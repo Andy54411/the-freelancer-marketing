@@ -76,6 +76,7 @@ export default function InvoiceHeaderTextSection({
                 textType="HEAD"
               />
             </div>
+
           </div>
         </fieldset>
       </CardContent>

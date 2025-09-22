@@ -3,64 +3,12 @@ import type { CompanySettings, TemplateCustomizations } from '../types';
 import { resolveLogoUrl } from '../utils/logoUtils';
 
 interface TemplateProps {
-  data: InvoiceData;
+  data: any; // 🔧 Geändert zu any für Flexibilität mit zusätzlichen Feldern
   companySettings?: CompanySettings;
   customizations?: TemplateCustomizations;
 }
 
-interface InvoiceData {
-  documentNumber: string;
-  date: string;
-  dueDate: string;
-  /** Leistungsdatum oder Leistungszeitraum gem. §14 UStG */
-  serviceDate?: string;
-  servicePeriod?: string;
-  customer: {
-    name: string;
-    email: string;
-    address: {
-      street: string;
-      zipCode: string;
-      city: string;
-      country: string;
-    };
-  };
-  company: {
-    name: string;
-    email: string;
-    phone: string;
-    address: {
-      street: string;
-      zipCode: string;
-      city: string;
-      country: string;
-    };
-    taxNumber: string;
-    vatId: string;
-    bankDetails: {
-      iban: string;
-      bic: string;
-      accountHolder: string;
-    };
-  };
-  items: Array<{
-    description: string;
-    quantity: number;
-    unit: string;
-    unitPrice: number;
-    total: number;
-  }>;
-  subtotal: number;
-  taxRate: number;
-  taxAmount: number;
-  total: number;
-  paymentTerms: string;
-  notes: string;
-  status: string;
-  isSmallBusiness: boolean;
-  /** Reverse-Charge Hinweis gem. §13b UStG */
-  reverseCharge?: boolean;
-}
+// 🔧 InvoiceData Interface entfernt - verwende any für maximale Flexibilität
 
 // Hinweis: TemplateProps ist oben bereits mit companySettings/customizations definiert
 
@@ -83,71 +31,92 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
     new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
   const serviceText =
     data.servicePeriod || (data.serviceDate ? formatDate(data.serviceDate) : formatDate(data.date));
+
+
   return (
     <div className="w-full max-w-4xl mx-auto bg-white p-8 font-sans text-sm">
       {/* Header */}
       <div className="flex justify-between items-start mb-8 pb-6 border-b-2 border-gray-300">
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Rechnung</h1>
           <p className="text-lg text-gray-600">Rechnungsnummer {data.documentNumber}</p>
+          <h2 className="text-xl font-bold text-gray-800 mt-6 mb-2">{data.company?.name || 'Company Name'}</h2>
+          <div className="text-gray-600">
+            <p>{data.company?.address?.street}</p>
+            <p>{data.company?.address?.zipCode} {data.company?.address?.city}</p>
+            {data.company?.phone && <p className="mt-2">{data.company?.phone}</p>}
+            {data.company?.email && <p>{data.company?.email}</p>}
+            {/* Keine weiteren Felder wie Zahlungsbedingung oder USt-Regel im Header anzeigen */}
+          </div>
         </div>
-        <div className="text-right">
+        <div className="flex-shrink-0 text-right ml-8">
           {showLogo && logoUrl && (
             <img
               src={logoUrl}
               alt={`${data.company?.name || 'Company'} Logo`}
-              className="h-12 w-auto ml-auto mb-2 object-contain"
+              className="h-24 w-auto ml-auto mb-2 object-contain"
             />
           )}
-          <h2 className="text-xl font-bold text-gray-800 mb-2">{data.company?.name || 'Company Name'}</h2>
-          <div className="text-gray-600">
-            <p>{data.company?.address?.street}</p>
-            <p>
-              {data.company?.address?.zipCode} {data.company?.address?.city}
-            </p>
-            <p className="mt-2">{data.company?.phone}</p>
-            <p>{data.company?.email}</p>
-          </div>
         </div>
       </div>
 
-      {/* Kunde und Daten */}
-      <div className="grid grid-cols-2 gap-8 mb-8">
-        <div>
-          <h3 className="text-sm font-bold text-gray-500 uppercase mb-2">Rechnungsempfänger</h3>
-          <div className="bg-gray-50 p-4 rounded">
-            <p className="font-bold text-gray-800">{data.customer?.name || 'Customer Name'}</p>
-            <p className="text-gray-700">{data.customer?.address?.street}</p>
-            <p className="text-gray-700">
-              {data.customer?.address?.zipCode} {data.customer?.address?.city}
-            </p>
+      {/* Kunde und Daten entfernt (Lieferanschrift wird nicht mehr unter Kopftext angezeigt) */}
+
+      {/* Mehr Optionen / Auswahlfelder (jetzt UNTER dem Kopftext) */}
+      {(
+        (data.currency && data.currency !== 'EUR') ||
+        (data.contactPersonName && data.contactPersonName.trim() !== '') ||
+        (data.deliveryTerms && data.deliveryTerms.trim() !== '') ||
+        (data.skontoText && data.skontoText.trim() !== '') ||
+        (data.skontoDays && data.skontoDays > 0) ||
+        (data.skontoPercentage && data.skontoPercentage > 0) ||
+        (typeof data.reverseCharge !== 'undefined' && data.reverseCharge !== false) ||
+        (data.isSmallBusiness)
+      ) && (
+        <div className="mb-8">
+          <div className="grid grid-cols-2 gap-8">
+            <div>
+              {data.currency && data.currency !== 'EUR' && (
+                <div className="text-gray-600 text-xs mb-1">Währung: <span className="font-semibold">{data.currency}</span></div>
+              )}
+              {data.contactPersonName && data.contactPersonName.trim() !== '' && (
+                <div className="text-gray-600 text-xs mb-1">Kontaktperson: <span className="font-semibold">{data.contactPersonName}</span></div>
+              )}
+              {data.deliveryTerms && data.deliveryTerms.trim() !== '' && (
+                <div className="text-gray-600 text-xs mb-1">Lieferbedingung: <span className="font-semibold">{data.deliveryTerms}</span></div>
+              )}
+              {(data.skontoText && data.skontoText.trim() !== '') || (data.skontoDays && data.skontoDays > 0) || (data.skontoPercentage && data.skontoPercentage > 0) ? (
+                <div className="text-gray-600 text-xs mb-1">
+                  Skonto: <span className="font-semibold">
+                    {data.skontoText ? data.skontoText : ''}
+                    {data.skontoDays && data.skontoDays > 0 ? ` Bei Zahlung binnen ${data.skontoDays} Tagen` : ''}
+                    {data.skontoPercentage && data.skontoPercentage > 0 ? ` ${data.skontoPercentage}%` : ''}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+            <div>
+              {typeof data.reverseCharge !== 'undefined' && data.reverseCharge !== false && (
+                <div className="text-gray-600 text-xs mb-1">Reverse Charge: <span className="font-semibold">aktiviert</span></div>
+              )}
+              {data.isSmallBusiness && (
+                <div className="text-gray-600 text-xs mb-1">Kleinunternehmerregelung (§19 UStG)</div>
+              )}
+            </div>
           </div>
         </div>
-        <div>
-          <div className="space-y-3">
-            <div>
-              <span className="text-sm font-bold text-gray-500 uppercase">Rechnungsdatum: </span>
-              <span className="font-semibold">{formatDate(data.date)}</span>
-            </div>
-            <div>
-              <span className="text-sm font-bold text-gray-500 uppercase">Fälligkeitsdatum: </span>
-              <span className="font-semibold">{formatDate(data.dueDate)}</span>
-            </div>
-            <div>
-              <span className="text-sm font-bold text-gray-500 uppercase">
-                Leistungsdatum/-zeitraum:{' '}
-              </span>
-              <span className="font-semibold">{serviceText}</span>
-            </div>
-            <div>
-              <span className="text-sm font-bold text-gray-500 uppercase">
-                Zahlungsbedingungen:{' '}
-              </span>
-              <span className="font-semibold">{data.paymentTerms}</span>
-            </div>
+      )}
+
+      {/* Kopftext / Header-Text */}
+      {(data.description || data.introText || data.headerText) && (
+        <div className="mb-6">
+          <div className="text-base text-gray-800 whitespace-pre-line" style={{wordBreak: 'break-word'}}>
+            {data.description && <div dangerouslySetInnerHTML={{ __html: data.description }} />}
+            {!data.description && data.introText && <div dangerouslySetInnerHTML={{ __html: data.introText }} />}
+            {!data.description && !data.introText && data.headerText && <div dangerouslySetInnerHTML={{ __html: data.headerText }} />}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Artikel Tabelle */}
       <div className="mb-8">
@@ -158,6 +127,9 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
               <th className="border border-gray-300 p-3 text-left font-bold">Beschreibung</th>
               <th className="border border-gray-300 p-3 text-center font-bold">Menge</th>
               <th className="border border-gray-300 p-3 text-right font-bold">Einzelpreis</th>
+              {data.items && data.items.some((item) => item.discountPercent > 0 || item.discount > 0) ? (
+                <th className="border border-gray-300 p-3 text-right font-bold">Rabatt</th>
+              ) : null}
               <th className="border border-gray-300 p-3 text-right font-bold">Gesamtpreis</th>
             </tr>
           </thead>
@@ -172,8 +144,21 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
                 <td className="border border-gray-300 p-3 text-right">
                   {formatCurrency(item.unitPrice)}
                 </td>
+                {data.items && data.items.some((itm) => itm.discountPercent > 0 || itm.discount > 0) ? (
+                  <td className="border border-gray-300 p-3 text-right text-red-600">
+                    {(item.discountPercent > 0 || item.discount > 0)
+                      ? `${item.discountPercent > 0 ? item.discountPercent : item.discount}%`
+                      : ''}
+                  </td>
+                ) : null}
                 <td className="border border-gray-300 p-3 text-right font-semibold">
-                  {formatCurrency(item.total)}
+                  {(() => {
+                    const discount = item.discountPercent > 0
+                      ? (item.unitPrice * item.quantity) * (item.discountPercent / 100)
+                      : (item.discount > 0 ? (item.unitPrice * item.quantity) * (item.discount / 100) : 0);
+                    const total = (item.unitPrice * item.quantity) - discount;
+                    return formatCurrency(total);
+                  })()}
                 </td>
               </tr>
             ))}
@@ -181,8 +166,27 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
         </table>
       </div>
 
-      {/* Summen */}
-      <div className="flex justify-end mb-8">
+
+
+      {/* Debug-Ausgabe für Summenbereich */}
+      {process.env.NODE_ENV !== 'production' && (
+        <pre className="text-xs text-red-500 bg-gray-100 p-2 mb-2">
+          {JSON.stringify({ currency: data.currency, paymentTerms: data.paymentTerms, taxRule: data.taxRule, taxRate: data.taxRate, taxAmount: data.taxAmount }, null, 2)}
+        </pre>
+      )}
+
+      {/* Summenbereich mit Infos links */}
+      <div className="flex flex-row justify-end mb-8 gap-4">
+        {/* Linke Spalte: Währung, Zahlungsbedingung, Steuerregel */}
+        <div className="flex flex-col text-sm text-gray-700 min-w-[220px]">
+          {/* Währung, Kontaktperson und Zahlungsbedingung werden nur oben im Optionen-Block angezeigt */}
+          {data.taxRule && (
+            <div>
+              <span className="font-semibold">Steuerregel:</span> {data.taxRule === 'DE_TAXABLE' ? 'In Deutschland steuerpflichtig' : data.taxRule}
+            </div>
+          )}
+        </div>
+        {/* Rechte Spalte: Summen */}
         <div className="w-80">
           <div className="space-y-2">
             <div className="flex justify-between py-2">
@@ -204,6 +208,26 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 🔧 ABSCHLUSSTEXT - Direkt nach Gesamtsumme ohne Titel und grauen Hintergrund */}
+      {(data.hinweise || data.additionalNotes || data.paymentNotes || data.conclusionText) && (
+        <div className="mt-3 mb-8">
+          <div className="text-sm text-gray-700 space-y-2">
+            {data.hinweise && (
+              <div dangerouslySetInnerHTML={{ __html: data.hinweise }} />
+            )}
+            {!data.hinweise && data.additionalNotes && (
+              <div dangerouslySetInnerHTML={{ __html: data.additionalNotes }} />
+            )}
+            {!data.hinweise && !data.additionalNotes && data.paymentNotes && (
+              <div dangerouslySetInnerHTML={{ __html: data.paymentNotes }} />
+            )}
+            {!data.hinweise && !data.additionalNotes && !data.paymentNotes && data.conclusionText && (
+              <div dangerouslySetInnerHTML={{ __html: data.conclusionText }} />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Footer / Compliance */}
       <div className="border-t-2 border-gray-300 pt-6 text-xs text-gray-700">
@@ -229,7 +253,7 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
             {!data.isSmallBusiness && data.reverseCharge && (
               <p>Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG).</p>
             )}
-            {data.notes && <p className="mt-2 text-gray-700">{data.notes}</p>}
+            {/* 🔧 Hinweis: data.notes wurde entfernt - Footer-Text erscheint jetzt als separater Abschlusstext-Block */}
           </div>
         </div>
         <div className="mt-4 text-gray-600">

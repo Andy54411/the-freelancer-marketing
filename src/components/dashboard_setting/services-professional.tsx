@@ -179,10 +179,43 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
     setActiveTab('manage');
   };
 
-  const handleServiceCreated = () => {
+  // Services nach dem Anlegen neu laden (ohne kompletten Reload)
+  const handleServiceCreated = async () => {
     setActiveTab('manage');
-    // Reload services by triggering useEffect again
-    window.location.reload();
+    // Services neu laden
+    if (user?.uid) {
+      try {
+        setIsLoading(true);
+        const servicePackagesRef = collection(db, 'companies', user.uid, 'servicePackages');
+        const querySnapshot = await getDocs(servicePackagesRef);
+        const servicesList: TestService[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          servicesList.push({
+            id: doc.id,
+            title: data.title || 'Unbenannt',
+            price: data.price || 0,
+            description: data.description || '',
+            additionalServices: data.additionalServices || [],
+            features: data.features || [],
+            deliveryTime: data.deliveryTime || 1,
+            deliveryUnit: data.deliveryUnit || 'Tage',
+            hasDuration: data.hasDuration || false,
+            duration: data.duration || 0,
+            packageType: data.packageType || 'basic',
+            name: data.name || '',
+            subcategory: data.subcategory || '',
+            serviceId: data.serviceId || '',
+            active: data.active !== false
+          });
+        });
+        setServices(servicesList);
+      } catch (error) {
+        toast.error('Fehler beim Neuladen der Services');
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   // Convert TestService to ServiceItem format for ServiceEdit component

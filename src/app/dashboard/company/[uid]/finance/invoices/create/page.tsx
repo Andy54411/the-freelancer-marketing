@@ -1,4 +1,5 @@
-'use client';
+
+"use client";
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -12,10 +13,24 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Check, ChevronsUpDown, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger, PopoverAnchor } from '@/components/ui/popover';
+import { PopoverAnchor } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -43,13 +58,37 @@ import {
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { db } from '@/firebase/clients';
+import { 
+  collection, 
+  getDocs, 
+  getDoc,
+  doc, 
+  updateDoc, 
+  addDoc, 
+  serverTimestamp, 
+  deleteDoc, 
+  FieldValue,
+  DocumentData,
+  QuerySnapshot 
+} from 'firebase/firestore';
 import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteService';
 import { FirestoreInvoiceService as InvoiceService } from '@/services/firestoreInvoiceService';
 import { InvoiceData as InvoiceType } from '@/types/invoiceTypes';
 import { QuoteItem as InvoiceItem } from '@/services/quoteService';
 import { getAllCurrencies } from '@/data/currencies';
+import { QuickAddService } from "@/components/QuickAddService";
 import { getCustomers } from '@/utils/api/companyApi';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+// ...
+// State für Dienstleistungs-Modal innerhalb der Komponente anlegen!
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
@@ -125,6 +164,7 @@ type PreviewTemplateData = {
   headTextHtml?: string;
   footerText?: string;
   contactPersonName?: string;
+  internalContactPerson?: string;
   paymentTerms?: string;
   deliveryTerms?: string;
   // Company-Objekt für Template-Kompatibilität
@@ -147,8 +187,6 @@ type PreviewTemplateData = {
     };
   };
 };
-import { db } from '@/firebase/clients';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { Switch } from '@/components/ui/switch';
 import { InventoryService } from '@/services/inventoryService';
@@ -174,6 +212,264 @@ export default function CreateQuotePage() {
   const router = useRouter();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
+
+  const renderProductsCard = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <Calculator className="h-5 w-5 mr-2 text-[#14ad9f]" />
+          Produkte
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <QuickAddService
+          companyId={uid}
+          onServiceAdded={(service) => {
+            setItems(prev => [...prev, service]);
+            toast.success('Dienstleistung wurde zur Rechnung hinzugefügt');
+          }}
+        />
+        {/* Rest des Card Contents */}
+        <div className="flex items-center justify-between mb-3">
+          {/* ... existierender Content ... */}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // Erweiterte States für Dienstleistungen
+  const [serviceModalOpen, setServiceModalOpen] = useState(false);
+  const [existingServices, setExistingServices] = useState<any[]>([]);
+  const [selectedService, setSelectedService] = useState<string>('');
+  const [serviceDraft, setServiceDraft] = useState({
+    name: '',
+    description: '',
+    price: '',
+    unit: 'Stk',
+  });
+  const [savingService, setSavingService] = useState(false);
+
+  // Lade existierende Dienstleistungen
+  useEffect(() => {
+    const loadExistingServices = async () => {
+      if (!uid) return;
+      try {
+        const servicesCol = collection(db, 'companies', uid, 'services');
+        const inlineCol = collection(db, 'companies', uid, 'inlineServices');
+
+        const [servicesSnap, inlineSnap]: [QuerySnapshot<DocumentData>, QuerySnapshot<DocumentData>] = await Promise.all([
+          getDocs(servicesCol),
+          getDocs(inlineCol)
+        ]);
+
+        const services = servicesSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          source: 'services'
+        }));
+
+        const inlineServices = inlineSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          source: 'inlineServices'
+        }));
+
+        setExistingServices([...services, ...inlineServices]);
+      } catch (error) {
+        console.error('Fehler beim Laden der Dienstleistungen:', error);
+        toast.error('Dienstleistungen konnten nicht geladen werden');
+      }
+    };
+
+    loadExistingServices();
+  }, [uid]);
+  // ComboBox für Dienstleistungsauswahl
+  const ServiceSelector = () => (
+    <div className="flex items-center gap-2 border-l border-gray-200 pl-4 ml-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            className={cn(
+              "min-w-[280px] justify-between border-input",
+              "hover:bg-accent hover:text-accent-foreground",
+              "focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2",
+              selectedService && "text-[#14ad9f] border-[#14ad9f]"
+            )}
+          >
+            {selectedService
+              ? existingServices.find((service) => service.name === selectedService)?.name
+              : "Dienstleistung auswählen oder neu erstellen..."}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[280px] p-0">
+          <Command>
+            <CommandInput 
+              placeholder="Dienstleistung suchen..." 
+              className="border-none focus:ring-0 focus-visible:ring-0"
+            />
+            <CommandEmpty>
+              <div className="p-4 text-sm text-center">
+                <p className="text-muted-foreground mb-2">Keine Dienstleistung gefunden.</p>
+                <Button
+                  variant="ghost"
+                  className="w-full mt-2 text-[#14ad9f]"
+                  onClick={() => {
+                    setServiceDraft(prev => ({ ...prev, name: '' }));
+                    setServiceModalOpen(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Neue Dienstleistung erstellen
+                </Button>
+              </div>
+            </CommandEmpty>
+            <CommandGroup>
+              {existingServices.map((service) => (
+                <CommandItem
+                  key={service.id}
+                  onSelect={() => {
+                    setSelectedService(service.name);
+                    setServiceDraft({
+                      name: service.name,
+                      description: service.description || '',
+                      price: service.price?.toString() || '',
+                      unit: service.unit || 'Stk',
+                    });
+                  }}
+                  className="text-sm hover:bg-[#14ad9f]/10 aria-selected:bg-[#14ad9f]/10"
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selectedService === service.name ? "opacity-100 text-[#14ad9f]" : "opacity-0"
+                    )}
+                  />
+                  {service.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      
+      {selectedService ? (
+        <Button
+          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+          onClick={saveServiceToSubcollection}
+          disabled={savingService}
+        >
+          {savingService ? (
+            <>Speichert...</>
+          ) : (
+            <>Dienstleistung übernehmen</>
+          )}
+        </Button>
+      ) : (
+        <Button
+          variant="outline"
+          className="text-[#14ad9f] border-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+          onClick={() => {
+            setServiceDraft(prev => ({ ...prev, name: '' }));
+            setServiceModalOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Neu
+        </Button>
+      )}
+    </div>
+  );
+  // Dienstleistung in Subcollection speichern
+  const saveServiceToSubcollection = async () => {
+    toast('SERVICE SAVE TRIGGERED (UI)', { description: 'Die Save-Funktion wurde im Client aufgerufen.' });
+    console.log('SERVICE SAVE TRIGGERED', { uid, serviceDraft });
+    if (!uid || !serviceDraft.name.trim()) {
+      console.warn('[Dienstleistung speichern] Abbruch: UID oder Name fehlt', { uid, name: serviceDraft.name });
+      return;
+    }
+    setSavingService(true);
+    try {
+      const serviceData = {
+        name: serviceDraft.name.trim(),
+        description: serviceDraft.description?.trim() || '',
+        price: parseFloat(serviceDraft.price) || 0,
+        unit: serviceDraft.unit || 'Stk',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      console.log('[Dienstleistung speichern] serviceData:', serviceData);
+      const ref = collection(db, 'companies', uid, 'inlineInvoiceServices');
+      console.log('[Dienstleistung speichern] Collection-Ref:', ref);
+      const result = await addDoc(ref, serviceData);
+      console.log('[Dienstleistung speichern] addDoc result:', result);
+      toast.success('Dienstleistung gespeichert');
+      setServiceDraft({ name: '', description: '', price: '', unit: 'Stk' });
+      setServiceModalOpen(false);
+    } catch (e) {
+      console.error('[Dienstleistung speichern] Fehler:', e);
+      toast.error('Fehler beim Speichern der Dienstleistung');
+    } finally {
+      setSavingService(false);
+    }
+  };
+  // States für Quick-Add Service Funktion
+  const [quickServiceName, setQuickServiceName] = useState('');
+  const [quickServicePrice, setQuickServicePrice] = useState('');
+  const [savingQuickService, setSavingQuickService] = useState(false);
+  
+  // Quick-Add Service Handler
+  const handleQuickAddService = async () => {
+    if (!uid || !quickServiceName.trim()) {
+      toast.error('Bitte geben Sie einen Namen für die Dienstleistung ein');
+      return;
+    }
+    
+    setSavingQuickService(true);
+    try {
+      // 1. In inlineInvoiceServices speichern
+      const serviceData = {
+        name: quickServiceName.trim(),
+        description: '',
+        price: parseFloat(quickServicePrice) || 0,
+        unit: 'Std',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      
+      const ref = collection(db, 'companies', uid, 'inlineInvoiceServices');
+      const result = await addDoc(ref, serviceData);
+      
+      // 2. Direkt zur Rechnung hinzufügen
+      const newItem = {
+        id: crypto.randomUUID(),
+        description: serviceData.name,
+        quantity: 1,
+        unitPrice: serviceData.price,
+        unit: serviceData.unit,
+        total: serviceData.price,
+        category: 'Dienstleistung',
+        inventoryItemId: result.id,
+      };
+      
+      setItems(prev => [...prev, newItem]);
+      
+      // 3. UI zurücksetzen
+      setQuickServiceName('');
+      setQuickServicePrice('');
+      toast.success('Dienstleistung gespeichert und zur Rechnung hinzugefügt');
+    } catch (e) {
+      console.error('Fehler beim Quick-Add Service:', e);
+      toast.error('Fehler beim Speichern der Dienstleistung');
+    } finally {
+      setSavingQuickService(false);
+    }
+  };
+
+  // State für neue Dienstleistung (Service)
+  const [newServiceName, setNewServiceName] = useState<string>('');
   const { settings } = useCompanySettings(uid);
 
   // UI state
@@ -445,8 +741,8 @@ export default function CreateQuotePage() {
     validUntil: '',
     invoiceDate: '',
     deliveryDate: '',
-    headTextHtml: '',
-    footerText: '',
+  headTextHtml: 'Sehr geehrte Damen und Herren,\n\nvielen Dank für Ihren Auftrag und das damit verbundene Vertrauen!\nHiermit stelle ich Ihnen die folgenden Leistungen in Rechnung:',
+  footerText: 'Wir bitten Sie, den Rechnungsbetrag von [%GESAMTBETRAG%] unter Angabe der Rechnungsnummer [%RECHNUNGSNUMMER%] auf das unten angegebene Konto zu überweisen. Zahlungsziel: [%ZAHLUNGSZIEL%] Rechnungsdatum: [%RECHNUNGSDATUM%] Vielen Dank für Ihr Vertrauen und die angenehme Zusammenarbeit!<br>Mit freundlichen Grüßen<br>[%KONTAKTPERSON%]',
     notes: '',
     currency: 'EUR',
     internalContactPerson: '',
@@ -792,6 +1088,30 @@ export default function CreateQuotePage() {
   // Währungen: alle ISO-4217 Codes mit lokalisierten Namen
   const allCurrencies = React.useMemo(() => getAllCurrencies('de-DE'), []);
 
+  // Quick-Add Service Komponente
+  const QuickAddServiceSection = () => (
+    <div className="mb-4 border-b pb-4">
+      <QuickAddService
+        companyId={uid}
+        onServiceAdded={(service) => {
+          setItems(prev => [...prev, service]);
+          toast.success('Dienstleistung wurde zur Rechnung hinzugefügt');
+        }}
+      />
+    </div>
+  );
+
+  // CardContent rendern
+  const renderCardContent = () => (
+    <div data-slot="card-content" className="px-6">
+      <QuickAddServiceSection />
+      {/* Rest des Card Contents */}
+      <div className="flex items-center justify-between mb-3">
+        {/* ... existierender Content ... */}
+      </div>
+    </div>
+  );
+
   // Einheiten-Auswahl (analog zur gewünschten Liste)
   const UNIT_OPTIONS = React.useMemo(
     () => [
@@ -921,9 +1241,8 @@ export default function CreateQuotePage() {
         companyName: data.customerName || '',
         name: data.customerName || '',
         email: data.customerEmail || '',
-        phone: data.customerPhone || '', // Verwende die korrekte KUNDENTELEFON-Variable
+        phone: data.customerPhone || '',
         address: data.customerAddress || '',
-        // Strukturierte Adresse wenn verfügbar
         street: data.customerAddress?.split('\n')[0] || '',
         postalCode: data.customerAddress?.split('\n')[1]?.split(' ')[0] || '',
         city: data.customerAddress?.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
@@ -940,15 +1259,38 @@ export default function CreateQuotePage() {
         totalAmount: data.total || 0,
         currency: data.currency || 'EUR',
         taxRate: data.vatRate || 0,
-        paymentTerms: data.paymentTerms || '',
+        paymentTerms: parseInt(data.paymentTerms || '14'),
         notes: data.notes || '',
         reference: data.reference || '',
         title: data.title || ''
+      },
+      contactPerson: {
+        name: data.internalContactPerson || 
+              (company?.contactPerson?.name as string) || 
+              [company?.firstName, company?.lastName].filter(Boolean).join(' ') || 
+              ''
       }
     };
 
-    // Verwende die zentrale Engine für die Ersetzung
-    return centralReplacePlaceholders(text, context);
+    // Spezial: Kontaktperson ODER Firmenname am Ende
+    let result = centralReplacePlaceholders(text, context);
+    if (result.includes('[%KONTAKTPERSON]')) {
+      const kontakt = context.contactPerson?.name?.trim();
+      const fallbackFirma = context.company?.companyName?.trim() || context.company?.name?.trim() || '';
+      const value = kontakt ? kontakt : fallbackFirma;
+      result = result.replace(/\[%KONTAKTPERSON_ODER_FIRMENNAME%\]/g, value);
+    }
+
+    // Debug: Platzhalter-Ersetzung validieren
+    console.log('🔧 [Platzhalter] Ersetzung:', {
+      originalText: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+      hasZahlungsziel: text.includes('[%ZAHLUNGSZIEL%]'),
+      hasKontaktperson: text.includes('[%KONTAKTPERSON%]'),
+      paymentTerms: context.invoice?.paymentTerms,
+      contactPersonName: context.contactPerson?.name,
+      result: result.substring(0, 200) + (result.length > 200 ? '...' : ''),
+    });
+    return result;
   };
 
   // Vorschau-Daten für das Template zusammenbauen
@@ -1408,7 +1750,117 @@ export default function CreateQuotePage() {
 
   const printInBrowser = () => {
     try {
-      const data = getProcessedPreviewData();
+      // Berechne die aktuellen Summen
+      const subtotal = items.reduce((sum, it) => {
+        const t = it.total || 0;
+        if (it.category === 'discount') {
+          return sum + -Math.abs(t);
+        }
+        const factor = 1 - Math.max(0, Math.min(100, it.discountPercent || 0)) / 100;
+        return sum + t * factor;
+      }, 0);
+      const vat = subtotal * (taxRate / 100);
+      const grandTotal = subtotal + vat;
+
+      // 🔧 WICHTIG: Verwende getProcessedPreviewData() für korrekte Platzhalter-Ersetzung
+      const processedData = getProcessedPreviewData();
+
+      // Vollständige Datenstruktur für die Print-Vorschau
+      const data = {
+        // Rechnungsdetails
+        invoiceNumber: formData.title || 'Vorschau',
+        date: formData.invoiceDate || new Date().toISOString().split('T')[0],
+        validUntil: formData.validUntil || new Date().toISOString().split('T')[0],
+        deliveryDate: formData.deliveryDate,
+        // Lieferzeitraum für Template (falls Range ausgewählt)
+        servicePeriod: deliveryDateType === 'range' && deliveryDateRange.from && deliveryDateRange.to 
+          ? `${deliveryDateRange.from.toLocaleDateString('de-DE')} - ${deliveryDateRange.to.toLocaleDateString('de-DE')}`
+          : undefined,
+        serviceDate: deliveryDateType === 'single' ? formData.deliveryDate : undefined,
+        
+        // Kundendaten
+        customerName: formData.customerName || '',
+        customerEmail: formData.customerEmail || '',
+        customerAddress: formData.customerAddress || '',
+        customerOrderNumber: formData.customerOrderNumber || '',
+        
+        // Unternehmensdaten
+        companyName: company?.companyName || settings?.companyName || (user as any)?.name || 'Ihr Unternehmen',
+        companyAddress: [
+          [company?.companyStreet, company?.companyHouseNumber].filter(Boolean).join(' '),
+          [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
+          company?.companyCountry,
+        ].filter(Boolean).join('\n'),
+        companyEmail: company?.contactEmail || company?.email || (settings as any)?.contactEmail || '',
+        companyPhone: company?.companyPhoneNumber || company?.phoneNumber || (settings as any)?.companyPhone || '',
+        companyWebsite: company?.website || company?.companyWebsite || (settings as any)?.companyWebsite || '',
+        companyVatId: company?.vatId || company?.step3?.vatId || (settings as any)?.vatId || '',
+        companyTaxNumber: company?.taxNumber || company?.step3?.taxNumber || (settings as any)?.taxNumber || '',
+        companyLogo: company?.profilePictureURL || company?.profilePictureFirebaseUrl || '',
+        
+        // Bankdaten
+        bankDetails: {
+          iban: company?.iban || company?.step4?.iban || settings?.iban || '',
+          bic: company?.bic || company?.step4?.bic || (settings as any)?.bic || '',
+          bankName: company?.bankName || company?.step4?.bankName || (settings as any)?.bankName || '',
+          accountHolder: company?.accountHolder || company?.step4?.accountHolder || (settings as any)?.accountHolder || company?.companyName || 'Kontoinhaber'
+        },
+        
+        // Positionen
+        items: items.filter(item => item.description && item.quantity > 0),
+        
+        // Finanzielle Daten
+        subtotal: subtotal,
+        tax: vat,
+        total: grandTotal,
+        currency: formData.currency || 'EUR',
+        vatRate: taxRate,
+        isSmallBusiness: company?.kleinunternehmer === 'ja' || company?.ust === 'kleinunternehmer' || false,
+        
+        // 🔧 KORRIGIERT: Verwende verarbeitete Texte mit ersetzten Platzhaltern
+        headTextHtml: processedData.headTextHtml || '',
+        notes: formData.notes || '',
+        footerText: processedData.footerText || '',
+        paymentTerms: formData.paymentTerms || '',
+        deliveryTerms: formData.deliveryTerms || '',
+        
+        // Kontaktperson
+        contactPersonName: formData.internalContactPerson || '',
+        
+        // Zusätzliche Felder
+        title: formData.title || '',
+        reference: formData.customerOrderNumber || '',
+        description: processedData.headTextHtml || '',
+        taxRule: formData.taxRule || 'DE_TAXABLE'
+      };
+
+      // 🔍 DEBUG: Zeige alle gesendeten Daten
+      console.log('=== PRINT BROWSER DEBUG ===');
+      console.log('Gesendete Daten an Print-Preview:', data);
+      console.log('Verarbeitete Platzhalter-Texte:', {
+        originalHeadText: formData.headTextHtml,
+        processedHeadText: processedData.headTextHtml,
+        originalFooterText: formData.footerText,
+        processedFooterText: processedData.footerText,
+      });
+      console.log('FormData State:', {
+        customerName: formData.customerName,
+        customerEmail: formData.customerEmail,
+        customerAddress: formData.customerAddress,
+        title: formData.title,
+        invoiceDate: formData.invoiceDate,
+        validUntil: formData.validUntil,
+        deliveryDate: formData.deliveryDate,
+        headTextHtml: formData.headTextHtml,
+        footerText: formData.footerText,
+        paymentTerms: formData.paymentTerms,
+        notes: formData.notes
+      });
+      console.log('Company Data:', company);
+      console.log('Items:', items);
+      console.log('Berechnete Summen:', { subtotal, vat, grandTotal });
+      console.log('=== END DEBUG ===');
+
       // UTF-8-sichere Base64-Kodierung (vermeidet UmsÃ¤tze/ä/ö/ü-Probleme)
       const encodeBase64Utf8 = (obj: any): string => {
         const json = typeof obj === 'string' ? obj : JSON.stringify(obj);
@@ -1418,12 +1870,13 @@ export default function CreateQuotePage() {
         return btoa(bin);
       };
       const payload = encodeURIComponent(encodeBase64Utf8(data));
-      const url = `/print/quote/${uid}/preview?auto=1&payload=${payload}`;
+      const url = `/print/invoice/preview?auto=1&payload=${payload}`;
       const win = window.open(url, '_blank');
       if (!win || win.closed || typeof win.closed === 'undefined') {
         toast.message('Popup-Blocker aktiv – bitte Popups erlauben und erneut versuchen.');
       }
     } catch (e) {
+      console.error('Print Error:', e);
       toast.error('Browser-Druck konnte nicht gestartet werden');
     }
   };
@@ -2884,6 +3337,128 @@ export default function CreateQuotePage() {
             >
               + Gesamtrabatt hinzufügen
             </Button>
+
+            {/* Dienstleistung anlegen */}
+            <div className="flex items-center gap-2 border-l border-gray-200 pl-4 ml-2">
+              <input
+                type="text"
+                value={newServiceName || ''}
+                onChange={e => setNewServiceName(e.target.value)}
+                placeholder="Neue Dienstleistung (z.B. Beratung)"
+                className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+                style={{ minWidth: 180 }}
+              />
+              <Button
+                type="button"
+                size="sm"
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                disabled={!newServiceName || newServiceName.trim().length < 2}
+                onClick={() => {
+                  if (!newServiceName || newServiceName.trim().length < 2) return;
+                  setServiceDraft({
+                    name: newServiceName,
+                    description: '',
+                    price: '',
+                    unit: 'Stk',
+                  });
+                  setServiceModalOpen(true);
+                  setNewServiceName('');
+                }}
+              >
+                Dienstleistung speichern
+              </Button>
+            </div>
+      {/* Modal für neue Dienstleistung */}
+      <Dialog open={serviceModalOpen} onOpenChange={setServiceModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Neue Dienstleistung anlegen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Name *</label>
+              <input
+                type="text"
+                className="w-full border rounded px-2 py-1"
+                value={serviceDraft.name}
+                onChange={e => setServiceDraft(d => ({ ...d, name: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Beschreibung</label>
+              <textarea
+                className="w-full border rounded px-2 py-1"
+                value={serviceDraft.description}
+                onChange={e => setServiceDraft(d => ({ ...d, description: e.target.value }))}
+                rows={2}
+              />
+            </div>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1">Preis *</label>
+                <input
+                  type="number"
+                  className="w-full border rounded px-2 py-1"
+                  value={serviceDraft.price}
+                  onChange={e => setServiceDraft(d => ({ ...d, price: e.target.value }))}
+                  min="0"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Einheit</label>
+                <select
+                  className="border rounded px-2 py-1"
+                  value={serviceDraft.unit}
+                  onChange={e => setServiceDraft(d => ({ ...d, unit: e.target.value }))}
+                >
+                  <option value="Stk">Stk</option>
+                  <option value="Std">Std</option>
+                  <option value="Pauschale">Pauschale</option>
+                  <option value="%">%</option>
+                  <option value="Tag(e)">Tag(e)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              onClick={async () => {
+                if (!serviceDraft.name.trim() || !serviceDraft.price) return;
+                
+                // 1. Zuerst in Firestore speichern
+                await saveServiceToSubcollection();
+                
+                // 2. Dann als Position zur Rechnung hinzufügen
+                setItems(prev => [
+                  ...prev,
+                  {
+                    id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+                    description: serviceDraft.name + (serviceDraft.description ? `: ${serviceDraft.description}` : ''),
+                    quantity: 1,
+                    unitPrice: parseFloat(serviceDraft.price),
+                    total: parseFloat(serviceDraft.price),
+                    unit: serviceDraft.unit,
+                  },
+                ]);
+
+                // 3. Dialog schließen und Form zurücksetzen
+                setServiceModalOpen(false);
+                setServiceDraft({ name: '', description: '', price: '', unit: 'Stk' });
+                toast.success('Dienstleistung zur Rechnung hinzugefügt');
+              }}
+              disabled={!serviceDraft.name.trim() || !serviceDraft.price}
+            >
+              Speichern & hinzufügen
+            </Button>
+            <DialogClose asChild>
+              <Button variant="outline" type="button">Abbrechen</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
           </div>
 
           {/* Positionsliste */}
@@ -3125,7 +3700,6 @@ export default function CreateQuotePage() {
             objectType="INVOICE"
             textType="FOOT"
           />
-          <div className="text-xs text-gray-500">Verfügbare Platzhalter: [%KONTAKTPERSON%]</div>
         </CardContent>
       </Card>
 
@@ -3465,57 +4039,6 @@ export default function CreateQuotePage() {
               </span>
             </li>
           </ul>
-        </CardContent>
-      </Card>
-
-      {/* Fußtext mit Textvorlagen */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <FileText className="h-5 w-5 mr-2 text-[#14ad9f]" />
-            Fußtext & Zahlungsbedingungen
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Textvorlagen Selector für Fußtext */}
-          <div className="flex items-center gap-2">
-            <Label className="flex-shrink-0">Fußtext-Vorlage:</Label>
-            <Select
-              value={selectedFooterTemplate}
-              onValueChange={value => {
-                setSelectedFooterTemplate(value);
-                const template = textTemplates.find(t => t.id === value);
-                if (template) {
-                  setFormData(prev => ({ ...prev, footerText: template.text }));
-                }
-              }}
-            >
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Vorlage auswählen..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Keine Vorlage</SelectItem>
-                {textTemplates
-                  .filter(t => t.objectType === 'INVOICE' && t.textType === 'FOOT')
-                  .map(template => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.name} {template.isDefault && '(Standard)'}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Fußtext / Hinweise</Label>
-            <FooterTextEditor
-              value={formData.footerText}
-              onChange={(html: string) => setFormData(prev => ({ ...prev, footerText: html }))}
-              companyId={uid}
-              objectType="INVOICE"
-              textType="FOOT"
-            />
-          </div>
         </CardContent>
       </Card>
 

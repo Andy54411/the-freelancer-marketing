@@ -1,19 +1,33 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
+import { addDoc, serverTimestamp, getDocs, collection, doc, updateDoc, deleteDoc, FieldValue } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
+import { toast } from 'sonner';
+import type { InventoryItem, InventoryStats, StockMovement } from '@/services/inventoryService';
+import type { InventoryCategoryExtended } from '@/services/types';
+import { InventoryService } from '@/services/inventoryService';
+import { 
+  AlertCircle,
+  AlertTriangle,
+  BarChart3,
+  Check,
+  CheckCircle,
+  ChevronsUpDown,
+  Edit,
+  Eye,
   Package,
+  Pencil,
   Plus,
   Search,
-  AlertTriangle,
-  Edit,
   Trash2,
-  Eye,
-  BarChart3,
-  AlertCircle,
-  CheckCircle,
   Download,
+  Box as BoxIcon,
+  Folder as FolderIcon,
 } from 'lucide-react';
+import { cn } from "@/lib/utils";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,10 +60,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  InventoryService,
-  InventoryItem,
-  InventoryStats,
-  StockMovement,
+//
   InventoryCategory,
 } from '@/services/inventoryService';
 
@@ -59,9 +70,15 @@ interface InventoryComponentProps {
 
 export default function InventoryComponent({ companyId }: InventoryComponentProps) {
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [serviceCount, setServiceCount] = useState<number>(0);
+  const [services, setServices] = useState<any[]>([]);
   const [stats, setStats] = useState<InventoryStats | null>(null);
+  // Inline-Dienstleistungen
+  const [inlineServices, setInlineServices] = useState<any[]>([]);
+  const [newInlineService, setNewInlineService] = useState('');
+  const [savingInlineService, setSavingInlineService] = useState(false);
   const [movements, setMovements] = useState<StockMovement[]>([]);
-  const [categories, setCategories] = useState<InventoryCategory[]>([]);
+  const [categories, setCategories] = useState<InventoryCategoryExtended[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -101,29 +118,250 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
     type: 'adjustment',
   });
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (): Promise<void> => {
     try {
+      if (!companyId) return; // Früher Return wenn keine companyId
+      
       setLoading(true);
-      const [itemsData, statsData, movementsData, categoriesData] = await Promise.all([
+      // Lade Daten aus beiden Collections parallel
+      const [itemsData, statsData, movementsData, categoriesData, inlineServicesSnap] = await Promise.all([
         InventoryService.getInventoryItems(companyId),
         InventoryService.getInventoryStats(companyId),
         InventoryService.getStockMovements(companyId),
         InventoryService.getCategories(companyId),
+        getDocs(collection(db, 'companies', companyId, 'inlineInvoiceServices'))
       ]);
 
-      setItems(itemsData);
-      setStats(statsData);
+      // Konvertiere inline Services zu ServiceItem Format
+      const inlineServicesData = inlineServicesSnap.docs.map(doc => {
+        const data = doc.data();
+        const price = typeof data.price === 'number' ? data.price : 
+                     typeof data.price === 'string' ? parseFloat(data.price) : 0;
+                     
+        return {
+          id: doc.id,
+          name: data.name || 'Unbenannte Dienstleistung',
+          description: data.description || '',
+          category: 'Dienstleistung',
+          sellingPrice: price,
+          unit: data.unit || 'Std',
+          status: 'active' as const,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+          companyId,
+          sku: `SRV-${doc.id.slice(0, 8)}`, // Generiere eine Service-SKU
+          currentStock: 1, // Dienstleistungen sind immer verfügbar
+          minStock: 0,
+          maxStock: 999999,
+          reservedStock: 0,
+          availableStock: 1,
+          purchasePrice: price, // Für Dienstleistungen setzen wir den gleichen Preis
+          stockValue: price,
+          isLowStock: false,
+          isOutOfStock: false
+        } satisfies InventoryItem;
+      });
+
+      // Kombiniere beide Datensätze - Deduplizierung nach ID
+      const combinedItems: InventoryItem[] = [
+        ...itemsData, 
+        ...inlineServicesData.filter(service => 
+          !itemsData.some(item => item.id === service.id)
+        )
+      ];
+      
+      // Aktualisiere Stats mit deduplizierten Daten
+      const updatedStats = {
+        ...statsData,
+        totalItems: combinedItems.length,
+        totalValue: combinedItems.reduce((sum, item) => sum + (item.sellingPrice || 0), 0),
+        serviceItems: inlineServicesData.length,
+        inventoryItems: itemsData.length
+      };
+
+      setItems(combinedItems);
+      setStats(updatedStats);
       setMovements(movementsData);
-      setCategories(categoriesData);
+      setCategories([
+        {
+          id: 'dienstleistung',
+          name: 'Dienstleistung',
+          description: 'Dienstleistungen und Services',
+          companyId,
+          itemCount: inlineServicesData.length,
+          totalValue: inlineServicesData.reduce((sum, item) => sum + (item.sellingPrice || 0), 0),
+          lastUpdate: getMaxTimestamp(inlineServicesData)
+        } as InventoryCategoryExtended,
+        {
+          id: 'artikel',
+          name: 'Artikel',
+          description: 'Physische Artikel und Produkte',
+          companyId,
+          itemCount: itemsData.filter(i => i.category === 'Artikel').length,
+          totalValue: itemsData
+            .filter(i => i.category === 'Artikel')
+            .reduce((sum, item) => sum + (item.sellingPrice || 0), 0),
+          lastUpdate: getMaxTimestamp(itemsData.filter(i => i.category === 'Artikel'))
+        } as InventoryCategoryExtended,
+        ...categoriesData.filter(cat => 
+          cat.name !== 'Dienstleistung' && 
+          cat.name !== 'Artikel'
+        ).map(cat => ({
+          ...cat,
+          itemCount: items.filter(i => i.category === cat.name).length,
+          totalValue: items
+            .filter(i => i.category === cat.name)
+            .reduce((sum, item) => sum + (item.sellingPrice || 0), 0),
+          lastUpdate: getMaxTimestamp(items.filter(i => i.category === cat.name))
+        } as InventoryCategoryExtended))
+      ]);
     } catch (error) {
+      console.error('Fehler beim Laden der Daten:', error);
     } finally {
       setLoading(false);
     }
-  }, [companyId]);
+  }, [companyId]); // Entferne items aus den Dependencies
 
+  // Services aus Subcollection mitzählen
   useEffect(() => {
     loadData();
-  }, [loadData]);
+    // Rechnungsdienstleistungen und existierende Services laden
+    const fetchAllServices = async () => {
+      try {
+        // Rechnungsdienstleistungen
+        const invoiceCol = collection(db, 'companies', companyId, 'invoiceServices');
+        const invoiceSnap = await getDocs(invoiceCol);
+        const invoiceServices = invoiceSnap.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          source: 'invoiceServices'
+        }));
+        setServiceCount(invoiceSnap.size);
+        setServices(invoiceServices);
+        
+        // Inline-Dienstleistungen
+        const inlineCol = collection(db, 'companies', companyId, 'inlineInvoiceServices');
+        const inlineSnap = await getDocs(inlineCol);
+        const inlineServices = inlineSnap.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          source: 'inlineServices'
+        }));
+        setInlineServices(inlineServices);
+
+        // Alle Services für Autocomplete kombinieren
+        setExistingServices([...invoiceServices, ...inlineServices]);
+      } catch (e) {
+        console.error('Fehler beim Laden der Dienstleistungen:', e);
+        setServiceCount(0);
+        setServices([]);
+        setInlineServices([]);
+        setExistingServices([]);
+      }
+    };
+    fetchAllServices();
+  }, [loadData, companyId]);
+
+
+  // State für Inline-Service Dialog und Autocomplete
+  const [inlineServiceDialogOpen, setInlineServiceDialogOpen] = useState(false);
+  const [editingService, setEditingService] = useState<any>(null);
+  const [selectedService, setSelectedService] = useState<string>('');
+  const [isCreatingNewService, setIsCreatingNewService] = useState(false);
+  const [existingServices, setExistingServices] = useState<any[]>([]);
+  const [newServiceForm, setNewServiceForm] = useState({
+    name: '',
+    description: '',
+    price: '',
+    unit: 'Stk',
+  });
+
+  // Neue/Bearbeite Inline-Dienstleistung speichern
+  async function handleSaveInlineService() {
+    if (!companyId || !newServiceForm.name.trim()) return;
+    setSavingInlineService(true);
+    try {
+      // Prüfen ob die Dienstleistung bereits existiert
+      const existingService = existingServices.find(
+        (service) => service.name.toLowerCase() === newServiceForm.name.trim().toLowerCase()
+      );
+
+      if (existingService && !isCreatingNewService) {
+        // Existierende Dienstleistung auswählen
+        setSelectedService(existingService.name);
+        setInlineServiceDialogOpen(false);
+        toast.success('Dienstleistung ausgewählt');
+      } else {
+        // Neue Dienstleistung erstellen
+        const data: {
+          name: string;
+          description: string;
+          price: number;
+          unit: string;
+          updatedAt: FieldValue;
+          createdAt?: FieldValue;
+        } = {
+          name: newServiceForm.name.trim(),
+          description: newServiceForm.description?.trim(),
+          price: newServiceForm.price ? parseFloat(newServiceForm.price) : 0,
+          unit: newServiceForm.unit || 'Stk',
+          updatedAt: serverTimestamp(),
+        };
+
+        if (editingService) {
+          // Aktualisieren
+          const docRef = doc(db, 'companies', companyId, 'inlineInvoiceServices', editingService.id);
+          await updateDoc(docRef, { ...data });
+        } else {
+          // Neu erstellen
+          data.createdAt = serverTimestamp();
+          await addDoc(collection(db, 'companies', companyId, 'inlineInvoiceServices'), data);
+        }
+
+        // UI zurücksetzen
+        setNewServiceForm({
+          name: '',
+          description: '',
+          price: '',
+          unit: 'Stk',
+        });
+        setEditingService(null);
+        setSelectedService('');
+        setIsCreatingNewService(false);
+        setInlineServiceDialogOpen(false);
+
+        // Nach dem Speichern neu laden
+        const col = collection(db, 'companies', companyId, 'inlineInvoiceServices');
+        const snap = await getDocs(col);
+        const updatedServices = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setInlineServices(updatedServices);
+        // Aktualisiere auch die existingServices Liste
+        setExistingServices([...services, ...updatedServices]);
+        toast.success(editingService ? 'Dienstleistung aktualisiert' : 'Dienstleistung gespeichert');
+      }
+    } catch (e) {
+      console.error('Fehler beim Speichern:', e);
+      toast.error('Fehler beim Speichern der Dienstleistung');
+    } finally {
+      setSavingInlineService(false);
+    }
+  }
+
+  // Inline-Service löschen
+  async function handleDeleteInlineService(serviceId: string) {
+    if (!companyId || !serviceId) return;
+    try {
+      await deleteDoc(doc(db, 'companies', companyId, 'inlineInvoiceServices', serviceId));
+      // Nach dem Löschen neu laden
+      const col = collection(db, 'companies', companyId, 'inlineInvoiceServices');
+      const snap = await getDocs(col);
+      setInlineServices(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      toast.success('Dienstleistung gelöscht');
+    } catch (e) {
+      console.error('Fehler beim Löschen:', e);
+      toast.error('Fehler beim Löschen der Dienstleistung');
+    }
+  }
 
   const handleAddItem = async () => {
     try {
@@ -158,10 +396,10 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
     try {
       await InventoryService.adjustStock(
         companyId,
-        selectedItem.id,
-        selectedItem.name,
+        selectedItem?.id || '',
+        selectedItem?.name || '',
         stockAdjustment.newStock,
-        selectedItem.unit,
+        selectedItem?.unit || '',
         stockAdjustment.reason,
         stockAdjustment.type
       );
@@ -183,7 +421,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
     if (!selectedItem) return;
 
     try {
-      await InventoryService.deleteInventoryItem(companyId, selectedItem.id);
+      await InventoryService.deleteInventoryItem(companyId, selectedItem?.id || '');
       await loadData();
       setShowDeleteDialog(false);
       setSelectedItem(null);
@@ -210,6 +448,22 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
       style: 'currency',
       currency: 'EUR',
     }).format(amount);
+  };
+
+  const formatTimestamp = (timestamp: any) => {
+    if (!timestamp) return 'Nie';
+    if (timestamp instanceof Date) return timestamp.toLocaleDateString('de-DE');
+    if (timestamp?.seconds) return new Date(timestamp.seconds * 1000).toLocaleDateString('de-DE');
+    return 'Ungültiges Datum';
+  };
+
+  const getMaxTimestamp = (items: any[]) => {
+    const timestamps = items
+      .map(i => i.updatedAt?.seconds || 0)
+      .filter(s => s > 0);
+    return timestamps.length > 0 
+      ? new Date(Math.max(...timestamps) * 1000)
+      : null;
   };
 
   const getStockStatus = (item: InventoryItem) => {
@@ -285,11 +539,318 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
 
       {/* Tab-Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Übersicht</TabsTrigger>
           <TabsTrigger value="movements">Bewegungen</TabsTrigger>
           <TabsTrigger value="categories">Kategorien</TabsTrigger>
+          <TabsTrigger value="services">Dienstleistungen</TabsTrigger>
         </TabsList>
+        {/* Dienstleistungen Tab */}
+        <TabsContent value="services" className="space-y-4">
+          {/* Service Dialog */}
+          <Dialog open={inlineServiceDialogOpen} onOpenChange={setInlineServiceDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingService ? 'Dienstleistung bearbeiten' : 'Neue Dienstleistung'}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingService
+                    ? 'Bearbeiten Sie die Details der ausgewählten Dienstleistung.'
+                    : 'Fügen Sie eine neue Dienstleistung zu Ihrer Sammlung hinzu.'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Name *</Label>
+                  <Input
+                    id="name"
+                    value={newServiceForm.name}
+                    onChange={e => setNewServiceForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="z.B. Beratung, Installation, Support"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="description">Beschreibung</Label>
+                  <Textarea
+                    id="description"
+                    value={newServiceForm.description}
+                    onChange={e => setNewServiceForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Detaillierte Beschreibung der Dienstleistung..."
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="price">Preis</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      value={newServiceForm.price}
+                      onChange={e => setNewServiceForm(prev => ({ ...prev, price: e.target.value }))}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="unit">Einheit</Label>
+                    <Select 
+                      value={newServiceForm.unit} 
+                      onValueChange={value => setNewServiceForm(prev => ({ ...prev, unit: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Wählen..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Stk">Stück</SelectItem>
+                        <SelectItem value="Std">Stunde</SelectItem>
+                        <SelectItem value="Tag">Tag</SelectItem>
+                        <SelectItem value="Monat">Monat</SelectItem>
+                        <SelectItem value="Pauschale">Pauschale</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" onClick={() => {
+                  setInlineServiceDialogOpen(false);
+                  setEditingService(null);
+                  setNewServiceForm({
+                    name: '',
+                    description: '',
+                    price: '',
+                    unit: 'Stk',
+                  });
+                }}>
+                  Abbrechen
+                </Button>
+                <Button
+                  onClick={async () => {
+                    await handleSaveInlineService();
+                    // Nach dem Speichern direkt zur Rechnungserstellung weiterleiten
+                    const serviceData = {
+                      name: newServiceForm.name,
+                      description: newServiceForm.description,
+                      price: parseFloat(newServiceForm.price),
+                      unit: newServiceForm.unit,
+                      quantity: 1
+                    };
+                    // Service-Daten im localStorage zwischenspeichern
+                    localStorage.setItem('newInvoiceService', JSON.stringify(serviceData));
+                    // Zur Rechnungserstellung navigieren
+                    window.location.href = `/dashboard/company/${companyId}/finance/invoices/create?addService=true`;
+                  }}
+                  disabled={savingInlineService || !newServiceForm.name.trim()}
+                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                >
+                  {savingInlineService ? (
+                    <>
+                      <span className="loading loading-spinner loading-xs mr-2"></span>
+                      Speichern...
+                    </>
+                  ) : (
+                    <>
+                      {editingService ? 'Aktualisieren' : 'Speichern & zur Rechnung'}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={handleSaveInlineService}
+                  disabled={savingInlineService || !newServiceForm.name.trim()}
+                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                >
+                  {savingInlineService ? (
+                    <>
+                      <span className="loading loading-spinner loading-xs mr-2"></span>
+                      Speichern...
+                    </>
+                  ) : (
+                    <>
+                      Nur speichern
+                    </>
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Aktionen */}
+          <div className="flex justify-between items-center">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold mb-1">Gespeicherte Dienstleistungen</h3>
+              <p className="text-sm text-muted-foreground">
+                Verwalten Sie hier Ihre häufig verwendeten Dienstleistungen für Rechnungen und Angebote.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Neue Dienstleistung oder Auswahl */}
+              <div className="flex items-center gap-2 border-l border-gray-200 pl-4 ml-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="min-w-[280px] justify-between"
+                    >
+                      {selectedService
+                        ? existingServices.find((service) => service.name === selectedService)?.name
+                        : "Dienstleistung auswählen oder neu erstellen..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[280px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Dienstleistung suchen..." />
+                      <CommandEmpty>
+                        <div className="p-2 text-sm">
+                          Keine Dienstleistung gefunden.
+                          <Button
+                            variant="ghost"
+                            className="w-full mt-2 text-[#14ad9f]"
+                            onClick={() => {
+                              setIsCreatingNewService(true);
+                              setNewServiceForm({
+                                ...newServiceForm,
+                                name: selectedService,
+                              });
+                              setInlineServiceDialogOpen(true);
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Neue Dienstleistung erstellen
+                          </Button>
+                        </div>
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {existingServices.map((service) => (
+                          <CommandItem
+                            key={service.id}
+                            onSelect={() => {
+                              setSelectedService(service.name);
+                              setNewServiceForm({
+                                name: service.name,
+                                description: service.description || '',
+                                price: service.price?.toString() || '',
+                                unit: service.unit || 'Stk',
+                              });
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedService === service.name ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {service.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <Button
+                  onClick={() => {
+                    setEditingService(null);
+                    setNewServiceForm({
+                      name: '',
+                      description: '',
+                      price: '',
+                      unit: 'Stk',
+                    });
+                    setIsCreatingNewService(true);
+                    setInlineServiceDialogOpen(true);
+                  }}
+                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Neue Dienstleistung
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Dienstleistungen Tabelle */}
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[300px]">Name</TableHead>
+                  <TableHead className="w-[300px]">Beschreibung</TableHead>
+                  <TableHead>Einheit</TableHead>
+                  <TableHead className="text-right">Preis</TableHead>
+                  <TableHead className="text-right">Zuletzt geändert</TableHead>
+                  <TableHead className="w-[100px] text-right">Aktionen</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inlineServices.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center h-24">
+                      <div className="flex flex-col items-center justify-center text-center space-y-2">
+                        <Package className="h-8 w-8 text-[#14ad9f]" />
+                        <div className="text-lg font-medium">Keine Dienstleistungen</div>
+                        <div className="text-sm text-muted-foreground">
+                          Fügen Sie Ihre erste Dienstleistung hinzu, um sie in Rechnungen und Angeboten schnell auswählen zu können.
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  inlineServices.map(service => (
+                    <TableRow key={service.id}>
+                      <TableCell className="font-medium">
+                        {service.name || 'Unbenannte Dienstleistung'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {service.description || '-'}
+                      </TableCell>
+                      <TableCell>{service.unit || 'Stk'}</TableCell>
+                      <TableCell className="text-right">
+                        {service.price
+                          ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(service.price)
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {formatTimestamp(service.updatedAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            className="text-[#14ad9f] hover:text-[#129488] p-1" 
+                            title="Bearbeiten"
+                            onClick={() => {
+                              setEditingService(service);
+                              setNewServiceForm({
+                                name: service.name || '',
+                                description: service.description || '',
+                                price: service.price?.toString() || '',
+                                unit: service.unit || 'Stk',
+                              });
+                              setInlineServiceDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button 
+                            className="text-red-500 hover:text-red-600 p-1" 
+                            title="Löschen"
+                            onClick={() => {
+                              if (window.confirm('Möchten Sie diese Dienstleistung wirklich löschen?')) {
+                                handleDeleteInlineService(service.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
 
         {/* Übersicht Tab */}
         <TabsContent value="overview" className="space-y-4">
@@ -383,12 +944,27 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="category">Kategorie</Label>
-                      <Input
-                        id="category"
+                      <Select
                         value={newItem.category}
-                        onChange={e => setNewItem({ ...newItem, category: e.target.value })}
-                        placeholder="z.B. Befestigungsmaterial"
-                      />
+                        onValueChange={value => setNewItem({ ...newItem, category: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Kategorie wählen" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Dienstleistung">Dienstleistung</SelectItem>
+                          <SelectItem value="Artikel">Artikel</SelectItem>
+                          <SelectItem value="">Keine Kategorie</SelectItem>
+                          {/* Dynamische Kategorien aus bestehenden Kategorien */}
+                          {categories
+                            .filter(cat => cat.name !== 'Dienstleistung' && cat.name !== 'Artikel')
+                            .map(category => (
+                              <SelectItem key={category.id} value={category.name}>
+                                {category.name} ({category.itemCount})
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="unit">Einheit</Label>
@@ -673,23 +1249,116 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
 
         {/* Kategorien Tab */}
         <TabsContent value="categories" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categories.map(category => (
-              <Card key={category.id}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{category.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-2xl font-bold">{category.itemCount}</div>
-                      <div className="text-sm text-muted-foreground">Artikel</div>
+          <div className="flex justify-between items-center">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold mb-1">Kategorien Übersicht</h3>
+              <p className="text-sm text-muted-foreground">
+                Ihre Artikel und Dienstleistungen nach Kategorien
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px]">Kategorie</TableHead>
+                  <TableHead>Anzahl Artikel</TableHead>
+                  <TableHead className="text-right">Gesamtwert</TableHead>
+                  <TableHead>Letzter Eintrag</TableHead>
+                  <TableHead className="text-right">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {/* Feste Kategorien */}
+                <TableRow>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-[#14ad9f]" />
+                      Dienstleistungen
                     </div>
-                    <Package className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </TableCell>
+                  <TableCell>{items.filter(i => i.category === 'Dienstleistung').length + serviceCount}</TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(items
+                      .filter(i => i.category === 'Dienstleistung')
+                      .reduce((sum, item) => sum + (item.sellingPrice || 0), 0))}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {items.filter(i => i.category === 'Dienstleistung').length > 0 ? 
+                      formatTimestamp(getMaxTimestamp(items.filter(i => i.category === 'Dienstleistung'))) : '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      Aktiv
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <BoxIcon className="h-4 w-4 text-[#14ad9f]" />
+                      Artikel
+                    </div>
+                  </TableCell>
+                  <TableCell>{items.filter(i => i.category === 'Artikel').length}</TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(items
+                      .filter(i => i.category === 'Artikel')
+                      .reduce((sum, item) => sum + (item.sellingPrice || 0), 0))}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {items.filter(i => i.category === 'Artikel').length > 0 ?
+                      formatTimestamp(getMaxTimestamp(items.filter(i => i.category === 'Artikel'))) : '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      Aktiv
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+
+                {/* Dynamische Kategorien */}
+                {categories
+                  .filter(category => category.name !== 'Dienstleistung' && category.name !== 'Artikel')
+                  .map(category => {
+                    const categoryItems = items.filter(i => i.category === category.name);
+                    const categoryValue = categoryItems.reduce((sum, item) => sum + (item.sellingPrice || 0), 0);
+                    const lastUpdate = categoryItems.length > 0 ? 
+                      formatTimestamp(getMaxTimestamp(categoryItems)) : '-';
+                    
+                    return (
+                      <TableRow key={category.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <FolderIcon className="h-4 w-4 text-[#14ad9f]" />
+                            {category.name}
+                          </div>
+                        </TableCell>
+                        <TableCell>{category.itemCount}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(categoryValue)}</TableCell>
+                        <TableCell className="text-muted-foreground">{lastUpdate}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            Aktiv
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                })}
+
+                {/* Zusammenfassung */}
+                <TableRow className="bg-muted/50">
+                  <TableCell className="font-medium">Gesamt</TableCell>
+                  <TableCell>{items.length + serviceCount}</TableCell>
+                  <TableCell className="text-right font-medium">
+                    {formatCurrency(items.reduce((sum, item) => sum + (item.sellingPrice || 0), 0))}
+                  </TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
         </TabsContent>
       </Tabs>

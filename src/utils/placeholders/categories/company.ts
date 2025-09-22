@@ -146,6 +146,17 @@ export const companyPlaceholders: PlaceholderRegistry = {
     if (taxNumber) taxInfo.push(`Steuernr.: ${taxNumber}`);
     
     return taxInfo.join(', ');
+  },
+  
+  // Kontaktperson - Für KONTAKTPERSON Platzhalter  
+  'KONTAKTPERSON': (context: PlaceholderContext) => {
+    // Priorität: contactPerson.name > company owner/CEO > company name
+    return context.contactPerson?.name || 
+           context.company?.ceo || 
+           context.company?.owner || 
+           context.company?.companyName || 
+           context.company?.name || 
+           '';
   }
 };
 
