@@ -72,6 +72,7 @@ export interface BankDetails {
   iban?: string;
   bic?: string;
   bankName?: string;
+  accountHolder?: string;
 }
 
 export interface TemplateCustomizations {

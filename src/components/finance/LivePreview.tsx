@@ -1,11 +1,38 @@
 'use client';
 
 import React from 'react';
-import ProfessionalBusinessTemplate from '@/components/templates/invoice-templates/ProfessionalBusinessTemplate';
+import { 
+  ProfessionalBusinessTemplate,
+  CorporateClassicTemplate,
+  ExecutivePremiumTemplate,
+  MinimalistElegantTemplate,
+  CreativeModernTemplate,
+  TechStartupTemplate
+} from '@/components/templates/invoice-templates';
 import { InvoiceData } from '@/types/invoiceTypes';
+import { TaxRuleType } from '@/types/taxRules';
+
+type TemplateType = 
+  | 'professional-business'
+  | 'corporate-classic'
+  | 'executive-premium'
+  | 'minimalist-elegant'
+  | 'creative-modern'
+  | 'tech-startup';
+
+interface TemplateItem {
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  total: number;
+  discountPercent: number;
+  discount: number;
+}
 
 interface LivePreviewProps {
   invoiceData: Partial<InvoiceData>;
+  template?: TemplateType;
   companySettings?: {
     companyName?: string;
     companyAddress?: string;
@@ -25,7 +52,33 @@ interface LivePreviewProps {
   };
 }
 
-export function LivePreview({ invoiceData, companySettings }: LivePreviewProps) {
+export function LivePreview({ invoiceData, companySettings, template = 'professional-business' }: LivePreviewProps) {
+  // WICHTIG: Template Debug Info
+  console.log('%c🔍 TEMPLATE DEBUG INFO 🔍', 'background: #ff0000; color: white; font-size: 20px; padding: 10px;');
+  console.log('%c⬇️ AUSGEWÄHLTES TEMPLATE ⬇️', 'color: #14ad9f; font-size: 16px; font-weight: bold;');
+  console.table({
+    selectedTemplate: template,
+    hasInvoiceData: !!invoiceData,
+    hasCompanySettings: !!companySettings,
+    invoiceNumber: invoiceData?.invoiceNumber,
+  });
+
+  const TemplateMap = {
+    'professional-business': ProfessionalBusinessTemplate,
+    'corporate-classic': CorporateClassicTemplate,
+    'executive-premium': ExecutivePremiumTemplate,
+    'minimalist-elegant': MinimalistElegantTemplate,
+    'creative-modern': CreativeModernTemplate,
+    'tech-startup': TechStartupTemplate
+  } as const;
+
+  // WICHTIG: Verfügbare Templates Debug Info
+  console.log('%c📄 VERFÜGBARE TEMPLATES 📄', 'background: #14ad9f; color: white; font-size: 16px; padding: 5px;');
+  console.table(Object.keys(TemplateMap).map(key => ({
+    templateName: key,
+    isAvailable: true
+  })));
+
   // Einfache Daten-Vorbereitung für Live Preview
   const previewData: InvoiceData = {
     id: 'preview',
@@ -42,9 +95,9 @@ export function LivePreview({ invoiceData, companySettings }: LivePreviewProps) 
     companyName: companySettings?.companyName || 'Ihr Unternehmen',
     companyAddress: companySettings?.companyAddress || 'Ihre Adresse',
     companyEmail: companySettings?.companyEmail || 'info@ihrunternehmen.de',
-    companyPhone: companySettings?.companyPhone || '+49 123 456789',
+    companyPhone: (companySettings?.companyPhone || '+49 123 456789').replace(/(\+49)(\d{4})(\d{3})(\d{3})/, '$1 $2 $3 $4'),
     companyWebsite: companySettings?.companyWebsite || '',
-    companyLogo: companySettings?.companyLogo || '',
+    companyLogo: companySettings?.companyLogo || companySettings?.profilePictureURL || '',
     companyVatId: companySettings?.vatId || '',
     companyTaxNumber: companySettings?.taxNumber || '',
     items: invoiceData.items || [
@@ -81,85 +134,161 @@ export function LivePreview({ invoiceData, companySettings }: LivePreviewProps) 
       : undefined,
     paymentTerms: invoiceData.paymentTerms || '',
     skontoEnabled: invoiceData.skontoEnabled || false,
-    skontoDays: invoiceData.skontoDays || 3,
-    skontoPercentage: invoiceData.skontoPercentage || 2.0,
-    skontoText: invoiceData.skontoText || '',
+    skontoDays: invoiceData.skontoEnabled ? (invoiceData.skontoDays || 0) : 0,
+    skontoPercentage: invoiceData.skontoEnabled ? (invoiceData.skontoPercentage || 0) : 0,
+    skontoText: invoiceData.skontoEnabled ? (invoiceData.skontoText || '') : '',
     notes: invoiceData.notes || '',
+    taxRuleType: invoiceData.taxRuleType || TaxRuleType.DE_TAXABLE,
   };
+
+  // Wenn das Template nicht in der Map ist, verwende das Professional Business Template als Fallback
+  const SelectedTemplate = TemplateMap[template] || TemplateMap['professional-business'];
+  
+  // Log Warnung wenn Fallback verwendet wird
+  if (!TemplateMap[template]) {
+    console.warn(`Template ${template} nicht gefunden, verwende Standard-Template (Professional Business)`);
+  }
+  
+  const templateData = {
+    documentNumber: previewData.invoiceNumber,
+    date: previewData.issueDate,
+    dueDate: previewData.dueDate,
+    customer: {
+      name: previewData.customerName,
+      email: previewData.customerEmail || '',
+      address: {
+        street: (previewData.customerAddress || '').split('\n')[0] || '',
+        zipCode: (previewData.customerAddress || '').split('\n')[1]?.split(' ')[0] || '',
+        city:
+          (previewData.customerAddress || '')
+            .split('\n')[1]
+            ?.split(' ')
+            .slice(1)
+            .join(' ') || '',
+        country: 'Deutschland',
+      },
+    },
+    company: {
+      name: previewData.companyName,
+      email: previewData.companyEmail,
+      phone: previewData.companyPhone || '',
+      address: {
+        street: (previewData.companyAddress || '').split('\n')[0] || '',
+        zipCode: (previewData.companyAddress || '').split('\n')[1]?.split(' ')[0] || '',
+        city:
+          (previewData.companyAddress || '')
+            .split('\n')[1]
+            ?.split(' ')
+            .slice(1)
+            .join(' ') || '',
+        country: 'Deutschland',
+      },
+      taxNumber: previewData.companyTaxNumber || '',
+      vatId: previewData.companyVatId || '',
+      bankDetails: {
+        iban: previewData.bankDetails?.iban || '',
+        bic: previewData.bankDetails?.bic || '',
+        accountHolder: previewData.bankDetails?.accountHolder || '',
+      },
+    },
+    items: (previewData.items || []).map((i, idx) => ({
+      description: i.description || `Position ${idx + 1}`,
+      quantity: (i as any).quantity || 1,
+      unit: (i as any).unit || 'Stk.',
+      unitPrice: (i as any).unitPrice || (i.total ? i.total : 0),
+      total: i.total || ((i as any).unitPrice || 0) * ((i as any).quantity || 1),
+    })),
+    subtotal: previewData.amount || 0,
+    taxRate: previewData.vatRate || 19,
+    taxAmount: previewData.tax || 0,
+    total: previewData.total || 0,
+    paymentTerms: previewData.paymentTerms || '',
+    notes: previewData.notes || '',
+    status: previewData.status || 'draft',
+    isSmallBusiness: previewData.isSmallBusiness || false,
+  };
+
+  // Hole die Template-Komponente
+  const TemplateComponent = TemplateMap[template];
+  
+  // WICHTIG: Template Rendering Debug Info
+  console.log('%c🖨️ TEMPLATE WIRD GERENDERT 🖨️', 'background: #ff6b00; color: white; font-size: 16px; padding: 5px;');
+  console.group('Template Details');
+  console.log('%cTemplate Name:', 'color: #ff6b00; font-weight: bold;', template);
+  console.log('%cKomponente existiert:', 'color: #ff6b00; font-weight: bold;', !!TemplateComponent);
+  console.log('%cTemplate Daten:', 'color: #ff6b00; font-weight: bold;');
+  console.table({
+    invoiceNumber: previewData.invoiceNumber,
+    customerName: previewData.customerName,
+    total: previewData.total,
+    templateStatus: Object.prototype.hasOwnProperty.call(TemplateMap, template) ? '✅ GELADEN' : '❌ FEHLT'
+  });
+  console.groupEnd();
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-white">
       <div className="absolute inset-[4px]">
-        {/* Skalierter, zentrierter Inhalt wie bei DocumentThumbnailFrame */}
         <div
           className="transform origin-top-left pointer-events-none"
           style={{
-            // 0.22 passt in ~260px Höhe ohne Scrollen
             scale: 0.22,
             width: `${Math.round(100 / 0.22)}%`,
             height: `${Math.round(100 / 0.22)}%`,
           }}
         >
-          <ProfessionalBusinessTemplate
-            data={{
-              documentNumber: previewData.invoiceNumber,
-              date: previewData.issueDate,
-              dueDate: previewData.dueDate,
-              customer: {
-                name: previewData.customerName,
-                email: previewData.customerEmail || '',
-                address: {
-                  street: (previewData.customerAddress || '').split('\n')[0] || '',
-                  zipCode: (previewData.customerAddress || '').split('\n')[1]?.split(' ')[0] || '',
-                  city:
-                    (previewData.customerAddress || '')
-                      .split('\n')[1]
-                      ?.split(' ')
-                      .slice(1)
-                      .join(' ') || '',
-                  country: 'Deutschland',
-                },
+          <SelectedTemplate data={{
+            documentNumber: templateData.documentNumber || '',
+            date: templateData.date || '',
+            dueDate: templateData.dueDate || '',
+            customer: {
+              name: templateData.customer?.name || '',
+              email: templateData.customer?.email || '',
+              address: {
+                street: templateData.customer?.address?.street || '',
+                zipCode: templateData.customer?.address?.zipCode || '',
+                city: templateData.customer?.address?.city || '',
+                country: templateData.customer?.address?.country || ''
+              }
+            },
+            company: templateData.company || {
+              name: '',
+              email: '',
+              phone: '',
+              address: {
+                street: '',
+                zipCode: '',
+                city: '',
+                country: ''
               },
-              company: {
-                name: previewData.companyName,
-                email: previewData.companyEmail,
-                phone: previewData.companyPhone || '',
-                address: {
-                  street: (previewData.companyAddress || '').split('\n')[0] || '',
-                  zipCode: (previewData.companyAddress || '').split('\n')[1]?.split(' ')[0] || '',
-                  city:
-                    (previewData.companyAddress || '')
-                      .split('\n')[1]
-                      ?.split(' ')
-                      .slice(1)
-                      .join(' ') || '',
-                  country: 'Deutschland',
-                },
-                taxNumber: previewData.companyTaxNumber || '',
-                vatId: previewData.companyVatId || '',
-                bankDetails: {
-                  iban: previewData.bankDetails?.iban || '',
-                  bic: previewData.bankDetails?.bic || '',
-                  accountHolder: previewData.bankDetails?.accountHolder || '',
-                },
-              },
-              items: (previewData.items || []).map((i, idx) => ({
-                description: i.description || `Position ${idx + 1}`,
-                quantity: (i as any).quantity || 1,
-                unit: (i as any).unit || 'Stk.',
-                unitPrice: (i as any).unitPrice || (i.total ? i.total : 0),
-                total: i.total || ((i as any).unitPrice || 0) * ((i as any).quantity || 1),
-              })),
-              subtotal: previewData.amount || 0,
-              taxRate: previewData.vatRate || 19,
-              taxAmount: previewData.tax || 0,
-              total: previewData.total || 0,
-              paymentTerms: previewData.paymentTerms || '',
-              notes: previewData.notes || '',
-              status: previewData.status || 'draft',
-              isSmallBusiness: previewData.isSmallBusiness || false,
-            }}
-          />
+              taxNumber: '',
+              vatId: '',
+              bankDetails: {
+                iban: '',
+                bic: '',
+                accountHolder: ''
+              }
+            },
+            items: (templateData.items || []).map(item => {
+              const templateItem: TemplateItem = {
+                description: item.description || '',
+                quantity: item.quantity || 0,
+                unit: item.unit || 'Stk.',
+                unitPrice: item.unitPrice || 0,
+                total: item.total || 0,
+                discountPercent: (item as any).discountPercent || 0,
+                discount: (item as any).discount || 0
+              };
+              return templateItem;
+            }),
+            subtotal: templateData.subtotal || 0,
+            taxRate: templateData.taxRate || 0,
+            taxAmount: templateData.taxAmount || 0,
+            total: templateData.total || 0,
+            notes: templateData.notes || '',
+            paymentTerms: templateData.paymentTerms || '',
+            status: templateData.status || 'draft',
+            isSmallBusiness: templateData.isSmallBusiness || false
+          }} />
         </div>
       </div>
     </div>

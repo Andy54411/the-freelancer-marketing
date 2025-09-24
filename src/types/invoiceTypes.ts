@@ -1,5 +1,7 @@
 'use client';
 
+import { TaxRuleType, TaxRuleCategory } from './taxRules';
+
 /**
  * Deutsche Rechnungstypen für GoBD-konforme Buchführung
  * Implementiert fortlaufende Rechnungsnummerierung und Storno-Funktionalität
@@ -53,9 +55,20 @@ export interface InvoiceData {
   companyTax?: string;
 
   // Steuereinstellungen
-  isSmallBusiness: boolean; // Kleinunternehmerregelung
+  isSmallBusiness: boolean; // Kleinunternehmerregelung §19 UStG
   vatRate: number;
   priceInput: 'netto' | 'brutto';
+  
+  // Erweiterte Steuerregeln
+  taxRuleType: TaxRuleType; // Verwendung des TaxRuleType Enums
+  taxRuleCategory?: TaxRuleCategory; // Optionale Kategorisierung
+  taxRuleText?: string; // Benutzerdefinierter Text für Steuerhinweise
+  taxRuleReason?: string; // Begründung für Steuerbefreiung oder spezielle Regelung
+  reverseChargeInfo?: {
+    customerVatId: string;
+    validatedAt?: Date;
+    euCountryCode: string;
+  };
 
   // Finanzielle Daten
   items: InvoiceItem[];
@@ -217,9 +230,40 @@ export class GermanInvoiceService {
       errors.push('Steuernummer oder USt-IdNr. ist erforderlich');
     }
 
-    // Kleinunternehmerregelung prüfen
+    // Steuerregeln validieren
     if (invoice.isSmallBusiness && invoice.tax > 0) {
       errors.push('Bei Kleinunternehmerregelung darf keine MwSt. ausgewiesen werden');
+    }
+
+    // Erweiterte Steuerregeln prüfen
+    switch (invoice.taxRuleType) {
+      case TaxRuleType.EU_REVERSE_18B:
+      case TaxRuleType.DE_REVERSE_13B:
+        if (!invoice.reverseChargeInfo?.customerVatId) {
+          errors.push('USt-IdNr. des EU-Kunden ist für Reverse-Charge erforderlich');
+        }
+        if (!invoice.reverseChargeInfo?.euCountryCode) {
+          errors.push('EU-Ländercode ist für Reverse-Charge erforderlich');
+        }
+        if (invoice.tax > 0) {
+          errors.push('Bei Reverse-Charge darf keine MwSt. ausgewiesen werden');
+        }
+        break;
+      
+      case TaxRuleType.DE_EXEMPT_4_USTG:
+        if (!invoice.taxRuleReason) {
+          errors.push('Begründung für Steuerbefreiung ist erforderlich');
+        }
+        if (invoice.tax > 0) {
+          errors.push('Bei Steuerbefreiung darf keine MwSt. ausgewiesen werden');
+        }
+        break;
+      
+      case TaxRuleType.EU_OSS:
+        if (!invoice.taxRuleText) {
+          errors.push('Steuerhinweis ist bei OSS-Regelung erforderlich');
+        }
+        break;
     }
 
     // Positionen prüfen
@@ -259,35 +303,71 @@ export class GermanInvoiceService {
   static calculateTax(
     amount: number,
     taxRate: number,
-    isGross: boolean
+    isGross: boolean,
+    taxRuleType: TaxRuleType = TaxRuleType.DE_TAXABLE,
+    isSmallBusiness: boolean = false
   ): {
     net: number;
     tax: number;
     gross: number;
+    displayText?: string;
   } {
-    if (isGross) {
-      // Brutto-Eingabe: MwSt. herausrechnen
-      const gross = amount;
-      const net = gross / (1 + taxRate / 100);
-      const tax = gross - net;
+    // Bei bestimmten Steuerregeln wird keine MwSt. berechnet
+    const noTaxRules = [
+      TaxRuleType.EU_REVERSE_18B,
+      TaxRuleType.DE_REVERSE_13B,
+      TaxRuleType.NON_EU_EXPORT,
+      TaxRuleType.DE_EXEMPT_4_USTG
+    ];
+    const isNoTaxCase = noTaxRules.includes(taxRuleType as TaxRuleType) || isSmallBusiness;
 
-      return {
-        net: Math.round(net * 100) / 100,
-        tax: Math.round(tax * 100) / 100,
-        gross: Math.round(gross * 100) / 100,
-      };
+    let net: number;
+    let tax: number;
+    let gross: number;
+    let displayText: string | undefined;
+
+    if (isNoTaxCase) {
+      // Keine Steuerberechnung für spezielle Fälle
+      net = isGross ? amount : amount;
+      tax = 0;
+      gross = net;
+
+      // Spezifische Hinweistexte
+      switch (taxRuleType) {
+        case TaxRuleType.EU_REVERSE_18B:
+        case TaxRuleType.DE_REVERSE_13B:
+          displayText = 'Steuerschuldnerschaft des Leistungsempfängers (Reverse-Charge-Verfahren)';
+          break;
+        case TaxRuleType.NON_EU_EXPORT:
+          displayText = 'Steuerfreie Ausfuhrlieferung';
+          break;
+        case TaxRuleType.DE_EXEMPT_4_USTG:
+          displayText = 'Steuerbefreit gemäß §4 UStG';
+          break;
+      }
+      
+      if (isSmallBusiness) {
+        displayText = 'Kleinunternehmer gemäß §19 UStG';
+      }
     } else {
-      // Netto-Eingabe: MwSt. hinzurechnen
-      const net = amount;
-      const tax = net * (taxRate / 100);
-      const gross = net + tax;
-
-      return {
-        net: Math.round(net * 100) / 100,
-        tax: Math.round(tax * 100) / 100,
-        gross: Math.round(gross * 100) / 100,
-      };
+      // Normale Steuerberechnung für inländische Fälle
+      if (isGross) {
+        gross = amount;
+        net = gross / (1 + taxRate / 100);
+        tax = gross - net;
+      } else {
+        net = amount;
+        tax = net * (taxRate / 100);
+        gross = net + tax;
+      }
     }
+
+    return {
+      net: Math.round(net * 100) / 100,
+      tax: Math.round(tax * 100) / 100,
+      gross: Math.round(gross * 100) / 100,
+      displayText
+    };
   }
 }
 

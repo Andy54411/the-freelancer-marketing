@@ -1,5 +1,6 @@
 'use client';
 
+import { TaxRuleType } from '@/types/taxRules';
 import {
   collection,
   doc,
@@ -66,18 +67,16 @@ export interface Quote {
   footerText?: string;
   customerOrderNumber?: string; // Referenz / Bestellnummer des Kunden
   // Zusätzliche optionale Felder (Mehr Optionen)
-  taxRule?:
-    | 'DE_TAXABLE'
-    | 'DE_EXEMPT_4_USTG'
-    | 'DE_REVERSE_13B'
-    | 'EU_REVERSE_18B'
-    | 'EU_INTRACOMMUNITY_SUPPLY'
-    | 'EU_OSS'
-    | 'NON_EU_EXPORT'
-    | 'NON_EU_OUT_OF_SCOPE';
+  taxRule?: TaxRuleType;
   internalContactPerson?: string;
   deliveryTerms?: string;
   paymentTerms?: string;
+
+  // Skonto-Einstellungen
+  skontoEnabled?: boolean;
+  skontoDays?: number;
+  skontoPercentage?: number;
+  skontoText?: string;
 
   // Positionen
   items: QuoteItem[];

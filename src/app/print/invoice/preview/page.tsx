@@ -4,12 +4,26 @@ import { useEffect, useMemo, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { InvoiceTemplateRenderer, DEFAULT_INVOICE_TEMPLATE } from '@/components/finance/InvoiceTemplates';
 import type { InvoiceData } from '@/types/invoiceTypes';
+import { TaxRuleType, TaxRuleCategory } from '@/types/taxRules';
 
 function PrintInvoicePreview() {
   const searchParams = useSearchParams();
+  const [loading, setLoading] = useState(true);
   const [previewData, setPreviewData] = useState<InvoiceData | null>(null);
   const [rawData, setRawData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  
+  // Flags für Steuerberechnung
+  const isReverseCharge = useMemo(() => 
+    rawData?.taxRule === 'DE_REVERSE_13B' || rawData?.taxRule === 'EU_REVERSE_CHARGE',
+    [rawData?.taxRule]
+  );
+  
+  const hideVatLine = useMemo(() => 
+    rawData?.taxRule === 'DE_REVERSE_13B' || 
+    rawData?.taxRule === 'EU_REVERSE_CHARGE' || 
+    rawData?.taxRule === 'DE_NOTAXABLE',
+    [rawData?.taxRule]
+  );
 
   const auto = useMemo(() => searchParams?.get('auto') === '1', [searchParams]);
 
@@ -36,73 +50,7 @@ function PrintInvoicePreview() {
             const json = new TextDecoder().decode(bytes);
             const decoded = JSON.parse(json);
             
-            // 🔍 DEBUG: Zeige alle empfangenen Daten
-            console.log('=== PRINT PREVIEW DEBUG ===');
-            console.log('Empfangene Raw-Daten:', decoded);
-            console.log('Alle Felder im Decoded-Objekt:', Object.keys(decoded));
-            console.log('Kundendaten:', {
-              customerName: decoded.customerName,
-              customerEmail: decoded.customerEmail,
-              customerAddress: decoded.customerAddress,
-              customerOrderNumber: decoded.customerOrderNumber
-            });
-            console.log('Rechnungsinfo:', {
-              invoiceNumber: decoded.invoiceNumber,
-              date: decoded.date,
-              validUntil: decoded.validUntil,
-              deliveryDate: decoded.deliveryDate,
-              serviceDate: decoded.serviceDate,
-              servicePeriod: decoded.servicePeriod
-            });
-            console.log('Firmendaten:', {
-              companyName: decoded.companyName,
-              companyAddress: decoded.companyAddress,
-              companyEmail: decoded.companyEmail,
-              companyPhone: decoded.companyPhone,
-              companyVatId: decoded.companyVatId,
-              companyTaxNumber: decoded.companyTaxNumber
-            });
-            console.log('Positionen:', decoded.items);
-            console.log('Finanzielle Daten:', {
-              subtotal: decoded.subtotal,
-              tax: decoded.tax,
-              total: decoded.total,
-              vatRate: decoded.vatRate
-            });
-            console.log('Texte:', {
-              headTextHtml: decoded.headTextHtml,
-              notes: decoded.notes,
-              footerText: decoded.footerText,
-              paymentTerms: decoded.paymentTerms,
-              description: decoded.description
-            });
-            console.log('🔧 TEMPLATE-STRUKTUR VALIDIERUNG:');
-            console.log('1️⃣ HEADER-TEXT (vor Rechnung):', {
-              'rawData.headTextHtml': decoded.headTextHtml,
-              'Länge': (decoded.headTextHtml || '').length,
-              'Hat Platzhalter': (decoded.headTextHtml || '').includes('[%'),
-              'Wird als description gesetzt': !!decoded.headTextHtml
-            });
-            console.log('2️⃣ RECHNUNGS-TABELLE: [IMMER VORHANDEN]');
-            console.log('3️⃣ FOOTER-TEXT (Hinweise nach Rechnung):', {
-              'rawData.footerText': decoded.footerText,
-              'Länge': (decoded.footerText || '').length,
-              'Hat Platzhalter': (decoded.footerText || '').includes('[%'),
-              'Wird als hinweise gesetzt': !!decoded.footerText
-            });
-            console.log('Platzhalter-Status:', {
-              headTextHasPlaceholders: (decoded.headTextHtml || '').includes('[%'),
-              footerTextHasPlaceholders: (decoded.footerText || '').includes('[%'),
-              shouldUseProcessedTexts: true
-            });
-            console.log('Kontakt und Zusatzfelder:', {
-              contactPersonName: decoded.contactPersonName,
-              internalContactPerson: decoded.internalContactPerson,
-              deliveryTerms: decoded.deliveryTerms,
-              taxRule: decoded.taxRule,
-              reference: decoded.reference
-            });
-            console.log('=== END DEBUG ===');
+            // Debug-Ausgaben entfernt
             
             // Hilfsfunktion für sichere Datumskonvertierung
             const safeDate = (dateValue: any): string => {
@@ -145,11 +93,14 @@ function PrintInvoicePreview() {
               createdAt: new Date(),
               year: new Date().getFullYear(),
               isStorno: false,
+              taxRuleType: decoded.taxRule || TaxRuleType.DE_TAXABLE,
+              taxRuleCategory: TaxRuleCategory.DOMESTIC,
               paymentTerms: decoded.paymentTerms || '',
-              bankDetails: decoded.bankDetails || {
-                iban: '',
-                bic: '',
-                accountHolder: decoded.companyName || 'Ihr Unternehmen'
+              bankDetails: {
+                iban: decoded.bankDetails?.iban || decoded.step4?.iban || '',
+                bic: decoded.bankDetails?.bic || decoded.step4?.bic || '',
+                bankName: decoded.bankDetails?.bankName || decoded.step4?.bankName || '',
+                accountHolder: decoded.bankDetails?.accountHolder || decoded.step4?.accountHolder || decoded.companyName || 'Ihr Unternehmen'
               },
             };
             
@@ -373,11 +324,11 @@ function PrintInvoicePreview() {
     paymentTerms: rawData?.paymentTerms || previewData.paymentTerms || '',
     deliveryTerms: rawData?.deliveryTerms || '',
     paymentMethod: rawData?.paymentMethod || '',
-    bankDetails: rawData?.bankDetails || previewData.bankDetails || {
-      iban: '',
-      bic: '',
-      bankName: '',
-      accountHolder: previewData.companyName
+    bankDetails: {
+      iban: rawData?.bankDetails?.iban || rawData?.step4?.iban || '',
+      bic: rawData?.bankDetails?.bic || rawData?.step4?.bic || '',
+      bankName: rawData?.bankDetails?.bankName || rawData?.step4?.bankName || '',
+      accountHolder: rawData?.bankDetails?.accountHolder || rawData?.step4?.accountHolder || rawData?.companyName || ''
     },
 
     // === SKONTO-SYSTEM ===
@@ -435,6 +386,26 @@ function PrintInvoicePreview() {
     reverseCharge: typeof rawData?.reverseCharge !== 'undefined' ? rawData.reverseCharge : false,
     taxRule: rawData?.taxRule || 'DE_TAXABLE',
     taxRuleLabel: rawData?.taxRuleLabel || '',
+    // Steuerregel-Text für die Anzeige
+    taxRuleText: (() => {
+      const rule = rawData?.taxRule || 'DE_TAXABLE';
+      switch (rule) {
+        case 'DE_TAXABLE':
+          return 'Der Steuerbetrag in Höhe von €' + (previewData.tax || 0).toFixed(2) + ' entspricht 19% gemäß §12 Abs. 1 UStG.';
+        case 'DE_REDUCED':
+          return 'Der Steuerbetrag in Höhe von €' + (previewData.tax || 0).toFixed(2) + ' entspricht 7% gemäß §12 Abs. 2 UStG.';
+        case 'DE_NOTAXABLE':
+          return 'Gemäß §19 UStG wird keine Umsatzsteuer berechnet.';
+        case 'EU_REVERSE_CHARGE':
+          return 'Steuerschuldnerschaft des Leistungsempfängers nach §13b UStG (Reverse Charge)';
+        case 'EU_OSS':
+          return 'Diese Leistung wird im Rahmen des EU One Stop Shop (OSS) nach §18j UStG versteuert.';
+        case 'NON_EU':
+          return 'Der Leistungsort liegt außerhalb der EU. Diese Leistung unterliegt nicht der deutschen Umsatzsteuer.';
+        default:
+          return '';
+      }
+    })(),
 
     // === E-RECHNUNG UND COMPLIANCE ===
     eInvoiceEnabled: rawData?.eInvoiceEnabled || false,
@@ -454,8 +425,9 @@ function PrintInvoicePreview() {
     nextNumber: rawData?.nextNumber || 1000,
 
     // === TEMPLATE-AUSWAHL ===
-    selectedTemplate: rawData?.selectedTemplate || 'professional-business',
-    templateId: rawData?.selectedTemplate || 'professional-business',
+    // Immer CorporateClassicTemplate verwenden
+    selectedTemplate: 'corporate-classic',
+    templateId: 'corporate-classic',
 
     // === ERWEITERTE TEMPLATE-FELDER ===
     projectName: rawData?.projectName || '',
@@ -541,42 +513,50 @@ function PrintInvoicePreview() {
       taxAmount: previewData.tax,
       total: previewData.total,
       isSmallBusiness: typeof rawData?.isSmallBusiness !== 'undefined' ? rawData.isSmallBusiness : previewData.isSmallBusiness,
-  currency: rawData?.currency || 'EUR'
+      currency: rawData?.currency || 'EUR',
+      reverseCharge: isReverseCharge,
+      hideVatLine: hideVatLine,
+      // Den Steuerregel-Text direkt hier berechnen
+      taxRuleText: (() => {
+        const rule = rawData?.taxRule || 'DE_TAXABLE';
+        switch (rule) {
+          case 'DE_TAXABLE':
+            return 'Der Steuerbetrag in Höhe von €' + (previewData.tax || 0).toFixed(2) + ' entspricht 19% gemäß §12 Abs. 1 UStG.';
+          case 'DE_REDUCED':
+            return 'Der Steuerbetrag in Höhe von €' + (previewData.tax || 0).toFixed(2) + ' entspricht 7% gemäß §12 Abs. 2 UStG.';
+          case 'DE_NOTAXABLE':
+            return 'Gemäß §19 UStG wird keine Umsatzsteuer berechnet.';
+          case 'DE_REVERSE_13B':
+            return 'Steuerschuldnerschaft des Leistungsempfängers nach §13b UStG. Es wird keine Umsatzsteuer ausgewiesen.';
+          case 'EU_REVERSE_CHARGE':
+            return 'Steuerschuldnerschaft des Leistungsempfängers nach §13b UStG (Reverse Charge)';
+          case 'EU_OSS':
+            return 'Diese Leistung wird im Rahmen des EU One Stop Shop (OSS) nach §18j UStG versteuert.';
+          case 'NON_EU':
+            return 'Der Leistungsort liegt außerhalb der EU. Diese Leistung unterliegt nicht der deutschen Umsatzsteuer.';
+          default:
+            return '';
+        }
+      })()
     }
   };
 
-  // Debug: Template-Daten ausgeben
-  console.log('=== FINALE TEMPLATE-STRUKTUR ÜBERPRÜFUNG ===');
-  console.log('� TEMPLATE AUFBAU (Sollte sein: Header → Tabelle → Footer)');
-  console.log('1️⃣ HEADER-BEREICH:', {
-    'templateData.description': templateData.description,
-    'templateData.introText': templateData.introText,
-    'templateData.headerText': templateData.headerText,
-    'header_ist_vorhanden': !!(templateData.description || templateData.introText),
-    'header_länge': (templateData.description || '').length
-  });
-  console.log('2️⃣ RECHNUNGS-TABELLE: [Automatisch durch InvoiceTemplateRenderer]');
-  console.log('3️⃣ HINWEISE-BEREICH (nach Tabelle):', {
-    'templateData.hinweise': templateData.hinweise,
-    'templateData.additionalNotes': templateData.additionalNotes,
-    'templateData.paymentNotes': templateData.paymentNotes,
-    'templateData.conclusionText': templateData.conclusionText,
-    'hinweise_ist_vorhanden': !!(templateData.hinweise || templateData.additionalNotes),
-    'hinweise_länge': (templateData.hinweise || '').length
-  });
-  console.log('❌ TEMPLATE-FOOTER (muss KOMPLETT LEER sein):');
-  console.log('   - templateData.notes:', `"${templateData.notes}"`);
-  console.log('   - templateData.footerText:', `"${templateData.footerText}"`);
-  console.log('   - templateData.footerNotes:', `"${templateData.footerNotes}"`);
-  console.log('   - previewData.notes:', `"${previewData.notes}"`);
-  console.log('   ✅ Alle sollten leer sein, damit Footer-Text nicht im Template-Footer erscheint!');
-  console.log('📊 TEMPLATE DATA COMPLETE:', JSON.stringify(templateData, null, 2));
-  console.log('=== END TEMPLATE STRUKTUR DEBUG ===');
+  // Debug-Ausgaben entfernt
 
   return (
     <>
       {/* Print-spezifische CSS-Optimierungen */}
       <style jsx global>{`
+        @page {
+          size: A4;
+          margin: 0;
+        }
+        @media print {
+          html, body {
+            width: 21cm;
+            height: 29.7cm;
+          }
+        }
         body.print-page {
           margin: 0 !important;
           padding: 0 !important;
@@ -589,6 +569,11 @@ function PrintInvoicePreview() {
             sans-serif;
           line-height: 1.4;
           font-size: 14px;
+          width: 21cm;
+          min-height: 29.7cm;
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
 
         body.print-page * {
@@ -627,11 +612,84 @@ function PrintInvoicePreview() {
       `}</style>
 
       {/* NUR dieser Container wird gedruckt */}
+      {/* Debug-Informationen */}
+      <div className="debug-info" style={{ display: 'none' }}>
+        <pre>{JSON.stringify({ rawData, templateData }, null, 2)}</pre>
+      </div>
+
+      {/* Debug-Ausgabe */}
+      {process.env.NODE_ENV === 'development' && (
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            console.log('🔍 Preview Data:', ${JSON.stringify({
+              template: rawData?.selectedTemplate || DEFAULT_INVOICE_TEMPLATE,
+              company: templateData?.company,
+              items: templateData?.items?.length,
+              customizations: {
+                showLogo: true,
+                logoUrl: templateData?.companyLogo
+              }
+            })});
+          `
+        }} />
+      )}
+
       <div className="invoice-print-content">
         <InvoiceTemplateRenderer
-          template={DEFAULT_INVOICE_TEMPLATE}
-          data={templateData}
-          preview={false}
+          template="professional-business"
+          data={{
+            ...templateData,
+            company: {
+              name: templateData.companyName,
+              email: templateData.companyEmail,
+              phone: templateData.companyPhone,
+              website: templateData.companyWebsite,
+              vatId: templateData.companyVatId,
+              taxNumber: templateData.companyTaxNumber,
+              logo: templateData.companyLogo,
+              address: {
+                street: templateData.companyAddress?.split('\n')[0] || '',
+                zipCode: templateData.companyAddress?.split('\n')[1]?.split(' ')[0] || '',
+                city: templateData.companyAddress?.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
+                country: templateData.companyAddress?.split('\n')[2] || 'DE'
+              },
+              bankDetails: {
+                iban: templateData.bankDetails?.iban || '',
+                bic: templateData.bankDetails?.bic || '',
+                bankName: templateData.bankDetails?.bankName || '',
+                accountHolder: templateData.bankDetails?.accountHolder || templateData.companyName
+              }
+            },
+            documentNumber: templateData.invoiceNumber,
+            date: templateData.date,
+            serviceDate: templateData.serviceDate || templateData.date,
+            servicePeriod: templateData.servicePeriod,
+            reference: templateData.reference,
+            currency: templateData.currency || 'EUR',
+            items: templateData.items.map((item: any, index: number) => ({
+              ...item,
+              position: index + 1
+            }))
+          }}
+          companySettings={{
+            companyName: templateData.companyName,
+            companyAddress: templateData.companyAddress,
+            companyEmail: templateData.companyEmail,
+            companyPhone: templateData.companyPhone,
+            companyWebsite: templateData.companyWebsite,
+            companyVatId: templateData.companyVatId,
+            companyTaxNumber: templateData.companyTaxNumber,
+            companyLogo: templateData.companyLogo,
+            logoUrl: templateData.companyLogo,
+            iban: templateData.bankDetails?.iban,
+            bic: templateData.bankDetails?.bic,
+            bankName: templateData.bankDetails?.bankName,
+            accountHolder: templateData.bankDetails?.accountHolder
+          }}
+          customizations={{
+            showLogo: true,
+            logoUrl: templateData.companyLogo
+          }}
         />
       </div>
     </>

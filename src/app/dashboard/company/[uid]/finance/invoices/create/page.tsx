@@ -5,6 +5,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { 
+  InvoiceTemplateRenderer, 
+  DEFAULT_INVOICE_TEMPLATE, 
+  type InvoiceTemplate as ImportedInvoiceTemplate,
+  AVAILABLE_TEMPLATES
+} from '@/components/finance/InvoiceTemplates';
 import {
   Select,
   SelectContent,
@@ -76,6 +82,7 @@ import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteSer
 import { FirestoreInvoiceService as InvoiceService } from '@/services/firestoreInvoiceService';
 import { InvoiceData as InvoiceType } from '@/types/invoiceTypes';
 import { QuoteItem as InvoiceItem } from '@/services/quoteService';
+import { TaxRuleType } from '@/types/taxRules';
 import { getAllCurrencies } from '@/data/currencies';
 import { QuickAddService } from "@/components/QuickAddService";
 import { getCustomers } from '@/utils/api/companyApi';
@@ -97,20 +104,16 @@ import {
   CreativeModernTemplate,
   MinimalistElegantTemplate,
   CorporateClassicTemplate,
-  TechStartupTemplate as TechInnovationTemplate,
+  TechStartupTemplate,
 } from '@/components/templates/invoice-templates';
 
-// Invoice Template Types
-type InvoiceTemplate =
-  | 'professional-business-invoice'
-  | 'executive-premium-invoice'
-  | 'creative-modern-invoice'
-  | 'minimalist-elegant-invoice'
-  | 'corporate-classic-invoice'
-  | 'tech-innovation-invoice';
+// Use ImportedInvoiceTemplate type from @/components/finance/InvoiceTemplates
 import { UserPreferencesService } from '@/lib/userPreferences';
 import { TextTemplateService } from '@/services/TextTemplateService';
 import InvoiceHeaderTextSection from '@/components/finance/InvoiceHeaderTextSection';
+import { SimpleTaxRuleSelector } from '@/components/finance/SimpleTaxRuleSelector';
+import { TaxRuleSelector } from '@/components/finance/TaxRuleSelector';
+import { useTaxCalculation } from '@/hooks/useTaxCalculation';
 // Import der zentralen Platzhalter-Engine
 import { replacePlaceholders as centralReplacePlaceholders, PlaceholderContext } from '@/utils/placeholders';
 type PreviewTemplateData = {
@@ -120,7 +123,7 @@ type PreviewTemplateData = {
   title?: string;
   reference?: string;
   currency?: string;
-  taxRule?: string;
+  taxRule?: TaxRuleType;
   taxRuleLabel?: string;
   invoiceDate?: string;
   deliveryDate?: string;
@@ -212,6 +215,10 @@ export default function CreateQuotePage() {
   const router = useRouter();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
+  const [selectedTemplate, setSelectedTemplate] = useState<ImportedInvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
+
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
 
   const renderProductsCard = () => (
     <Card>
@@ -502,7 +509,6 @@ export default function CreateQuotePage() {
   const [taxDEOpen, setTaxDEOpen] = useState(true);
   const [taxEUOpen, setTaxEUOpen] = useState(false);
   const [taxNonEUOpen, setTaxNonEUOpen] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
   const [company, setCompany] = useState<any | null>(null);
   // E-Mail Versand UI
   const [emailCardOpen, setEmailCardOpen] = useState(false);
@@ -519,11 +525,7 @@ export default function CreateQuotePage() {
   const [pdfSizeBytes, setPdfSizeBytes] = useState<number | null>(null);
   const [creatingPdf, setCreatingPdf] = useState<boolean>(false);
 
-  // Template Auswahl & User Preferences
-  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>(
-    'professional-business-invoice'
-  );
-  const [loadingTemplate, setLoadingTemplate] = useState(true);
+  // Template Auswahl & User Preferences - entfernt, da doppelt deklariert
 
   // PDF Hidden Container Ref
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
@@ -768,15 +770,7 @@ export default function CreateQuotePage() {
     internalContactPerson: '',
     deliveryTerms: '',
     paymentTerms: '',
-    taxRule: 'DE_TAXABLE' as
-      | 'DE_TAXABLE'
-      | 'DE_EXEMPT_4_USTG'
-      | 'DE_REVERSE_13B'
-      | 'EU_REVERSE_18B'
-      | 'EU_INTRACOMMUNITY_SUPPLY'
-      | 'EU_OSS'
-      | 'NON_EU_EXPORT'
-      | 'NON_EU_OUT_OF_SCOPE',
+    taxRule: TaxRuleType.DE_TAXABLE,
   });
 
   // Items (Netto im State)
@@ -937,7 +931,7 @@ export default function CreateQuotePage() {
 
   // Steuerlogik aus der Auswahl ableiten (berücksichtigt Standard-Steuersatz aus Einstellungen)
   useEffect(() => {
-    if (formData.taxRule === 'DE_TAXABLE') {
+    if (formData.taxRule === TaxRuleType.DE_TAXABLE) {
       const rate = settings?.defaultTaxRate ? parseInt(settings.defaultTaxRate, 10) : 19;
       setTaxRate(Number.isFinite(rate) ? rate : 19);
     } else {
@@ -955,15 +949,15 @@ export default function CreateQuotePage() {
         // Lade direkt die User Preferences
         const preferences = await UserPreferencesService.getUserPreferences(user.uid, uid);
 
-        if (preferences.preferredQuoteTemplate) {
-          setSelectedTemplate(preferences.preferredInvoiceTemplate as InvoiceTemplate);
+        if (preferences.preferredInvoiceTemplate) {
+          setSelectedTemplate(preferences.preferredInvoiceTemplate as ImportedInvoiceTemplate);
         } else {
-          // Fallback auf corporate-classic-quote laut Datenbank
-          setSelectedTemplate('corporate-classic-invoice');
+          // Fallback auf Standard-Template wenn keine Präferenz gesetzt ist
+          setSelectedTemplate(DEFAULT_INVOICE_TEMPLATE);
         }
       } catch (error) {
         console.warn('Fehler beim Laden der Template-Preferences:', error);
-        setSelectedTemplate('corporate-classic-invoice'); // Fallback
+        setSelectedTemplate(DEFAULT_INVOICE_TEMPLATE); // Fallback auf das Standard-Template
       } finally {
         setLoadingTemplate(false);
       }
@@ -1010,18 +1004,13 @@ export default function CreateQuotePage() {
   }, [uid, formData.headTextHtml, formData.footerText]);
 
   // Template-Komponente dynamisch rendern
-  const renderTemplateComponent = (templateId: InvoiceTemplate) => {
-    const components = {
-      'professional-business-invoice': ProfessionalBusinessTemplate,
-      'executive-premium-invoice': ExecutivePremiumTemplate,
-      'creative-modern-invoice': CreativeModernTemplate,
-      'minimalist-elegant-invoice': MinimalistElegantTemplate,
-      'corporate-classic-invoice': CorporateClassicTemplate,
-      'tech-innovation-invoice': TechInnovationTemplate,
-    };
-
-    const TemplateComponent = components[templateId] || CorporateClassicTemplate;
-    return TemplateComponent;
+  const renderTemplateComponent = (templateId: ImportedInvoiceTemplate) => {
+    const template = AVAILABLE_TEMPLATES.find(t => t.id === templateId);
+    if (template) {
+      return template.component;
+    }
+    console.warn('Unbekannte Template-ID:', templateId, 'Verwende Professional Business Template als Fallback');
+    return ProfessionalBusinessTemplate;
   };
   useEffect(() => {
     if (!settings) return;
@@ -1034,10 +1023,10 @@ export default function CreateQuotePage() {
       const next = { ...prev };
       if (settings.ust === 'kleinunternehmer') {
         // Für Kleinunternehmer: keine USt -> sinnvolle Default-Regelung
-        next.taxRule = 'DE_EXEMPT_4_USTG';
+        next.taxRule = TaxRuleType.DE_EXEMPT_4_USTG;
       } else {
         // Standardfall: steuerpflichtig in DE
-        next.taxRule = prev.taxRule || 'DE_TAXABLE';
+        next.taxRule = prev.taxRule || TaxRuleType.DE_TAXABLE;
       }
 
       // Zahlungsbedingungen vorbelegen (nur Basis-Text; Skonto wird separat gesteuert)
@@ -1372,15 +1361,16 @@ export default function CreateQuotePage() {
         .filter(Boolean)
         .join('\n\n') || undefined;
 
-    const taxRuleLabelMap: Record<string, string> = {
-      DE_TAXABLE: 'Umsatzsteuerpflichtige Umsätze (DE, i. d. R. 19%)',
-      DE_EXEMPT_4_USTG: 'Steuerfreie Umsätze §4 UStG',
-      DE_REVERSE_13B: 'Reverse Charge gem. §13b UStG',
-      EU_REVERSE_18B: 'Reverse Charge gem. §18b UStG (EU)',
-      EU_INTRACOMMUNITY_SUPPLY: 'Innergemeinschaftliche Lieferungen (EU)',
-      EU_OSS: 'OSS – One-Stop-Shop (EU)',
-      NON_EU_EXPORT: 'Ausfuhren (Drittland)',
-      NON_EU_OUT_OF_SCOPE: 'Nicht im Inland steuerbare Leistung (außerhalb EU)',
+    const taxRuleLabelMap: Record<TaxRuleType, string> = {
+      [TaxRuleType.DE_TAXABLE]: 'Umsatzsteuerpflichtige Umsätze (DE, i. d. R. 19%)',
+      [TaxRuleType.DE_TAXABLE_REDUCED]: 'Ermäßigter Steuersatz (DE, 7%)',
+      [TaxRuleType.DE_EXEMPT_4_USTG]: 'Steuerfreie Umsätze §4 UStG',
+      [TaxRuleType.DE_REVERSE_13B]: 'Reverse Charge gem. §13b UStG',
+      [TaxRuleType.EU_REVERSE_18B]: 'Reverse Charge gem. §18b UStG (EU)',
+      [TaxRuleType.EU_INTRACOMMUNITY_SUPPLY]: 'Innergemeinschaftliche Lieferungen (EU)',
+      [TaxRuleType.EU_OSS]: 'OSS – One-Stop-Shop (EU)',
+      [TaxRuleType.NON_EU_EXPORT]: 'Ausfuhren (Drittland)',
+      [TaxRuleType.NON_EU_OUT_OF_SCOPE]: 'Nicht im Inland steuerbare Leistung (außerhalb EU)',
     };
 
     const data: PreviewTemplateData = {
@@ -2101,6 +2091,10 @@ export default function CreateQuotePage() {
         status: asDraft ? 'draft' : 'sent',
         title: formData.title,
         description: formData.headTextHtml,
+        skontoEnabled,
+        skontoDays: skontoDays || undefined,
+        skontoPercentage: skontoPercentage || undefined,
+        skontoText,
         notes: formData.notes,
         footerText: formData.footerText,
         deliveryMethod: formData.deliveryTerms ? 'custom' : undefined,
@@ -2114,7 +2108,7 @@ export default function CreateQuotePage() {
         language: 'de',
         template: 'professional-business-quote',
         lastModifiedBy: uid,
-        taxRule: formData.taxRule,
+        taxRule: formData.taxRule as TaxRuleType,
         internalContactPerson: formData.internalContactPerson || undefined,
         deliveryTerms: formData.deliveryTerms || undefined,
         paymentTerms: finalPaymentTerms,
@@ -2566,18 +2560,26 @@ export default function CreateQuotePage() {
               <Button 
                 variant="outline" 
                 size="default"
-                onClick={() => setPreviewOpen(true)}
-              >
-                Vorschau
-              </Button>
-              <Button 
-                variant="outline" 
-                size="default"
                 onClick={() => handleSubmit(true)}
                 disabled={loading}
               >
                 Speichern
               </Button>
+
+              <Button
+                variant="outline"
+                size="default"
+                onClick={() => {
+                  const previewData = buildPreviewData();
+                  const TemplateComponent = renderTemplateComponent(selectedTemplate);
+                  setPreviewOpen(true);
+                }}
+                className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Live-Vorschau
+              </Button>
+
               <Button 
                 className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                 size="default"
@@ -3457,9 +3459,12 @@ export default function CreateQuotePage() {
             </div>
       {/* Modal für neue Dienstleistung */}
       <Dialog open={serviceModalOpen} onOpenChange={setServiceModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" aria-describedby="service-dialog-description">
           <DialogHeader>
             <DialogTitle>Neue Dienstleistung anlegen</DialogTitle>
+            <div id="service-dialog-description" className="sr-only">
+              Dialog zum Anlegen einer neuen Dienstleistung mit Name und weiteren Details
+            </div>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -3920,175 +3925,14 @@ export default function CreateQuotePage() {
                 </div>
               </div>
 
-              {/* Umsatzsteuerregelung: Drei unabhängige Accordions */}
+              {/* Umsatzsteuerregelung */}
               <div className="space-y-3">
                 <Label className="font-semibold">Umsatzsteuerregelung</Label>
-
-                {/* In Deutschland */}
-                <div className="rounded-lg border border-gray-200 overflow-hidden">
-                  <button
-                    type="button"
-                    className="w-full flex items-center justify-between bg-muted/30 px-3 py-2 hover:bg-muted/50 transition"
-                    onClick={() => setTaxDEOpen(v => !v)}
-                  >
-                    <span className="text-sm font-medium">In Deutschland</span>
-                    <ChevronDown
-                      className={`w-4 h-4 transition-transform ${taxDEOpen ? 'rotate-180' : ''}`}
-                    />
-                  </button>
-                  {taxDEOpen && (
-                    <div className="p-3 space-y-2">
-                      {[
-                        {
-                          key: 'DE_TAXABLE',
-                          label: 'Umsatzsteuerpflichtige Umsätze',
-                          hint: 'Regelsteuersatz, i. d. R. 19% (oder 7% für bestimmte Leistungen).',
-                        },
-                        {
-                          key: 'DE_EXEMPT_4_USTG',
-                          label: 'Steuerfreie Umsätze §4 UStG',
-                          hint: 'Umsätze, die nach §4 UStG von der Steuer befreit sind (z. B. bestimmte Versicherungen).',
-                        },
-                        {
-                          key: 'DE_REVERSE_13B',
-                          label: 'Reverse Charge gem. §13b UStG',
-                          hint: 'Steuerschuld geht auf den Leistungsempfänger über (B2B, bestimmte Leistungen).',
-                        },
-                      ].map(opt => (
-                        <label
-                          key={opt.key}
-                          className={`flex items-center justify-between gap-3 rounded border p-2 ${formData.taxRule === opt.key ? 'border-[#14ad9f] bg-[#14ad9f]/5' : 'border-gray-200'}`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name="taxRule"
-                              className="accent-[#14ad9f]"
-                              checked={formData.taxRule === (opt.key as any)}
-                              onChange={() => setFormData(p => ({ ...p, taxRule: opt.key as any }))}
-                            />
-                            <span>{opt.label}</span>
-                          </div>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="w-4 h-4 text-gray-500" />
-                            </TooltipTrigger>
-                            <TooltipContent>{opt.hint}</TooltipContent>
-                          </Tooltip>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Im EU-Ausland */}
-                <div className="rounded-lg border border-gray-200 overflow-hidden">
-                  <button
-                    type="button"
-                    className="w-full flex items-center justify-between bg-muted/30 px-3 py-2 hover:bg-muted/50 transition"
-                    onClick={() => setTaxEUOpen(v => !v)}
-                  >
-                    <span className="text-sm font-medium">Im EU-Ausland</span>
-                    <ChevronDown
-                      className={`w-4 h-4 transition-transform ${taxEUOpen ? 'rotate-180' : ''}`}
-                    />
-                  </button>
-                  {taxEUOpen && (
-                    <div className="p-3 space-y-2">
-                      {[
-                        {
-                          key: 'EU_REVERSE_18B',
-                          label: 'Reverse Charge gem. §18b UStG',
-                          hint: 'B2B-Leistungen innerhalb der EU – Steuerschuld beim Leistungsempfänger.',
-                        },
-                        {
-                          key: 'EU_INTRACOMMUNITY_SUPPLY',
-                          label: 'Innergemeinschaftliche Lieferungen',
-                          hint: 'Lieferung von Waren in anderes EU-Land an Unternehmer mit USt-IdNr., i. d. R. steuerfrei.',
-                        },
-                        {
-                          key: 'EU_OSS',
-                          label: 'OSS – One-Stop-Shop',
-                          hint: 'Fernverkauf an Privatkunden in EU; Besteuerung im Bestimmungsland über OSS.',
-                        },
-                      ].map(opt => (
-                        <label
-                          key={opt.key}
-                          className={`flex items-center justify-between gap-3 rounded border p-2 ${formData.taxRule === opt.key ? 'border-[#14ad9f] bg-[#14ad9f]/5' : 'border-gray-200'}`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name="taxRule"
-                              className="accent-[#14ad9f]"
-                              checked={formData.taxRule === (opt.key as any)}
-                              onChange={() => setFormData(p => ({ ...p, taxRule: opt.key as any }))}
-                            />
-                            <span>{opt.label}</span>
-                          </div>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="w-4 h-4 text-gray-500" />
-                            </TooltipTrigger>
-                            <TooltipContent>{opt.hint}</TooltipContent>
-                          </Tooltip>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Außerhalb der EU */}
-                <div className="rounded-lg border border-gray-200 overflow-hidden">
-                  <button
-                    type="button"
-                    className="w-full flex items-center justify-between bg-muted/30 px-3 py-2 hover:bg-muted/50 transition"
-                    onClick={() => setTaxNonEUOpen(v => !v)}
-                  >
-                    <span className="text-sm font-medium">Außerhalb der EU</span>
-                    <ChevronDown
-                      className={`w-4 h-4 transition-transform ${taxNonEUOpen ? 'rotate-180' : ''}`}
-                    />
-                  </button>
-                  {taxNonEUOpen && (
-                    <div className="p-3 space-y-2">
-                      {[
-                        {
-                          key: 'NON_EU_EXPORT',
-                          label: 'Ausfuhren',
-                          hint: 'Warenlieferungen in Drittländer (außerhalb EU) sind i. d. R. steuerfrei (Nachweis erforderlich).',
-                        },
-                        {
-                          key: 'NON_EU_OUT_OF_SCOPE',
-                          label: 'Nicht im Inland steuerbare Leistung (außerhalb EU, z.B. Schweiz)',
-                          hint: 'Leistung gilt nicht im Inland als ausgeführt – keine deutsche USt.',
-                        },
-                      ].map(opt => (
-                        <label
-                          key={opt.key}
-                          className={`flex items-center justify-between gap-3 rounded border p-2 ${formData.taxRule === opt.key ? 'border-[#14ad9f] bg-[#14ad9f]/5' : 'border-gray-200'}`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name="taxRule"
-                              className="accent-[#14ad9f]"
-                              checked={formData.taxRule === (opt.key as any)}
-                              onChange={() => setFormData(p => ({ ...p, taxRule: opt.key as any }))}
-                            />
-                            <span>{opt.label}</span>
-                          </div>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="w-4 h-4 text-gray-500" />
-                            </TooltipTrigger>
-                            <TooltipContent>{opt.hint}</TooltipContent>
-                          </Tooltip>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                
+                <TaxRuleSelector
+                  value={formData.taxRule}
+                  onChange={(value) => setFormData(p => ({ ...p, taxRule: value }))}
+                />
 
                 <div className="text-xs text-gray-500">
                   Hinweis: Je nach Regelung setzen wir den USt.-Satz automatisch (DE steuerpflichtig
@@ -4146,17 +3990,9 @@ export default function CreateQuotePage() {
 
       {/* Aktionen */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <Button
-          onClick={() => setPreviewOpen(true)}
-          variant="outline"
-          className="text-[#14ad9f] border-[#14ad9f]"
-        >
-          <Eye className="w-4 h-4 mr-2" />
-          Vorschau
-        </Button>
         <Button type="button" onClick={printInBrowser} variant="outline" className="sm:ml-2">
           <Printer className="w-4 h-4 mr-2" />
-          Drucken (Browser)
+          Drucken
         </Button>
         <Button
           onClick={() => handleSubmit(true)}
@@ -4307,58 +4143,41 @@ export default function CreateQuotePage() {
         </div>
       )}
 
-      {/* Vorschau-Dialog */}
+      {/* Live-Vorschau Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-[1000px] w-full p-0 overflow-hidden">
-          <DialogHeader className="px-6 pt-6">
-            <DialogTitle>Vorschau Angebot</DialogTitle>
+        <DialogContent className="max-w-7xl w-full p-0">
+          <DialogHeader className="px-6 pt-6 flex items-center justify-between">
+            <DialogTitle>Live-Vorschau</DialogTitle>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                const previewData = buildPreviewData();
+                const payload = encodeURIComponent(btoa(JSON.stringify(previewData)));
+                window.open(`/print/invoice/preview?auto=1&payload=${payload}`, '_blank');
+              }}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Drucken
+            </Button>
           </DialogHeader>
-          <div className="px-6 pb-6">
-            <div className="border rounded-md overflow-auto bg-white" style={{ maxHeight: '75vh' }}>
-              <div className="p-4">
-                {(() => {
-                  if (loadingTemplate) {
-                    return (
-                      <div className="flex items-center justify-center h-64">
-                        <Loader2 className="h-8 w-8 animate-spin" />
-                        <span className="ml-2">Template wird geladen...</span>
-                      </div>
-                    );
-                  }
-
-                  const TemplateComponent = renderTemplateComponent(selectedTemplate);
-                  const previewData = buildPreviewData();
-
-                  return (
-                    <TemplateComponent
-                      data={previewData as any}
-                      companySettings={{
-                        companyName: previewData.companyName,
-                        logoUrl: previewData.companyLogo || previewData.profilePictureURL,
-                        address: (() => {
-                          const lines = (previewData.companyAddress || '').split('\n');
-                          return {
-                            street: lines[0] || '',
-                            zipCode: (lines[1] || '').split(' ')[0] || '',
-                            city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
-                            country: lines[2] || undefined,
-                          };
-                        })(),
-                        contactInfo: {
-                          email: previewData.companyEmail,
-                          phone: previewData.companyPhone,
-                          website: previewData.companyWebsite,
-                        },
-                        vatId: previewData.companyVatId,
-                        taxId: previewData.companyTaxNumber,
-                        commercialRegister: previewData.companyRegister,
-                        bankDetails: previewData.bankDetails,
-                      }}
-                      customizations={{ showLogo: true }}
-                    />
-                  );
-                })()}
-              </div>
+          <div className="bg-[#f5f5f5] w-full overflow-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+            <div className="max-w-[210mm] mx-auto bg-white shadow-sm my-8">
+              {loadingTemplate ? (
+                <div className="flex items-center justify-center h-64">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                  <span className="ml-2">Template wird geladen...</span>
+                </div>
+              ) : (
+                <div className="p-0">
+                  <InvoiceTemplateRenderer
+                    template={selectedTemplate}
+                    data={buildPreviewData()}
+                    preview={true}
+                    customizations={{ showLogo: true }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </DialogContent>

@@ -2,13 +2,94 @@ import React from 'react';
 import type { CompanySettings, TemplateCustomizations } from '../types';
 import { resolveLogoUrl } from '../utils/logoUtils';
 
+export interface TemplateData {
+  // Dokumentinformationen
+  documentNumber: string;
+  date: string;
+  dueDate: string;
+
+  // Leistungszeitraum
+  serviceDate?: string;
+  servicePeriod?: string;
+
+  // Kundendaten
+  customer: {
+    name: string;
+    email: string;
+    address: {
+      street: string;
+      zipCode: string;
+      city: string;
+      country: string;
+    };
+  };
+
+  // Unternehmensdaten
+  company: {
+    name: string;
+    email: string;
+    phone: string;
+    address: {
+      street: string;
+      zipCode: string;
+      city: string;
+      country: string;
+    };
+    taxNumber: string;
+    vatId: string;
+    bankDetails: {
+      iban: string;
+      bic: string;
+      accountHolder: string;
+    };
+  };
+
+  // Rechnungsposten
+  items: Array<{
+    description: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    total: number;
+    discountPercent: number;
+    discount: number;
+  }>;
+
+  // Beträge
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  total: number;
+
+  // Optionale Felder
+  currency?: string;
+  description?: string;
+  introText?: string;
+  headerText?: string;
+  notes?: string;
+  hinweise?: string;
+  additionalNotes?: string;
+  paymentNotes?: string;
+  conclusionText?: string;
+  paymentTerms?: string;
+  
+  // Zusätzliche Optionen
+  contactPersonName?: string;
+  deliveryTerms?: string;
+  skontoText?: string;
+  skontoDays?: number;
+  skontoPercentage?: number;
+  reverseCharge?: boolean;
+  taxRule?: string;
+  status?: string;
+  isSmallBusiness?: boolean;
+}
+
 interface TemplateProps {
-  data: any; // 🔧 Geändert zu any für Flexibilität mit zusätzlichen Feldern
+  data: TemplateData;
   companySettings?: CompanySettings;
   customizations?: TemplateCustomizations;
 }
-
-// 🔧 InvoiceData Interface entfernt - verwende any für maximale Flexibilität
 
 // Hinweis: TemplateProps ist oben bereits mit companySettings/customizations definiert
 

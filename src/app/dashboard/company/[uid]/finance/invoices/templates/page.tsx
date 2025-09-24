@@ -12,6 +12,7 @@ import {
   AVAILABLE_TEMPLATES,
   InvoiceData,
 } from '@/components/finance/InvoiceTemplates';
+import { TaxRuleType } from '@/types/taxRules';
 import { toast } from 'sonner';
 // API Imports statt Firebase
 import { getCompanyData, updateCompanyTemplate, handleApiError } from '@/utils/api/companyApi';
@@ -21,7 +22,7 @@ export default function InvoiceTemplatesPage() {
   const params = useParams();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
-  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>('german-standard');
+  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>('professional-business');
   const [previewTemplate, setPreviewTemplate] = useState<InvoiceTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,6 +53,9 @@ export default function InvoiceTemplatesPage() {
             preferredTemplate = 'minimal-clean';
           } else if (preferredTemplate === 'corporate') {
             preferredTemplate = 'corporate-formal';
+          } else if (preferredTemplate === 'corporate-reminder') {
+            preferredTemplate = 'professional-business'; // Mahnungs-Template auf Standard-Template zurücksetzen
+            console.warn('Template corporate-reminder wurde zu professional-business migriert');
           }
 
           if (preferredTemplate && AVAILABLE_TEMPLATES.some(t => t.id === preferredTemplate)) {
@@ -95,6 +99,10 @@ export default function InvoiceTemplatesPage() {
         companyData?.phone ||
         '+49 40 123456789',
       companyWebsite: companyData?.website || companyData?.step1?.website || 'https://ihrefirma.de',
+      taxRuleType: TaxRuleType.DE_TAXABLE,
+      createdAt: new Date(),
+      year: new Date().getFullYear(),
+      companyId: 'preview_company',
       companyLogo:
         companyData?.profilePictureURL ||
         companyData?.step3?.profilePictureURL ||
@@ -293,17 +301,17 @@ export default function InvoiceTemplatesPage() {
                     <div className="flex items-center justify-between text-xs text-gray-600">
                       <span>Stil:</span>
                       <span className="font-medium">
-                        {template.id === 'german-standard' &&
+                        {template.id === 'professional-business' &&
                           'GoBD-konform mit Auto-Mehrseitigkeit'}
-                        {template.id === 'german-multipage' && 'Mehrseitig optimiert'}
+                        {template.id === 'corporate-classic' && 'Professionell mit Corporate Design'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-gray-600">
                       <span>Für:</span>
                       <span className="font-medium">
-                        {template.id === 'german-standard' && 'Alle deutschen Unternehmen'}
-                        {template.id === 'german-multipage' &&
-                          'Große Rechnungen mit vielen Positionen'}
+                        {template.id === 'professional-business' && 'Alle deutschen Unternehmen'}
+                        {template.id === 'corporate-classic' &&
+                          'Größere Unternehmen mit Corporate Identity'}
                       </span>
                     </div>
                   </div>
