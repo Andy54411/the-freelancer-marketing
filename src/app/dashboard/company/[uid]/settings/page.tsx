@@ -13,6 +13,7 @@ import PortfolioForm from '@/components/dashboard_setting/portfolio';
 import ServicesForm from '@/components/dashboard_setting/services-professional';
 import FaqsForm from '@/components/dashboard_setting/faqs';
 import PaymentTermsForm from '@/components/dashboard_setting/PaymentTermsForm';
+import ManagingDirectorModal from '@/components/dashboard_setting/ManagingDirectorModal';
 import { RawFirestoreUserData, UserDataForSettings } from '@/types/settings';
 import { Loader2 as FiLoader, Save as FiSave } from 'lucide-react';
 import { toast } from 'sonner';
@@ -26,6 +27,7 @@ export default function SettingsPage() {
   const [form, setForm] = useState<UserDataForSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isManagingDirectorModalOpen, setIsManagingDirectorModalOpen] = useState(false);
 
   // Funktion zum Umwandeln der Firestore-Daten in das Settings-Format
   const transformToUserDataForSettings = (rawData: RawFirestoreUserData): UserDataForSettings => {
@@ -211,7 +213,7 @@ export default function SettingsPage() {
             formData={form}
             handleChange={handleChange}
             onOpenManagingDirectorPersonalModal={() => {
-              // Optional: Modal-Funktionalität kann hier implementiert werden
+              setIsManagingDirectorModalOpen(true);
             }}
           />
         );
@@ -252,7 +254,7 @@ export default function SettingsPage() {
             formData={form}
             handleChange={handleChange}
             onOpenManagingDirectorPersonalModal={() => {
-              // Optional: Modal-Funktionalität kann hier implementiert werden
+              setIsManagingDirectorModalOpen(true);
             }}
           />
         );
@@ -345,6 +347,17 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Managing Director Modal */}
+      {form && (
+        <ManagingDirectorModal
+          isOpen={isManagingDirectorModalOpen}
+          onClose={() => setIsManagingDirectorModalOpen(false)}
+          formData={form}
+          handleChange={handleChange}
+          onSave={saveForm}
+        />
       )}
     </>
   );

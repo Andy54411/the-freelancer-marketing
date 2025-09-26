@@ -1,9 +1,21 @@
 'use client';
 
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
-import { InvoiceTemplateRenderer, DEFAULT_INVOICE_TEMPLATE, AVAILABLE_TEMPLATES } from '@/components/finance/InvoiceTemplates';
+import {
+  InvoiceTemplateRenderer,
+  DEFAULT_INVOICE_TEMPLATE,
+  AVAILABLE_TEMPLATES,
+} from '@/components/finance/InvoiceTemplates';
 import { db } from '@/firebase/clients';
-import { doc, getDoc, collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  collectionGroup,
+} from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { InvoiceData } from '@/types/invoiceTypes';
@@ -38,31 +50,32 @@ function getTaxRuleLabel(taxRule: string): string {
 async function findInvoiceGlobally(invoiceId: string): Promise<InvoiceData | null> {
   try {
     console.log('Searching for invoice globally:', invoiceId);
-    
+
     // Verwende collectionGroup Query um in allen invoices Subcollections zu suchen
-    const invoicesQuery = query(
-      collectionGroup(db, 'invoices')
-    );
-    
+    const invoicesQuery = query(collectionGroup(db, 'invoices'));
+
     const querySnapshot = await getDocs(invoicesQuery);
     console.log('Total invoices found:', querySnapshot.size);
-    
+
     // Suche nach der spezifischen ID
     const foundDoc = querySnapshot.docs.find(doc => doc.id === invoiceId);
-    
+
     if (!foundDoc) {
       console.log('Invoice not found globally:', invoiceId);
-      console.log('Available invoice IDs:', querySnapshot.docs.map(doc => doc.id));
+      console.log(
+        'Available invoice IDs:',
+        querySnapshot.docs.map(doc => doc.id)
+      );
       return null;
     }
-    
+
     console.log('Invoice found:', foundDoc.id);
-    
+
     // Nehme das gefundene Dokument
     const docSnap = foundDoc;
     const data = docSnap.data();
     console.log('Invoice data loaded:', data);
-    
+
     // Transformiere die Daten in das erwartete Format
     const invoice: InvoiceData = {
       id: docSnap.id,
@@ -78,8 +91,16 @@ async function findInvoiceGlobally(invoiceId: string): Promise<InvoiceData | nul
       date: data.date?.toDate ? data.date.toDate().toISOString() : data.date,
       issueDate: data.issueDate,
       dueDate: data.dueDate?.toDate ? data.dueDate.toDate().toISOString() : data.dueDate,
-      createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt instanceof Date ? data.createdAt : new Date()),
-      stornoDate: data.stornoDate?.toDate ? data.stornoDate.toDate() : (data.stornoDate instanceof Date ? data.stornoDate : undefined),
+      createdAt: data.createdAt?.toDate
+        ? data.createdAt.toDate()
+        : data.createdAt instanceof Date
+          ? data.createdAt
+          : new Date(),
+      stornoDate: data.stornoDate?.toDate
+        ? data.stornoDate.toDate()
+        : data.stornoDate instanceof Date
+          ? data.stornoDate
+          : undefined,
       description: data.description,
       customerEmail: data.customerEmail,
       companyName: data.companyName,
@@ -103,13 +124,11 @@ async function findInvoiceGlobally(invoiceId: string): Promise<InvoiceData | nul
       deliveryTerms: data.deliveryTerms,
       contactPersonName: data.contactPersonName,
       priceInput: data.priceInput || 'netto',
-      taxRuleType: data.taxRuleType || 'DE_TAXABLE', 
+      taxRuleType: data.taxRuleType || 'DE_TAXABLE',
       year: data.year || new Date().getFullYear(),
       isStorno: data.isStorno || false,
-
-
     };
-    
+
     console.log('Invoice found globally:', invoice);
     return invoice;
   } catch (error) {
@@ -126,8 +145,29 @@ interface PrintInvoicePageProps {
  * Dedizierte Client-Rendered Seite für saubere PDF-Generierung
  * Diese Seite zeigt nur die Rechnung ohne Navigation, Header oder andere UI-Elemente
  * Optimiert für Puppeteer-basierte PDF-Generierung
+ * KEINE CACHE - Lädt IMMER frische Daten!
  */
 export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
+  // CACHE KILLER - Erzwinge Reload bei jedem Aufruf
+  useEffect(() => {
+    // Entferne alle Cache-Header
+    if (typeof window !== 'undefined') {
+      const meta = document.createElement('meta');
+      meta.httpEquiv = 'Cache-Control';
+      meta.content = 'no-cache, no-store, must-revalidate';
+      document.head.appendChild(meta);
+
+      const meta2 = document.createElement('meta');
+      meta2.httpEquiv = 'Pragma';
+      meta2.content = 'no-cache';
+      document.head.appendChild(meta2);
+
+      const meta3 = document.createElement('meta');
+      meta3.httpEquiv = 'Expires';
+      meta3.content = '0';
+      document.head.appendChild(meta3);
+    }
+  }, []);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [userTemplate, setUserTemplate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -140,18 +180,18 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
         // 1. Lade die Rechnungsdaten direkt aus der bekannten Company
         const knownCompanyId = 'LLc8PX1VYHfpoFknk8o51LAOfSA2';
         let data = await FirestoreInvoiceService.getInvoiceById(knownCompanyId, invoiceId);
-        
+
         // Falls nicht in der bekannten Company gefunden, versuche globale Suche
         if (!data) {
           data = await findInvoiceGlobally(invoiceId);
         }
-        
+
         if (!data) {
           console.error('Invoice not found:', invoiceId);
           return notFound();
         }
 
-        // 2. Lade vollständige Firmendaten und merge sie mit Rechnungsdaten
+        // 2. Lade vollständige Firmendaten und merge sie mit Rechnungsdaten - FRISCH AUS DB!
         if (data.companyId) {
           try {
             const companyDoc = await getDoc(doc(db, 'companies', data.companyId));
@@ -166,7 +206,7 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
               }
 
               // VOLLSTÄNDIGE Firmendaten in Rechnung einbetten
-              const enrichedData: InvoiceData = {
+              const enrichedData: any = {
                 ...data,
                 // RECHNUNGSNUMMER - KRITISCH!
                 invoiceNumber: data.invoiceNumber || data.number || '',
@@ -195,48 +235,43 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
                   data.profilePictureURL ||
                   '',
 
-                // FIRMENADRESSE
+                // FIRMENADRESSE - LIVE DATEN!
                 companyAddress:
-                  data.companyAddress ||
                   [
                     companyData.companyStreet && companyData.companyHouseNumber
                       ? `${companyData.companyStreet} ${companyData.companyHouseNumber}`
                       : companyData.companyStreet,
                     `${companyData.companyPostalCode || ''} ${companyData.companyCity || ''}`.trim(),
-                    companyData.companyCountry || 'Deutschland',
+                    companyData.companyCountry || 'DE',
                   ]
                     .filter(Boolean)
                     .join('\n') ||
+                  data.companyAddress ||
                   '',
 
-                // KONTAKTDATEN
-                companyEmail: companyData.email || data.companyEmail || '',
+                // KONTAKTDATEN - LIVE DATEN!
+                companyEmail:
+                  companyData.email || companyData.contactEmail || data.companyEmail || '',
                 companyPhone:
-                  companyData.companyPhoneNumber || companyData.phone || data.companyPhone || '',
+                  companyData.phoneNumber ||
+                  companyData.companyPhoneNumber ||
+                  data.companyPhone ||
+                  '',
                 companyWebsite:
-                  companyData.companyWebsite || companyData.website || data.companyWebsite || '',
-
-                // STEUERDATEN - ERWEITERT!
-                companyVatId:
-                  companyData.vatId || companyData.step3?.vatId || data.companyVatId || '',
-                companyTaxNumber:
-                  companyData.taxNumber ||
-                  companyData.step3?.taxNumber ||
-                  companyData.taxNumberForBackend ||
-                  data.companyTaxNumber ||
+                  companyData.website ||
+                  companyData.companyWebsiteForBackend ||
+                  data.companyWebsite ||
                   '',
-                companyTax: companyData.vatId || companyData.step3?.vatId || data.companyTax || '',
 
-                // RECHTLICHE DATEN
-                legalForm:
-                  companyData.legalForm || companyData.step2?.legalForm || data.legalForm || '',
+                // STEUERDATEN - LIVE DATEN!
+                companyVatId: companyData.vatId || companyData.step3?.vatId || '',
+                companyTaxNumber: companyData.step3?.taxNumber || companyData.taxNumber || '',
+
+                // RECHTLICHE DATEN - LIVE DATEN!
+                legalForm: companyData.step2?.legalForm || companyData.legalForm || '',
                 companyRegister:
-                  companyData.companyRegister ||
-                  companyData.step3?.companyRegister ||
-                  data.companyRegister ||
-                  '',
-                districtCourt:
-                  companyData.districtCourt || companyData.step3?.districtCourt || data.districtCourt || '',
+                  companyData.step3?.companyRegister || companyData.companyRegister || '',
+                districtCourt: companyData.step3?.districtCourt || companyData.districtCourt || '',
 
                 // KLEINUNTERNEHMER STATUS
                 isSmallBusiness:
@@ -245,21 +280,21 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
                   data.isSmallBusiness ||
                   false,
 
-                // BANKDATEN
-                bankDetails:
-                  data.bankDetails ||
-                  (companyData.iban
-                    ? {
-                        iban: companyData.iban || companyData.step4?.iban || '',
-                        bic: companyData.bic || companyData.step4?.bic || '',
-                        accountHolder:
-                          companyData.accountHolder ||
-                          companyData.step4?.accountHolder ||
-                          companyData.companyName ||
-                          '',
-                        bankName: companyData.bankName || companyData.step4?.bankName || '',
-                      }
-                    : undefined),
+                // BANKDATEN - LIVE AUS COMPANY DB!
+                bankDetails: {
+                  iban: companyData.step4?.iban || companyData.bankDetails?.iban || '',
+                  bic: companyData.step4?.bic || companyData.bankDetails?.bic || 'DETESTEE',
+                  accountHolder:
+                    companyData.step4?.accountHolder || companyData.accountHolder || '',
+                  bankName: companyData.step4?.bankName || companyData.bankDetails?.bankName || '',
+                },
+
+                // !! COMPANY STEPS FÜR TEMPLATE !!
+                step1: companyData.step1 || {},
+                step2: companyData.step2 || {},
+                step3: companyData.step3 || {},
+                step4: companyData.step4 || {},
+                managingDirectors: companyData.step1?.managingDirectors || [],
               };
 
               setInvoiceData(enrichedData);
@@ -359,20 +394,29 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
             page-break-inside: avoid;
             height: auto !important;
             min-height: auto !important;
+            overflow: visible !important;
           }
 
-          /* Flexbox für Print deaktivieren */
+          /* Flexbox für Print korrigieren */
           .flex.flex-col {
-            display: block !important;
+            display: flex !important;
+            flex-direction: column !important;
             min-height: auto !important;
+            height: auto !important;
           }
 
           .flex-1 {
-            flex: none !important;
+            flex: 1 !important;
           }
 
           .mt-auto {
-            margin-top: 0 !important;
+            margin-top: auto !important;
+          }
+
+          /* Footer sichtbar machen */
+          .invoice-footer {
+            page-break-inside: avoid !important;
+            margin-top: 20px !important;
           }
 
           /* Tabellen kompakter aber sauber */
@@ -394,7 +438,8 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
           line-height: 1.4;
           font-size: 14px;
           width: 100%;
-          min-height: 297mm;
+          height: auto !important;
+          min-height: auto !important;
         }
 
         body.print-page * {
@@ -414,11 +459,11 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
           width: 100% !important;
           max-width: none !important;
           margin: 0 !important;
-          padding: 0 !important;
           padding: 20mm !important;
           background: white !important;
           box-sizing: border-box;
-          min-height: 257mm;
+          min-height: auto !important;
+          height: auto !important;
         }
 
         .bg-\\[\\#14ad9f\\] {
@@ -437,7 +482,12 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
           className="bg-[#14ad9f] hover:bg-[#129488] text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+            />
           </svg>
           <span>Drucken</span>
         </button>
@@ -448,48 +498,105 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
         {/* Minimales A4-optimiertes Layout */}
         <div className="print-invoice-wrapper">
           <InvoiceTemplateRenderer
-            template={(userTemplate && AVAILABLE_TEMPLATES.some(t => t.id === userTemplate) ? (userTemplate as any) : DEFAULT_INVOICE_TEMPLATE) as any}
-            data={{
-              ...invoiceData,
-              // Template-kompatible Felder hinzufügen
-              subtotal: invoiceData.amount || 0,
-              taxAmount: invoiceData.tax || 0,
-              taxRate: invoiceData.vatRate || 19,
-              // Tax-Regel Informationen
-              taxRule: (invoiceData as any).taxRule || 'DE_TAXABLE',
-              taxRuleLabel: (invoiceData as any).taxRuleLabel || getTaxRuleLabel((invoiceData as any).taxRule || 'DE_TAXABLE'),
-              // Dynamischer Dokumenttyp und Titel
-              documentType: invoiceData.isStorno ? 'storno' : 'invoice',
-              documentTitle: invoiceData.isStorno ? 'STORNO-RECHNUNG' : 'Rechnung',
-              isStorno: invoiceData.isStorno,
-              // NUR Datenbankdaten - KEINE hardcodierten Fallbacks!
-              company: invoiceData.companyName ? {
-                name: invoiceData.companyName,
-                address: invoiceData.companyAddress ? {
-                  street: invoiceData.companyAddress.split('\n')[0] || '',
-                  zipCode: invoiceData.companyAddress.split('\n')[1]?.split(' ')[0] || '',
-                  city: invoiceData.companyAddress.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
-                  country: invoiceData.companyAddress.split('\n')[2] || ''
-                } : undefined,
-                email: invoiceData.companyEmail || undefined,
-                phone: invoiceData.companyPhone || undefined,
-                website: invoiceData.companyWebsite || undefined,
-                vatId: invoiceData.companyVatId || undefined,
-                taxNumber: invoiceData.companyTaxNumber || undefined,
-                bankDetails: invoiceData.bankDetails || undefined
-              } : undefined,
-              customer: invoiceData.customerName ? {
-                name: invoiceData.customerName,
-                email: invoiceData.customerEmail || undefined,
-                address: invoiceData.customerAddress ? {
-                  street: invoiceData.customerAddress.split(' ').slice(0, -3).join(' ') || '',
-                  zipCode: invoiceData.customerAddress.split(' ').slice(-3, -2)[0] || '',
-                  city: invoiceData.customerAddress.split(' ').slice(-2, -1)[0] || '',
-                  country: invoiceData.customerAddress.split(' ').slice(-1)[0] || ''
-                } : undefined
-              } : undefined,
-              profilePictureURL: invoiceData.companyLogo || invoiceData.profilePictureURL || undefined,
-            } as any}
+            template={
+              (userTemplate && AVAILABLE_TEMPLATES.some(t => t.id === userTemplate)
+                ? (userTemplate as any)
+                : DEFAULT_INVOICE_TEMPLATE) as any
+            }
+            data={(() => {
+              const templateData = {
+                ...invoiceData,
+                // Template-kompatible Felder hinzufügen
+                subtotal: invoiceData.amount || 0,
+                taxAmount: invoiceData.tax || 0,
+                taxRate: invoiceData.vatRate || 19,
+                // Tax-Regel Informationen
+                taxRule: (invoiceData as any).taxRule || 'DE_TAXABLE',
+                taxRuleLabel:
+                  (invoiceData as any).taxRuleLabel ||
+                  getTaxRuleLabel((invoiceData as any).taxRule || 'DE_TAXABLE'),
+                // Dynamischer Dokumenttyp und Titel
+                documentType: invoiceData.isStorno ? 'storno' : 'invoice',
+                documentTitle: invoiceData.isStorno ? 'STORNO-RECHNUNG' : 'Rechnung',
+                isStorno: invoiceData.isStorno,
+                // NUR Datenbankdaten - KEINE hardcodierten Fallbacks!
+                company: invoiceData.companyName
+                  ? {
+                      name: invoiceData.companyName,
+                      address: invoiceData.companyAddress
+                        ? {
+                            street: invoiceData.companyAddress.split('\n')[0] || '',
+                            zipCode: invoiceData.companyAddress.split('\n')[1]?.split(' ')[0] || '',
+                            city:
+                              invoiceData.companyAddress
+                                .split('\n')[1]
+                                ?.split(' ')
+                                .slice(1)
+                                .join(' ') || '',
+                            country: invoiceData.companyAddress.split('\n')[2] || '',
+                          }
+                        : undefined,
+                      email: invoiceData.companyEmail || undefined,
+                      phone: invoiceData.companyPhone || undefined,
+                      website: invoiceData.companyWebsite || undefined,
+                      vatId: invoiceData.companyVatId || undefined,
+                      taxNumber: invoiceData.companyTaxNumber || undefined,
+                      bankDetails: {
+                        iban:
+                          (invoiceData as any).iban || (invoiceData as any).bankDetails?.iban || '',
+                        bic:
+                          (invoiceData as any).bic || (invoiceData as any).bankDetails?.bic || '',
+                        accountHolder:
+                          (invoiceData as any).accountHolder ||
+                          (invoiceData as any).bankDetails?.accountHolder ||
+                          '',
+                        bankName:
+                          (invoiceData as any).bankName ||
+                          (invoiceData as any).bankDetails?.bankName ||
+                          '',
+                      },
+                    }
+                  : undefined,
+                customer: invoiceData.customerName
+                  ? {
+                      name: invoiceData.customerName,
+                      email: invoiceData.customerEmail || undefined,
+                      address: invoiceData.customerAddress
+                        ? {
+                            street:
+                              invoiceData.customerAddress.split(' ').slice(0, -3).join(' ') || '',
+                            zipCode: invoiceData.customerAddress.split(' ').slice(-3, -2)[0] || '',
+                            city: invoiceData.customerAddress.split(' ').slice(-2, -1)[0] || '',
+                            country: invoiceData.customerAddress.split(' ').slice(-1)[0] || '',
+                          }
+                        : undefined,
+                    }
+                  : undefined,
+                profilePictureURL:
+                  invoiceData.companyLogo || invoiceData.profilePictureURL || undefined,
+                // !! LIVE COMPANY DATEN FÜR FOOTER !!
+                managingDirectors: (invoiceData as any).managingDirectors || undefined,
+                step1: (invoiceData as any).step1 || undefined,
+                step2: (invoiceData as any).step2 || undefined,
+                step3: (invoiceData as any).step3 || undefined,
+                step4: (invoiceData as any).step4 || undefined,
+                districtCourt: invoiceData.districtCourt,
+                companyRegister: invoiceData.companyRegister,
+                legalForm: invoiceData.legalForm,
+                firstName: (invoiceData as any).firstName || undefined,
+                lastName: (invoiceData as any).lastName || undefined,
+
+                // DIREKTE COMPANY DATEN FÜR FOOTER
+                companyName: invoiceData.companyName,
+                companyEmail: invoiceData.companyEmail,
+                companyPhone: invoiceData.companyPhone,
+                companyWebsite: invoiceData.companyWebsite,
+                companyVatId: invoiceData.companyVatId,
+                companyTaxNumber: invoiceData.companyTaxNumber,
+              };
+
+              return templateData;
+            })()}
             preview={false}
           />
         </div>

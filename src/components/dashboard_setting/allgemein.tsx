@@ -112,14 +112,32 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
           />
         </div>
 
-        <div className="md:col-span-2">
-          <button
-            type="button"
-            onClick={onOpenManagingDirectorPersonalModal}
-            className="text-sm text-teal-600 hover:underline"
-          >
-            Persönliche Daten des Geschäftsführers bearbeiten
-          </button>
+        <div className="md:col-span-2 mb-4">
+          <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-teal-800">Geschäftsführer-Daten</h3>
+                <p className="text-xs text-teal-600 mt-1">
+                  Verwalten Sie die persönlichen Daten aller Geschäftsführer
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenManagingDirectorPersonalModal}
+                className="inline-flex items-center px-3 py-2 border border-teal-300 shadow-sm text-sm leading-4 font-medium rounded-md text-teal-700 bg-white hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+              >
+                <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                Bearbeiten
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-col">
