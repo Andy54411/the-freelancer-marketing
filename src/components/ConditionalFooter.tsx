@@ -7,14 +7,7 @@ export default function ConditionalFooter() {
   const pathname = usePathname();
 
   // Liste der Pfade, wo Footer NICHT angezeigt werden soll
-  const hiddenFooterPaths = [
-    '/login',
-    '/register',
-    '/dashboard',
-    '/admin',
-    '/staff',
-    '/onboarding',
-  ];
+  const hiddenFooterPaths = ['/login', '/register', '/admin', '/staff', '/onboarding'];
 
   // Prüfe ob aktueller Pfad Footer verstecken soll
   const shouldHideFooter = hiddenFooterPaths.some(path => pathname?.startsWith(path));
