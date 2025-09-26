@@ -213,10 +213,10 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
 
   return (
     <div
-      className={`${preview ? 'max-w-[210mm] mx-auto' : 'w-full'} bg-white px-0 py-2 font-sans text-sm flex flex-col min-h-0 print:min-h-[297mm] print:h-[297mm] print:w-[210mm] print:max-w-[210mm] print:mx-auto`}
+      className={`${preview ? 'max-w-[210mm] mx-auto' : 'w-full'} bg-white px-0 py-2 font-sans text-sm flex flex-col print:min-h-[297mm] print:w-[210mm] print:max-w-[210mm] print:mx-auto print:p-0`}
     >
       {/* Header - bleibt oben */}
-      <div className="flex-shrink-0 mb-3 pb-2 border-b-2 border-gray-300 print:mb-4">
+      <div className="flex-shrink-0 mb-2 pb-1 border-b-2 border-gray-300 print:mb-3 print:pb-2">
         <div className="grid grid-cols-2 gap-8">
           {/* Links: Kundendaten */}
           <div>
@@ -277,7 +277,6 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
           </div>
         </div>
       </div>
-
       {/* Content - nimmt verfügbaren Platz */}
       <div className="flex-1 flex flex-col print:flex-1 print:min-h-0">
         {/* Mehr Optionen / Auswahlfelder */}
@@ -475,74 +474,48 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
           </div>
         )}
       </div>
-
-      {/* E-Invoice Informationen - Wichtig für B2B Compliance */}
+      {/* E-Invoice Informationen - Kompakt für B2B Compliance */}
       {(data.eInvoiceData?.guid || data.eInvoice?.guid) && (
-        <div className="mt-6 p-4 bg-blue-50 rounded border border-blue-200">
-          <div className="flex items-start gap-6">
-            {/* QR-Code für E-Invoice */}
-            <div className="flex-shrink-0">
-              <div className="bg-white p-2 rounded border">
+        <div className="mt-3 p-2 bg-blue-50 rounded border border-blue-200 print:mt-4 print:p-3">
+          <div className="flex items-center gap-4">
+            {/* QR-Code und Download kompakt */}
+            <div className="flex-shrink-0 flex flex-col items-center">
+              <div className="bg-white p-1 rounded border">
                 <QRCode
                   value={generateEInvoiceQRData()}
-                  size={80}
+                  size={60}
                   style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
                 />
               </div>
-              <div className="text-xs text-center text-gray-600 mt-1">XML Download QR</div>
               <button
                 onClick={downloadXML}
-                className="mt-2 w-full px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                className="mt-1 px-2 py-0.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors text-center print:hidden"
               >
-                XML Download
+                XML ↓
               </button>
             </div>
 
-            {/* E-Invoice Details */}
+            {/* E-Invoice Details kompakt */}
             <div className="flex-1">
-              <h3 className="text-sm font-bold text-blue-800 mb-3">
-                Elektronische Rechnung (E-Invoice)
-              </h3>
-              <div className="grid grid-cols-2 gap-4 text-xs">
-                {/* Neues E-Invoice Format */}
+              <h4 className="text-xs font-bold text-blue-800 mb-2">E-Invoice</h4>
+              <div className="grid grid-cols-3 gap-2 text-xs">
                 {data.eInvoiceData?.format && (
                   <div>
                     <span className="font-medium text-blue-700">Format:</span>
-                    <div>{data.eInvoiceData.format}</div>
+                    <div className="text-xs">{data.eInvoiceData.format}</div>
                   </div>
                 )}
                 {data.eInvoiceData?.version && (
                   <div>
                     <span className="font-medium text-blue-700">Version:</span>
-                    <div>{data.eInvoiceData.version}</div>
-                  </div>
-                )}
-                {data.eInvoiceData?.guid && (
-                  <div className="col-span-2">
-                    <span className="font-medium text-blue-700">GUID:</span>
-                    <div className="font-mono text-xs break-all">{data.eInvoiceData.guid}</div>
-                  </div>
-                )}
-                {data.eInvoiceData?.xmlUrl && (
-                  <div className="col-span-2">
-                    <span className="font-medium text-blue-700">XML-Datei:</span>
-                    <div className="text-xs">
-                      <a
-                        href={data.eInvoiceData.xmlUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 underline"
-                      >
-                        Download XML
-                      </a>
-                    </div>
+                    <div className="text-xs">{data.eInvoiceData.version}</div>
                   </div>
                 )}
                 {data.eInvoiceData?.validationStatus && (
                   <div>
-                    <span className="font-medium text-blue-700">Validierung:</span>
+                    <span className="font-medium text-blue-700">Status:</span>
                     <div
-                      className={`font-medium ${
+                      className={`font-medium text-xs ${
                         data.eInvoiceData.validationStatus === 'valid'
                           ? 'text-green-600'
                           : data.eInvoiceData.validationStatus === 'invalid'
@@ -551,41 +524,28 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
                       }`}
                     >
                       {data.eInvoiceData.validationStatus === 'valid'
-                        ? '✓ Gültig'
+                        ? '✓'
                         : data.eInvoiceData.validationStatus === 'invalid'
-                          ? '✗ Ungültig'
-                          : '⏳ Wird geprüft'}
+                          ? '✗'
+                          : '⏳'}
                     </div>
                   </div>
                 )}
-
-                {/* Legacy E-Invoice Format (Fallback) */}
-                {data.eInvoice?.format && !data.eInvoiceData?.format && (
-                  <div>
-                    <span className="font-medium text-blue-700">Format:</span>
-                    <div>{data.eInvoice.format}</div>
-                  </div>
-                )}
-                {data.eInvoice?.version && !data.eInvoiceData?.version && (
-                  <div>
-                    <span className="font-medium text-blue-700">Version:</span>
-                    <div>{data.eInvoice.version}</div>
-                  </div>
-                )}
-                {data.eInvoice?.guid && !data.eInvoiceData?.guid && (
-                  <div className="col-span-2">
-                    <span className="font-medium text-blue-700">GUID:</span>
-                    <div className="font-mono text-xs break-all">{data.eInvoice.guid}</div>
-                  </div>
-                )}
               </div>
+              {(data.eInvoiceData?.guid || data.eInvoice?.guid) && (
+                <div className="mt-1">
+                  <span className="font-medium text-blue-700 text-xs">GUID:</span>
+                  <div className="font-mono text-xs break-all text-gray-600">
+                    {(data.eInvoiceData?.guid || data.eInvoice?.guid)?.substring(0, 20)}...
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      )}
-
+      )}{' '}
       {/* Footer - Immer am Ende der A4-Seite */}
-      <div className="mt-auto">
+      <div className="mt-auto print:mt-6">
         <InvoiceFooter data={data as any} preview={preview} />
       </div>
     </div>
