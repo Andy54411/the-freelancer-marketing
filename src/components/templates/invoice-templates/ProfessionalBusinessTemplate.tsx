@@ -152,6 +152,7 @@ interface TemplateProps {
   data: TemplateData;
   companySettings?: CompanySettings;
   customizations?: TemplateCustomizations;
+  preview?: boolean;
 }
 
 /**
@@ -161,6 +162,7 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
   data,
   companySettings,
   customizations,
+  preview = false,
 }) => {
   const logoUrl = resolveLogoUrl(customizations, companySettings, data);
   const showLogo = customizations?.showLogo ?? true;
@@ -175,7 +177,9 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
     data.servicePeriod || (data.serviceDate ? formatDate(data.serviceDate) : formatDate(data.date));
 
   return (
-    <div className="w-full bg-white px-0 py-2 font-sans text-sm flex flex-col min-h-0 print:min-h-[297mm] print:h-[297mm] print:w-[210mm] print:max-w-[210mm] print:mx-auto">
+    <div
+      className={`${preview ? 'max-w-[210mm] mx-auto' : 'w-full'} bg-white px-0 py-2 font-sans text-sm flex flex-col min-h-0 print:min-h-[297mm] print:h-[297mm] print:w-[210mm] print:max-w-[210mm] print:mx-auto`}
+    >
       {/* Header - bleibt oben */}
       <div className="flex-shrink-0 mb-3 pb-2 border-b-2 border-gray-300 print:mb-4">
         <div className="grid grid-cols-2 gap-8">
@@ -529,7 +533,7 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
 
       {/* Footer - Immer am Ende der A4-Seite */}
       <div className="mt-auto">
-        <InvoiceFooter data={data as any} />
+        <InvoiceFooter data={data as any} preview={preview} />
       </div>
     </div>
   );

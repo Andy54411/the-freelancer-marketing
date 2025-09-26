@@ -29,16 +29,15 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [isManagingDirectorModalOpen, setIsManagingDirectorModalOpen] = useState(false);
 
-  // Funktion zum Umwandeln der Firestore-Daten in das Settings-Format
   const transformToUserDataForSettings = (rawData: RawFirestoreUserData): UserDataForSettings => {
     return {
       uid: rawData.uid,
       companyName: rawData.companyName || rawData.step2?.companyName,
       email: rawData.email,
       displayName: rawData.displayName || rawData.email || '',
+      legalForm: rawData.step2?.legalForm,
       step1: rawData.step1,
       step2: rawData.step2,
-      step3: rawData.step3,
       step4: rawData.step4,
       step5: rawData.step5,
       portfolioItems: rawData.portfolioItems || [],

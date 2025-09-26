@@ -37,6 +37,7 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import FooterTextEditor from '@/components/finance/FooterTextEditor';
 import InventorySelector from '@/components/quotes/InventorySelector';
+import { LivePreviewComponent } from '@/components/finance/LivePreviewComponent';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Calculator,
@@ -163,7 +164,6 @@ type PreviewTemplateData = {
   profilePictureURL?: string;
   companyVatId?: string;
   companyTaxNumber?: string;
-  companyRegister?: string;
   items: Array<{
     id?: string;
     description: string;
@@ -193,6 +193,17 @@ type PreviewTemplateData = {
   internalContactPerson?: string;
   paymentTerms?: string;
   deliveryTerms?: string;
+  // Zusätzliche Footer-Daten
+  step1?: any;
+  step2?: any;
+  step3?: any;
+  step4?: any;
+  managingDirectors?: string;
+  districtCourt?: string;
+  companyRegister?: string;
+  legalForm?: string;
+  firstName?: string;
+  lastName?: string;
   // Company-Objekt für Template-Kompatibilität
   company?: {
     name: string;
@@ -1642,6 +1653,17 @@ export default function CreateQuotePage() {
           certificateSerial: tseSettings.certificateSerial || '',
         };
       })(),
+      // Footer-Daten aus Company-Objekt
+      step1: company?.step1 || (company as any)?.step1,
+      step2: company?.step2 || (company as any)?.step2,
+      step3: company?.step3 || (company as any)?.step3,
+      step4: company?.step4 || (company as any)?.step4,
+      managingDirectors:
+        (company as any)?.managingDirectors || (company as any)?.step1?.managingDirectors,
+      districtCourt: (company as any)?.districtCourt || (company as any)?.step3?.districtCourt,
+      legalForm: (company as any)?.step2?.legalForm || (company as any)?.legalForm,
+      firstName: (company as any)?.firstName || (company as any)?.step1?.personalData?.firstName,
+      lastName: (company as any)?.lastName || (company as any)?.step1?.personalData?.lastName,
     };
 
     return data;
@@ -2899,9 +2921,7 @@ export default function CreateQuotePage() {
                 variant="outline"
                 size="default"
                 onClick={() => {
-                  const previewData = buildPreviewData();
-                  const TemplateComponent = renderTemplateComponent(selectedTemplate);
-                  setPreviewOpen(true);
+                  setPreviewOpen(!previewOpen);
                 }}
                 className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
               >
@@ -4543,48 +4563,14 @@ export default function CreateQuotePage() {
         </div>
       )}
 
-      {/* Live-Vorschau Dialog */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-7xl w-full p-0">
-          <DialogHeader className="px-6 pt-6 flex items-center justify-between">
-            <DialogTitle>Live-Vorschau</DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                const previewData = buildPreviewData();
-                const payload = encodeURIComponent(btoa(JSON.stringify(previewData)));
-                window.open(`/print/invoice/preview?auto=1&payload=${payload}`, '_blank');
-              }}
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              Drucken
-            </Button>
-          </DialogHeader>
-          <div
-            className="bg-[#f5f5f5] w-full overflow-auto"
-            style={{ maxHeight: 'calc(100vh - 200px)' }}
-          >
-            <div className="max-w-[210mm] mx-auto bg-white shadow-sm my-8">
-              {loadingTemplate ? (
-                <div className="flex items-center justify-center h-64">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                  <span className="ml-2">Template wird geladen...</span>
-                </div>
-              ) : (
-                <div className="p-0">
-                  <InvoiceTemplateRenderer
-                    template={selectedTemplate}
-                    data={buildPreviewData()}
-                    preview={true}
-                    customizations={{ showLogo: true }}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Live-Vorschau Komponente */}
+      <LivePreviewComponent
+        isVisible={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        selectedTemplate={selectedTemplate}
+        buildPreviewData={buildPreviewData}
+        loadingTemplate={loadingTemplate}
+      />
 
       {/* Modal: Neues Produkt */}
       <NewProductModal

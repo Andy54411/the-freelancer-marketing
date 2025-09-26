@@ -149,6 +149,7 @@ export interface UserDataForSettings {
   companyName?: string;
   email?: string;
   displayName?: string;
+  legalForm?: string; // Rechtsform des Unternehmens
   lat?: number;
   lng?: number;
   radiusKm?: number;

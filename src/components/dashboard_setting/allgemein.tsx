@@ -143,8 +143,8 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Rechtsform</label>
           <input
-            value={step2?.legalForm || ''}
-            onChange={e => handleChange('step2.legalForm', e.target.value)}
+            value={formData.legalForm || ''}
+            onChange={e => handleChange('legalForm', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             placeholder="z.B. Einzelunternehmen, GmbH, UG"
           />
