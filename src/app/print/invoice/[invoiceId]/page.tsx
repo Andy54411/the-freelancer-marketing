@@ -389,39 +389,91 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
             display: none !important;
           }
 
-          /* Kompaktes Print-Layout */
+          /* A4-Layout mit Footer am Ende der Seite */
           .invoice-print-content {
-            page-break-inside: avoid;
-            height: auto !important;
-            min-height: auto !important;
-            overflow: visible !important;
-          }
-
-          /* Flexbox für Print korrigieren */
-          .flex.flex-col {
             display: flex !important;
             flex-direction: column !important;
+            min-height: 267mm !important;
+            max-height: 267mm !important;
+            overflow: hidden !important;
+            font-size: 12px !important;
+            line-height: 1.3 !important;
+            page-break-inside: avoid !important;
+          }
+
+          /* Content-Bereich flex-grow */
+          .invoice-content {
+            flex-grow: 1 !important;
+          }
+
+          /* Footer immer am Ende der A4-Seite */
+          .invoice-footer {
+            margin-top: auto !important;
+            flex-shrink: 0 !important;
+            page-break-inside: avoid !important;
+            font-size: 11px !important;
+            padding-top: 10px !important;
+          }
+
+          /* Andere Flexbox-Elemente normal lassen */
+          .flex.flex-col:not(.invoice-print-content) {
+            display: block !important;
             min-height: auto !important;
             height: auto !important;
           }
 
-          .flex-1 {
-            flex: 1 !important;
+          .flex-1:not(.invoice-content) {
+            flex: none !important;
           }
 
-          .mt-auto {
-            margin-top: auto !important;
+          /* Kompakte Abstände */
+          .mb-6,
+          .my-6,
+          .mt-6 {
+            margin-top: 8px !important;
+            margin-bottom: 8px !important;
           }
 
-          /* Footer sichtbar machen */
-          .invoice-footer {
-            page-break-inside: avoid !important;
-            margin-top: 20px !important;
+          .mb-4,
+          .my-4,
+          .mt-4 {
+            margin-top: 6px !important;
+            margin-bottom: 6px !important;
+          }
+
+          .p-6 {
+            padding: 12px !important;
           }
 
           /* Tabellen kompakter aber sauber */
           table {
             page-break-inside: avoid;
+          }
+
+          /* Template-spezifische Kompaktierung */
+          h1,
+          h2,
+          h3 {
+            margin-top: 8px !important;
+            margin-bottom: 6px !important;
+            line-height: 1.2 !important;
+          }
+
+          /* Header kompakter */
+          .invoice-header {
+            margin-bottom: 12px !important;
+          }
+
+          /* Tabellen-Zellen kompakter */
+          td,
+          th {
+            padding: 4px 8px !important;
+            font-size: 11px !important;
+          }
+
+          /* Logo kleiner */
+          img {
+            max-height: 60px !important;
           }
         }
 
@@ -459,11 +511,13 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
           width: 100% !important;
           max-width: none !important;
           margin: 0 !important;
-          padding: 20mm !important;
+          padding: 15mm !important;
           background: white !important;
           box-sizing: border-box;
           min-height: auto !important;
           height: auto !important;
+          max-height: 267mm !important;
+          overflow: hidden !important;
         }
 
         .bg-\\[\\#14ad9f\\] {

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { CompanySettings, TemplateCustomizations } from '../types';
 import { resolveLogoUrl } from '../utils/logoUtils';
+import { InvoiceFooter } from './InvoiceFooter';
 
 // Hilfsfunktion für dynamische Dokumenttitel
 function getDocumentTitle(data: any): string {
@@ -153,8 +154,6 @@ interface TemplateProps {
   customizations?: TemplateCustomizations;
 }
 
-// Hinweis: TemplateProps ist oben bereits mit companySettings/customizations definiert
-
 /**
  * Professional Business Template - Klassisch, sauber, deutscher Standard
  */
@@ -176,9 +175,9 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
     data.servicePeriod || (data.serviceDate ? formatDate(data.serviceDate) : formatDate(data.date));
 
   return (
-    <div className="w-full bg-white px-0 py-2 font-sans text-sm flex flex-col print:min-h-0">
-      {/* Header */}
-      <div className="mb-3 pb-2 border-b-2 border-gray-300">
+    <div className="w-full bg-white px-0 py-2 font-sans text-sm flex flex-col min-h-screen print:min-h-[297mm] print:h-[297mm] print:w-[210mm] print:max-w-[210mm] print:mx-auto">
+      {/* Header - bleibt oben */}
+      <div className="flex-shrink-0 mb-3 pb-2 border-b-2 border-gray-300 print:mb-4">
         <div className="grid grid-cols-2 gap-8">
           {/* Links: Kundendaten */}
           <div>
@@ -239,84 +238,87 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
           </div>
         </div>
       </div>
-      {/* Mehr Optionen / Auswahlfelder (jetzt UNTER dem Kopftext) */}
-      {((data.currency && data.currency !== 'EUR') ||
-        (data.contactPersonName && data.contactPersonName.trim() !== '') ||
-        (data.deliveryTerms && data.deliveryTerms.trim() !== '') ||
-        (data.skontoText && data.skontoText.trim() !== '') ||
-        (data.skontoDays && data.skontoDays > 0) ||
-        (data.skontoPercentage && data.skontoPercentage > 0) ||
-        (typeof data.reverseCharge !== 'undefined' && data.reverseCharge !== false) ||
-        data.isSmallBusiness) && (
-        <div className="mb-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              {data.currency && data.currency !== 'EUR' && (
-                <div className="text-gray-600 text-xs mb-1">
-                  Währung: <span className="font-semibold">{data.currency}</span>
-                </div>
-              )}
-              {data.contactPersonName && data.contactPersonName.trim() !== '' && (
-                <div className="text-gray-600 text-xs mb-1">
-                  Kontaktperson: <span className="font-semibold">{data.contactPersonName}</span>
-                </div>
-              )}
-              {data.deliveryTerms && data.deliveryTerms.trim() !== '' && (
-                <div className="text-gray-600 text-xs mb-1">
-                  Lieferbedingung: <span className="font-semibold">{data.deliveryTerms}</span>
-                </div>
-              )}
-              {(data.skontoText && data.skontoText.trim() !== '') ||
-              (data.skontoDays && data.skontoDays > 0) ||
-              (data.skontoPercentage && data.skontoPercentage > 0) ? (
-                <div className="text-gray-600 text-xs mb-1">
-                  Skonto:{' '}
-                  <span className="font-semibold">
-                    {data.skontoText ? data.skontoText : ''}
-                    {data.skontoDays && data.skontoDays > 0
-                      ? ` Bei Zahlung binnen ${data.skontoDays} Tagen`
-                      : ''}
-                    {data.skontoPercentage && data.skontoPercentage > 0
-                      ? ` ${data.skontoPercentage}%`
-                      : ''}
-                  </span>
-                </div>
-              ) : null}
+
+      {/* Content - nimmt verfügbaren Platz */}
+      <div className="flex-1 flex flex-col print:flex-1 print:min-h-0">
+        {/* Mehr Optionen / Auswahlfelder */}
+        {((data.currency && data.currency !== 'EUR') ||
+          (data.contactPersonName && data.contactPersonName.trim() !== '') ||
+          (data.deliveryTerms && data.deliveryTerms.trim() !== '') ||
+          (data.skontoText && data.skontoText.trim() !== '') ||
+          (data.skontoDays && data.skontoDays > 0) ||
+          (data.skontoPercentage && data.skontoPercentage > 0) ||
+          (typeof data.reverseCharge !== 'undefined' && data.reverseCharge !== false) ||
+          data.isSmallBusiness) && (
+          <div className="mb-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                {data.currency && data.currency !== 'EUR' && (
+                  <div className="text-gray-600 text-xs mb-1">
+                    Währung: <span className="font-semibold">{data.currency}</span>
+                  </div>
+                )}
+                {data.contactPersonName && data.contactPersonName.trim() !== '' && (
+                  <div className="text-gray-600 text-xs mb-1">
+                    Kontaktperson: <span className="font-semibold">{data.contactPersonName}</span>
+                  </div>
+                )}
+                {data.deliveryTerms && data.deliveryTerms.trim() !== '' && (
+                  <div className="text-gray-600 text-xs mb-1">
+                    Lieferbedingung: <span className="font-semibold">{data.deliveryTerms}</span>
+                  </div>
+                )}
+                {(data.skontoText && data.skontoText.trim() !== '') ||
+                (data.skontoDays && data.skontoDays > 0) ||
+                (data.skontoPercentage && data.skontoPercentage > 0) ? (
+                  <div className="text-gray-600 text-xs mb-1">
+                    Skonto:{' '}
+                    <span className="font-semibold">
+                      {data.skontoText ? data.skontoText : ''}
+                      {data.skontoDays && data.skontoDays > 0
+                        ? ` Bei Zahlung binnen ${data.skontoDays} Tagen`
+                        : ''}
+                      {data.skontoPercentage && data.skontoPercentage > 0
+                        ? ` ${data.skontoPercentage}%`
+                        : ''}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+              <div>
+                {typeof data.reverseCharge !== 'undefined' && data.reverseCharge !== false && (
+                  <div className="text-gray-600 text-xs mb-1">
+                    Reverse Charge: <span className="font-semibold">aktiviert</span>
+                  </div>
+                )}
+                {data.isSmallBusiness && (
+                  <div className="text-gray-600 text-xs mb-1">
+                    Kleinunternehmerregelung (§19 UStG)
+                  </div>
+                )}
+              </div>
             </div>
-            <div>
-              {typeof data.reverseCharge !== 'undefined' && data.reverseCharge !== false && (
-                <div className="text-gray-600 text-xs mb-1">
-                  Reverse Charge: <span className="font-semibold">aktiviert</span>
-                </div>
+          </div>
+        )}
+
+        {/* Kopftext / Header-Text */}
+        {(data.description || data.introText || data.headerText) && (
+          <div className="mb-6">
+            <div
+              className="text-base text-gray-800 whitespace-pre-line"
+              style={{ wordBreak: 'break-word' }}
+            >
+              {data.description && <div dangerouslySetInnerHTML={{ __html: data.description }} />}
+              {!data.description && data.introText && (
+                <div dangerouslySetInnerHTML={{ __html: data.introText }} />
               )}
-              {data.isSmallBusiness && (
-                <div className="text-gray-600 text-xs mb-1">
-                  Kleinunternehmerregelung (§19 UStG)
-                </div>
+              {!data.description && !data.introText && data.headerText && (
+                <div dangerouslySetInnerHTML={{ __html: data.headerText }} />
               )}
             </div>
           </div>
-        </div>
-      )}
-      {/* Kopftext / Header-Text */}
-      {(data.description || data.introText || data.headerText) && (
-        <div className="mb-6">
-          <div
-            className="text-base text-gray-800 whitespace-pre-line"
-            style={{ wordBreak: 'break-word' }}
-          >
-            {data.description && <div dangerouslySetInnerHTML={{ __html: data.description }} />}
-            {!data.description && data.introText && (
-              <div dangerouslySetInnerHTML={{ __html: data.introText }} />
-            )}
-            {!data.description && !data.introText && data.headerText && (
-              <div dangerouslySetInnerHTML={{ __html: data.headerText }} />
-            )}
-          </div>
-        </div>
-      )}
-      {/* FLEXIBLER CONTENT BEREICH - wächst mit Tabelle */}
-      <div className="flex-1 flex flex-col">
+        )}
+
         {/* Artikel Tabelle */}
         <div className="mb-4">
           <table className="w-full border-collapse">
@@ -409,281 +411,72 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
             </div>
           </div>
         </div>
-      </div>{' '}
-      {/* Ende des flexiblen Content-Bereichs */}
-      {/* Footer Text aus der Rechnung */}
-      {(data as any).footerText && (
-        <div className="mt-6 mb-6">
-          <div
-            className="text-sm text-gray-600 leading-relaxed"
-            dangerouslySetInnerHTML={{
-              __html: (data as any).footerText
-                .replace(/\[%GESAMTBETRAG%\]/g, formatCurrency(data.total))
-                .replace(/\[%RECHNUNGSNUMMER%\]/g, data.documentNumber)
-                .replace(/\[%ZAHLUNGSZIEL%\]/g, (data as any).paymentTerms || '')
-                .replace(/\[%RECHNUNGSDATUM%\]/g, formatDate(data.date))
-                .replace(
-                  /\[%KONTAKTPERSON%\]/g,
-                  (data as any).contactPersonName || data.company?.name || ''
-                )
-                // Zeilenumbruch nur bei "Mit freundlichen Grüßen" und Name
-                .replace(/Mit freundlichen Grüßen/g, '<br>Mit freundlichen Grüßen<br>'),
-            }}
-          />
-        </div>
-      )}
-      {/* 🔧 ABSCHLUSSTEXT - Direkt nach Gesamtsumme ohne Titel und grauen Hintergrund */}
-      {(data.hinweise || data.additionalNotes || data.paymentNotes || data.conclusionText) && (
-        <div className="mt-2 mb-4">
-          <div className="text-sm text-gray-700 space-y-2">
-            {data.hinweise && <div dangerouslySetInnerHTML={{ __html: data.hinweise }} />}
-            {!data.hinweise && data.additionalNotes && (
-              <div dangerouslySetInnerHTML={{ __html: data.additionalNotes }} />
-            )}
-            {!data.hinweise && !data.additionalNotes && data.paymentNotes && (
-              <div dangerouslySetInnerHTML={{ __html: data.paymentNotes }} />
-            )}
-            {!data.hinweise &&
-              !data.additionalNotes &&
-              !data.paymentNotes &&
-              data.conclusionText && (
-                <div dangerouslySetInnerHTML={{ __html: data.conclusionText }} />
-              )}
-          </div>
-        </div>
-      )}
-      {/* TSE-Daten (Technische Sicherheitseinrichtung) */}
-      {(data.tse || data.tseData) && (
-        <div className="mt-4 mb-3 border border-gray-300 rounded-lg p-3 bg-gray-50">
-          <h4 className="text-sm font-semibold text-gray-800 mb-3">
-            TSE-Daten (Technische Sicherheitseinrichtung)
-          </h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-            {/* Seriennummer */}
-            {(data.tse?.serial || data.tseData?.serialNumber) && (
-              <div>
-                <span className="font-medium text-gray-600">Seriennummer:</span>
-                <div className="font-mono">{data.tse?.serial || data.tseData?.serialNumber}</div>
-              </div>
-            )}
-            {/* Signatur-Algorithmus */}
-            {data.tseData?.signatureAlgorithm && (
-              <div>
-                <span className="font-medium text-gray-600">Signatur-Algorithmus:</span>
-                <div className="font-mono">{data.tseData.signatureAlgorithm}</div>
-              </div>
-            )}
-            {/* Transaktionsnummer */}
-            {data.tseData?.transactionNumber && (
-              <div>
-                <span className="font-medium text-gray-600">Transaktionsnummer:</span>
-                <div className="font-mono">{data.tseData.transactionNumber}</div>
-              </div>
-            )}
-            {/* Startzeit */}
-            {(data.tse?.startD || data.tseData?.startTime) && (
-              <div>
-                <span className="font-medium text-gray-600">Startzeit:</span>
-                <div className="font-mono">{data.tse?.startD || data.tseData?.startTime}</div>
-              </div>
-            )}
-            {/* Endzeit */}
-            {(data.tse?.finishD || data.tseData?.finishTime) && (
-              <div>
-                <span className="font-medium text-gray-600">Endzeit:</span>
-                <div className="font-mono">{data.tse?.finishD || data.tseData?.finishTime}</div>
-              </div>
-            )}
-            {/* Signatur */}
-            {data.tseData?.signature && (
-              <div>
-                <span className="font-medium text-gray-600">Signatur:</span>
-                <div className="font-mono text-xs truncate">{data.tseData.signature}</div>
-              </div>
-            )}
-            {/* Öffentlicher Schlüssel */}
-            {data.tseData?.publicKey && (
-              <div>
-                <span className="font-medium text-gray-600">Öffentlicher Schlüssel:</span>
-                <div className="font-mono text-xs truncate">{data.tseData.publicKey}</div>
-              </div>
-            )}
-            {/* Zertifikat-Seriennummer */}
-            {data.tseData?.certificateSerial && (
-              <div>
-                <span className="font-medium text-gray-600">Zertifikat-Serial:</span>
-                <div className="font-mono">{data.tseData.certificateSerial}</div>
-              </div>
-            )}
-            {/* Legacy TSE-Felder für Rückwärtskompatibilität */}
-            {data.tse?.fn && (
-              <div>
-                <span className="font-medium text-gray-600">FN:</span>
-                <div className="font-mono">{data.tse.fn}</div>
-              </div>
-            )}
-            {data.tse?.signCnt && (
-              <div>
-                <span className="font-medium text-gray-600">SignCnt:</span>
-                <div className="font-mono">{data.tse.signCnt}</div>
-              </div>
-            )}
-            {data.tse?.code && (
-              <div>
-                <span className="font-medium text-gray-600">Code:</span>
-                <div className="font-mono">{data.tse.code}</div>
-              </div>
-            )}
-            {data.tse?.sq && (
-              <div>
-                <span className="font-medium text-gray-600">SQ:</span>
-                <div className="font-mono">{data.tse.sq}</div>
-              </div>
-            )}
-            {data.tse?.sign && (
-              <div className="col-span-2 md:col-span-4">
-                <span className="font-medium text-gray-600">Sign:</span>
-                <div className="font-mono text-xs break-all">{data.tse.sign}</div>
-              </div>
-            )}
-          </div>
 
-          {/* QR-Code */}
-          {data.tse?.qrCode && (
-            <div className="mt-4 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-xs font-medium text-gray-600 mb-2">TSE QR-Code</div>
-                <img
-                  src={data.tse.qrCode}
-                  alt="TSE QR-Code"
-                  className="w-24 h-24 border border-gray-300"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      {/* FIXER FOOTER - immer am Ende */}
-      <div className="pt-3 text-sm text-gray-700 mt-auto invoice-footer">
-        {/* 🔧 ABSCHLUSSTEXT - Direkt nach Gesamtsumme ohne Titel und grauen Hintergrund */}
-        {(data.hinweise || data.additionalNotes || data.paymentNotes || data.conclusionText) && (
-          <div className="mt-2 mb-4">
-            <div className="text-sm text-gray-700 space-y-2">
-              {data.hinweise && <div dangerouslySetInnerHTML={{ __html: data.hinweise }} />}
-              {!data.hinweise && data.additionalNotes && (
-                <div dangerouslySetInnerHTML={{ __html: data.additionalNotes }} />
-              )}
-              {!data.hinweise && !data.additionalNotes && data.paymentNotes && (
-                <div dangerouslySetInnerHTML={{ __html: data.paymentNotes }} />
-              )}
-              {!data.hinweise &&
-                !data.additionalNotes &&
-                !data.paymentNotes &&
-                data.conclusionText && (
-                  <div dangerouslySetInnerHTML={{ __html: data.conclusionText }} />
-                )}
-            </div>
+        {/* Footer Text aus der Rechnung */}
+        {(data as any).footerText && (
+          <div className="mb-4 p-3 bg-gray-50 rounded">
+            <div
+              className="text-sm text-gray-700 leading-relaxed"
+              dangerouslySetInnerHTML={{
+                __html: (data as any).footerText
+                  .replace(/\[%GESAMTBETRAG%\]/g, formatCurrency(data.total))
+                  .replace(/\[%RECHNUNGSNUMMER%\]/g, data.documentNumber)
+                  .replace(/\[%ZAHLUNGSZIEL%\]/g, (data as any).paymentTerms || '')
+                  .replace(/\[%RECHNUNGSDATUM%\]/g, formatDate(data.date))
+                  .replace(
+                    /\[%KONTAKTPERSON%\]/g,
+                    (data as any).contactPersonName || data.company?.name || ''
+                  )
+                  .replace(/Zahlungsziel:/g, '<br><br><strong>Zahlungsziel:</strong>')
+                  .replace(/Rechnungsdatum:/g, '<br><strong>Rechnungsdatum:</strong>')
+                  .replace(/Vielen Dank/g, '<br>Vielen Dank')
+                  .replace(/Mit freundlichen Grüßen/g, '<br>Mit freundlichen Grüßen<br>'),
+              }}
+            />
           </div>
         )}
 
-        {/* TSE-Daten (Technische Sicherheitseinrichtung) */}
-        {(data.tse || data.tseData) && (
-          <div className="mt-4 mb-3 border border-gray-300 rounded-lg p-3 bg-gray-50">
-            <h4 className="text-sm font-semibold text-gray-800 mb-3">
-              TSE-Daten (Technische Sicherheitseinrichtung)
-            </h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-              {/* Seriennummer */}
-              {(data.tse?.serial || data.tseData?.serialNumber) && (
+        {/* TSE Daten falls vorhanden */}
+        {data.tse && (
+          <div className="mt-6 p-4 bg-gray-50 rounded border">
+            <h3 className="text-sm font-bold text-gray-800 mb-3">
+              Technische Sicherheitseinrichtung (TSE)
+            </h3>
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              {data.tse.serial && (
                 <div>
                   <span className="font-medium text-gray-600">Seriennummer:</span>
-                  <div className="font-mono">{data.tse?.serial || data.tseData?.serialNumber}</div>
+                  <div className="font-mono">{data.tse.serial}</div>
                 </div>
               )}
-              {/* Signatur-Algorithmus */}
-              {data.tseData?.signatureAlgorithm && (
+              {data.tse.startD && (
                 <div>
-                  <span className="font-medium text-gray-600">Signatur-Algorithmus:</span>
-                  <div className="font-mono">{data.tseData.signatureAlgorithm}</div>
+                  <span className="font-medium text-gray-600">Startdatum:</span>
+                  <div>{data.tse.startD}</div>
                 </div>
               )}
-              {/* Transaktionsnummer */}
-              {data.tseData?.transactionNumber && (
+              {data.tse.finishD && (
                 <div>
-                  <span className="font-medium text-gray-600">Transaktionsnummer:</span>
-                  <div className="font-mono">{data.tseData.transactionNumber}</div>
+                  <span className="font-medium text-gray-600">Enddatum:</span>
+                  <div>{data.tse.finishD}</div>
                 </div>
               )}
-              {/* Startzeit */}
-              {(data.tse?.startD || data.tseData?.startTime) && (
+              {data.tse.signCnt !== undefined && (
                 <div>
-                  <span className="font-medium text-gray-600">Startzeit:</span>
-                  <div className="font-mono">{data.tse?.startD || data.tseData?.startTime}</div>
+                  <span className="font-medium text-gray-600">Signaturzähler:</span>
+                  <div>{data.tse.signCnt}</div>
                 </div>
               )}
-              {/* Endzeit */}
-              {(data.tse?.finishD || data.tseData?.finishTime) && (
-                <div>
-                  <span className="font-medium text-gray-600">Endzeit:</span>
-                  <div className="font-mono">{data.tse?.finishD || data.tseData?.finishTime}</div>
-                </div>
-              )}
-              {/* Signatur */}
-              {data.tseData?.signature && (
-                <div>
+              {data.tse.sign && (
+                <div className="col-span-2">
                   <span className="font-medium text-gray-600">Signatur:</span>
-                  <div className="font-mono text-xs truncate">{data.tseData.signature}</div>
-                </div>
-              )}
-              {/* Öffentlicher Schlüssel */}
-              {data.tseData?.publicKey && (
-                <div>
-                  <span className="font-medium text-gray-600">Öffentlicher Schlüssel:</span>
-                  <div className="font-mono text-xs truncate">{data.tseData.publicKey}</div>
-                </div>
-              )}
-              {/* Zertifikat-Seriennummer */}
-              {data.tseData?.certificateSerial && (
-                <div>
-                  <span className="font-medium text-gray-600">Zertifikat-Serial:</span>
-                  <div className="font-mono">{data.tseData.certificateSerial}</div>
-                </div>
-              )}
-              {/* Legacy TSE-Felder für Rückwärtskompatibilität */}
-              {data.tse?.fn && (
-                <div>
-                  <span className="font-medium text-gray-600">FN:</span>
-                  <div className="font-mono">{data.tse.fn}</div>
-                </div>
-              )}
-              {data.tse?.signCnt && (
-                <div>
-                  <span className="font-medium text-gray-600">SignCnt:</span>
-                  <div className="font-mono">{data.tse.signCnt}</div>
-                </div>
-              )}
-              {data.tse?.code && (
-                <div>
-                  <span className="font-medium text-gray-600">Code:</span>
-                  <div className="font-mono">{data.tse.code}</div>
-                </div>
-              )}
-              {data.tse?.sq && (
-                <div>
-                  <span className="font-medium text-gray-600">SQ:</span>
-                  <div className="font-mono">{data.tse.sq}</div>
-                </div>
-              )}
-              {data.tse?.sign && (
-                <div className="col-span-2 md:col-span-4">
-                  <span className="font-medium text-gray-600">Sign:</span>
                   <div className="font-mono text-xs break-all">{data.tse.sign}</div>
                 </div>
               )}
             </div>
 
             {/* QR-Code */}
-            {data.tse?.qrCode && (
+            {data.tse.qrCode && (
               <div className="mt-4 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-xs font-medium text-gray-600 mb-2">TSE QR-Code</div>
@@ -698,169 +491,46 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
           </div>
         )}
 
-        {/* Footer / Compliance */}
-        <div className="border-t-2 border-gray-300 pt-3 text-sm text-gray-700 invoice-footer">
-          <div className="text-center text-sm leading-relaxed">
-            {(() => {
-              const footerParts: string[] = [];
-
-              // Firmenname mit Rechtsform (immer zuerst)
-              let companyName = '';
-              if (data.company?.name) {
-                companyName = data.company.name;
-              } else if ((data as any).companyName) {
-                companyName = (data as any).companyName;
-              }
-
-              // Rechtsform anhängen falls vorhanden (step2 hat Vorrang!)
-              const companyLegalForm =
-                (data as any).step2?.legalForm || (data as any).legalForm || '';
-              const companySuffix = (data as any).step2?.companySuffix || '';
-
-              if (companyName) {
-                if (companySuffix && !companyName.includes(companySuffix)) {
-                  companyName = `${companyName} ${companySuffix}`;
-                } else if (
-                  companyLegalForm &&
-                  !companyName.includes(companyLegalForm) &&
-                  !companySuffix
-                ) {
-                  companyName = `${companyName} ${companyLegalForm}`;
-                }
-                footerParts.push(companyName);
-              }
-
-              // Adresse
-              if (data.company?.address?.street) {
-                footerParts.push(data.company.address.street);
-              }
-              if (data.company?.address?.zipCode && data.company?.address?.city) {
-                footerParts.push(`${data.company.address.zipCode} ${data.company.address.city}`);
-              }
-              if (
-                data.company?.address?.country &&
-                data.company.address.country !== 'Deutschland'
-              ) {
-                footerParts.push(data.company.address.country);
-              }
-
-              // Telefon
-              if (data.company?.phone) {
-                footerParts.push(`Tel.: ${data.company.phone}`);
-              }
-
-              // E-Mail
-              if (data.company?.email) {
-                footerParts.push(`E-Mail: ${data.company.email}`);
-              }
-
-              // Website
-              if (data.company?.website) {
-                footerParts.push(`Web: ${data.company.website}`);
-              }
-
-              // IBAN
-              if (data.company?.bankDetails?.iban) {
-                footerParts.push(`IBAN: ${data.company.bankDetails.iban}`);
-              }
-
-              // BIC
-              if (data.company?.bankDetails?.bic) {
-                footerParts.push(`BIC: ${data.company.bankDetails.bic}`);
-              }
-
-              // USt-IdNr
-              if (data.company?.vatId) {
-                footerParts.push(`USt-IdNr.: ${data.company.vatId}`);
-              }
-
-              // Steuernr
-              if (data.company?.taxNumber) {
-                footerParts.push(`Steuernr.: ${data.company.taxNumber}`);
-              }
-
-              // Amtsgericht (aus step3.districtCourt in der Datenbank)
-              if ((data as any).districtCourt) {
-                footerParts.push(`Amtsgericht: ${(data as any).districtCourt}`);
-              }
-
-              // Handelsregister (aus step3.companyRegister in der Datenbank)
-              if ((data as any).companyRegister) {
-                footerParts.push(`Handelsregister: ${(data as any).companyRegister}`);
-              }
-
-              // Geschäftsführer (IMMER anzeigen wenn vorhanden - unabhängig von Rechtsform)
-              // WICHTIG: step2.legalForm hat Vorrang vor legalForm!
-              const legalForm = (
-                (data as any).step2?.legalForm ||
-                (data as any).legalForm ||
-                ''
-              ).toLowerCase();
-
-              // GESCHÄFTSFÜHRER IMMER VERSUCHEN (nicht nur bei bestimmten Rechtsformen)
-              {
-                let directorName = '';
-
-                // 1. Prüfe managingDirectors Array (direkt)
-                if ((data as any).managingDirectors && (data as any).managingDirectors.length > 0) {
-                  const mainDirector =
-                    (data as any).managingDirectors.find((dir: any) => dir.isMainDirector) ||
-                    (data as any).managingDirectors[0];
-                  if (mainDirector && mainDirector.firstName && mainDirector.lastName) {
-                    directorName = `${mainDirector.firstName} ${mainDirector.lastName}`;
-                  }
-                }
-
-                // 2. Prüfe step1.managingDirectors Array
-                if (
-                  !directorName &&
-                  (data as any).step1?.managingDirectors &&
-                  (data as any).step1.managingDirectors.length > 0
-                ) {
-                  const mainDirector =
-                    (data as any).step1.managingDirectors.find((dir: any) => dir.isMainDirector) ||
-                    (data as any).step1.managingDirectors[0];
-                  if (mainDirector && mainDirector.firstName && mainDirector.lastName) {
-                    directorName = `${mainDirector.firstName} ${mainDirector.lastName}`;
-                  }
-                }
-
-                // 3. Prüfe step1.personalData
-                if (
-                  !directorName &&
-                  (data as any).step1?.personalData?.firstName &&
-                  (data as any).step1?.personalData?.lastName
-                ) {
-                  directorName = `${(data as any).step1.personalData.firstName} ${(data as any).step1.personalData.lastName}`;
-                }
-
-                // 4. Fallback zu direkten personalData Feldern
-                if (!directorName && (data as any).firstName && (data as any).lastName) {
-                  directorName = `${(data as any).firstName} ${(data as any).lastName}`;
-                }
-
-                // Für GmbH, UG, AG, KG ist Geschäftsführer PFLICHT
-                const requiresDirector =
-                  legalForm.includes('gmbh') ||
-                  legalForm.includes('ug') ||
-                  legalForm.includes('ag') ||
-                  legalForm.includes('kg');
-
-                if (directorName.trim()) {
-                  if (requiresDirector) {
-                    footerParts.push(`Geschäftsführer: ${directorName.trim()}`);
-                  } else {
-                    footerParts.push(`Inhaber: ${directorName.trim()}`);
-                  }
-                }
-              }
-
-              return footerParts.join(' | ');
-            })()}
+        {/* TSE Daten (neues Format) falls vorhanden */}
+        {data.tseData && (
+          <div className="mt-6 p-4 bg-gray-50 rounded border">
+            <h3 className="text-sm font-bold text-gray-800 mb-3">
+              Technische Sicherheitseinrichtung (TSE)
+            </h3>
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div>
+                <span className="font-medium text-gray-600">Seriennummer:</span>
+                <div className="font-mono">{data.tseData.serialNumber}</div>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Algorithmus:</span>
+                <div>{data.tseData.signatureAlgorithm}</div>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Transaktionsnummer:</span>
+                <div>{data.tseData.transactionNumber}</div>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Startzeit:</span>
+                <div>{data.tseData.startTime}</div>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Endzeit:</span>
+                <div>{data.tseData.finishTime}</div>
+              </div>
+              <div className="col-span-2">
+                <span className="font-medium text-gray-600">Signatur:</span>
+                <div className="font-mono text-xs break-all">{data.tseData.signature}</div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>{' '}
-      {/* Ende des flexiblen Content-Bereichs */}
+        )}
+      </div>
+
+      {/* Footer - Immer am Ende der A4-Seite */}
+      <div className="mt-auto">
+        <InvoiceFooter data={data as any} />
+      </div>
     </div>
   );
 };
