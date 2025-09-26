@@ -61,7 +61,7 @@ export interface InvoiceData {
   isSmallBusiness: boolean; // Kleinunternehmerregelung §19 UStG
   vatRate: number;
   priceInput: 'netto' | 'brutto';
-  
+
   // Erweiterte Steuerregeln
   taxRuleType: TaxRuleType; // Verwendung des TaxRuleType Enums
   taxRuleCategory?: TaxRuleCategory; // Optionale Kategorisierung
@@ -125,6 +125,24 @@ export interface InvoiceData {
     accountHolder: string;
     bankName?: string;
   };
+
+  // E-Rechnung Daten - Legacy Format
+  eInvoice?: {
+    format?: string;
+    version?: string;
+    guid?: string;
+    xmlContent?: string;
+  };
+
+  // E-Rechnung Daten - Neues Format
+  eInvoiceData?: {
+    format: string;
+    version: string;
+    guid: string;
+    xmlUrl?: string;
+    validationStatus?: 'valid' | 'invalid' | 'pending';
+    createdAt: string;
+  };
 }
 
 /**
@@ -183,26 +201,26 @@ export class GermanInvoiceService {
       contactPersonName: originalInvoice.contactPersonName || '',
       paymentTerms: originalInvoice.paymentTerms || 'Zahlbar sofort ohne Abzug',
       deliveryTerms: originalInvoice.deliveryTerms || '',
-      
+
       // Sichere Objekt-Felder
       bankDetails: originalInvoice.bankDetails || {
         iban: '',
         bic: '',
         accountHolder: '',
-        bankName: ''
+        bankName: '',
       },
-      
+
       // Sichere Numeric-Felder
       amount: originalInvoice.amount || 0,
       tax: originalInvoice.tax || 0,
       total: originalInvoice.total || 0,
       vatRate: originalInvoice.vatRate || 19,
-      
+
       // Sichere Boolean-Felder
       isSmallBusiness: originalInvoice.isSmallBusiness || false,
-      
+
       // Sichere Array-Felder
-      items: originalInvoice.items || []
+      items: originalInvoice.items || [],
     };
 
     return {
@@ -224,18 +242,18 @@ export class GermanInvoiceService {
         unitPrice: item.unitPrice || 0, // Einzelpreis bleibt positiv
         total: -Math.abs(item.total || 0), // Total negativ
         discount: item.discount || 0, // Rabatt-Default
-        taxRate: item.taxRate || safeOriginal.vatRate
+        taxRate: item.taxRate || safeOriginal.vatRate,
       })),
 
       // Alle Summen negativ in der Datenbank speichern
       amount: -Math.abs(safeOriginal.amount), // Nettosumme negativ
-      tax: -Math.abs(safeOriginal.tax), // Steuerbetrag negativ  
+      tax: -Math.abs(safeOriginal.tax), // Steuerbetrag negativ
       total: -Math.abs(safeOriginal.total), // Gesamtsumme negativ
 
       // Storno-spezifische Kennzeichnung
       title: `STORNO zu ${safeOriginal.title || safeOriginal.invoiceNumber || safeOriginal.number}`,
       documentNumber: `STORNO-${safeOriginal.documentNumber || safeOriginal.invoiceNumber || safeOriginal.number}`,
-      
+
       // Storno-spezifische Daten
       status: 'storno',
       isStorno: true,
@@ -248,7 +266,7 @@ export class GermanInvoiceService {
       createdAt: stornoDate,
       year: currentYear,
     };
-  }  /**
+  } /**
    * Validiert eine Rechnung nach deutschen Standards
    */
   static validateInvoice(invoice: InvoiceData): {
@@ -310,7 +328,7 @@ export class GermanInvoiceService {
           errors.push('Bei Reverse-Charge darf keine MwSt. ausgewiesen werden');
         }
         break;
-      
+
       case TaxRuleType.DE_EXEMPT_4_USTG:
         if (!invoice.taxRuleReason) {
           errors.push('Begründung für Steuerbefreiung ist erforderlich');
@@ -319,7 +337,7 @@ export class GermanInvoiceService {
           errors.push('Bei Steuerbefreiung darf keine MwSt. ausgewiesen werden');
         }
         break;
-      
+
       case TaxRuleType.EU_OSS:
         if (!invoice.taxRuleText) {
           errors.push('Steuerhinweis ist bei OSS-Regelung erforderlich');
@@ -378,7 +396,7 @@ export class GermanInvoiceService {
       TaxRuleType.EU_REVERSE_18B,
       TaxRuleType.DE_REVERSE_13B,
       TaxRuleType.NON_EU_EXPORT,
-      TaxRuleType.DE_EXEMPT_4_USTG
+      TaxRuleType.DE_EXEMPT_4_USTG,
     ];
     const isNoTaxCase = noTaxRules.includes(taxRuleType as TaxRuleType) || isSmallBusiness;
 
@@ -406,7 +424,7 @@ export class GermanInvoiceService {
           displayText = 'Steuerbefreit gemäß §4 UStG';
           break;
       }
-      
+
       if (isSmallBusiness) {
         displayText = 'Kleinunternehmer gemäß §19 UStG';
       }
@@ -427,7 +445,7 @@ export class GermanInvoiceService {
       net: Math.round(net * 100) / 100,
       tax: Math.round(tax * 100) / 100,
       gross: Math.round(gross * 100) / 100,
-      displayText
+      displayText,
     };
   }
 }

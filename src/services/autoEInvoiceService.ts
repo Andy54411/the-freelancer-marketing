@@ -30,54 +30,64 @@ export class AutoEInvoiceService {
       console.log('🚀 Starte automatische E-Invoice-Generierung...', {
         invoiceId: invoiceData.id,
         format: config.defaultFormat,
-        tseEnabled: config.tseEnabled
+        tseEnabled: config.tseEnabled,
       });
 
-      // 1. TSE-Daten generieren falls aktiviert
+      // 1. TSE-Daten generieren falls aktiviert (überspringen wenn bereits vorhanden)
       let tseData: TSEData | undefined;
-      if (config.tseEnabled) {
+      if (config.tseEnabled && !invoiceData.tseData) {
         tseData = await this.generateTSEData(config.companyId);
         console.log('✅ TSE-Daten generiert:', tseData?.serialNumber);
+      } else if (invoiceData.tseData) {
+        tseData = invoiceData.tseData;
+        console.log('✅ TSE-Daten aus Invoice verwendet');
       }
 
       // 2. XML generieren
       let xmlContent: string;
-      if (config.defaultFormat === 'zugferd') {
-        xmlContent = await EInvoiceService.generateZUGFeRDWithTSE(
-          invoiceData,
-          {
-            conformanceLevel: 'EN16931' as any,
-            guideline: 'urn:cen.eu:en16931:2017#compliant#urn:zugferd.de:2p1:extended',
-            specificationId: 'urn:cen.eu:en16931:2017',
-          },
-          {
-            companyName: invoiceData.companyName,
-            companyAddress: invoiceData.companyAddress,
-            companyVatId: invoiceData.companyVatId,
-            email: invoiceData.companyEmail,
-            phoneNumber: invoiceData.companyPhone,
-          },
-          tseData
+      try {
+        if (config.defaultFormat === 'zugferd') {
+          xmlContent = await EInvoiceService.generateZUGFeRDWithTSE(
+            invoiceData,
+            {
+              conformanceLevel: 'EN16931' as any,
+              guideline: 'urn:cen.eu:en16931:2017#compliant#urn:zugferd.de:2p1:extended',
+              specificationId: 'urn:cen.eu:en16931:2017',
+            },
+            {
+              companyName: invoiceData.companyName,
+              companyAddress: invoiceData.companyAddress,
+              companyVatId: invoiceData.companyVatId,
+              email: invoiceData.companyEmail,
+              phoneNumber: invoiceData.companyPhone,
+            },
+            tseData
+          );
+          console.log('✅ ZUGFeRD XML generiert');
+        } else {
+          xmlContent = await EInvoiceService.generateXRechnungXML(
+            invoiceData,
+            {
+              buyerReference: invoiceData.reference || invoiceData.customerOrderNumber || '',
+              leitwegId: '', // Aus Company-Einstellungen laden
+              specificationId: 'urn:cen.eu:en16931:2017',
+              businessProcessType: 'urn:fdc:peppol.eu:2017:poacc:billing:01:1.0',
+            },
+            {
+              companyName: invoiceData.companyName,
+              companyAddress: invoiceData.companyAddress,
+              companyVatId: invoiceData.companyVatId,
+              email: invoiceData.companyEmail,
+              phoneNumber: invoiceData.companyPhone,
+            }
+          );
+          console.log('✅ XRechnung XML generiert');
+        }
+      } catch (xmlError) {
+        console.error('❌ XML-Generierung fehlgeschlagen:', xmlError);
+        throw new Error(
+          `XML-Generierung fehlgeschlagen: ${xmlError instanceof Error ? xmlError.message : 'Unbekannter Fehler'}`
         );
-        console.log('✅ ZUGFeRD XML generiert');
-      } else {
-        xmlContent = await EInvoiceService.generateXRechnungXML(
-          invoiceData,
-          {
-            buyerReference: invoiceData.reference || invoiceData.customerOrderNumber || '',
-            leitwegId: '', // Aus Company-Einstellungen laden
-            specificationId: 'urn:cen.eu:en16931:2017',
-            businessProcessType: 'urn:fdc:peppol.eu:2017:poacc:billing:01:1.0',
-          },
-          {
-            companyName: invoiceData.companyName,
-            companyAddress: invoiceData.companyAddress,
-            companyVatId: invoiceData.companyVatId,
-            email: invoiceData.companyEmail,
-            phoneNumber: invoiceData.companyPhone,
-          }
-        );
-        console.log('✅ XRechnung XML generiert');
       }
 
       // 3. XML validieren
@@ -95,7 +105,7 @@ export class AutoEInvoiceService {
       console.log('✅ E-Invoice Validierung erfolgreich');
 
       // 4. E-Invoice speichern
-      const eInvoiceId = await EInvoiceService.createEInvoice({
+      const eInvoiceData: any = {
         invoiceId: invoiceData.id,
         companyId: config.companyId,
         format: config.defaultFormat,
@@ -105,9 +115,15 @@ export class AutoEInvoiceService {
         validationStatus: 'valid',
         validationErrors: [],
         transmissionStatus: config.autoTransmit ? 'pending' : 'draft',
-        transmissionMethod: config.autoTransmit ? 'email' : undefined,
         recipientType: 'business',
-      });
+      };
+
+      // Nur transmissionMethod hinzufügen, wenn es gesetzt ist
+      if (config.autoTransmit) {
+        eInvoiceData.transmissionMethod = 'email';
+      }
+
+      const eInvoiceId = await EInvoiceService.createEInvoice(eInvoiceData);
 
       console.log('✅ E-Invoice gespeichert mit ID:', eInvoiceId);
 
@@ -123,6 +139,7 @@ export class AutoEInvoiceService {
         }`
       );
 
+      // Rückgabe der E-Invoice-Daten mit ID für weitere Verarbeitung
       return {
         id: eInvoiceId,
         invoiceId: invoiceData.id,
@@ -134,12 +151,11 @@ export class AutoEInvoiceService {
         validationStatus: 'valid',
         validationErrors: [],
         transmissionStatus: config.autoTransmit ? 'sent' : 'draft',
-        transmissionMethod: config.autoTransmit ? 'email' : undefined,
         recipientType: 'business',
         createdAt: new Date(),
         updatedAt: new Date(),
+        ...(config.autoTransmit && { transmissionMethod: 'email' }),
       };
-
     } catch (error) {
       console.error('❌ Automatische E-Invoice-Generierung fehlgeschlagen:', error);
       toast.error(`E-Rechnung-Generierung fehlgeschlagen: ${(error as Error).message}`);
@@ -155,7 +171,7 @@ export class AutoEInvoiceService {
     // Für Demo-Zwecke generieren wir Mock-Daten
     const now = new Date();
     const transactionNumber = Math.floor(Math.random() * 1000000).toString();
-    
+
     return {
       serialNumber: `TSE-${companyId.substring(0, 8).toUpperCase()}`,
       signatureAlgorithm: 'ecdsa-plain-SHA256',
@@ -194,9 +210,9 @@ export class AutoEInvoiceService {
     // - E-Mail mit PDF/A-3
     // - Portal-Upload
     // - WebService-Call
-    
+
     console.log('📤 E-Invoice Übertragung simuliert für ID:', eInvoiceId);
-    
+
     // Simulation einer Übertragung
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
@@ -248,7 +264,7 @@ export class AutoEInvoiceService {
   }> {
     try {
       const settings = await EInvoiceService.getEInvoiceSettings(companyId);
-      
+
       let score = 0;
       const recommendations: string[] = [];
 
@@ -288,7 +304,6 @@ export class AutoEInvoiceService {
         peppolEnabled: Boolean(settings.peppol?.enabled),
         recommendations,
       };
-
     } catch (error) {
       console.error('Fehler beim Erstellen des Compliance-Reports:', error);
       return {

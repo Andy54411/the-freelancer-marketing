@@ -2,6 +2,7 @@ import React from 'react';
 import type { CompanySettings, TemplateCustomizations } from '../types';
 import { resolveLogoUrl } from '../utils/logoUtils';
 import { InvoiceFooter } from './InvoiceFooter';
+import QRCode from 'react-qr-code';
 
 // Hilfsfunktion für dynamische Dokumenttitel
 function getDocumentTitle(data: any): string {
@@ -116,29 +117,7 @@ export interface TemplateData {
   contactPersonName?: string;
   deliveryTerms?: string;
 
-  // TSE-Daten (Technische Sicherheitseinrichtung) - Legacy Format
-  tse?: {
-    fn?: string; // Finanzamtnummer
-    startD?: string; // Startdatum
-    finishD?: string; // Enddatum
-    serial?: string; // Seriennummer
-    signCnt?: number; // Signaturzähler
-    sign?: string; // Digitale Signatur
-    code?: string; // TSE-Code
-    sq?: string; // Sequential Number
-    qrCode?: string; // QR-Code
-  };
-  // TSE-Daten (Technische Sicherheitseinrichtung) - Neues Format
-  tseData?: {
-    serialNumber: string;
-    signatureAlgorithm: string;
-    transactionNumber: string;
-    startTime: string;
-    finishTime: string;
-    signature: string;
-    publicKey: string;
-    certificateSerial: string;
-  };
+  // Skonto und Zahlungsbedingungen
   skontoText?: string;
   skontoDays?: number;
   skontoPercentage?: number;
@@ -146,8 +125,25 @@ export interface TemplateData {
   taxRule?: string;
   status?: string;
   isSmallBusiness?: boolean;
-}
 
+  // E-Rechnung Daten - Legacy Format
+  eInvoice?: {
+    format?: string;
+    version?: string;
+    guid?: string;
+    xmlContent?: string;
+  };
+
+  // E-Rechnung Daten - Neues Format
+  eInvoiceData?: {
+    format: string;
+    version: string;
+    guid: string;
+    xmlUrl?: string;
+    validationStatus?: 'valid' | 'invalid' | 'pending';
+    createdAt: string;
+  };
+}
 interface TemplateProps {
   data: TemplateData;
   companySettings?: CompanySettings;
@@ -175,6 +171,45 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
     new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
   const serviceText =
     data.servicePeriod || (data.serviceDate ? formatDate(data.serviceDate) : formatDate(data.date));
+
+  // QR-Code Daten für E-Invoice generieren
+  const generateEInvoiceQRData = () => {
+    const guid = data.eInvoiceData?.guid || data.eInvoice?.guid;
+    if (!guid) return '';
+
+    // Verwende immer die Produktions-URL für QR-Codes
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.taskilo.com';
+    return `${baseUrl}/api/einvoices/${guid}/xml`;
+  };
+
+  // Download-Funktion für XML-Datei
+  const downloadXML = async () => {
+    const guid = data.eInvoiceData?.guid || data.eInvoice?.guid;
+    if (!guid) {
+      alert('Keine E-Invoice-Daten verfügbar');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/einvoices/${guid}/xml`);
+      if (!response.ok) {
+        throw new Error('Download fehlgeschlagen');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `einvoice-${data.documentNumber}.xml`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('XML Download fehlgeschlagen:', error);
+      alert('XML Download fehlgeschlagen. Bitte versuchen Sie es später erneut.');
+    }
+  };
 
   return (
     <div
@@ -439,97 +474,115 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
             />
           </div>
         )}
-
-        {/* TSE Daten falls vorhanden */}
-        {data.tse && (
-          <div className="mt-6 p-4 bg-gray-50 rounded border">
-            <h3 className="text-sm font-bold text-gray-800 mb-3">
-              Technische Sicherheitseinrichtung (TSE)
-            </h3>
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              {data.tse.serial && (
-                <div>
-                  <span className="font-medium text-gray-600">Seriennummer:</span>
-                  <div className="font-mono">{data.tse.serial}</div>
-                </div>
-              )}
-              {data.tse.startD && (
-                <div>
-                  <span className="font-medium text-gray-600">Startdatum:</span>
-                  <div>{data.tse.startD}</div>
-                </div>
-              )}
-              {data.tse.finishD && (
-                <div>
-                  <span className="font-medium text-gray-600">Enddatum:</span>
-                  <div>{data.tse.finishD}</div>
-                </div>
-              )}
-              {data.tse.signCnt !== undefined && (
-                <div>
-                  <span className="font-medium text-gray-600">Signaturzähler:</span>
-                  <div>{data.tse.signCnt}</div>
-                </div>
-              )}
-              {data.tse.sign && (
-                <div className="col-span-2">
-                  <span className="font-medium text-gray-600">Signatur:</span>
-                  <div className="font-mono text-xs break-all">{data.tse.sign}</div>
-                </div>
-              )}
-            </div>
-
-            {/* QR-Code */}
-            {data.tse.qrCode && (
-              <div className="mt-4 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-xs font-medium text-gray-600 mb-2">TSE QR-Code</div>
-                  <img
-                    src={data.tse.qrCode}
-                    alt="TSE QR-Code"
-                    className="w-24 h-24 border border-gray-300"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TSE Daten (neues Format) falls vorhanden */}
-        {data.tseData && (
-          <div className="mt-6 p-4 bg-gray-50 rounded border">
-            <h3 className="text-sm font-bold text-gray-800 mb-3">
-              Technische Sicherheitseinrichtung (TSE)
-            </h3>
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div>
-                <span className="font-medium text-gray-600">Seriennummer:</span>
-                <div className="font-mono">{data.tseData.serialNumber}</div>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">Algorithmus:</span>
-                <div>{data.tseData.signatureAlgorithm}</div>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">Transaktionsnummer:</span>
-                <div>{data.tseData.transactionNumber}</div>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">Startzeit:</span>
-                <div>{data.tseData.startTime}</div>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">Endzeit:</span>
-                <div>{data.tseData.finishTime}</div>
-              </div>
-              <div className="col-span-2">
-                <span className="font-medium text-gray-600">Signatur:</span>
-                <div className="font-mono text-xs break-all">{data.tseData.signature}</div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* E-Invoice Informationen - Wichtig für B2B Compliance */}
+      {(data.eInvoiceData?.guid || data.eInvoice?.guid) && (
+        <div className="mt-6 p-4 bg-blue-50 rounded border border-blue-200">
+          <div className="flex items-start gap-6">
+            {/* QR-Code für E-Invoice */}
+            <div className="flex-shrink-0">
+              <div className="bg-white p-2 rounded border">
+                <QRCode
+                  value={generateEInvoiceQRData()}
+                  size={80}
+                  style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+                />
+              </div>
+              <div className="text-xs text-center text-gray-600 mt-1">XML Download QR</div>
+              <button
+                onClick={downloadXML}
+                className="mt-2 w-full px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+              >
+                XML Download
+              </button>
+            </div>
+
+            {/* E-Invoice Details */}
+            <div className="flex-1">
+              <h3 className="text-sm font-bold text-blue-800 mb-3">
+                Elektronische Rechnung (E-Invoice)
+              </h3>
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                {/* Neues E-Invoice Format */}
+                {data.eInvoiceData?.format && (
+                  <div>
+                    <span className="font-medium text-blue-700">Format:</span>
+                    <div>{data.eInvoiceData.format}</div>
+                  </div>
+                )}
+                {data.eInvoiceData?.version && (
+                  <div>
+                    <span className="font-medium text-blue-700">Version:</span>
+                    <div>{data.eInvoiceData.version}</div>
+                  </div>
+                )}
+                {data.eInvoiceData?.guid && (
+                  <div className="col-span-2">
+                    <span className="font-medium text-blue-700">GUID:</span>
+                    <div className="font-mono text-xs break-all">{data.eInvoiceData.guid}</div>
+                  </div>
+                )}
+                {data.eInvoiceData?.xmlUrl && (
+                  <div className="col-span-2">
+                    <span className="font-medium text-blue-700">XML-Datei:</span>
+                    <div className="text-xs">
+                      <a
+                        href={data.eInvoiceData.xmlUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Download XML
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {data.eInvoiceData?.validationStatus && (
+                  <div>
+                    <span className="font-medium text-blue-700">Validierung:</span>
+                    <div
+                      className={`font-medium ${
+                        data.eInvoiceData.validationStatus === 'valid'
+                          ? 'text-green-600'
+                          : data.eInvoiceData.validationStatus === 'invalid'
+                            ? 'text-red-600'
+                            : 'text-yellow-600'
+                      }`}
+                    >
+                      {data.eInvoiceData.validationStatus === 'valid'
+                        ? '✓ Gültig'
+                        : data.eInvoiceData.validationStatus === 'invalid'
+                          ? '✗ Ungültig'
+                          : '⏳ Wird geprüft'}
+                    </div>
+                  </div>
+                )}
+
+                {/* Legacy E-Invoice Format (Fallback) */}
+                {data.eInvoice?.format && !data.eInvoiceData?.format && (
+                  <div>
+                    <span className="font-medium text-blue-700">Format:</span>
+                    <div>{data.eInvoice.format}</div>
+                  </div>
+                )}
+                {data.eInvoice?.version && !data.eInvoiceData?.version && (
+                  <div>
+                    <span className="font-medium text-blue-700">Version:</span>
+                    <div>{data.eInvoice.version}</div>
+                  </div>
+                )}
+                {data.eInvoice?.guid && !data.eInvoiceData?.guid && (
+                  <div className="col-span-2">
+                    <span className="font-medium text-blue-700">GUID:</span>
+                    <div className="font-mono text-xs break-all">{data.eInvoice.guid}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer - Immer am Ende der A4-Seite */}
       <div className="mt-auto">

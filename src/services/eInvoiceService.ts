@@ -106,15 +106,33 @@ export class EInvoiceService {
     eInvoiceData: Omit<EInvoiceData, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
+      console.log('📄 Creating E-Invoice with data:', {
+        invoiceId: eInvoiceData.invoiceId,
+        companyId: eInvoiceData.companyId,
+        format: eInvoiceData.format,
+        amount: eInvoiceData.amount,
+        hasXmlContent: !!eInvoiceData.xmlContent?.length,
+      });
+
+      // Validate required fields
+      if (!eInvoiceData.invoiceId || !eInvoiceData.companyId || !eInvoiceData.xmlContent) {
+        throw new Error(
+          `Missing required fields: invoiceId=${!!eInvoiceData.invoiceId}, companyId=${!!eInvoiceData.companyId}, xmlContent=${!!eInvoiceData.xmlContent}`
+        );
+      }
+
       const docRef = await addDoc(collection(db, this.COLLECTION), {
         ...eInvoiceData,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+      console.log('✅ E-Invoice created with ID:', docRef.id);
       return docRef.id;
     } catch (error) {
-
-      throw new Error('E-Rechnung konnte nicht erstellt werden');
+      console.error('❌ Failed to create E-Invoice:', error);
+      throw new Error(
+        `E-Rechnung konnte nicht erstellt werden: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+      );
     }
   }
 
@@ -216,7 +234,6 @@ export class EInvoiceService {
 
       return xmlTemplate;
     } catch (error) {
-
       throw new Error('ZUGFeRD XML konnte nicht generiert werden');
     }
   }
@@ -316,7 +333,6 @@ export class EInvoiceService {
 
       return xmlTemplate;
     } catch (error) {
-
       throw new Error('XRechnung XML konnte nicht generiert werden');
     }
   }
@@ -399,7 +415,6 @@ export class EInvoiceService {
         warnings,
       };
     } catch (error) {
-
       return {
         isValid: false,
         errors: ['Validierung fehlgeschlagen: ' + (error as Error).message],
@@ -427,8 +442,34 @@ export class EInvoiceService {
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       })) as EInvoiceData[];
     } catch (error) {
-
       throw new Error('E-Rechnungen konnten nicht geladen werden');
+    }
+  }
+
+  /**
+   * Lädt eine einzelne E-Rechnung anhand der ID
+   */
+  static async getEInvoiceById(id: string): Promise<EInvoiceData | null> {
+    try {
+      const { doc, getDoc } = await import('firebase/firestore');
+      const { db } = await import('@/firebase/clients');
+
+      const docRef = doc(db, 'eInvoices', id);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        return null;
+      }
+
+      const data = docSnap.data();
+
+      return {
+        id: docSnap.id,
+        ...data,
+      } as EInvoiceData;
+    } catch (error) {
+      console.error('Error getting E-Invoice by ID:', error);
+      throw error;
     }
   }
 
@@ -462,7 +503,6 @@ export class EInvoiceService {
         });
       }
     } catch (error) {
-
       throw new Error('E-Rechnungs-Einstellungen konnten nicht gespeichert werden');
     }
   }
@@ -618,7 +658,7 @@ export class EInvoiceService {
   ): Promise<string> {
     try {
       const baseXML = await this.generateZUGFeRDXML(invoiceData, metadata, companyData);
-      
+
       if (!tseData) {
         return baseXML;
       }
@@ -651,16 +691,17 @@ export class EInvoiceService {
 
         // TSE-spezifische Felder in SupplyChainTradeTransaction
         if (parsedXML['rsm:CrossIndustryInvoice']['rsm:SupplyChainTradeTransaction']) {
-          parsedXML['rsm:CrossIndustryInvoice']['rsm:SupplyChainTradeTransaction']['ram:TSEData'] = {
-            'ram:SerialNumber': tseData.serialNumber,
-            'ram:SignatureAlgorithm': tseData.signatureAlgorithm,
-            'ram:TransactionNumber': tseData.transactionNumber,
-            'ram:StartTime': tseData.startTime,
-            'ram:FinishTime': tseData.finishTime,
-            'ram:Signature': tseData.signature,
-            'ram:PublicKey': tseData.publicKey,
-            'ram:CertificateSerial': tseData.certificateSerial,
-          };
+          parsedXML['rsm:CrossIndustryInvoice']['rsm:SupplyChainTradeTransaction']['ram:TSEData'] =
+            {
+              'ram:SerialNumber': tseData.serialNumber,
+              'ram:SignatureAlgorithm': tseData.signatureAlgorithm,
+              'ram:TransactionNumber': tseData.transactionNumber,
+              'ram:StartTime': tseData.startTime,
+              'ram:FinishTime': tseData.finishTime,
+              'ram:Signature': tseData.signature,
+              'ram:PublicKey': tseData.publicKey,
+              'ram:CertificateSerial': tseData.certificateSerial,
+            };
         }
       }
 
@@ -684,7 +725,7 @@ export class EInvoiceService {
 
       // XML als Anhang einbetten
       const xmlBytes = new TextEncoder().encode(xmlContent);
-      
+
       await pdfDoc.attach(xmlBytes, filename, {
         mimeType: 'text/xml',
         description: 'ZUGFeRD Invoice Data',
@@ -711,9 +752,12 @@ export class EInvoiceService {
       pdfDoc.setModificationDate(new Date());
 
       const pdfBytes = await pdfDoc.save();
-      return new ArrayBuffer(pdfBytes.byteLength).slice(0).constructor === ArrayBuffer 
-        ? pdfBytes.buffer as ArrayBuffer 
-        : pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer;
+      return new ArrayBuffer(pdfBytes.byteLength).slice(0).constructor === ArrayBuffer
+        ? (pdfBytes.buffer as ArrayBuffer)
+        : (pdfBytes.buffer.slice(
+            pdfBytes.byteOffset,
+            pdfBytes.byteOffset + pdfBytes.byteLength
+          ) as ArrayBuffer);
     } catch (error) {
       console.error('Fehler beim Erstellen der PDF/A-3 Datei:', error);
       throw new Error('PDF/A-3 Datei konnte nicht erstellt werden');

@@ -57,6 +57,7 @@ import {
   Copy,
   Download,
   Settings,
+  Send,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
@@ -223,17 +224,6 @@ type PreviewTemplateData = {
       bic: string;
       accountHolder: string;
     };
-  };
-  // TSE-Daten für deutsche E-Rechnung-Compliance
-  tseData?: {
-    serialNumber: string;
-    signatureAlgorithm: string;
-    transactionNumber: string;
-    startTime: string;
-    finishTime: string;
-    signature: string;
-    publicKey: string;
-    certificateSerial: string;
   };
 };
 import { useCompanySettings } from '@/hooks/useCompanySettings';
@@ -1632,27 +1622,6 @@ export default function CreateQuotePage() {
             '',
         },
       },
-      // TSE-Daten für deutsche E-Rechnung-Compliance
-      tseData: (() => {
-        // TSE-Daten aus Company-Einstellungen holen, falls verfügbar
-        const tseSettings = (company as any)?.eInvoiceSettings?.tse || (settings as any)?.tse;
-
-        if (!tseSettings) {
-          return undefined;
-        }
-
-        return {
-          serialNumber: tseSettings.serialNumber || '',
-          signatureAlgorithm: tseSettings.signatureAlgorithm || 'ecdsa-plain-SHA256',
-          transactionNumber:
-            tseSettings.transactionNumber || Math.floor(Math.random() * 1000000).toString(),
-          startTime: tseSettings.startTime || new Date().toISOString(),
-          finishTime: tseSettings.finishTime || new Date(Date.now() + 1000).toISOString(),
-          signature: tseSettings.signature || '',
-          publicKey: tseSettings.publicKey || '',
-          certificateSerial: tseSettings.certificateSerial || '',
-        };
-      })(),
       // Footer-Daten aus Company-Objekt
       step1: company?.step1 || (company as any)?.step1,
       step2: company?.step2 || (company as any)?.step2,
@@ -2214,6 +2183,12 @@ export default function CreateQuotePage() {
     setLoading(true);
     try {
       console.log('🚨 CRITICAL: Starting Invoice Save - ALL FIELDS MUST BE SAVED!');
+      console.log('📊 E-INVOICE DEBUG:', {
+        eInvoiceEnabled,
+        eInvoiceSettings,
+        isEInvoice: eInvoiceEnabled || false,
+        eInvoiceType: eInvoiceEnabled ? 'zugferd' : null,
+      });
 
       // Validation
       if (!formData.customerName || !formData.validUntil) {
@@ -2475,6 +2450,62 @@ export default function CreateQuotePage() {
 
       toast.success(asDraft ? 'Rechnung als Entwurf gespeichert' : 'Rechnung erstellt');
       console.log('🎉 INVOICE CREATION COMPLETED SUCCESSFULLY');
+
+      // 🚀 E-INVOICE GENERIERUNG NACH SPEICHERN (falls aktiviert)
+      if (!asDraft && eInvoiceEnabled && createdInvoiceId) {
+        console.log('🚀 Starting E-Invoice generation for invoice:', createdInvoiceId);
+        try {
+          const { AutoEInvoiceService } = await import('@/services/autoEInvoiceService');
+
+          // Lade die gerade gespeicherte Rechnung
+          const savedInvoice = await InvoiceService.getInvoiceById(uid, createdInvoiceId);
+          if (savedInvoice) {
+            console.log('📄 Generating E-Invoice for saved invoice:', savedInvoice.id);
+
+            const eInvoiceResult = await AutoEInvoiceService.generateEInvoiceForInvoice(
+              savedInvoice,
+              {
+                companyId: uid,
+                enabled: true,
+                defaultFormat: 'zugferd',
+                autoTransmit: false,
+                tseEnabled: false,
+              }
+            );
+
+            if (eInvoiceResult) {
+              console.log('✅ E-Invoice generated successfully:', {
+                id: eInvoiceResult.id,
+                format: eInvoiceResult.format,
+                validationStatus: eInvoiceResult.validationStatus,
+                hasXmlContent: !!eInvoiceResult.xmlContent,
+              });
+
+              // Update die Rechnung mit den E-Invoice-Daten
+              const updateData = {
+                eInvoiceData: {
+                  format: eInvoiceResult.format,
+                  version: '1.0', // Standard version
+                  guid: eInvoiceResult.id || crypto.randomUUID(), // Use the E-Invoice ID as GUID
+                  xmlUrl: `/api/einvoices/${eInvoiceResult.id}/xml`, // Generate XML URL
+                  validationStatus: eInvoiceResult.validationStatus,
+                  createdAt: eInvoiceResult.createdAt?.toISOString() || new Date().toISOString(),
+                },
+                companyId: uid, // Required for updateInvoice method
+              };
+
+              await InvoiceService.updateInvoice(createdInvoiceId, updateData);
+
+              toast.success('E-Rechnung erfolgreich generiert');
+            } else {
+              console.log('⚠️ E-Invoice generation returned null - no data generated');
+            }
+          }
+        } catch (eInvoiceError) {
+          console.error('❌ E-Invoice generation failed:', eInvoiceError);
+          toast.error('E-Rechnung konnte nicht generiert werden');
+        }
+      }
 
       // Navigate to invoices list
       router.push(`/dashboard/company/${uid}/finance/invoices`);
@@ -2914,7 +2945,12 @@ export default function CreateQuotePage() {
                 onClick={() => handleSubmit(true)}
                 disabled={loading}
               >
-                Speichern
+                {loading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
+                Als Entwurf speichern
               </Button>
 
               <Button
@@ -2935,7 +2971,12 @@ export default function CreateQuotePage() {
                 onClick={() => handleSubmit(false)}
                 disabled={loading}
               >
-                Überprüfen und senden
+                {loading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4 mr-2" />
+                )}
+                Rechnung erstellen
               </Button>
 
               {/* More Options Dropdown */}
@@ -4405,35 +4446,6 @@ export default function CreateQuotePage() {
           />
         </CardContent>
       </Card>
-
-      {/* Aktionen */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Button type="button" onClick={printInBrowser} variant="outline" className="sm:ml-2">
-          <Printer className="w-4 h-4 mr-2" />
-          Drucken
-        </Button>
-        <Button
-          onClick={() => handleSubmit(true)}
-          disabled={loading}
-          className="bg-gray-600 hover:bg-gray-700 text-white"
-        >
-          {loading ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4 mr-2" />
-          )}
-          Speichern
-        </Button>
-        <Button
-          type="button"
-          onClick={() => setEmailCardOpen(v => !v)}
-          variant="default"
-          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-        >
-          <Mail className="w-4 h-4 mr-2" />
-          Als E-Mail versenden
-        </Button>
-      </div>
 
       {/* E-Rechnung ist ab 2025 PFLICHT - automatisch bei jeder Rechnung */}
 

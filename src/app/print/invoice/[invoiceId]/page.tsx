@@ -46,91 +46,95 @@ function getTaxRuleLabel(taxRule: string): string {
 
 /**
  * Sucht eine Rechnung global über alle Companies hinweg
+ * VERBESSERT: Verwendet keine collectionGroup Query, sondern direkte Pfad-Suche
  */
 async function findInvoiceGlobally(invoiceId: string): Promise<InvoiceData | null> {
   try {
     console.log('Searching for invoice globally:', invoiceId);
 
-    // Verwende collectionGroup Query um in allen invoices Subcollections zu suchen
-    const invoicesQuery = query(collectionGroup(db, 'invoices'));
+    // STRATEGIE: Versuche alle bekannten Companies zu durchsuchen
+    // Da collectionGroup nicht erlaubt ist, durchsuchen wir systematisch alle Companies
+    const companiesQuery = query(collection(db, 'companies'));
+    const companiesSnapshot = await getDocs(companiesQuery);
 
-    const querySnapshot = await getDocs(invoicesQuery);
-    console.log('Total invoices found:', querySnapshot.size);
+    for (const companyDoc of companiesSnapshot.docs) {
+      const companyId = companyDoc.id;
+      try {
+        const invoiceRef = doc(db, 'companies', companyId, 'invoices', invoiceId);
+        const invoiceSnap = await getDoc(invoiceRef);
 
-    // Suche nach der spezifischen ID
-    const foundDoc = querySnapshot.docs.find(doc => doc.id === invoiceId);
+        if (invoiceSnap.exists()) {
+          console.log('Invoice found in company:', companyId, invoiceId);
+          const data = invoiceSnap.data();
 
-    if (!foundDoc) {
-      console.log('Invoice not found globally:', invoiceId);
-      console.log(
-        'Available invoice IDs:',
-        querySnapshot.docs.map(doc => doc.id)
-      );
-      return null;
+          // Transformiere die Daten in das erwartete Format
+          const invoice: InvoiceData = {
+            id: invoiceSnap.id,
+            companyId: data.companyId,
+            customerName: data.customerName,
+            customerAddress: data.customerAddress,
+            items: data.items || [],
+            total: data.total || 0,
+            status: data.status || 'draft',
+            invoiceNumber: data.invoiceNumber,
+            number: data.number,
+            sequentialNumber: data.sequentialNumber,
+            documentNumber: data.documentNumber || data.invoiceNumber || data.number,
+            date: data.date?.toDate ? data.date.toDate().toISOString() : data.date,
+            issueDate: data.issueDate,
+            dueDate: data.dueDate?.toDate ? data.dueDate.toDate().toISOString() : data.dueDate,
+            createdAt: data.createdAt?.toDate
+              ? data.createdAt.toDate()
+              : data.createdAt instanceof Date
+                ? data.createdAt
+                : new Date(),
+            stornoDate: data.stornoDate?.toDate
+              ? data.stornoDate.toDate()
+              : data.stornoDate instanceof Date
+                ? data.stornoDate
+                : undefined,
+            description: data.description,
+            customerEmail: data.customerEmail,
+            companyName: data.companyName,
+            companyAddress: data.companyAddress,
+            companyEmail: data.companyEmail,
+            companyPhone: data.companyPhone,
+            companyWebsite: data.companyWebsite,
+            companyVatId: data.companyVatId,
+            companyTaxNumber: data.companyTaxNumber,
+            companyLogo: data.companyLogo,
+            bankDetails: data.bankDetails,
+            amount: data.amount,
+            tax: data.tax,
+            currency: data.currency || 'EUR',
+            vatRate: data.vatRate || 19,
+            isSmallBusiness: data.isSmallBusiness || false,
+            notes: data.notes,
+            headTextHtml: data.headTextHtml,
+            footerText: data.footerText,
+            paymentTerms: data.paymentTerms,
+            deliveryTerms: data.deliveryTerms,
+            contactPersonName: data.contactPersonName,
+            priceInput: data.priceInput || 'netto',
+            taxRuleType: data.taxRuleType || 'DE_TAXABLE',
+            year: data.year || new Date().getFullYear(),
+            isStorno: data.isStorno || false,
+            // E-Invoice Daten hinzufügen
+            eInvoice: data.eInvoice,
+            eInvoiceData: data.eInvoiceData,
+          };
+
+          console.log('Invoice found globally:', invoice);
+          return invoice;
+        }
+      } catch (companyError) {
+        console.log('Error checking company', companyId, ':', companyError);
+        // Continue to next company
+      }
     }
 
-    console.log('Invoice found:', foundDoc.id);
-
-    // Nehme das gefundene Dokument
-    const docSnap = foundDoc;
-    const data = docSnap.data();
-    console.log('Invoice data loaded:', data);
-
-    // Transformiere die Daten in das erwartete Format
-    const invoice: InvoiceData = {
-      id: docSnap.id,
-      companyId: data.companyId,
-      customerName: data.customerName,
-      customerAddress: data.customerAddress,
-      items: data.items || [],
-      total: data.total || 0,
-      status: data.status || 'draft',
-      invoiceNumber: data.invoiceNumber,
-      number: data.number,
-      sequentialNumber: data.sequentialNumber,
-      date: data.date?.toDate ? data.date.toDate().toISOString() : data.date,
-      issueDate: data.issueDate,
-      dueDate: data.dueDate?.toDate ? data.dueDate.toDate().toISOString() : data.dueDate,
-      createdAt: data.createdAt?.toDate
-        ? data.createdAt.toDate()
-        : data.createdAt instanceof Date
-          ? data.createdAt
-          : new Date(),
-      stornoDate: data.stornoDate?.toDate
-        ? data.stornoDate.toDate()
-        : data.stornoDate instanceof Date
-          ? data.stornoDate
-          : undefined,
-      description: data.description,
-      customerEmail: data.customerEmail,
-      companyName: data.companyName,
-      companyAddress: data.companyAddress,
-      companyEmail: data.companyEmail,
-      companyPhone: data.companyPhone,
-      companyWebsite: data.companyWebsite,
-      companyVatId: data.companyVatId,
-      companyTaxNumber: data.companyTaxNumber,
-      companyLogo: data.companyLogo,
-      bankDetails: data.bankDetails,
-      amount: data.amount,
-      tax: data.tax,
-      currency: data.currency || 'EUR',
-      vatRate: data.vatRate || 19,
-      isSmallBusiness: data.isSmallBusiness || false,
-      notes: data.notes,
-      headTextHtml: data.headTextHtml,
-      footerText: data.footerText,
-      paymentTerms: data.paymentTerms,
-      deliveryTerms: data.deliveryTerms,
-      contactPersonName: data.contactPersonName,
-      priceInput: data.priceInput || 'netto',
-      taxRuleType: data.taxRuleType || 'DE_TAXABLE',
-      year: data.year || new Date().getFullYear(),
-      isStorno: data.isStorno || false,
-    };
-
-    console.log('Invoice found globally:', invoice);
-    return invoice;
+    console.log('Invoice not found in any company:', invoiceId);
+    return null;
   } catch (error) {
     console.error('Error finding invoice globally:', error);
     return null;
@@ -177,17 +181,11 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
       const { invoiceId } = await params;
 
       try {
-        // 1. Lade die Rechnungsdaten direkt aus der bekannten Company
-        const knownCompanyId = 'LLc8PX1VYHfpoFknk8o51LAOfSA2';
-        let data = await FirestoreInvoiceService.getInvoiceById(knownCompanyId, invoiceId);
-
-        // Falls nicht in der bekannten Company gefunden, versuche globale Suche
-        if (!data) {
-          data = await findInvoiceGlobally(invoiceId);
-        }
+        // 1. Versuche globale Suche zuerst (findet Rechnung in jeder Company)
+        const data = await findInvoiceGlobally(invoiceId);
 
         if (!data) {
-          console.error('Invoice not found:', invoiceId);
+          console.error('Invoice not found globally:', invoiceId);
           return notFound();
         }
 
@@ -295,6 +293,10 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
                 step3: companyData.step3 || {},
                 step4: companyData.step4 || {},
                 managingDirectors: companyData.step1?.managingDirectors || [],
+
+                // E-INVOICE DATEN - AUS RECHNUNG ÜBERTRAGEN
+                eInvoice: data.eInvoice || undefined,
+                eInvoiceData: data.eInvoiceData || undefined,
               };
 
               setInvoiceData(enrichedData);
@@ -646,6 +648,10 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
                 companyWebsite: invoiceData.companyWebsite,
                 companyVatId: invoiceData.companyVatId,
                 companyTaxNumber: invoiceData.companyTaxNumber,
+
+                // E-INVOICE DATEN
+                eInvoice: invoiceData.eInvoice,
+                eInvoiceData: invoiceData.eInvoiceData,
               };
 
               return templateData;
