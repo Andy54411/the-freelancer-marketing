@@ -516,8 +516,7 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
           box-sizing: border-box;
           min-height: auto !important;
           height: auto !important;
-          max-height: 267mm !important;
-          overflow: hidden !important;
+          max-height: none !important;
         }
 
         .bg-\\[\\#14ad9f\\] {

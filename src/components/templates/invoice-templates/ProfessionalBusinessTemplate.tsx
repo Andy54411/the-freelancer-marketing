@@ -175,7 +175,7 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
     data.servicePeriod || (data.serviceDate ? formatDate(data.serviceDate) : formatDate(data.date));
 
   return (
-    <div className="w-full bg-white px-0 py-2 font-sans text-sm flex flex-col min-h-screen print:min-h-[297mm] print:h-[297mm] print:w-[210mm] print:max-w-[210mm] print:mx-auto">
+    <div className="w-full bg-white px-0 py-2 font-sans text-sm flex flex-col min-h-0 print:min-h-[297mm] print:h-[297mm] print:w-[210mm] print:max-w-[210mm] print:mx-auto">
       {/* Header - bleibt oben */}
       <div className="flex-shrink-0 mb-3 pb-2 border-b-2 border-gray-300 print:mb-4">
         <div className="grid grid-cols-2 gap-8">
