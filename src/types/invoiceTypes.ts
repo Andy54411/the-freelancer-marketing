@@ -2,6 +2,9 @@
 
 import { TaxRuleType, TaxRuleCategory } from './taxRules';
 
+// Re-export für Convenience - sowohl als Typ als auch als Wert
+export { TaxRuleType, TaxRuleCategory };
+
 /**
  * Deutsche Rechnungstypen für GoBD-konforme Buchführung
  * Implementiert fortlaufende Rechnungsnummerierung und Storno-Funktionalität
@@ -93,6 +96,22 @@ export interface InvoiceData {
   notes?: string;
   taxNote?: 'kleinunternehmer' | 'reverse-charge' | 'none'; // Steuerhinweise (Kleinunternehmer, Reverse-Charge, etc.)
   paymentTerms?: string;
+  footerText?: string;
+  headTextHtml?: string;
+  title?: string;
+  documentNumber?: string;
+  customerNumber?: string;
+  customerOrderNumber?: string;
+  internalContactPerson?: string;
+  contactPersonName?: string; // Hinzugefügt für Storno-Kompatibilität
+  projectTitle?: string; // Hinzugefügt für Storno-Kompatibilität
+  customerFirstName?: string;
+  customerLastName?: string;
+  customerPhone?: string;
+  deliveryDate?: string;
+  deliveryDateType?: string;
+  deliveryTerms?: string;
+  currency?: string;
 
   // Skonto-Einstellungen
   skontoEnabled?: boolean;
@@ -153,8 +172,41 @@ export class GermanInvoiceService {
     const stornoDate = new Date();
     const currentYear = stornoDate.getFullYear();
 
-    return {
+    // Sichere Feldwerte - ersetze undefined mit sinnvollen Defaults
+    const safeOriginal = {
       ...originalInvoice,
+      // Sichere String-Felder
+      description: originalInvoice.description || '',
+      notes: originalInvoice.notes || '',
+      customerOrderNumber: originalInvoice.customerOrderNumber || '',
+      projectTitle: originalInvoice.projectTitle || '',
+      contactPersonName: originalInvoice.contactPersonName || '',
+      paymentTerms: originalInvoice.paymentTerms || 'Zahlbar sofort ohne Abzug',
+      deliveryTerms: originalInvoice.deliveryTerms || '',
+      
+      // Sichere Objekt-Felder
+      bankDetails: originalInvoice.bankDetails || {
+        iban: '',
+        bic: '',
+        accountHolder: '',
+        bankName: ''
+      },
+      
+      // Sichere Numeric-Felder
+      amount: originalInvoice.amount || 0,
+      tax: originalInvoice.tax || 0,
+      total: originalInvoice.total || 0,
+      vatRate: originalInvoice.vatRate || 19,
+      
+      // Sichere Boolean-Felder
+      isSmallBusiness: originalInvoice.isSmallBusiness || false,
+      
+      // Sichere Array-Felder
+      items: originalInvoice.items || []
+    };
+
+    return {
+      ...safeOriginal,
       id: `storno_${Date.now()}`,
       number: `${currentYear}-${String(newSequentialNumber).padStart(3, '0')}`,
       invoiceNumber: `${currentYear}-${String(newSequentialNumber).padStart(3, '0')}`,
@@ -163,31 +215,40 @@ export class GermanInvoiceService {
       issueDate: stornoDate.toISOString().split('T')[0],
       dueDate: stornoDate.toISOString().split('T')[0], // Storno-Rechnungen sind sofort fällig
 
-      // Negative Beträge für Storno
-      items: originalInvoice.items.map(item => ({
+      // Negative Beträge für Storno - ALLE Beträge negativ in der Datenbank
+      items: safeOriginal.items.map(item => ({
         ...item,
-        quantity: -item.quantity,
-        total: -item.total,
+        id: item.id || `item_${Date.now()}_${Math.random()}`,
+        description: item.description || '',
+        quantity: -Math.abs(item.quantity || 1), // Sicherstellen, dass negativ
+        unitPrice: item.unitPrice || 0, // Einzelpreis bleibt positiv
+        total: -Math.abs(item.total || 0), // Total negativ
+        discount: item.discount || 0, // Rabatt-Default
+        taxRate: item.taxRate || safeOriginal.vatRate
       })),
-      amount: -originalInvoice.amount,
-      tax: -originalInvoice.tax,
-      total: -originalInvoice.total,
 
+      // Alle Summen negativ in der Datenbank speichern
+      amount: -Math.abs(safeOriginal.amount), // Nettosumme negativ
+      tax: -Math.abs(safeOriginal.tax), // Steuerbetrag negativ  
+      total: -Math.abs(safeOriginal.total), // Gesamtsumme negativ
+
+      // Storno-spezifische Kennzeichnung
+      title: `STORNO zu ${safeOriginal.title || safeOriginal.invoiceNumber || safeOriginal.number}`,
+      documentNumber: `STORNO-${safeOriginal.documentNumber || safeOriginal.invoiceNumber || safeOriginal.number}`,
+      
       // Storno-spezifische Daten
       status: 'storno',
       isStorno: true,
-      originalInvoiceId: originalInvoice.id,
+      originalInvoiceId: safeOriginal.id,
       stornoReason,
-      stornoDate,
+      stornoDate: stornoDate,
       stornoBy,
 
-      // Neue Metadaten
+      // Neue Metadaten - als ISO String für bessere Firestore-Kompatibilität
       createdAt: stornoDate,
       year: currentYear,
     };
-  }
-
-  /**
+  }  /**
    * Validiert eine Rechnung nach deutschen Standards
    */
   static validateInvoice(invoice: InvoiceData): {

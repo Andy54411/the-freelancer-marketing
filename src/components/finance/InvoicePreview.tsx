@@ -251,6 +251,7 @@ export function InvoicePreview({ invoiceData, companySettings, template = 'profe
                 name: previewData.companyName,
                 email: previewData.companyEmail,
                 phone: previewData.companyPhone,
+                website: previewData.companyWebsite,
                 vatId: previewData.companyVatId,
                 taxNumber: previewData.companyTaxNumber,
                 address: previewData.companyAddress ? {

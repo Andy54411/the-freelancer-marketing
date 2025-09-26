@@ -104,6 +104,7 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
 
     try {
       const createdStornoInvoice = await FirestoreInvoiceService.createAndSaveStornoInvoice(
+        invoice.companyId || invoice.id, // companyId ist der erste Parameter
         invoice.id,
         stornoReason.trim(),
         user.email || user.uid
@@ -119,10 +120,69 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
       setShowConfirmDialog(false);
       setStornoReason('');
     } catch (error) {
-
+      console.error('Storno creation error:', error);
       toast.error('Fehler beim Erstellen der Storno-Rechnung');
     } finally {
       setIsCreatingStorno(false);
+    }
+  };
+
+  const handleDownloadStornoPdf = async () => {
+    if (!stornoInvoice) {
+      toast.error('Keine Storno-Rechnung verfügbar');
+      return;
+    }
+
+    try {
+      toast.info('PDF wird erstellt...');
+
+      // Nutze die bestehende PDF-Generation API
+      const response = await fetch('/api/generate-invoice-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          invoiceData: stornoInvoice,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'PDF-Generierung fehlgeschlagen');
+      }
+
+      const contentType = response.headers.get('content-type');
+
+      // Prüfe ob wir direkt ein PDF erhalten haben (Development mit Puppeteer)
+      if (contentType?.includes('application/pdf')) {
+        const pdfBlob = await response.blob();
+        const pdfUrl = window.URL.createObjectURL(pdfBlob);
+        
+        // Download auslösen
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.download = `Storno-Rechnung_${stornoInvoice.invoiceNumber || stornoInvoice.number || 'storno'}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(pdfUrl);
+        
+        toast.success('Storno-PDF erfolgreich heruntergeladen');
+      } else {
+        // Fallback: JSON Response mit Print-URL
+        const data = await response.json();
+        if (data.printUrl) {
+          // Öffne Print-Seite in neuem Tab für Browser-basierte PDF-Generierung
+          window.open(data.printUrl, '_blank');
+          toast.success('Storno-PDF wird in neuem Tab geöffnet');
+        } else {
+          throw new Error('Keine PDF-URL erhalten');
+        }
+      }
+    } catch (error) {
+      console.error('PDF download error:', error);
+      toast.error(`PDF-Download fehlgeschlagen: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
     }
   };
 
@@ -331,13 +391,16 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
                     <DialogDescription>Vorschau der erstellten Storno-Rechnung</DialogDescription>
                   </DialogHeader>
                   <div className="mt-4">
-                    <InvoiceTemplateRenderer data={stornoInvoice} template="german-standard" />
+                    <InvoiceTemplateRenderer data={stornoInvoice} template="professional-business" />
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setShowStornoPreview(false)}>
                       Schließen
                     </Button>
-                    <Button className="bg-[#14ad9f] hover:bg-[#129488]">
+                    <Button 
+                      className="bg-[#14ad9f] hover:bg-[#129488]"
+                      onClick={handleDownloadStornoPdf}
+                    >
                       <Download className="w-4 h-4 mr-2" />
                       PDF herunterladen
                     </Button>

@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { AVAILABLE_TEMPLATES, InvoiceTemplate, InvoiceTemplateRenderer } from './InvoiceTemplates';
-import { InvoiceData } from '@/types/invoiceTypes';
+import { InvoiceData, TaxRuleType } from '@/types/invoiceTypes';
 import { UserPreferencesService } from '@/lib/userPreferences';
 
 interface InvoiceTemplatePickerProps {
@@ -98,6 +98,7 @@ export function InvoiceTemplatePicker({
     isSmallBusiness: false,
     vatRate: 19,
     priceInput: 'netto' as const,
+    taxRuleType: TaxRuleType.DE_TAXABLE,
     amount: 1000,
     tax: 190,
     total: 1190,

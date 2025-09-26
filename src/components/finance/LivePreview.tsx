@@ -61,8 +61,8 @@ export function LivePreview({ invoiceData, companySettings, template = 'professi
     hasInvoiceData: !!invoiceData,
     hasCompanySettings: !!companySettings,
     invoiceNumber: invoiceData?.invoiceNumber,
+    companyWebsite: companySettings?.companyWebsite || 'NICHT VORHANDEN',
   });
-
   const TemplateMap = {
     'professional-business': ProfessionalBusinessTemplate,
     'corporate-classic': CorporateClassicTemplate,
@@ -172,6 +172,7 @@ export function LivePreview({ invoiceData, companySettings, template = 'professi
       name: previewData.companyName,
       email: previewData.companyEmail,
       phone: previewData.companyPhone || '',
+      website: previewData.companyWebsite || '',
       address: {
         street: (previewData.companyAddress || '').split('\n')[0] || '',
         zipCode: (previewData.companyAddress || '').split('\n')[1]?.split(' ')[0] || '',
@@ -207,6 +208,7 @@ export function LivePreview({ invoiceData, companySettings, template = 'professi
     status: previewData.status || 'draft',
     isSmallBusiness: previewData.isSmallBusiness || false,
   };
+
 
   // Hole die Template-Komponente
   const TemplateComponent = TemplateMap[template];
@@ -254,6 +256,7 @@ export function LivePreview({ invoiceData, companySettings, template = 'professi
               name: '',
               email: '',
               phone: '',
+              website: '',
               address: {
                 street: '',
                 zipCode: '',

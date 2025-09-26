@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { TaxRuleType } from '@/types/taxRules';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -323,15 +324,7 @@ export default function CreateQuotePage() {
     internalContactPerson: '',
     deliveryTerms: '',
     paymentTerms: '',
-    taxRule: 'DE_TAXABLE' as
-      | 'DE_TAXABLE'
-      | 'DE_EXEMPT_4_USTG'
-      | 'DE_REVERSE_13B'
-      | 'EU_REVERSE_18B'
-      | 'EU_INTRACOMMUNITY_SUPPLY'
-      | 'EU_OSS'
-      | 'NON_EU_EXPORT'
-      | 'NON_EU_OUT_OF_SCOPE',
+    taxRule: TaxRuleType.DE_TAXABLE as TaxRuleType,
   });
 
   // Items (Netto im State)
@@ -581,10 +574,10 @@ export default function CreateQuotePage() {
       const next = { ...prev };
       if (settings.ust === 'kleinunternehmer') {
         // Für Kleinunternehmer: keine USt -> sinnvolle Default-Regelung
-        next.taxRule = 'DE_EXEMPT_4_USTG';
+        next.taxRule = TaxRuleType.DE_EXEMPT_4_USTG;
       } else {
         // Standardfall: steuerpflichtig in DE
-        next.taxRule = prev.taxRule || 'DE_TAXABLE';
+        next.taxRule = prev.taxRule || TaxRuleType.DE_TAXABLE;
       }
 
       // Zahlungsbedingungen vorbelegen (nur Basis-Text; Skonto wird separat gesteuert)
@@ -1298,7 +1291,7 @@ export default function CreateQuotePage() {
         language: 'de',
         template: 'professional-business-quote',
         lastModifiedBy: uid,
-        taxRule: formData.taxRule,
+        taxRule: formData.taxRule as TaxRuleType,
         internalContactPerson: formData.internalContactPerson || undefined,
         deliveryTerms: formData.deliveryTerms || undefined,
         paymentTerms: finalPaymentTerms,

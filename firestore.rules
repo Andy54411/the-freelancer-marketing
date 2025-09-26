@@ -1727,6 +1727,43 @@ service cloud.firestore {
                         isSupportStaff());
     }
 
+    // Invoices Collection (Rechnungen) - als Subcollection unter companies
+    match /companies/{companyId}/invoices/{invoiceId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma - inklusive Storno-Rechnungen
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma, nur wenn nicht immutable (GoBD-konform)
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       resource.data.companyId == companyId &&
+                       (!('gobd' in resource.data) || !resource.data.gobd.immutable) &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff oder eigene Firma (nur Entwürfe, nicht Storno-Rechnungen)
+      allow delete: if isSupportStaff() || 
+                       (request.auth != null && 
+                        request.auth.uid == companyId &&
+                        isCompany() &&
+                        resource.data.companyId == companyId &&
+                        resource.data.status == 'draft' &&
+                        (!('isStorno' in resource.data) || !resource.data.isStorno));
+    }
+
     // OrderTimeTracking Collection (Auftrag-Zeiterfassung) - als Subcollection
     match /companies/{companyId}/orderTimeTracking/{trackingId} {
       // Lesen: Nur eigene Firma oder Support Staff

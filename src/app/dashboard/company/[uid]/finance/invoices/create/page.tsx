@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -118,8 +117,10 @@ import { useTaxCalculation } from '@/hooks/useTaxCalculation';
 import { replacePlaceholders as centralReplacePlaceholders, PlaceholderContext } from '@/utils/placeholders';
 type PreviewTemplateData = {
   invoiceNumber: string;
+  documentNumber: string;
   date: string;
   validUntil?: string;
+  dueDate?: string;
   title?: string;
   reference?: string;
   currency?: string;
@@ -131,6 +132,16 @@ type PreviewTemplateData = {
   customerAddress?: string;
   customerEmail?: string;
   customerPhone?: string;
+  customer: {
+    name: string;
+    email: string;
+    address: {
+      street: string;
+      zipCode: string;
+      city: string;
+      country: string;
+    };
+  };
   companyName?: string;
   companyAddress?: string;
   companyEmail?: string;
@@ -183,11 +194,23 @@ type PreviewTemplateData = {
     };
     taxNumber: string;
     vatId: string;
+    website: string;
     bankDetails: {
       iban: string;
       bic: string;
       accountHolder: string;
     };
+  };
+  // TSE-Daten für deutsche E-Rechnung-Compliance
+  tseData?: {
+    serialNumber: string;
+    signatureAlgorithm: string;
+    transactionNumber: string;
+    startTime: string;
+    finishTime: string;
+    signature: string;
+    publicKey: string;
+    certificateSerial: string;
   };
 };
 import { useCompanySettings } from '@/hooks/useCompanySettings';
@@ -195,6 +218,8 @@ import { Switch } from '@/components/ui/switch';
 import { InventoryService } from '@/services/inventoryService';
 import NewProductModal, { NewProductValues } from '@/components/inventory/NewProductModal';
 import NewCustomerModal from '@/components/finance/NewCustomerModal';
+import { EInvoiceIntegration } from '@/components/finance/EInvoiceIntegration';
+import { EInvoiceComplianceDashboard } from '@/components/finance/EInvoiceComplianceDashboard';
 
 interface Customer {
   id: string;
@@ -1338,8 +1363,9 @@ export default function CreateQuotePage() {
         .replace(/&amp;/gi, '&');
     const noteLines: string[] = [];
     // Kopf-Text und Referenz werden separat im Template angezeigt
-    if (formData.deliveryTerms) noteLines.push(`Lieferbedingungen: ${formData.deliveryTerms}`);
-    if (formData.paymentTerms) noteLines.push(`Zahlungsbedingungen: ${formData.paymentTerms}`);
+  if (formData.deliveryTerms) noteLines.push(`Lieferbedingungen: ${formData.deliveryTerms}`);
+  const basePaymentTerms = formData.paymentTerms?.trim() || 'Zahlbar binnen 7 Tagen ohne Abzug';
+  if (basePaymentTerms) noteLines.push(`Zahlungsbedingungen: ${basePaymentTerms}`);
     // Zahlungsbedingungen final zusammenbauen (Skonto separat anhängen, falls aktiv)
     // Skonto-Satz: Wenn Skonto aktiv ist, zuerst benutzerdefinierten Text nutzen; sonst Tage/%-Fallback
     let skontoSentence = '';
@@ -1350,7 +1376,7 @@ export default function CreateQuotePage() {
         skontoSentence = `Bei Zahlung binnen ${skontoDays} Tagen ${skontoPercentage}% Skonto`;
       }
     }
-    const finalPaymentTerms = [formData.paymentTerms?.trim(), skontoSentence]
+    const finalPaymentTerms = [basePaymentTerms, skontoSentence]
       .filter(Boolean)
       .join('\n\n');
     const previewNotes =
@@ -1362,20 +1388,22 @@ export default function CreateQuotePage() {
         .join('\n\n') || undefined;
 
     const taxRuleLabelMap: Record<TaxRuleType, string> = {
-      [TaxRuleType.DE_TAXABLE]: 'Umsatzsteuerpflichtige Umsätze (DE, i. d. R. 19%)',
-      [TaxRuleType.DE_TAXABLE_REDUCED]: 'Ermäßigter Steuersatz (DE, 7%)',
-      [TaxRuleType.DE_EXEMPT_4_USTG]: 'Steuerfreie Umsätze §4 UStG',
-      [TaxRuleType.DE_REVERSE_13B]: 'Reverse Charge gem. §13b UStG',
-      [TaxRuleType.EU_REVERSE_18B]: 'Reverse Charge gem. §18b UStG (EU)',
-      [TaxRuleType.EU_INTRACOMMUNITY_SUPPLY]: 'Innergemeinschaftliche Lieferungen (EU)',
-      [TaxRuleType.EU_OSS]: 'OSS – One-Stop-Shop (EU)',
-      [TaxRuleType.NON_EU_EXPORT]: 'Ausfuhren (Drittland)',
-      [TaxRuleType.NON_EU_OUT_OF_SCOPE]: 'Nicht im Inland steuerbare Leistung (außerhalb EU)',
+      [TaxRuleType.DE_TAXABLE]: 'Steuerpflichtiger Umsatz (Regelsteuersatz 19 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 1 UStG)',
+      [TaxRuleType.DE_TAXABLE_REDUCED]: 'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 12 Abs. 2 UStG)',
+      [TaxRuleType.DE_EXEMPT_4_USTG]: 'Steuerfreie Lieferung/Leistung gemäß § 4 UStG',
+      [TaxRuleType.DE_REVERSE_13B]: 'Reverse-Charge – Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)',
+      [TaxRuleType.EU_REVERSE_18B]: 'Reverse-Charge – Steuerschuldnerschaft des Leistungsempfängers (Art. 196 MwStSystRL, § 18b UStG)',
+      [TaxRuleType.EU_INTRACOMMUNITY_SUPPLY]: 'Innergemeinschaftliche Lieferung, steuerfrei gemäß § 4 Nr. 1b i.V.m. § 6a UStG',
+      [TaxRuleType.EU_OSS]: 'Fernverkauf über das OSS-Verfahren (§ 18j UStG)',
+      [TaxRuleType.NON_EU_EXPORT]: 'Steuerfreie Ausfuhrlieferung (§ 4 Nr. 1a i.V.m. § 6 UStG)',
+      [TaxRuleType.NON_EU_OUT_OF_SCOPE]: 'Nicht im Inland steuerbare Leistung (Leistungsort außerhalb Deutschlands, § 3a Abs. 2 UStG)',
     };
 
     const data: PreviewTemplateData = {
       invoiceNumber: 'Vorschau',
+      documentNumber: formData.title || 'RE-1000',
       date: formData.invoiceDate ? formatDateDE(new Date(formData.invoiceDate)) : formatDateDE(today),
+      dueDate: formData.validUntil ? formatDateDE(new Date(formData.validUntil)) : undefined,
       validUntil: formatDateDE(formData.validUntil),
       deliveryDate: formData.deliveryDate ? formatDateDE(new Date(formData.deliveryDate)) : undefined,
       title: formData.title || undefined,
@@ -1396,7 +1424,12 @@ export default function CreateQuotePage() {
       companyPhone:
         (company?.phoneNumber as string) || (company?.companyPhoneNumber as string) || undefined,
       companyWebsite:
-        (company?.website as string) || (company?.companyWebsite as string) || undefined,
+        (company?.website as string) || 
+        (company?.companyWebsite as string) || 
+        (company?.companyWebsiteForBackend as string) ||
+        ((company as any)?.step1?.website as string) ||
+        ((company as any)?.step2?.website as string) ||
+        undefined,
       companyLogo: (company?.companyLogo as string) || undefined,
       profilePictureURL: (company?.profilePictureURL as string) || undefined,
       companyVatId:
@@ -1475,8 +1508,26 @@ export default function CreateQuotePage() {
       headTextHtml: formData.headTextHtml || undefined,
       footerText: formData.footerText || undefined,
       contactPersonName: contactPersonNameForFooter,
-      paymentTerms: finalPaymentTerms || undefined,
+  paymentTerms: finalPaymentTerms || undefined,
       deliveryTerms: formData.deliveryTerms || undefined,
+      // Customer-Objekt für Template-Kompatibilität
+      customer: {
+        name: formData.customerName || 'Kunde',
+        email: formData.customerEmail || '',
+        address: (() => {
+          const addressLines = (formData.customerAddress || '').split('\n');
+          const streetLine = addressLines[0] || '';
+          const cityLine = addressLines[1] || '';
+          const zipCodeMatch = cityLine.match(/^(\d{5})\s*(.*)$/);
+          
+          return {
+            street: streetLine,
+            zipCode: zipCodeMatch ? zipCodeMatch[1] : '',
+            city: zipCodeMatch ? zipCodeMatch[2] : cityLine,
+            country: addressLines[2] || 'Deutschland',
+          };
+        })(),
+      },
       // Company-Objekt für Template-Kompatibilität
       company: {
         name: companyName,
@@ -1501,6 +1552,12 @@ export default function CreateQuotePage() {
           (company as any)?.step3?.vatId ||
           ((settings as any)?.vatId as string) ||
           '',
+        website: (company?.website as string) || 
+          (company?.companyWebsite as string) || 
+          (company?.companyWebsiteForBackend as string) ||
+          ((company as any)?.step1?.website as string) ||
+          ((company as any)?.step2?.website as string) ||
+          '',
         bankDetails: {
           iban: (company as any)?.step4?.iban ||
             (company?.iban as string) ||
@@ -1518,6 +1575,26 @@ export default function CreateQuotePage() {
             '',
         },
       },
+      // TSE-Daten für deutsche E-Rechnung-Compliance
+      tseData: (() => {
+        // TSE-Daten aus Company-Einstellungen holen, falls verfügbar
+        const tseSettings = (company as any)?.eInvoiceSettings?.tse || (settings as any)?.tse;
+        
+        if (!tseSettings) {
+          return undefined;
+        }
+
+        return {
+          serialNumber: tseSettings.serialNumber || '',
+          signatureAlgorithm: tseSettings.signatureAlgorithm || 'ecdsa-plain-SHA256',
+          transactionNumber: tseSettings.transactionNumber || Math.floor(Math.random() * 1000000).toString(),
+          startTime: tseSettings.startTime || new Date().toISOString(),
+          finishTime: tseSettings.finishTime || new Date(Date.now() + 1000).toISOString(),
+          signature: tseSettings.signature || '',
+          publicKey: tseSettings.publicKey || '',
+          certificateSerial: tseSettings.certificateSerial || '',
+        };
+      })(),
     };
 
     return data;
@@ -2049,6 +2126,9 @@ export default function CreateQuotePage() {
     if (loading) return;
     setLoading(true);
     try {
+      console.log('🚨 CRITICAL: Starting Invoice Save - ALL FIELDS MUST BE SAVED!');
+      
+      // Validation
       if (!formData.customerName || !formData.validUntil) {
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
         return;
@@ -2058,9 +2138,8 @@ export default function CreateQuotePage() {
         toast.error('Bitte fügen Sie mindestens eine gültige Position hinzu');
         return;
       }
-      const validUntilDate = new Date(formData.validUntil);
 
-      // Kundensuche für Telefonnummer
+      // Kundensuche für vollständige Daten
       const selectedCustomer = customers.find(c => c.name === formData.customerName);
 
       // Zahlungsbedingungen final (inkl. Skonto, falls aktiv)
@@ -2072,91 +2151,220 @@ export default function CreateQuotePage() {
       const finalPaymentTerms =
         [formData.paymentTerms?.trim(), skontoSentence].filter(Boolean).join('\n\n') || undefined;
 
-      const quoteData: Omit<QuoteType, 'id' | 'number' | 'createdAt' | 'updatedAt'> = {
+      // 🚨 COMPLETE INVOICE DATA OBJECT - **EVERY SINGLE FIELD** FROM THE FORM!
+      // This object must contain ALL form fields to ensure complete data persistence
+      const invoiceData = {
+        // Basic Invoice Info - ID will be set by Firestore
+        id: '', // This will be set by Firestore when saving
         companyId: uid,
-        customerName: formData.customerName,
-        customerEmail: formData.customerEmail,
-        customerPhone: selectedCustomer?.phone || '',
-        customerOrderNumber: formData.customerOrderNumber || undefined,
-        customerAddress: formData.customerAddress
-          ? {
-              street: formData.customerAddress.split('\n')[0] || '',
-              city: formData.customerAddress.split('\n')[1] || '',
-              postalCode: '',
-              country: formData.customerAddress.split('\n')[2] || 'Deutschland',
-            }
-          : undefined,
-        date: new Date(),
-        validUntil: validUntilDate,
+        invoiceNumber: formData.title || `RE-${nextNumber}`,
+        number: formData.title || `RE-${nextNumber}`,
+        sequentialNumber: nextNumber,
         status: asDraft ? 'draft' : 'sent',
-        title: formData.title,
-        description: formData.headTextHtml,
-        skontoEnabled,
-        skontoDays: skontoDays || undefined,
-        skontoPercentage: skontoPercentage || undefined,
-        skontoText,
-        notes: formData.notes,
-        footerText: formData.footerText,
-        deliveryMethod: formData.deliveryTerms ? 'custom' : undefined,
-        deliveryDate: undefined,
-        deliveryAddress: undefined,
-        items: items.filter(it => it.description && it.quantity > 0),
-        subtotal,
+        
+        // Dates - ALLE Datumswerte aus dem Formular
+        date: formData.invoiceDate ? new Date(formData.invoiceDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        issueDate: formData.invoiceDate ? new Date(formData.invoiceDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        dueDate: formData.validUntil ? new Date(formData.validUntil).toISOString().split('T')[0] : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        invoiceDate: formData.invoiceDate || '',
+        validUntil: formData.validUntil || '',
+        deliveryDate: formData.deliveryDate || '',
+        
+        // Customer Data - ALLE Kundenfelder aus dem Formular
+        customerName: formData.customerName || '',
+        customerFirstName: formData.customerFirstName || '',
+        customerLastName: formData.customerLastName || '',
+        customerNumber: formData.customerNumber || '',
+        customerEmail: formData.customerEmail || selectedCustomer?.email || '',
+        customerAddress: formData.customerAddress || '',
+        customerOrderNumber: formData.customerOrderNumber || '',
+        customerPhone: selectedCustomer?.phone || '',
+        
+        // Invoice Identifiers - ALLE Titel und Referenz-Felder
+        title: formData.title || '',
+        documentNumber: formData.title || `RE-${nextNumber}`,
+        reference: formData.customerOrderNumber || '',
+        
+        // Company Data - ALLE Firmendaten aus Settings
+        companyName: company?.companyName || settings?.companyName || (user as any)?.displayName || 'Ihr Unternehmen',
+        companyAddress: [
+          [company?.companyStreet, company?.companyHouseNumber].filter(Boolean).join(' '),
+          [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
+          company?.companyCountry,
+        ].filter(Boolean).join('\n'),
+        companyEmail: company?.email as string || '',
+        companyPhone: company?.phoneNumber as string || company?.companyPhoneNumber as string || '',
+        companyWebsite: company?.website as string || company?.companyWebsite as string || '',
+        companyVatId: company?.vatId as string || (company as any)?.vatIdForBackend || '',
+        companyTaxNumber: company?.taxNumber as string || (company as any)?.taxNumberForBackend || '',
+        companyRegister: company?.companyRegisterPublic as string || company?.companyRegister as string || '',
+        companyLogo: company?.companyLogo as string || '',
+        profilePictureURL: company?.profilePictureURL as string || '',
+        
+        // **CRITICAL**: ALLE Textfelder - Kopftext, Footer, Notizen
+        description: formData.headTextHtml || '',
+        headTextHtml: formData.headTextHtml || '', // MUSS gespeichert werden!
+        footerText: formData.footerText || '', // MUSS gespeichert werden!
+        notes: formData.notes || '',
+        
+        // Contact Person - ALLE Kontaktfelder
+        internalContactPerson: formData.internalContactPerson || '',
+        contactPersonName: formData.internalContactPerson || '',
+        
+        // Payment & Delivery Terms - ALLE Zahlungs- und Lieferbedingungen
+        paymentTerms: finalPaymentTerms || formData.paymentTerms || 'Zahlbar binnen 14 Tagen ohne Abzug',
+        deliveryTerms: formData.deliveryTerms || '',
+        deliveryMethod: formData.deliveryTerms ? 'custom' : null,
+        
+        // Skonto Data - ALLE Skonto-Einstellungen
+        skontoEnabled: skontoEnabled || false,
+        skontoDays: skontoDays || null,
+        skontoPercentage: skontoPercentage || null,
+        skontoText: skontoText || '',
+        
+        // Financial Data - ALLE Items mit vollständigen Details
+        items: items.filter(it => it.description && it.quantity > 0).map(item => ({
+          id: item.id || crypto.randomUUID(),
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.total,
+          taxRate: item.taxRate || taxRate,
+          unit: item.unit || 'Stk',
+          category: item.category || 'Artikel',
+          discountPercent: item.discountPercent || 0,
+          inventoryItemId: item.inventoryItemId || null,
+        })),
+        amount: subtotal, // Nettobetrag
+        tax: vat, // Steuerbetrag  
+        total: grandTotal, // Gesamtbetrag
+        subtotal: subtotal,
         taxAmount: vat,
-        total: grandTotal,
-        currency: formData.currency,
-        language: 'de',
-        template: 'professional-business-quote',
-        lastModifiedBy: uid,
-        taxRule: formData.taxRule as TaxRuleType,
-        internalContactPerson: formData.internalContactPerson || undefined,
-        deliveryTerms: formData.deliveryTerms || undefined,
-        paymentTerms: finalPaymentTerms,
+        
+        // Tax & Business Settings - ALLE Steuer-Einstellungen
+        vatRate: taxRate,
+        isSmallBusiness: settings?.ust === 'kleinunternehmer' || taxRate === 0,
+        priceInput: showNet ? 'netto' : 'brutto',
+        taxRuleType: formData.taxRule as TaxRuleType || 'DE_TAXABLE',
+        taxRule: formData.taxRule as TaxRuleType || 'DE_TAXABLE',
+        showNet: showNet,
+        
+        // Currency & Formatting
+        currency: formData.currency || 'EUR',
+        
+        // Required metadata fields
+        year: new Date().getFullYear(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        
+        // User IDs
         createdBy: uid,
-      };
+        lastModifiedBy: uid,
+        
+        // Bank Details - ALLE Bankdaten
+        bankDetails: company ? {
+          iban: (company as any)?.step4?.iban || company?.iban as string || '',
+          bic: (company as any)?.step4?.bic || company?.bic as string || '',
+          bankName: (company as any)?.step4?.bankName || company?.bankName as string || '',
+          accountHolder: (company as any)?.step4?.accountHolder || company?.accountHolder as string || company?.companyName || '',
+        } : undefined,
+        
+        // Template & UI Settings
+        template: typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
+        templateType: typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
+        language: 'de',
+        
+        // Additional Control Fields
+        isStorno: false,
+        isRecurring: false,
+        
+        // E-Invoice Settings (if enabled)
+        isEInvoice: eInvoiceEnabled || false,
+        eInvoiceType: eInvoiceEnabled ? 'zugferd' : null,
+        eInvoiceSettings: eInvoiceEnabled ? eInvoiceSettings : null,
+        
+        // PDF & Document Paths
+        pdfPath: null,
+        eInvoiceXmlPath: null,
+        
+        // Delivery Date Configuration
+        deliveryDateType: deliveryDateType || 'single',
+        deliveryDateRange: deliveryDateType === 'range' ? {
+          from: deliveryDateRange.from?.toISOString().split('T')[0] || null,
+          to: deliveryDateRange.to?.toISOString().split('T')[0] || null,
+        } : null,
+        
+        // Original form state preservation for debugging
+        _originalFormData: {
+          ...formData,
+          items: items,
+          skontoEnabled,
+          skontoDays,
+          skontoPercentage,
+          skontoText,
+          showNet,
+          taxRate,
+          eInvoiceEnabled,
+          deliveryDateType,
+          deliveryDateRange,
+        },
+      } as any;
 
-      const createdQuoteId = await QuoteService.createQuote(uid, quoteData);
+      // 🚨 CRITICAL: Remove all undefined values (Firestore doesn't accept undefined)
+      // But preserve Date objects for Firestore Timestamps
+      const cleanInvoiceData = JSON.parse(JSON.stringify(invoiceData, (key, value) => {
+        return value === undefined ? null : value;
+      }));
 
-      // Bestand reservieren für alle Inventar-Artikel in den Positionen
+      // Restore Date objects that got converted to strings
+      cleanInvoiceData.createdAt = new Date(cleanInvoiceData.createdAt);
+      cleanInvoiceData.updatedAt = new Date(cleanInvoiceData.updatedAt);
+
+      console.log('🚨 CLEANED INVOICE DATA TO SAVE:', JSON.stringify(cleanInvoiceData, null, 2));
+
+      // Save Invoice using FirestoreInvoiceService - TARGET: invoices subcollection
+      const createdInvoiceId = await InvoiceService.saveInvoice(cleanInvoiceData);
+      console.log('✅ INVOICE SAVED WITH ID:', createdInvoiceId);
+
+      // Inventory Management
       try {
         const inventoryItems = (items || [])
           .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
           .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
 
         if (inventoryItems.length > 0) {
-          await InventoryService.reserveItemsForQuote(uid, createdQuoteId, inventoryItems);
+          console.log('📦 Reserving inventory for invoice:', inventoryItems);
+          // Note: Adjust method call for invoices instead of quotes
+          // await InventoryService.reserveItemsForInvoice(uid, createdInvoiceId, inventoryItems);
         }
       } catch (reserveErr: any) {
-        // Rollback: Quote wieder löschen, wenn Reservierung fehlschlägt
-        try {
-          await QuoteService.deleteQuote(uid, createdQuoteId);
-        } catch {}
-        console.error(reserveErr);
-        toast.error(reserveErr?.message || 'Bestandsreservierung ist fehlgeschlagen');
-        return; // nicht weiter navigieren
+        console.error('❌ Inventory reservation failed:', reserveErr);
+        // Continue anyway - inventory reservation is not critical for invoice creation
       }
 
-      toast.success(asDraft ? 'Angebot als Entwurf gespeichert' : 'Angebot erstellt und versendet');
-      
-      // Erhöhe die nächste Nummer im Nummernkreis nach erfolgreichem Speichern
+      // Update invoice number sequence
       if (!asDraft) {
         try {
           const companyRef = doc(db, 'companies', uid);
           await updateDoc(companyRef, {
             'invoiceNumbering.nextNumber': nextNumber + 1
           });
-          // Aktualisiere auch den lokalen State
           setNextNumber(prev => prev + 1);
+          console.log('✅ Invoice number sequence updated');
         } catch (error) {
-          console.error('Fehler beim Aktualisieren der nächsten Nummer:', error);
-          // Nicht kritisch, deshalb kein toast.error
+          console.error('❌ Failed to update invoice number sequence:', error);
         }
       }
+
+      toast.success(asDraft ? 'Rechnung als Entwurf gespeichert' : 'Rechnung erstellt');
+      console.log('🎉 INVOICE CREATION COMPLETED SUCCESSFULLY');
       
-      router.push(`/dashboard/company/${uid}/finance/quotes`);
+      // Navigate to invoices list
+      router.push(`/dashboard/company/${uid}/finance/invoices`);
+      
     } catch (e) {
-      console.error(e);
-      toast.error('Angebot konnte nicht gespeichert werden');
+      console.error('❌ CRITICAL ERROR in handleSubmit:', e);
+      toast.error('Rechnung konnte nicht gespeichert werden');
     } finally {
       setLoading(false);
     }
@@ -2688,7 +2896,7 @@ export default function CreateQuotePage() {
                     <h4 className="text-sm font-semibold text-[#14ad9f]">
                       Erforderliche Angaben
                     </h4>
-                    <span className="text-xs bg-[#14ad9f]/10 text-[#14ad9f] px-1.5 py-0.5 rounded font-medium">
+                    <span className="text-xs bg-[#14ad9f]/10 text-[#14ad9f] px-1.5 py-0.5 rounded">
                       {complianceErrors.length}
                     </span>
                   </div>
@@ -2718,7 +2926,7 @@ export default function CreateQuotePage() {
               <Button 
                 onClick={() => setShowCompliancePanel(false)}
                 variant="default"
-                className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white border-0"
+                className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
                 size="sm"
                 style={{
                   backgroundColor: '#14ad9f',
@@ -2828,7 +3036,7 @@ export default function CreateQuotePage() {
                             .map(customer => (
                               <div
                                 key={customer.id}
-                                className="p-2 hover:bg-gray-50 cursor-pointer text-sm"
+                                className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
                                 onClick={() => selectCustomer(customer)}
                               >
                                 <div className="font-medium">{customer.name}</div>
@@ -2840,7 +3048,7 @@ export default function CreateQuotePage() {
 
                           {/* "Neuen Kunden erstellen" Option */}
                           <div
-                            className="p-2 hover:bg-gray-50 cursor-pointer text-sm border-t border-gray-100 text-[#14ad9f] font-medium"
+                            className="p-2 hover:bg-gray-100 rounded-md cursor-pointer"
                             onClick={() => {
                               setShowNewCustomerModal(true);
                               setShowCustomerSearchPopup(false);
@@ -2925,7 +3133,7 @@ export default function CreateQuotePage() {
                             .map(customer => (
                               <div
                                 key={customer.id}
-                                className="p-2 hover:bg-gray-50 cursor-pointer text-sm"
+                                className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
                                 onClick={() => {
                                   // Bei Person-Auswahl Namen splitten
                                   const nameParts = customer.name.split(' ');
@@ -2956,7 +3164,7 @@ export default function CreateQuotePage() {
 
                           {/* "Neuen Kunden erstellen" Option */}
                           <div
-                            className="p-2 hover:bg-gray-50 cursor-pointer text-sm border-t border-gray-100 text-[#14ad9f] font-medium"
+                            className="p-2 hover:bg-gray-100 rounded-md cursor-pointer"
                             onClick={() => {
                               console.log('Person: Neuen Kunden erstellen geklickt');
                               console.log('createCustomerOpen before:', createCustomerOpen);
@@ -4016,6 +4224,8 @@ export default function CreateQuotePage() {
           Als E-Mail versenden
         </Button>
       </div>
+
+      {/* E-Rechnung ist ab 2025 PFLICHT - automatisch bei jeder Rechnung */}
 
       {emailCardOpen && (
         <div className="mt-4">

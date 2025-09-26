@@ -38,16 +38,28 @@ export default function InvoiceDetailPage() {
   const loadInvoice = async () => {
     try {
       setLoading(true);
-      const invoiceData = await FirestoreInvoiceService.getInvoiceById(invoiceId);
+      console.log('Loading invoice:', { uid, invoiceId });
+      
+      const invoiceData = await FirestoreInvoiceService.getInvoiceById(uid, invoiceId);
+      console.log('Invoice data loaded:', invoiceData);
 
-      if (!invoiceData || invoiceData.companyId !== uid) {
-        setError('Rechnung nicht gefunden oder keine Berechtigung');
+      if (!invoiceData) {
+        console.log('No invoice data found');
+        setError('Rechnung nicht gefunden');
+        return;
+      }
+
+      if (invoiceData.companyId !== uid) {
+        console.log('Company ID mismatch:', { invoiceCompanyId: invoiceData.companyId, expectedUid: uid });
+        setError('Keine Berechtigung für diese Rechnung');
         return;
       }
 
       setInvoice(invoiceData);
+      setError(null); // Clear any previous errors
     } catch (err) {
-      setError('Fehler beim Laden der Rechnung');
+      console.error('Error loading invoice:', err);
+      setError('Fehler beim Laden der Rechnung: ' + (err instanceof Error ? err.message : 'Unbekannter Fehler'));
     } finally {
       setLoading(false);
     }
@@ -182,6 +194,64 @@ export default function InvoiceDetailPage() {
 
   const handleEditInvoice = () => {
     router.push(`/dashboard/company/${uid}/finance/invoices/${invoiceId}/edit`);
+  };
+
+  const handleViewPdf = async () => {
+    if (!invoice) return;
+
+    setDownloadingPdf(true);
+    try {
+      // Call our modern PDF API endpoint
+      const response = await fetch('/api/generate-invoice-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          invoiceData: invoice,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'PDF-Generation fehlgeschlagen');
+      }
+
+      const contentType = response.headers.get('content-type');
+
+      // Check if we got a PDF directly (Development with Puppeteer)
+      if (contentType?.includes('application/pdf')) {
+        const pdfBlob = await response.blob();
+        const pdfUrl = window.URL.createObjectURL(pdfBlob);
+
+        // Open PDF in new tab instead of downloading
+        window.open(pdfUrl, '_blank');
+        
+        // Clean up after a short delay
+        setTimeout(() => {
+          window.URL.revokeObjectURL(pdfUrl);
+        }, 10000);
+
+        return;
+      }
+
+      // Handle JSON response (contains printUrl)
+      const responseData = await response.json();
+
+      if (responseData.printUrl) {
+        // Open the print URL in a new tab
+        window.open(responseData.printUrl, '_blank');
+        return;
+      }
+
+      // If we get here, something unexpected happened
+      throw new Error('Unerwartetes Response-Format vom PDF-Service');
+    } catch (error) {
+      console.error('Error viewing PDF:', error);
+      toast.error('Fehler beim Anzeigen der PDF');
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   const handleDownloadPdf = async () => {
@@ -369,12 +439,22 @@ export default function InvoiceDetailPage() {
 
                 <Button
                   variant="outline"
+                  onClick={handleViewPdf}
+                  disabled={downloadingPdf}
+                  className="border-blue-500 text-blue-600 hover:bg-blue-50 px-4 py-2"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  {downloadingPdf ? 'Laden...' : 'Anzeigen'}
+                </Button>
+
+                <Button
+                  variant="outline"
                   onClick={handleDownloadPdf}
                   disabled={downloadingPdf}
                   className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  {downloadingPdf ? 'PDF...' : 'PDF'}
+                  {downloadingPdf ? 'PDF...' : 'Download'}
                 </Button>
 
                 {invoice.status !== 'draft' && (

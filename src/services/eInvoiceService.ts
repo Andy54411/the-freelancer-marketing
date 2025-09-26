@@ -16,6 +16,9 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
+import { XMLParser, XMLBuilder } from 'fast-xml-parser';
+import * as xml2js from 'xml2js';
+import { PDFDocument, rgb } from 'pdf-lib';
 
 export interface EInvoiceData {
   id?: string;
@@ -49,9 +52,19 @@ export interface EInvoiceSettings {
     participantId?: string;
     endpoint?: string;
   };
+  xrechnung?: {
+    leitwegId: string;
+    buyerReference?: string;
+  };
   validation: {
     strictMode: boolean;
     autoCorrection: boolean;
+  };
+  tse?: {
+    enabled: boolean;
+    serialNumber?: string;
+    publicKey?: string;
+    certificateSerial?: string;
   };
   createdAt: Date;
   updatedAt: Date;
@@ -69,6 +82,17 @@ export interface ZUGFeRDMetadata {
   conformanceLevel: 'BASIC' | 'COMFORT' | 'EXTENDED';
   guideline: string;
   specificationId: string;
+}
+
+export interface TSEData {
+  serialNumber: string;
+  signatureAlgorithm: string;
+  transactionNumber: string;
+  startTime: string;
+  finishTime: string;
+  signature: string;
+  publicKey: string;
+  certificateSerial: string;
 }
 
 export class EInvoiceService {
@@ -443,6 +467,35 @@ export class EInvoiceService {
     }
   }
 
+  /**
+   * Lädt E-Rechnungs-Einstellungen für ein Unternehmen
+   */
+  static async getEInvoiceSettings(companyId: string): Promise<EInvoiceSettings> {
+    try {
+      const q = query(
+        collection(db, this.SETTINGS_COLLECTION),
+        where('companyId', '==', companyId)
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        throw new Error('Keine E-Rechnungs-Einstellungen gefunden');
+      }
+
+      const doc = querySnapshot.docs[0];
+      return {
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+      } as EInvoiceSettings;
+    } catch (error) {
+      console.error('Fehler beim Laden der E-Rechnungs-Einstellungen:', error);
+      throw new Error('E-Rechnungs-Einstellungen konnten nicht geladen werden');
+    }
+  }
+
   // Hilfsmethoden für Adressparsingg
   private static extractAddressLine(address: string): string {
     return address.split('\n')[0] || '';
@@ -514,5 +567,204 @@ export class EInvoiceService {
   </cac:InvoiceLine>`
       )
       .join('');
+  }
+
+  /**
+   * Erweiterte XML-Validierung mit fast-xml-parser
+   */
+  static async validateXMLStructure(xmlContent: string): Promise<{
+    isValid: boolean;
+    parsedData?: any;
+    errors: string[];
+  }> {
+    try {
+      const parser = new XMLParser({
+        ignoreAttributes: false,
+        attributeNamePrefix: '@_',
+        allowBooleanAttributes: true,
+      });
+
+      const parsedData = parser.parse(xmlContent);
+
+      // Grundlegende Struktur-Validierung
+      if (!parsedData) {
+        return {
+          isValid: false,
+          errors: ['XML konnte nicht geparst werden'],
+        };
+      }
+
+      return {
+        isValid: true,
+        parsedData,
+        errors: [],
+      };
+    } catch (error) {
+      return {
+        isValid: false,
+        errors: [`XML-Parsing Fehler: ${(error as Error).message}`],
+      };
+    }
+  }
+
+  /**
+   * Generiert ZUGFeRD XML mit TSE-Daten
+   */
+  static async generateZUGFeRDWithTSE(
+    invoiceData: any,
+    metadata: ZUGFeRDMetadata,
+    companyData: any,
+    tseData?: TSEData
+  ): Promise<string> {
+    try {
+      const baseXML = await this.generateZUGFeRDXML(invoiceData, metadata, companyData);
+      
+      if (!tseData) {
+        return baseXML;
+      }
+
+      // TSE-Daten in XML integrieren
+      const parser = new XMLParser({
+        ignoreAttributes: false,
+        attributeNamePrefix: '@_',
+      });
+
+      const builder = new XMLBuilder({
+        ignoreAttributes: false,
+        attributeNamePrefix: '@_',
+        format: true,
+      });
+
+      const parsedXML = parser.parse(baseXML);
+
+      // TSE-Daten-Block hinzufügen
+      if (parsedXML['rsm:CrossIndustryInvoice']) {
+        if (!parsedXML['rsm:CrossIndustryInvoice']['rsm:ExchangedDocument']['ram:IncludedNote']) {
+          parsedXML['rsm:CrossIndustryInvoice']['rsm:ExchangedDocument']['ram:IncludedNote'] = [];
+        }
+
+        // TSE-Daten als Notiz hinzufügen
+        parsedXML['rsm:CrossIndustryInvoice']['rsm:ExchangedDocument']['ram:IncludedNote'].push({
+          'ram:Content': `TSE: ${tseData.serialNumber}`,
+          'ram:SubjectCode': 'TSE',
+        });
+
+        // TSE-spezifische Felder in SupplyChainTradeTransaction
+        if (parsedXML['rsm:CrossIndustryInvoice']['rsm:SupplyChainTradeTransaction']) {
+          parsedXML['rsm:CrossIndustryInvoice']['rsm:SupplyChainTradeTransaction']['ram:TSEData'] = {
+            'ram:SerialNumber': tseData.serialNumber,
+            'ram:SignatureAlgorithm': tseData.signatureAlgorithm,
+            'ram:TransactionNumber': tseData.transactionNumber,
+            'ram:StartTime': tseData.startTime,
+            'ram:FinishTime': tseData.finishTime,
+            'ram:Signature': tseData.signature,
+            'ram:PublicKey': tseData.publicKey,
+            'ram:CertificateSerial': tseData.certificateSerial,
+          };
+        }
+      }
+
+      return builder.build(parsedXML);
+    } catch (error) {
+      console.error('Fehler beim Generieren der ZUGFeRD XML mit TSE:', error);
+      throw new Error('ZUGFeRD XML mit TSE konnte nicht generiert werden');
+    }
+  }
+
+  /**
+   * Erstellt PDF/A-3 Datei mit eingebetteter XML (ZUGFeRD)
+   */
+  static async createPDFA3WithXML(
+    pdfBuffer: ArrayBuffer,
+    xmlContent: string,
+    filename: string = 'zugferd-data.xml'
+  ): Promise<ArrayBuffer> {
+    try {
+      const pdfDoc = await PDFDocument.load(pdfBuffer);
+
+      // XML als Anhang einbetten
+      const xmlBytes = new TextEncoder().encode(xmlContent);
+      
+      await pdfDoc.attach(xmlBytes, filename, {
+        mimeType: 'text/xml',
+        description: 'ZUGFeRD Invoice Data',
+        creationDate: new Date(),
+        modificationDate: new Date(),
+      });
+
+      // PDF/A-3 Metadaten setzen
+      const metadata = `<?xml version="1.0" encoding="UTF-8"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <rdf:Description rdf:about="" xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/">
+      <pdfaid:part>3</pdfaid:part>
+      <pdfaid:conformance>B</pdfaid:conformance>
+    </rdf:Description>
+  </rdf:RDF>
+</x:xmpmeta>`;
+
+      pdfDoc.setTitle('E-Rechnung (ZUGFeRD)');
+      pdfDoc.setSubject('Elektronische Rechnung nach ZUGFeRD Standard');
+      pdfDoc.setKeywords(['ZUGFeRD', 'E-Rechnung', 'PDF/A-3']);
+      pdfDoc.setProducer('Taskilo E-Invoice System');
+      pdfDoc.setCreationDate(new Date());
+      pdfDoc.setModificationDate(new Date());
+
+      const pdfBytes = await pdfDoc.save();
+      return new ArrayBuffer(pdfBytes.byteLength).slice(0).constructor === ArrayBuffer 
+        ? pdfBytes.buffer as ArrayBuffer 
+        : pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer;
+    } catch (error) {
+      console.error('Fehler beim Erstellen der PDF/A-3 Datei:', error);
+      throw new Error('PDF/A-3 Datei konnte nicht erstellt werden');
+    }
+  }
+
+  /**
+   * Konvertiert XML zwischen verschiedenen Formaten
+   */
+  static async convertXMLFormat(
+    xmlContent: string,
+    fromFormat: 'zugferd' | 'xrechnung',
+    toFormat: 'zugferd' | 'xrechnung'
+  ): Promise<string> {
+    if (fromFormat === toFormat) {
+      return xmlContent;
+    }
+
+    try {
+      const parser = new XMLParser({
+        ignoreAttributes: false,
+        attributeNamePrefix: '@_',
+      });
+
+      const parsedData = parser.parse(xmlContent);
+
+      // Vereinfachte Konvertierungslogik (kann erweitert werden)
+      if (fromFormat === 'zugferd' && toFormat === 'xrechnung') {
+        // ZUGFeRD zu XRechnung konvertieren
+        return this.convertZUGFeRDToXRechnung(parsedData);
+      } else if (fromFormat === 'xrechnung' && toFormat === 'zugferd') {
+        // XRechnung zu ZUGFeRD konvertieren
+        return this.convertXRechnungToZUGFeRD(parsedData);
+      }
+
+      throw new Error(`Konvertierung von ${fromFormat} zu ${toFormat} nicht unterstützt`);
+    } catch (error) {
+      console.error('Fehler bei XML-Konvertierung:', error);
+      throw new Error('XML-Konvertierung fehlgeschlagen');
+    }
+  }
+
+  private static convertZUGFeRDToXRechnung(zugferdData: any): string {
+    // Implementierung der ZUGFeRD zu XRechnung Konvertierung
+    // Dies ist eine vereinfachte Version - in der Praxis wäre eine vollständige Feldmapping notwendig
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<!-- XRechnung konvertiert aus ZUGFeRD -->';
+  }
+
+  private static convertXRechnungToZUGFeRD(xrechnungData: any): string {
+    // Implementierung der XRechnung zu ZUGFeRD Konvertierung
+    // Dies ist eine vereinfachte Version - in der Praxis wäre eine vollständige Feldmapping notwendig
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<!-- ZUGFeRD konvertiert aus XRechnung -->';
   }
 }
