@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { 
-  InvoiceTemplateRenderer, 
-  DEFAULT_INVOICE_TEMPLATE, 
+import {
+  InvoiceTemplateRenderer,
+  DEFAULT_INVOICE_TEMPLATE,
   type InvoiceTemplate as ImportedInvoiceTemplate,
-  AVAILABLE_TEMPLATES
+  AVAILABLE_TEMPLATES,
 } from '@/components/finance/InvoiceTemplates';
 import {
   Select,
@@ -25,11 +25,7 @@ import {
   CommandInput,
   CommandItem,
 } from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check, ChevronsUpDown, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
@@ -64,18 +60,18 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { db } from '@/firebase/clients';
-import { 
-  collection, 
-  getDocs, 
+import {
+  collection,
+  getDocs,
   getDoc,
-  doc, 
-  updateDoc, 
-  addDoc, 
-  serverTimestamp, 
-  deleteDoc, 
+  doc,
+  updateDoc,
+  addDoc,
+  serverTimestamp,
+  deleteDoc,
   FieldValue,
   DocumentData,
-  QuerySnapshot 
+  QuerySnapshot,
 } from 'firebase/firestore';
 import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteService';
 import { FirestoreInvoiceService as InvoiceService } from '@/services/firestoreInvoiceService';
@@ -83,7 +79,7 @@ import { InvoiceData as InvoiceType } from '@/types/invoiceTypes';
 import { QuoteItem as InvoiceItem } from '@/services/quoteService';
 import { TaxRuleType } from '@/types/taxRules';
 import { getAllCurrencies } from '@/data/currencies';
-import { QuickAddService } from "@/components/QuickAddService";
+import { QuickAddService } from '@/components/QuickAddService';
 import { getCustomers } from '@/utils/api/companyApi';
 import {
   Dialog,
@@ -95,8 +91,21 @@ import {
 } from '@/components/ui/dialog';
 // ...
 // State für Dienstleistungs-Modal innerhalb der Komponente anlegen!
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   ProfessionalBusinessTemplate,
   ExecutivePremiumTemplate,
@@ -114,7 +123,10 @@ import { SimpleTaxRuleSelector } from '@/components/finance/SimpleTaxRuleSelecto
 import { TaxRuleSelector } from '@/components/finance/TaxRuleSelector';
 import { useTaxCalculation } from '@/hooks/useTaxCalculation';
 // Import der zentralen Platzhalter-Engine
-import { replacePlaceholders as centralReplacePlaceholders, PlaceholderContext } from '@/utils/placeholders';
+import {
+  replacePlaceholders as centralReplacePlaceholders,
+  PlaceholderContext,
+} from '@/utils/placeholders';
 type PreviewTemplateData = {
   invoiceNumber: string;
   documentNumber: string;
@@ -241,8 +253,9 @@ export default function EditInvoicePage() {
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
   const invoiceId = typeof params?.invoiceId === 'string' ? params.invoiceId : '';
-  const [selectedTemplate, setSelectedTemplate] = useState<ImportedInvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
-  
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<ImportedInvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
+
   // Edit-spezifische States
   const [loadingInvoice, setLoadingInvoice] = useState(true);
   const [originalInvoice, setOriginalInvoice] = useState<any>(null);
@@ -261,7 +274,7 @@ export default function EditInvoicePage() {
       <CardContent>
         <QuickAddService
           companyId={uid}
-          onServiceAdded={(service) => {
+          onServiceAdded={service => {
             setItems(prev => [...prev, service]);
             toast.success('Dienstleistung wurde zur Rechnung hinzugefügt');
           }}
@@ -287,7 +300,7 @@ export default function EditInvoicePage() {
   const parsePrice = (price: number | string): number => {
     if (typeof price === 'number') return price;
     return parseFloat(price) || 0;
-  }
+  };
 
   // Erweiterte States für Dienstleistungen
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
@@ -312,9 +325,9 @@ export default function EditInvoicePage() {
       try {
         const inlineInvoiceServicesCol = collection(db, 'companies', uid, 'inlineInvoiceServices');
         const inlineInvoiceServicesSnap = await getDocs(inlineInvoiceServicesCol);
-        
+
         console.log('Geladene Dienstleistungen:', inlineInvoiceServicesSnap.docs.length);
-        
+
         const inlineInvoiceServices = inlineInvoiceServicesSnap.docs.map(doc => {
           const data = doc.data();
           console.log('Dienstleistung:', doc.id, data);
@@ -324,7 +337,7 @@ export default function EditInvoicePage() {
             description: data.description,
             price: data.price || 0,
             unit: data.unit || 'Stk',
-            source: 'inlineInvoiceServices' as const
+            source: 'inlineInvoiceServices' as const,
           };
         });
 
@@ -349,22 +362,22 @@ export default function EditInvoicePage() {
             variant="outline"
             role="combobox"
             className={cn(
-              "min-w-[280px] justify-between border-input",
-              "hover:bg-accent hover:text-accent-foreground",
-              "focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2",
-              selectedService && "text-[#14ad9f] border-[#14ad9f]"
+              'min-w-[280px] justify-between border-input',
+              'hover:bg-accent hover:text-accent-foreground',
+              'focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2',
+              selectedService && 'text-[#14ad9f] border-[#14ad9f]'
             )}
           >
             {selectedService
-              ? existingServices.find((service) => service.name === selectedService)?.name
-              : "Dienstleistung auswählen oder neu erstellen..."}
+              ? existingServices.find(service => service.name === selectedService)?.name
+              : 'Dienstleistung auswählen oder neu erstellen...'}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[280px] p-0">
           <Command>
-            <CommandInput 
-              placeholder="Dienstleistung suchen..." 
+            <CommandInput
+              placeholder="Dienstleistung suchen..."
               className="border-none focus:ring-0 focus-visible:ring-0"
             />
             <CommandEmpty>
@@ -384,7 +397,7 @@ export default function EditInvoicePage() {
               </div>
             </CommandEmpty>
             <CommandGroup>
-              {existingServices.map((service) => (
+              {existingServices.map(service => (
                 <CommandItem
                   key={service.id}
                   onSelect={() => {
@@ -400,8 +413,8 @@ export default function EditInvoicePage() {
                 >
                   <Check
                     className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedService === service.name ? "opacity-100 text-[#14ad9f]" : "opacity-0"
+                      'mr-2 h-4 w-4',
+                      selectedService === service.name ? 'opacity-100 text-[#14ad9f]' : 'opacity-0'
                     )}
                   />
                   {service.name}
@@ -411,18 +424,14 @@ export default function EditInvoicePage() {
           </Command>
         </PopoverContent>
       </Popover>
-      
+
       {selectedService ? (
         <Button
           className="bg-[#14ad9f] hover:bg-[#129488] text-white"
           onClick={saveServiceToSubcollection}
           disabled={savingService}
         >
-          {savingService ? (
-            <>Speichert...</>
-          ) : (
-            <>Dienstleistung übernehmen</>
-          )}
+          {savingService ? <>Speichert...</> : <>Dienstleistung übernehmen</>}
         </Button>
       ) : (
         <Button
@@ -441,10 +450,15 @@ export default function EditInvoicePage() {
   );
   // Dienstleistung in Subcollection speichern
   const saveServiceToSubcollection = async () => {
-    toast('SERVICE SAVE TRIGGERED (UI)', { description: 'Die Save-Funktion wurde im Client aufgerufen.' });
+    toast('SERVICE SAVE TRIGGERED (UI)', {
+      description: 'Die Save-Funktion wurde im Client aufgerufen.',
+    });
     console.log('SERVICE SAVE TRIGGERED', { uid, serviceDraft });
     if (!uid || !serviceDraft.name.trim()) {
-      console.warn('[Dienstleistung speichern] Abbruch: UID oder Name fehlt', { uid, name: serviceDraft.name });
+      console.warn('[Dienstleistung speichern] Abbruch: UID oder Name fehlt', {
+        uid,
+        name: serviceDraft.name,
+      });
       return;
     }
     setSavingService(true);
@@ -476,14 +490,14 @@ export default function EditInvoicePage() {
   const [quickServiceName, setQuickServiceName] = useState('');
   const [quickServicePrice, setQuickServicePrice] = useState('');
   const [savingQuickService, setSavingQuickService] = useState(false);
-  
+
   // Quick-Add Service Handler
   const handleQuickAddService = async () => {
     if (!uid || !quickServiceName.trim()) {
       toast.error('Bitte geben Sie einen Namen für die Dienstleistung ein');
       return;
     }
-    
+
     setSavingQuickService(true);
     try {
       // 1. In inlineInvoiceServices speichern
@@ -495,10 +509,10 @@ export default function EditInvoicePage() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
-      
+
       const ref = collection(db, 'companies', uid, 'inlineInvoiceServices');
       const result = await addDoc(ref, serviceData);
-      
+
       // 2. Direkt zur Rechnung hinzufügen
       const newItem = {
         id: crypto.randomUUID(),
@@ -510,9 +524,9 @@ export default function EditInvoicePage() {
         category: 'Dienstleistung',
         inventoryItemId: result.id,
       };
-      
+
       setItems(prev => [...prev, newItem]);
-      
+
       // 3. UI zurücksetzen
       setQuickServiceName('');
       setQuickServicePrice('');
@@ -594,7 +608,7 @@ export default function EditInvoicePage() {
 
   // Lieferdatum State (Einzeldatum vs. Zeitraum)
   const [deliveryDateType, setDeliveryDateType] = useState<'single' | 'range'>('single');
-  const [deliveryDateRange, setDeliveryDateRange] = useState<{from?: Date; to?: Date}>({});
+  const [deliveryDateRange, setDeliveryDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [deliveryDatePopoverOpen, setDeliveryDatePopoverOpen] = useState(false);
 
   // Textvorlagen State
@@ -640,7 +654,7 @@ export default function EditInvoicePage() {
       customerName: customer.name,
       customerEmail: customer.email,
       customerNumber: customer.customerNumber || '',
-      customerAddress: 
+      customerAddress:
         customer.street && customer.city
           ? `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}`
           : prev.customerAddress,
@@ -793,8 +807,10 @@ export default function EditInvoicePage() {
     validUntil: '',
     invoiceDate: '',
     deliveryDate: '',
-  headTextHtml: 'Sehr geehrte Damen und Herren,\n\nvielen Dank für Ihren Auftrag und das damit verbundene Vertrauen!\nHiermit stelle ich Ihnen die folgenden Leistungen in Rechnung:',
-  footerText: 'Wir bitten Sie, den Rechnungsbetrag von [%GESAMTBETRAG%] unter Angabe der Rechnungsnummer [%RECHNUNGSNUMMER%] auf das unten angegebene Konto zu überweisen. Zahlungsziel: [%ZAHLUNGSZIEL%] Rechnungsdatum: [%RECHNUNGSDATUM%] Vielen Dank für Ihr Vertrauen und die angenehme Zusammenarbeit!<br>Mit freundlichen Grüßen<br>[%KONTAKTPERSON%]',
+    headTextHtml:
+      'Sehr geehrte Damen und Herren,\n\nvielen Dank für Ihren Auftrag und das damit verbundene Vertrauen!\nHiermit stelle ich Ihnen die folgenden Leistungen in Rechnung:',
+    footerText:
+      'Wir bitten Sie, den Rechnungsbetrag von [%GESAMTBETRAG%] unter Angabe der Rechnungsnummer [%RECHNUNGSNUMMER%] auf das unten angegebene Konto zu überweisen. Zahlungsziel: [%ZAHLUNGSZIEL%] Rechnungsdatum: [%RECHNUNGSDATUM%] Vielen Dank für Ihr Vertrauen und die angenehme Zusammenarbeit!<br>Mit freundlichen Grüßen<br>[%KONTAKTPERSON%]',
     notes: '',
     currency: 'EUR',
     internalContactPerson: '',
@@ -845,23 +861,23 @@ export default function EditInvoicePage() {
   useEffect(() => {
     const loadInvoiceData = async () => {
       if (!invoiceId || !uid || !user || user.uid !== uid) return;
-      
+
       try {
         setLoadingInvoice(true);
         console.log('Loading invoice:', invoiceId, 'for company:', uid);
-        
+
         // Lade Invoice-Daten
         const invoiceData = await InvoiceService.getInvoiceById(uid, invoiceId);
-        
+
         if (!invoiceData || invoiceData.companyId !== uid) {
           toast.error('Rechnung nicht gefunden oder keine Berechtigung');
           router.push(`/dashboard/company/${uid}/finance/invoices`);
           return;
         }
-        
+
         console.log('Loaded invoice data:', invoiceData);
         setOriginalInvoice(invoiceData);
-        
+
         // Form-Daten mit Invoice-Daten befüllen
         setFormData(prev => ({
           ...prev,
@@ -885,7 +901,7 @@ export default function EditInvoicePage() {
           paymentTerms: invoiceData.paymentTerms || '',
           taxRule: invoiceData.taxRuleType || TaxRuleType.DE_TAXABLE,
         }));
-        
+
         // Items laden
         if (invoiceData.items && invoiceData.items.length > 0) {
           const mappedItems = invoiceData.items.map((item: any) => ({
@@ -893,7 +909,7 @@ export default function EditInvoicePage() {
             description: item.description || '',
             quantity: item.quantity || 1,
             unitPrice: item.unitPrice || 0,
-            total: item.total || (item.quantity * item.unitPrice),
+            total: item.total || item.quantity * item.unitPrice,
             unit: item.unit || 'Stk',
             category: item.category || 'Artikel',
             discountPercent: item.discountPercent || 0,
@@ -901,25 +917,25 @@ export default function EditInvoicePage() {
           }));
           setItems(mappedItems);
         }
-        
+
         // Template setzen (Felder existieren nicht im InvoiceData Typ)
         // Default Template verwenden
         setSelectedTemplate(DEFAULT_INVOICE_TEMPLATE);
-        
+
         // Tax Rate setzen
         if (invoiceData.vatRate !== undefined) {
           setTaxRate(invoiceData.vatRate);
         }
-        
+
         // Show Net/Brutto based on saved settings
         if (invoiceData.priceInput) {
           setShowNet(invoiceData.priceInput === 'netto');
         }
-        
+
         // E-Invoice Settings (Feld existiert nicht im InvoiceData Typ)
         // Default auf false setzen
         setEInvoiceEnabled(false);
-        
+
         // Skonto-Einstellungen
         if (invoiceData.skontoEnabled) {
           setSkontoEnabled(invoiceData.skontoEnabled);
@@ -927,7 +943,7 @@ export default function EditInvoicePage() {
           setSkontoPercentage(invoiceData.skontoPercentage);
           setSkontoText(invoiceData.skontoText || '');
         }
-        
+
         // Delivery Date Type (Felder existieren nicht im InvoiceData Typ)
         // Default Werte setzen
         setDeliveryDateType('single');
@@ -935,9 +951,8 @@ export default function EditInvoicePage() {
           from: undefined,
           to: undefined,
         });
-        
+
         toast.success('Rechnung geladen');
-        
       } catch (error) {
         console.error('Error loading invoice:', error);
         toast.error('Fehler beim Laden der Rechnung');
@@ -946,7 +961,7 @@ export default function EditInvoicePage() {
         setLoadingInvoice(false);
       }
     };
-    
+
     loadInvoiceData();
   }, [invoiceId, uid, user, router]);
 
@@ -994,28 +1009,33 @@ export default function EditInvoicePage() {
         if (snap.exists()) {
           const companyData = snap.data();
           setCompany(companyData);
-          
+
           // Prüfe Vollständigkeit der Unternehmensdaten für Banner
           const requiredFields = [
             companyData.companyName,
             companyData.companyStreet,
             companyData.companyCity,
             companyData.companyPostalCode,
-            companyData.vatId || companyData.taxNumber || companyData.step3?.vatId || companyData.step3?.taxNumber,
+            companyData.vatId ||
+              companyData.taxNumber ||
+              companyData.step3?.vatId ||
+              companyData.step3?.taxNumber,
           ];
-          
+
           const missingRequiredFields = requiredFields.some(field => !field?.trim());
-          const missingOptionalFields = !companyData.email && !companyData.phoneNumber && !companyData.iban;
-          
+          const missingOptionalFields =
+            !companyData.email && !companyData.phoneNumber && !companyData.iban;
+
           // Zeige Banner wenn wichtige Felder fehlen
           if (missingRequiredFields || missingOptionalFields) {
             setShowCompanySettingsBanner(true);
-            
+
             // Vorausfüllen der Formulardaten für das Modal
             setCompanySettingsFormData({
-              companyOwner: companyData.firstName && companyData.lastName 
-                ? `${companyData.firstName} ${companyData.lastName}` 
-                : '',
+              companyOwner:
+                companyData.firstName && companyData.lastName
+                  ? `${companyData.firstName} ${companyData.lastName}`
+                  : '',
               companyName: companyData.companyName || '',
               street: companyData.companyStreet || '',
               zip: companyData.companyPostalCode || '',
@@ -1044,19 +1064,22 @@ export default function EditInvoicePage() {
       try {
         const companyRef = doc(db, 'companies', uid);
         const companySnap = await getDoc(companyRef);
-        
+
         if (companySnap.exists()) {
           const data = companySnap.data();
           const numbering = data.invoiceNumbering;
-          
+
           if (numbering) {
             setNumberingFormat(numbering.format || 'RE-%NUMBER');
             setNextNumber(numbering.nextNumber || 1000);
-            
+
             // Setze die aktuelle Rechnungsnummer basierend auf den geladenen Einstellungen
             setFormData(prev => ({
               ...prev,
-              title: generateNumberPreview(numbering.format || 'RE-%NUMBER', numbering.nextNumber || 1000)
+              title: generateNumberPreview(
+                numbering.format || 'RE-%NUMBER',
+                numbering.nextNumber || 1000
+              ),
             }));
           }
         }
@@ -1148,7 +1171,11 @@ export default function EditInvoicePage() {
     if (template) {
       return template.component;
     }
-    console.warn('Unbekannte Template-ID:', templateId, 'Verwende Professional Business Template als Fallback');
+    console.warn(
+      'Unbekannte Template-ID:',
+      templateId,
+      'Verwende Professional Business Template als Fallback'
+    );
     return ProfessionalBusinessTemplate;
   };
   useEffect(() => {
@@ -1204,18 +1231,18 @@ export default function EditInvoicePage() {
   useEffect(() => {
     const loadEInvoiceSettings = async () => {
       if (!uid) return;
-      
+
       try {
         // Check if E-Rechnung settings exist in company document
         const { doc, getDoc } = await import('firebase/firestore');
         const { db } = await import('@/firebase/clients');
         const companyRef = doc(db, 'companies', uid);
         const companySnap = await getDoc(companyRef);
-        
+
         if (companySnap.exists()) {
           const companyData = companySnap.data();
           const einvoiceSettings = companyData.eInvoiceSettings;
-          
+
           if (einvoiceSettings) {
             setEInvoiceSettings(einvoiceSettings);
             setEInvoiceEnabled(Boolean(einvoiceSettings.enableAutoGeneration));
@@ -1241,7 +1268,7 @@ export default function EditInvoicePage() {
     <div className="mb-4 border-b pb-4">
       <QuickAddService
         companyId={uid}
-        onServiceAdded={(service) => {
+        onServiceAdded={service => {
           setItems(prev => [...prev, service]);
           toast.success('Dienstleistung wurde zur Rechnung hinzugefügt');
         }}
@@ -1319,15 +1346,15 @@ export default function EditInvoicePage() {
     // Benutzer-Bestätigung abfragen
     const confirmed = window.confirm(
       `Sind Sie sicher, dass Sie die Rechnung ${originalInvoice.invoiceNumber} stornieren möchten?\n\n` +
-      'Dies erstellt eine neue Stornorechnung mit negativen Beträgen und einer fortlaufenden Rechnungsnummer.\n' +
-      'Die ursprüngliche Rechnung bleibt unverändert bestehen (GoBD-konform).'
+        'Dies erstellt eine neue Stornorechnung mit negativen Beträgen und einer fortlaufenden Rechnungsnummer.\n' +
+        'Die ursprüngliche Rechnung bleibt unverändert bestehen (GoBD-konform).'
     );
 
     if (!confirmed) return;
 
     try {
       setLoading(true);
-      
+
       // Prüfe, ob die Rechnung storniert werden kann
       if (originalInvoice.isStorno) {
         toast.error('Eine Stornorechnung kann nicht erneut storniert werden');
@@ -1342,10 +1369,9 @@ export default function EditInvoicePage() {
       // Alle anderen Status (einschließlich 'draft') können storniert werden
 
       // Erstelle Storno-Rechnung mit dem FirestoreInvoiceService
-      const stornoReason = window.prompt(
-        'Grund für die Stornierung (optional):',
-        'Stornierung auf Kundenwunsch'
-      ) || 'Stornierung';
+      const stornoReason =
+        window.prompt('Grund für die Stornierung (optional):', 'Stornierung auf Kundenwunsch') ||
+        'Stornierung';
 
       const stornoBy = (user as any).displayName || user.email || 'System';
 
@@ -1353,7 +1379,7 @@ export default function EditInvoicePage() {
         companyId: uid,
         originalInvoiceId: originalInvoice.id,
         stornoReason,
-        stornoBy
+        stornoBy,
       });
 
       // Verwende FirestoreInvoiceService für GoBD-konforme Stornierung
@@ -1366,24 +1392,17 @@ export default function EditInvoicePage() {
 
       console.log('Storno invoice created:', stornoInvoice);
 
-      toast.success(
-        `Stornorechnung ${stornoInvoice.invoiceNumber} wurde erfolgreich erstellt`,
-        {
-          description: 'Die ursprüngliche Rechnung wurde als storniert markiert'
-        }
-      );
+      toast.success(`Stornorechnung ${stornoInvoice.invoiceNumber} wurde erfolgreich erstellt`, {
+        description: 'Die ursprüngliche Rechnung wurde als storniert markiert',
+      });
 
       // Weiterleitung zur neuen Stornorechnung
       router.push(`/dashboard/company/${uid}/finance/invoices/${stornoInvoice.id}/edit`);
-
     } catch (error) {
       console.error('Fehler beim Stornieren der Rechnung:', error);
-      toast.error(
-        'Fehler beim Stornieren der Rechnung',
-        {
-          description: error instanceof Error ? error.message : 'Unbekannter Fehler'
-        }
-      );
+      toast.error('Fehler beim Stornieren der Rechnung', {
+        description: error instanceof Error ? error.message : 'Unbekannter Fehler',
+      });
     } finally {
       setLoading(false);
     }
@@ -1395,7 +1414,7 @@ export default function EditInvoicePage() {
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   };
 
   const getMonthName = (monthIndex: number): string => {
@@ -1458,12 +1477,14 @@ export default function EditInvoicePage() {
         city: data.companyAddress?.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
         country: data.companyAddress?.split('\n')[2] || '',
         // Bankdaten
-        bankDetails: data.bankDetails ? {
-          iban: data.bankDetails.iban || '',
-          bic: data.bankDetails.bic || '',
-          bankName: data.bankDetails.bankName || '',
-          accountHolder: data.bankDetails.accountHolder || ''
-        } : undefined
+        bankDetails: data.bankDetails
+          ? {
+              iban: data.bankDetails.iban || '',
+              bic: data.bankDetails.bic || '',
+              bankName: data.bankDetails.bankName || '',
+              accountHolder: data.bankDetails.accountHolder || '',
+            }
+          : undefined,
       },
       selectedCustomer: {
         companyName: data.customerName || '',
@@ -1474,7 +1495,7 @@ export default function EditInvoicePage() {
         street: data.customerAddress?.split('\n')[0] || '',
         postalCode: data.customerAddress?.split('\n')[1]?.split(' ')[0] || '',
         city: data.customerAddress?.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
-        country: data.customerAddress?.split('\n')[2] || ''
+        country: data.customerAddress?.split('\n')[2] || '',
       },
       invoice: {
         invoiceNumber: data.invoiceNumber || '',
@@ -1490,21 +1511,23 @@ export default function EditInvoicePage() {
         paymentTerms: parseInt(data.paymentTerms || '14'),
         notes: data.notes || '',
         reference: data.reference || '',
-        title: data.title || ''
+        title: data.title || '',
       },
       contactPerson: {
-        name: data.internalContactPerson || 
-              (company?.contactPerson?.name as string) || 
-              [company?.firstName, company?.lastName].filter(Boolean).join(' ') || 
-              ''
-      }
+        name:
+          data.internalContactPerson ||
+          (company?.contactPerson?.name as string) ||
+          [company?.firstName, company?.lastName].filter(Boolean).join(' ') ||
+          '',
+      },
     };
 
     // Spezial: Kontaktperson ODER Firmenname am Ende
     let result = centralReplacePlaceholders(text, context);
     if (result.includes('[%KONTAKTPERSON]')) {
       const kontakt = context.contactPerson?.name?.trim();
-      const fallbackFirma = context.company?.companyName?.trim() || context.company?.name?.trim() || '';
+      const fallbackFirma =
+        context.company?.companyName?.trim() || context.company?.name?.trim() || '';
       const value = kontakt ? kontakt : fallbackFirma;
       result = result.replace(/\[%KONTAKTPERSON_ODER_FIRMENNAME%\]/g, value);
     }
@@ -1524,7 +1547,7 @@ export default function EditInvoicePage() {
   // Vorschau-Daten für das Template zusammenbauen
   const buildPreviewData = (): PreviewTemplateData => {
     const today = new Date();
-    
+
     // Firmenname und -adresse aus companies-Collection, mit Fallbacks
     const companyName =
       (company?.companyName as string) ||
@@ -1557,9 +1580,9 @@ export default function EditInvoicePage() {
         .replace(/&amp;/gi, '&');
     const noteLines: string[] = [];
     // Kopf-Text und Referenz werden separat im Template angezeigt
-  if (formData.deliveryTerms) noteLines.push(`Lieferbedingungen: ${formData.deliveryTerms}`);
-  const basePaymentTerms = formData.paymentTerms?.trim() || 'Zahlbar binnen 7 Tagen ohne Abzug';
-  if (basePaymentTerms) noteLines.push(`Zahlungsbedingungen: ${basePaymentTerms}`);
+    if (formData.deliveryTerms) noteLines.push(`Lieferbedingungen: ${formData.deliveryTerms}`);
+    const basePaymentTerms = formData.paymentTerms?.trim() || 'Zahlbar binnen 7 Tagen ohne Abzug';
+    if (basePaymentTerms) noteLines.push(`Zahlungsbedingungen: ${basePaymentTerms}`);
     // Zahlungsbedingungen final zusammenbauen (Skonto separat anhängen, falls aktiv)
     // Skonto-Satz: Wenn Skonto aktiv ist, zuerst benutzerdefinierten Text nutzen; sonst Tage/%-Fallback
     let skontoSentence = '';
@@ -1570,9 +1593,7 @@ export default function EditInvoicePage() {
         skontoSentence = `Bei Zahlung binnen ${skontoDays} Tagen ${skontoPercentage}% Skonto`;
       }
     }
-    const finalPaymentTerms = [basePaymentTerms, skontoSentence]
-      .filter(Boolean)
-      .join('\n\n');
+    const finalPaymentTerms = [basePaymentTerms, skontoSentence].filter(Boolean).join('\n\n');
     const previewNotes =
       [
         formData.deliveryTerms ? `Lieferbedingungen: ${formData.deliveryTerms}` : '',
@@ -1582,24 +1603,34 @@ export default function EditInvoicePage() {
         .join('\n\n') || undefined;
 
     const taxRuleLabelMap: Record<TaxRuleType, string> = {
-      [TaxRuleType.DE_TAXABLE]: 'Steuerpflichtiger Umsatz (Regelsteuersatz 19 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 1 UStG)',
-      [TaxRuleType.DE_TAXABLE_REDUCED]: 'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 12 Abs. 2 UStG)',
+      [TaxRuleType.DE_TAXABLE]:
+        'Steuerpflichtiger Umsatz (Regelsteuersatz 19 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 1 UStG)',
+      [TaxRuleType.DE_TAXABLE_REDUCED]:
+        'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 12 Abs. 2 UStG)',
       [TaxRuleType.DE_EXEMPT_4_USTG]: 'Steuerfreie Lieferung/Leistung gemäß § 4 UStG',
-      [TaxRuleType.DE_REVERSE_13B]: 'Reverse-Charge – Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)',
-      [TaxRuleType.EU_REVERSE_18B]: 'Reverse-Charge – Steuerschuldnerschaft des Leistungsempfängers (Art. 196 MwStSystRL, § 18b UStG)',
-      [TaxRuleType.EU_INTRACOMMUNITY_SUPPLY]: 'Innergemeinschaftliche Lieferung, steuerfrei gemäß § 4 Nr. 1b i.V.m. § 6a UStG',
+      [TaxRuleType.DE_REVERSE_13B]:
+        'Reverse-Charge – Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)',
+      [TaxRuleType.EU_REVERSE_18B]:
+        'Reverse-Charge – Steuerschuldnerschaft des Leistungsempfängers (Art. 196 MwStSystRL, § 18b UStG)',
+      [TaxRuleType.EU_INTRACOMMUNITY_SUPPLY]:
+        'Innergemeinschaftliche Lieferung, steuerfrei gemäß § 4 Nr. 1b i.V.m. § 6a UStG',
       [TaxRuleType.EU_OSS]: 'Fernverkauf über das OSS-Verfahren (§ 18j UStG)',
       [TaxRuleType.NON_EU_EXPORT]: 'Steuerfreie Ausfuhrlieferung (§ 4 Nr. 1a i.V.m. § 6 UStG)',
-      [TaxRuleType.NON_EU_OUT_OF_SCOPE]: 'Nicht im Inland steuerbare Leistung (Leistungsort außerhalb Deutschlands, § 3a Abs. 2 UStG)',
+      [TaxRuleType.NON_EU_OUT_OF_SCOPE]:
+        'Nicht im Inland steuerbare Leistung (Leistungsort außerhalb Deutschlands, § 3a Abs. 2 UStG)',
     };
 
     const data: PreviewTemplateData = {
       invoiceNumber: 'Vorschau',
       documentNumber: formData.title || 'RE-1000',
-      date: formData.invoiceDate ? formatDateDE(new Date(formData.invoiceDate)) : formatDateDE(today),
+      date: formData.invoiceDate
+        ? formatDateDE(new Date(formData.invoiceDate))
+        : formatDateDE(today),
       dueDate: formData.validUntil ? formatDateDE(new Date(formData.validUntil)) : undefined,
       validUntil: formatDateDE(formData.validUntil),
-      deliveryDate: formData.deliveryDate ? formatDateDE(new Date(formData.deliveryDate)) : undefined,
+      deliveryDate: formData.deliveryDate
+        ? formatDateDE(new Date(formData.deliveryDate))
+        : undefined,
       title: formData.title || undefined,
       reference: formData.customerOrderNumber || undefined,
       currency:
@@ -1618,8 +1649,8 @@ export default function EditInvoicePage() {
       companyPhone:
         (company?.phoneNumber as string) || (company?.companyPhoneNumber as string) || undefined,
       companyWebsite:
-        (company?.website as string) || 
-        (company?.companyWebsite as string) || 
+        (company?.website as string) ||
+        (company?.companyWebsite as string) ||
         (company?.companyWebsiteForBackend as string) ||
         ((company as any)?.step1?.website as string) ||
         ((company as any)?.step2?.website as string) ||
@@ -1702,7 +1733,7 @@ export default function EditInvoicePage() {
       headTextHtml: formData.headTextHtml || undefined,
       footerText: formData.footerText || undefined,
       contactPersonName: contactPersonNameForFooter,
-  paymentTerms: finalPaymentTerms || undefined,
+      paymentTerms: finalPaymentTerms || undefined,
       deliveryTerms: formData.deliveryTerms || undefined,
       // Customer-Objekt für Template-Kompatibilität
       customer: {
@@ -1713,7 +1744,7 @@ export default function EditInvoicePage() {
           const streetLine = addressLines[0] || '';
           const cityLine = addressLines[1] || '';
           const zipCodeMatch = cityLine.match(/^(\d{5})\s*(.*)$/);
-          
+
           return {
             street: streetLine,
             zipCode: zipCodeMatch ? zipCodeMatch[1] : '',
@@ -1736,32 +1767,38 @@ export default function EditInvoicePage() {
             country: lines[2] || '',
           };
         })(),
-        taxNumber: (company?.taxNumber as string) ||
+        taxNumber:
+          (company?.taxNumber as string) ||
           (company as any)?.taxNumberForBackend ||
           (company as any)?.step3?.taxNumber ||
           ((settings as any)?.taxNumber as string) ||
           '',
-        vatId: (company?.vatId as string) ||
+        vatId:
+          (company?.vatId as string) ||
           (company as any)?.vatIdForBackend ||
           (company as any)?.step3?.vatId ||
           ((settings as any)?.vatId as string) ||
           '',
-        website: (company?.website as string) || 
-          (company?.companyWebsite as string) || 
+        website:
+          (company?.website as string) ||
+          (company?.companyWebsite as string) ||
           (company?.companyWebsiteForBackend as string) ||
           ((company as any)?.step1?.website as string) ||
           ((company as any)?.step2?.website as string) ||
           '',
         bankDetails: {
-          iban: (company as any)?.step4?.iban ||
+          iban:
+            (company as any)?.step4?.iban ||
             (company?.iban as string) ||
             ((settings as any)?.step4?.iban as string) ||
             '',
-          bic: (company as any)?.step4?.bic ||
+          bic:
+            (company as any)?.step4?.bic ||
             (company?.bic as string) ||
             ((settings as any)?.step4?.bic as string) ||
             '',
-          accountHolder: (company as any)?.step4?.accountHolder ||
+          accountHolder:
+            (company as any)?.step4?.accountHolder ||
             (company?.accountHolder as string) ||
             ((settings as any)?.step4?.accountHolder as string) ||
             (settings as any)?.accountHolder ||
@@ -1773,7 +1810,7 @@ export default function EditInvoicePage() {
       tseData: (() => {
         // TSE-Daten aus Company-Einstellungen holen, falls verfügbar
         const tseSettings = (company as any)?.eInvoiceSettings?.tse || (settings as any)?.tse;
-        
+
         if (!tseSettings) {
           return undefined;
         }
@@ -1781,7 +1818,8 @@ export default function EditInvoicePage() {
         return {
           serialNumber: tseSettings.serialNumber || '',
           signatureAlgorithm: tseSettings.signatureAlgorithm || 'ecdsa-plain-SHA256',
-          transactionNumber: tseSettings.transactionNumber || Math.floor(Math.random() * 1000000).toString(),
+          transactionNumber:
+            tseSettings.transactionNumber || Math.floor(Math.random() * 1000000).toString(),
           startTime: tseSettings.startTime || new Date().toISOString(),
           finishTime: tseSettings.finishTime || new Date(Date.now() + 1000).toISOString(),
           signature: tseSettings.signature || '',
@@ -2054,65 +2092,83 @@ export default function EditInvoicePage() {
         validUntil: formData.validUntil || new Date().toISOString().split('T')[0],
         deliveryDate: formData.deliveryDate,
         // Lieferzeitraum für Template (falls Range ausgewählt)
-        servicePeriod: deliveryDateType === 'range' && deliveryDateRange.from && deliveryDateRange.to 
-          ? `${deliveryDateRange.from.toLocaleDateString('de-DE')} - ${deliveryDateRange.to.toLocaleDateString('de-DE')}`
-          : undefined,
+        servicePeriod:
+          deliveryDateType === 'range' && deliveryDateRange.from && deliveryDateRange.to
+            ? `${deliveryDateRange.from.toLocaleDateString('de-DE')} - ${deliveryDateRange.to.toLocaleDateString('de-DE')}`
+            : undefined,
         serviceDate: deliveryDateType === 'single' ? formData.deliveryDate : undefined,
-        
+
         // Kundendaten
         customerName: formData.customerName || '',
         customerEmail: formData.customerEmail || '',
         customerAddress: formData.customerAddress || '',
         customerOrderNumber: formData.customerOrderNumber || '',
-        
+
         // Unternehmensdaten
-        companyName: company?.companyName || settings?.companyName || (user as any)?.name || 'Ihr Unternehmen',
+        companyName:
+          company?.companyName || settings?.companyName || (user as any)?.name || 'Ihr Unternehmen',
         companyAddress: [
           [company?.companyStreet, company?.companyHouseNumber].filter(Boolean).join(' '),
           [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
           company?.companyCountry,
-        ].filter(Boolean).join('\n'),
-        companyEmail: company?.contactEmail || company?.email || (settings as any)?.contactEmail || '',
-        companyPhone: company?.companyPhoneNumber || company?.phoneNumber || (settings as any)?.companyPhone || '',
-        companyWebsite: company?.website || company?.companyWebsite || (settings as any)?.companyWebsite || '',
+        ]
+          .filter(Boolean)
+          .join('\n'),
+        companyEmail:
+          company?.contactEmail || company?.email || (settings as any)?.contactEmail || '',
+        companyPhone:
+          company?.companyPhoneNumber ||
+          company?.phoneNumber ||
+          (settings as any)?.companyPhone ||
+          '',
+        companyWebsite:
+          company?.website || company?.companyWebsite || (settings as any)?.companyWebsite || '',
         companyVatId: company?.vatId || company?.step3?.vatId || (settings as any)?.vatId || '',
-        companyTaxNumber: company?.taxNumber || company?.step3?.taxNumber || (settings as any)?.taxNumber || '',
+        companyTaxNumber:
+          company?.taxNumber || company?.step3?.taxNumber || (settings as any)?.taxNumber || '',
         companyLogo: company?.profilePictureURL || company?.profilePictureFirebaseUrl || '',
-        
+
         // Bankdaten
         bankDetails: {
           iban: company?.iban || company?.step4?.iban || settings?.iban || '',
           bic: company?.bic || company?.step4?.bic || (settings as any)?.bic || '',
-          bankName: company?.bankName || company?.step4?.bankName || (settings as any)?.bankName || '',
-          accountHolder: company?.accountHolder || company?.step4?.accountHolder || (settings as any)?.accountHolder || company?.companyName || 'Kontoinhaber'
+          bankName:
+            company?.bankName || company?.step4?.bankName || (settings as any)?.bankName || '',
+          accountHolder:
+            company?.accountHolder ||
+            company?.step4?.accountHolder ||
+            (settings as any)?.accountHolder ||
+            company?.companyName ||
+            'Kontoinhaber',
         },
-        
+
         // Positionen
         items: items.filter(item => item.description && item.quantity > 0),
-        
+
         // Finanzielle Daten
         subtotal: subtotal,
         tax: vat,
         total: grandTotal,
         currency: formData.currency || 'EUR',
         vatRate: taxRate,
-        isSmallBusiness: company?.kleinunternehmer === 'ja' || company?.ust === 'kleinunternehmer' || false,
-        
+        isSmallBusiness:
+          company?.kleinunternehmer === 'ja' || company?.ust === 'kleinunternehmer' || false,
+
         // 🔧 KORRIGIERT: Verwende verarbeitete Texte mit ersetzten Platzhaltern
         headTextHtml: processedData.headTextHtml || '',
         notes: formData.notes || '',
         footerText: processedData.footerText || '',
         paymentTerms: formData.paymentTerms || '',
         deliveryTerms: formData.deliveryTerms || '',
-        
+
         // Kontaktperson
         contactPersonName: formData.internalContactPerson || '',
-        
+
         // Zusätzliche Felder
         title: formData.title || '',
         reference: formData.customerOrderNumber || '',
         description: processedData.headTextHtml || '',
-        taxRule: formData.taxRule || 'DE_TAXABLE'
+        taxRule: formData.taxRule || 'DE_TAXABLE',
       };
 
       // 🔍 DEBUG: Zeige alle gesendeten Daten
@@ -2135,7 +2191,7 @@ export default function EditInvoicePage() {
         headTextHtml: formData.headTextHtml,
         footerText: formData.footerText,
         paymentTerms: formData.paymentTerms,
-        notes: formData.notes
+        notes: formData.notes,
       });
       console.log('Company Data:', company);
       console.log('Items:', items);
@@ -2316,14 +2372,12 @@ export default function EditInvoicePage() {
     );
   };
 
-
-
   const handleSubmit = async (asDraft = true) => {
     if (loading) return;
     setLoading(true);
     try {
       console.log('🚨 CRITICAL: Starting Invoice Save - ALL FIELDS MUST BE SAVED!');
-      
+
       // Validation
       if (!formData.customerName || !formData.validUntil) {
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
@@ -2357,15 +2411,21 @@ export default function EditInvoicePage() {
         number: formData.title || `RE-${nextNumber}`,
         sequentialNumber: nextNumber,
         status: asDraft ? 'draft' : 'sent',
-        
+
         // Dates - ALLE Datumswerte aus dem Formular
-        date: formData.invoiceDate ? new Date(formData.invoiceDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        issueDate: formData.invoiceDate ? new Date(formData.invoiceDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        dueDate: formData.validUntil ? new Date(formData.validUntil).toISOString().split('T')[0] : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        date: formData.invoiceDate
+          ? new Date(formData.invoiceDate).toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0],
+        issueDate: formData.invoiceDate
+          ? new Date(formData.invoiceDate).toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0],
+        dueDate: formData.validUntil
+          ? new Date(formData.validUntil).toISOString().split('T')[0]
+          : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         invoiceDate: formData.invoiceDate || '',
         validUntil: formData.validUntil || '',
         deliveryDate: formData.deliveryDate || '',
-        
+
         // Customer Data - ALLE Kundenfelder aus dem Formular
         customerName: formData.customerName || '',
         customerFirstName: formData.customerFirstName || '',
@@ -2375,121 +2435,143 @@ export default function EditInvoicePage() {
         customerAddress: formData.customerAddress || '',
         customerOrderNumber: formData.customerOrderNumber || '',
         customerPhone: selectedCustomer?.phone || '',
-        
+
         // Invoice Identifiers - ALLE Titel und Referenz-Felder
         title: formData.title || '',
         documentNumber: formData.title || `RE-${nextNumber}`,
         reference: formData.customerOrderNumber || '',
-        
+
         // Company Data - ALLE Firmendaten aus Settings
-        companyName: company?.companyName || settings?.companyName || (user as any)?.displayName || 'Ihr Unternehmen',
+        companyName:
+          company?.companyName ||
+          settings?.companyName ||
+          (user as any)?.displayName ||
+          'Ihr Unternehmen',
         companyAddress: [
           [company?.companyStreet, company?.companyHouseNumber].filter(Boolean).join(' '),
           [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
           company?.companyCountry,
-        ].filter(Boolean).join('\n'),
-        companyEmail: company?.email as string || '',
-        companyPhone: company?.phoneNumber as string || company?.companyPhoneNumber as string || '',
-        companyWebsite: company?.website as string || company?.companyWebsite as string || '',
-        companyVatId: company?.vatId as string || (company as any)?.vatIdForBackend || '',
-        companyTaxNumber: company?.taxNumber as string || (company as any)?.taxNumberForBackend || '',
-        companyRegister: company?.companyRegisterPublic as string || company?.companyRegister as string || '',
-        companyLogo: company?.companyLogo as string || '',
-        profilePictureURL: company?.profilePictureURL as string || '',
-        
+        ]
+          .filter(Boolean)
+          .join('\n'),
+        companyEmail: (company?.email as string) || '',
+        companyPhone:
+          (company?.phoneNumber as string) || (company?.companyPhoneNumber as string) || '',
+        companyWebsite: (company?.website as string) || (company?.companyWebsite as string) || '',
+        companyVatId: (company?.vatId as string) || (company as any)?.vatIdForBackend || '',
+        companyTaxNumber:
+          (company?.taxNumber as string) || (company as any)?.taxNumberForBackend || '',
+        companyRegister:
+          (company?.companyRegisterPublic as string) || (company?.companyRegister as string) || '',
+        companyLogo: (company?.companyLogo as string) || '',
+        profilePictureURL: (company?.profilePictureURL as string) || '',
+
         // **CRITICAL**: ALLE Textfelder - Kopftext, Footer, Notizen
         description: formData.headTextHtml || '',
         headTextHtml: formData.headTextHtml || '', // MUSS gespeichert werden!
         footerText: formData.footerText || '', // MUSS gespeichert werden!
         notes: formData.notes || '',
-        
+
         // Contact Person - ALLE Kontaktfelder
         internalContactPerson: formData.internalContactPerson || '',
         contactPersonName: formData.internalContactPerson || '',
-        
+
         // Payment & Delivery Terms - ALLE Zahlungs- und Lieferbedingungen
-        paymentTerms: finalPaymentTerms || formData.paymentTerms || 'Zahlbar binnen 14 Tagen ohne Abzug',
+        paymentTerms:
+          finalPaymentTerms || formData.paymentTerms || 'Zahlbar binnen 14 Tagen ohne Abzug',
         deliveryTerms: formData.deliveryTerms || '',
         deliveryMethod: formData.deliveryTerms ? 'custom' : null,
-        
+
         // Skonto Data - ALLE Skonto-Einstellungen
         skontoEnabled: skontoEnabled || false,
         skontoDays: skontoDays || null,
         skontoPercentage: skontoPercentage || null,
         skontoText: skontoText || '',
-        
+
         // Financial Data - ALLE Items mit vollständigen Details
-        items: items.filter(it => it.description && it.quantity > 0).map(item => ({
-          id: item.id || crypto.randomUUID(),
-          description: item.description,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          total: item.total,
-          taxRate: item.taxRate || taxRate,
-          unit: item.unit || 'Stk',
-          category: item.category || 'Artikel',
-          discountPercent: item.discountPercent || 0,
-          inventoryItemId: item.inventoryItemId || null,
-        })),
+        items: items
+          .filter(it => it.description && it.quantity > 0)
+          .map(item => ({
+            id: item.id || crypto.randomUUID(),
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.total,
+            taxRate: item.taxRate || taxRate,
+            unit: item.unit || 'Stk',
+            category: item.category || 'Artikel',
+            discountPercent: item.discountPercent || 0,
+            inventoryItemId: item.inventoryItemId || null,
+          })),
         amount: subtotal, // Nettobetrag
-        tax: vat, // Steuerbetrag  
+        tax: vat, // Steuerbetrag
         total: grandTotal, // Gesamtbetrag
         subtotal: subtotal,
         taxAmount: vat,
-        
+
         // Tax & Business Settings - ALLE Steuer-Einstellungen
         vatRate: taxRate,
         isSmallBusiness: settings?.ust === 'kleinunternehmer' || taxRate === 0,
         priceInput: showNet ? 'netto' : 'brutto',
-        taxRuleType: formData.taxRule as TaxRuleType || 'DE_TAXABLE',
-        taxRule: formData.taxRule as TaxRuleType || 'DE_TAXABLE',
+        taxRuleType: (formData.taxRule as TaxRuleType) || 'DE_TAXABLE',
+        taxRule: (formData.taxRule as TaxRuleType) || 'DE_TAXABLE',
         showNet: showNet,
-        
+
         // Currency & Formatting
         currency: formData.currency || 'EUR',
-        
+
         // Required metadata fields
         year: new Date().getFullYear(),
         createdAt: new Date(),
         updatedAt: new Date(),
-        
+
         // User IDs
         createdBy: uid,
         lastModifiedBy: uid,
-        
+
         // Bank Details - ALLE Bankdaten
-        bankDetails: company ? {
-          iban: (company as any)?.step4?.iban || company?.iban as string || '',
-          bic: (company as any)?.step4?.bic || company?.bic as string || '',
-          bankName: (company as any)?.step4?.bankName || company?.bankName as string || '',
-          accountHolder: (company as any)?.step4?.accountHolder || company?.accountHolder as string || company?.companyName || '',
-        } : undefined,
-        
+        bankDetails: company
+          ? {
+              iban: (company as any)?.step4?.iban || (company?.iban as string) || '',
+              bic: (company as any)?.step4?.bic || (company?.bic as string) || '',
+              bankName: (company as any)?.step4?.bankName || (company?.bankName as string) || '',
+              accountHolder:
+                (company as any)?.step4?.accountHolder ||
+                (company?.accountHolder as string) ||
+                company?.companyName ||
+                '',
+            }
+          : undefined,
+
         // Template & UI Settings
         template: typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
-        templateType: typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
+        templateType:
+          typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
         language: 'de',
-        
+
         // Additional Control Fields
         isStorno: false,
         isRecurring: false,
-        
+
         // E-Invoice Settings (if enabled)
         isEInvoice: eInvoiceEnabled || false,
         eInvoiceType: eInvoiceEnabled ? 'zugferd' : null,
         eInvoiceSettings: eInvoiceEnabled ? eInvoiceSettings : null,
-        
+
         // PDF & Document Paths
         pdfPath: null,
         eInvoiceXmlPath: null,
-        
+
         // Delivery Date Configuration
         deliveryDateType: deliveryDateType || 'single',
-        deliveryDateRange: deliveryDateType === 'range' ? {
-          from: deliveryDateRange.from?.toISOString().split('T')[0] || null,
-          to: deliveryDateRange.to?.toISOString().split('T')[0] || null,
-        } : null,
-        
+        deliveryDateRange:
+          deliveryDateType === 'range'
+            ? {
+                from: deliveryDateRange.from?.toISOString().split('T')[0] || null,
+                to: deliveryDateRange.to?.toISOString().split('T')[0] || null,
+              }
+            : null,
+
         // Original form state preservation for debugging
         _originalFormData: {
           ...formData,
@@ -2508,9 +2590,11 @@ export default function EditInvoicePage() {
 
       // 🚨 CRITICAL: Remove all undefined values (Firestore doesn't accept undefined)
       // But preserve Date objects for Firestore Timestamps
-      const cleanInvoiceData = JSON.parse(JSON.stringify(invoiceData, (key, value) => {
-        return value === undefined ? null : value;
-      }));
+      const cleanInvoiceData = JSON.parse(
+        JSON.stringify(invoiceData, (key, value) => {
+          return value === undefined ? null : value;
+        })
+      );
 
       // Restore Date objects that got converted to strings
       cleanInvoiceData.createdAt = new Date(cleanInvoiceData.createdAt);
@@ -2521,7 +2605,7 @@ export default function EditInvoicePage() {
       // 🔄 UPDATE EXISTING INVOICE (Edit Mode)
       // Verwende die ursprüngliche ID der existierenden Rechnung
       cleanInvoiceData.id = invoiceId;
-      
+
       // Update Invoice using FirestoreInvoiceService
       await InvoiceService.updateInvoice(invoiceId, cleanInvoiceData);
       console.log('✅ INVOICE UPDATED WITH ID:', invoiceId);
@@ -2546,10 +2630,9 @@ export default function EditInvoicePage() {
 
       toast.success(asDraft ? 'Rechnung als Entwurf aktualisiert' : 'Rechnung aktualisiert');
       console.log('🎉 INVOICE UPDATE COMPLETED SUCCESSFULLY');
-      
+
       // Navigate to invoices list
       router.push(`/dashboard/company/${uid}/finance/invoices`);
-      
     } catch (e) {
       console.error('❌ CRITICAL ERROR in handleSubmit:', e);
       toast.error('Rechnung konnte nicht gespeichert werden');
@@ -2564,12 +2647,12 @@ export default function EditInvoicePage() {
       setEInvoiceEnabled(false);
       return;
     }
-    
+
     // Umfassende E-Rechnung Compliance Prüfung
     try {
       const complianceErrors: string[] = [];
       const invalidFieldsSet = new Set<string>();
-      
+
       // 1. Lade Company-Daten für vollständige Prüfung
       let companyData: any = null;
       try {
@@ -2585,14 +2668,14 @@ export default function EditInvoicePage() {
       } catch (error) {
         complianceErrors.push('Fehler beim Laden der Unternehmensdaten');
       }
-      
+
       // 2. Unternehmensdaten Prüfung (§14 UStG) - aus companies collection
       if (companyData) {
         // Firmenname (Pflichtfeld)
         if (!companyData.companyName?.trim()) {
           complianceErrors.push('Firmenname ist erforderlich');
         }
-        
+
         // Vollständige Firmenanschrift prüfen (aus der echten DB-Struktur)
         if (!companyData.companyStreet?.trim()) {
           complianceErrors.push('Firmenstraße ist erforderlich');
@@ -2606,35 +2689,38 @@ export default function EditInvoicePage() {
         if (!companyData.companyCountry?.trim()) {
           complianceErrors.push('Land der Firma ist erforderlich');
         }
-        
+
         // E-Mail für Versendung (aus der echten DB-Struktur)
         const hasEmail = companyData.contactEmail?.trim() || companyData.email?.trim();
         if (!hasEmail) {
           complianceErrors.push('Firmen-E-Mail-Adresse ist erforderlich');
         }
-        
+
         // Telefonnummer (aus der echten DB-Struktur)
         const hasPhone = companyData.companyPhoneNumber?.trim() || companyData.phoneNumber?.trim();
         if (!hasPhone) {
           complianceErrors.push('Firmen-Telefonnummer ist für E-Rechnungen empfohlen');
         }
-        
+
         // Steuerliche Identifikation (aus der echten DB-Struktur)
         const hasVatId = companyData.vatId?.trim() || companyData.step3?.vatId?.trim();
         const hasTaxNumber = companyData.taxNumber?.trim() || companyData.step3?.taxNumber?.trim();
-        
+
         if (!hasVatId && !hasTaxNumber) {
           complianceErrors.push('USt-IdNr. oder Steuernummer ist erforderlich für E-Rechnungen');
         }
-        
+
         // Kleinunternehmer-spezifische Prüfung (aus der echten DB-Struktur)
-        const isKleinunternehmer = companyData.kleinunternehmer === 'ja' || 
-                                   companyData.ust === 'kleinunternehmer' || 
-                                   companyData.step2?.kleinunternehmer === 'ja';
-        
+        const isKleinunternehmer =
+          companyData.kleinunternehmer === 'ja' ||
+          companyData.ust === 'kleinunternehmer' ||
+          companyData.step2?.kleinunternehmer === 'ja';
+
         if (isKleinunternehmer) {
           if (hasVatId) {
-            complianceErrors.push('Kleinunternehmer dürfen keine USt-IdNr. auf Rechnungen ausweisen');
+            complianceErrors.push(
+              'Kleinunternehmer dürfen keine USt-IdNr. auf Rechnungen ausweisen'
+            );
           }
           if (!hasTaxNumber) {
             complianceErrors.push('Kleinunternehmer benötigen eine Steuernummer für E-Rechnungen');
@@ -2642,28 +2728,34 @@ export default function EditInvoicePage() {
         } else {
           // Regelbesteuerte Unternehmen
           if (!hasVatId && !hasTaxNumber) {
-            complianceErrors.push('Regelbesteuerte Unternehmen benötigen USt-IdNr. oder Steuernummer');
+            complianceErrors.push(
+              'Regelbesteuerte Unternehmen benötigen USt-IdNr. oder Steuernummer'
+            );
           }
         }
-        
+
         // Rechtsform und Registrierung (aus der echten DB-Struktur)
         const legalForm = companyData.legalForm || companyData.step2?.legalForm;
         if (legalForm && legalForm !== 'Einzelunternehmen' && legalForm !== 'Freiberufler') {
           // Kapitalgesellschaften benötigen Handelsregistereintrag
-          const hasRegister = companyData.companyRegister?.trim() || 
-                             companyData.step3?.companyRegister?.trim() ||
-                             companyData.registrationNumber?.trim();
+          const hasRegister =
+            companyData.companyRegister?.trim() ||
+            companyData.step3?.companyRegister?.trim() ||
+            companyData.registrationNumber?.trim();
           if (!hasRegister) {
-            complianceErrors.push('Handelsregisternummer ist für Kapitalgesellschaften erforderlich');
+            complianceErrors.push(
+              'Handelsregisternummer ist für Kapitalgesellschaften erforderlich'
+            );
           }
         }
-        
+
         // Bankverbindung für Zahlungen (aus der echten DB-Struktur)
         const hasIban = companyData.iban?.trim() || companyData.step4?.iban?.trim();
         const hasBic = companyData.bic?.trim() || companyData.step4?.bic?.trim();
         const hasBankName = companyData.bankName?.trim() || companyData.step4?.bankName?.trim();
-        const hasAccountHolder = companyData.accountHolder?.trim() || companyData.step4?.accountHolder?.trim();
-        
+        const hasAccountHolder =
+          companyData.accountHolder?.trim() || companyData.step4?.accountHolder?.trim();
+
         if (!hasIban) {
           complianceErrors.push('IBAN ist für E-Rechnungen erforderlich');
         }
@@ -2676,42 +2768,48 @@ export default function EditInvoicePage() {
         if (!hasAccountHolder) {
           complianceErrors.push('Kontoinhaber ist für E-Rechnungen erforderlich');
         }
-        
+
         // Website (aus der echten DB-Struktur)
-        const hasWebsite = companyData.website?.trim() || 
-                          companyData.companyWebsite?.trim() || 
-                          companyData.step1?.website?.trim() ||
-                          companyData.companyWebsiteForBackend?.trim();
+        const hasWebsite =
+          companyData.website?.trim() ||
+          companyData.companyWebsite?.trim() ||
+          companyData.step1?.website?.trim() ||
+          companyData.companyWebsiteForBackend?.trim();
         if (!hasWebsite) {
           complianceErrors.push('Firmen-Website ist für professionelle E-Rechnungen empfohlen');
         }
-        
+
         // Logo für Branding (aus der echten DB-Struktur)
-        const hasLogo = companyData.profilePictureURL?.trim() || 
-                       companyData.profilePictureFirebaseUrl?.trim();
+        const hasLogo =
+          companyData.profilePictureURL?.trim() || companyData.profilePictureFirebaseUrl?.trim();
         if (!hasLogo) {
           complianceErrors.push('Firmen-Logo ist für professionelle E-Rechnungen empfohlen');
         }
-        
+
         // Branchenangabe (aus der echten DB-Struktur)
-        const hasIndustry = companyData.selectedCategory?.trim() || 
-                           companyData.step2?.industry?.trim() ||
-                           companyData.industry?.trim();
+        const hasIndustry =
+          companyData.selectedCategory?.trim() ||
+          companyData.step2?.industry?.trim() ||
+          companyData.industry?.trim();
         if (!hasIndustry) {
           complianceErrors.push('Branchenangabe ist für E-Rechnungen empfohlen');
         }
-        
+
         // Geschäftsbeschreibung (aus der echten DB-Struktur)
         if (!companyData.description?.trim()) {
-          complianceErrors.push('Geschäftsbeschreibung ist für professionelle E-Rechnungen empfohlen');
+          complianceErrors.push(
+            'Geschäftsbeschreibung ist für professionelle E-Rechnungen empfohlen'
+          );
         }
       } else {
-        complianceErrors.push('Unternehmensdaten nicht vollständig - bitte Firmenprofil vervollständigen');
+        complianceErrors.push(
+          'Unternehmensdaten nicht vollständig - bitte Firmenprofil vervollständigen'
+        );
       }
-      
+
       // 3. Kundendaten Prüfung - Prüfe ob gültiger Kunde ausgewählt wurde
       const selectedCustomer = customers.find(c => c.name === formData.customerName);
-      
+
       if (!formData.customerName.trim()) {
         complianceErrors.push('Kundenname ist erforderlich');
         invalidFieldsSet.add('customerName');
@@ -2727,7 +2825,7 @@ export default function EditInvoicePage() {
             invalidFieldsSet.add('customerAddress');
           }
         }
-        
+
         if (!formData.customerEmail?.trim()) {
           complianceErrors.push('Kunden-E-Mail-Adresse für E-Rechnung Versendung erforderlich');
           invalidFieldsSet.add('customerEmail');
@@ -2735,46 +2833,57 @@ export default function EditInvoicePage() {
       } else {
         // Existierender Kunde - prüfe Vollständigkeit in der Customers Collection
         if (!selectedCustomer.email?.trim()) {
-          complianceErrors.push(`Kunde &quot;${selectedCustomer.name}&quot; hat keine E-Mail-Adresse hinterlegt`);
+          complianceErrors.push(
+            `Kunde &quot;${selectedCustomer.name}&quot; hat keine E-Mail-Adresse hinterlegt`
+          );
         }
-        
-        if (!selectedCustomer.street?.trim() || !selectedCustomer.city?.trim() || !selectedCustomer.postalCode?.trim()) {
-          complianceErrors.push(`Kunde &quot;${selectedCustomer.name}&quot; hat unvollständige Adressdaten`);
+
+        if (
+          !selectedCustomer.street?.trim() ||
+          !selectedCustomer.city?.trim() ||
+          !selectedCustomer.postalCode?.trim()
+        ) {
+          complianceErrors.push(
+            `Kunde &quot;${selectedCustomer.name}&quot; hat unvollständige Adressdaten`
+          );
         }
-        
+
         // Für B2B-Kunden (mit VAT-ID) zusätzliche Prüfungen
         if (selectedCustomer.vatId?.trim()) {
           if (!selectedCustomer.vatValidated) {
-            complianceErrors.push(`USt-IdNr. von Kunde &quot;${selectedCustomer.name}&quot; ist nicht validiert`);
+            complianceErrors.push(
+              `USt-IdNr. von Kunde &quot;${selectedCustomer.name}&quot; ist nicht validiert`
+            );
           }
         }
       }
-      
+
       // 4. Rechnungsdaten Prüfung
       if (!formData.title?.trim()) {
         complianceErrors.push('Rechnungsnummer ist erforderlich');
         invalidFieldsSet.add('title');
       }
-      
+
       // 5. Positionen Prüfung
-      const validItems = items.filter(item => 
-        item.description?.trim() && 
-        item.quantity > 0 && 
-        item.unitPrice >= 0 &&
-        item.category !== 'discount'
+      const validItems = items.filter(
+        item =>
+          item.description?.trim() &&
+          item.quantity > 0 &&
+          item.unitPrice >= 0 &&
+          item.category !== 'discount'
       );
-      
+
       if (validItems.length === 0) {
         complianceErrors.push('Mindestens eine gültige Position ist erforderlich');
         invalidFieldsSet.add('items');
       }
-      
+
       // 6. Steuerliche Prüfung
       if (!formData.taxRule) {
         complianceErrors.push('Steuerliche Behandlung muss definiert sein');
         invalidFieldsSet.add('taxRule');
       }
-      
+
       // 7. E-Rechnung spezifische Anforderungen
       if (contactType === 'organisation') {
         // Für B2B E-Rechnungen
@@ -2782,61 +2891,61 @@ export default function EditInvoicePage() {
           complianceErrors.push('Kunden-E-Mail-Adresse für E-Rechnung Versendung erforderlich');
         }
       }
-      
+
       // 8. Format-spezifische Prüfungen
       const defaultFormat = eInvoiceSettings?.defaultFormat || 'zugferd';
-      
+
       if (defaultFormat === 'xrechnung') {
         // XRechnung benötigt zusätzliche Metadaten
         if (!formData.customerOrderNumber?.trim()) {
           complianceErrors.push('Bestellnummer für XRechnung erforderlich');
         }
       }
-      
+
       // 9. Betragsprüfung
       const totalAmount = subtotal + vat;
       if (totalAmount <= 0) {
         complianceErrors.push('Rechnungsbetrag muss größer als 0 sein');
       }
-      
+
       // 10. Währungsprüfung
       if (formData.currency !== 'EUR') {
         complianceErrors.push('E-Rechnungen werden aktuell nur in EUR unterstützt');
       }
-      
+
       // 11. Datum Prüfungen
       const today = new Date();
       const invoiceDate = new Date();
-      
+
       if (invoiceDate > today) {
         complianceErrors.push('Rechnungsdatum darf nicht in der Zukunft liegen');
       }
-      
+
       // Zeige Compliance Fehler oder aktiviere E-Rechnung
       if (complianceErrors.length > 0) {
         setEInvoiceEnabled(false);
         setComplianceErrors(complianceErrors);
         setInvalidFields(invalidFieldsSet);
         setShowCompliancePanel(true);
-        
+
         // Kurze Toast-Nachricht mit Hinweis auf Panel
         toast.error('E-Rechnung kann nicht aktiviert werden', {
           description: `${complianceErrors.length} Probleme gefunden. Fehlende Felder sind rot markiert.`,
           duration: 5000,
         });
-        
+
         return;
       }
-      
+
       // Alle Prüfungen bestanden - E-Rechnung aktivieren
       setEInvoiceEnabled(true);
       setInvalidFields(new Set()); // Clear invalid fields
-      
+
       // Update settings in company document
       try {
         const { doc, updateDoc } = await import('firebase/firestore');
         const { db } = await import('@/firebase/clients');
-        
+
         const updatedSettings = {
           defaultFormat: eInvoiceSettings?.defaultFormat || 'zugferd',
           defaultStandard: eInvoiceSettings?.defaultStandard || 'EN16931',
@@ -2852,26 +2961,27 @@ export default function EditInvoicePage() {
           },
           updatedAt: new Date(),
         };
-        
+
         const companyRef = doc(db, 'companies', uid);
         await updateDoc(companyRef, {
-          'eInvoiceSettings': updatedSettings
+          eInvoiceSettings: updatedSettings,
         });
-        
+
         setEInvoiceSettings(updatedSettings);
       } catch (updateError) {
         console.error('Fehler beim Speichern der E-Rechnung Einstellungen:', updateError);
         // Don't fail the whole process if settings can't be saved
       }
-      
+
       toast.success('E-Rechnung aktiviert', {
-        description: 'Alle Compliance-Anforderungen erfüllt. E-Rechnungen werden automatisch generiert.',
+        description:
+          'Alle Compliance-Anforderungen erfüllt. E-Rechnungen werden automatisch generiert.',
       });
-      
     } catch (error) {
       console.error('Fehler bei E-Rechnung Compliance-Prüfung:', error);
       toast.error('E-Rechnung Prüfung fehlgeschlagen', {
-        description: 'Technischer Fehler bei der Compliance-Prüfung. Bitte versuchen Sie es erneut.',
+        description:
+          'Technischer Fehler bei der Compliance-Prüfung. Bitte versuchen Sie es erneut.',
       });
       setEInvoiceEnabled(false);
     }
@@ -2900,7 +3010,7 @@ export default function EditInvoicePage() {
       toast.success('Unternehmensdaten gespeichert');
       setShowCompanySettingsModal(false);
       setShowCompanySettingsBanner(false);
-      
+
       // Reload company data
       const snap = await getDoc(companyRef);
       if (snap.exists()) {
@@ -2914,8 +3024,8 @@ export default function EditInvoicePage() {
 
   // Hilfsfunktion für fehlerhafte Felder
   const getFieldErrorClass = (fieldName: string) => {
-    return invalidFields.has(fieldName) 
-      ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+    return invalidFields.has(fieldName)
+      ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
       : '';
   };
 
@@ -2942,8 +3052,11 @@ export default function EditInvoicePage() {
           <div className="text-center">
             <AlertTriangle className="h-8 w-8 mx-auto mb-4 text-red-500" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Rechnung nicht gefunden</h2>
-            <p className="text-gray-600 mb-4">Die angeforderte Rechnung konnte nicht gefunden werden oder Sie haben keine Berechtigung.</p>
-            <Button 
+            <p className="text-gray-600 mb-4">
+              Die angeforderte Rechnung konnte nicht gefunden werden oder Sie haben keine
+              Berechtigung.
+            </p>
+            <Button
               onClick={() => router.push(`/dashboard/company/${uid}/finance/invoices`)}
               className="bg-[#14ad9f] hover:bg-[#129488] text-white"
             >
@@ -2979,11 +3092,11 @@ export default function EditInvoicePage() {
             {/* E-Rechnung Toggle */}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">
-                <Switch 
+                <Switch
                   checked={eInvoiceEnabled}
                   onCheckedChange={handleEInvoiceToggle}
                   style={{
-                    backgroundColor: eInvoiceEnabled ? '#14ad9f' : undefined
+                    backgroundColor: eInvoiceEnabled ? '#14ad9f' : undefined,
                   }}
                   className=""
                 />
@@ -2996,8 +3109,8 @@ export default function EditInvoicePage() {
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="default"
                 onClick={() => handleSubmit(true)}
                 disabled={loading || loadingInvoice}
@@ -3019,7 +3132,7 @@ export default function EditInvoicePage() {
                 Live-Vorschau
               </Button>
 
-              <Button 
+              <Button
                 className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                 size="default"
                 onClick={() => handleSubmit(false)}
@@ -3036,13 +3149,16 @@ export default function EditInvoicePage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => {
-                    // TODO: Aufgabe erstellen Funktionalität implementieren
-                    toast.success('Aufgabe erstellen - Feature wird implementiert');
-                  }} className="w-full">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      // TODO: Aufgabe erstellen Funktionalität implementieren
+                      toast.success('Aufgabe erstellen - Feature wird implementiert');
+                    }}
+                    className="w-full"
+                  >
                     <div className="w-full">
-                      <Button 
-                        variant="default" 
+                      <Button
+                        variant="default"
                         className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white justify-center"
                         size="sm"
                       >
@@ -3050,12 +3166,15 @@ export default function EditInvoicePage() {
                       </Button>
                     </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    handleStornierung();
-                  }} className="w-full">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      handleStornierung();
+                    }}
+                    className="w-full"
+                  >
                     <div className="w-full">
-                      <Button 
-                        variant="default" 
+                      <Button
+                        variant="default"
                         className="w-full bg-red-600 hover:bg-red-700 text-white justify-center"
                         size="sm"
                       >
@@ -3076,13 +3195,12 @@ export default function EditInvoicePage() {
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-6 w-6 text-orange-600 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <div className="font-medium text-orange-800 mb-1">
-                Angaben zu deinem Unternehmen
-              </div>
+              <div className="font-medium text-orange-800 mb-1">Angaben zu deinem Unternehmen</div>
               <div className="text-sm text-orange-700 mb-3">
-                Damit deine Rechnungen rechtssicher und GoBD-konform sind, ergänze noch Angaben zu dir und deinem Unternehmen.
+                Damit deine Rechnungen rechtssicher und GoBD-konform sind, ergänze noch Angaben zu
+                dir und deinem Unternehmen.
               </div>
-              <Button 
+              <Button
                 onClick={() => setShowCompanySettingsModal(true)}
                 className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                 size="sm"
@@ -3115,7 +3233,7 @@ export default function EditInvoicePage() {
                 Folgende Probleme verhindern die Aktivierung der E-Rechnung:
               </SheetDescription>
             </SheetHeader>
-            
+
             <div className="mt-6 space-y-3">
               {complianceErrors.length > 0 && (
                 <div className="p-3 bg-[#14ad9f]/5 border border-[#14ad9f]/20 rounded-lg">
@@ -3123,9 +3241,7 @@ export default function EditInvoicePage() {
                     <div className="w-4 h-4 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-xs font-bold">
                       !
                     </div>
-                    <h4 className="text-sm font-semibold text-[#14ad9f]">
-                      Erforderliche Angaben
-                    </h4>
+                    <h4 className="text-sm font-semibold text-[#14ad9f]">Erforderliche Angaben</h4>
                     <span className="text-xs bg-[#14ad9f]/10 text-[#14ad9f] px-1.5 py-0.5 rounded">
                       {complianceErrors.length}
                     </span>
@@ -3148,12 +3264,13 @@ export default function EditInvoicePage() {
                 E-Rechnung Mindestanforderungen
               </h4>
               <div className="text-xs text-gray-700 leading-tight">
-                Vollständige Firmen- und Kundendaten, Steuer-ID, Bankverbindung, gültige E-Mail-Adressen
+                Vollständige Firmen- und Kundendaten, Steuer-ID, Bankverbindung, gültige
+                E-Mail-Adressen
               </div>
             </div>
 
             <SheetFooter className="mt-6 pt-4 border-t border-[#14ad9f]/10">
-              <Button 
+              <Button
                 onClick={() => setShowCompliancePanel(false)}
                 variant="default"
                 className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
@@ -3161,12 +3278,12 @@ export default function EditInvoicePage() {
                 style={{
                   backgroundColor: '#14ad9f',
                   color: 'white',
-                  border: 'none'
+                  border: 'none',
                 }}
-                onMouseEnter={(e) => {
+                onMouseEnter={e => {
                   e.currentTarget.style.backgroundColor = '#129488';
                 }}
-                onMouseLeave={(e) => {
+                onMouseLeave={e => {
                   e.currentTarget.style.backgroundColor = '#14ad9f';
                 }}
               >
@@ -3192,7 +3309,7 @@ export default function EditInvoicePage() {
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Empfänger</h3>
-                
+
                 {/* Kontakttyp Toggle */}
                 <div className="flex items-center gap-2 mb-4">
                   <Label className="text-sm font-medium text-gray-700">Kontakt</Label>
@@ -3203,8 +3320,8 @@ export default function EditInvoicePage() {
                       variant={contactType === 'organisation' ? 'default' : 'outline'}
                       size="sm"
                       className={`rounded-r-none ${
-                        contactType === 'organisation' 
-                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' 
+                        contactType === 'organisation'
+                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
                           : 'hover:bg-gray-50'
                       }`}
                       onClick={() => setContactType('organisation')}
@@ -3216,8 +3333,8 @@ export default function EditInvoicePage() {
                       variant={contactType === 'person' ? 'default' : 'outline'}
                       size="sm"
                       className={`rounded-l-none ${
-                        contactType === 'person' 
-                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' 
+                        contactType === 'person'
+                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
                           : 'hover:bg-gray-50'
                       }`}
                       onClick={() => setContactType('person')}
@@ -3260,7 +3377,9 @@ export default function EditInvoicePage() {
                           {/* Gefilterte Kunden anzeigen */}
                           {customers
                             .filter(customer =>
-                              customer.name.toLowerCase().includes(formData.customerName.toLowerCase())
+                              customer.name
+                                .toLowerCase()
+                                .includes(formData.customerName.toLowerCase())
                             )
                             .slice(0, 5)
                             .map(customer => (
@@ -3284,7 +3403,7 @@ export default function EditInvoicePage() {
                               setShowCustomerSearchPopup(false);
                             }}
                           >
-                            + Neuen Kunden "{formData.customerName}" erstellen
+                            + Neuen Kunden &quot;{formData.customerName}&quot; erstellen
                           </div>
                         </div>
                       )}
@@ -3309,7 +3428,8 @@ export default function EditInvoicePage() {
                               }));
 
                               // Trigger Kundensuche wenn kombinierter Name >= 2 Zeichen
-                              const combinedName = `${value} ${formData.customerLastName || ''}`.trim();
+                              const combinedName =
+                                `${value} ${formData.customerLastName || ''}`.trim();
                               if (combinedName.length >= 2) {
                                 setShowCustomerSearchPopup(true);
                               } else {
@@ -3337,7 +3457,8 @@ export default function EditInvoicePage() {
                               }));
 
                               // Trigger Kundensuche wenn kombinierter Name >= 2 Zeichen
-                              const combinedName = `${formData.customerFirstName || ''} ${value}`.trim();
+                              const combinedName =
+                                `${formData.customerFirstName || ''} ${value}`.trim();
                               if (combinedName.length >= 2) {
                                 setShowCustomerSearchPopup(true);
                               } else {
@@ -3357,7 +3478,9 @@ export default function EditInvoicePage() {
                           {/* Gefilterte Kunden anzeigen */}
                           {customers
                             .filter(customer =>
-                              customer.name.toLowerCase().includes(formData.customerName.toLowerCase())
+                              customer.name
+                                .toLowerCase()
+                                .includes(formData.customerName.toLowerCase())
                             )
                             .slice(0, 5)
                             .map(customer => (
@@ -3369,7 +3492,7 @@ export default function EditInvoicePage() {
                                   const nameParts = customer.name.split(' ');
                                   const firstName = nameParts[0] || '';
                                   const lastName = nameParts.slice(1).join(' ') || '';
-                                  
+
                                   setFormData(prev => ({
                                     ...prev,
                                     customerName: customer.name,
@@ -3377,7 +3500,7 @@ export default function EditInvoicePage() {
                                     customerLastName: lastName,
                                     customerEmail: customer.email,
                                     customerNumber: customer.customerNumber || '',
-                                    customerAddress: 
+                                    customerAddress:
                                       customer.street && customer.city
                                         ? `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}`
                                         : prev.customerAddress,
@@ -3403,7 +3526,7 @@ export default function EditInvoicePage() {
                               console.log('setCreateCustomerOpen(true) direkt aufgerufen');
                             }}
                           >
-                            + Neuen Kunden "{formData.customerName}" erstellen
+                            + Neuen Kunden &quot;{formData.customerName}&quot; erstellen
                           </div>
                         </div>
                       )}
@@ -3465,7 +3588,14 @@ export default function EditInvoicePage() {
                         }}
                         title="Adresszusatz entfernen"
                       >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
                           <line x1="18" y1="6" x2="6" y2="18"></line>
                           <line x1="6" y1="6" x2="18" y2="18"></line>
                         </svg>
@@ -3477,7 +3607,11 @@ export default function EditInvoicePage() {
                   <div className="grid grid-cols-2 gap-3">
                     <Input
                       placeholder="Postleitzahl"
-                      value={formData.customerAddress?.split('\n')[showAddressAddition ? 2 : 1]?.split(' ')[0] || ''}
+                      value={
+                        formData.customerAddress
+                          ?.split('\n')
+                          [showAddressAddition ? 2 : 1]?.split(' ')[0] || ''
+                      }
                       onChange={e => {
                         const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
                         const lineIndex = showAddressAddition ? 2 : 1;
@@ -3489,7 +3623,13 @@ export default function EditInvoicePage() {
                     />
                     <Input
                       placeholder="Ort"
-                      value={formData.customerAddress?.split('\n')[showAddressAddition ? 2 : 1]?.split(' ').slice(1).join(' ') || ''}
+                      value={
+                        formData.customerAddress
+                          ?.split('\n')
+                          [showAddressAddition ? 2 : 1]?.split(' ')
+                          .slice(1)
+                          .join(' ') || ''
+                      }
                       onChange={e => {
                         const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
                         const lineIndex = showAddressAddition ? 2 : 1;
@@ -3502,8 +3642,11 @@ export default function EditInvoicePage() {
                   </div>
 
                   {/* Land */}
-                  <Select 
-                    value={formData.customerAddress?.split('\n')[showAddressAddition ? 3 : 2] || 'Deutschland'}
+                  <Select
+                    value={
+                      formData.customerAddress?.split('\n')[showAddressAddition ? 3 : 2] ||
+                      'Deutschland'
+                    }
                     onValueChange={value => {
                       const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
                       const lineIndex = showAddressAddition ? 3 : 2;
@@ -3536,7 +3679,7 @@ export default function EditInvoicePage() {
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Rechnungsinformationen</h3>
-                
+
                 {/* 2x2 Grid für Rechnungsfelder */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   {/* Rechnungsdatum */}
@@ -3559,7 +3702,7 @@ export default function EditInvoicePage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
-                        <Label 
+                        <Label
                           className={`text-sm font-medium cursor-pointer ${
                             deliveryDateType === 'single' ? 'text-gray-900' : 'text-gray-500'
                           }`}
@@ -3579,7 +3722,7 @@ export default function EditInvoicePage() {
                         Zeitraum
                       </button>
                     </div>
-                    
+
                     {deliveryDateType === 'single' ? (
                       <Input
                         type="date"
@@ -3590,10 +3733,13 @@ export default function EditInvoicePage() {
                         required
                       />
                     ) : (
-                      <Popover open={deliveryDatePopoverOpen} onOpenChange={setDeliveryDatePopoverOpen}>
+                      <Popover
+                        open={deliveryDatePopoverOpen}
+                        onOpenChange={setDeliveryDatePopoverOpen}
+                      >
                         <PopoverTrigger asChild>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             className="w-full justify-start text-left font-normal"
                             onClick={() => setDeliveryDatePopoverOpen(true)}
                           >
@@ -3601,13 +3747,14 @@ export default function EditInvoicePage() {
                             {deliveryDateRange.from ? (
                               deliveryDateRange.to ? (
                                 <>
-                                  {format(deliveryDateRange.from, "dd.MM.yyyy", { locale: de })} - {format(deliveryDateRange.to, "dd.MM.yyyy", { locale: de })}
+                                  {format(deliveryDateRange.from, 'dd.MM.yyyy', { locale: de })} -{' '}
+                                  {format(deliveryDateRange.to, 'dd.MM.yyyy', { locale: de })}
                                 </>
                               ) : (
-                                format(deliveryDateRange.from, "dd.MM.yyyy", { locale: de })
+                                format(deliveryDateRange.from, 'dd.MM.yyyy', { locale: de })
                               )
                             ) : (
-                              "Zeitraum auswählen"
+                              'Zeitraum auswählen'
                             )}
                           </Button>
                         </PopoverTrigger>
@@ -3618,9 +3765,9 @@ export default function EditInvoicePage() {
                             defaultMonth={deliveryDateRange.from}
                             selected={{
                               from: deliveryDateRange.from,
-                              to: deliveryDateRange.to
+                              to: deliveryDateRange.to,
                             }}
-                            onSelect={(range) => {
+                            onSelect={range => {
                               setDeliveryDateRange(range || {});
                               // Schließe den Popover wenn beide Daten ausgewählt sind
                               if (range?.from && range?.to) {
@@ -3650,19 +3797,30 @@ export default function EditInvoicePage() {
                         required
                         className={`pr-10 ${originalInvoice?.title ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                         disabled={!!originalInvoice?.title}
-                        title={originalInvoice?.title ? 'Rechnungsnummer kann nach Erstellung nicht mehr geändert werden (GoBD Konformität)' : undefined}
+                        title={
+                          originalInvoice?.title
+                            ? 'Rechnungsnummer kann nach Erstellung nicht mehr geändert werden (GoBD Konformität)'
+                            : undefined
+                        }
                       />
                       {!originalInvoice?.title && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-gray-100"
                           type="button"
                           onClick={() => setShowNumberingModal(true)}
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.06 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1.06H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1.06-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.06 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1.06H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1.06z"/>
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <circle cx="12" cy="12" r="3" />
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.06 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1.06H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1.06-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.06 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1.06H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1.06z" />
                           </svg>
                         </Button>
                       )}
@@ -3712,8 +3870,8 @@ export default function EditInvoicePage() {
       <InvoiceHeaderTextSection
         title={formData.title}
         headTextHtml={formData.headTextHtml}
-        onTitleChange={(value) => setFormData(prev => ({ ...prev, title: value }))}
-        onHeadTextChange={(html) => setFormData(prev => ({ ...prev, headTextHtml: html }))}
+        onTitleChange={value => setFormData(prev => ({ ...prev, title: value }))}
+        onHeadTextChange={html => setFormData(prev => ({ ...prev, headTextHtml: html }))}
         companyId={uid}
         userId={user?.uid || ''}
         getFieldErrorClass={getFieldErrorClass}
@@ -3835,24 +3993,31 @@ export default function EditInvoicePage() {
                         <>
                           {/* Vorhandene Dienstleistungen */}
                           {(savedServices || [])
-                            .filter(service => 
-                              !newServiceName || 
-                              service.name.toLowerCase().includes(newServiceName.toLowerCase())
+                            .filter(
+                              service =>
+                                !newServiceName ||
+                                service.name.toLowerCase().includes(newServiceName.toLowerCase())
                             )
                             .map(service => (
                               <div
                                 key={service.id}
                                 className="flex items-center justify-between p-2 hover:bg-gray-100 cursor-pointer rounded-md"
                                 onClick={() => {
-                                  const price = typeof service.price === 'string' ? parseFloat(service.price) : service.price;
-                                  setItems(prev => [...prev, {
-                                    id: crypto.randomUUID(),
-                                    description: service.name,
-                                    quantity: 1,
-                                    unitPrice: price,
-                                    total: price,
-                                    unit: service.unit || 'Stk',
-                                  }]);
+                                  const price =
+                                    typeof service.price === 'string'
+                                      ? parseFloat(service.price)
+                                      : service.price;
+                                  setItems(prev => [
+                                    ...prev,
+                                    {
+                                      id: crypto.randomUUID(),
+                                      description: service.name,
+                                      quantity: 1,
+                                      unitPrice: price,
+                                      total: price,
+                                      unit: service.unit || 'Stk',
+                                    },
+                                  ]);
                                   setNewServiceName('');
                                   setShowPopover(false);
                                   toast.success('Dienstleistung zur Rechnung hinzugefügt');
@@ -3863,17 +4028,28 @@ export default function EditInvoicePage() {
                                   <div className="text-sm text-gray-500">{service.unit}</div>
                                 </div>
                                 <div className="font-medium">
-                                  {formatCurrency(typeof service.price === 'string' ? parseFloat(service.price) : service.price)}
+                                  {formatCurrency(
+                                    typeof service.price === 'string'
+                                      ? parseFloat(service.price)
+                                      : service.price
+                                  )}
                                 </div>
                               </div>
                             ))}
 
                           {/* Option zum Erstellen einer neuen Dienstleistung */}
                           {newServiceName && newServiceName.trim().length >= 2 && (
-                            <div className={savedServices.filter(service => 
-                              service.name.toLowerCase().includes(newServiceName.toLowerCase())
-                            ).length > 0 ? "border-t border-gray-200 mt-2 pt-2" : ""}>
-                              <div className="p-2 hover:bg-gray-100 rounded-md cursor-pointer"
+                            <div
+                              className={
+                                savedServices.filter(service =>
+                                  service.name.toLowerCase().includes(newServiceName.toLowerCase())
+                                ).length > 0
+                                  ? 'border-t border-gray-200 mt-2 pt-2'
+                                  : ''
+                              }
+                            >
+                              <div
+                                className="p-2 hover:bg-gray-100 rounded-md cursor-pointer"
                                 onClick={() => {
                                   setServiceDraft({
                                     name: newServiceName,
@@ -3884,10 +4060,13 @@ export default function EditInvoicePage() {
                                   setServiceModalOpen(true);
                                   setNewServiceName('');
                                   setShowPopover(false);
-                                }}>
+                                }}
+                              >
                                 <div className="flex items-center gap-2 text-sm text-gray-600">
                                   <Plus className="w-4 h-4" />
-                                  <span>Neue Dienstleistung &quot;{newServiceName}&quot; erstellen</span>
+                                  <span>
+                                    Neue Dienstleistung &quot;{newServiceName}&quot; erstellen
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -3899,100 +4078,107 @@ export default function EditInvoicePage() {
                 )}
               </div>
             </div>
-      {/* Modal für neue Dienstleistung */}
-      <Dialog open={serviceModalOpen} onOpenChange={setServiceModalOpen}>
-        <DialogContent className="max-w-md" aria-describedby="service-dialog-description">
-          <DialogHeader>
-            <DialogTitle>Neue Dienstleistung anlegen</DialogTitle>
-            <div id="service-dialog-description" className="sr-only">
-              Dialog zum Anlegen einer neuen Dienstleistung mit Name und weiteren Details
-            </div>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Name *</label>
-              <input
-                type="text"
-                className="w-full border rounded px-2 py-1"
-                value={serviceDraft.name}
-                onChange={e => setServiceDraft(d => ({ ...d, name: e.target.value }))}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Beschreibung</label>
-              <textarea
-                className="w-full border rounded px-2 py-1"
-                value={serviceDraft.description}
-                onChange={e => setServiceDraft(d => ({ ...d, description: e.target.value }))}
-                rows={2}
-              />
-            </div>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <label className="block text-sm font-medium mb-1">Preis *</label>
-                <input
-                  type="number"
-                  className="w-full border rounded px-2 py-1"
-                  value={serviceDraft.price}
-                  onChange={e => setServiceDraft(d => ({ ...d, price: e.target.value }))}
-                  min="0"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Einheit</label>
-                <select
-                  className="border rounded px-2 py-1"
-                  value={serviceDraft.unit}
-                  onChange={e => setServiceDraft(d => ({ ...d, unit: e.target.value }))}
-                >
-                  <option value="Stk">Stk</option>
-                  <option value="Std">Std</option>
-                  <option value="Pauschale">Pauschale</option>
-                  <option value="%">%</option>
-                  <option value="Tag(e)">Tag(e)</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-              onClick={async () => {
-                if (!serviceDraft.name.trim() || !serviceDraft.price) return;
-                
-                // 1. Zuerst in Firestore speichern
-                await saveServiceToSubcollection();
-                
-                // 2. Dann als Position zur Rechnung hinzufügen
-                setItems(prev => [
-                  ...prev,
-                  {
-                    id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : Math.random().toString(36).slice(2),
-                    description: serviceDraft.name + (serviceDraft.description ? `: ${serviceDraft.description}` : ''),
-                    quantity: 1,
-                    unitPrice: parseFloat(serviceDraft.price),
-                    total: parseFloat(serviceDraft.price),
-                    unit: serviceDraft.unit,
-                  },
-                ]);
+            {/* Modal für neue Dienstleistung */}
+            <Dialog open={serviceModalOpen} onOpenChange={setServiceModalOpen}>
+              <DialogContent className="max-w-md" aria-describedby="service-dialog-description">
+                <DialogHeader>
+                  <DialogTitle>Neue Dienstleistung anlegen</DialogTitle>
+                  <div id="service-dialog-description" className="sr-only">
+                    Dialog zum Anlegen einer neuen Dienstleistung mit Name und weiteren Details
+                  </div>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Name *</label>
+                    <input
+                      type="text"
+                      className="w-full border rounded px-2 py-1"
+                      value={serviceDraft.name}
+                      onChange={e => setServiceDraft(d => ({ ...d, name: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Beschreibung</label>
+                    <textarea
+                      className="w-full border rounded px-2 py-1"
+                      value={serviceDraft.description}
+                      onChange={e => setServiceDraft(d => ({ ...d, description: e.target.value }))}
+                      rows={2}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium mb-1">Preis *</label>
+                      <input
+                        type="number"
+                        className="w-full border rounded px-2 py-1"
+                        value={serviceDraft.price}
+                        onChange={e => setServiceDraft(d => ({ ...d, price: e.target.value }))}
+                        min="0"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Einheit</label>
+                      <select
+                        className="border rounded px-2 py-1"
+                        value={serviceDraft.unit}
+                        onChange={e => setServiceDraft(d => ({ ...d, unit: e.target.value }))}
+                      >
+                        <option value="Stk">Stk</option>
+                        <option value="Std">Std</option>
+                        <option value="Pauschale">Pauschale</option>
+                        <option value="%">%</option>
+                        <option value="Tag(e)">Tag(e)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                    onClick={async () => {
+                      if (!serviceDraft.name.trim() || !serviceDraft.price) return;
 
-                // 3. Dialog schließen und Form zurücksetzen
-                setServiceModalOpen(false);
-                setServiceDraft({ name: '', description: '', price: '', unit: 'Stk' });
-                toast.success('Dienstleistung zur Rechnung hinzugefügt');
-              }}
-              disabled={!serviceDraft.name.trim() || !serviceDraft.price}
-            >
-              Speichern & hinzufügen
-            </Button>
-            <DialogClose asChild>
-              <Button variant="outline" type="button">Abbrechen</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+                      // 1. Zuerst in Firestore speichern
+                      await saveServiceToSubcollection();
+
+                      // 2. Dann als Position zur Rechnung hinzufügen
+                      setItems(prev => [
+                        ...prev,
+                        {
+                          id:
+                            typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                              ? crypto.randomUUID()
+                              : Math.random().toString(36).slice(2),
+                          description:
+                            serviceDraft.name +
+                            (serviceDraft.description ? `: ${serviceDraft.description}` : ''),
+                          quantity: 1,
+                          unitPrice: parseFloat(serviceDraft.price),
+                          total: parseFloat(serviceDraft.price),
+                          unit: serviceDraft.unit,
+                        },
+                      ]);
+
+                      // 3. Dialog schließen und Form zurücksetzen
+                      setServiceModalOpen(false);
+                      setServiceDraft({ name: '', description: '', price: '', unit: 'Stk' });
+                      toast.success('Dienstleistung zur Rechnung hinzugefügt');
+                    }}
+                    disabled={!serviceDraft.name.trim() || !serviceDraft.price}
+                  >
+                    Speichern & hinzufügen
+                  </Button>
+                  <DialogClose asChild>
+                    <Button variant="outline" type="button">
+                      Abbrechen
+                    </Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Positionsliste */}
@@ -4370,10 +4556,10 @@ export default function EditInvoicePage() {
               {/* Umsatzsteuerregelung */}
               <div className="space-y-3">
                 <Label className="font-semibold">Umsatzsteuerregelung</Label>
-                
+
                 <TaxRuleSelector
                   value={formData.taxRule}
-                  onChange={(value) => setFormData(p => ({ ...p, taxRule: value }))}
+                  onChange={value => setFormData(p => ({ ...p, taxRule: value }))}
                 />
 
                 <div className="text-xs text-gray-500">
@@ -4592,8 +4778,8 @@ export default function EditInvoicePage() {
         <DialogContent className="max-w-7xl w-full p-0">
           <DialogHeader className="px-6 pt-6 flex items-center justify-between">
             <DialogTitle>Live-Vorschau</DialogTitle>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => {
                 const previewData = buildPreviewData();
@@ -4605,7 +4791,10 @@ export default function EditInvoicePage() {
               Drucken
             </Button>
           </DialogHeader>
-          <div className="bg-[#f5f5f5] w-full overflow-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+          <div
+            className="bg-[#f5f5f5] w-full overflow-auto"
+            style={{ maxHeight: 'calc(100vh - 200px)' }}
+          >
             <div className="max-w-[210mm] mx-auto bg-white shadow-sm my-8">
               {loadingTemplate ? (
                 <div className="flex items-center justify-center h-64">
@@ -4711,7 +4900,12 @@ export default function EditInvoicePage() {
                   <Label>Inhaber</Label>
                   <Input
                     value={companySettingsFormData.companyOwner}
-                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, companyOwner: e.target.value }))}
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({
+                        ...prev,
+                        companyOwner: e.target.value,
+                      }))
+                    }
                     placeholder="Inhaber"
                   />
                 </div>
@@ -4719,18 +4913,22 @@ export default function EditInvoicePage() {
                   <Label>Firma</Label>
                   <Input
                     value={companySettingsFormData.companyName}
-                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, companyName: e.target.value }))}
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, companyName: e.target.value }))
+                    }
                     placeholder="Firma"
                   />
                 </div>
               </div>
-              
+
               <div className="mt-4 space-y-4">
                 <div className="space-y-2">
                   <Label>Anschrift</Label>
                   <Input
                     value={companySettingsFormData.street}
-                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, street: e.target.value }))}
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, street: e.target.value }))
+                    }
                     placeholder="Straße und Hausnummer"
                   />
                 </div>
@@ -4738,14 +4936,18 @@ export default function EditInvoicePage() {
                   <div className="space-y-2">
                     <Input
                       value={companySettingsFormData.zip}
-                      onChange={e => setCompanySettingsFormData(prev => ({ ...prev, zip: e.target.value }))}
+                      onChange={e =>
+                        setCompanySettingsFormData(prev => ({ ...prev, zip: e.target.value }))
+                      }
                       placeholder="PLZ"
                     />
                   </div>
                   <div className="space-y-2">
                     <Input
                       value={companySettingsFormData.city}
-                      onChange={e => setCompanySettingsFormData(prev => ({ ...prev, city: e.target.value }))}
+                      onChange={e =>
+                        setCompanySettingsFormData(prev => ({ ...prev, city: e.target.value }))
+                      }
                       placeholder="Ort"
                     />
                   </div>
@@ -4757,7 +4959,9 @@ export default function EditInvoicePage() {
                   <Label>Steuernummer</Label>
                   <Input
                     value={companySettingsFormData.taxNumber}
-                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, taxNumber: e.target.value }))}
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, taxNumber: e.target.value }))
+                    }
                     placeholder="Steuernummer"
                   />
                 </div>
@@ -4765,7 +4969,9 @@ export default function EditInvoicePage() {
                   <Label>Umsatzsteuer-ID</Label>
                   <Input
                     value={companySettingsFormData.vatNumber}
-                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, vatNumber: e.target.value }))}
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, vatNumber: e.target.value }))
+                    }
                     placeholder="Umsatzsteuer-ID"
                   />
                 </div>
@@ -4781,7 +4987,9 @@ export default function EditInvoicePage() {
                   <Input
                     type="email"
                     value={companySettingsFormData.email}
-                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, email: e.target.value }))
+                    }
                     placeholder="marie@musterfrau.de"
                   />
                 </div>
@@ -4789,7 +4997,9 @@ export default function EditInvoicePage() {
                   <Label>Telefon</Label>
                   <Input
                     value={companySettingsFormData.phone}
-                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, phone: e.target.value }))
+                    }
                     placeholder="07821 127384"
                   />
                 </div>
@@ -4800,7 +5010,9 @@ export default function EditInvoicePage() {
                   <Label>IBAN</Label>
                   <Input
                     value={companySettingsFormData.iban}
-                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, iban: e.target.value }))}
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, iban: e.target.value }))
+                    }
                     placeholder="DE01100100000010101010"
                   />
                 </div>
@@ -4808,7 +5020,9 @@ export default function EditInvoicePage() {
                   <Label>BIC</Label>
                   <Input
                     value={companySettingsFormData.bic}
-                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, bic: e.target.value }))}
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, bic: e.target.value }))
+                    }
                     placeholder="BELADEBE"
                   />
                 </div>
@@ -4820,7 +5034,7 @@ export default function EditInvoicePage() {
             <Button variant="outline" onClick={() => setShowCompanySettingsModal(false)}>
               Abbrechen
             </Button>
-            <Button 
+            <Button
               onClick={handleCompanySettingsSave}
               className="bg-[#14ad9f] hover:bg-[#129488] text-white"
             >
@@ -4925,25 +5139,37 @@ export default function EditInvoicePage() {
                 Folgende Variablen stehen für das Format zur Verfügung:
               </Label>
               <div className="text-xs text-gray-600 space-y-1">
-                <div><code className="bg-gray-100 px-1 rounded">%NUMBER</code> - Nächste Zahl <span className="text-red-500">Obligatorisch</span></div>
-                <div><code className="bg-gray-100 px-1 rounded">%YYYY</code> - Aktuelles Jahr (2025)</div>
-                <div><code className="bg-gray-100 px-1 rounded">%YY</code> - Aktuelles Jahr (25)</div>
-                <div><code className="bg-gray-100 px-1 rounded">%MM</code> - Aktueller Monat (09)</div>
-                <div><code className="bg-gray-100 px-1 rounded">%M</code> - Aktueller Monat (9)</div>
-                <div><code className="bg-gray-100 px-1 rounded">%DD</code> - Aktueller Tag (15)</div>
-                <div><code className="bg-gray-100 px-1 rounded">%D</code> - Aktueller Tag (15)</div>
+                <div>
+                  <code className="bg-gray-100 px-1 rounded">%NUMBER</code> - Nächste Zahl{' '}
+                  <span className="text-red-500">Obligatorisch</span>
+                </div>
+                <div>
+                  <code className="bg-gray-100 px-1 rounded">%YYYY</code> - Aktuelles Jahr (2025)
+                </div>
+                <div>
+                  <code className="bg-gray-100 px-1 rounded">%YY</code> - Aktuelles Jahr (25)
+                </div>
+                <div>
+                  <code className="bg-gray-100 px-1 rounded">%MM</code> - Aktueller Monat (09)
+                </div>
+                <div>
+                  <code className="bg-gray-100 px-1 rounded">%M</code> - Aktueller Monat (9)
+                </div>
+                <div>
+                  <code className="bg-gray-100 px-1 rounded">%DD</code> - Aktueller Tag (15)
+                </div>
+                <div>
+                  <code className="bg-gray-100 px-1 rounded">%D</code> - Aktueller Tag (15)
+                </div>
               </div>
             </div>
 
             {/* Buttons */}
             <div className="flex justify-end gap-3 pt-4">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowNumberingModal(false)}
-              >
+              <Button variant="outline" onClick={() => setShowNumberingModal(false)}>
                 Abbrechen
               </Button>
-              <Button 
+              <Button
                 className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                 onClick={async () => {
                   try {
@@ -4952,15 +5178,15 @@ export default function EditInvoicePage() {
                     await updateDoc(companyRef, {
                       'invoiceNumbering.format': numberingFormat,
                       'invoiceNumbering.nextNumber': nextNumber,
-                      'invoiceNumbering.lastUpdated': new Date().toISOString()
+                      'invoiceNumbering.lastUpdated': new Date().toISOString(),
                     });
 
                     // Aktualisiere das Rechnungsnummer-Feld mit der neuen Vorschau
-                    setFormData(prev => ({ 
-                      ...prev, 
-                      title: generateNumberPreview(numberingFormat, nextNumber) 
+                    setFormData(prev => ({
+                      ...prev,
+                      title: generateNumberPreview(numberingFormat, nextNumber),
                     }));
-                    
+
                     setShowNumberingModal(false);
                     toast.success('Nummernkreis-Einstellungen gespeichert');
                   } catch (error) {
@@ -4988,26 +5214,28 @@ export default function EditInvoicePage() {
               Folgende Probleme verhindern die Aktivierung der E-Rechnung:
             </SheetDescription>
           </SheetHeader>
-          
+
           <div className="mt-6 space-y-3">
             {(() => {
               // Kategorisiere die Compliance-Fehler in Pflicht und Empfohlen
-              const criticalErrors = complianceErrors.filter(error => 
-                !error.includes('empfohlen') && 
-                !error.includes('Website') && 
-                !error.includes('Logo') && 
-                !error.includes('Branchenangabe') &&
-                !error.includes('Geschäftsbeschreibung') &&
-                !error.includes('Telefonnummer')
+              const criticalErrors = complianceErrors.filter(
+                error =>
+                  !error.includes('empfohlen') &&
+                  !error.includes('Website') &&
+                  !error.includes('Logo') &&
+                  !error.includes('Branchenangabe') &&
+                  !error.includes('Geschäftsbeschreibung') &&
+                  !error.includes('Telefonnummer')
               );
-              
-              const recommendedErrors = complianceErrors.filter(error => 
-                error.includes('empfohlen') || 
-                error.includes('Website') || 
-                error.includes('Logo') || 
-                error.includes('Branchenangabe') ||
-                error.includes('Geschäftsbeschreibung') ||
-                error.includes('Telefonnummer')
+
+              const recommendedErrors = complianceErrors.filter(
+                error =>
+                  error.includes('empfohlen') ||
+                  error.includes('Website') ||
+                  error.includes('Logo') ||
+                  error.includes('Branchenangabe') ||
+                  error.includes('Geschäftsbeschreibung') ||
+                  error.includes('Telefonnummer')
               );
 
               return (
@@ -5019,7 +5247,9 @@ export default function EditInvoicePage() {
                         <div className="w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                           !
                         </div>
-                        <h4 className="text-sm font-semibold text-red-800">Erforderliche Angaben</h4>
+                        <h4 className="text-sm font-semibold text-red-800">
+                          Erforderliche Angaben
+                        </h4>
                         <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
                           {criticalErrors.length}
                         </span>
@@ -5055,7 +5285,8 @@ export default function EditInvoicePage() {
                       <div className="text-xs text-yellow-700">
                         <div className="leading-tight">
                           {recommendedErrors.slice(0, 2).join(', ')}
-                          {recommendedErrors.length > 2 && ` und ${recommendedErrors.length - 2} weitere Verbesserungen`}
+                          {recommendedErrors.length > 2 &&
+                            ` und ${recommendedErrors.length - 2} weitere Verbesserungen`}
                         </div>
                       </div>
                     </div>
@@ -5072,13 +5303,14 @@ export default function EditInvoicePage() {
               E-Rechnung Mindestanforderungen
             </h4>
             <div className="text-xs text-blue-700 leading-tight">
-              Vollständige Firmen- und Kundendaten, Steuer-ID, Bankverbindung, gültige E-Mail-Adressen
+              Vollständige Firmen- und Kundendaten, Steuer-ID, Bankverbindung, gültige
+              E-Mail-Adressen
             </div>
           </div>
 
           <SheetFooter className="mt-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowCompliancePanel(false)}
               className="w-full h-8 text-sm"
             >
