@@ -38,6 +38,9 @@ function getBrowserConfig() {
         '--disable-dev-shm-usage',
         '--disable-web-security',
         '--disable-features=VizDisplayCompositor',
+        '--disable-background-timer-throttling',
+        '--disable-renderer-backgrounding',
+        '--disable-backgrounding-occluded-windows',
       ],
     };
   }
@@ -45,7 +48,14 @@ function getBrowserConfig() {
   // Local development
   return {
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-web-security',
+      '--disable-background-timer-throttling',
+      '--disable-renderer-backgrounding',
+      '--disable-backgrounding-occluded-windows',
+    ],
   };
 }
 
@@ -60,51 +70,83 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Rechnung laden
-    const invoiceDoc = await db!
+    // Rechnung aus Firestore laden
+    const invoiceRef = db!
       .collection('companies')
       .doc(companyId)
       .collection('invoices')
-      .doc(invoiceId)
-      .get();
-    if (!invoiceDoc.exists) {
+      .doc(invoiceId);
+    const invoiceSnap = await invoiceRef.get();
+
+    if (!invoiceSnap.exists) {
       return NextResponse.json({ error: 'Rechnung nicht gefunden' }, { status: 404 });
     }
 
-    const invoice = { id: invoiceDoc.id, ...invoiceDoc.data() } as InvoiceData;
+    const invoiceData = invoiceSnap.data() as InvoiceData;
 
-    // PDF generieren
+    // Puppeteer für PDF-Generierung verwenden
     const puppeteerInstance = await getPuppeteer();
     const browser = await puppeteerInstance.launch(getBrowserConfig());
     const page = await browser.newPage();
 
     try {
-      // HTML für die Rechnung generieren
-      const invoiceUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://taskilo.de'}/print/invoice/${invoice.id}?companyId=${companyId}`;
+      // Print-Seite laden mit besseren Einstellungen für clientseitiges JavaScript
+      const printUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/print/invoice/${invoiceId}?companyId=${companyId}`;
+      console.log('Loading print URL:', printUrl);
 
-      await page.goto(invoiceUrl, {
+      await page.setViewport({ width: 1200, height: 1600 });
+      await page.setUserAgent(
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      );
+
+      await page.goto(printUrl, {
         waitUntil: 'networkidle0',
         timeout: 30000,
       });
 
-      // PDF generieren
+      // Warte auf das Template-Element
+      await page.waitForSelector('[data-template-renderer]', {
+        timeout: 15000,
+      });
+
+      // Zusätzliche Wartezeit für JavaScript-Execution und Rendering
+      await page.waitForTimeout(3000);
+
+      // Überprüfe, ob das Template geladen wurde und Inhalt hat
+      const templateExists = await page.$('[data-template-renderer]');
+      if (!templateExists) {
+        throw new Error('Template-Element nicht gefunden - Seite hat sich nicht richtig geladen');
+      }
+
+      // Überprüfe, ob das Template Inhalt hat
+      const templateContent = await page.$eval(
+        '[data-template-renderer]',
+        el => el.textContent?.length || 0
+      );
+      if (templateContent < 100) {
+        console.warn('Template scheint wenig Inhalt zu haben:', templateContent);
+        // Zusätzliche Wartezeit für langsames Rendering
+        await page.waitForTimeout(2000);
+      }
+
+      // PDF generieren - nur den Template-Inhalt
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
         margin: {
-          top: '20mm',
+          top: '10mm',
           right: '15mm',
-          bottom: '20mm',
+          bottom: '10mm',
           left: '15mm',
         },
+        preferCSSPageSize: false,
+        displayHeaderFooter: false,
+        // Wichtig: Nur den sichtbaren Bereich des Templates erfassen
+        pageRanges: '1',
       });
 
       // PDF in Firebase Storage speichern
-      if (!storage) {
-        throw new Error('Firebase Storage nicht verfügbar');
-      }
-      const bucket = storage.bucket('tilvo-f142f.firebasestorage.app');
-
+      const bucket = storage!.bucket();
       const fileName = `invoices/${companyId}/${invoiceId}.pdf`;
       const file = bucket.file(fileName);
 
@@ -112,46 +154,39 @@ export async function POST(request: NextRequest) {
         metadata: {
           contentType: 'application/pdf',
           metadata: {
-            invoiceId: invoice.id,
-            invoiceNumber: invoice.invoiceNumber || invoice.number,
-            companyId: companyId,
+            invoiceId,
+            companyId,
             createdAt: new Date().toISOString(),
           },
         },
-        public: false, // Private, nur über signed URLs zugänglich
       });
 
-      // PDF-Pfad in der Rechnung speichern
-      const pdfPath = `gs://${bucket.name}/${fileName}`;
-      await db!
-        .collection('companies')
-        .doc(companyId)
-        .collection('invoices')
-        .doc(invoiceId)
-        .update({
-          pdfPath: pdfPath,
-          pdfGeneratedAt: new Date(),
-        });
+      // PDF-URL generieren
+      const [url] = await file.getSignedUrl({
+        action: 'read',
+        expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 Tage
+      });
 
-      await browser.close();
+      // PDF-Pfad in der Rechnung aktualisieren
+      await invoiceRef.update({
+        pdfPath: `gs://${bucket.name}/${fileName}`,
+        pdfUrl: url,
+        updatedAt: new Date(),
+      });
 
       return NextResponse.json({
         success: true,
-        pdfPath: pdfPath,
-        fileName: fileName,
-        message: 'PDF erfolgreich generiert und gespeichert',
+        pdfPath: `gs://${bucket.name}/${fileName}`,
+        pdfUrl: url,
       });
-    } catch (error) {
+    } finally {
+      await page.close();
       await browser.close();
-      throw error;
     }
-  } catch (error: any) {
-    console.error('Fehler beim Generieren des PDF:', error);
+  } catch (error) {
+    console.error('Fehler bei der PDF-Generierung:', error);
     return NextResponse.json(
-      {
-        error: error.message || 'Unbekannter Fehler beim Generieren des PDFs',
-        details: error.message,
-      },
+      { error: `PDF-Generierung fehlgeschlagen: ${error}` },
       { status: 500 }
     );
   }

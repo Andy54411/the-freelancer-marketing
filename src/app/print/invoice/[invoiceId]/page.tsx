@@ -808,6 +808,7 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
         {/* Minimales A4-optimiertes Layout */}
         <div className="print-invoice-wrapper">
           <InvoiceTemplateRenderer
+            data-template-renderer
             template={
               (userTemplate && AVAILABLE_TEMPLATES.some(t => t.id === userTemplate)
                 ? (userTemplate as any)
