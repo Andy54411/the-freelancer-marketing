@@ -182,45 +182,41 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
     return `${baseUrl}/api/einvoices/${guid}/xml`;
   };
 
-  // Download-Funktion für XML-Datei
-  const downloadXML = async () => {
-    const guid = data.eInvoiceData?.guid || data.eInvoice?.guid;
-    if (!guid) {
-      alert('Keine E-Invoice-Daten verfügbar');
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/einvoices/${guid}/xml`);
-      if (!response.ok) {
-        throw new Error('Download fehlgeschlagen');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `einvoice-${data.documentNumber}.xml`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error('XML Download fehlgeschlagen:', error);
-      alert('XML Download fehlgeschlagen. Bitte versuchen Sie es später erneut.');
-    }
-  };
-
   return (
     <div
-      className={`${preview ? 'max-w-[210mm] mx-auto' : 'w-full'} bg-white px-0 py-2 font-sans text-sm flex flex-col print:min-h-[297mm] print:w-[210mm] print:max-w-[210mm] print:mx-auto print:p-0`}
+      className={`${preview ? 'max-w-[210mm] mx-auto' : 'w-full'} bg-white px-0 py-2 font-sans text-sm flex flex-col print:min-h-[297mm] print:w-[210mm] print:max-w-[210mm] print:mx-auto print:p-0 relative`}
     >
-      {/* Header - bleibt oben */}
-      <div className="flex-shrink-0 mb-2 pb-1 border-b-2 border-gray-300 print:mb-3 print:pb-2">
+      {/* Logo absolut positioniert - ganz oben mittig */}
+      {showLogo && logoUrl && (
+        <div className="w-full flex justify-center mb-4">
+          <img
+            src={logoUrl}
+            alt={`${data.company?.name || 'Company'} Logo`}
+            className="h-24 w-auto object-contain"
+          />
+        </div>
+      )}
+
+      {/* Header - Grid mit 2 Spalten */}
+      <div className="flex-shrink-0 mb-2 pb-1 border-b-2 border-gray-300 print:mb-3 print:pb-2 relative">
         <div className="grid grid-cols-2 gap-8">
-          {/* Links: Kundendaten */}
+          {/* Links: Überschrift, Firmenadresse, Kundendaten */}
           <div>
-            <h1 className="text-xl font-bold text-gray-800 mb-1">{getDocumentTitle(data)}</h1>
+            <h1 className="text-2xl font-bold text-gray-800 mb-0.5">{getDocumentTitle(data)}</h1>
+
+            {/* Firmenadresse in einer Zeile */}
+            <div className="text-xs text-gray-600 mb-3" style={{ fontSize: '10px' }}>
+              {data.company?.name &&
+                data.company?.address?.street &&
+                data.company?.address?.zipCode &&
+                data.company?.address?.city && (
+                  <div className="font-medium">
+                    {data.company.name} | {data.company.address.street} |{' '}
+                    {data.company.address.zipCode} {data.company.address.city}
+                  </div>
+                )}
+            </div>
+
             <div className="mb-2">
               <div className="text-sm">
                 <div className="font-semibold">{data.customer?.name || 'Kunde'}</div>
@@ -236,6 +232,10 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
                   )}
               </div>
             </div>
+          </div>
+
+          {/* Rechts: Rechnungsinformationen auf der Trennlinie */}
+          <div className="text-right absolute bottom-0 right-0 pb-1">
             <div className="text-sm space-y-1">
               <div>
                 <strong>Rechnungsnummer:</strong> {data.documentNumber}
@@ -250,34 +250,8 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
               )}
             </div>
           </div>
-
-          {/* Rechts: Logo und Firmendaten */}
-          <div className="text-right">
-            {showLogo && logoUrl && (
-              <img
-                src={logoUrl}
-                alt={`${data.company?.name || 'Company'} Logo`}
-                className="h-24 w-auto ml-auto mb-4 object-contain"
-              />
-            )}
-            <div className="text-right">
-              <h2 className="text-xl font-bold text-gray-800 mb-2">
-                {data.company?.name || 'Company Name'}
-              </h2>
-              <div className="text-gray-600 text-sm">
-                <p>{data.company?.address?.street}</p>
-                <p>
-                  {data.company?.address?.zipCode} {data.company?.address?.city}
-                </p>
-                {data.company?.phone && <p className="mt-2">{data.company?.phone}</p>}
-                {data.company?.email && <p>{data.company?.email}</p>}
-                {data.company?.website && <p>{data.company?.website}</p>}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
-      {/* Content - nimmt verfügbaren Platz */}
       <div className="flex-1 flex flex-col print:flex-1 print:min-h-0">
         {/* Mehr Optionen / Auswahlfelder */}
         {((data.currency && data.currency !== 'EUR') ||
@@ -338,10 +312,9 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
             </div>
           </div>
         )}
-
         {/* Kopftext / Header-Text */}
         {(data.description || data.introText || data.headerText) && (
-          <div className="mb-6">
+          <div className="mb-12">
             <div
               className="text-base text-gray-800 whitespace-pre-line"
               style={{ wordBreak: 'break-word' }}
@@ -356,7 +329,6 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
             </div>
           </div>
         )}
-
         {/* Artikel Tabelle */}
         <div className="mb-4">
           <table className="w-full border-collapse">
@@ -409,10 +381,9 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
             </tbody>
           </table>
         </div>
-
         {/* Summenbereich mit Infos links */}
-        <div className="flex flex-row justify-between mb-4 gap-4">
-          {/* Linke Spalte: Währung, Zahlungsbedingung, Steuerregel */}
+        <div className="flex flex-row justify-between mt-6 mb-4 gap-4">
+          {/* Linke Spalte: Währung, Zahlungsbedingung, Steuerregel und E-Invoice */}
           <div className="flex flex-col text-sm text-gray-700 min-w-[220px]">
             {/* Währung, Kontaktperson und Zahlungsbedingung werden nur oben im Optionen-Block angezeigt */}
             {(data as any).taxRule && (
@@ -422,8 +393,65 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
               </div>
             )}
             {data.paymentTerms && (
-              <div>
+              <div className="mb-3">
                 <span className="font-semibold">Zahlungsziel:</span> {data.paymentTerms}
+              </div>
+            )}
+
+            {/* E-Invoice Informationen - Unter Steuerregel und Zahlungsziel */}
+            {(data.eInvoiceData?.guid || data.eInvoice?.guid) && (
+              <div className="mt-2 p-2 bg-white rounded">
+                <div className="flex items-start gap-2">
+                  {/* QR-Code kompakt */}
+                  <div className="flex-shrink-0">
+                    <div className="bg-white p-1 rounded border">
+                      <QRCode
+                        value={generateEInvoiceQRData()}
+                        size={85}
+                        style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* E-Invoice Details kompakt */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs space-y-0.5">
+                      <div className="font-bold text-gray-800">E-Invoice</div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-gray-700">Format:</span>
+                        <span className="truncate">{data.eInvoiceData?.format || 'zugferd'}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-gray-700">Version:</span>
+                        <span>{data.eInvoiceData?.version || '1.0'}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-gray-700">Status:</span>
+                        <span
+                          className={`font-medium ${
+                            data.eInvoiceData?.validationStatus === 'valid'
+                              ? 'text-green-600'
+                              : data.eInvoiceData?.validationStatus === 'invalid'
+                                ? 'text-red-600'
+                                : 'text-yellow-600'
+                          }`}
+                        >
+                          {data.eInvoiceData?.validationStatus === 'valid'
+                            ? '✓'
+                            : data.eInvoiceData?.validationStatus === 'invalid'
+                              ? '✗'
+                              : '⏳'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-gray-700">GUID:</span>
+                        <span className="font-mono text-xs">
+                          {data.eInvoiceData?.guid || data.eInvoice?.guid}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -448,8 +476,7 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
               </div>
             </div>
           </div>
-        </div>
-
+        </div>{' '}
         {/* Footer Text aus der Rechnung */}
         {(data as any).footerText && (
           <div className="mb-4 p-3 bg-gray-50 rounded">
@@ -474,76 +501,7 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
           </div>
         )}
       </div>
-      {/* E-Invoice Informationen - Kompakt für B2B Compliance */}
-      {(data.eInvoiceData?.guid || data.eInvoice?.guid) && (
-        <div className="mt-3 p-2 bg-blue-50 rounded border border-blue-200 print:mt-4 print:p-3">
-          <div className="flex items-center gap-4">
-            {/* QR-Code und Download kompakt */}
-            <div className="flex-shrink-0 flex flex-col items-center">
-              <div className="bg-white p-1 rounded border">
-                <QRCode
-                  value={generateEInvoiceQRData()}
-                  size={60}
-                  style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
-                />
-              </div>
-              <button
-                onClick={downloadXML}
-                className="mt-1 px-2 py-0.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors text-center print:hidden"
-              >
-                XML ↓
-              </button>
-            </div>
 
-            {/* E-Invoice Details kompakt */}
-            <div className="flex-1">
-              <h4 className="text-xs font-bold text-blue-800 mb-2">E-Invoice</h4>
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                {data.eInvoiceData?.format && (
-                  <div>
-                    <span className="font-medium text-blue-700">Format:</span>
-                    <div className="text-xs">{data.eInvoiceData.format}</div>
-                  </div>
-                )}
-                {data.eInvoiceData?.version && (
-                  <div>
-                    <span className="font-medium text-blue-700">Version:</span>
-                    <div className="text-xs">{data.eInvoiceData.version}</div>
-                  </div>
-                )}
-                {data.eInvoiceData?.validationStatus && (
-                  <div>
-                    <span className="font-medium text-blue-700">Status:</span>
-                    <div
-                      className={`font-medium text-xs ${
-                        data.eInvoiceData.validationStatus === 'valid'
-                          ? 'text-green-600'
-                          : data.eInvoiceData.validationStatus === 'invalid'
-                            ? 'text-red-600'
-                            : 'text-yellow-600'
-                      }`}
-                    >
-                      {data.eInvoiceData.validationStatus === 'valid'
-                        ? '✓'
-                        : data.eInvoiceData.validationStatus === 'invalid'
-                          ? '✗'
-                          : '⏳'}
-                    </div>
-                  </div>
-                )}
-              </div>
-              {(data.eInvoiceData?.guid || data.eInvoice?.guid) && (
-                <div className="mt-1">
-                  <span className="font-medium text-blue-700 text-xs">GUID:</span>
-                  <div className="font-mono text-xs break-all text-gray-600">
-                    {(data.eInvoiceData?.guid || data.eInvoice?.guid)?.substring(0, 20)}...
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}{' '}
       {/* Footer - Immer am Ende der A4-Seite */}
       <div className="mt-auto print:mt-6">
         <InvoiceFooter data={data as any} preview={preview} />
