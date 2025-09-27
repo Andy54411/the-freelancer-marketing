@@ -47,13 +47,35 @@ export function EmailDialog({ isOpen, onClose, invoice, companyId }: EmailDialog
 
     setSending(true);
     try {
-      // Hier würde die E-Mail-Versand-Logik implementiert werden
-      // Für jetzt zeigen wir nur eine Erfolgsmeldung
-      alert('E-Mail-Versand-Funktionalität wird implementiert.');
-      onClose();
-    } catch (error) {
+      const response = await fetch('/api/send-invoice-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          invoiceId: invoice.id,
+          companyId: companyId,
+          recipientEmail: emailTo,
+          recipientName: invoice.customerName || 'Kunde',
+          subject: emailSubject,
+          message: emailBody,
+          senderName: invoice.companyName || 'Ihr Unternehmen',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert(
+          `✅ E-Mail erfolgreich versendet!\n\nPDF-Anhang: ${result.pdfAttached ? '✅ Inklusive' : '❌ Nicht verfügbar'}\nDateiname: ${result.attachmentFilename || 'N/A'}`
+        );
+        onClose();
+      } else {
+        throw new Error(result.error || 'Unbekannter Fehler');
+      }
+    } catch (error: any) {
       console.error('Fehler beim E-Mail-Versand:', error);
-      alert('Fehler beim Versand der E-Mail.');
+      alert(`❌ Fehler beim Versand der E-Mail:\n${error.message}`);
     } finally {
       setSending(false);
     }
@@ -103,15 +125,15 @@ export function EmailDialog({ isOpen, onClose, invoice, companyId }: EmailDialog
             />
           </div>
 
-          <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-            <strong>Rechnung:</strong> {invoice.number || invoice.invoiceNumber || 'RE-XXXX'}
-            <br />
-            <strong>Betrag:</strong>{' '}
-            {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(
-              invoice.total
-            )}
-            <br />
-            <strong>Fällig bis:</strong> {new Date(invoice.dueDate).toLocaleDateString('de-DE')}
+          <div className="text-sm text-gray-600 bg-green-50 border border-green-200 p-3 rounded">
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-green-600" />
+              <strong className="text-green-800">PDF-Anhang:</strong>
+              <span>Rechnung wird automatisch als PDF angehängt</span>
+            </div>
+            <div className="mt-1 text-xs text-green-700">
+              Dateiname: Rechnung_{invoice.number || invoice.invoiceNumber || 'RE-XXXX'}.pdf
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">

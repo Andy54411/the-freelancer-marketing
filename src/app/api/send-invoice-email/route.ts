@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import { db } from '@/firebase/server';
+import { db, storage } from '@/firebase/server';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -14,17 +14,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { invoiceId, recipientEmail, recipientName, subject, message, senderName } =
+    const { invoiceId, companyId, recipientEmail, recipientName, subject, message, senderName } =
       await request.json();
 
     // Validierung
-    if (!invoiceId || !recipientEmail || !subject || !message || !senderName) {
+    if (!invoiceId || !companyId || !recipientEmail || !subject || !message || !senderName) {
       return NextResponse.json({ error: 'Fehlende erforderliche Felder' }, { status: 400 });
     }
 
-    // Rechnung laden
-
-    const invoiceDoc = await db!.collection('invoices').doc(invoiceId).get();
+    // Rechnung laden aus der Subcollection companies/{companyId}/invoices
+    const invoiceDoc = await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('invoices')
+      .doc(invoiceId)
+      .get();
     if (!invoiceDoc.exists) {
       return NextResponse.json({ error: 'Rechnung nicht gefunden' }, { status: 404 });
     }
@@ -55,42 +59,80 @@ export async function POST(request: NextRequest) {
       type: string;
       disposition: string;
     } | null = null;
+
     try {
-      // Interne PDF-Generation über unsere bestehende API
-      const pdfResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL || 'https://taskilo.de'}/api/generate-invoice-pdf`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            invoiceData: invoice,
-          }),
-        }
-      );
-
-      if (pdfResponse.ok) {
-        const contentType = pdfResponse.headers.get('content-type');
-
-        if (contentType && contentType.includes('application/pdf')) {
-          // Echtes PDF erhalten
-          const pdfBuffer = await pdfResponse.arrayBuffer();
-          const pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
-
-          pdfAttachment = {
-            filename: `Rechnung_${invoice.invoiceNumber || invoice.number}.pdf`,
-            content: pdfBase64,
-            type: 'application/pdf',
-            disposition: 'attachment',
-          };
+      // Prüfen, ob bereits ein gespeichertes PDF vorhanden ist
+      if (invoice.pdfPath) {
+        // PDF aus Storage laden
+        if (!storage) {
+          console.warn('Firebase Storage nicht verfügbar, generiere neues PDF');
         } else {
-          // JSON-Antwort (Fallback-Modus)
-          const result = await pdfResponse.json();
+          const bucket = storage.bucket('tilvo-f142f.firebasestorage.app');
+
+          // PDF-Pfad parsen (gs://bucket-name/path)
+          const pdfPathMatch = invoice.pdfPath.match(/gs:\/\/([^\/]+)\/(.+)/);
+          if (pdfPathMatch) {
+            const [, bucketName, filePath] = pdfPathMatch;
+            const file = bucket.file(filePath);
+
+            try {
+              const [pdfBuffer] = await file.download();
+              const pdfBase64 = pdfBuffer.toString('base64');
+
+              pdfAttachment = {
+                filename: `Rechnung_${invoice.invoiceNumber || invoice.number}.pdf`,
+                content: pdfBase64,
+                type: 'application/pdf',
+                disposition: 'attachment',
+              };
+            } catch (storageError) {
+              console.warn(
+                'Gespeichertes PDF konnte nicht geladen werden, generiere neues:',
+                storageError
+              );
+            }
+          }
         }
-      } else {
       }
-    } catch (pdfError) {}
+
+      // Fallback: PDF neu generieren, wenn kein gespeichertes PDF vorhanden oder Laden fehlgeschlagen
+      if (!pdfAttachment) {
+        const pdfResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL || 'https://taskilo.de'}/api/generate-invoice-pdf`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              invoiceData: invoice,
+            }),
+          }
+        );
+
+        if (pdfResponse.ok) {
+          const contentType = pdfResponse.headers.get('content-type');
+
+          if (contentType && contentType.includes('application/pdf')) {
+            // Echtes PDF erhalten
+            const pdfBuffer = await pdfResponse.arrayBuffer();
+            const pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
+
+            pdfAttachment = {
+              filename: `Rechnung_${invoice.invoiceNumber || invoice.number}.pdf`,
+              content: pdfBase64,
+              type: 'application/pdf',
+              disposition: 'attachment',
+            };
+          } else {
+            // JSON-Antwort (Fallback-Modus)
+            const result = await pdfResponse.json();
+          }
+        }
+      }
+    } catch (pdfError) {
+      console.warn('PDF-Generierung fehlgeschlagen:', pdfError);
+    }
 
     // E-Mail-Konfiguration mit optionalem PDF-Anhang
     const invoiceUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://taskilo.de'}/print/invoice/${invoice.id}`;
@@ -187,7 +229,12 @@ export async function POST(request: NextRequest) {
 
     // Rechnungsstatus aktualisieren
     try {
-      await db!.collection('invoices').doc(invoiceId).update({ status: 'sent' });
+      await db!
+        .collection('companies')
+        .doc(companyId)
+        .collection('invoices')
+        .doc(invoiceId)
+        .update({ status: 'sent' });
     } catch (updateError) {}
 
     return NextResponse.json({

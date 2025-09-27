@@ -60,11 +60,13 @@ function initializeFirebase() {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
         projectId: 'tilvo-f142f',
+        storageBucket: 'tilvo-f142f.firebasestorage.app',
       });
     } else {
       // Fallback for build-time when credentials are not available
       admin.initializeApp({
         projectId: 'tilvo-f142f',
+        storageBucket: 'tilvo-f142f.firebasestorage.app',
       });
     }
   } catch (error) {
@@ -73,6 +75,7 @@ function initializeFirebase() {
     try {
       admin.initializeApp({
         projectId: 'tilvo-f142f',
+        storageBucket: 'tilvo-f142f.firebasestorage.app',
       });
     } catch (fallbackError) {
       console.error('Firebase fallback initialization failed:', fallbackError);
@@ -115,5 +118,11 @@ export function withFirebase<T>(operation: () => Promise<T>): Promise<T> {
   return operation();
 }
 
-// Export admin for existing server-side code that needs it
-export { admin };
+export const storage = (() => {
+  try {
+    return admin.storage();
+  } catch (error) {
+    console.warn('Storage not available during build time');
+    return null;
+  }
+})();

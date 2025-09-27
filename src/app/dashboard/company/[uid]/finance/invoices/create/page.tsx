@@ -2602,6 +2602,39 @@ export default function CreateQuotePage() {
       toast.success(asDraft ? 'Rechnung als Entwurf gespeichert' : 'Rechnung erstellt');
       console.log('🎉 INVOICE CREATION COMPLETED SUCCESSFULLY');
 
+      // 🚀 PDF GENERIERUNG NACH SPEICHERN (für alle Rechnungen)
+      if (!asDraft && createdInvoiceId) {
+        console.log('🚀 Starting PDF generation for invoice:', createdInvoiceId);
+        try {
+          // PDF automatisch generieren und speichern
+          const pdfResponse = await fetch('/api/generate-invoice-pdf-storage', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              invoiceId: createdInvoiceId,
+              companyId: uid,
+            }),
+          });
+
+          if (pdfResponse.ok) {
+            const pdfResult = await pdfResponse.json();
+            console.log('✅ PDF generated and stored successfully:', {
+              pdfPath: pdfResult.pdfPath,
+              fileName: pdfResult.fileName,
+            });
+            toast.success('PDF erfolgreich generiert und gespeichert');
+          } else {
+            console.error('❌ PDF generation failed:', await pdfResponse.text());
+            toast.error('PDF konnte nicht generiert werden');
+          }
+        } catch (pdfError) {
+          console.error('❌ PDF generation error:', pdfError);
+          toast.error('PDF-Generierung fehlgeschlagen');
+        }
+      }
+
       // 🚀 E-INVOICE GENERIERUNG NACH SPEICHERN (falls aktiviert)
       if (!asDraft && eInvoiceEnabled && createdInvoiceId) {
         console.log('🚀 Starting E-Invoice generation for invoice:', createdInvoiceId);

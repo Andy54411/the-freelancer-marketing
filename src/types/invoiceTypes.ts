@@ -184,6 +184,9 @@ export interface InvoiceData {
 
   // Referenznummer
   reference?: string;
+
+  // PDF-Speicherpfad für wiederverwendbare PDFs
+  pdfPath?: string; // Firebase Storage Pfad zum gespeicherten PDF
 }
 
 /**
