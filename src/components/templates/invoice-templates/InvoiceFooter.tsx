@@ -8,6 +8,7 @@ interface FooterData {
       street?: string;
       zipCode?: string;
       city?: string;
+      houseNumber?: string;
     };
     phone?: string;
     email?: string;
@@ -19,6 +20,24 @@ interface FooterData {
       bic?: string;
     };
   };
+
+  // Direkte Firmenfelder (aus der Datenbank)
+  companyName?: string;
+  companySuffix?: string;
+  companyStreet?: string;
+  companyHouseNumber?: string;
+  companyPostalCode?: string;
+  companyCity?: string;
+  companyPhone?: string;
+  companyEmail?: string;
+  companyWebsite?: string;
+  phoneNumber?: string;
+  email?: string;
+  website?: string;
+  iban?: string;
+  bic?: string;
+  vatId?: string;
+  taxNumber?: string;
 
   // Rechtliche Daten
   districtCourt?: string;
@@ -50,6 +69,10 @@ interface FooterData {
     legalForm?: string;
     companySuffix?: string;
   };
+  step4?: {
+    iban?: string;
+    bic?: string;
+  };
 
   // Direkte Felder
   firstName?: string;
@@ -66,99 +89,109 @@ interface InvoiceFooterProps {
  * Zeigt alle Firmendaten, Kontaktdaten und rechtlichen Informationen
  */
 export const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ data, preview = false }) => {
-  // Sammle alle Footer-Informationen
+  // Sammle alle Footer-Informationen basierend auf der neuen Datenbankstruktur
   const footerParts: string[] = [];
 
-  // Firmenname
-  if (data.company?.name || (data as any).companyName) {
-    const companyName = data.company?.name || (data as any).companyName;
-    const companySuffix = (data as any).step2?.companySuffix || (data as any).companySuffix;
+  // Firmenname + Suffix
+  const companyName = (data as any).companyName || (data as any).company?.name;
+  const companySuffix = (data as any).companySuffix || (data as any).step2?.companySuffix;
+  if (companyName) {
     const fullCompanyName = companySuffix ? `${companyName} ${companySuffix}` : companyName;
     footerParts.push(fullCompanyName);
   }
 
-  // Adresse
-  if (
-    (data.company?.address?.street || (data as any).companyStreet) &&
-    (data.company?.address?.zipCode || (data as any).companyPostalCode) &&
-    (data.company?.address?.city || (data as any).companyCity)
-  ) {
-    footerParts.push(data.company?.address?.street || (data as any).companyStreet);
-    footerParts.push(
-      `${data.company?.address?.zipCode || (data as any).companyPostalCode} ${data.company?.address?.city || (data as any).companyCity}`
-    );
-    footerParts.push('DE');
+  // Straße + Hausnummer
+  const street = (data as any).companyStreet || (data as any).company?.address?.street;
+  const houseNumber =
+    (data as any).companyHouseNumber || (data as any).company?.address?.houseNumber;
+  if (street) {
+    const fullStreet = houseNumber ? `${street} ${houseNumber}` : street;
+    footerParts.push(fullStreet);
   }
 
+  // PLZ + Stadt
+  const postalCode = (data as any).companyPostalCode || (data as any).company?.address?.zipCode;
+  const city = (data as any).companyCity || (data as any).company?.address?.city;
+  if (postalCode && city) {
+    footerParts.push(`${postalCode} ${city}`);
+  }
+
+  // Land (immer DE für deutsche Unternehmen)
+  footerParts.push('DE');
+
   // Telefon
-  if (data.company?.phone || (data as any).companyPhone || (data as any).phoneNumber) {
-    footerParts.push(
-      `Tel.: ${data.company?.phone || (data as any).companyPhone || (data as any).phoneNumber}`
-    );
+  const phone =
+    (data as any).phoneNumber || (data as any).companyPhone || (data as any).company?.phone;
+  if (phone) {
+    footerParts.push(`Tel.: ${phone}`);
   }
 
   // E-Mail
-  if (data.company?.email || (data as any).companyEmail || (data as any).email) {
-    footerParts.push(
-      `E-Mail: ${data.company?.email || (data as any).companyEmail || (data as any).email}`
-    );
+  const email = (data as any).email || (data as any).companyEmail || (data as any).company?.email;
+  if (email) {
+    footerParts.push(`E-Mail: ${email}`);
   }
 
   // Website
-  if (data.company?.website || (data as any).companyWebsite || (data as any).website) {
-    footerParts.push(
-      `Web: ${data.company?.website || (data as any).companyWebsite || (data as any).website}`
-    );
+  const website =
+    (data as any).website || (data as any).companyWebsite || (data as any).company?.website;
+  if (website) {
+    footerParts.push(`Web: ${website}`);
   }
 
   // IBAN
-  if (data.company?.bankDetails?.iban || (data as any).iban) {
-    footerParts.push(`IBAN: ${data.company?.bankDetails?.iban || (data as any).iban}`);
+  const iban =
+    (data as any).iban || (data as any).company?.bankDetails?.iban || (data as any).step4?.iban;
+  if (iban) {
+    footerParts.push(`IBAN: ${iban}`);
   }
 
   // BIC
-  if (data.company?.bankDetails?.bic || (data as any).bic) {
-    footerParts.push(`BIC: ${data.company?.bankDetails?.bic || (data as any).bic}`);
+  const bic =
+    (data as any).bic || (data as any).company?.bankDetails?.bic || (data as any).step4?.bic;
+  if (bic) {
+    footerParts.push(`BIC: ${bic}`);
   }
 
   // USt-IdNr
-  if (data.company?.vatId || (data as any).vatId || (data as any).companyVatId) {
-    footerParts.push(
-      `USt-IdNr.: ${data.company?.vatId || (data as any).vatId || (data as any).companyVatId}`
-    );
-  }
-
-  // Steuernr
-  if (data.company?.taxNumber || (data as any).taxNumber || (data as any).companyTaxNumber) {
-    footerParts.push(
-      `Steuernr.: ${data.company?.taxNumber || (data as any).taxNumber || (data as any).companyTaxNumber}`
-    );
-  }
-
-  // Amtsgericht
-  if (data.districtCourt) {
-    footerParts.push(`Amtsgericht: ${data.districtCourt}`);
-  }
-
-  // Handelsregister
-  if (data.companyRegister) {
-    footerParts.push(`Handelsregister: ${data.companyRegister}`);
+  const vatId = (data as any).vatId || (data as any).company?.vatId;
+  if (vatId) {
+    footerParts.push(`USt-IdNr.: ${vatId}`);
   }
 
   // Rechtsform
-  if (data.legalForm) {
-    footerParts.push(`Rechtsform: ${data.legalForm}`);
+  const legalForm = (data as any).legalForm || (data as any).step2?.legalForm;
+  if (legalForm) {
+    footerParts.push(`Rechtsform: ${legalForm}`);
+  }
+
+  // Handelsregister (HRB)
+  const companyRegister = (data as any).companyRegister || (data as any).step3?.companyRegister;
+  if (companyRegister) {
+    footerParts.push(`HRB: ${companyRegister}`);
+  }
+
+  // Amtsgericht
+  const districtCourt = (data as any).districtCourt || (data as any).step3?.districtCourt;
+  if (districtCourt) {
+    footerParts.push(`Amtsgericht: ${districtCourt}`);
+  }
+
+  // Steuernummer (falls vorhanden)
+  const taxNumber = (data as any).taxNumber || (data as any).step3?.taxNumber;
+  if (taxNumber) {
+    footerParts.push(`Steuernr.: ${taxNumber}`);
   }
 
   // Geschäftsführer/Inhaber
-  const legalForm = (data.step2?.legalForm || data.legalForm || '').toLowerCase();
-
+  const legalFormLower = legalForm?.toLowerCase() || '';
   let directorName = '';
 
   // 1. Prüfe managingDirectors Array (direkt)
-  if (data.managingDirectors && data.managingDirectors.length > 0) {
+  if ((data as any).managingDirectors && (data as any).managingDirectors.length > 0) {
     const mainDirector =
-      data.managingDirectors.find((dir: any) => dir.isMainDirector) || data.managingDirectors[0];
+      (data as any).managingDirectors.find((dir: any) => dir.isMainDirector) ||
+      (data as any).managingDirectors[0];
     if (mainDirector && mainDirector.firstName && mainDirector.lastName) {
       directorName = `${mainDirector.firstName} ${mainDirector.lastName}`;
     } else if (mainDirector && mainDirector.name) {
@@ -167,10 +200,14 @@ export const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ data, preview = fa
   }
 
   // 2. Prüfe step1.managingDirectors Array
-  if (!directorName && data.step1?.managingDirectors && data.step1.managingDirectors.length > 0) {
+  if (
+    !directorName &&
+    (data as any).step1?.managingDirectors &&
+    (data as any).step1.managingDirectors.length > 0
+  ) {
     const mainDirector =
-      data.step1.managingDirectors.find((dir: any) => dir.isMainDirector) ||
-      data.step1.managingDirectors[0];
+      (data as any).step1.managingDirectors.find((dir: any) => dir.isMainDirector) ||
+      (data as any).step1.managingDirectors[0];
     if (mainDirector && mainDirector.firstName && mainDirector.lastName) {
       directorName = `${mainDirector.firstName} ${mainDirector.lastName}`;
     } else if (mainDirector && mainDirector.name) {
@@ -179,21 +216,25 @@ export const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ data, preview = fa
   }
 
   // 3. Prüfe step1.personalData
-  if (!directorName && data.step1?.personalData?.firstName && data.step1?.personalData?.lastName) {
-    directorName = `${data.step1.personalData.firstName} ${data.step1.personalData.lastName}`;
+  if (
+    !directorName &&
+    (data as any).step1?.personalData?.firstName &&
+    (data as any).step1?.personalData?.lastName
+  ) {
+    directorName = `${(data as any).step1.personalData.firstName} ${(data as any).step1.personalData.lastName}`;
   }
 
   // 4. Fallback zu direkten personalData Feldern
-  if (!directorName && data.firstName && data.lastName) {
-    directorName = `${data.firstName} ${data.lastName}`;
+  if (!directorName && (data as any).firstName && (data as any).lastName) {
+    directorName = `${(data as any).firstName} ${(data as any).lastName}`;
   }
 
   // Für GmbH, UG, AG, KG ist Geschäftsführer PFLICHT
   const requiresDirector =
-    legalForm.includes('gmbh') ||
-    legalForm.includes('ug') ||
-    legalForm.includes('ag') ||
-    legalForm.includes('kg');
+    legalFormLower.includes('gmbh') ||
+    legalFormLower.includes('ug') ||
+    legalFormLower.includes('ag') ||
+    legalFormLower.includes('kg');
 
   if (directorName.trim()) {
     if (requiresDirector) {
@@ -206,10 +247,8 @@ export const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ data, preview = fa
   return (
     <div className="w-full mt-auto pt-4 border-t border-gray-300 print:mt-8 print:pt-6">
       {preview ? (
-        <div className="text-sm text-gray-600 text-center leading-relaxed space-y-1">
-          <div>{footerParts.slice(0, 4).join(' | ')}</div>
-          {footerParts.length > 4 && <div>{footerParts.slice(4, 8).join(' | ')}</div>}
-          {footerParts.length > 8 && <div>{footerParts.slice(8).join(' | ')}</div>}
+        <div className="text-sm text-gray-600 text-center leading-relaxed">
+          <div>{footerParts.join(' | ')}</div>
         </div>
       ) : (
         <div className="text-xs text-gray-600 text-center leading-tight print:text-[10px]">

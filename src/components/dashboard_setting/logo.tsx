@@ -41,14 +41,25 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
   // Update fileUrl when formData changes
   useEffect(() => {
     const profileUrl = formData?.step3?.profilePictureURL || null;
+    console.log('LogoForm - profileUrl from formData:', profileUrl);
     setFileUrl(profileUrl);
   }, [formData?.step3?.profilePictureURL]);
 
   // Update bannerUrl when formData changes
   useEffect(() => {
-    const bannerImageUrl = formData?.profileBannerImage || null;
+    const bannerImageUrl =
+      formData?.step3?.profileBannerImage || formData?.profileBannerImage || null;
+    console.log(
+      'LogoForm - bannerUrl from formData.step3.profileBannerImage:',
+      formData?.step3?.profileBannerImage
+    );
+    console.log(
+      'LogoForm - bannerUrl from formData.profileBannerImage:',
+      formData?.profileBannerImage
+    );
+    console.log('LogoForm - final bannerUrl:', bannerImageUrl);
     setBannerUrl(bannerImageUrl);
-  }, [formData?.profileBannerImage]);
+  }, [formData?.step3?.profileBannerImage, formData?.profileBannerImage]);
 
   useEffect(() => {
     if (!uid) return;
@@ -80,6 +91,18 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !uid) return;
+
+    // Prüfe ob bereits ein Logo existiert
+    if (fileUrl) {
+      const confirmReplace = window.confirm(
+        'Es existiert bereits ein Logo. Möchten Sie es durch das neue Logo ersetzen?'
+      );
+      if (!confirmReplace) {
+        // Reset file input
+        event.target.value = '';
+        return;
+      }
+    }
 
     setUploadError(null);
     setUploadSuccess(false);
@@ -134,6 +157,18 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
     const file = event.target.files?.[0];
     if (!file || !uid) return;
 
+    // Prüfe ob bereits ein Banner existiert
+    if (bannerUrl) {
+      const confirmReplace = window.confirm(
+        'Es existiert bereits ein Banner-Bild. Möchten Sie es durch das neue Banner ersetzen?'
+      );
+      if (!confirmReplace) {
+        // Reset file input
+        event.target.value = '';
+        return;
+      }
+    }
+
     setUploadError(null);
     setUploadSuccess(false);
     setUploadingBanner(true);
@@ -158,6 +193,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
         // Für Firmen: Schreibe Banner in companies collection
         await updateDoc(doc(db, 'companies', uid), {
           profileBannerImage: url,
+          'step3.profileBannerImage': url,
         });
       } else {
         setUploadError('Banner-Upload ist nur für Firmen verfügbar');
@@ -165,7 +201,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
       }
 
       setBannerUrl(url);
-      handleChange('profileBannerImage', url);
+      handleChange('step3.profileBannerImage', url);
       window.dispatchEvent(new CustomEvent('bannerImageUpdated', { detail: url }));
       setUploadSuccess(true);
     } catch (err: unknown) {
@@ -322,8 +358,11 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
           htmlFor="logo-upload"
           className="block mb-2 font-medium text-gray-900 dark:text-gray-200"
         >
-          Logo hochladen
+          Firmenlogo (max. 1 Logo)
         </Label>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+          Laden Sie Ihr Firmenlogo hoch. Ein vorhandenes Logo wird automatisch ersetzt.
+        </p>
         <Input
           id="logo-upload"
           type="file"
@@ -345,8 +384,12 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
           htmlFor="banner-upload"
           className="block mb-2 font-medium text-gray-900 dark:text-gray-200"
         >
-          Banner-Bild hochladen
+          Banner-Bild (max. 1 Banner)
         </Label>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+          Laden Sie ein Banner-Bild für Ihr Firmenprofil hoch. Ein vorhandenes Banner wird
+          automatisch ersetzt.
+        </p>
         <Input
           id="banner-upload"
           type="file"

@@ -14,6 +14,19 @@ export interface RawFirestoreUserData {
   profilePictureFirebaseUrl?: string;
   identityFrontUrlStripeId?: string;
   identityBackUrlStripeId?: string;
+  // Additional root-level accounting fields
+  lastInvoiceNumber?: string;
+  districtCourt?: string;
+  companyRegister?: string;
+  registrationNumber?: string;
+  ust?: string;
+  profitMethod?: string;
+  priceInput?: string;
+  taxMethod?: string;
+  accountingSystem?: string;
+  defaultTaxRate?: string;
+  bankName?: string;
+  bic?: string;
   step1?: {
     personalData?: {
       gender?: string;
@@ -67,6 +80,8 @@ export interface RawFirestoreUserData {
     taxId?: string;
     vatId?: string;
     commercialRegisterNumber?: string;
+    districtCourt?: string;
+    companyRegister?: string;
     legalForm?: string;
     foundingDate?: string;
     numberOfEmployees?: string;
@@ -99,6 +114,7 @@ export interface RawFirestoreUserData {
     faqs?: any[];
     portfolio?: any[];
     profilePictureURL?: string;
+    profileBannerImage?: string;
     identityFrontUrl?: string;
     identityBackUrl?: string;
   };
@@ -124,11 +140,24 @@ export interface RawFirestoreUserData {
   identityFrontUrl?: string;
   identityBackUrl?: string;
   paymentTermsSettings?: {
-    defaultPaymentTerms?: string;
+    defaultPaymentTerms?: {
+      days: number;
+      text: string;
+      skontoEnabled?: boolean;
+      skontoDays?: number;
+      skontoPercentage?: number;
+    };
     customTerms?: string;
     allowedPaymentMethods?: string[];
     lateFeePercentage?: number;
     earlyPaymentDiscount?: number;
+  };
+  defaultPaymentTerms?: {
+    days: number;
+    text: string;
+    skontoEnabled?: boolean;
+    skontoDays?: number;
+    skontoPercentage?: number;
   };
   logoUrl?: string;
   documentTemplates?: {
@@ -250,6 +279,7 @@ export interface UserDataForSettings {
     faqs?: any[];
     portfolio?: any[];
     profilePictureURL?: string;
+    profileBannerImage?: string;
     identityFrontUrl?: string;
     identityBackUrl?: string;
   };
@@ -275,7 +305,13 @@ export interface UserDataForSettings {
   identityFrontUrl?: string;
   identityBackUrl?: string;
   paymentTermsSettings?: {
-    defaultPaymentTerms?: string;
+    defaultPaymentTerms?: {
+      days: number;
+      text: string;
+      skontoEnabled?: boolean;
+      skontoDays?: number;
+      skontoPercentage?: number;
+    };
     customTerms?: string;
     allowedPaymentMethods?: string[];
     lateFeePercentage?: number;

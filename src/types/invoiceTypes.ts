@@ -37,6 +37,19 @@ export interface InvoiceData {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
+  // Strukturierte Kundendaten für Templates
+  customer?: {
+    name: string;
+    email: string;
+    address: {
+      street: string;
+      zipCode: string;
+      city: string;
+      country: string;
+    };
+    taxNumber?: string;
+    vatId?: string;
+  };
 
   // Rechnungsbeschreibung
   description: string;
@@ -56,6 +69,26 @@ export interface InvoiceData {
   districtCourt?: string;
   legalForm?: string;
   companyTax?: string;
+  // Strukturierte Unternehmensdaten für Templates
+  company?: {
+    name: string;
+    email: string;
+    phone: string;
+    website?: string;
+    address?: {
+      street: string;
+      zipCode: string;
+      city: string;
+      country: string;
+    };
+    taxNumber?: string;
+    vatId?: string;
+    bankDetails?: {
+      iban: string;
+      bic: string;
+      accountHolder: string;
+    };
+  };
 
   // Steuereinstellungen
   isSmallBusiness: boolean; // Kleinunternehmerregelung §19 UStG

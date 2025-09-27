@@ -1,0 +1,143 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Mail, Loader2 } from 'lucide-react';
+import { InvoiceData } from '@/types/invoiceTypes';
+
+interface EmailDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  invoice: InvoiceData;
+  companyId: string;
+}
+
+export function EmailDialog({ isOpen, onClose, invoice, companyId }: EmailDialogProps) {
+  const [emailTo, setEmailTo] = useState('');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && invoice) {
+      // Vorbefüllen mit Kundendaten
+      setEmailTo(invoice.customerEmail || '');
+      setEmailSubject(`Rechnung ${invoice.number || invoice.invoiceNumber || 'RE-XXXX'}`);
+      setEmailBody(
+        `Sehr geehrte Damen und Herren,\n\n` +
+          `anbei erhalten Sie unsere Rechnung ${invoice.number || invoice.invoiceNumber || 'RE-XXXX'}.\n\n` +
+          `Rechnungsbetrag: ${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(invoice.total)}\n` +
+          `Fällig bis: ${new Date(invoice.dueDate).toLocaleDateString('de-DE')}\n\n` +
+          `Bei Fragen stehen wir Ihnen gerne zur Verfügung.\n\n` +
+          `Mit freundlichen Grüßen\n` +
+          `${invoice.companyName || 'Ihr Unternehmen'}`
+      );
+    }
+  }, [isOpen, invoice]);
+
+  const handleSendEmail = async () => {
+    if (!emailTo || !emailSubject || !emailBody) {
+      alert('Bitte füllen Sie alle Felder aus.');
+      return;
+    }
+
+    setSending(true);
+    try {
+      // Hier würde die E-Mail-Versand-Logik implementiert werden
+      // Für jetzt zeigen wir nur eine Erfolgsmeldung
+      alert('E-Mail-Versand-Funktionalität wird implementiert.');
+      onClose();
+    } catch (error) {
+      console.error('Fehler beim E-Mail-Versand:', error);
+      alert('Fehler beim Versand der E-Mail.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5" />
+            Rechnung per E-Mail versenden
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="emailTo">Empfänger</Label>
+            <Input
+              id="emailTo"
+              type="email"
+              value={emailTo}
+              onChange={e => setEmailTo(e.target.value)}
+              placeholder="kunde@example.com"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="emailSubject">Betreff</Label>
+            <Input
+              id="emailSubject"
+              value={emailSubject}
+              onChange={e => setEmailSubject(e.target.value)}
+              placeholder="Rechnung RE-XXXX"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="emailBody">Nachricht</Label>
+            <Textarea
+              id="emailBody"
+              rows={8}
+              value={emailBody}
+              onChange={e => setEmailBody(e.target.value)}
+              placeholder="Ihre Nachricht..."
+            />
+          </div>
+
+          <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+            <strong>Rechnung:</strong> {invoice.number || invoice.invoiceNumber || 'RE-XXXX'}
+            <br />
+            <strong>Betrag:</strong>{' '}
+            {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(
+              invoice.total
+            )}
+            <br />
+            <strong>Fällig bis:</strong> {new Date(invoice.dueDate).toLocaleDateString('de-DE')}
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              onClick={handleSendEmail}
+              disabled={sending}
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            >
+              {sending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Wird gesendet...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 mr-2" />
+                  E-Mail senden
+                </>
+              )}
+            </Button>
+            <Button variant="outline" onClick={onClose}>
+              Abbrechen
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

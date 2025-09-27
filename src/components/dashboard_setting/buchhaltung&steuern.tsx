@@ -3,20 +3,20 @@
 import React, { useEffect, useState } from 'react';
 import { UserDataForSettings } from '@/types/settings';
 
-// ANPASSUNG: 'export' wurde hinzugefügt
 export interface AccountingFormProps {
   formData: UserDataForSettings;
   handleChange: (path: string, value: string) => void;
 }
 
 const AccountingForm: React.FC<AccountingFormProps> = ({ formData, handleChange }) => {
+  console.log('AccountingForm received formData:', formData);
+  console.log('accountingSystem in formData:', formData?.step3?.accountingSystem);
   const [isSmallBusiness, setIsSmallBusiness] = useState(false);
 
   useEffect(() => {
     const currentUst = formData?.step3?.ust;
     if (currentUst === 'kleinunternehmer') {
       setIsSmallBusiness(true);
-      // Nur ändern, wenn die Werte noch nicht gesetzt sind
       if (formData?.step3?.profitMethod !== 'euer') {
         handleChange('step3.profitMethod', 'euer');
       }
@@ -26,7 +26,7 @@ const AccountingForm: React.FC<AccountingFormProps> = ({ formData, handleChange 
     } else {
       setIsSmallBusiness(false);
     }
-  }, [formData?.step3?.ust]); // Entferne handleChange aus dependencies
+  }, [formData?.step3?.ust]);
 
   const baseBoxClass = 'p-6 rounded-md shadow-sm cursor-pointer transition border ';
 
@@ -52,6 +52,7 @@ const AccountingForm: React.FC<AccountingFormProps> = ({ formData, handleChange 
 
   return (
     <div className="space-y-8 bg-gray-50 dark:bg-gray-900 p-6 rounded-lg">
+      {/* Umsatzsteuer-ID und Steuernummer */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className={labelClass}>Umsatzsteuer-ID</label>
@@ -77,52 +78,7 @@ const AccountingForm: React.FC<AccountingFormProps> = ({ formData, handleChange 
         </div>
       </div>
 
-      {/* Neuer Bereich für Rechnungsnummern-Migration */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
-        <h3 className="text-lg font-semibold mb-4 text-blue-900 dark:text-blue-100">
-          🧾 Rechnungsnummern-Migration
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className={labelClass}>Letzte Rechnungsnummer aus altem System</label>
-            <input
-              type="text"
-              value={formData?.step3?.lastInvoiceNumber || ''}
-              onChange={e => handleChange('step3.lastInvoiceNumber', e.target.value)}
-              className={inputClass}
-              placeholder="z.B. R-2024-456 oder 2024-456"
-            />
-            <p className={helperTextClass}>
-              📋 <strong>Wichtig für Steuerkonformität:</strong> Tragen Sie hier Ihre letzte
-              Rechnungsnummer aus dem vorherigen System ein, damit die neue Nummerierung nahtlos
-              fortgesetzt wird.
-            </p>
-          </div>
-          <div className="flex items-center">
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                <strong>Nächste Rechnungsnummer:</strong>
-              </div>
-              <div className="text-lg font-mono text-[#14ad9f]">
-                {formData?.step3?.lastInvoiceNumber
-                  ? (() => {
-                      const match = formData.step3.lastInvoiceNumber.match(/(\d+)$/);
-                      if (match) {
-                        const nextNumber = parseInt(match[1]) + 1;
-                        const year = new Date().getFullYear();
-                        return `R-${year}-${nextNumber.toString().padStart(3, '0')}`;
-                      }
-                      return 'R-2025-001';
-                    })()
-                  : 'R-2025-001'}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Automatisch generiert bei Rechnungserstellung
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Amtsgericht und Handelsregister */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className={labelClass}>Amtsgericht</label>
@@ -151,6 +107,8 @@ const AccountingForm: React.FC<AccountingFormProps> = ({ formData, handleChange 
           </p>
         </div>
       </div>
+
+      {/* Umsatzsteuer */}
       <div className="space-y-3">
         <label className={labelClass}>Umsatzsteuer</label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -167,6 +125,8 @@ const AccountingForm: React.FC<AccountingFormProps> = ({ formData, handleChange 
           ))}
         </div>
       </div>
+
+      {/* Gewinnermittlung */}
       <div className="space-y-3">
         <label className={labelClass}>Gewinnermittlung</label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -184,6 +144,8 @@ const AccountingForm: React.FC<AccountingFormProps> = ({ formData, handleChange 
           </div>
         </div>
       </div>
+
+      {/* Versteuerungsart - nur wenn nicht Kleinunternehmer */}
       {!isSmallBusiness && (
         <div className="space-y-3">
           <label className={labelClass}>Versteuerungsart</label>
@@ -205,6 +167,8 @@ const AccountingForm: React.FC<AccountingFormProps> = ({ formData, handleChange 
           </div>
         </div>
       )}
+
+      {/* Standard Umsatzsteuersatz */}
       <div>
         <label className={`${labelClass} mb-2`}>Standard Umsatzsteuersatz</label>
         <select
@@ -218,13 +182,18 @@ const AccountingForm: React.FC<AccountingFormProps> = ({ formData, handleChange 
           <option value="0">0 %</option>
         </select>
       </div>
+
+      {/* Kontenrahmen */}
       <div className="space-y-3">
         <label className={labelClass}>Kontenrahmen</label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {['skro4', 'skro3'].map(type => (
             <div
               key={type}
-              onClick={() => handleChange('step3.accountingSystem', type)}
+              onClick={() => {
+                console.log('Clicked accountingSystem:', type);
+                handleChange('step3.accountingSystem', type);
+              }}
               className={getBoxClass(formData?.step3?.accountingSystem === type)}
             >
               <h3 className="font-semibold text-lg">{type === 'skro4' ? 'SKR04' : 'SKR03'}</h3>
@@ -237,6 +206,8 @@ const AccountingForm: React.FC<AccountingFormProps> = ({ formData, handleChange 
           ))}
         </div>
       </div>
+
+      {/* Preiseingabe */}
       <div className="space-y-3">
         <label className={labelClass}>Eingabe von Preisen in...</label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

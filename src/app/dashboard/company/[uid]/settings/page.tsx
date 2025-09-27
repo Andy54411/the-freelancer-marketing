@@ -30,7 +30,7 @@ export default function SettingsPage() {
   const [isManagingDirectorModalOpen, setIsManagingDirectorModalOpen] = useState(false);
 
   const transformToUserDataForSettings = (rawData: RawFirestoreUserData): UserDataForSettings => {
-    return {
+    const transformed = {
       uid: rawData.uid,
       companyName: rawData.companyName || rawData.step2?.companyName,
       email: rawData.email,
@@ -38,15 +38,52 @@ export default function SettingsPage() {
       legalForm: rawData.step2?.legalForm,
       step1: rawData.step1,
       step2: rawData.step2,
+      step3: {
+        ...(rawData.step3 || {}),
+        // Merge accounting fields from root level into step3
+        vatId: rawData.vatId ?? rawData.step3?.vatId ?? '',
+        taxNumber: rawData.taxNumber ?? rawData.step3?.taxNumber ?? '',
+        districtCourt:
+          rawData.districtCourt ||
+          rawData.step3?.districtCourt ||
+          rawData.step2?.districtCourt ||
+          '',
+        companyRegister:
+          rawData.companyRegister ||
+          rawData.step3?.companyRegister ||
+          rawData.step2?.companyRegister ||
+          rawData.registrationNumber ||
+          '',
+        ust: rawData.step3?.ust || rawData.ust,
+        profitMethod: rawData.step3?.profitMethod || rawData.profitMethod,
+        priceInput: rawData.step3?.priceInput || rawData.priceInput,
+        taxMethod: rawData.step3?.taxMethod || rawData.taxMethod,
+        accountingSystem:
+          rawData.step3?.accountingSystem ||
+          (rawData.accountingSystem === 'skr03' ? 'skro3' : rawData.accountingSystem),
+        defaultTaxRate: rawData.defaultTaxRate || rawData.step3?.defaultTaxRate || '19',
+        profilePictureURL: rawData.profilePictureURL || rawData.step3?.profilePictureURL,
+        profileBannerImage: rawData.profileBannerImage || rawData.step3?.profileBannerImage,
+        bankDetails: rawData.step3?.bankDetails || {
+          bankName: rawData.bankName || '',
+          iban: rawData.iban || '',
+          bic: rawData.bic || '',
+          accountHolder: rawData.accountHolder || '',
+        },
+      },
       step4: rawData.step4,
       step5: rawData.step5,
       portfolioItems: rawData.portfolioItems || [],
       faqs: rawData.faqs || [],
-      paymentTermsSettings: rawData.paymentTermsSettings,
+      paymentTermsSettings: rawData.paymentTermsSettings || {
+        defaultPaymentTerms: rawData.defaultPaymentTerms,
+      },
       logoUrl: rawData.logoUrl,
       documentTemplates: rawData.documentTemplates,
       stornoSettings: rawData.stornoSettings,
     };
+
+    return transformed;
   };
 
   useEffect(() => {
@@ -70,15 +107,35 @@ export default function SettingsPage() {
         const companyDoc = await getDoc(doc(db, 'companies', uid));
         if (companyDoc.exists()) {
           const companyData = companyDoc.data() as RawFirestoreUserData;
+          console.log('Raw company data:', companyData);
+          console.log('step3:', companyData.step3);
+          console.log('profileBannerImage in raw data:', companyData.profileBannerImage);
+          console.log('profileBannerImage in step3:', companyData.step3?.profileBannerImage);
+          console.log('accountingSystem in step3:', companyData.step3?.accountingSystem);
           const transformedData = transformToUserDataForSettings(companyData);
+          console.log('Transformed step3:', transformedData.step3);
+          console.log('Transformed profileBannerImage:', transformedData.profileBannerImage);
+          console.log(
+            'Transformed step3.profileBannerImage:',
+            transformedData.step3?.profileBannerImage
+          );
+          console.log('Final accountingSystem:', transformedData.step3?.accountingSystem);
           setForm(transformedData);
         } else {
+          console.log('Company doc not found, trying users collection');
           // Fallback: User-Daten
           const userDoc = await getDoc(doc(db, 'users', uid));
           if (userDoc.exists()) {
             const userData = userDoc.data() as RawFirestoreUserData;
             const transformedData = transformToUserDataForSettings(userData);
             setForm(transformedData);
+
+            // Erstelle Company-Dokument aus User-Daten für zukünftige Verwendung
+            await updateDoc(doc(db, 'companies', uid), {
+              ...userData,
+              uid: uid,
+              lastUpdated: serverTimestamp(),
+            });
           } else {
             // Erstelle Basis-Daten
             const baseData: UserDataForSettings = {
@@ -93,6 +150,14 @@ export default function SettingsPage() {
               faqs: [],
             };
             setForm(baseData);
+
+            // Erstelle leeres Company-Dokument
+            await updateDoc(doc(db, 'companies', uid), {
+              uid: uid,
+              email: user.email || '',
+              displayName: user.email || '',
+              lastUpdated: serverTimestamp(),
+            });
           }
         }
       } catch (error) {
@@ -170,6 +235,9 @@ export default function SettingsPage() {
       };
 
       const cleanedForm = cleanData(form);
+      console.log('Form before save:', form);
+      console.log('Cleaned form:', cleanedForm);
+      console.log('accountingSystem in cleaned form:', cleanedForm.step3?.accountingSystem);
 
       await updateDoc(docRef, {
         ...cleanedForm,

@@ -109,14 +109,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  ProfessionalBusinessTemplate,
-  ExecutivePremiumTemplate,
-  CreativeModernTemplate,
-  MinimalistElegantTemplate,
-  CorporateClassicTemplate,
-  TechStartupTemplate,
-} from '@/components/templates/invoice-templates';
+import { ProfessionalBusinessTemplate } from '@/components/templates/invoice-templates';
 
 // Use ImportedInvoiceTemplate type from @/components/finance/InvoiceTemplates
 import { UserPreferencesService } from '@/lib/userPreferences';
@@ -143,6 +136,8 @@ type PreviewTemplateData = {
   taxRuleLabel?: string;
   invoiceDate?: string;
   deliveryDate?: string;
+  serviceDate?: string;
+  servicePeriod?: string;
   customerName: string;
   customerAddress?: string;
   customerEmail?: string;
@@ -192,6 +187,9 @@ type PreviewTemplateData = {
   };
   notes?: string;
   headTextHtml?: string;
+  headerText?: string; // Template erwartet headerText
+  introText?: string; // Template erwartet auch introText
+  description?: string; // Template erwartet auch description
   footerText?: string;
   contactPersonName?: string;
   internalContactPerson?: string;
@@ -208,6 +206,13 @@ type PreviewTemplateData = {
   legalForm?: string;
   firstName?: string;
   lastName?: string;
+  // Skonto-Felder
+  skontoEnabled?: boolean;
+  skontoDays?: number;
+  skontoPercentage?: number;
+  skontoText?: string;
+  // Template-Informationen
+  selectedTemplate?: string;
   // Company-Objekt für Template-Kompatibilität
   company?: {
     name: string;
@@ -807,7 +812,8 @@ export default function CreateQuotePage() {
     customerOrderNumber: '',
     validUntil: '',
     invoiceDate: '',
-    deliveryDate: '',
+    deliveryDate: new Date().toISOString().split('T')[0],
+    servicePeriod: '', // Lieferzeitraum/Leistungszeitraum
     headTextHtml:
       'Sehr geehrte Damen und Herren,\n\nvielen Dank für Ihren Auftrag und das damit verbundene Vertrauen!\nHiermit stelle ich Ihnen die folgenden Leistungen in Rechnung:',
     footerText:
@@ -1360,7 +1366,7 @@ export default function CreateQuotePage() {
         email: data.customerEmail || '',
         phone: data.customerPhone || '',
         address: data.customerAddress || '',
-        street: data.customerAddress?.split('\n')[0] || '',
+        street: (data.customerAddress?.split('\n')[0] || '').replace(/\s+/g, ' ').trim(),
         postalCode: data.customerAddress?.split('\n')[1]?.split(' ')[0] || '',
         city: data.customerAddress?.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
         country: data.customerAddress?.split('\n')[2] || '',
@@ -1432,7 +1438,9 @@ export default function CreateQuotePage() {
       (companyName as string) ||
       undefined;
     const companyAddress = [
-      [company?.companyStreet, company?.companyHouseNumber].filter(Boolean).join(' '),
+      [company?.companyStreet?.replace(/\s+/g, ' ').trim(), company?.companyHouseNumber]
+        .filter(Boolean)
+        .join(' '),
       [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
       company?.companyCountry,
     ]
@@ -1567,10 +1575,51 @@ export default function CreateQuotePage() {
         };
       }),
       subtotal,
-      tax: showNet ? 0 : vat, // Bei Netto-Anzeige keine Steuer anzeigen
-      total: showNet ? subtotal : grandTotal, // Bei Netto-Anzeige nur Netto-Summe zeigen
-      vatRate: showNet ? 0 : taxRate, // Bei Netto-Anzeige keine Steuer-Rate anzeigen
-      isSmallBusiness: settings?.ust === 'kleinunternehmer' || taxRate === 0,
+      tax: (() => {
+        // Für Reverse Charge und bestimmte steuerfreie Regeln ist die Steuer immer 0
+        const isReverseCharge =
+          formData.taxRule?.includes('REVERSE') ||
+          formData.taxRule === TaxRuleType.DE_REVERSE_13B ||
+          formData.taxRule === TaxRuleType.EU_REVERSE_18B;
+        const isTaxExempt =
+          formData.taxRule === TaxRuleType.DE_EXEMPT_4_USTG ||
+          formData.taxRule === TaxRuleType.EU_INTRACOMMUNITY_SUPPLY ||
+          formData.taxRule === TaxRuleType.NON_EU_EXPORT ||
+          formData.taxRule === TaxRuleType.NON_EU_OUT_OF_SCOPE;
+        if (isReverseCharge || isTaxExempt) return 0;
+        // Bei Netto-Anzeige keine Steuer anzeigen
+        return showNet ? 0 : vat;
+      })(),
+      total: (() => {
+        const isReverseCharge =
+          formData.taxRule?.includes('REVERSE') ||
+          formData.taxRule === TaxRuleType.DE_REVERSE_13B ||
+          formData.taxRule === TaxRuleType.EU_REVERSE_18B;
+        const isTaxExempt =
+          formData.taxRule === TaxRuleType.DE_EXEMPT_4_USTG ||
+          formData.taxRule === TaxRuleType.EU_INTRACOMMUNITY_SUPPLY ||
+          formData.taxRule === TaxRuleType.NON_EU_EXPORT ||
+          formData.taxRule === TaxRuleType.NON_EU_OUT_OF_SCOPE;
+        if (isReverseCharge || isTaxExempt) return subtotal;
+        // Bei Netto-Anzeige nur Netto-Summe zeigen
+        return showNet ? subtotal : grandTotal;
+      })(),
+      vatRate: (() => {
+        // Für Reverse Charge und steuerfreie Regeln ist die Steuer-Rate 0
+        const isReverseCharge =
+          formData.taxRule?.includes('REVERSE') ||
+          formData.taxRule === TaxRuleType.DE_REVERSE_13B ||
+          formData.taxRule === TaxRuleType.EU_REVERSE_18B;
+        const isTaxExempt =
+          formData.taxRule === TaxRuleType.DE_EXEMPT_4_USTG ||
+          formData.taxRule === TaxRuleType.EU_INTRACOMMUNITY_SUPPLY ||
+          formData.taxRule === TaxRuleType.NON_EU_EXPORT ||
+          formData.taxRule === TaxRuleType.NON_EU_OUT_OF_SCOPE;
+        if (isReverseCharge || isTaxExempt) return 0;
+        // Bei Netto-Anzeige keine Steuer-Rate anzeigen
+        return showNet ? 0 : taxRate;
+      })(),
+      isSmallBusiness: false, // Wird durch taxRule bestimmt, nicht durch settings
       bankDetails: company
         ? {
             iban:
@@ -1599,10 +1648,21 @@ export default function CreateQuotePage() {
         : undefined,
       notes: previewNotes,
       headTextHtml: formData.headTextHtml || undefined,
+      headerText: formData.headTextHtml || undefined, // Template erwartet headerText
+      introText: formData.headTextHtml || undefined, // Template erwartet auch introText
+      description: formData.headTextHtml || undefined, // Template erwartet auch description
       footerText: formData.footerText || undefined,
       contactPersonName: contactPersonNameForFooter,
       paymentTerms: finalPaymentTerms || undefined,
       deliveryTerms: formData.deliveryTerms || undefined,
+      // Lieferzeit/Leistungszeitraum für Template
+      serviceDate: formData.deliveryDate
+        ? formatDateDE(new Date(formData.deliveryDate))
+        : undefined,
+      servicePeriod:
+        deliveryDateType === 'range' && deliveryDateRange.from && deliveryDateRange.to
+          ? `${formatDateDE(deliveryDateRange.from)} - ${formatDateDE(deliveryDateRange.to)}`
+          : formData.servicePeriod || undefined,
       // Customer-Objekt für Template-Kompatibilität
       customer: {
         name: formData.customerName || 'Kunde',
@@ -1693,7 +1753,23 @@ export default function CreateQuotePage() {
       legalForm: (company as any)?.step2?.legalForm || (company as any)?.legalForm,
       firstName: (company as any)?.firstName || (company as any)?.step1?.personalData?.firstName,
       lastName: (company as any)?.lastName || (company as any)?.step1?.personalData?.lastName,
+      // Skonto-Felder für Template
+      skontoEnabled: skontoEnabled || false,
+      skontoDays: skontoEnabled ? skontoDays || 0 : 0,
+      skontoPercentage: skontoEnabled ? skontoPercentage || 0 : 0,
+      skontoText: skontoEnabled ? skontoText || '' : '',
+      // Template-Informationen
+      selectedTemplate:
+        typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
     };
+
+    // DEBUG: Tax Rule Ausgabe
+    console.log('🔧 [TAX RULE DEBUG] buildPreviewData:', {
+      formDataTaxRule: formData.taxRule,
+      taxRuleInData: data.taxRule,
+      taxRuleLabel: data.taxRuleLabel,
+      taxRuleLabelMap: taxRuleLabelMap[formData.taxRule],
+    });
 
     return data;
   };
@@ -1976,7 +2052,9 @@ export default function CreateQuotePage() {
         companyName:
           company?.companyName || settings?.companyName || (user as any)?.name || 'Ihr Unternehmen',
         companyAddress: [
-          [company?.companyStreet, company?.companyHouseNumber].filter(Boolean).join(' '),
+          [company?.companyStreet?.replace(/\s+/g, ' ').trim(), company?.companyHouseNumber]
+            .filter(Boolean)
+            .join(' '),
           [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
           company?.companyCountry,
         ]
@@ -2330,7 +2408,9 @@ export default function CreateQuotePage() {
           (user as any)?.displayName ||
           'Ihr Unternehmen',
         companyAddress: [
-          [company?.companyStreet, company?.companyHouseNumber].filter(Boolean).join(' '),
+          [company?.companyStreet?.replace(/\s+/g, ' ').trim(), company?.companyHouseNumber]
+            .filter(Boolean)
+            .join(' '),
           [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
           company?.companyCountry,
         ]
@@ -3635,7 +3715,7 @@ export default function CreateQuotePage() {
                     {deliveryDateType === 'single' ? (
                       <Input
                         type="date"
-                        value={formData.deliveryDate || new Date().toISOString().split('T')[0]}
+                        value={formData.deliveryDate}
                         onChange={e => {
                           setFormData(prev => ({ ...prev, deliveryDate: e.target.value }));
                         }}
@@ -3678,8 +3758,13 @@ export default function CreateQuotePage() {
                             }}
                             onSelect={range => {
                               setDeliveryDateRange(range || {});
-                              // Schließe den Popover wenn beide Daten ausgewählt sind
+                              // Aktualisiere servicePeriod in formData wenn Zeitraum komplett ist
                               if (range?.from && range?.to) {
+                                const servicePeriodText = `${formatDateDE(range.from)} - ${formatDateDE(range.to)}`;
+                                setFormData(prev => ({
+                                  ...prev,
+                                  servicePeriod: servicePeriodText,
+                                }));
                                 setDeliveryDatePopoverOpen(false);
                               }
                             }}

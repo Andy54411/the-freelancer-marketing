@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Edit, Trash2, X } from 'lucide-react';
+import { Eye, Edit, Trash2, X, Mail, Download } from 'lucide-react';
 import { InvoiceData } from '@/types/invoiceTypes';
 import StornoInvoice from './StornoInvoice';
+import { EmailDialog } from './EmailDialog';
 
 interface InvoiceComponentProps {
   invoices: InvoiceData[];
@@ -23,6 +24,8 @@ export function InvoiceComponent({
   const [invoices, _setInvoices] = useState<InvoiceData[]>(initialInvoices);
   const [showStornoDialog, setShowStornoDialog] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [selectedInvoiceForEmail, setSelectedInvoiceForEmail] = useState<InvoiceData | null>(null);
   const router = useRouter();
 
   const formatCurrency = (amount: number) => {
@@ -62,6 +65,18 @@ export function InvoiceComponent({
     }
   };
 
+  const handleSendEmail = (invoiceId: string) => {
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (invoice) {
+      setSelectedInvoiceForEmail(invoice);
+      setShowEmailDialog(true);
+    }
+  };
+
+  const handleDownloadPdf = (invoiceId: string) => {
+    // PDF-Download-Funktionalität - Verwende die direkte Rechnungsansicht Route
+    window.open(`/print/invoice/${invoiceId}`, '_blank');
+  };
   const handleStornoCreated = () => {
     setShowStornoDialog(false);
     setSelectedInvoice(null);
@@ -116,6 +131,26 @@ export function InvoiceComponent({
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
+                      {invoice.status !== 'draft' && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="E-Mail senden"
+                            onClick={() => handleSendEmail(invoice.id)}
+                          >
+                            <Mail className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="PDF herunterladen"
+                            onClick={() => handleDownloadPdf(invoice.id)}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                       {invoice.status === 'draft' && (
                         <Button
                           variant="ghost"
@@ -153,6 +188,18 @@ export function InvoiceComponent({
 
       {showStornoDialog && selectedInvoice && (
         <StornoInvoice invoice={selectedInvoice} onStornoCreated={handleStornoCreated} />
+      )}
+
+      {showEmailDialog && selectedInvoiceForEmail && (
+        <EmailDialog
+          isOpen={showEmailDialog}
+          onClose={() => {
+            setShowEmailDialog(false);
+            setSelectedInvoiceForEmail(null);
+          }}
+          invoice={selectedInvoiceForEmail}
+          companyId={_companyId}
+        />
       )}
     </Card>
   );

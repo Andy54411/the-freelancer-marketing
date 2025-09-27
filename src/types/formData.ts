@@ -6,6 +6,7 @@ export interface CreateInvoiceFormData {
   invoiceDate: string;
   validUntil: string;
   deliveryDate?: string;
+  servicePeriod?: string; // Für Lieferzeitraum/Leistungszeitraum Text
   customerOrderNumber?: string;
 
   // Kundendaten

@@ -106,14 +106,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  ProfessionalBusinessTemplate,
-  ExecutivePremiumTemplate,
-  CreativeModernTemplate,
-  MinimalistElegantTemplate,
-  CorporateClassicTemplate,
-  TechStartupTemplate,
-} from '@/components/templates/invoice-templates';
+import { ProfessionalBusinessTemplate } from '@/components/templates/invoice-templates';
 
 // Use ImportedInvoiceTemplate type from @/components/finance/InvoiceTemplates
 import { UserPreferencesService } from '@/lib/userPreferences';
@@ -213,6 +206,8 @@ type PreviewTemplateData = {
       accountHolder: string;
     };
   };
+  // Template-Informationen
+  selectedTemplate?: string;
   // TSE-Daten für deutsche E-Rechnung-Compliance
   tseData?: {
     serialNumber: string;
@@ -1827,6 +1822,9 @@ export default function EditInvoicePage() {
           certificateSerial: tseSettings.certificateSerial || '',
         };
       })(),
+      // Template-Informationen
+      selectedTemplate:
+        typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
     };
 
     return data;

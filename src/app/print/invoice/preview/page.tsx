@@ -492,9 +492,9 @@ function PrintInvoicePreview() {
     nextNumber: rawData?.nextNumber || 1000,
 
     // === TEMPLATE-AUSWAHL ===
-    // Immer CorporateClassicTemplate verwenden
-    selectedTemplate: 'corporate-classic',
-    templateId: 'corporate-classic',
+    // Verwende selectedTemplate aus dem Payload oder fallback auf corporate-classic
+    selectedTemplate: rawData?.selectedTemplate || 'corporate-classic',
+    templateId: rawData?.selectedTemplate || 'corporate-classic',
 
     // === ERWEITERTE TEMPLATE-FELDER ===
     projectName: rawData?.projectName || '',
@@ -719,7 +719,7 @@ function PrintInvoicePreview() {
 
       <div className="invoice-print-content">
         <InvoiceTemplateRenderer
-          template="professional-business"
+          template={rawData?.selectedTemplate || 'professional-business'}
           data={{
             ...templateData,
             company: {

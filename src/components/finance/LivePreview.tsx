@@ -1,14 +1,7 @@
 'use client';
 
 import React from 'react';
-import {
-  ProfessionalBusinessTemplate,
-  CorporateClassicTemplate,
-  ExecutivePremiumTemplate,
-  MinimalistElegantTemplate,
-  CreativeModernTemplate,
-  TechStartupTemplate,
-} from '@/components/templates/invoice-templates';
+import { ProfessionalBusinessTemplate } from '@/components/templates/invoice-templates';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { TaxRuleType } from '@/types/taxRules';
 
@@ -99,11 +92,6 @@ export function LivePreview({
   });
   const TemplateMap = {
     'professional-business': ProfessionalBusinessTemplate,
-    'corporate-classic': CorporateClassicTemplate,
-    'executive-premium': ExecutivePremiumTemplate,
-    'minimalist-elegant': MinimalistElegantTemplate,
-    'creative-modern': CreativeModernTemplate,
-    'tech-startup': TechStartupTemplate,
   } as const;
 
   // WICHTIG: Verfügbare Templates Debug Info

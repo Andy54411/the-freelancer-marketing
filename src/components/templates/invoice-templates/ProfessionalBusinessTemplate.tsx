@@ -1,8 +1,27 @@
 import React from 'react';
 import type { CompanySettings, TemplateCustomizations } from '../types';
-import { resolveLogoUrl } from '../utils/logoUtils';
 import { InvoiceFooter } from './InvoiceFooter';
 import QRCode from 'react-qr-code';
+
+/**
+ * Einfache Logo-URL Resolver Funktion
+ */
+function resolveLogoUrl(
+  customizations?: TemplateCustomizations,
+  companySettings?: CompanySettings,
+  data?: any
+): string | undefined {
+  // Priorität: customizations > companySettings > data
+  return (
+    customizations?.logoUrl ||
+    (companySettings as any)?.logo ||
+    (companySettings as any)?.logoUrl ||
+    data?.company?.logo ||
+    data?.companyLogo ||
+    data?.profilePictureURL ||
+    undefined
+  );
+}
 
 /**
  * Gibt den deutschen Text für eine Steuerregel zurück
@@ -11,15 +30,28 @@ function getTaxRuleLabel(taxRule: string): string {
   switch (taxRule) {
     case 'DE_TAXABLE':
       return 'Steuerpflichtiger Umsatz (Regelsteuersatz 19 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 1 UStG)';
+    case 'DE_TAXABLE_REDUCED':
+      return 'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 12 Abs. 2 UStG)';
     case 'DE_REDUCED':
       return 'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 2 UStG)';
     case 'DE_EXEMPT':
-      return 'Steuerfreier Umsatz (§ 4 UStG)';
+    case 'DE_EXEMPT_4_USTG':
+      return 'Steuerfreie Lieferung/Leistung gemäß § 4 UStG';
     case 'DE_SMALL_BUSINESS':
       return 'Umsatzsteuerbefreit nach § 19 UStG (Kleinunternehmerregelung)';
     case 'DE_REVERSE_CHARGE':
     case 'DE_REVERSE_13B':
       return 'Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)';
+    case 'EU_REVERSE_18B':
+      return 'Steuerschuldnerschaft des Leistungsempfängers (Art. 196 MwStSystRL, § 18b UStG)';
+    case 'EU_INTRACOMMUNITY_SUPPLY':
+      return 'Innergemeinschaftliche Lieferung, steuerfrei gemäß § 4 Nr. 1b i.V.m. § 6a UStG';
+    case 'EU_OSS':
+      return 'Fernverkauf über das OSS-Verfahren (§ 18j UStG)';
+    case 'NON_EU_EXPORT':
+      return 'Steuerfreie Ausfuhrlieferung (§ 4 Nr. 1a i.V.m. § 6 UStG)';
+    case 'NON_EU_OUT_OF_SCOPE':
+      return 'Nicht im Inland steuerbare Leistung (Leistungsort außerhalb Deutschlands, § 3a Abs. 2 UStG)';
     case 'DE_INTRACOMMUNITY':
       return 'Innergemeinschaftliche Lieferung (§ 4 Nr. 1b UStG)';
     case 'DE_EXPORT':
@@ -47,6 +79,23 @@ function getDocumentTitle(data: any): string {
         return 'STORNO-RECHNUNG';
       case 'reminder':
         return 'Mahnung';
+      case 'voucher':
+      case 'gutschein':
+        return 'Gutschein';
+      case 'delivery_note':
+      case 'lieferschein':
+        return 'Lieferschein';
+      case 'proforma':
+        return 'Proforma-Rechnung';
+      case 'credit_note':
+      case 'gutschrift':
+        return 'Gutschrift';
+      case 'order_confirmation':
+      case 'auftragsbestaetigung':
+        return 'Auftragsbestätigung';
+      case 'cost_estimate':
+      case 'kostenvoranschlag':
+        return 'Kostenvoranschlag';
       default:
         return 'Dokument';
     }
@@ -68,7 +117,22 @@ export interface TemplateData {
   dueDate: string;
 
   // Dokumenttyp und Titel
-  documentType?: 'quote' | 'invoice' | 'storno' | 'reminder';
+  documentType?:
+    | 'quote'
+    | 'invoice'
+    | 'storno'
+    | 'reminder'
+    | 'voucher'
+    | 'gutschein'
+    | 'delivery_note'
+    | 'lieferschein'
+    | 'proforma'
+    | 'credit_note'
+    | 'gutschrift'
+    | 'order_confirmation'
+    | 'auftragsbestaetigung'
+    | 'cost_estimate'
+    | 'kostenvoranschlag';
   documentTitle?: string;
 
   // Leistungszeitraum
@@ -216,6 +280,25 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
   const serviceText =
     data.servicePeriod || (data.serviceDate ? formatDate(data.serviceDate) : formatDate(data.date));
 
+  // Hilfsfunktion zum Bereinigen der Straße - robuster
+  const cleanStreet = (street: string) => {
+    if (!street) return '';
+    console.log('DEBUG cleanStreet input:', JSON.stringify(street));
+    // Extrem aggressive Bereinigung
+    const cleaned = street
+      .replace(/<br\s*\/?>/gi, ' ') // HTML <br> Tags
+      .replace(/\r\n/g, ' ') // Windows Zeilenumbrüche
+      .replace(/\n/g, ' ') // Unix Zeilenumbrüche
+      .replace(/\r/g, ' ') // Mac Zeilenumbrüche
+      .replace(/\t/g, ' ') // Tabs
+      .replace(/\f/g, ' ') // Form feeds
+      .replace(/\v/g, ' ') // Vertical tabs
+      .replace(/\s+/g, ' ') // Mehrere Leerzeichen
+      .trim(); // Trim
+    console.log('DEBUG cleanStreet output:', JSON.stringify(cleaned));
+    return cleaned;
+  };
+
   // QR-Code Daten für E-Invoice generieren
   const generateEInvoiceQRData = () => {
     const guid = data.eInvoiceData?.guid || data.eInvoice?.guid;
@@ -249,14 +332,22 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
             <h1 className="text-2xl font-bold text-gray-800 mb-0.5">{getDocumentTitle(data)}</h1>
 
             {/* Firmenadresse in einer Zeile */}
-            <div className="text-xs text-gray-600 mb-3" style={{ fontSize: '10px' }}>
+            <div className="text-xs text-gray-600 mb-3" style={{ fontSize: '12px' }}>
               {data.company?.name &&
                 data.company?.address?.street &&
                 data.company?.address?.zipCode &&
                 data.company?.address?.city && (
                   <div className="font-medium">
-                    {data.company.name} | {data.company.address.street} |{' '}
-                    {data.company.address.zipCode} {data.company.address.city}
+                    {(() => {
+                      // Vollständiger Firmenname mit Suffix
+                      const companyName = data.company.name;
+                      const companySuffix =
+                        (data as any).companySuffix || (data as any).step2?.companySuffix;
+                      const fullCompanyName = companySuffix
+                        ? `${companyName} ${companySuffix}`
+                        : companyName;
+                      return `${fullCompanyName} | ${cleanStreet(data.company.address.street)} | ${data.company.address.zipCode} ${data.company.address.city}`;
+                    })()}
                   </div>
                 )}
             </div>
@@ -264,41 +355,143 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
             <div className="mb-2">
               <div className="text-sm">
                 <div className="font-semibold">{data.customer?.name || 'Kunde'}</div>
-                {data.customer?.address?.street && <div>{data.customer.address.street}</div>}
-                {(data.customer?.address?.zipCode || data.customer?.address?.city) && (
-                  <div>
-                    {data.customer.address.zipCode} {data.customer.address.city}
-                  </div>
+                {data.customer?.address?.street && (
+                  <div>{cleanStreet(data.customer.address.street)}</div>
                 )}
-                {data.customer?.address?.country &&
-                  data.customer.address.country !== 'Deutschland' && (
-                    <div>{data.customer.address.country}</div>
-                  )}
-                {(data.customer?.vatId || data.customer?.taxNumber) && (
+                <div>
+                  {data.customer?.address?.zipCode || ''} {data.customer?.address?.city || ''}
+                </div>
+                <div>Deutschland</div>
+                {((data as any).customerVatId ||
+                  data.customer?.vatId ||
+                  data.customer?.taxNumber) && (
                   <div className="mt-1 text-xs text-gray-600">
-                    {data.customer.vatId && `VAT: ${data.customer.vatId}`}
-                    {data.customer.vatId && data.customer.taxNumber && ' / '}
-                    {data.customer.taxNumber && `Steuernummer: ${data.customer.taxNumber}`}
+                    {((data as any).customerVatId || data.customer?.vatId) &&
+                      `VAT: ${(data as any).customerVatId || data.customer?.vatId}`}
+                    {((data as any).customerVatId || data.customer?.vatId) &&
+                      data.customer?.taxNumber &&
+                      ' / '}
+                    {data.customer?.taxNumber && `Steuernummer: ${data.customer?.taxNumber}`}
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Rechts: Rechnungsinformationen auf der Trennlinie */}
+          {/* Rechts: Dokumentinformationen auf der Trennlinie */}
           <div className="text-right absolute bottom-0 right-0 pb-1">
             <div className="text-sm space-y-1">
               <div>
-                <strong>Rechnungsnummer:</strong> {data.documentNumber}
+                <strong>
+                  {(() => {
+                    switch (data.documentType) {
+                      case 'quote':
+                        return 'Angebotsnummer:';
+                      case 'reminder':
+                        return 'Mahnungsnummer:';
+                      case 'voucher':
+                      case 'gutschein':
+                        return 'Gutscheinnummer:';
+                      case 'delivery_note':
+                      case 'lieferschein':
+                        return 'Lieferscheinnummer:';
+                      case 'proforma':
+                        return 'Proforma-Nr.:';
+                      case 'credit_note':
+                      case 'gutschrift':
+                        return 'Gutschriftsnummer:';
+                      case 'order_confirmation':
+                      case 'auftragsbestaetigung':
+                        return 'Auftragsnummer:';
+                      case 'cost_estimate':
+                      case 'kostenvoranschlag':
+                        return 'Kostenvoranschlag-Nr.:';
+                      case 'storno':
+                        return 'Storno-Rechnungsnummer:';
+                      default:
+                        return 'Rechnungsnummer:';
+                    }
+                  })()}
+                </strong>{' '}
+                {data.documentNumber}
               </div>
               <div>
-                <strong>Rechnungsdatum:</strong> {formatDate(data.date)}
+                <strong>
+                  {(() => {
+                    switch (data.documentType) {
+                      case 'quote':
+                        return 'Angebotsdatum:';
+                      case 'reminder':
+                        return 'Mahnungsdatum:';
+                      case 'voucher':
+                      case 'gutschein':
+                        return 'Gutscheindatum:';
+                      case 'delivery_note':
+                      case 'lieferschein':
+                        return 'Lieferdatum:';
+                      case 'proforma':
+                        return 'Proforma-Datum:';
+                      case 'credit_note':
+                      case 'gutschrift':
+                        return 'Gutschriftsdatum:';
+                      case 'order_confirmation':
+                      case 'auftragsbestaetigung':
+                        return 'Auftragsdatum:';
+                      case 'cost_estimate':
+                      case 'kostenvoranschlag':
+                        return 'Datum:';
+                      case 'storno':
+                        return 'Storno-Datum:';
+                      default:
+                        return 'Rechnungsdatum:';
+                    }
+                  })()}
+                </strong>{' '}
+                {formatDate(data.date)}
               </div>
-              {data.dueDate && (
+              {data.dueDate &&
+                data.documentType &&
+                ![
+                  'quote',
+                  'voucher',
+                  'gutschein',
+                  'delivery_note',
+                  'lieferschein',
+                  'order_confirmation',
+                  'auftragsbestaetigung',
+                  'cost_estimate',
+                  'kostenvoranschlag',
+                ].includes(data.documentType) && (
+                  <div>
+                    <strong>
+                      {(() => {
+                        switch (data.documentType) {
+                          case 'reminder':
+                            return 'Zahlungsziel:';
+                          case 'proforma':
+                            return 'Gültig bis:';
+                          case 'credit_note':
+                          case 'gutschrift':
+                            return 'Gutschrift bis:';
+                          default:
+                            return 'Fälligkeitsdatum:';
+                        }
+                      })()}
+                    </strong>{' '}
+                    {formatDate(data.dueDate)}
+                  </div>
+                )}
+              {data.documentType === 'quote' && data.dueDate && (
                 <div>
-                  <strong>Fälligkeitsdatum:</strong> {formatDate(data.dueDate)}
+                  <strong>Gültig bis:</strong> {formatDate(data.dueDate)}
                 </div>
               )}
+              {(data.documentType === 'voucher' || data.documentType === 'gutschein') &&
+                data.dueDate && (
+                  <div>
+                    <strong>Gültig bis:</strong> {formatDate(data.dueDate)}
+                  </div>
+                )}
               {/* Lieferzeitraum - direkt unter Fälligkeitsdatum */}
               {(data.servicePeriod || data.serviceDate) && (
                 <div>
@@ -332,27 +525,6 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
       </div>
       <div className="flex-1 flex flex-col print:flex-1 print:min-h-0">
         {/* Mehr Optionen / Auswahlfelder */}
-        {((data.currency && data.currency !== 'EUR') ||
-          (typeof data.reverseCharge !== 'undefined' && data.reverseCharge !== false)) && (
-          <div className="mb-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                {data.currency && data.currency !== 'EUR' && (
-                  <div className="text-gray-600 text-xs mb-1">
-                    Währung: <span className="font-semibold">{data.currency}</span>
-                  </div>
-                )}
-              </div>
-              <div>
-                {typeof data.reverseCharge !== 'undefined' && data.reverseCharge !== false && (
-                  <div className="text-gray-600 text-xs mb-1">
-                    Reverse Charge: <span className="font-semibold">aktiviert</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
         {((data.currency && data.currency !== 'EUR') ||
           (typeof data.reverseCharge !== 'undefined' && data.reverseCharge !== false)) && (
           <div className="mb-4">
@@ -552,7 +724,25 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
               )}
               <div className="border-t-2 border-gray-300 pt-2">
                 <div className="flex justify-between py-2 text-lg font-bold">
-                  <span>Gesamtbetrag:</span>
+                  <span>
+                    {(() => {
+                      switch (data.documentType) {
+                        case 'quote':
+                          return 'Angebotssumme:';
+                        case 'voucher':
+                        case 'gutschein':
+                          return 'Gutscheinwert:';
+                        case 'credit_note':
+                        case 'gutschrift':
+                          return 'Gutschriftsbetrag:';
+                        case 'cost_estimate':
+                        case 'kostenvoranschlag':
+                          return 'Geschätzte Kosten:';
+                        default:
+                          return 'Gesamtbetrag:';
+                      }
+                    })()}
+                  </span>
                   <span>{formatCurrency(data.total)}</span>
                 </div>
                 {/* Skonto-Berechnung - Option 1: Vollständige Preisaufschlüsselung */}

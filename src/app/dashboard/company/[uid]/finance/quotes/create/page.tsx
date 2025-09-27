@@ -686,7 +686,9 @@ export default function CreateQuotePage() {
       (companyName as string) ||
       undefined;
     const companyAddress = [
-      [company?.companyStreet, company?.companyHouseNumber].filter(Boolean).join(' '),
+      [company?.companyStreet?.replace(/\s+/g, ' ').trim(), company?.companyHouseNumber]
+        .filter(Boolean)
+        .join(' '),
       [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
       company?.companyCountry,
     ]
@@ -1270,7 +1272,7 @@ export default function CreateQuotePage() {
         customerOrderNumber: formData.customerOrderNumber || undefined,
         customerAddress: formData.customerAddress
           ? {
-              street: formData.customerAddress.split('\n')[0] || '',
+              street: (formData.customerAddress.split('\n')[0] || '').replace(/\s+/g, ' ').trim(),
               city: formData.customerAddress.split('\n')[1] || '',
               postalCode: '',
               country: formData.customerAddress.split('\n')[2] || 'Deutschland',
@@ -2436,7 +2438,7 @@ export default function CreateQuotePage() {
                         customerAddress: (() => {
                           const lines = (previewData.customerAddress || '').split('\n');
                           return {
-                            street: lines[0] || '',
+                            street: (lines[0] || '').replace(/\s+/g, ' ').trim(),
                             zipCode: (lines[1] || '').split(' ')[0] || '',
                             city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
                             country: lines[2] || undefined,

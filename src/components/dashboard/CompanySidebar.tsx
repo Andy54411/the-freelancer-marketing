@@ -252,7 +252,6 @@ const navigationItems: NavigationItem[] = [
       { label: 'FAQs', value: 'settings-faqs' },
       { label: 'Auszahlungen', value: 'settings-payouts' },
       { label: 'Storno-Einstellungen', value: 'settings-storno', href: 'settings/storno' },
-      { label: 'Template-Einstellungen', value: 'settings-templates', href: 'settings/templates' },
       { label: 'Textvorlagen', value: 'settings-textvorlagen', href: 'settings/textvorlagen' },
     ],
   },

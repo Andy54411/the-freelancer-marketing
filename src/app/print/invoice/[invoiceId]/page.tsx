@@ -73,6 +73,94 @@ async function findInvoiceGlobally(invoiceId: string): Promise<InvoiceData | nul
             companyId: data.companyId,
             customerName: data.customerName,
             customerAddress: data.customerAddress,
+            // Parse customerAddress into structured format
+            customer: data.customerAddress
+              ? {
+                  name: data.customerName || '',
+                  email: data.customerEmail || '',
+                  address: (() => {
+                    // Bereinige customerAddress von Zeilenumbrüchen
+                    const cleanedAddress = (data.customerAddress || '')
+                      .replace(/<br\s*\/?>/gi, ' ') // HTML <br> Tags
+                      .replace(/\r\n/g, ' ') // Windows Zeilenumbrüche
+                      .replace(/\n/g, ' ') // Unix Zeilenumbrüche
+                      .replace(/\r/g, ' ') // Mac Zeilenumbrüche
+                      .replace(/\t/g, ' ') // Tabs
+                      .replace(/\f/g, ' ') // Form feeds
+                      .replace(/\v/g, ' ') // Vertical tabs
+                      .replace(/\s+/g, ' ') // Mehrere Leerzeichen
+                      .trim(); // Trim
+
+                    console.log('DEBUG customerAddress parsing:', {
+                      original: data.customerAddress,
+                      cleaned: cleanedAddress,
+                    });
+
+                    // Intelligente Parsing für: "Siedlung am Wald 6 18586 Sellin Deutschland"
+                    const parts = cleanedAddress.split(' ').filter(p => p.length > 0);
+                    if (parts.length >= 4) {
+                      // Finde PLZ (numerisch) - meist 5-stellig
+                      let plzIndex = -1;
+                      for (let i = 0; i < parts.length; i++) {
+                        if (/^\d{4,5}$/.test(parts[i])) {
+                          plzIndex = i;
+                          break;
+                        }
+                      }
+
+                      if (plzIndex > 0) {
+                        const street = parts.slice(0, plzIndex).join(' ');
+                        const zipCode = parts[plzIndex];
+                        const city = parts[plzIndex + 1] || '';
+                        const country = parts.slice(plzIndex + 2).join(' ') || 'Deutschland';
+                        return { street, zipCode, city, country };
+                      }
+                    }
+
+                    // Fallback für Format: "Street City Deutschland"
+                    if (parts.length >= 2) {
+                      const country =
+                        parts[parts.length - 1] === 'Deutschland' ? 'Deutschland' : 'Deutschland';
+                      const cityStart =
+                        parts.length >= 3 && parts[parts.length - 1] === 'Deutschland'
+                          ? parts.length - 2
+                          : parts.length - 1;
+
+                      // Suche nach PLZ in den letzten Teilen
+                      let plzFound = '';
+                      let cityEnd = cityStart;
+                      for (let i = Math.max(0, cityStart - 2); i <= cityStart; i++) {
+                        if (/^\d{4,5}$/.test(parts[i])) {
+                          plzFound = parts[i];
+                          cityEnd = i + 1;
+                          break;
+                        }
+                      }
+
+                      return {
+                        street: parts
+                          .slice(0, plzFound ? parts.indexOf(plzFound) : cityEnd)
+                          .join(' '),
+                        zipCode: plzFound,
+                        city: plzFound
+                          ? parts.slice(parts.indexOf(plzFound) + 1, cityStart + 1).join(' ')
+                          : parts[cityStart] || '',
+                        country: country,
+                      };
+                    }
+
+                    // Absoluter Fallback
+                    return {
+                      street: cleanedAddress,
+                      zipCode: '',
+                      city: '',
+                      country: 'Deutschland',
+                    };
+                  })(),
+                  vatId: (data as any).customerVatId || data.customerVatId || undefined,
+                  taxNumber: (data as any).customerTaxNumber || data.customerTaxNumber || undefined,
+                }
+              : undefined,
             items: data.items || [],
             total: data.total || 0,
             status: data.status || 'draft',
@@ -325,6 +413,41 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
                     .join('\n') ||
                   data.companyAddress ||
                   '',
+
+                // Strukturierte Firmenadresse für Templates
+                company: {
+                  name: companyData.companyName || data.companyName || '',
+                  email: companyData.email || companyData.contactEmail || data.companyEmail || '',
+                  phone:
+                    companyData.phoneNumber ||
+                    companyData.companyPhoneNumber ||
+                    data.companyPhone ||
+                    '',
+                  website:
+                    companyData.website ||
+                    companyData.companyWebsiteForBackend ||
+                    data.companyWebsite ||
+                    '',
+                  address: {
+                    street:
+                      companyData.companyStreet && companyData.companyHouseNumber
+                        ? `${companyData.companyStreet} ${companyData.companyHouseNumber}`
+                            .replace(/\s+/g, ' ')
+                            .trim()
+                        : (companyData.companyStreet || '').replace(/\s+/g, ' ').trim(),
+                    zipCode: companyData.companyPostalCode || '',
+                    city: companyData.companyCity || '',
+                    country: companyData.companyCountry || 'DE',
+                  },
+                  taxNumber: companyData.step3?.taxNumber || companyData.taxNumber || '',
+                  vatId: companyData.vatId || companyData.step3?.vatId || '',
+                  bankDetails: {
+                    iban: companyData.step4?.iban || companyData.bankDetails?.iban || '',
+                    bic: companyData.step4?.bic || companyData.bankDetails?.bic || 'DETESTEE',
+                    accountHolder:
+                      companyData.step4?.accountHolder || companyData.accountHolder || '',
+                  },
+                },
 
                 // KONTAKTDATEN - LIVE DATEN!
                 companyEmail:
@@ -744,23 +867,71 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
                       },
                     }
                   : undefined,
-                customer: invoiceData.customerName
-                  ? {
-                      name: invoiceData.customerName,
-                      email: invoiceData.customerEmail || undefined,
-                      address: invoiceData.customerAddress
-                        ? {
-                            street:
-                              invoiceData.customerAddress.split(' ').slice(0, -3).join(' ') || '',
-                            zipCode: invoiceData.customerAddress.split(' ').slice(-3, -2)[0] || '',
-                            city: invoiceData.customerAddress.split(' ').slice(-2, -1)[0] || '',
-                            country: invoiceData.customerAddress.split(' ').slice(-1)[0] || '',
-                          }
-                        : undefined,
-                      vatId: (invoiceData as any).customerVatId || undefined,
-                      taxNumber: (invoiceData as any).customerTaxNumber || undefined,
-                    }
-                  : undefined,
+                // Verwende die bereits korrekt geparste customer-Struktur aus invoiceData
+                customer:
+                  invoiceData.customer &&
+                  invoiceData.customer.address &&
+                  invoiceData.customer.address.street
+                    ? invoiceData.customer // Verwende die korrekt geparste Struktur aus findInvoiceGlobally
+                    : invoiceData.customerName
+                      ? {
+                          name: invoiceData.customerName,
+                          email: invoiceData.customerEmail || undefined,
+                          address: invoiceData.customerAddress
+                            ? (() => {
+                                // Intelligente Parsing-Logik als Fallback
+                                const cleanedAddress = (invoiceData.customerAddress || '')
+                                  .replace(/<br\s*\/?>/gi, ' ')
+                                  .replace(/\r\n/g, ' ')
+                                  .replace(/\n/g, ' ')
+                                  .replace(/\r/g, ' ')
+                                  .replace(/\t/g, ' ')
+                                  .replace(/\s+/g, ' ')
+                                  .trim();
+
+                                const parts = cleanedAddress.split(' ').filter(p => p.length > 0);
+                                if (parts.length >= 4) {
+                                  // Finde PLZ (numerisch)
+                                  let plzIndex = -1;
+                                  for (let i = 0; i < parts.length; i++) {
+                                    if (/^\d{4,5}$/.test(parts[i])) {
+                                      plzIndex = i;
+                                      break;
+                                    }
+                                  }
+
+                                  if (plzIndex > 0) {
+                                    return {
+                                      street: parts.slice(0, plzIndex).join(' '),
+                                      zipCode: parts[plzIndex],
+                                      city: parts[plzIndex + 1] || '',
+                                      country: parts.slice(plzIndex + 2).join(' ') || 'Deutschland',
+                                    };
+                                  }
+                                }
+
+                                // Fallback: Einfache Aufteilung
+                                if (parts.length >= 3) {
+                                  return {
+                                    street: parts.slice(0, -2).join(' '),
+                                    zipCode: parts[parts.length - 2],
+                                    city: parts[parts.length - 1],
+                                    country: 'Deutschland',
+                                  };
+                                }
+
+                                return {
+                                  street: cleanedAddress,
+                                  zipCode: '',
+                                  city: '',
+                                  country: 'Deutschland',
+                                };
+                              })()
+                            : undefined,
+                          vatId: (invoiceData as any).customerVatId || undefined,
+                          taxNumber: (invoiceData as any).customerTaxNumber || undefined,
+                        }
+                      : undefined,
                 profilePictureURL:
                   invoiceData.companyLogo || invoiceData.profilePictureURL || undefined,
                 // !! LIVE COMPANY DATEN FÜR FOOTER !!
