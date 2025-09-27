@@ -600,7 +600,10 @@ export default function CreateQuotePage() {
   useEffect(() => {
     if (!settings?.defaultPaymentTerms) return;
     const d = settings.defaultPaymentTerms as Record<string, unknown>;
-    setSkontoEnabled(Boolean(d.skontoEnabled));
+    // Skonto nur aktivieren, wenn gültige Daten vorhanden sind
+    const shouldEnableSkonto =
+      Boolean(d.skontoEnabled) && typeof d.skontoPercentage === 'number' && d.skontoPercentage > 0;
+    setSkontoEnabled(shouldEnableSkonto);
     setSkontoDays(
       typeof d.skontoDays === 'number'
         ? d.skontoDays

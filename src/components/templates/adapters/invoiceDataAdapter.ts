@@ -56,6 +56,11 @@ export interface TemplateInvoiceData {
   paymentTerms: string;
   notes?: string;
   reverseCharge?: boolean;
+  // Skonto-Felder
+  skontoEnabled?: boolean;
+  skontoDays?: number;
+  skontoPercentage?: number;
+  skontoText?: string;
 }
 
 /**
@@ -67,7 +72,7 @@ function parseAddress(address: string | undefined): TemplateAddress {
     street: lines[0] || '',
     zipCode: lines[1]?.split(' ')[0] || '',
     city: lines[1]?.split(' ').slice(1).join(' ') || '',
-    country: lines[2] || 'Deutschland'
+    country: lines[2] || 'Deutschland',
   };
 }
 
@@ -87,7 +92,7 @@ export function adaptInvoiceDataToTemplate(data: InvoiceData): TemplateInvoiceDa
     customer: {
       name: data.customerName,
       email: data.customerEmail || '',
-      address: customerAddress
+      address: customerAddress,
     },
     company: {
       name: data.companyName || '',
@@ -99,15 +104,15 @@ export function adaptInvoiceDataToTemplate(data: InvoiceData): TemplateInvoiceDa
       bankDetails: {
         iban: data.bankDetails?.iban || '',
         bic: data.bankDetails?.bic || '',
-        accountHolder: data.bankDetails?.accountHolder || ''
-      }
+        accountHolder: data.bankDetails?.accountHolder || '',
+      },
     },
     items: (data.items || []).map(item => ({
       description: item.description,
       quantity: item.quantity,
       unit: 'Stk.',
       unitPrice: item.unitPrice,
-      total: item.total
+      total: item.total,
     })),
     subtotal: data.items?.reduce((sum, item) => sum + item.total, 0) || 0,
     taxRate: Number(data.vatRate || 19),
@@ -115,7 +120,12 @@ export function adaptInvoiceDataToTemplate(data: InvoiceData): TemplateInvoiceDa
     total: data.total || 0,
     paymentTerms: `Zahlbar bis ${new Date(data.dueDate).toLocaleDateString('de-DE')}`,
     notes: data.notes || '',
-    reverseCharge: false
+    reverseCharge: false,
+    // Skonto-Felder
+    skontoEnabled: data.skontoEnabled || false,
+    skontoDays: data.skontoDays || 0,
+    skontoPercentage: data.skontoPercentage || 0,
+    skontoText: data.skontoText || '',
   };
 
   return templateData;

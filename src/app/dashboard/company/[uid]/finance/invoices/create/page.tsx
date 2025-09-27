@@ -78,6 +78,7 @@ import {
 import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteService';
 import { FirestoreInvoiceService as InvoiceService } from '@/services/firestoreInvoiceService';
 import { InvoiceData as InvoiceType } from '@/types/invoiceTypes';
+import { CreateInvoiceFormData } from '@/types/formData';
 import { QuoteItem as InvoiceItem } from '@/services/quoteService';
 import { TaxRuleType } from '@/types/taxRules';
 import { getAllCurrencies } from '@/data/currencies';
@@ -155,6 +156,8 @@ type PreviewTemplateData = {
       city: string;
       country: string;
     };
+    taxNumber?: string;
+    vatId?: string;
   };
   companyName?: string;
   companyAddress?: string;
@@ -244,6 +247,7 @@ interface Customer {
   city?: string;
   postalCode?: string;
   country?: string;
+  taxNumber?: string;
   vatId?: string;
   vatValidated?: boolean;
 }
@@ -549,6 +553,7 @@ export default function CreateQuotePage() {
   const [taxDEOpen, setTaxDEOpen] = useState(true);
   const [taxEUOpen, setTaxEUOpen] = useState(false);
   const [taxNonEUOpen, setTaxNonEUOpen] = useState(false);
+  const [paymentDays, setPaymentDays] = useState(14); // Standard 14 Tage
   const [company, setCompany] = useState<any | null>(null);
   // E-Mail Versand UI
   const [emailCardOpen, setEmailCardOpen] = useState(false);
@@ -791,7 +796,7 @@ export default function CreateQuotePage() {
   const [skontoText, setSkontoText] = useState<string>('');
 
   // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateInvoiceFormData>({
     customerName: '',
     customerFirstName: '',
     customerLastName: '',
@@ -813,6 +818,11 @@ export default function CreateQuotePage() {
     deliveryTerms: '',
     paymentTerms: '',
     taxRule: TaxRuleType.DE_TAXABLE,
+    // Skonto-Felder
+    skontoEnabled: false,
+    skontoDays: 0,
+    skontoPercentage: 0,
+    skontoText: '',
   });
 
   // Items (Netto im State)
@@ -989,6 +999,45 @@ export default function CreateQuotePage() {
     }
   }, [formData.taxRule, settings?.defaultTaxRate]);
 
+  // Zahlungsbedingungen Synchronisation: Tage → Datum (einfache Richtung)
+  useEffect(() => {
+    // Wenn sich die Tage ändern, berechne das neue Fälligkeitsdatum
+    // Verwende das Rechnungsdatum oder das heutige Datum als Fallback
+    const currentInvoiceDate = formData.invoiceDate || new Date().toISOString().split('T')[0];
+    if (currentInvoiceDate && paymentDays > 0) {
+      const invoiceDate = new Date(currentInvoiceDate);
+      const dueDate = new Date(invoiceDate);
+      dueDate.setDate(invoiceDate.getDate() + paymentDays);
+
+      const dueDateString = dueDate.toISOString().split('T')[0];
+      setFormData(prev => ({ ...prev, validUntil: dueDateString }));
+    }
+  }, [paymentDays, formData.invoiceDate]);
+
+  // Initiale Berechnung der Tage aus dem Standard-Datum
+  useEffect(() => {
+    const currentInvoiceDate = formData.invoiceDate || new Date().toISOString().split('T')[0];
+    if (currentInvoiceDate && !formData.validUntil) {
+      // Wenn kein Fälligkeitsdatum gesetzt ist, verwende Standard 14 Tage
+      const invoiceDate = new Date(currentInvoiceDate);
+      const dueDate = new Date(invoiceDate);
+      dueDate.setDate(invoiceDate.getDate() + 14);
+
+      const dueDateString = dueDate.toISOString().split('T')[0];
+      setFormData(prev => ({ ...prev, validUntil: dueDateString }));
+    } else if (currentInvoiceDate && formData.validUntil) {
+      // Wenn beide Daten vorhanden sind, berechne die Tage aus dem Datum
+      const invoiceDate = new Date(currentInvoiceDate);
+      const dueDate = new Date(formData.validUntil);
+      const diffTime = dueDate.getTime() - invoiceDate.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays > 0 && diffDays !== paymentDays) {
+        setPaymentDays(diffDays);
+      }
+    }
+  }, [formData.invoiceDate, formData.validUntil]);
+
   // Template Auswahl & User Preferences laden
   useEffect(() => {
     if (!user?.uid) return;
@@ -1103,7 +1152,10 @@ export default function CreateQuotePage() {
   useEffect(() => {
     if (!settings?.defaultPaymentTerms) return;
     const d = settings.defaultPaymentTerms as Record<string, unknown>;
-    setSkontoEnabled(Boolean(d.skontoEnabled));
+    // Skonto nur aktivieren, wenn gültige Daten vorhanden sind
+    const shouldEnableSkonto =
+      Boolean(d.skontoEnabled) && typeof d.skontoPercentage === 'number' && d.skontoPercentage > 0;
+    setSkontoEnabled(shouldEnableSkonto);
     setSkontoDays(
       typeof d.skontoDays === 'number'
         ? d.skontoDays
@@ -1568,6 +1620,14 @@ export default function CreateQuotePage() {
             country: addressLines[2] || 'Deutschland',
           };
         })(),
+        taxNumber: (() => {
+          const selectedCustomer = customers.find(c => c.name === formData.customerName);
+          return selectedCustomer?.taxNumber || undefined;
+        })(),
+        vatId: (() => {
+          const selectedCustomer = customers.find(c => c.name === formData.customerName);
+          return selectedCustomer?.vatId || undefined;
+        })(),
       },
       // Company-Objekt für Template-Kompatibilität
       company: {
@@ -1903,6 +1963,8 @@ export default function CreateQuotePage() {
             ? `${deliveryDateRange.from.toLocaleDateString('de-DE')} - ${deliveryDateRange.to.toLocaleDateString('de-DE')}`
             : undefined,
         serviceDate: deliveryDateType === 'single' ? formData.deliveryDate : undefined,
+        deliveryDateType: deliveryDateType,
+        deliveryDateRange: deliveryDateRange,
 
         // Kundendaten
         customerName: formData.customerName || '',
@@ -1967,12 +2029,18 @@ export default function CreateQuotePage() {
         paymentTerms: formData.paymentTerms || '',
         deliveryTerms: formData.deliveryTerms || '',
 
+        // Skonto-Daten
+        skontoEnabled: formData.skontoEnabled || false,
+        skontoDays: formData.skontoDays || 0,
+        skontoPercentage: formData.skontoPercentage || 0,
+        skontoText: formData.skontoText || '',
+
         // Kontaktperson
         contactPersonName: formData.internalContactPerson || '',
 
         // Zusätzliche Felder
         title: formData.title || '',
-        reference: formData.customerOrderNumber || '',
+        reference: formData.customerOrderNumber || undefined,
         description: processedData.headTextHtml || '',
         taxRule: formData.taxRule || 'DE_TAXABLE',
       };
@@ -2222,7 +2290,7 @@ export default function CreateQuotePage() {
         invoiceNumber: formData.title || `RE-${nextNumber}`,
         number: formData.title || `RE-${nextNumber}`,
         sequentialNumber: nextNumber,
-        status: asDraft ? 'draft' : 'sent',
+        status: asDraft ? 'draft' : 'finalized',
 
         // Dates - ALLE Datumswerte aus dem Formular
         date: formData.invoiceDate
@@ -2247,11 +2315,13 @@ export default function CreateQuotePage() {
         customerAddress: formData.customerAddress || '',
         customerOrderNumber: formData.customerOrderNumber || '',
         customerPhone: selectedCustomer?.phone || '',
+        customerVatId: selectedCustomer?.vatId || '',
+        customerTaxNumber: selectedCustomer?.taxNumber || '',
 
         // Invoice Identifiers - ALLE Titel und Referenz-Felder
         title: formData.title || '',
         documentNumber: formData.title || `RE-${nextNumber}`,
-        reference: formData.customerOrderNumber || '',
+        reference: formData.customerOrderNumber || undefined,
 
         // Company Data - ALLE Firmendaten aus Settings
         companyName:
@@ -3685,8 +3755,9 @@ export default function CreateQuotePage() {
                     <Input
                       type="number"
                       placeholder="14"
+                      value={paymentDays}
+                      onChange={e => setPaymentDays(Number(e.target.value) || 0)}
                       className="w-16 text-center"
-                      defaultValue="14"
                     />
                     <span className="text-sm text-gray-500">Tagen</span>
                   </div>

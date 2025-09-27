@@ -12,6 +12,30 @@ import {
 import { InvoiceData } from '@/types/invoiceTypes';
 import { TaxRuleType } from '@/types/taxRules';
 
+/**
+ * Gibt den deutschen Text für eine Steuerregel zurück
+ */
+function getTaxRuleLabel(taxRule: string): string {
+  switch (taxRule) {
+    case 'DE_TAXABLE':
+      return 'Steuerpflichtiger Umsatz (Regelsteuersatz 19 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 1 UStG)';
+    case 'DE_REDUCED':
+      return 'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 2 UStG)';
+    case 'DE_EXEMPT':
+      return 'Steuerfreier Umsatz (§ 4 UStG)';
+    case 'DE_SMALL_BUSINESS':
+      return 'Umsatzsteuerbefreit nach § 19 UStG (Kleinunternehmerregelung)';
+    case 'DE_REVERSE_CHARGE':
+      return 'Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)';
+    case 'DE_INTRACOMMUNITY':
+      return 'Innergemeinschaftliche Lieferung (§ 4 Nr. 1b UStG)';
+    case 'DE_EXPORT':
+      return 'Ausfuhrlieferung (§ 4 Nr. 1a UStG)';
+    default:
+      return taxRule;
+  }
+}
+
 type TemplateType =
   | 'professional-business'
   | 'corporate-classic'
@@ -157,7 +181,8 @@ export function LivePreview({
     skontoText: invoiceData.skontoEnabled ? invoiceData.skontoText || '' : '',
     notes: invoiceData.notes || '',
     taxRuleType: invoiceData.taxRuleType || TaxRuleType.DE_TAXABLE,
-  };
+    taxRuleLabel: getTaxRuleLabel(invoiceData.taxRuleType || TaxRuleType.DE_TAXABLE),
+  } as any;
 
   // Wenn das Template nicht in der Map ist, verwende das Professional Business Template als Fallback
   const SelectedTemplate = TemplateMap[template] || TemplateMap['professional-business'];

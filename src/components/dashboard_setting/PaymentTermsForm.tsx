@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiSave, FiCheck, FiAlertCircle, FiClock } from 'react-icons/fi';
+import { UserDataForSettings } from '@/types/settings';
 
 interface PaymentTermsData {
   days: number;
@@ -9,11 +10,6 @@ interface PaymentTermsData {
   skontoEnabled: boolean;
   skontoDays: number;
   skontoPercentage: number;
-}
-
-interface UserDataForSettings {
-  uid: string;
-  defaultPaymentTerms?: PaymentTermsData;
 }
 
 interface PaymentTermsFormProps {
@@ -35,13 +31,18 @@ const PaymentTermsForm: React.FC<PaymentTermsFormProps> = ({ formData, handleCha
 
   // Initialize form with existing settings
   useEffect(() => {
-    if (formData?.defaultPaymentTerms) {
+    if (formData?.paymentTermsSettings?.defaultPaymentTerms) {
+      const paymentTerms = formData.paymentTermsSettings.defaultPaymentTerms as any;
       setLocalData({
-        days: formData.defaultPaymentTerms.days || 14,
-        text: formData.defaultPaymentTerms.text || 'Zahlbar binnen 14 Tagen ohne Abzug',
-        skontoEnabled: formData.defaultPaymentTerms.skontoEnabled || false,
-        skontoDays: formData.defaultPaymentTerms.skontoDays || 3,
-        skontoPercentage: formData.defaultPaymentTerms.skontoPercentage || 2.0,
+        days: paymentTerms.days || 14,
+        text: paymentTerms.text || 'Zahlbar binnen 14 Tagen ohne Abzug',
+        skontoEnabled:
+          (paymentTerms.skontoEnabled &&
+            paymentTerms.skontoPercentage &&
+            paymentTerms.skontoPercentage > 0) ||
+          false,
+        skontoDays: paymentTerms.skontoDays || 3,
+        skontoPercentage: paymentTerms.skontoPercentage || 2.0,
       });
     }
   }, [formData]);
@@ -63,7 +64,7 @@ const PaymentTermsForm: React.FC<PaymentTermsFormProps> = ({ formData, handleCha
   const handleLocalChange = (field: keyof PaymentTermsData, value: string | number | boolean) => {
     const newValue = value;
     setLocalData(prev => ({ ...prev, [field]: newValue }));
-    handleChange(`defaultPaymentTerms.${field}`, newValue);
+    handleChange(`paymentTermsSettings.defaultPaymentTerms.${String(field)}`, newValue);
   };
 
   const handleQuickSelect = (days: number) => {
@@ -73,18 +74,18 @@ const PaymentTermsForm: React.FC<PaymentTermsFormProps> = ({ formData, handleCha
       days,
       text: newText,
     }));
-    handleChange('defaultPaymentTerms.days', days);
-    handleChange('defaultPaymentTerms.text', newText);
+    handleChange('paymentTermsSettings.defaultPaymentTerms.days', days);
+    handleChange('paymentTermsSettings.defaultPaymentTerms.text', newText);
   };
 
   // Show success message when changes are made
   useEffect(() => {
-    if (formData?.defaultPaymentTerms) {
+    if (formData?.paymentTermsSettings?.defaultPaymentTerms) {
       setMessage({ type: 'success', text: 'Zahlungskonditionen werden automatisch gespeichert' });
       const timer = setTimeout(() => setMessage(null), 3000);
       return () => clearTimeout(timer);
     }
-  }, [formData?.defaultPaymentTerms]);
+  }, [formData?.paymentTermsSettings?.defaultPaymentTerms]);
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-6 space-y-6">

@@ -117,14 +117,32 @@ async function findInvoiceGlobally(invoiceId: string): Promise<InvoiceData | nul
             contactPersonName: data.contactPersonName,
             priceInput: data.priceInput || 'netto',
             taxRuleType: data.taxRuleType || 'DE_TAXABLE',
+            taxRule: data.taxRule || data.taxRuleType || 'DE_TAXABLE',
             year: data.year || new Date().getFullYear(),
             isStorno: data.isStorno || false,
+            // Delivery date information
+            deliveryDate: data.deliveryDate,
+            deliveryDateType: data.deliveryDateType,
+            deliveryDateRange: data.deliveryDateRange,
             // E-Invoice Daten hinzufügen
             eInvoice: data.eInvoice,
             eInvoiceData: data.eInvoiceData,
+            // Referenznummer hinzufügen
+            reference: (data as any).reference,
+            // Skonto-Daten hinzufügen
+            skontoEnabled: data.skontoEnabled || false,
+            skontoDays: data.skontoDays || 0,
+            skontoPercentage: data.skontoPercentage || 0,
+            skontoText: data.skontoText || '',
           };
 
-          console.log('Invoice found globally:', invoice);
+          console.log('DEBUG findInvoiceGlobally delivery data:', {
+            deliveryDate: data.deliveryDate,
+            deliveryDateType: data.deliveryDateType,
+            deliveryDateRange: data.deliveryDateRange,
+          });
+
+          console.log('DEBUG findInvoiceGlobally full data object:', data);
           return invoice;
         }
       } catch (companyError) {
@@ -201,6 +219,67 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
               if (preferredTemplate) {
                 const isKnown = AVAILABLE_TEMPLATES.some(t => t.id === preferredTemplate);
                 setUserTemplate(isKnown ? preferredTemplate : DEFAULT_INVOICE_TEMPLATE);
+              }
+
+              // 3. Lade Kundendaten falls customerVatId oder customerTaxNumber fehlen
+              let customerVatId = (data as any).customerVatId || '';
+              let customerTaxNumber = (data as any).customerTaxNumber || '';
+
+              if ((!customerVatId || !customerTaxNumber) && data.customerName) {
+                try {
+                  // Versuche zuerst exakte Übereinstimmung
+                  const customersQuery = query(
+                    collection(db, 'companies', data.companyId, 'customers'),
+                    where('name', '==', data.customerName)
+                  );
+                  let customersSnapshot = await getDocs(customersQuery);
+
+                  // Wenn keine exakte Übereinstimmung, versuche Teilstring-Suche
+                  if (customersSnapshot.empty) {
+                    console.log(
+                      '🔍 Exact match failed, trying substring search for:',
+                      data.customerName
+                    );
+                    const allCustomersQuery = query(
+                      collection(db, 'companies', data.companyId, 'customers')
+                    );
+                    const allCustomersSnapshot = await getDocs(allCustomersQuery);
+
+                    // Finde Kunden mit ähnlichem Namen
+                    const matchingCustomers = allCustomersSnapshot.docs.filter(doc => {
+                      const customerData = doc.data();
+                      const customerName = customerData.name || '';
+                      return (
+                        customerName.toLowerCase().includes(data.customerName.toLowerCase()) ||
+                        data.customerName.toLowerCase().includes(customerName.toLowerCase())
+                      );
+                    });
+
+                    if (matchingCustomers.length > 0) {
+                      customersSnapshot = { docs: matchingCustomers, empty: false } as any;
+                      console.log(
+                        '🔍 Found customer with substring match:',
+                        matchingCustomers[0].data().name
+                      );
+                    }
+                  }
+
+                  if (!customersSnapshot.empty) {
+                    const customerData = customersSnapshot.docs[0].data();
+                    customerVatId = customerData.vatId || customerVatId;
+                    customerTaxNumber = customerData.taxNumber || customerTaxNumber;
+                    console.log('✅ Customer data loaded from DB:', {
+                      customerName: data.customerName,
+                      foundCustomerName: customerData.name,
+                      customerVatId,
+                      customerTaxNumber,
+                    });
+                  } else {
+                    console.log('❌ No customer found in DB for name:', data.customerName);
+                  }
+                } catch (customerError) {
+                  console.log('❌ Error loading customer data:', customerError);
+                }
               }
 
               // VOLLSTÄNDIGE Firmendaten in Rechnung einbetten
@@ -287,6 +366,10 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
                   bankName: companyData.step4?.bankName || companyData.bankDetails?.bankName || '',
                 },
 
+                // KUNDENDATEN - LIVE DATEN!
+                customerVatId: customerVatId,
+                customerTaxNumber: customerTaxNumber,
+
                 // !! COMPANY STEPS FÜR TEMPLATE !!
                 step1: companyData.step1 || {},
                 step2: companyData.step2 || {},
@@ -294,10 +377,59 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
                 step4: companyData.step4 || {},
                 managingDirectors: companyData.step1?.managingDirectors || [],
 
+                // DIREKTE FELDER FÜR FOOTER
+
+                // REFERENZ - AUS RECHNUNG LADEN
+                reference: (data as any).reference || '',
+
                 // E-INVOICE DATEN - AUS RECHNUNG ÜBERTRAGEN
                 eInvoice: data.eInvoice || undefined,
                 eInvoiceData: data.eInvoiceData || undefined,
+
+                // REVERSE CHARGE - AUS RECHNUNG ÜBERTRAGEN
+                reverseCharge: !!data.reverseChargeInfo,
+
+                // SKONTO DATEN - AUS RECHNUNG ÜBERTRAGEN
+                skontoText: data.skontoText || undefined,
+                skontoDays: data.skontoDays || undefined,
+                skontoPercentage: data.skontoPercentage || undefined,
+
+                // SERVICE PERIOD - AUS DELIVERY DATE RANGE BERECHNEN
+                servicePeriod: data.deliveryDateRange
+                  ? (() => {
+                      try {
+                        const range = data.deliveryDateRange as any; // Type assertion to avoid TypeScript issues
+                        // Handle both string format ("21.09.2025 - 27.09.2025") and object format ({ from: "...", to: "..." })
+                        if (typeof range === 'string') {
+                          const [start, end] = range.split(' - ');
+                          if (start && end) {
+                            const startDate = new Date(start);
+                            const endDate = new Date(end);
+                            return `${startDate.toLocaleDateString('de-DE')} - ${endDate.toLocaleDateString('de-DE')}`;
+                          }
+                        } else if (range && typeof range === 'object' && range.from && range.to) {
+                          const startDate = new Date(range.from);
+                          const endDate = new Date(range.to);
+                          return `${startDate.toLocaleDateString('de-DE')} - ${endDate.toLocaleDateString('de-DE')}`;
+                        }
+                      } catch (error) {
+                        console.log('Error parsing delivery date range:', error);
+                      }
+                      return undefined;
+                    })()
+                  : undefined,
+
+                // STEUERREGEL LABEL
+                taxRuleLabel: getTaxRuleLabel(
+                  (data as any).taxRule || (data as any).taxRuleType || 'DE_TAXABLE'
+                ),
               };
+
+              console.log('📊 ENRICHED DATA FOR TEMPLATE:', {
+                customerVatId: enrichedData.customerVatId,
+                customerTaxNumber: enrichedData.customerTaxNumber,
+                hasCustomerData: !!enrichedData.customerVatId || !!enrichedData.customerTaxNumber,
+              });
 
               setInvoiceData(enrichedData);
             } else {
@@ -625,6 +757,8 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
                             country: invoiceData.customerAddress.split(' ').slice(-1)[0] || '',
                           }
                         : undefined,
+                      vatId: (invoiceData as any).customerVatId || undefined,
+                      taxNumber: (invoiceData as any).customerTaxNumber || undefined,
                     }
                   : undefined,
                 profilePictureURL:
@@ -635,9 +769,6 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
                 step2: (invoiceData as any).step2 || undefined,
                 step3: (invoiceData as any).step3 || undefined,
                 step4: (invoiceData as any).step4 || undefined,
-                districtCourt: invoiceData.districtCourt,
-                companyRegister: invoiceData.companyRegister,
-                legalForm: invoiceData.legalForm,
                 firstName: (invoiceData as any).firstName || undefined,
                 lastName: (invoiceData as any).lastName || undefined,
 
@@ -652,7 +783,42 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
                 // E-INVOICE DATEN
                 eInvoice: invoiceData.eInvoice,
                 eInvoiceData: invoiceData.eInvoiceData,
+
+                // SERVICE DATE & PERIOD (aus gespeicherten Delivery-Daten berechnen)
+                serviceDate:
+                  (invoiceData as any).deliveryDateType === 'single'
+                    ? invoiceData.deliveryDate
+                    : undefined,
+                servicePeriod: (() => {
+                  const deliveryType = (invoiceData as any).deliveryDateType;
+                  const deliveryRange = (invoiceData as any).deliveryDateRange;
+                  console.log('DEBUG Delivery Data:', { deliveryType, deliveryRange });
+
+                  if (deliveryType === 'range' && deliveryRange?.from && deliveryRange?.to) {
+                    const fromDate = new Date(deliveryRange.from).toLocaleDateString('de-DE');
+                    const toDate = new Date(deliveryRange.to).toLocaleDateString('de-DE');
+                    const result = `${fromDate} - ${toDate}`;
+                    console.log('DEBUG servicePeriod calculated:', result);
+                    return result;
+                  }
+                  return undefined;
+                })(),
+
+                // ZUSÄTZLICHE FELDER FÜR TEMPLATE-ANZEIGE
+                contactPersonName: invoiceData.contactPersonName || undefined,
+                deliveryTerms: invoiceData.deliveryTerms || undefined,
+                skontoText: invoiceData.skontoText || undefined,
+                skontoDays: invoiceData.skontoDays || undefined,
+                skontoPercentage: invoiceData.skontoPercentage || undefined,
+                isSmallBusiness: invoiceData.isSmallBusiness || false,
               };
+
+              console.log('DEBUG templateData for template:', {
+                servicePeriod: templateData.servicePeriod,
+                serviceDate: templateData.serviceDate,
+                deliveryDateType: templateData.deliveryDateType,
+                deliveryDateRange: templateData.deliveryDateRange,
+              });
 
               return templateData;
             })()}

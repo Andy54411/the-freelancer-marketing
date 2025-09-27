@@ -10,6 +10,9 @@ export interface CreateInvoiceFormData {
 
   // Kundendaten
   customerName: string;
+  customerFirstName?: string;
+  customerLastName?: string;
+  customerNumber?: string;
   customerEmail: string;
   customerAddress?: string;
 
@@ -26,4 +29,10 @@ export interface CreateInvoiceFormData {
   // Lieferung und Zahlung
   deliveryTerms: string;
   paymentTerms: string;
+
+  // Skonto-Einstellungen
+  skontoEnabled?: boolean;
+  skontoDays?: number;
+  skontoPercentage?: number;
+  skontoText?: string;
 }

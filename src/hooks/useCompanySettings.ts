@@ -41,6 +41,17 @@ export interface CompanySettings {
     skontoPercentage?: number; // Skonto-Prozentsatz
   };
 
+  // Zahlungskonditionen-Einstellungen (aus Settings)
+  paymentTermsSettings?: {
+    defaultPaymentTerms?: {
+      days: number;
+      text: string;
+      skontoEnabled?: boolean;
+      skontoDays?: number;
+      skontoPercentage?: number;
+    };
+  };
+
   // Rechtliche Angaben
   legalForm?: string;
 }
@@ -120,9 +131,10 @@ export function useCompanySettings(userId?: string) {
             iban: userData.iban || userData.step4?.iban,
             accountHolder: userData.accountHolder || userData.step4?.accountHolder,
 
-            // Zahlungskonditionen - Priorität: settings.paymentTerms.defaultPaymentTerms > root defaultPaymentTerms > fallback
+            // Zahlungskonditionen - Priorität: settings.paymentTerms.defaultPaymentTerms > root defaultPaymentTerms > paymentTermsSettings > fallback
             defaultPaymentTerms: userData.settings?.paymentTerms?.defaultPaymentTerms ||
               userData.defaultPaymentTerms ||
+              userData.paymentTermsSettings?.defaultPaymentTerms ||
               // Prüfe auch direkt in step5 für Migration
               (userData.step5?.paymentTerms
                 ? {

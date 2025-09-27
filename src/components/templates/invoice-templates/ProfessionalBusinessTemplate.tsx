@@ -4,6 +4,31 @@ import { resolveLogoUrl } from '../utils/logoUtils';
 import { InvoiceFooter } from './InvoiceFooter';
 import QRCode from 'react-qr-code';
 
+/**
+ * Gibt den deutschen Text für eine Steuerregel zurück
+ */
+function getTaxRuleLabel(taxRule: string): string {
+  switch (taxRule) {
+    case 'DE_TAXABLE':
+      return 'Steuerpflichtiger Umsatz (Regelsteuersatz 19 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 1 UStG)';
+    case 'DE_REDUCED':
+      return 'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 2 UStG)';
+    case 'DE_EXEMPT':
+      return 'Steuerfreier Umsatz (§ 4 UStG)';
+    case 'DE_SMALL_BUSINESS':
+      return 'Umsatzsteuerbefreit nach § 19 UStG (Kleinunternehmerregelung)';
+    case 'DE_REVERSE_CHARGE':
+    case 'DE_REVERSE_13B':
+      return 'Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)';
+    case 'DE_INTRACOMMUNITY':
+      return 'Innergemeinschaftliche Lieferung (§ 4 Nr. 1b UStG)';
+    case 'DE_EXPORT':
+      return 'Ausfuhrlieferung (§ 4 Nr. 1a UStG)';
+    default:
+      return taxRule;
+  }
+}
+
 // Hilfsfunktion für dynamische Dokumenttitel
 function getDocumentTitle(data: any): string {
   // 1. Explizit gesetzter Titel hat höchste Priorität
@@ -60,6 +85,8 @@ export interface TemplateData {
       city: string;
       country: string;
     };
+    taxNumber?: string;
+    vatId?: string;
   };
 
   // Unternehmensdaten
@@ -118,6 +145,7 @@ export interface TemplateData {
   deliveryTerms?: string;
 
   // Skonto und Zahlungsbedingungen
+  skontoEnabled?: boolean;
   skontoText?: string;
   skontoDays?: number;
   skontoPercentage?: number;
@@ -143,6 +171,9 @@ export interface TemplateData {
     validationStatus?: 'valid' | 'invalid' | 'pending';
     createdAt: string;
   };
+
+  // Referenznummer
+  reference?: string;
 }
 interface TemplateProps {
   data: TemplateData;
@@ -160,6 +191,19 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
   customizations,
   preview = false,
 }) => {
+  console.log(
+    'DEBUG ProfessionalBusinessTemplate received data at',
+    new Date().toISOString(),
+    ':',
+    {
+      servicePeriod: data.servicePeriod,
+      serviceDate: data.serviceDate,
+      deliveryDateType: (data as any).deliveryDateType,
+      deliveryDateRange: (data as any).deliveryDateRange,
+      hasServicePeriod: !!data.servicePeriod,
+      hasServiceDate: !!data.serviceDate,
+    }
+  );
   const logoUrl = resolveLogoUrl(customizations, companySettings, data);
   const showLogo = customizations?.showLogo ?? true;
   // DIN 5008: deutsches Datumsformat und Währungsformat verwenden
@@ -230,6 +274,13 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
                   data.customer.address.country !== 'Deutschland' && (
                     <div>{data.customer.address.country}</div>
                   )}
+                {(data.customer?.vatId || data.customer?.taxNumber) && (
+                  <div className="mt-1 text-xs text-gray-600">
+                    {data.customer.vatId && `VAT: ${data.customer.vatId}`}
+                    {data.customer.vatId && data.customer.taxNumber && ' / '}
+                    {data.customer.taxNumber && `Steuernummer: ${data.customer.taxNumber}`}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -248,6 +299,33 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
                   <strong>Fälligkeitsdatum:</strong> {formatDate(data.dueDate)}
                 </div>
               )}
+              {/* Lieferzeitraum - direkt unter Fälligkeitsdatum */}
+              {(data.servicePeriod || data.serviceDate) && (
+                <div>
+                  <strong>{data.servicePeriod ? 'Lieferzeitraum:' : 'Lieferdatum:'}</strong>{' '}
+                  {data.servicePeriod || (data.serviceDate ? formatDate(data.serviceDate) : '')}
+                </div>
+              )}
+              {data.contactPersonName && data.contactPersonName.trim() !== '' && (
+                <div>
+                  <strong>Kontaktperson:</strong> {data.contactPersonName}
+                </div>
+              )}
+              {data.deliveryTerms && data.deliveryTerms.trim() !== '' && (
+                <div>
+                  <strong>Lieferbedingung:</strong> {data.deliveryTerms}
+                </div>
+              )}
+              {data.isSmallBusiness && (
+                <div>
+                  <strong>Kleinunternehmerregelung (§19 UStG)</strong>
+                </div>
+              )}
+              {data.reference && (
+                <div>
+                  <strong>Referenz:</strong> {data.reference}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -255,13 +333,7 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
       <div className="flex-1 flex flex-col print:flex-1 print:min-h-0">
         {/* Mehr Optionen / Auswahlfelder */}
         {((data.currency && data.currency !== 'EUR') ||
-          (data.contactPersonName && data.contactPersonName.trim() !== '') ||
-          (data.deliveryTerms && data.deliveryTerms.trim() !== '') ||
-          (data.skontoText && data.skontoText.trim() !== '') ||
-          (data.skontoDays && data.skontoDays > 0) ||
-          (data.skontoPercentage && data.skontoPercentage > 0) ||
-          (typeof data.reverseCharge !== 'undefined' && data.reverseCharge !== false) ||
-          data.isSmallBusiness) && (
+          (typeof data.reverseCharge !== 'undefined' && data.reverseCharge !== false)) && (
           <div className="mb-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -270,32 +342,6 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
                     Währung: <span className="font-semibold">{data.currency}</span>
                   </div>
                 )}
-                {data.contactPersonName && data.contactPersonName.trim() !== '' && (
-                  <div className="text-gray-600 text-xs mb-1">
-                    Kontaktperson: <span className="font-semibold">{data.contactPersonName}</span>
-                  </div>
-                )}
-                {data.deliveryTerms && data.deliveryTerms.trim() !== '' && (
-                  <div className="text-gray-600 text-xs mb-1">
-                    Lieferbedingung: <span className="font-semibold">{data.deliveryTerms}</span>
-                  </div>
-                )}
-                {(data.skontoText && data.skontoText.trim() !== '') ||
-                (data.skontoDays && data.skontoDays > 0) ||
-                (data.skontoPercentage && data.skontoPercentage > 0) ? (
-                  <div className="text-gray-600 text-xs mb-1">
-                    Skonto:{' '}
-                    <span className="font-semibold">
-                      {data.skontoText ? data.skontoText : ''}
-                      {data.skontoDays && data.skontoDays > 0
-                        ? ` Bei Zahlung binnen ${data.skontoDays} Tagen`
-                        : ''}
-                      {data.skontoPercentage && data.skontoPercentage > 0
-                        ? ` ${data.skontoPercentage}%`
-                        : ''}
-                    </span>
-                  </div>
-                ) : null}
               </div>
               <div>
                 {typeof data.reverseCharge !== 'undefined' && data.reverseCharge !== false && (
@@ -303,9 +349,25 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
                     Reverse Charge: <span className="font-semibold">aktiviert</span>
                   </div>
                 )}
-                {data.isSmallBusiness && (
+              </div>
+            </div>
+          </div>
+        )}
+        {((data.currency && data.currency !== 'EUR') ||
+          (typeof data.reverseCharge !== 'undefined' && data.reverseCharge !== false)) && (
+          <div className="mb-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                {data.currency && data.currency !== 'EUR' && (
                   <div className="text-gray-600 text-xs mb-1">
-                    Kleinunternehmerregelung (§19 UStG)
+                    Währung: <span className="font-semibold">{data.currency}</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                {typeof data.reverseCharge !== 'undefined' && data.reverseCharge !== false && (
+                  <div className="text-gray-600 text-xs mb-1">
+                    Reverse Charge: <span className="font-semibold">aktiviert</span>
                   </div>
                 )}
               </div>
@@ -389,12 +451,32 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
             {(data as any).taxRule && (
               <div className="mb-2">
                 <span className="font-semibold">Steuerregel:</span>{' '}
-                {(data as any).taxRuleLabel || (data as any).taxRule}
+                {getTaxRuleLabel((data as any).taxRule)}
               </div>
             )}
+            {/* Skonto-Informationen - Unter Steuerregel */}
+            {(data.skontoText && data.skontoText.trim() !== '') ||
+            (data.skontoDays && data.skontoDays > 0) ||
+            (data.skontoPercentage && data.skontoPercentage > 0) ? (
+              <div className="mb-2">
+                <span className="font-semibold">Skonto:</span>{' '}
+                {data.skontoText ? data.skontoText : ''}
+                {data.skontoDays && data.skontoDays > 0
+                  ? ` Bei Zahlung binnen ${data.skontoDays} Tagen`
+                  : ''}
+                {data.skontoPercentage && data.skontoPercentage > 0
+                  ? ` ${data.skontoPercentage}%`
+                  : ''}
+              </div>
+            ) : null}
             {data.paymentTerms && (
               <div className="mb-3">
                 <span className="font-semibold">Zahlungsziel:</span> {data.paymentTerms}
+                {(data.skontoText && data.skontoText.trim() !== '') ||
+                (data.skontoDays && data.skontoDays > 0) ||
+                (data.skontoPercentage && data.skontoPercentage > 0)
+                  ? ` ohne Abzug ${data.skontoText || ''}`
+                  : ''}
               </div>
             )}
 
@@ -473,6 +555,30 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
                   <span>Gesamtbetrag:</span>
                   <span>{formatCurrency(data.total)}</span>
                 </div>
+                {/* Skonto-Berechnung - Option 1: Vollständige Preisaufschlüsselung */}
+                {data.skontoEnabled &&
+                  data.skontoPercentage &&
+                  data.skontoPercentage > 0 &&
+                  data.skontoDays &&
+                  data.skontoDays > 0 && (
+                    <div className="border-t border-gray-200 pt-2 space-y-1">
+                      <div className="flex justify-between py-1 text-sm">
+                        <span>
+                          Skonto {data.skontoPercentage}% bei Zahlung binnen {data.skontoDays}{' '}
+                          Tagen:
+                        </span>
+                        <span className="text-red-600">
+                          - {formatCurrency(data.total * (data.skontoPercentage / 100))}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-1 text-base font-semibold border-t border-gray-100 pt-1">
+                        <span>Zahlbetrag bei Skonto:</span>
+                        <span className="text-green-600">
+                          {formatCurrency(data.total * (1 - data.skontoPercentage / 100))}
+                        </span>
+                      </div>
+                    </div>
+                  )}
               </div>
             </div>
           </div>

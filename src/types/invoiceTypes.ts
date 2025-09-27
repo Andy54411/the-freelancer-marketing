@@ -64,6 +64,7 @@ export interface InvoiceData {
 
   // Erweiterte Steuerregeln
   taxRuleType: TaxRuleType; // Verwendung des TaxRuleType Enums
+  taxRule?: TaxRuleType; // Alternative Schreibweise für Kompatibilität
   taxRuleCategory?: TaxRuleCategory; // Optionale Kategorisierung
   taxRuleText?: string; // Benutzerdefinierter Text für Steuerhinweise
   taxRuleReason?: string; // Begründung für Steuerbefreiung oder spezielle Regelung
@@ -110,10 +111,14 @@ export interface InvoiceData {
   customerPhone?: string;
   deliveryDate?: string;
   deliveryDateType?: string;
+  deliveryDateRange?: {
+    from: string | null;
+    to: string | null;
+  };
   deliveryTerms?: string;
   currency?: string;
 
-  // Skonto-Einstellungen
+  // Skonto-Felder
   skontoEnabled?: boolean;
   skontoDays?: number;
   skontoPercentage?: number;
@@ -143,6 +148,9 @@ export interface InvoiceData {
     validationStatus?: 'valid' | 'invalid' | 'pending';
     createdAt: string;
   };
+
+  // Referenznummer
+  reference?: string;
 }
 
 /**

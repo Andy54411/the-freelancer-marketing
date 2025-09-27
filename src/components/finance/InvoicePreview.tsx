@@ -17,7 +17,7 @@ import {
   ExecutivePremiumTemplate,
   MinimalistElegantTemplate,
   CreativeModernTemplate,
-  TechStartupTemplate
+  TechStartupTemplate,
 } from '@/components/templates/invoice-templates';
 // Verwende die zentrale InvoiceData Definition
 import { InvoiceData } from '@/types/invoiceTypes';
@@ -25,7 +25,31 @@ import { TaxRuleType } from '@/types/taxRules';
 import { DocumentData } from '@/components/templates/types';
 import { adaptInvoiceDataToTemplate } from '@/components/templates/adapters/invoiceDataAdapter';
 
-type TemplateType = 
+/**
+ * Gibt den deutschen Text für eine Steuerregel zurück
+ */
+function getTaxRuleLabel(taxRule: string): string {
+  switch (taxRule) {
+    case 'DE_TAXABLE':
+      return 'Steuerpflichtiger Umsatz (Regelsteuersatz 19 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 1 UStG)';
+    case 'DE_REDUCED':
+      return 'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 2 UStG)';
+    case 'DE_EXEMPT':
+      return 'Steuerfreier Umsatz (§ 4 UStG)';
+    case 'DE_SMALL_BUSINESS':
+      return 'Umsatzsteuerbefreit nach § 19 UStG (Kleinunternehmerregelung)';
+    case 'DE_REVERSE_CHARGE':
+      return 'Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)';
+    case 'DE_INTRACOMMUNITY':
+      return 'Innergemeinschaftliche Lieferung (§ 4 Nr. 1b UStG)';
+    case 'DE_EXPORT':
+      return 'Ausfuhrlieferung (§ 4 Nr. 1a UStG)';
+    default:
+      return taxRule;
+  }
+}
+
+type TemplateType =
   | 'professional-business'
   | 'corporate-classic'
   | 'executive-premium'
@@ -55,7 +79,11 @@ interface InvoicePreviewProps {
   };
 }
 
-export function InvoicePreview({ invoiceData, companySettings, template = 'professional-business' }: InvoicePreviewProps) {
+export function InvoicePreview({
+  invoiceData,
+  companySettings,
+  template = 'professional-business',
+}: InvoicePreviewProps) {
   // Template-Mapping
   const TemplateMap = {
     'professional-business': ProfessionalBusinessTemplate,
@@ -118,8 +146,9 @@ export function InvoicePreview({ invoiceData, companySettings, template = 'profe
     skontoPercentage: invoiceData.skontoPercentage || 2.0,
     skontoText: invoiceData.skontoText || '',
     notes: invoiceData.notes || '',
-    taxRuleType: (invoiceData.taxRuleType || 'DE_TAXABLE') as TaxRuleType
-  };
+    taxRuleType: (invoiceData.taxRuleType || 'DE_TAXABLE') as TaxRuleType,
+    taxRuleLabel: getTaxRuleLabel(invoiceData.taxRuleType || 'DE_TAXABLE'),
+  } as any;
 
   const handlePrint = () => {
     // Erstelle ein neues Fenster nur für das Template
@@ -195,7 +224,7 @@ export function InvoicePreview({ invoiceData, companySettings, template = 'profe
               customizations: {
                 primaryColor: '#4F46E5',
                 showLogo: true,
-                showTaxId: true
+                showTaxId: true,
               },
             })
           );
@@ -211,10 +240,10 @@ export function InvoicePreview({ invoiceData, companySettings, template = 'profe
   };
 
   const SelectedTemplate = TemplateMap[template];
-  
+
   return (
     <Dialog>
-      <DialogContent 
+      <DialogContent
         className="max-w-4xl max-h-[90vh] overflow-auto"
         aria-describedby="invoice-preview-description"
       >
@@ -238,54 +267,71 @@ export function InvoicePreview({ invoiceData, companySettings, template = 'profe
 
         <div className="bg-white">
           <SelectedTemplate
-            data={{
-              ...previewData,
-              documentNumber: previewData.invoiceNumber || previewData.number,
-              customerAddress: previewData.customerAddress ? {
-                street: previewData.customerAddress.split('\n')[0] || '',
-                zipCode: previewData.customerAddress.split('\n')[1]?.split(' ')[0] || '',
-                city: previewData.customerAddress.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
-                country: 'Deutschland'
-              } : undefined,
-              company: {
-                name: previewData.companyName,
-                email: previewData.companyEmail,
-                phone: previewData.companyPhone,
-                website: previewData.companyWebsite,
-                vatId: previewData.companyVatId,
-                taxNumber: previewData.companyTaxNumber,
-                address: previewData.companyAddress ? {
-                  street: previewData.companyAddress.split('\n')[0] || '',
-                  zipCode: previewData.companyAddress.split('\n')[1]?.split(' ')[0] || '',
-                  city: previewData.companyAddress.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
-                  country: 'Deutschland'
-                } : undefined,
-                bankDetails: previewData.bankDetails
-              },
-              bankDetails: previewData.bankDetails // Zusätzlich direkt auf der Hauptebene
-            } as any}
+            data={
+              {
+                ...previewData,
+                documentNumber: previewData.invoiceNumber || previewData.number,
+                customerAddress: previewData.customerAddress
+                  ? {
+                      street: previewData.customerAddress.split('\n')[0] || '',
+                      zipCode: previewData.customerAddress.split('\n')[1]?.split(' ')[0] || '',
+                      city:
+                        previewData.customerAddress.split('\n')[1]?.split(' ').slice(1).join(' ') ||
+                        '',
+                      country: 'Deutschland',
+                    }
+                  : undefined,
+                company: {
+                  name: previewData.companyName,
+                  email: previewData.companyEmail,
+                  phone: previewData.companyPhone,
+                  website: previewData.companyWebsite,
+                  vatId: previewData.companyVatId,
+                  taxNumber: previewData.companyTaxNumber,
+                  address: previewData.companyAddress
+                    ? {
+                        street: previewData.companyAddress.split('\n')[0] || '',
+                        zipCode: previewData.companyAddress.split('\n')[1]?.split(' ')[0] || '',
+                        city:
+                          previewData.companyAddress
+                            .split('\n')[1]
+                            ?.split(' ')
+                            .slice(1)
+                            .join(' ') || '',
+                        country: 'Deutschland',
+                      }
+                    : undefined,
+                  bankDetails: previewData.bankDetails,
+                },
+                bankDetails: previewData.bankDetails, // Zusätzlich direkt auf der Hauptebene
+              } as any
+            }
             companySettings={{
               companyName: previewData.companyName,
               logoUrl: previewData.companyLogo || previewData.profilePictureURL,
-              address: previewData.companyAddress ? {
-                street: previewData.companyAddress.split('\n')[0] || '',
-                zipCode: previewData.companyAddress.split('\n')[1]?.split(' ')[0] || '',
-                city: previewData.companyAddress.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
-                country: 'Deutschland'
-              } : undefined,
+              address: previewData.companyAddress
+                ? {
+                    street: previewData.companyAddress.split('\n')[0] || '',
+                    zipCode: previewData.companyAddress.split('\n')[1]?.split(' ')[0] || '',
+                    city:
+                      previewData.companyAddress.split('\n')[1]?.split(' ').slice(1).join(' ') ||
+                      '',
+                    country: 'Deutschland',
+                  }
+                : undefined,
               contactInfo: {
                 email: previewData.companyEmail,
                 phone: previewData.companyPhone,
-                website: previewData.companyWebsite
+                website: previewData.companyWebsite,
               },
               taxId: previewData.companyTaxNumber,
               vatId: previewData.companyVatId,
-              bankDetails: previewData.bankDetails
+              bankDetails: previewData.bankDetails,
             }}
             customizations={{
               primaryColor: '#4F46E5',
               showLogo: true,
-              showTaxId: true
+              showTaxId: true,
             }}
           />
         </div>

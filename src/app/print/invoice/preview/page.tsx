@@ -2,26 +2,55 @@
 
 import { useEffect, useMemo, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { InvoiceTemplateRenderer, DEFAULT_INVOICE_TEMPLATE } from '@/components/finance/InvoiceTemplates';
+import {
+  InvoiceTemplateRenderer,
+  DEFAULT_INVOICE_TEMPLATE,
+} from '@/components/finance/InvoiceTemplates';
 import type { InvoiceData } from '@/types/invoiceTypes';
 import { TaxRuleType, TaxRuleCategory } from '@/types/taxRules';
+
+/**
+ * Gibt den deutschen Text für eine Steuerregel zurück
+ */
+function getTaxRuleLabel(taxRule: string): string {
+  switch (taxRule) {
+    case 'DE_TAXABLE':
+      return 'Steuerpflichtiger Umsatz (Regelsteuersatz 19 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 1 UStG)';
+    case 'DE_REDUCED':
+      return 'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 2 UStG)';
+    case 'DE_EXEMPT':
+      return 'Steuerfreier Umsatz (§ 4 UStG)';
+    case 'DE_SMALL_BUSINESS':
+      return 'Umsatzsteuerbefreit nach § 19 UStG (Kleinunternehmerregelung)';
+    case 'DE_REVERSE_CHARGE':
+    case 'DE_REVERSE_13B':
+      return 'Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)';
+    case 'DE_INTRACOMMUNITY':
+      return 'Innergemeinschaftliche Lieferung (§ 4 Nr. 1b UStG)';
+    case 'DE_EXPORT':
+      return 'Ausfuhrlieferung (§ 4 Nr. 1a UStG)';
+    default:
+      return taxRule;
+  }
+}
 
 function PrintInvoicePreview() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [previewData, setPreviewData] = useState<InvoiceData | null>(null);
   const [rawData, setRawData] = useState<any>(null);
-  
+
   // Flags für Steuerberechnung
-  const isReverseCharge = useMemo(() => 
-    rawData?.taxRule === 'DE_REVERSE_13B' || rawData?.taxRule === 'EU_REVERSE_CHARGE',
+  const isReverseCharge = useMemo(
+    () => rawData?.taxRule === 'DE_REVERSE_13B' || rawData?.taxRule === 'EU_REVERSE_CHARGE',
     [rawData?.taxRule]
   );
-  
-  const hideVatLine = useMemo(() => 
-    rawData?.taxRule === 'DE_REVERSE_13B' || 
-    rawData?.taxRule === 'EU_REVERSE_CHARGE' || 
-    rawData?.taxRule === 'DE_NOTAXABLE',
+
+  const hideVatLine = useMemo(
+    () =>
+      rawData?.taxRule === 'DE_REVERSE_13B' ||
+      rawData?.taxRule === 'EU_REVERSE_CHARGE' ||
+      rawData?.taxRule === 'DE_NOTAXABLE',
     [rawData?.taxRule]
   );
 
@@ -49,16 +78,16 @@ function PrintInvoicePreview() {
             for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
             const json = new TextDecoder().decode(bytes);
             const decoded = JSON.parse(json);
-            
+
             // Debug-Ausgaben entfernt
-            
+
             // Hilfsfunktion für sichere Datumskonvertierung
             const safeDate = (dateValue: any): string => {
               if (!dateValue) return new Date().toISOString();
               const date = new Date(dateValue);
               return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
             };
-            
+
             // Konvertiere Preview-Daten zu InvoiceData-Format
             const invoiceData: InvoiceData = {
               id: 'preview',
@@ -96,14 +125,22 @@ function PrintInvoicePreview() {
               taxRuleType: decoded.taxRule || TaxRuleType.DE_TAXABLE,
               taxRuleCategory: TaxRuleCategory.DOMESTIC,
               paymentTerms: decoded.paymentTerms || '',
+              skontoEnabled: decoded.skontoEnabled || false,
+              skontoDays: decoded.skontoDays || 0,
+              skontoPercentage: decoded.skontoPercentage || 0,
+              skontoText: decoded.skontoText || '',
               bankDetails: {
                 iban: decoded.bankDetails?.iban || decoded.step4?.iban || '',
                 bic: decoded.bankDetails?.bic || decoded.step4?.bic || '',
                 bankName: decoded.bankDetails?.bankName || decoded.step4?.bankName || '',
-                accountHolder: decoded.bankDetails?.accountHolder || decoded.step4?.accountHolder || decoded.companyName || 'Ihr Unternehmen'
+                accountHolder:
+                  decoded.bankDetails?.accountHolder ||
+                  decoded.step4?.accountHolder ||
+                  decoded.companyName ||
+                  'Ihr Unternehmen',
               },
             };
-            
+
             // Speichere auch die rohen Daten für Template-Verwendung
             setRawData(decoded);
             setPreviewData(invoiceData);
@@ -169,7 +206,15 @@ function PrintInvoicePreview() {
     validUntil: previewData.dueDate,
     invoiceDate: previewData.date,
     serviceDate: rawData?.serviceDate || rawData?.deliveryDate || previewData.date,
-    servicePeriod: rawData?.servicePeriod || rawData?.serviceDate || previewData.date,
+    servicePeriod:
+      rawData?.servicePeriod ||
+      (rawData?.deliveryDateType === 'range' &&
+      rawData?.deliveryDateRange?.from &&
+      rawData?.deliveryDateRange?.to
+        ? `${new Date(rawData.deliveryDateRange.from).toLocaleDateString('de-DE')} - ${new Date(rawData.deliveryDateRange.to).toLocaleDateString('de-DE')}`
+        : undefined) ||
+      rawData?.serviceDate ||
+      previewData.date,
     deliveryDate: rawData?.deliveryDate || previewData.date,
 
     // === KUNDEN-INFORMATIONEN ===
@@ -187,7 +232,9 @@ function PrintInvoicePreview() {
       phone: rawData?.customerPhone || '',
       orderNumber: rawData?.customerOrderNumber || '',
       address: (() => {
-        const addressLines = (previewData.customerAddress || '').split('\n').filter(line => line.trim());
+        const addressLines = (previewData.customerAddress || '')
+          .split('\n')
+          .filter(line => line.trim());
         const street = addressLines[0] || '';
         const cityLine = addressLines[1] || '';
         const zipCode = cityLine.split(' ')[0] || '';
@@ -201,7 +248,7 @@ function PrintInvoicePreview() {
           fullAddress: previewData.customerAddress,
           addressLine1: street,
           addressLine2: `${zipCode} ${city}`,
-          addressLine3: country
+          addressLine3: country,
         };
       })(),
       vatId: rawData?.customerVatId || '',
@@ -235,7 +282,9 @@ function PrintInvoicePreview() {
       logo: previewData.companyLogo,
       profilePictureURL: previewData.companyLogo,
       address: (() => {
-        const addressLines = (previewData.companyAddress || '').split('\n').filter(line => line.trim());
+        const addressLines = (previewData.companyAddress || '')
+          .split('\n')
+          .filter(line => line.trim());
         const street = addressLines[0] || '';
         const cityLine = addressLines[1] || '';
         const zipCode = cityLine.split(' ')[0] || '';
@@ -249,7 +298,7 @@ function PrintInvoicePreview() {
           fullAddress: previewData.companyAddress,
           addressLine1: street,
           addressLine2: `${zipCode} ${city}`,
-          addressLine3: country
+          addressLine3: country,
         };
       })(),
       taxNumber: previewData.companyTaxNumber,
@@ -260,7 +309,7 @@ function PrintInvoicePreview() {
         iban: '',
         bic: '',
         bankName: '',
-        accountHolder: previewData.companyName
+        accountHolder: previewData.companyName,
       },
       ceo: rawData?.ceo || rawData?.companyOwner || '',
       contactEmail: previewData.companyEmail,
@@ -297,7 +346,8 @@ function PrintInvoicePreview() {
       tax: ((item.total || 0) * (previewData.vatRate || 19)) / 100,
       discount: (item as any).discountPercent || 0,
       discountPercent: (item as any).discountPercent || 0,
-      discountAmount: ((item.unitPrice || 0) * (item.quantity || 1) * ((item as any).discountPercent || 0)) / 100,
+      discountAmount:
+        ((item.unitPrice || 0) * (item.quantity || 1) * ((item as any).discountPercent || 0)) / 100,
       category: (item as any).category || 'Service',
       sku: (item as any).sku || '',
       weight: (item as any).weight || '',
@@ -318,7 +368,7 @@ function PrintInvoicePreview() {
     totalAmount: previewData.total,
     vatRate: previewData.vatRate,
     taxRate: previewData.vatRate,
-  currency: rawData?.currency || 'EUR',
+    currency: rawData?.currency || 'EUR',
 
     // === ZAHLUNGS- UND GESCHÄFTSBEDINGUNGEN ===
     paymentTerms: rawData?.paymentTerms || previewData.paymentTerms || '',
@@ -328,7 +378,11 @@ function PrintInvoicePreview() {
       iban: rawData?.bankDetails?.iban || rawData?.step4?.iban || '',
       bic: rawData?.bankDetails?.bic || rawData?.step4?.bic || '',
       bankName: rawData?.bankDetails?.bankName || rawData?.step4?.bankName || '',
-      accountHolder: rawData?.bankDetails?.accountHolder || rawData?.step4?.accountHolder || rawData?.companyName || ''
+      accountHolder:
+        rawData?.bankDetails?.accountHolder ||
+        rawData?.step4?.accountHolder ||
+        rawData?.companyName ||
+        '',
     },
 
     // === SKONTO-SYSTEM ===
@@ -339,14 +393,16 @@ function PrintInvoicePreview() {
 
     // === TEXTFELDER UND BESCHREIBUNGEN ===
     description: (() => {
-      let desc = (rawData?.headTextHtml || previewData.description || '');
+      let desc = rawData?.headTextHtml || previewData.description || '';
       // Fester Standardtext wie gewünscht, wenn leer oder nur Platzhalter
       const isDefault = !desc || /\[%[A-Z_]+%\]/.test(desc);
       if (isDefault) {
         desc = `Sehr geehrte Damen und Herren,\n\nvielen Dank für Ihren Auftrag und das damit verbundene Vertrauen!\nHiermit stelle ich Ihnen die folgenden Leistungen in Rechnung:`;
       }
       // Entferne alle Varianten von Zahlungsbedingung/USt-Regel (auch mit HTML, Bold, Whitespaces, Zeilenumbrüchen)
-      desc = desc.replace(/<[^>]*>?/gm, tag => tag.match(/<\/?(b|strong|span|div|p)[^>]*>/i) ? tag : ''); // Erlaube nur bestimmte Tags
+      desc = desc.replace(/<[^>]*>?/gm, tag =>
+        tag.match(/<\/?(b|strong|span|div|p)[^>]*>/i) ? tag : ''
+      ); // Erlaube nur bestimmte Tags
       desc = desc.replace(/\s*Zahlungsbedingung\s*:?[^\n<]*((<br\s*\/?>)|\n|$)/gim, '');
       desc = desc.replace(/\s*USt[-_ ]?Regel\s*:?[^\n<]*((<br\s*\/?>)|\n|$)/gim, '');
       desc = desc.replace(/\s*Steuerregel\s*:?[^\n<]*((<br\s*\/?>)|\n|$)/gim, '');
@@ -382,18 +438,29 @@ function PrintInvoicePreview() {
     priceInput: previewData.priceInput,
 
     // === STEUER- UND COMPLIANCE-FELDER ===
-    isSmallBusiness: typeof rawData?.isSmallBusiness !== 'undefined' ? rawData.isSmallBusiness : previewData.isSmallBusiness,
+    isSmallBusiness:
+      typeof rawData?.isSmallBusiness !== 'undefined'
+        ? rawData.isSmallBusiness
+        : previewData.isSmallBusiness,
     reverseCharge: typeof rawData?.reverseCharge !== 'undefined' ? rawData.reverseCharge : false,
     taxRule: rawData?.taxRule || 'DE_TAXABLE',
-    taxRuleLabel: rawData?.taxRuleLabel || '',
+    taxRuleLabel: rawData?.taxRuleLabel || getTaxRuleLabel(rawData?.taxRule || 'DE_TAXABLE'),
     // Steuerregel-Text für die Anzeige
     taxRuleText: (() => {
       const rule = rawData?.taxRule || 'DE_TAXABLE';
       switch (rule) {
         case 'DE_TAXABLE':
-          return 'Der Steuerbetrag in Höhe von €' + (previewData.tax || 0).toFixed(2) + ' entspricht 19% gemäß §12 Abs. 1 UStG.';
+          return (
+            'Der Steuerbetrag in Höhe von €' +
+            (previewData.tax || 0).toFixed(2) +
+            ' entspricht 19% gemäß §12 Abs. 1 UStG.'
+          );
         case 'DE_REDUCED':
-          return 'Der Steuerbetrag in Höhe von €' + (previewData.tax || 0).toFixed(2) + ' entspricht 7% gemäß §12 Abs. 2 UStG.';
+          return (
+            'Der Steuerbetrag in Höhe von €' +
+            (previewData.tax || 0).toFixed(2) +
+            ' entspricht 7% gemäß §12 Abs. 2 UStG.'
+          );
         case 'DE_NOTAXABLE':
           return 'Gemäß §19 UStG wird keine Umsatzsteuer berechnet.';
         case 'EU_REVERSE_CHARGE':
@@ -504,7 +571,9 @@ function PrintInvoicePreview() {
     // === FORMATIERTE DATUMSFELDER ===
     formattedDate: new Date(previewData.date).toLocaleDateString('de-DE'),
     formattedDueDate: new Date(previewData.dueDate).toLocaleDateString('de-DE'),
-    formattedServiceDate: rawData?.serviceDate ? new Date(rawData.serviceDate).toLocaleDateString('de-DE') : '',
+    formattedServiceDate: rawData?.serviceDate
+      ? new Date(rawData.serviceDate).toLocaleDateString('de-DE')
+      : '',
 
     // === STEUERBERECHNUNG DETAILS ===
     taxCalculation: {
@@ -512,7 +581,10 @@ function PrintInvoicePreview() {
       taxRate: previewData.vatRate,
       taxAmount: previewData.tax,
       total: previewData.total,
-      isSmallBusiness: typeof rawData?.isSmallBusiness !== 'undefined' ? rawData.isSmallBusiness : previewData.isSmallBusiness,
+      isSmallBusiness:
+        typeof rawData?.isSmallBusiness !== 'undefined'
+          ? rawData.isSmallBusiness
+          : previewData.isSmallBusiness,
       currency: rawData?.currency || 'EUR',
       reverseCharge: isReverseCharge,
       hideVatLine: hideVatLine,
@@ -521,9 +593,17 @@ function PrintInvoicePreview() {
         const rule = rawData?.taxRule || 'DE_TAXABLE';
         switch (rule) {
           case 'DE_TAXABLE':
-            return 'Der Steuerbetrag in Höhe von €' + (previewData.tax || 0).toFixed(2) + ' entspricht 19% gemäß §12 Abs. 1 UStG.';
+            return (
+              'Der Steuerbetrag in Höhe von €' +
+              (previewData.tax || 0).toFixed(2) +
+              ' entspricht 19% gemäß §12 Abs. 1 UStG.'
+            );
           case 'DE_REDUCED':
-            return 'Der Steuerbetrag in Höhe von €' + (previewData.tax || 0).toFixed(2) + ' entspricht 7% gemäß §12 Abs. 2 UStG.';
+            return (
+              'Der Steuerbetrag in Höhe von €' +
+              (previewData.tax || 0).toFixed(2) +
+              ' entspricht 7% gemäß §12 Abs. 2 UStG.'
+            );
           case 'DE_NOTAXABLE':
             return 'Gemäß §19 UStG wird keine Umsatzsteuer berechnet.';
           case 'DE_REVERSE_13B':
@@ -537,8 +617,8 @@ function PrintInvoicePreview() {
           default:
             return '';
         }
-      })()
-    }
+      })(),
+    },
   };
 
   // Debug-Ausgaben entfernt
@@ -552,7 +632,8 @@ function PrintInvoicePreview() {
           margin: 0;
         }
         @media print {
-          html, body {
+          html,
+          body {
             width: 21cm;
             height: 29.7cm;
           }
@@ -619,19 +700,21 @@ function PrintInvoicePreview() {
 
       {/* Debug-Ausgabe */}
       {process.env.NODE_ENV === 'development' && (
-        <script dangerouslySetInnerHTML={{
-          __html: `
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
             console.log('🔍 Preview Data:', ${JSON.stringify({
               template: rawData?.selectedTemplate || DEFAULT_INVOICE_TEMPLATE,
               company: templateData?.company,
               items: templateData?.items?.length,
               customizations: {
                 showLogo: true,
-                logoUrl: templateData?.companyLogo
-              }
+                logoUrl: templateData?.companyLogo,
+              },
             })});
-          `
-        }} />
+          `,
+          }}
+        />
       )}
 
       <div className="invoice-print-content">
@@ -650,15 +733,16 @@ function PrintInvoicePreview() {
               address: {
                 street: templateData.companyAddress?.split('\n')[0] || '',
                 zipCode: templateData.companyAddress?.split('\n')[1]?.split(' ')[0] || '',
-                city: templateData.companyAddress?.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
-                country: templateData.companyAddress?.split('\n')[2] || 'DE'
+                city:
+                  templateData.companyAddress?.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
+                country: templateData.companyAddress?.split('\n')[2] || 'DE',
               },
               bankDetails: {
                 iban: templateData.bankDetails?.iban || '',
                 bic: templateData.bankDetails?.bic || '',
                 bankName: templateData.bankDetails?.bankName || '',
-                accountHolder: templateData.bankDetails?.accountHolder || templateData.companyName
-              }
+                accountHolder: templateData.bankDetails?.accountHolder || templateData.companyName,
+              },
             },
             documentNumber: templateData.invoiceNumber,
             date: templateData.date,
@@ -668,8 +752,8 @@ function PrintInvoicePreview() {
             currency: templateData.currency || 'EUR',
             items: templateData.items.map((item: any, index: number) => ({
               ...item,
-              position: index + 1
-            }))
+              position: index + 1,
+            })),
           }}
           companySettings={{
             companyName: templateData.companyName,
@@ -684,11 +768,11 @@ function PrintInvoicePreview() {
             iban: templateData.bankDetails?.iban,
             bic: templateData.bankDetails?.bic,
             bankName: templateData.bankDetails?.bankName,
-            accountHolder: templateData.bankDetails?.accountHolder
+            accountHolder: templateData.bankDetails?.accountHolder,
           }}
           customizations={{
             showLogo: true,
-            logoUrl: templateData.companyLogo
+            logoUrl: templateData.companyLogo,
           }}
         />
       </div>
