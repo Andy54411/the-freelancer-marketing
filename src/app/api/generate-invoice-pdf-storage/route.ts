@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
       }
       const bucket = storage.bucket('tilvo-f142f.firebasestorage.app');
 
-      const fileName = `invoices/${companyId}/${invoice.id}.pdf`;
+      const fileName = `invoices/${companyId}/${invoiceId}.pdf`;
       const file = bucket.file(fileName);
 
       await file.save(pdfBuffer, {
