@@ -642,9 +642,10 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
                 </div>
               )}
               {/* Skonto-Informationen - Unter Steuerregel */}
-              {(data.skontoText && data.skontoText.trim() !== '') ||
-              (data.skontoDays && data.skontoDays > 0) ||
-              (data.skontoPercentage && data.skontoPercentage > 0) ? (
+              {data.skontoEnabled &&
+              ((data.skontoText && data.skontoText.trim() !== '') ||
+                (data.skontoDays && data.skontoDays > 0) ||
+                (data.skontoPercentage && data.skontoPercentage > 0)) ? (
                 <div className="mb-2">
                   <span className="font-semibold">Skonto:</span>{' '}
                   {data.skontoText ? data.skontoText : ''}
@@ -659,9 +660,10 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
               {data.paymentTerms && (
                 <div className="mb-3">
                   <span className="font-semibold">Zahlungsziel:</span> {data.paymentTerms}
-                  {(data.skontoText && data.skontoText.trim() !== '') ||
-                  (data.skontoDays && data.skontoDays > 0) ||
-                  (data.skontoPercentage && data.skontoPercentage > 0)
+                  {data.skontoEnabled &&
+                  ((data.skontoText && data.skontoText.trim() !== '') ||
+                    (data.skontoDays && data.skontoDays > 0) ||
+                    (data.skontoPercentage && data.skontoPercentage > 0))
                     ? ` ohne Abzug ${data.skontoText || ''}`
                     : ''}
                 </div>
