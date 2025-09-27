@@ -245,13 +245,13 @@ export const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ data, preview = fa
   }
 
   return (
-    <div className="w-full mt-auto pt-6 border-t-2 border-gray-400 print:mt-10 print:pt-8 px-8 print:px-12">
+    <div className="w-full mt-auto pt-6 border-t-2 border-gray-400 print:mt-10 print:pt-8">
       {preview ? (
-        <div className="text-sm text-gray-700 text-center leading-relaxed print:text-lg print:leading-relaxed">
+        <div className="text-[11px] text-gray-700 text-center leading-relaxed print:text-base print:leading-relaxed">
           <div>{footerParts.join(' | ')}</div>
         </div>
       ) : (
-        <div className="text-xs text-gray-700 text-center leading-relaxed print:text-sm print:leading-relaxed">
+        <div className="text-[10px] text-gray-700 text-center leading-relaxed print:text-[11px] print:leading-relaxed">
           {footerParts.join(' | ')}
         </div>
       )}
