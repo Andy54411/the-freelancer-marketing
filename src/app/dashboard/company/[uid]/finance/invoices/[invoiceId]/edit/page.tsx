@@ -38,6 +38,7 @@ import { de } from 'date-fns/locale';
 import FooterTextEditor from '@/components/finance/FooterTextEditor';
 import InventorySelector from '@/components/quotes/InventorySelector';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { COUNTRIES } from '@/constants/countries';
 import {
   Calculator,
   Save,
@@ -3652,21 +3653,15 @@ export default function EditInvoicePage() {
                       setFormData(prev => ({ ...prev, customerAddress: lines.join('\n') }));
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Bitte auswählen" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Deutschland">Deutschland</SelectItem>
-                      <SelectItem value="Österreich">Österreich</SelectItem>
-                      <SelectItem value="Schweiz">Schweiz</SelectItem>
-                      <SelectItem value="Niederlande">Niederlande</SelectItem>
-                      <SelectItem value="Frankreich">Frankreich</SelectItem>
-                      <SelectItem value="Italien">Italien</SelectItem>
-                      <SelectItem value="Spanien">Spanien</SelectItem>
-                      <SelectItem value="Polen">Polen</SelectItem>
-                      <SelectItem value="Tschechische Republik">Tschechische Republik</SelectItem>
-                      <SelectItem value="Belgien">Belgien</SelectItem>
-                      <SelectItem value="USA">USA</SelectItem>
+                      {COUNTRIES.map(country => (
+                        <SelectItem key={country.value} value={country.value}>
+                          {country.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
