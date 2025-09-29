@@ -2456,6 +2456,10 @@ export default function CreateQuotePage() {
         unitPrice: item.unitPrice,
         total: item.total,
         taxRate: item.taxRate,
+        discountPercent: item.discountPercent || 0,
+        unit: item.unit || 'Stk',
+        category: item.category || 'Artikel',
+        inventoryItemId: item.inventoryItemId || null,
       })),
 
       // Additional fields

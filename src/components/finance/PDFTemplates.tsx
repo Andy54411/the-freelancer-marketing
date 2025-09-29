@@ -5,7 +5,6 @@ import { InvoiceData } from '@/types/invoiceTypes';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { InvoiceFooter } from '@/components/templates/invoice-templates/InvoiceFooter';
 import { Button } from '@/components/ui/button';
-import { Upload, Plus, Minus } from 'lucide-react';
 
 interface PDFTemplateProps {
   document: InvoiceData;
@@ -14,165 +13,7 @@ interface PDFTemplateProps {
   logoUrl?: string | null;
   logoSize?: number;
   documentType: 'invoice' | 'quote' | 'reminder';
-  onLogoChange?: (newLogoUrl: string) => void;
-  isEditMode?: boolean;
 }
-
-// LogoUpload-Komponente
-interface LogoUploadProps {
-  currentLogo?: string;
-  logoSize: number;
-  onLogoChange?: (newLogoUrl: string) => void;
-  onSizeChange?: (newSize: number) => void;
-  isEditMode?: boolean;
-}
-
-const LogoUpload: React.FC<LogoUploadProps> = ({ 
-  currentLogo, 
-  logoSize, 
-  onLogoChange, 
-  onSizeChange,
-  isEditMode = false 
-}) => {
-  const [uploadedLogo, setUploadedLogo] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const handleFileSelect = (file: File) => {
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setUploadedLogo(result);
-        onLogoChange?.(result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      handleFileSelect(files[0]);
-    }
-  };
-
-  const displayLogo = uploadedLogo || currentLogo;
-  
-  if (!isEditMode) {
-    // Im Ansichtsmodus nur das Logo anzeigen
-    return displayLogo ? (
-      <img 
-        src={displayLogo} 
-        alt="Logo" 
-        style={{ 
-          height: `${Math.max(logoSize * 1.2, 50)}px`,
-          maxHeight: '100px',
-          width: 'auto'
-        }}
-      />
-    ) : null;
-  }
-
-  // Im Bearbeitungsmodus das Upload-Element anzeigen
-  return (
-    <div className="px-4 pb-4 bg-gray-50 space-y-4">
-      <div className="space-y-3">
-        <div 
-          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-            isDragging 
-              ? 'border-[#14ad9f] bg-[#14ad9f]/5' 
-              : 'border-gray-300 hover:border-[#14ad9f]'
-          }`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
-          <input 
-            ref={fileInputRef}
-            accept=".jpg,.jpeg,.png" 
-            className="hidden" 
-            type="file"
-            onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
-          />
-          <div 
-            className="cursor-pointer"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-            <Button 
-              type="button"
-              variant="outline"
-              className="mb-2"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Logo hochladen
-            </Button>
-            <p className="text-sm text-gray-500">oder hier hineinziehen</p>
-            <p className="text-xs text-gray-400">.jpg, .jpeg, .png (max. 10 MB)</p>
-          </div>
-        </div>
-        
-        {displayLogo && (
-          <div className="space-y-2">
-            <div className="text-sm text-green-600 text-center">
-              ✓ Logo {uploadedLogo ? 'hochgeladen' : 'aus Datenbank'}
-            </div>
-            <div className="flex justify-center">
-              <img 
-                alt="Logo Vorschau" 
-                className="max-h-12 max-w-24 object-contain border rounded" 
-                src={displayLogo}
-                style={{ transform: 'scale(0.5)', transformOrigin: 'center center' }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-      
-      <div className="space-y-2">
-        <label className="flex items-center gap-2 select-none text-sm font-medium">
-          Größe
-        </label>
-        <div className="flex items-center gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => onSizeChange?.(Math.max(20, logoSize - 10))}
-          >
-            <Minus className="h-3 w-3" />
-          </Button>
-          <span className="text-sm font-medium min-w-[3rem] text-center">
-            {logoSize}%
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => onSizeChange?.(Math.min(200, logoSize + 10))}
-          >
-            <Plus className="h-3 w-3" />
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const PDFTemplate: React.FC<PDFTemplateProps> = ({
   document,
@@ -180,9 +21,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({
   color,
   logoUrl,
   logoSize = 50,
-  documentType,
-  onLogoChange,
-  isEditMode = false
+  documentType
 }) => {
   const documentLabels = {
     invoice: 'Rechnung',
@@ -194,10 +33,18 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({
 
   // Verwende echte Daten aus dem document (Vollständige Firebase-Integration)
   const realItems = document.items || [];
-  const subtotal = document.amount || (document as any).subtotal || 0; // Nettobetrag
-  const taxAmount = document.tax || (document as any).taxAmount || 0; // Steuerbetrag  
-  const total = document.total || (subtotal + taxAmount); // Gesamtbetrag
   const vatRate = document.vatRate || (document as any).taxRate || 19;
+  
+  // Berechne Zwischensumme mit Rabatten
+  const subtotal = realItems.reduce((sum, item) => {
+    const discountPercent = (item as any).discountPercent || 0;
+    const originalTotal = item.total || (item.unitPrice * item.quantity);
+    const discountedTotal = discountPercent > 0 ? originalTotal * (1 - discountPercent / 100) : originalTotal;
+    return sum + discountedTotal;
+  }, 0);
+  
+  const taxAmount = subtotal * (vatRate / 100); // Steuerbetrag
+  const total = subtotal + taxAmount; // Gesamtbetrag
 
   // Rechnungsidentifikation
   const companyName = document.companyName || 'Ihr Unternehmen';
@@ -263,8 +110,9 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({
   const createdBy = (document as any).createdBy || '';
   
   // Logo und Branding - STANDARDMÄSSIG AUS DATENBANK
-  // Priorität: 1. User-Override (document.companyLogo) 2. Datenbank-Logo (profilePictureURL/profilePictureFirebaseUrl)
-  const companyLogo = document.companyLogo || 
+  // Priorität: 1. User-Upload (logoUrl) 2. User-Override (document.companyLogo) 3. Datenbank-Logo (profilePictureURL/profilePictureFirebaseUrl)
+  const companyLogo = logoUrl || 
+                     document.companyLogo || 
                      (document as any).profilePictureURL || 
                      (document as any).profilePictureFirebaseUrl ||
                      'https://storage.googleapis.com/tilvo-f142f-storage/user_uploads%2FLLc8PX1VYHfpoFknk8o51LAOfSA2%2Fbusiness_icon_363787a5-842e-4841-8d71-e692082312fa_Gemini_Generated_Image_xzose0xzose0xzos.jpg';
@@ -315,12 +163,17 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({
           {/* Logo rechts */}
           <div className="flex-1 flex justify-end">
             <div className={companyLogo ? "mb-4" : ""} style={{ height: companyLogo ? '100px' : '0px', display: 'flex', alignItems: 'center' }}>
-              <LogoUpload
-                currentLogo={companyLogo}
-                logoSize={logoSize}
-                onLogoChange={onLogoChange}
-                isEditMode={isEditMode}
-              />
+              {companyLogo && (
+                <img 
+                  src={companyLogo} 
+                  alt="Logo" 
+                  style={{ 
+                    height: `${Math.max(logoSize * 1.2, 50)}px`,
+                    maxHeight: '100px',
+                    width: 'auto'
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -380,29 +233,60 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({
 
       {/* Items Table */}
       <div className="mb-8">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr style={{ backgroundColor: '#F4F2E5' }}>
-              <th className="border p-3 text-left">Beschreibung</th>
-              <th className="border p-3 text-center">Menge</th>
-              <th className="border p-3 text-right">Einzelpreis</th>
-              <th className="border p-3 text-right">Gesamtpreis</th>
-            </tr>
-          </thead>
-          <tbody>
-            {realItems.map((item, index) => (
-              <tr key={index}>
-                <td className="border p-3">{item.description}</td>
-                <td className="border p-3 text-center">{item.quantity} {(item as any).unit || 'Stk'}</td>
-                <td className="border p-3 text-right">{formatCurrency(item.unitPrice)}</td>
-                <td className="border p-3 text-right">{formatCurrency(item.total)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Totals */}
+        {(() => {
+          // Prüfe ob irgendein Item einen Rabatt hat
+          const hasAnyDiscount = realItems.some(item => (item as any).discountPercent > 0);
+          
+          return (
+            <table className="w-full border-collapse">
+              <thead>
+                <tr style={{ backgroundColor: '#F4F2E5' }}>
+                  <th className="border p-3 text-left">Beschreibung</th>
+                  <th className="border p-3 text-center">Menge</th>
+                  <th className="border p-3 text-right">Einzelpreis</th>
+                  {hasAnyDiscount && <th className="border p-3 text-right">Rabatt %</th>}
+                  <th className="border p-3 text-right">Gesamtpreis</th>
+                </tr>
+              </thead>
+              <tbody>
+                {realItems.map((item, index) => {
+                  const discountPercent = (item as any).discountPercent || 0;
+                  const hasDiscount = discountPercent > 0;
+                  const originalPrice = item.unitPrice;
+                  const discountedPrice = hasDiscount ? originalPrice * (1 - discountPercent / 100) : originalPrice;
+                  const totalWithDiscount = hasDiscount ? discountedPrice * item.quantity : item.total;
+                  
+                  return (
+                    <tr key={index}>
+                      <td className="border p-3">{item.description}</td>
+                      <td className="border p-3 text-center">{item.quantity} {(item as any).unit || 'Stk'}</td>
+                      <td className="border p-3 text-right">
+                        {formatCurrency(item.unitPrice)}
+                      </td>
+                      {hasAnyDiscount && (
+                        <td className="border p-3 text-right">
+                          {hasDiscount ? (
+                            <span className="text-red-600 font-semibold">{discountPercent}%</span>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                      )}
+                      <td className="border p-3 text-right">
+                        {hasDiscount ? (
+                          <span className="text-red-600 font-semibold">{formatCurrency(totalWithDiscount)}</span>
+                        ) : (
+                          <span className={item.category === 'discount' ? 'text-red-600 font-semibold' : ''}>{formatCurrency(item.total)}</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          );
+        })()}
+      </div>      {/* Totals */}
       <div className="flex justify-end mb-8">
         <div className="w-64">
           <div className="flex justify-between py-2">

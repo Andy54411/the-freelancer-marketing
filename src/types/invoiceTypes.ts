@@ -16,9 +16,12 @@ export interface InvoiceItem {
   description: string;
   quantity: number;
   unitPrice: number;
-  discount?: number; // Rabatt in Prozent (0-100), optional für Rückwärtskompatibilität
+  discountPercent?: number; // Rabatt in Prozent (0-100), optional für Rückwärtskompatibilität
   total: number;
   taxRate?: number;
+  unit?: string;
+  category?: string;
+  inventoryItemId?: string | null;
 }
 
 export interface InvoiceData {
@@ -289,7 +292,7 @@ export class GermanInvoiceService {
         quantity: -Math.abs(item.quantity || 1), // Sicherstellen, dass negativ
         unitPrice: item.unitPrice || 0, // Einzelpreis bleibt positiv
         total: -Math.abs(item.total || 0), // Total negativ
-        discount: item.discount || 0, // Rabatt-Default
+        discountPercent: item.discountPercent || 0, // Rabatt-Default
         taxRate: item.taxRate || safeOriginal.vatRate,
       })),
 
