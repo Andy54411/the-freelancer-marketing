@@ -242,6 +242,7 @@ import NewProductModal, { NewProductValues } from '@/components/inventory/NewPro
 import NewCustomerModal from '@/components/finance/NewCustomerModal';
 import { EInvoiceIntegration } from '@/components/finance/EInvoiceIntegration';
 import { EInvoiceComplianceDashboard } from '@/components/finance/EInvoiceComplianceDashboard';
+import { SendDocumentModal } from '@/components/finance/SendDocumentModal';
 
 interface Customer {
   id: string;
@@ -640,6 +641,8 @@ export default function CreateQuotePage() {
   // Company Settings Banner State
   const [showCompanySettingsBanner, setShowCompanySettingsBanner] = useState(false);
   const [showCompanySettingsModal, setShowCompanySettingsModal] = useState(false);
+  const [showSendDocumentModal, setShowSendDocumentModal] = useState(false);
+  const [createdDocument, setCreatedDocument] = useState<InvoiceType | null>(null);
   const [companySettingsFormData, setCompanySettingsFormData] = useState({
     companyOwner: '',
     companyName: '',
@@ -2325,17 +2328,157 @@ export default function CreateQuotePage() {
     );
   };
 
+  const handleOpenSendModal = () => {
+    // Validation
+    if (!formData.customerName || !formData.validUntil) {
+      toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+      return;
+    }
+    const hasValidItems = items.some(it => it.description && it.quantity > 0);
+    if (!hasValidItems) {
+      toast.error('Bitte fügen Sie mindestens eine gültige Position hinzu');
+      return;
+    }
+
+    // Kundensuche für vollständige Daten
+    const selectedCustomer = customers.find(c => c.name === formData.customerName);
+
+    // Zahlungsbedingungen final (inkl. Skonto, falls aktiv)
+    const skontoSentence =
+      skontoEnabled && skontoDays && skontoPercentage
+        ? skontoText?.trim() ||
+          `Bei Zahlung binnen ${skontoDays} Tagen ${skontoPercentage}% Skonto`
+        : '';
+    const finalPaymentTerms =
+      [formData.paymentTerms?.trim(), skontoSentence].filter(Boolean).join('\n\n') || undefined;
+
+    // Calculate totals for preview
+    const subtotal = items.reduce((sum, it) => {
+      const t = it.total || 0;
+      if (it.category === 'discount') {
+        return sum + -Math.abs(t);
+      }
+      const factor = 1 - Math.max(0, Math.min(100, it.discountPercent || 0)) / 100;
+      return sum + t * factor;
+    }, 0);
+    const vat = subtotal * (taxRate / 100);
+    const grandTotal = subtotal + vat;
+    const totalNet = subtotal;
+
+    // Create temporary invoice data for modal preview
+    const tempInvoiceData: InvoiceType = {
+      id: '',
+      companyId: uid,
+      invoiceNumber: formData.title || `RE-${nextNumber}`,
+      number: formData.title || `RE-${nextNumber}`,
+      sequentialNumber: nextNumber,
+      status: 'draft',
+
+      // Dates
+      date: formData.invoiceDate
+        ? new Date(formData.invoiceDate).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0],
+      issueDate: formData.invoiceDate
+        ? new Date(formData.invoiceDate).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0],
+      dueDate: formData.validUntil
+        ? new Date(formData.validUntil).toISOString().split('T')[0]
+        : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+
+      // Customer Data
+      customerName: formData.customerName || '',
+      customerFirstName: formData.customerFirstName || '',
+      customerLastName: formData.customerLastName || '',
+      customerNumber: formData.customerNumber || '',
+      customerEmail: formData.customerEmail || selectedCustomer?.email || '',
+      customerAddress: formData.customerAddress || '',
+      customerOrderNumber: formData.customerOrderNumber || '',
+      customerPhone: selectedCustomer?.phone || '',
+      customerVatId: selectedCustomer?.vatId || '', // CRITICAL: Customer VAT ID for PDF
+      // Rechnungsbeschreibung
+      description: formData.title || `Rechnung ${nextNumber}`,
+
+      // Finanzielle Daten
+      amount: subtotal, // Nettobetrag
+      tax: vat, // Steuerbetrag
+      total: grandTotal, // Gesamtbetrag
+
+      // Status und Metadaten
+      year: new Date().getFullYear(),
+
+      // Steuereinstellungen
+      isSmallBusiness: false, // Wird durch taxRule bestimmt
+      vatRate: taxRate,
+      priceInput: 'brutto', // Standardmäßig brutto
+
+      // Erweiterte Steuerregeln
+      taxRuleType: formData.taxRule || TaxRuleType.DE_TAXABLE,
+
+      // Unternehmensdaten
+      companyName: company?.companyName || '',
+      companyAddress: [
+        [company?.companyStreet?.replace(/\s+/g, ' ').trim(), company?.companyHouseNumber]
+          .filter(Boolean)
+          .join(' '),
+        [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
+        company?.companyCountry,
+      ]
+        .filter(Boolean)
+        .join('\n'),
+      companyEmail: (company?.email as string) || '',
+      companyPhone: (company?.phoneNumber as string) || (company?.companyPhoneNumber as string) || '',
+      companyWebsite: '',
+      companyLogo: '',
+      profilePictureURL: (company?.profilePictureURL as string) || undefined,
+      companyVatId:
+        (company?.vatId as string) ||
+        (company as any)?.vatIdForBackend ||
+        (company as any)?.step3?.vatId ||
+        undefined,
+      companyTaxNumber:
+        (company?.taxNumber as string) ||
+        (company as any)?.taxNumberForBackend ||
+        (company as any)?.step3?.taxNumber ||
+        undefined,
+      companyRegister:
+        (company?.companyRegisterPublic as string) ||
+        (company?.companyRegister as string) ||
+        (company as any)?.step3?.companyRegister ||
+        ((settings as any)?.districtCourt as string) ||
+        ((settings as any)?.companyRegister as string) ||
+        undefined,
+
+      // Items and totals
+      items: items.map(item => ({
+        id: item.id,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        total: item.total,
+        taxRate: item.taxRate,
+      })),
+
+      // Additional fields
+      currency: 'EUR',
+      paymentTerms: finalPaymentTerms,
+      headTextHtml: formData.headTextHtml || '', // CRITICAL: Kopftext für Modal/PDF
+      footerText: formData.footerText || '',
+      notes: formData.notes || '',
+
+      // Metadata
+      createdAt: new Date(),
+      isStorno: false,
+    };
+
+    setCreatedDocument(tempInvoiceData);
+    setShowSendDocumentModal(true);
+  };
+
   const handleSubmit = async (asDraft = true) => {
     if (loading) return;
     setLoading(true);
     try {
-      console.log('🚨 CRITICAL: Starting Invoice Save - ALL FIELDS MUST BE SAVED!');
-      console.log('📊 E-INVOICE DEBUG:', {
-        eInvoiceEnabled,
-        eInvoiceSettings,
-        isEInvoice: eInvoiceEnabled || false,
-        eInvoiceType: eInvoiceEnabled ? 'zugferd' : null,
-      });
+  
 
       // Validation
       if (!formData.customerName || !formData.validUntil) {
@@ -2602,38 +2745,6 @@ export default function CreateQuotePage() {
       toast.success(asDraft ? 'Rechnung als Entwurf gespeichert' : 'Rechnung erstellt');
       console.log('🎉 INVOICE CREATION COMPLETED SUCCESSFULLY');
 
-      // 🚀 PDF GENERIERUNG NACH SPEICHERN (für alle Rechnungen)
-      if (!asDraft && createdInvoiceId) {
-        console.log('🚀 Starting PDF generation for invoice:', createdInvoiceId);
-        try {
-          // PDF automatisch generieren und speichern
-          const pdfResponse = await fetch('/api/generate-invoice-pdf-storage', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              invoiceId: createdInvoiceId,
-              companyId: uid,
-            }),
-          });
-
-          if (pdfResponse.ok) {
-            const pdfResult = await pdfResponse.json();
-            console.log('✅ PDF generated and stored successfully:', {
-              pdfPath: pdfResult.pdfPath,
-              fileName: pdfResult.fileName,
-            });
-            toast.success('PDF erfolgreich generiert und gespeichert');
-          } else {
-            console.error('❌ PDF generation failed:', await pdfResponse.text());
-            toast.error('PDF konnte nicht generiert werden');
-          }
-        } catch (pdfError) {
-          console.error('❌ PDF generation error:', pdfError);
-          toast.error('PDF-Generierung fehlgeschlagen');
-        }
-      }
 
       // 🚀 E-INVOICE GENERIERUNG NACH SPEICHERN (falls aktiviert)
       if (!asDraft && eInvoiceEnabled && createdInvoiceId) {
@@ -2691,8 +2802,9 @@ export default function CreateQuotePage() {
         }
       }
 
-      // Navigate to invoices list
-      router.push(`/dashboard/company/${uid}/finance/invoices`);
+      // Open send document modal instead of navigating
+      setCreatedDocument(invoiceData);
+      setShowSendDocumentModal(true);
     } catch (e) {
       console.error('❌ CRITICAL ERROR in handleSubmit:', e);
       toast.error('Rechnung konnte nicht gespeichert werden');
@@ -3152,7 +3264,7 @@ export default function CreateQuotePage() {
               <Button
                 className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                 size="default"
-                onClick={() => handleSubmit(false)}
+                onClick={handleOpenSendModal}
                 disabled={loading}
               >
                 {loading ? (
@@ -5271,8 +5383,48 @@ export default function CreateQuotePage() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* Send Document Modal */}
+      {createdDocument && (
+        <SendDocumentModal
+          isOpen={showSendDocumentModal}
+          onClose={() => {
+            setShowSendDocumentModal(false);
+            setCreatedDocument(null);
+          }}
+          document={createdDocument}
+          documentType="invoice"
+          companyId={uid}
+          onSend={async (method, options) => {
+            try {
+              // First save the invoice
+              await handleSubmit(false); // Save as finalized
+
+              // Then handle the sending logic
+              if (method === 'email') {
+                // TODO: Implement actual email sending
+                console.log('Sending invoice via email:', options);
+                toast.success('Rechnung wurde gespeichert und E-Mail-Versand wird vorbereitet');
+              } else if (method === 'download') {
+                // TODO: Implement PDF download
+                console.log('Downloading invoice PDF');
+                toast.success('PDF-Download wird vorbereitet');
+              } else if (method === 'print') {
+                // TODO: Implement print functionality
+                console.log('Preparing invoice for printing');
+                toast.success('Druckvorbereitung abgeschlossen');
+              }
+
+              // Navigate to invoices list after successful send
+              router.push(`/dashboard/company/${uid}/finance/invoices`);
+            } catch (error) {
+              console.error('Error sending document:', error);
+              toast.error('Fehler beim Versenden der Rechnung');
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
 
-// Ende CreateQuotePage

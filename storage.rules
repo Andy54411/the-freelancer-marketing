@@ -121,6 +121,36 @@ service firebase.storage {
                        request.resource.contentType.matches('application/pdf')));
     }
 
+    // Invoice PDFs - Firmen können ihre Rechnungs-PDFs verwalten
+    // Pfad: invoices/{companyId}/{invoiceId}/{fileName}
+    match /invoices/{companyId}/{invoiceId}/{fileName} {
+      allow read: if request.auth != null && 
+                     (isSupportStaff() || 
+                      (isCompany() && request.auth.uid == companyId) ||
+                      request.auth.uid == companyId);
+      allow write: if request.auth != null && 
+                      (isSupportStaff() || 
+                       (isCompany() && request.auth.uid == companyId) ||
+                       request.auth.uid == companyId) &&
+                      (isDelete() || (isUpload() && 
+                       request.resource.contentType.matches('application/pdf')));
+    }
+
+    // Alternative Invoice PDF Pfad - für direkten Company-Zugriff
+    // Pfad: invoices/{companyId}/{fileName}
+    match /invoices/{companyId}/{fileName} {
+      allow read: if request.auth != null && 
+                     (isSupportStaff() || 
+                      (isCompany() && request.auth.uid == companyId) ||
+                      request.auth.uid == companyId);
+      allow write: if request.auth != null && 
+                      (isSupportStaff() || 
+                       (isCompany() && request.auth.uid == companyId) ||
+                       request.auth.uid == companyId) &&
+                      (isDelete() || (isUpload() && 
+                       request.resource.contentType.matches('application/pdf')));
+    }
+
     // Portfolio-Bilder - Alle authentifizierten Benutzer können Portfolio-Bilder verwalten
     // Pfad: portfolio/{portfolioItemId}/main/{fileName} und portfolio/{portfolioItemId}/additional/{fileName}
     match /portfolio/{portfolioItemId}/{imageType}/{fileName} {

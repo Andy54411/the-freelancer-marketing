@@ -41,14 +41,22 @@ export interface CompanySettings {
     skontoPercentage?: number; // Skonto-Prozentsatz
   };
 
-  // Zahlungskonditionen-Einstellungen (aus Settings)
-  paymentTermsSettings?: {
-    defaultPaymentTerms?: {
-      days: number;
-      text: string;
-      skontoEnabled?: boolean;
-      skontoDays?: number;
-      skontoPercentage?: number;
+  // Mahngebühren-Einstellungen
+  reminderFees?: {
+    level1: {
+      fee: number; // Mahngebühr für 1. Mahnung
+      days: number; // Zahlungsfrist in Tagen
+      title: string; // Titel der Mahnung
+    };
+    level2: {
+      fee: number; // Mahngebühr für 2. Mahnung
+      days: number; // Zahlungsfrist in Tagen
+      title: string; // Titel der Mahnung
+    };
+    level3: {
+      fee: number; // Mahngebühr für 3. Mahnung
+      days: number; // Zahlungsfrist in Tagen
+      title: string; // Titel der Mahnung
     };
   };
 
@@ -153,6 +161,13 @@ export function useCompanySettings(userId?: string) {
                 skontoDays: 10,
                 skontoPercentage: 2,
               },
+
+            // Mahngebühren-Einstellungen
+            reminderFees: userData.reminderFees || {
+              level1: { fee: 5.0, days: 7, title: '1. Mahnung' },
+              level2: { fee: 10.0, days: 14, title: '2. Mahnung' },
+              level3: { fee: 15.0, days: 21, title: '3. Mahnung / Inkasso-Androhung' },
+            },
 
             // Rechtliche Angaben
             legalForm: userData.legalForm || userData.step2?.legalForm,

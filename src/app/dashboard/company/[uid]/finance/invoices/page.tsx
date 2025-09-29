@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { InvoiceComponent } from '@/components/finance/InvoiceComponent';
+import { InvoiceListView } from '@/components/finance/InvoiceListView';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { Button } from '@/components/ui/button';
-import { Plus, FileText } from 'lucide-react';
+import { FileText, Plus, Download, Filter } from 'lucide-react';
 import Link from 'next/link';
 
 export default function InvoicesPage() {
@@ -18,6 +18,8 @@ export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     if (user && user.uid === uid) {
@@ -52,26 +54,21 @@ export default function InvoicesPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="border-b border-gray-200 pb-4 flex justify-between items-start">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
-            <p className="text-gray-600 mt-1">Verwalten Sie Ihre Rechnungen und deren Status</p>
-          </div>
+        <header className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
           <div className="flex gap-2">
-            <Link href={`/dashboard/company/${uid}/finance/invoices/templates`}>
-              <Button variant="outline" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Templates
-              </Button>
-            </Link>
+            <Button variant="outline" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              E-Rechnung lesen
+            </Button>
             <Link href={`/dashboard/company/${uid}/finance/invoices/create`}>
-              <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
-                <Plus className="w-4 h-4 mr-2" />
-                Neue Rechnung
+              <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Rechnung schreiben
               </Button>
             </Link>
           </div>
-        </div>
+        </header>
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
@@ -85,26 +82,21 @@ export default function InvoicesPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="border-b border-gray-200 pb-4 flex justify-between items-start">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
-            <p className="text-gray-600 mt-1">Verwalten Sie Ihre Rechnungen und deren Status</p>
-          </div>
+        <header className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
           <div className="flex gap-2">
-            <Link href={`/dashboard/company/${uid}/finance/invoices/templates`}>
-              <Button variant="outline" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Templates
-              </Button>
-            </Link>
+            <Button variant="outline" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              E-Rechnung lesen
+            </Button>
             <Link href={`/dashboard/company/${uid}/finance/invoices/create`}>
-              <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
-                <Plus className="w-4 h-4 mr-2" />
-                Neue Rechnung
+              <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Rechnung schreiben
               </Button>
             </Link>
           </div>
-        </div>
+        </header>
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-2">Fehler</h2>
@@ -117,30 +109,34 @@ export default function InvoicesPage() {
       </div>
     );
   }
+
   return (
     <div className="space-y-6">
-      <div className="border-b border-gray-200 pb-4 flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
-          <p className="text-gray-600 mt-1">Verwalten Sie Ihre Rechnungen und deren Status</p>
-        </div>
+      <header className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
         <div className="flex gap-2">
-          <Link href={`/dashboard/company/${uid}/finance/invoices/templates`}>
-            <Button variant="outline" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Templates
-            </Button>
-          </Link>
+          <Button variant="outline" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            E-Rechnung lesen
+          </Button>
           <Link href={`/dashboard/company/${uid}/finance/invoices/create`}>
-            <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
-              <Plus className="w-4 h-4 mr-2" />
-              Neue Rechnung
+            <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Rechnung schreiben
             </Button>
           </Link>
         </div>
-      </div>
+      </header>
 
-      <InvoiceComponent invoices={invoices} onRefresh={loadInvoices} companyId={uid} />
+      <InvoiceListView 
+        invoices={invoices} 
+        onRefresh={loadInvoices} 
+        companyId={uid}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        showFilters={showFilters}
+        setShowFilters={setShowFilters}
+      />
     </div>
   );
 }

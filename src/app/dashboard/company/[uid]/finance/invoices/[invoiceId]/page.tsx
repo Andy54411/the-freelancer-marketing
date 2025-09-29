@@ -6,14 +6,29 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Download, Edit, Send, X, FileText } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ArrowLeft, Download, Edit, Send, X, FileText, ZoomIn, ZoomOut, MoreHorizontal, Mail, CheckCircle, Clipboard, Calendar, Minus, Sparkles } from 'lucide-react';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import { InvoiceTemplateRenderer } from '@/components/finance/InvoiceTemplates';
 import { SendInvoiceDialog } from '@/components/finance/SendInvoiceDialog';
 import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
+import { db, storage } from '@/firebase/clients';
+import { ref, getDownloadURL, listAll } from 'firebase/storage';
 import { toast } from 'sonner';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+// PDF.js Worker konfigurieren - verwende lokale Worker-Datei für CSP-Kompatibilität
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf-worker/pdf.worker.min.mjs';
 
 export default function InvoiceDetailPage() {
   const params = useParams();
@@ -28,12 +43,280 @@ export default function InvoiceDetailPage() {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [numPages, setNumPages] = useState<number | null>(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [scale, setScale] = useState(1.0);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [availablePdfs, setAvailablePdfs] = useState<{name: string, url: string}[]>([]);
+  const [showPdfSelector, setShowPdfSelector] = useState(false);
+  const [useIframeViewer, setUseIframeViewer] = useState(false);
+  const [shouldUsePdfJs, setShouldUsePdfJs] = useState(true);
+  const [newTag, setNewTag] = useState('');
+  const [isAddingTag, setIsAddingTag] = useState(false);
 
   useEffect(() => {
     if (user && user.uid === uid && invoiceId) {
       loadInvoice();
     }
   }, [user, uid, invoiceId]);
+
+  useEffect(() => {
+    if (invoice) {
+      loadPdfFromStorage();
+    }
+  }, [invoice]);
+
+  const generateAndStorePdf = async () => {
+    if (!user || !invoice) return null;
+    
+    try {
+      console.log('Generating PDF and storing in Firebase Storage...');
+      
+      // PDF über die Firestore API generieren und speichern
+      const response = await fetch('/api/generate-invoice-pdf-from-firestore', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyId: uid,
+          invoiceId: invoiceId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unbekannter Fehler' }));
+        console.error('PDF Generation API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        throw new Error(`PDF-Generierung fehlgeschlagen: ${errorData.error || response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('PDF generated and stored:', result);
+      
+      return result.pdfUrl; // Signed URL zurückgeben
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      return null;
+    }
+  };
+
+  const refreshPdfUrl = async (storagePath: string) => {
+    try {
+      console.log('Refreshing PDF URL for path:', storagePath);
+      const pdfRef = ref(storage, storagePath);
+      const freshUrl = await getDownloadURL(pdfRef);
+      console.log('Fresh PDF URL obtained:', freshUrl);
+      return freshUrl;
+    } catch (error) {
+      console.error('Error refreshing PDF URL:', error);
+      return null;
+    }
+  };
+
+    // Funktion zur URL-Validierung - vereinfacht für bessere Kompatibilität
+  const validatePdfUrl = async (url: string): Promise<boolean> => {
+    try {
+      console.log('Validating PDF URL:', url);
+      
+      // Für Firebase Storage URLs, versuche einen einfacheren Ansatz
+      if (url.includes('firebasestorage.googleapis.com') || url.includes('storage.googleapis.com')) {
+        // Bei Firebase Storage URLs, überspringe die HEAD-Validierung in der Entwicklung
+        // da diese oft CORS-Probleme verursacht, aber versuche trotzdem zu laden
+        console.log('Firebase Storage URL detected - skipping HEAD validation');
+        return true; // Optimistisch zurückgeben, PDF.js wird den eigentlichen Test machen
+      }
+      
+      const response = await fetch(url, { method: 'HEAD' });
+      console.log('PDF URL validation response:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        console.log('PDF URL validation failed:', response.status, response.statusText);
+        return false;
+      }
+      
+      const contentType = response.headers.get('content-type');
+      console.log('Content-Type:', contentType);
+      
+      if (contentType && !contentType.includes('application/pdf')) {
+        console.log('Invalid content type:', contentType);
+        return false;
+      }
+      
+      console.log('PDF URL validation successful');
+      return true;
+    } catch (error) {
+      console.error('Error validating PDF URL:', error);
+      return false;
+    }
+  };
+
+  const loadPdfFromStorage = async () => {
+    if (!user || !invoice) return;
+    
+    setPdfLoading(true);
+    setPdfError(null);
+    
+    try {
+      // Erst prüfen, ob bereits eine PDF existiert
+      const pdfRef = ref(storage, `invoices/${uid}/${invoiceId}/invoice.pdf`);
+      const pdfDownloadUrl = await getDownloadURL(pdfRef);
+      
+      console.log('PDF URL loaded:', pdfDownloadUrl);
+      setPdfUrl(pdfDownloadUrl);
+      setPdfLoading(false);
+      
+      // Präventive Prüfung für primäre PDF
+      if (pdfDownloadUrl.includes('firebasestorage.googleapis.com') || pdfDownloadUrl.includes('storage.googleapis.com')) {
+        console.log('Firebase Storage primary URL - using iframe viewer');
+        setUseIframeViewer(true);
+        setShouldUsePdfJs(false);
+      } else {
+        setUseIframeViewer(false);
+        setShouldUsePdfJs(true);
+      }
+      return;
+    } catch (error: any) {
+      // Stummes Logging für erwarteten "object-not-found" Fehler
+      if (error?.code !== 'storage/object-not-found') {
+        console.error('Unexpected error loading primary PDF:', error);
+      }
+    }
+
+    try {
+      // Prüfe verschiedene mögliche PDF Pfade mit dynamischen Namen
+      const invoicesRef = ref(storage, `invoices/${uid}`);
+      const listResult = await listAll(invoicesRef);
+      
+      if (listResult.items.length > 0) {
+        console.log('Found PDFs in storage:', listResult.items.map(item => item.name));
+      }
+      
+      // Sammle alle verfügbaren PDFs für die Auswahl
+      const pdfList: {name: string, url: string}[] = [];
+      for (const item of listResult.items) {
+        try {
+          const url = await getDownloadURL(item);
+          pdfList.push({ name: item.name, url });
+        } catch (error: any) {
+          // Stummes Logging für erwartete Storage-Fehler
+          if (error?.code !== 'storage/object-not-found') {
+            console.log('Could not get URL for:', item.name);
+          }
+        }
+      }
+      setAvailablePdfs(pdfList);
+      
+      // Erstelle eine Liste von möglichen Suchbegriffen
+      const searchTerms = [
+        invoiceId,
+        invoice.documentNumber,
+        invoice.invoiceNumber,
+        invoice.number,
+        invoice.sequentialNumber?.toString(),
+      ].filter(Boolean);
+      
+      console.log('Searching for PDFs with terms:', searchTerms);
+      
+      // Suche nach PDF-Dateien für diese Invoice
+      for (const item of listResult.items) {
+        const fileName = item.name.toLowerCase();
+        
+        // Prüfe alle Suchbegriffe
+        const matchFound = searchTerms.some(term => 
+          fileName.includes(term?.toString().toLowerCase() || '')
+        );
+        
+        if (matchFound || fileName.includes('invoice')) {
+          try {
+            const pdfUrl = await getDownloadURL(item);
+            console.log('Found matching PDF:', item.name);
+            
+            // Bei Firebase Storage URLs, prüfe präventiv ob PDF.js funktionieren wird
+            console.log('Using PDF:', item.name);
+            setPdfUrl(pdfUrl);
+            setPdfLoading(false);
+            
+            // Präventive Prüfung: Verwende iframe für Firebase Storage URLs um Fetch-Fehler zu vermeiden
+            if (pdfUrl.includes('firebasestorage.googleapis.com') || pdfUrl.includes('storage.googleapis.com')) {
+              console.log('Firebase Storage URL detected - using iframe viewer to prevent fetch errors');
+              setUseIframeViewer(true);
+              setShouldUsePdfJs(false);
+            } else {
+              setUseIframeViewer(false);
+              setShouldUsePdfJs(true);
+            }
+            return;
+          } catch (error: any) {
+            // Stummes Logging für erwartete Storage-Fehler
+            if (error?.code !== 'storage/object-not-found') {
+              console.log('Could not get download URL for:', item.name, error);
+            }
+          }
+        }
+      }
+      
+      // Fallback: Nimm die neueste PDF-Datei
+      if (listResult.items.length > 0) {
+        // Sortiere nach Name (neuere haben oft längere Namen oder höhere Zahlen)
+        const sortedItems = listResult.items.sort((a, b) => b.name.localeCompare(a.name));
+        const latestPdf = sortedItems[0];
+        
+        try {
+          const pdfUrl = await getDownloadURL(latestPdf);
+          console.log('Using latest PDF as fallback:', latestPdf.name);
+          
+          // Lade Fallback-PDF direkt
+          console.log('Using latest PDF as fallback:', latestPdf.name);
+          setPdfUrl(pdfUrl);
+          setPdfLoading(false);
+          
+          // Präventive Prüfung für Fallback-PDF
+          if (pdfUrl.includes('firebasestorage.googleapis.com') || pdfUrl.includes('storage.googleapis.com')) {
+            console.log('Firebase Storage fallback URL - using iframe viewer');
+            setUseIframeViewer(true);
+            setShouldUsePdfJs(false);
+          } else {
+            setUseIframeViewer(false);
+            setShouldUsePdfJs(true);
+          }
+          return;
+        } catch (error: any) {
+          // Stummes Logging für erwartete Storage-Fehler
+          if (error?.code !== 'storage/object-not-found') {
+            console.log('Could not get download URL for latest PDF:', latestPdf.name, error);
+          }
+        }
+      }
+    } catch (error: any) {
+      // Stummes Logging für erwartete Storage-Fehler
+      if (error?.code !== 'storage/object-not-found') {
+        console.log('Could not list storage files:', error);
+      }
+    }
+
+    // Wenn keine PDF gefunden wurde, automatisch generieren
+    console.log('No existing PDF found, generating new one...');
+    try {
+      const generatedPdfUrl = await generateAndStorePdf();
+      if (generatedPdfUrl) {
+        setPdfUrl(generatedPdfUrl);
+        toast.success('PDF wurde erfolgreich generiert!');
+      } else {
+        setPdfError('PDF konnte nicht generiert werden.');
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setPdfError('PDF konnte nicht generiert werden. Versuchen Sie es später erneut.');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   const loadInvoice = async () => {
     try {
@@ -136,6 +419,117 @@ export default function InvoiceDetailPage() {
     );
   };
 
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    setPageNumber(1);
+  };
+
+  const onDocumentLoadError = (error: any) => {
+    // Stille Behandlung für erwartete Fetch-Fehler
+    const isFetchError = error?.message?.includes('Failed to fetch') || 
+                        error?.details?.includes('Failed to fetch') ||
+                        error?.name === 'UnknownErrorException';
+    
+    if (isFetchError) {
+      // Stumm zum iframe-Fallback wechseln, ohne Console-Fehler
+      console.log('PDF.js loading failed, switching to iframe viewer');
+      setUseIframeViewer(true);
+      setPdfError(null);
+      return;
+    }
+    
+    // Nur echte, unerwartete Fehler loggen
+    console.error('Unexpected PDF load error:', error);
+    console.error('PDF URL was:', pdfUrl);
+    
+    if (error?.message?.includes('CORS')) {
+      setPdfError('CORS-Fehler beim PDF-Laden. PDF-Zugriff ist möglicherweise blockiert.');
+      setUseIframeViewer(false);
+    } else {
+      setPdfError(`Fehler beim Laden des PDFs: ${error?.message || 'Unbekannter Fehler'}. Bitte versuchen Sie es erneut.`);
+      setUseIframeViewer(false);
+    }
+    
+    // PDF URL nur bei echten Fehlern zurücksetzen
+    setPdfUrl(null);
+  };  const goToPrevPage = () => {
+    setPageNumber(prev => Math.max(prev - 1, 1));
+  };
+
+  const goToNextPage = () => {
+    setPageNumber(prev => Math.min(prev + 1, numPages || 1));
+  };
+
+  const handleZoomIn = () => {
+    setScale(prev => Math.min(prev + 0.25, 3.0));
+  };
+
+  const handleZoomOut = () => {
+    setScale(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const loadPdfForViewing = () => {
+    loadPdfFromStorage();
+  };
+
+  const addTag = async (tagName: string) => {
+    if (!tagName.trim() || !invoice) return;
+
+    setIsAddingTag(true);
+    try {
+      const currentTags = invoice.tags || [];
+      if (currentTags.includes(tagName.trim())) {
+        toast.error('Tag bereits vorhanden');
+        return;
+      }
+
+      const newTags = [...currentTags, tagName.trim()];
+      const invoiceRef = doc(db, 'companies', uid, 'invoices', invoiceId);
+      
+      await updateDoc(invoiceRef, {
+        tags: newTags,
+        updatedAt: new Date(),
+      });
+
+      setInvoice(prev => prev ? { ...prev, tags: newTags } : null);
+      setNewTag('');
+      toast.success('Tag hinzugefügt');
+    } catch (error) {
+      console.error('Error adding tag:', error);
+      toast.error('Fehler beim Hinzufügen des Tags');
+    } finally {
+      setIsAddingTag(false);
+    }
+  };
+
+  const removeTag = async (tagToRemove: string) => {
+    if (!invoice) return;
+
+    try {
+      const currentTags = invoice.tags || [];
+      const newTags = currentTags.filter(tag => tag !== tagToRemove);
+      const invoiceRef = doc(db, 'companies', uid, 'invoices', invoiceId);
+      
+      await updateDoc(invoiceRef, {
+        tags: newTags,
+        updatedAt: new Date(),
+      });
+
+      setInvoice(prev => prev ? { ...prev, tags: newTags } : null);
+      toast.success('Tag entfernt');
+    } catch (error) {
+      console.error('Error removing tag:', error);
+      toast.error('Fehler beim Entfernen des Tags');
+    }
+  };
+
+  const handleTagKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && newTag.trim()) {
+      e.preventDefault();
+      addTag(newTag.trim());
+    }
+  };
+
   const handleFinalizeInvoice = async () => {
     if (!invoice || invoice.status !== 'draft') return;
 
@@ -183,6 +577,30 @@ export default function InvoiceDetailPage() {
       toast.success(`Rechnung ${invoiceNumber} wurde finalisiert!`);
     } catch (error) {
       toast.error('Fehler beim Finalisieren der Rechnung');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleMarkAsPaid = async () => {
+    if (!invoice || invoice.status === 'paid') return;
+
+    setUpdating(true);
+    try {
+      const invoiceRef = doc(db, 'companies', uid, 'invoices', invoiceId);
+      await updateDoc(invoiceRef, {
+        status: 'paid',
+        paidDate: new Date(),
+        updatedAt: new Date(),
+      });
+
+      // Update local state
+      setInvoice(prev => prev ? { ...prev, status: 'paid', paidDate: new Date() } : null);
+      
+      toast.success('Rechnung als bezahlt markiert');
+    } catch (error) {
+      console.error('Error marking invoice as paid:', error);
+      toast.error('Fehler beim Markieren als bezahlt');
     } finally {
       setUpdating(false);
     }
@@ -399,355 +817,699 @@ export default function InvoiceDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto">
-        {/* Top Navigation Bar */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        {/* SevDesk-style Header */}
+        <header className="bg-white border-b border-gray-200">
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <Button
                   variant="ghost"
                   onClick={handleBackToInvoices}
-                  className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 p-2"
+                  className="p-2"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <div>
-                  <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    {invoice.status === 'draft'
-                      ? 'Rechnungsentwurf'
-                      : `Rechnung ${invoice.invoiceNumber || invoice.number || `#${invoice.sequentialNumber || 'TEMP'}`}`}
-                  </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {invoice.customerName && `${invoice.customerName} • `}
-                    {formatCurrency(invoiceTotals.total)}
-                  </p>
-                </div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Rechnung Nr. {invoice.invoiceNumber || invoice.number || `#${invoice.sequentialNumber || 'TEMP'}`}
+                </h2>
               </div>
 
               <div className="flex items-center space-x-3">
-                {getStatusBadge(invoice.status)}
-
-                {invoice.status === 'draft' && (
-                  <Button
-                    onClick={handleFinalizeInvoice}
-                    disabled={updating}
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2"
-                  >
-                    {updating ? 'Finalisiere...' : 'Finalisieren'}
-                  </Button>
-                )}
-
-                <Button
-                  variant="outline"
-                  onClick={handleViewPdf}
-                  disabled={downloadingPdf}
-                  className="border-blue-500 text-blue-600 hover:bg-blue-50 px-4 py-2"
+                <Button 
+                  variant="outline" 
+                  className="border-gray-300"
+                  onClick={() => router.push(`/dashboard/company/${uid}/finance/invoices/create`)}
                 >
-                  <FileText className="h-4 w-4 mr-2" />
-                  {downloadingPdf ? 'Laden...' : 'Anzeigen'}
+                  Neue Rechnung
                 </Button>
 
                 <Button
                   variant="outline"
                   onClick={handleDownloadPdf}
                   disabled={downloadingPdf}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2"
+                  className="border-gray-300"
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  {downloadingPdf ? 'PDF...' : 'Download'}
+                  {downloadingPdf ? 'Herunterladen...' : 'Herunterladen'}
                 </Button>
 
-                {invoice.status !== 'draft' && (
+                {invoice.status !== 'paid' && (
                   <Button
-                    variant="outline"
-                    onClick={() => setSendDialogOpen(true)}
-                    className="border-blue-500 text-blue-600 hover:bg-blue-50 px-4 py-2"
+                    onClick={handleMarkAsPaid}
+                    disabled={updating}
+                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                   >
-                    <Send className="h-4 w-4 mr-2" />
-                    Senden
+                    {updating ? 'Markiere...' : 'Als bezahlt markieren'}
                   </Button>
                 )}
 
-                {invoice.status === 'draft' && (
-                  <Button
-                    variant="outline"
-                    onClick={handleEditInvoice}
-                    className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Bearbeiten
-                  </Button>
-                )}
+                {/* Weitere Funktionen Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="border-gray-300">
+                      <MoreHorizontal className="h-4 w-4 mr-2" />
+                      Mehr
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <DropdownMenuItem 
+                      onClick={handleEditInvoice}
+                      className="cursor-pointer hover:bg-gray-50 font-medium"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Dokument bearbeiten
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    
+                    <div className="px-2 py-1.5">
+                      <div className="flex items-center text-sm font-medium text-gray-900 mb-2">
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Weitere Funktionen
+                      </div>
+                    </div>
+
+                    <DropdownMenuItem 
+                      onClick={() => setSendDialogOpen(true)}
+                      className="cursor-pointer hover:bg-gray-50"
+                    >
+                      <Mail className="h-4 w-4 mr-3" />
+                      Dokument versenden
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      onClick={() => toast.info('Aufgaben-Feature wird bald hinzugefügt!')}
+                      className="cursor-pointer hover:bg-gray-50"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-3" />
+                      Aufgabe erstellen
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      onClick={async () => {
+                        try {
+                          toast.info('Lieferschein wird erstellt...', { duration: 2000 });
+                          
+                          // Erstelle Lieferschein basierend auf Rechnung
+                          const deliveryNoteData = {
+                            invoiceId: invoice.id,
+                            invoiceNumber: invoice.invoiceNumber || invoice.number,
+                            customerName: invoice.customerName,
+                            customerAddress: invoice.customerAddress,
+                            items: invoice.items,
+                            deliveryDate: new Date().toISOString().split('T')[0],
+                            companyId: uid,
+                            createdAt: new Date(),
+                            status: 'draft'
+                          };
+                          
+                          // Hier würde normalerweise ein API-Call zur Lieferschein-Erstellung stattfinden
+                          // Für jetzt navigieren wir zur Delivery Notes Seite
+                          const params = new URLSearchParams({
+                            'from-invoice': invoiceId,
+                            'invoice-number': invoice.invoiceNumber || invoice.number || '',
+                            'customer-name': invoice.customerName || '',
+                          });
+                          
+                          router.push(`/dashboard/company/${uid}/finance/delivery-notes?${params.toString()}`);
+                          
+                        } catch (error) {
+                          console.error('Error creating delivery note:', error);
+                          toast.error('Fehler beim Erstellen des Lieferscheins');
+                        }
+                      }}
+                      className="cursor-pointer hover:bg-gray-50"
+                    >
+                      <Clipboard className="h-4 w-4 mr-3" />
+                      Lieferschein erzeugen
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        router.push(`/dashboard/company/${uid}/finance/invoices/create?template=${invoiceId}`);
+                      }}
+                      className="cursor-pointer hover:bg-gray-50"
+                    >
+                      <FileText className="h-4 w-4 mr-3" />
+                      Rechnung als Vorlage verwenden
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      onClick={async () => {
+                        try {
+                          // Prüfe ob Rechnung überfällig ist
+                          const dueDate = new Date(invoice.dueDate);
+                          const today = new Date();
+                          const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+                          
+                          if (invoice.status === 'paid') {
+                            toast.info('Diese Rechnung ist bereits bezahlt.');
+                            return;
+                          }
+                          
+                          if (daysOverdue < 0) {
+                            // Zahlungserinnerung
+                            const confirmed = confirm(
+                              `Diese Rechnung ist noch nicht fällig (fällig am ${dueDate.toLocaleDateString('de-DE')}). ` +
+                              'Möchten Sie trotzdem eine freundliche Zahlungserinnerung senden?'
+                            );
+                            if (!confirmed) return;
+                            
+                            toast.info('Zahlungserinnerung wird erstellt...', { duration: 2000 });
+                            
+                            // Für jetzt: Einfache Toast-Nachricht mit geplanter Funktionalität
+                            setTimeout(() => {
+                              toast.success('Zahlungserinnerung wurde zur Versendung vorbereitet!', {
+                                description: 'Diese Funktion wird in Kürze vollständig implementiert.',
+                                duration: 4000,
+                              });
+                            }, 500);
+                            
+                          } else {
+                            // Mahnung
+                            let mahnungType = '1. Mahnung';
+                            if (daysOverdue > 30) mahnungType = '2. Mahnung';
+                            if (daysOverdue > 60) mahnungType = '3. Mahnung';
+                            
+                            const confirmed = confirm(
+                              `Diese Rechnung ist ${daysOverdue} Tage überfällig. ` +
+                              `Möchten Sie eine ${mahnungType} erstellen?`
+                            );
+                            if (!confirmed) return;
+                            
+                            toast.info(`${mahnungType} wird erstellt...`, { duration: 2000 });
+                            
+                            // Navigation zur existierenden Reminders-Seite
+                            setTimeout(() => {
+                              const params = new URLSearchParams({
+                                invoice: invoiceId,
+                                'invoice-number': invoice.invoiceNumber || invoice.number || '',
+                                'customer-name': invoice.customerName || '',
+                                'days-overdue': daysOverdue.toString(),
+                                'level': daysOverdue > 60 ? '3' : daysOverdue > 30 ? '2' : '1'
+                              });
+                              router.push(`/dashboard/company/${uid}/finance/reminders?${params.toString()}`);
+                            }, 500);
+                          }
+                          
+                        } catch (error) {
+                          console.error('Error creating reminder/mahnung:', error);
+                          toast.error('Fehler beim Erstellen der Mahnung');
+                        }
+                      }}
+                      className="cursor-pointer hover:bg-gray-50"
+                    >
+                      <Calendar className="h-4 w-4 mr-3" />
+                      Mahnung / Zahlungserinnerung
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        if (confirm('Sind Sie sicher, dass Sie diese Rechnung stornieren möchten?')) {
+                          toast.info('Storno-Feature wird bald implementiert!');
+                        }
+                      }}
+                      className="cursor-pointer hover:bg-red-50 text-red-600 hover:text-red-700"
+                    >
+                      <Minus className="h-4 w-4 mr-3" />
+                      Rechnung stornieren
+                    </DropdownMenuItem>
+
+                    <div className="mt-2 px-2 py-1.5 bg-gradient-to-r from-[#14ad9f] to-[#129488] rounded-md cursor-pointer">
+                      <div className="flex items-center justify-between text-white text-xs">
+                        <span>Verfügbar mit einem Upgrade</span>
+                        <div className="flex items-center">
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none">
+                            <path d="M10 16L13.6464 12.3536C13.8417 12.1583 13.8417 11.8417 13.6464 11.6464L10 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Main Content */}
-        <div className="p-6">
-          <div className="grid grid-cols-12 gap-6">
-            {/* Left Content - Invoice Details */}
-            <div className="col-span-12 lg:col-span-8">
-              {/* Invoice Header Info */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-6">
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                        Rechnungsnummer
-                      </h3>
-                      <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
-                        {invoice.invoiceNumber ||
-                          invoice.number ||
-                          `#${invoice.sequentialNumber || 'TEMP'}`}
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                        Rechnungsdatum
-                      </h3>
-                      <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
-                        {new Date(invoice.issueDate || invoice.date).toLocaleDateString('de-DE')}
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                        Fälligkeitsdatum
-                      </h3>
-                      <p
-                        className={`mt-1 text-lg font-semibold ${
-                          new Date(invoice.dueDate) < new Date()
-                            ? 'text-red-600'
-                            : 'text-gray-900 dark:text-white'
-                        }`}
-                      >
-                        {new Date(invoice.dueDate).toLocaleDateString('de-DE')}
-                      </p>
-                    </div>
+        {/* Main Content - SevDesk Style */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+          {/* Invoice Details Section */}
+          <div className="lg:col-span-1">
+            <div className="infocard bg-white border border-gray-200 rounded-lg">
+              {/* Header */}
+              <div className="top border-b border-gray-100 p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Rechnungsdetails</h3>
+                  <div className="group">
+                    <FileText className="h-5 w-5 text-gray-400" />
                   </div>
                 </div>
               </div>
 
-              {/* Customer Information */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-6">
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Kunde</h2>
-                </div>
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                        Name
-                      </h3>
-                      <p className="text-gray-900 dark:text-white font-medium">
-                        {invoice.customerName || 'Nicht angegeben'}
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                        E-Mail
-                      </h3>
-                      <p className="text-gray-900 dark:text-white">
-                        {invoice.customerEmail || 'Nicht angegeben'}
-                      </p>
-                    </div>
-                    {invoice.customerAddress && (
-                      <div className="md:col-span-2">
-                        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                          Adresse
-                        </h3>
-                        <p className="text-gray-900 dark:text-white whitespace-pre-line">
-                          {invoice.customerAddress}
+              {/* Details */}
+              <div className="details p-4">
+                <div className="space-y-4">
+                  {/* Fälligkeit */}
+                  {invoice.dueDate && (
+                    <div className="detail flex justify-between items-start py-2">
+                      <div className="left">
+                        <p className="label text-sm text-gray-600">Fälligkeit</p>
+                      </div>
+                      <div className="right text-right">
+                        <p className="text-sm font-medium text-gray-900">
+                          {(() => {
+                            const dueDate = new Date(invoice.dueDate);
+                            const today = new Date();
+                            const diffTime = dueDate.getTime() - today.getTime();
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            
+                            if (diffDays > 0) {
+                              return `In ${diffDays} Tagen`;
+                            } else if (diffDays === 0) {
+                              return 'Heute';
+                            } else {
+                              return `${Math.abs(diffDays)} Tage überfällig`;
+                            }
+                          })()}
                         </p>
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Invoice Items Table */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Positionen
-                  </h2>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Beschreibung
-                        </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Menge
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Einzelpreis
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Gesamtpreis
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-                      {invoice.items?.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {item.description}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-center text-sm text-gray-900 dark:text-white">
-                            {item.quantity}
-                          </td>
-                          <td className="px-6 py-4 text-right text-sm text-gray-900 dark:text-white">
-                            {formatCurrency(item.unitPrice)}
-                          </td>
-                          <td className="px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-white">
-                            {formatCurrency(item.total)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Notes */}
-              {invoice.notes && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mt-6">
-                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Anmerkungen
-                    </h2>
-                  </div>
-                  <div className="p-6">
-                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">
-                      {invoice.notes}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Right Sidebar */}
-            <div className="col-span-12 lg:col-span-4">
-              {/* Financial Summary */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-6">
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Summen</h2>
-                </div>
-                <div className="p-6">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        Zwischensumme
-                      </span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {formatCurrency(invoiceTotals.subtotal)}
-                      </span>
                     </div>
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {invoice.isSmallBusiness
-                          ? 'MwSt. (Kleinunternehmer)'
-                          : `MwSt. (${invoice.vatRate || '19'}%)`}
-                      </span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {invoice.isSmallBusiness
-                          ? 'keine MwSt.'
-                          : formatCurrency(invoiceTotals.taxAmount)}
-                      </span>
+                  )}
+
+                  {/* Zahlungsziel */}
+                  {invoice.dueDate && (
+                    <div className="detail flex justify-between items-start py-2">
+                      <div className="left">
+                        <p className="label text-sm text-gray-600">Zahlungsziel</p>
+                      </div>
+                      <div className="right text-right">
+                        <p className="text-sm font-medium text-gray-900">
+                          <b>{new Date(invoice.dueDate).toLocaleDateString('de-DE')}</b>
+                          <br />
+                          <span className="text-xs text-gray-500">
+                            ({(() => {
+                              const createdDate = new Date(invoice.createdAt || invoice.date);
+                              const dueDate = new Date(invoice.dueDate);
+                              const diffTime = dueDate.getTime() - createdDate.getTime();
+                              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                              return `${diffDays} Tage`;
+                            })()})
+                          </span>
+                        </p>
+                      </div>
                     </div>
-                    <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-base font-semibold text-gray-900 dark:text-white">
-                          Gesamtbetrag
-                        </span>
-                        <span className="text-xl font-bold text-[#14ad9f]">
-                          {formatCurrency(invoiceTotals.total)}
-                        </span>
+                  )}
+
+                  {/* Tags */}
+                  <div className="detail flex justify-between items-center py-2">
+                    <div className="left">
+                      <p className="label text-sm text-gray-600">Tags</p>
+                    </div>
+                    <div className="right flex-1 max-w-[180px]">
+                      <div className="flex flex-wrap gap-1 justify-end items-center">
+                        {/* Existing Tags */}
+                        {invoice.tags && invoice.tags.length > 0 && (
+                          <>
+                            {invoice.tags.map((tag: string, index: number) => (
+                              <span key={index} className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded hover:bg-gray-200 transition-colors">
+                                {tag}
+                                <button 
+                                  onClick={() => removeTag(tag)}
+                                  className="text-gray-400 hover:text-red-500 text-xs font-bold transition-colors"
+                                  title="Tag entfernen"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </>
+                        )}
+                        
+                        {/* Add Tag Input */}
+                        <div className="inline-flex">
+                          <input 
+                            type="text" 
+                            value={newTag}
+                            onChange={(e) => setNewTag(e.target.value)}
+                            onKeyPress={handleTagKeyPress}
+                            disabled={isAddingTag}
+                            className="text-right text-sm border-0 outline-0 placeholder-gray-400 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:border-[#14ad9f] focus:rounded px-2 py-1 min-w-[100px] max-w-[120px]"
+                            placeholder={invoice.tags && invoice.tags.length > 0 ? "+" : "Tags hinzufügen"}
+                            onFocus={(e) => {
+                              e.target.style.textAlign = 'left';
+                              e.target.placeholder = 'Tag eingeben...';
+                            }}
+                            onBlur={(e) => {
+                              if (newTag.trim()) {
+                                addTag(newTag.trim());
+                              } else {
+                                e.target.style.textAlign = 'right';
+                                e.target.placeholder = invoice.tags && invoice.tags.length > 0 ? "+" : "Tags hinzufügen";
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Rechnungsdatum */}
+                  <div className="detail flex justify-between items-start py-2">
+                    <div className="left">
+                      <p className="label text-sm text-gray-600">Rechnungsdatum</p>
+                    </div>
+                    <div className="right">
+                      <p className="text-sm font-medium text-gray-900">{new Date(invoice.createdAt || invoice.date).toLocaleDateString('de-DE')}</p>
+                    </div>
+                  </div>
+
+                  {/* Status als Badge */}
+                  <div className="detail flex justify-between items-start py-2">
+                    <div className="left">
+                      <p className="label text-sm text-gray-600">Status</p>
+                    </div>
+                    <div className="right">
+                      <Badge variant={invoice.status === 'paid' ? 'default' : 'secondary'} className={invoice.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
+                        {invoice.status === 'paid' ? 'Bezahlt' : 'Offen'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Gesamtbetrag */}
+                  <div className="detail flex justify-between items-start py-2 border-t border-gray-100 pt-4">
+                    <div className="left">
+                      <p className="label text-sm text-gray-600">Gesamtbetrag</p>
+                    </div>
+                    <div className="right">
+                      <p className="text-sm font-bold text-gray-900">{(invoice.total || invoice.amount || 0).toFixed(2)} €</p>
+                    </div>
+                  </div>
+
+                  {/* Customer */}
+                  {invoice.customerName && (
+                    <div className="detail flex justify-between items-start py-2">
+                      <div className="left">
+                        <p className="label text-sm text-gray-600">Kunde</p>
+                      </div>
+                      <div className="right">
+                        <p className="text-sm font-medium text-gray-900">{invoice.customerName}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* DATEV Export History */}
+                  <div className="detail flex justify-between items-start py-2">
+                    <div className="left">
+                      <p className="label text-sm text-gray-600">DATEV Export-Historie</p>
+                    </div>
+                    <div className="right column">
+                      <p className="sublabel text-sm text-gray-500">nicht exportiert</p>
+                      <div className="upgrade-icon-wrapper mt-1 flex items-center gap-2 text-xs text-[#14ad9f] cursor-pointer hover:text-[#129488]">
+                        <span className="upgrade-text">Zum Export</span>
+                        <Sparkles className="h-3 w-3" />
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
 
-              {/* Status & Alerts */}
-              {invoice.status === 'draft' && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <FileText className="h-5 w-5 text-amber-400" />
+          {/* PDF Viewer Section */}
+          <div className="pdf col-span-2">
+            <div className="bg-white border border-gray-200 rounded-lg">
+              {/* PDF Toolbar - nur für PDF.js anzeigen */}
+              {!useIframeViewer && (
+                <div className="border-b border-gray-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={goToPrevPage}
+                          disabled={pageNumber <= 1}
+                        >
+                          ←
+                        </Button>
+                        <span className="text-sm text-gray-600">
+                          Seite {pageNumber} von {numPages || 1}
+                        </span>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={goToNextPage}
+                          disabled={pageNumber >= (numPages || 1)}
+                        >
+                          →
+                        </Button>
+                      </div>
                     </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                        Entwurf
-                      </h3>
-                      <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-                        Diese Rechnung ist noch ein Entwurf. Finalisieren Sie sie, um eine
-                        offizielle Rechnungsnummer zu erhalten.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {new Date(invoice.dueDate) < new Date() && invoice.status !== 'paid' && (
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <X className="h-5 w-5 text-red-400" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
-                        Überfällig
-                      </h3>
-                      <p className="mt-1 text-sm text-red-700 dark:text-red-300">
-                        Fällig seit {new Date(invoice.dueDate).toLocaleDateString('de-DE')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Quick Actions */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Aktionen</h2>
-                </div>
-                <div className="p-6 space-y-3">
-                  <Button
-                    variant="outline"
-                    onClick={handleDownloadPdf}
-                    disabled={downloadingPdf}
-                    className="w-full justify-start border-gray-300 hover:bg-gray-50"
-                  >
-                    <Download className="h-4 w-4 mr-3" />
-                    {downloadingPdf ? 'PDF wird erstellt...' : 'PDF herunterladen'}
-                  </Button>
-
-                  {invoice.status !== 'draft' && (
+                  
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleZoomOut}
+                      disabled={scale <= 0.5}
+                    >
+                      <ZoomOut className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm text-gray-600 min-w-[60px] text-center">
+                      {Math.round(scale * 100)}%
+                    </span>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleZoomIn}
+                      disabled={scale >= 3.0}
+                    >
+                      <ZoomIn className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="outline"
-                      onClick={() => setSendDialogOpen(true)}
-                      className="w-full justify-start border-blue-300 text-blue-600 hover:bg-blue-50"
+                      size="sm"
+                      onClick={handleDownloadPdf}
+                      disabled={downloadingPdf}
                     >
-                      <Send className="h-4 w-4 mr-3" />
-                      Per E-Mail senden
+                      <Download className="h-4 w-4" />
                     </Button>
-                  )}
-
-                  {invoice.status === 'draft' && (
-                    <Button
-                      variant="outline"
-                      onClick={handleEditInvoice}
-                      className="w-full justify-start border-gray-300 hover:bg-gray-50"
-                    >
-                      <Edit className="h-4 w-4 mr-3" />
-                      Bearbeiten
-                    </Button>
+                  </div>
+                </div>
+                </div>
+              )}
+              
+              {/* PDF Content */}
+              <div className="p-4">
+                <div className="flex justify-center">
+                  {pdfLoading ? (
+                    <div className="flex items-center justify-center h-96">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f] mx-auto mb-2"></div>
+                        <p className="text-gray-500">PDF wird geladen...</p>
+                      </div>
+                    </div>
+                  ) : pdfError ? (
+                    <div className="flex items-center justify-center h-96">
+                      <div className="text-center">
+                        <FileText className="h-12 w-12 text-red-400 mx-auto mb-2" />
+                        <p className="text-red-500 mb-4">{pdfError}</p>
+                        <div className="space-x-2 flex flex-wrap gap-2">
+                          <Button
+                            onClick={loadPdfForViewing}
+                            variant="outline"
+                            className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Erneut versuchen
+                          </Button>
+                          {availablePdfs.length > 0 && (
+                            <Button
+                              onClick={() => setShowPdfSelector(true)}
+                              variant="outline"
+                              className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              PDF auswählen ({availablePdfs.length})
+                            </Button>
+                          )}
+                          <Button
+                            onClick={async () => {
+                              setPdfLoading(true);
+                              setPdfError(null);
+                              const pdfUrl = await generateAndStorePdf();
+                              if (pdfUrl) {
+                                setPdfUrl(pdfUrl);
+                                toast.success('PDF wurde erfolgreich generiert!');
+                              } else {
+                                setPdfError('PDF konnte nicht generiert werden.');
+                              }
+                              setPdfLoading(false);
+                            }}
+                            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                            disabled={pdfLoading}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            {pdfLoading ? 'Generiere...' : 'PDF generieren'}
+                          </Button>
+                        </div>
+                        
+                        {/* PDF Selector Modal */}
+                        {showPdfSelector && availablePdfs.length > 0 && (
+                          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div className="bg-white rounded-lg p-6 w-96 max-h-96 overflow-y-auto">
+                              <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-semibold">PDF auswählen</h3>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => setShowPdfSelector(false)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <div className="space-y-2">
+                                {availablePdfs.map((pdf, index) => (
+                                  <div key={index} className="flex items-center justify-between p-2 border rounded">
+                                    <span className="text-sm truncate flex-1 mr-2">{pdf.name}</span>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        setPdfUrl(pdf.url);
+                                        setPdfError(null);
+                                        setShowPdfSelector(false);
+                                        toast.success(`PDF "${pdf.name}" geladen!`);
+                                      }}
+                                      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                                    >
+                                      Laden
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : pdfUrl ? (
+                    <>
+                      {useIframeViewer ? (
+                        // Iframe Fallback für PDF-Anzeige
+                        <div className="w-full bg-gray-50 rounded-lg overflow-hidden border border-gray-300 shadow-lg">
+                          <div className="bg-[#14ad9f] text-white p-3 text-sm font-medium flex items-center justify-between">
+                            <span>PDF Viewer</span>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                size="sm"
+                                className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
+                                onClick={() => {
+                                  setShouldUsePdfJs(true);
+                                  setUseIframeViewer(false);
+                                  setNumPages(null);
+                                  setPageNumber(1);
+                                  setPdfError(null); // Clear any errors when switching back
+                                }}
+                              >
+                                Erweiterte Ansicht
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
+                                onClick={() => window.open(pdfUrl, '_blank')}
+                              >
+                                <Download className="h-4 w-4 mr-1" />
+                                Öffnen
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="overflow-hidden">
+                            <iframe
+                              src={pdfUrl}
+                              className="w-full h-[800px] border-0"
+                              style={{ transform: 'scale(0.8)', transformOrigin: 'top left', width: '125%' }}
+                              title="PDF Viewer"
+                            />
+                          </div>
+                        </div>
+                      ) : shouldUsePdfJs ? (
+                        // Standard PDF.js Viewer - nur verwenden wenn sicher
+                        <div className="border border-gray-300 shadow-lg">
+                          <Document
+                          file={pdfUrl}
+                          onLoadSuccess={onDocumentLoadSuccess}
+                          onLoadError={onDocumentLoadError}
+                          loading={
+                            <div className="flex items-center justify-center h-96">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
+                            </div>
+                          }
+                          options={{
+                            cMapUrl: '/pdf-worker/',
+                            cMapPacked: true,
+                          }}
+                        >
+                          <Page 
+                            pageNumber={pageNumber} 
+                            scale={scale}
+                            renderTextLayer={true}
+                            renderAnnotationLayer={true}
+                          />
+                        </Document>
+                        </div>
+                      ) : (
+                        // Iframe als sicherer Fallback für problematische URLs
+                        <div className="w-full bg-gray-50 rounded-lg overflow-hidden border border-gray-300 shadow-lg">
+                          <div className="bg-[#14ad9f] text-white p-3 text-sm font-medium flex items-center justify-between">
+                            <span>PDF Viewer</span>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                size="sm"
+                                className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
+                                onClick={() => {
+                                  setShouldUsePdfJs(true);
+                                  setUseIframeViewer(false);
+                                  setNumPages(null);
+                                  setPageNumber(1);
+                                  setPdfError(null);
+                                }}
+                              >
+                                Erweiterte Ansicht
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
+                                onClick={() => window.open(pdfUrl, '_blank')}
+                              >
+                                <Download className="h-4 w-4 mr-1" />
+                                Öffnen
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="overflow-hidden">
+                            <iframe
+                              src={pdfUrl}
+                              className="w-full h-[800px] border-0"
+                              style={{ transform: 'scale(0.8)', transformOrigin: 'top left', width: '125%' }}
+                              title="PDF Viewer"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center h-96">
+                      <div className="text-center">
+                        <FileText className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-500 mb-4">Keine PDF verfügbar</p>
+                        <Button
+                          onClick={loadPdfForViewing}
+                          className="bg-[#14ad9f] hover:bg-[#129488]"
+                        >
+                          PDF generieren
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -760,7 +1522,7 @@ export default function InvoiceDetailPage() {
           <SendInvoiceDialog
             isOpen={sendDialogOpen}
             onClose={() => setSendDialogOpen(false)}
-            invoice={invoice}
+            invoice={invoice!}
             companyName={invoice.companyName || 'Ihr Unternehmen'}
           />
         )}

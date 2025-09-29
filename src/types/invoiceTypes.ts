@@ -37,6 +37,7 @@ export interface InvoiceData {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
+  customerVatId?: string; // VAT ID des Kunden (für B2B-Geschäfte)
   // Strukturierte Kundendaten für Templates
   customer?: {
     name: string;
@@ -148,6 +149,9 @@ export interface InvoiceData {
     from: string | null;
     to: string | null;
   };
+
+  // Tags für Organisation und Kategorisierung
+  tags?: string[]; // Array von Tag-Namen für bessere Rechnungsorganisation
   deliveryTerms?: string;
   currency?: string;
 

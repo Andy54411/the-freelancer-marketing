@@ -287,15 +287,28 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
       const { invoiceId } = await params;
 
       try {
-        // 1. Versuche globale Suche zuerst (findet Rechnung in jeder Company)
-        const data = await findInvoiceGlobally(invoiceId);
+        // 1. Prüfe zuerst, ob es sich um Vorschau-Daten handelt (aus localStorage)
+        let data: InvoiceData | null = null;
+        if (typeof window !== 'undefined') {
+          const previewData = localStorage.getItem(`preview_${invoiceId}`);
+          if (previewData) {
+            data = JSON.parse(previewData);
+            // Entferne die Vorschau-Daten aus localStorage nach dem Laden
+            localStorage.removeItem(`preview_${invoiceId}`);
+          }
+        }
+
+        // 2. Wenn keine Vorschau-Daten gefunden, versuche globale Suche (findet Rechnung in jeder Company)
+        if (!data) {
+          data = await findInvoiceGlobally(invoiceId);
+        }
 
         if (!data) {
           console.error('Invoice not found globally:', invoiceId);
           return notFound();
         }
 
-        // 2. Lade vollständige Firmendaten und merge sie mit Rechnungsdaten - FRISCH AUS DB!
+        // 3. Lade vollständige Firmendaten und merge sie mit Rechnungsdaten - FRISCH AUS DB!
         if (data.companyId) {
           try {
             const companyDoc = await getDoc(doc(db, 'companies', data.companyId));

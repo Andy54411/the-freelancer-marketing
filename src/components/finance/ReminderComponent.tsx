@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { ReminderSettings } from './ReminderSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +61,7 @@ interface ReminderComponentProps {
 }
 
 export function ReminderComponent({ companyId }: ReminderComponentProps) {
+  const router = useRouter();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -257,7 +260,7 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
           <p className="text-gray-600 mt-1">Automatisches Mahnwesen für überfällige Rechnungen</p>
         </div>
         <Button
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => router.push(`/dashboard/company/${companyId}/finance/reminders/create`)}
           className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -266,10 +269,9 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="overview">Übersicht</TabsTrigger>
           <TabsTrigger value="settings">Einstellungen</TabsTrigger>
-          <TabsTrigger value="templates">Vorlagen</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -367,7 +369,7 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
                   </p>
                   {!searchTerm && (
                     <Button
-                      onClick={() => setShowCreateModal(true)}
+                      onClick={() => router.push(`/dashboard/company/${companyId}/finance/reminders/create`)}
                       className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
                     >
                       Erste Mahnung erstellen
@@ -448,61 +450,7 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Mahnwesen Einstellungen</CardTitle>
-              <CardDescription>Konfigurieren Sie Ihr automatisches Mahnwesen</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h4 className="font-medium text-gray-900">Mahngebühren</h4>
-
-                {Object.entries(reminderSettings).map(([level, config]) => (
-                  <div
-                    key={level}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div>
-                      <h5 className="font-medium text-gray-900">{config.title}</h5>
-                      <p className="text-sm text-gray-600">Nach {config.days} Tagen Verzug</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-900">{formatCurrency(config.fee)}</p>
-                      <p className="text-sm text-gray-600">Gebühr</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="pt-4 border-t">
-                <Button className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white">
-                  Einstellungen speichern
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="templates" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Mahnungsvorlagen</CardTitle>
-              <CardDescription>Passen Sie die Texte Ihrer Mahnungen an</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Vorlagen anpassen</h3>
-                <p className="text-gray-600 mb-4">
-                  Personalisieren Sie Ihre Mahnungstexte für alle Mahnstufen
-                </p>
-                <Button className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Vorlagen bearbeiten
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <ReminderSettings uid={companyId} />
         </TabsContent>
       </Tabs>
 
