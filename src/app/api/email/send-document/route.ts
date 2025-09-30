@@ -60,12 +60,14 @@ export async function POST(req: NextRequest) {
     const slug = companySlug || 'taskilo';
     const fromEmail = `${slug}@taskilo.de`;
 
-    // Anhänge verarbeiten
-    const emailAttachments = attachments?.map(attachment => ({
-      filename: attachment.filename,
-      content: Buffer.from(attachment.contentBase64, 'base64') as unknown as string,
-      contentType: 'application/pdf',
-    }));
+    // Anhänge verarbeiten - mit Validierung!
+    const emailAttachments = attachments
+      ?.filter(attachment => attachment.contentBase64 && attachment.contentBase64.trim().length > 0) // Nur Anhänge mit Inhalt
+      ?.map(attachment => ({
+        filename: attachment.filename,
+        content: attachment.contentBase64, // Use base64 string directly
+        contentType: 'application/pdf',
+      }));
 
     // E-Mail-Empfängerliste zusammenstellen
     const allRecipients = [...to];

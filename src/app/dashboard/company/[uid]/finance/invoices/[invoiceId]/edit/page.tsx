@@ -107,8 +107,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ProfessionalBusinessTemplate } from '@/components/templates/invoice-templates';
-
 // Use ImportedInvoiceTemplate type from @/components/finance/InvoiceTemplates
 import { UserPreferencesService } from '@/lib/userPreferences';
 import { TextTemplateService } from '@/services/TextTemplateService';
@@ -1170,9 +1168,9 @@ export default function EditInvoicePage() {
     console.warn(
       'Unbekannte Template-ID:',
       templateId,
-      'Verwende Professional Business Template als Fallback'
+      'Verwende Standard Template als Fallback'
     );
-    return ProfessionalBusinessTemplate;
+    return null; // PDF-System wird über AVAILABLE_TEMPLATES verwaltet
   };
   useEffect(() => {
     if (!settings) return;
@@ -1885,15 +1883,16 @@ export default function EditInvoicePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emailCardOpen]);
 
-  // PDF-Generierung mit React-PDF und dem umgeschriebenen Template
+  // PDF-Generierung mit der bestehenden InvoicePDFTemplate Service
   const generatePdfBlob = async (): Promise<Blob> => {
     try {
-      console.log('[PDF] Start React-PDF Erzeugung mit umgeschriebenem Template');
+      console.log('[PDF] Start PDF-Erzeugung mit InvoicePDFTemplate Service');
 
       // Verwende das bestehende Template-Datenformat - angepasst für Invoice mit Platzhaltern
       const templateData = {
         ...getProcessedPreviewData(),
         dueDate: getProcessedPreviewData().validUntil, // Fälligkeitsdatum für Rechnungen
+        documentType: 'invoice', // Explizit als Rechnung markieren
       };
 
       console.log('[PDF] Template-Daten erstellt', {
@@ -1905,17 +1904,15 @@ export default function EditInvoicePage() {
         currency: templateData.currency,
       });
 
-      // React-PDF importieren
-      const { pdf } = await import('@react-pdf/renderer');
-      const { default: GermanStandardInvoicePDF } = await import(
-        '@/components/pdf/GermanStandardInvoicePDF'
-      );
+      // InvoicePDFTemplate Service importieren
+      const { InvoicePDFTemplate } = await import('@/services/pdf/InvoicePDFTemplate');
 
-      // PDF mit dem umgeschriebenen Template generieren
-      const blob = await pdf(<GermanStandardInvoicePDF data={templateData} />).toBlob();
+      // PDF mit der bestehenden Service generieren
+      const pdfBuffer = await InvoicePDFTemplate.generateInvoicePDF(templateData);
+      const blob = new Blob([new Uint8Array(pdfBuffer)], { type: 'application/pdf' });
 
       const size = blob.size;
-      console.log('[PDF] React-PDF Blob erstellt', {
+      console.log('[PDF] PDF Blob erstellt', {
         size,
         sizeKB: (size / 1024).toFixed(1),
         isEmpty: size < 1000,
@@ -1927,7 +1924,7 @@ export default function EditInvoicePage() {
 
       return blob;
     } catch (error) {
-      console.error('[PDF] React-PDF Fehler:', error);
+      console.error('[PDF] PDF-Erstellung Fehler:', error);
       throw new Error(`PDF-Erstellung fehlgeschlagen: ${error}`);
     }
   };
@@ -2066,156 +2063,7 @@ export default function EditInvoicePage() {
     }
   };
 
-  const printInBrowser = () => {
-    try {
-      // Berechne die aktuellen Summen
-      const subtotal = items.reduce((sum, it) => {
-        const t = it.total || 0;
-        if (it.category === 'discount') {
-          return sum + -Math.abs(t);
-        }
-        const factor = 1 - Math.max(0, Math.min(100, it.discountPercent || 0)) / 100;
-        return sum + t * factor;
-      }, 0);
-      const vat = subtotal * (taxRate / 100);
-      const grandTotal = subtotal + vat;
-
-      // 🔧 WICHTIG: Verwende getProcessedPreviewData() für korrekte Platzhalter-Ersetzung
-      const processedData = getProcessedPreviewData();
-
-      // Vollständige Datenstruktur für die Print-Vorschau
-      const data = {
-        // Rechnungsdetails
-        invoiceNumber: formData.title || 'Vorschau',
-        date: formData.invoiceDate || new Date().toISOString().split('T')[0],
-        validUntil: formData.validUntil || new Date().toISOString().split('T')[0],
-        deliveryDate: formData.deliveryDate,
-        // Lieferzeitraum für Template (falls Range ausgewählt)
-        servicePeriod:
-          deliveryDateType === 'range' && deliveryDateRange.from && deliveryDateRange.to
-            ? `${deliveryDateRange.from.toLocaleDateString('de-DE')} - ${deliveryDateRange.to.toLocaleDateString('de-DE')}`
-            : undefined,
-        serviceDate: deliveryDateType === 'single' ? formData.deliveryDate : undefined,
-
-        // Kundendaten
-        customerName: formData.customerName || '',
-        customerEmail: formData.customerEmail || '',
-        customerAddress: formData.customerAddress || '',
-        customerOrderNumber: formData.customerOrderNumber || '',
-
-        // Unternehmensdaten
-        companyName:
-          company?.companyName || settings?.companyName || (user as any)?.name || 'Ihr Unternehmen',
-        companyAddress: [
-          [company?.companyStreet, company?.companyHouseNumber].filter(Boolean).join(' '),
-          [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
-          company?.companyCountry,
-        ]
-          .filter(Boolean)
-          .join('\n'),
-        companyEmail:
-          company?.contactEmail || company?.email || (settings as any)?.contactEmail || '',
-        companyPhone:
-          company?.companyPhoneNumber ||
-          company?.phoneNumber ||
-          (settings as any)?.companyPhone ||
-          '',
-        companyWebsite:
-          company?.website || company?.companyWebsite || (settings as any)?.companyWebsite || '',
-        companyVatId: company?.vatId || company?.step3?.vatId || (settings as any)?.vatId || '',
-        companyTaxNumber:
-          company?.taxNumber || company?.step3?.taxNumber || (settings as any)?.taxNumber || '',
-        companyLogo: company?.profilePictureURL || company?.profilePictureFirebaseUrl || '',
-
-        // Bankdaten
-        bankDetails: {
-          iban: company?.iban || company?.step4?.iban || settings?.iban || '',
-          bic: company?.bic || company?.step4?.bic || (settings as any)?.bic || '',
-          bankName:
-            company?.bankName || company?.step4?.bankName || (settings as any)?.bankName || '',
-          accountHolder:
-            company?.accountHolder ||
-            company?.step4?.accountHolder ||
-            (settings as any)?.accountHolder ||
-            company?.companyName ||
-            'Kontoinhaber',
-        },
-
-        // Positionen
-        items: items.filter(item => item.description && item.quantity > 0),
-
-        // Finanzielle Daten
-        subtotal: subtotal,
-        tax: vat,
-        total: grandTotal,
-        currency: formData.currency || 'EUR',
-        vatRate: taxRate,
-        isSmallBusiness:
-          company?.kleinunternehmer === 'ja' || company?.ust === 'kleinunternehmer' || false,
-
-        // 🔧 KORRIGIERT: Verwende verarbeitete Texte mit ersetzten Platzhaltern
-        headTextHtml: processedData.headTextHtml || '',
-        notes: formData.notes || '',
-        footerText: processedData.footerText || '',
-        paymentTerms: formData.paymentTerms || '',
-        deliveryTerms: formData.deliveryTerms || '',
-
-        // Kontaktperson
-        contactPersonName: formData.internalContactPerson || '',
-
-        // Zusätzliche Felder
-        title: formData.title || '',
-        reference: formData.customerOrderNumber || '',
-        description: processedData.headTextHtml || '',
-        taxRule: formData.taxRule || 'DE_TAXABLE',
-      };
-
-      // 🔍 DEBUG: Zeige alle gesendeten Daten
-      console.log('=== PRINT BROWSER DEBUG ===');
-      console.log('Gesendete Daten an Print-Preview:', data);
-      console.log('Verarbeitete Platzhalter-Texte:', {
-        originalHeadText: formData.headTextHtml,
-        processedHeadText: processedData.headTextHtml,
-        originalFooterText: formData.footerText,
-        processedFooterText: processedData.footerText,
-      });
-      console.log('FormData State:', {
-        customerName: formData.customerName,
-        customerEmail: formData.customerEmail,
-        customerAddress: formData.customerAddress,
-        title: formData.title,
-        invoiceDate: formData.invoiceDate,
-        validUntil: formData.validUntil,
-        deliveryDate: formData.deliveryDate,
-        headTextHtml: formData.headTextHtml,
-        footerText: formData.footerText,
-        paymentTerms: formData.paymentTerms,
-        notes: formData.notes,
-      });
-      console.log('Company Data:', company);
-      console.log('Items:', items);
-      console.log('Berechnete Summen:', { subtotal, vat, grandTotal });
-      console.log('=== END DEBUG ===');
-
-      // UTF-8-sichere Base64-Kodierung (vermeidet UmsÃ¤tze/ä/ö/ü-Probleme)
-      const encodeBase64Utf8 = (obj: any): string => {
-        const json = typeof obj === 'string' ? obj : JSON.stringify(obj);
-        const bytes = new TextEncoder().encode(json);
-        let bin = '';
-        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-        return btoa(bin);
-      };
-      const payload = encodeURIComponent(encodeBase64Utf8(data));
-      const url = `/print/invoice/preview?auto=1&payload=${payload}`;
-      const win = window.open(url, '_blank');
-      if (!win || win.closed || typeof win.closed === 'undefined') {
-        toast.message('Popup-Blocker aktiv – bitte Popups erlauben und erneut versuchen.');
-      }
-    } catch (e) {
-      console.error('Print Error:', e);
-      toast.error('Browser-Druck konnte nicht gestartet werden');
-    }
-  };
+  // printInBrowser function removed - using PDF-only system now
 
   const blobToBase64 = (blob: Blob): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -4611,9 +4459,9 @@ export default function EditInvoicePage() {
 
       {/* Aktionen */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <Button type="button" onClick={printInBrowser} variant="outline" className="sm:ml-2">
+        <Button type="button" onClick={downloadPdf} variant="outline" className="sm:ml-2">
           <Printer className="w-4 h-4 mr-2" />
-          Drucken
+          PDF herunterladen
         </Button>
         <Button
           onClick={() => handleSubmit(true)}
@@ -4777,7 +4625,8 @@ export default function EditInvoicePage() {
               onClick={() => {
                 const previewData = buildPreviewData();
                 const payload = encodeURIComponent(btoa(JSON.stringify(previewData)));
-                window.open(`/print/invoice/preview?auto=1&payload=${payload}`, '_blank');
+                // Removed: Print URL - now using PDF-only system
+                // window.open(`/print/invoice/preview?auto=1&payload=${payload}`, '_blank');
               }}
             >
               <Printer className="h-4 w-4 mr-2" />

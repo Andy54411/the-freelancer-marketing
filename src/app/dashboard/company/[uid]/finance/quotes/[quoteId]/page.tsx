@@ -207,9 +207,11 @@ export default function QuoteDetailPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              window.open(`/print/quote/${uid}/${quote.id}?auto=1`, '_blank', 'noopener')
-            }
+            onClick={() => {
+              // Removed: Print URL - now using PDF-only system
+              console.log('PDF print would happen here via PDF-only system');
+              // window.open(`/print/quote/${uid}/${quote.id}?auto=1`, '_blank', 'noopener')
+            }}
           >
             <Printer className="h-4 w-4 mr-2" />
             Drucken
@@ -217,7 +219,11 @@ export default function QuoteDetailPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.open(`/print/quote/${uid}/${quote.id}`, '_blank', 'noopener')}
+            onClick={() => {
+              // Removed: Print URL - now using PDF-only system
+              console.log('PDF download would happen here');
+              // window.open(`/print/quote/${uid}/${quote.id}`, '_blank', 'noopener')
+            }}
           >
             <Download className="h-4 w-4 mr-2" />
             PDF Download

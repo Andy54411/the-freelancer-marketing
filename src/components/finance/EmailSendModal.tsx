@@ -40,11 +40,12 @@ interface EmailRecipient {
 interface EmailSendModalProps {
   isOpen: boolean;
   onClose: () => void;
-  document: InvoiceData;
-  documentType: 'invoice' | 'quote' | 'reminder';
+  document: InvoiceData | any;
+  documentType: 'invoice' | 'quote' | 'delivery' | 'order' | 'reminder';
   companyId: string;
   selectedTemplate: string; // Template from SendDocumentModal
   getRenderedHtml: () => string | null; // ✅ Get rendered HTML from SendDocumentModal
+  isTemplateReady: boolean; // ✅ Check if template is rendered and ready
   onSend?: (emailData: EmailSendData) => Promise<void>;
 }
 
@@ -67,6 +68,7 @@ export function EmailSendModal({
   companyId,
   selectedTemplate,
   getRenderedHtml,
+  isTemplateReady,
   onSend,
 }: EmailSendModalProps) {
   const [sending, setSending] = useState(false);
@@ -188,14 +190,23 @@ Mit freundlichen Grüßen`);
   const generatePdfBase64 = async (): Promise<string | null> => {
     try {
       console.log('EmailSendModal - Generating PDF with template:', selectedTemplate);
+      console.log('EmailSendModal - Template ready status:', isTemplateReady);
 
-      // ✅ Get the rendered HTML from SendDocumentModal
+      // ✅ Prüfung ob Template bereit ist
+      if (!isTemplateReady) {
+        console.error('Template not ready - cannot generate PDF');
+        throw new Error('Template is not ready yet. Please wait for the document preview to load completely.');
+      }
+
+      // ✅ Get HTML Content direkt
       const htmlContent = getRenderedHtml();
       
-      if (!htmlContent) {
-        console.error('No HTML content available from template');
-        throw new Error('Template not rendered yet');
+      if (!htmlContent || htmlContent.trim().length === 0) {
+        console.error('No HTML content received from template');
+        throw new Error('Template could not be rendered. Please make sure the document preview is visible and try again.');
       }
+      
+      console.log('Template ready! HTML content length:', htmlContent.length);
 
       console.log('EmailSendModal - Got HTML content, sending to API');
 
@@ -212,16 +223,29 @@ Mit freundlichen Grüßen`);
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        console.error('PDF API failed:', response.status, errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          throw new Error(`PDF generation failed (${response.status}): ${errorText}`);
+        }
         throw new Error(errorData.error || 'PDF generation failed');
       }
 
       const result = await response.json();
-      console.log('EmailSendModal - PDF generated successfully');
+      
+      if (!result.pdfBase64 || result.pdfBase64.trim().length === 0) {
+        console.error('PDF API returned empty base64');
+        throw new Error('PDF generation returned empty result');
+      }
+      
+      console.log('EmailSendModal - PDF generated successfully, base64 length:', result.pdfBase64.length);
       return result.pdfBase64;
     } catch (error) {
       console.error('PDF generation failed:', error);
-      return null;
+      throw error; // Re-throw instead of returning null for better error handling
     }
   };
 
@@ -242,7 +266,7 @@ Mit freundlichen Grüßen`);
     try {
       toast.message('PDF wird erstellt...');
       
-      // Generate PDF
+      // Generate PDF - will throw error if it fails
       const pdfBase64 = await generatePdfBase64();
       
       toast.message('E-Mail wird versendet...');

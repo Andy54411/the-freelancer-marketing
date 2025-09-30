@@ -4,13 +4,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { TaxRuleType } from '@/types/taxRules';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import FooterTextEditor from '@/components/finance/FooterTextEditor';
-import HeaderTextEditor from '@/components/finance/HeaderTextEditor';
-import InventorySelector from '@/components/quotes/InventorySelector';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -19,6 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Calculator,
   Save,
@@ -32,24 +32,20 @@ import {
   Mail,
   Printer,
 } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { db } from '@/firebase/clients';
+import { collection, getDocs, getDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteService';
+import { InventoryService } from '@/services/inventoryService';
+import { TextTemplateService } from '@/services/TextTemplateService';
+import { UserPreferencesService } from '@/lib/userPreferences';
 import { getAllCurrencies } from '@/data/currencies';
 import { getCustomers } from '@/utils/api/companyApi';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import {
-  ProfessionalBusinessQuoteTemplate,
-  ExecutivePremiumQuoteTemplate,
-  CreativeModernQuoteTemplate,
-  MinimalistElegantQuoteTemplate,
-  CorporateClassicQuoteTemplate,
-  TechInnovationQuoteTemplate,
-  type QuoteTemplate,
-} from '@/components/templates/quote-templates';
-import { UserPreferencesService } from '@/lib/userPreferences';
-import { TextTemplateService } from '@/services/TextTemplateService';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import FooterTextEditor from '@/components/finance/FooterTextEditor';
+import HeaderTextEditor from '@/components/finance/HeaderTextEditor';
+import InventorySelector from '@/components/quotes/InventorySelector';
+import NewProductModal, { NewProductValues } from '@/components/inventory/NewProductModal';
+// Removed: Quote templates - now using PDF-only system
 type PreviewTemplateData = {
   quoteNumber: string;
   date: string;
@@ -101,14 +97,8 @@ type PreviewTemplateData = {
   paymentTerms?: string;
   deliveryTerms?: string;
 };
-import { db } from '@/firebase/clients';
-import { doc, getDoc } from 'firebase/firestore';
-import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { Switch } from '@/components/ui/switch';
-import { InventoryService } from '@/services/inventoryService';
 import { Popover, PopoverContent, PopoverAnchor } from '@/components/ui/popover';
-import NewProductModal, { NewProductValues } from '@/components/inventory/NewProductModal';
-import NewCustomerModal from '@/components/finance/NewCustomerModal';
 
 interface Customer {
   id: string;
@@ -156,14 +146,100 @@ export default function CreateQuotePage() {
   const [pdfSizeBytes, setPdfSizeBytes] = useState<number | null>(null);
   const [creatingPdf, setCreatingPdf] = useState<boolean>(false);
 
-  // Template Auswahl & User Preferences
-  const [selectedTemplate, setSelectedTemplate] = useState<QuoteTemplate>(
-    'professional-business-quote'
-  );
-  const [loadingTemplate, setLoadingTemplate] = useState(true);
-
   // PDF Hidden Container Ref
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    customerName: '',
+    customerNumber: '',
+    customerEmail: '',
+    customerAddress: '',
+    title: '',
+    customerOrderNumber: '',
+    validUntil: '',
+    headTextHtml: '',
+    footerText: '',
+    notes: '',
+    currency: 'EUR',
+    internalContactPerson: '',
+    deliveryTerms: '',
+    paymentTerms: '',
+    taxRule: TaxRuleType.DE_TAXABLE as TaxRuleType,
+  });
+
+  // Items (Netto im State)
+  const [items, setItems] = useState<QuoteItem[]>([
+    {
+      id:
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : Math.random().toString(36).slice(2),
+      description: 'Leistung',
+      quantity: 1,
+      unitPrice: 0,
+      total: 0,
+    },
+  ]);
+
+  // Hilfsfunktionen
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('de-DE');
+    } catch {
+      return '';
+    }
+  };
+
+  const computeItemTotalNet = (qty: number, unitNet: number) => {
+    const q = isFinite(qty) ? Math.max(0, qty) : 0;
+    const p = isFinite(unitNet) ? Math.max(0, unitNet) : 0;
+    return q * p;
+  };
+
+  const blobToBase64 = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        const base64 = result.split(',')[1] || '';
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+  const handleItemChange = (index: number, field: keyof QuoteItem, value: any) => {
+    setItems(prev =>
+      prev.map((item, i) => {
+        if (i !== index) return item;
+        const next: QuoteItem = { ...item };
+        if (field === 'description') next.description = String(value);
+        if (field === 'quantity') next.quantity = parseFloat(String(value)) || 0;
+        if (field === 'unitPrice') {
+          const input = parseFloat(String(value)) || 0;
+          const net = showNet ? input : input / (1 + taxRate / 100);
+          next.unitPrice = net;
+        }
+        next.total = computeItemTotalNet(next.quantity, next.unitPrice);
+        return next;
+      })
+    );
+  };
+
+  // Totals (Rabatt-Positionen abziehen)
+  const subtotal = items.reduce((sum, it) => {
+    const t = it.total || 0;
+    if (it.category === 'discount') {
+      return sum + -Math.abs(t);
+    }
+    const factor = 1 - Math.max(0, Math.min(100, it.discountPercent || 0)) / 100;
+    return sum + t * factor;
+  }, 0);
+  const vat = subtotal * (taxRate / 100);
+  const grandTotal = subtotal + vat;
 
   // Produkt-anlegen Prompt/Modal State
   const [dismissedCreatePromptIds, setDismissedCreatePromptIds] = useState<Set<string>>(new Set());
@@ -307,39 +383,6 @@ export default function CreateQuotePage() {
   const [skontoDays, setSkontoDays] = useState<number | undefined>(undefined);
   const [skontoPercentage, setSkontoPercentage] = useState<number | undefined>(undefined);
   const [skontoText, setSkontoText] = useState<string>('');
-
-  // Form state
-  const [formData, setFormData] = useState({
-    customerName: '',
-    customerNumber: '',
-    customerEmail: '',
-    customerAddress: '',
-    title: '',
-    customerOrderNumber: '',
-    validUntil: '',
-    headTextHtml: '',
-    footerText: '',
-    notes: '',
-    currency: 'EUR',
-    internalContactPerson: '',
-    deliveryTerms: '',
-    paymentTerms: '',
-    taxRule: TaxRuleType.DE_TAXABLE as TaxRuleType,
-  });
-
-  // Items (Netto im State)
-  const [items, setItems] = useState<QuoteItem[]>([
-    {
-      id:
-        typeof crypto !== 'undefined' && 'randomUUID' in crypto
-          ? crypto.randomUUID()
-          : Math.random().toString(36).slice(2),
-      description: 'Leistung',
-      quantity: 1,
-      unitPrice: 0,
-      total: 0,
-    },
-  ]);
 
   // Halte itemsRef synchron, damit Debounce/Popover-Logik nicht vor Deklaration auf items zugreift
   useEffect(() => {
@@ -522,47 +565,7 @@ export default function CreateQuotePage() {
     }
   }, [formData.taxRule, settings?.defaultTaxRate]);
 
-  // Template Auswahl & User Preferences laden
-  useEffect(() => {
-    if (!user?.uid) return;
-
-    const loadUserTemplate = async () => {
-      try {
-        setLoadingTemplate(true);
-        // Lade direkt die User Preferences
-        const preferences = await UserPreferencesService.getUserPreferences(user.uid, uid);
-
-        if (preferences.preferredQuoteTemplate) {
-          setSelectedTemplate(preferences.preferredQuoteTemplate as QuoteTemplate);
-        } else {
-          // Fallback auf corporate-classic-quote laut Datenbank
-          setSelectedTemplate('corporate-classic-quote');
-        }
-      } catch (error) {
-        console.warn('Fehler beim Laden der Template-Preferences:', error);
-        setSelectedTemplate('corporate-classic-quote'); // Fallback
-      } finally {
-        setLoadingTemplate(false);
-      }
-    };
-
-    loadUserTemplate();
-  }, [user?.uid, uid]);
-
-  // Template-Komponente dynamisch rendern
-  const renderTemplateComponent = (templateId: QuoteTemplate) => {
-    const components = {
-      'professional-business-quote': ProfessionalBusinessQuoteTemplate,
-      'executive-premium-quote': ExecutivePremiumQuoteTemplate,
-      'creative-modern-quote': CreativeModernQuoteTemplate,
-      'minimalist-elegant-quote': MinimalistElegantQuoteTemplate,
-      'corporate-classic-quote': CorporateClassicQuoteTemplate,
-      'tech-innovation-quote': TechInnovationQuoteTemplate,
-    };
-
-    const TemplateComponent = components[templateId] || CorporateClassicQuoteTemplate;
-    return TemplateComponent;
-  };
+  // Settings-abhängige Konfiguration
   useEffect(() => {
     if (!settings) return;
 
@@ -905,30 +908,6 @@ export default function CreateQuotePage() {
 
       // React-PDF importieren
       const { pdf } = await import('@react-pdf/renderer');
-      const { default: GermanStandardQuotePDF } = await import(
-        '@/components/pdf/GermanStandardQuotePDF'
-      );
-
-      // PDF mit dem umgeschriebenen Template generieren
-      const blob = await pdf(<GermanStandardQuotePDF data={templateData} />).toBlob();
-
-      const size = blob.size;
-      console.log('[PDF] React-PDF Blob erstellt', {
-        size,
-        sizeKB: (size / 1024).toFixed(1),
-        isEmpty: size < 1000,
-      });
-
-      if (size < 1000) {
-        throw new Error('PDF ist zu klein - möglicherweise leer');
-      }
-
-      return blob;
-    } catch (error) {
-      console.error('[PDF] React-PDF Fehler:', error);
-      throw new Error(`PDF-Erstellung fehlgeschlagen: ${error}`);
-    }
-  };
 
   // Fallback-Erzeugung via html2canvas + jsPDF (mit Seiten-Slicing)
   const generatePdfViaCanvas = async (element: HTMLElement): Promise<Blob> => {
@@ -1076,11 +1055,14 @@ export default function CreateQuotePage() {
         return btoa(bin);
       };
       const payload = encodeURIComponent(encodeBase64Utf8(data));
-      const url = `/print/quote/${uid}/preview?auto=1&payload=${payload}`;
-      const win = window.open(url, '_blank');
-      if (!win || win.closed || typeof win.closed === 'undefined') {
-        toast.message('Popup-Blocker aktiv – bitte Popups erlauben und erneut versuchen.');
-      }
+      // Removed: Print URL - now using PDF-only system
+      // Removed: Print URL - now using PDF-only system
+      // const url = `/print/quote/${uid}/preview?auto=1&payload=${payload}`;
+      // const win = window.open(url, '_blank'); // Disabled - using PDF-only system
+      // if (!win || win.closed || typeof win.closed === 'undefined') {
+      //   toast.message('Popup-Blocker aktiv – bitte Popups erlauben und erneut versuchen.');
+      // }
+      console.log('PDF preview would happen here via PDF-only system');
     } catch (e) {
       toast.error('Browser-Druck konnte nicht gestartet werden');
     }
@@ -1167,12 +1149,7 @@ export default function CreateQuotePage() {
     );
   }
 
-  // Helpers
-  const computeItemTotalNet = (qty: number, unitNet: number) => {
-    const q = isFinite(qty) ? Math.max(0, qty) : 0;
-    const p = isFinite(unitNet) ? Math.max(0, unitNet) : 0;
-    return q * p;
-  };
+
 
   // Totals (Rabatt-Positionen abziehen)
   const subtotal = items.reduce((sum, it) => {
@@ -2413,86 +2390,25 @@ export default function CreateQuotePage() {
             <div className="border rounded-md overflow-auto bg-white" style={{ maxHeight: '75vh' }}>
               <div className="p-4">
                 {(() => {
-                  if (loadingTemplate) {
-                    return (
-                      <div className="flex items-center justify-center h-64">
-                        <Loader2 className="h-8 w-8 animate-spin" />
-                        <span className="ml-2">Template wird geladen...</span>
-                      </div>
-                    );
-                  }
-
-                  const TemplateComponent = renderTemplateComponent(selectedTemplate);
+                  // PDF-only system - no live preview available
                   const previewData = buildPreviewData();
 
                   return (
-                    <TemplateComponent
-                      data={{
-                        documentNumber: previewData.quoteNumber,
-                        date: previewData.date,
-                        validUntil: previewData.validUntil,
-                        title: previewData.title,
-                        reference: previewData.reference,
-                        customerName: previewData.customerName,
-                        customerEmail: previewData.customerEmail,
-                        customerAddress: (() => {
-                          const lines = (previewData.customerAddress || '').split('\n');
-                          return {
-                            street: (lines[0] || '').replace(/\s+/g, ' ').trim(),
-                            zipCode: (lines[1] || '').split(' ')[0] || '',
-                            city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
-                            country: lines[2] || undefined,
-                          };
-                        })(),
-                        items:
-                          previewData.items?.map(it => ({
-                            description: it.description,
-                            quantity: it.quantity,
-                            unitPrice: it.unitPrice,
-                            discountPercent: it.discountPercent || 0,
-                            category: it.category,
-                            unit: it.unit,
-                          })) || [],
-                        subtotal: previewData.subtotal,
-                        taxRate: previewData.vatRate,
-                        taxAmount: previewData.tax,
-                        total: previewData.total,
-                        currency: previewData.currency,
-                        taxRule: previewData.taxRule,
-                        taxRuleLabel: previewData.taxRuleLabel,
-                        isSmallBusiness: previewData.isSmallBusiness,
-                        headTextHtml: previewData.headTextHtml,
-                        footerText: previewData.footerText,
-                        notes: previewData.notes,
-                        createdBy: previewData.contactPersonName,
-                        paymentTerms: previewData.paymentTerms,
-                        deliveryTerms: previewData.deliveryTerms,
-                        internalContactPerson: formData.internalContactPerson,
-                      }}
-                      companySettings={{
-                        companyName: previewData.companyName,
-                        logoUrl: previewData.companyLogo || previewData.profilePictureURL,
-                        address: (() => {
-                          const lines = (previewData.companyAddress || '').split('\n');
-                          return {
-                            street: lines[0] || '',
-                            zipCode: (lines[1] || '').split(' ')[0] || '',
-                            city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
-                            country: lines[2] || undefined,
-                          };
-                        })(),
-                        contactInfo: {
-                          email: previewData.companyEmail,
-                          phone: previewData.companyPhone,
-                          website: previewData.companyWebsite,
-                        },
-                        vatId: previewData.companyVatId,
-                        taxId: previewData.companyTaxNumber,
-                        commercialRegister: previewData.companyRegister,
-                        bankDetails: previewData.bankDetails,
-                      }}
-                      customizations={{ showLogo: true }}
-                    />
+                    <div className="text-center p-8">
+                      <div className="text-gray-500 mb-4">
+                        <FileText className="h-12 w-12 mx-auto mb-2" />
+                        <h3 className="text-lg font-medium">PDF-Only System</h3>
+                        <p className="text-sm">Live-Vorschau wurde durch PDF-System ersetzt.</p>
+                        <p className="text-sm mt-2">Verwenden Sie die Download-Funktion für die PDF-Vorschau.</p>
+                      </div>
+                      <div className="text-left max-w-md mx-auto text-sm space-y-2">
+                        <p><strong>Kunde:</strong> {previewData.customerName}</p>
+                        <p><strong>Titel:</strong> {previewData.title || 'Angebot'}</p>
+                        <p><strong>Gültig bis:</strong> {previewData.validUntil}</p>
+                        <p><strong>Positionen:</strong> {previewData.items?.length || 0}</p>
+                        <p><strong>Gesamt:</strong> {formatCurrency(previewData.total)}</p>
+                      </div>
+                    </div>
                   );
                 })()}
               </div>
@@ -2570,31 +2486,24 @@ export default function CreateQuotePage() {
         }}
       />
 
-      {/* Modal: Neuer Kunde */}
-      <NewCustomerModal
-        open={createCustomerOpen}
-        onOpenChange={setCreateCustomerOpen}
-        defaultValues={{
-          name: formData.customerName || '',
-        }}
-        saving={creatingCustomer}
-        persistDirectly={true}
-        companyId={uid}
-        onSaved={async customerId => {
-          try {
-            // Lade Kunden neu mit der existierenden Funktion
-            const response = await getCustomers(uid);
-            if (response.success && response.customers) {
-              setCustomers(response.customers);
-            }
-            toast.success('Kunde erfolgreich erstellt');
-          } catch (error) {
-            console.error('Fehler beim Aktualisieren der Kundenliste:', error);
-          }
-        }}
-      />
+      {/* Modal: Neuer Kunde - temporär deaktiviert */}
+      {createCustomerOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Neuen Kunden anlegen</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Die Kundenerstellung wird bald verfügbar sein.
+            </p>
+            <Button 
+              onClick={() => setCreateCustomerOpen(false)} 
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            >
+              Schließen
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// Ende CreateQuotePage

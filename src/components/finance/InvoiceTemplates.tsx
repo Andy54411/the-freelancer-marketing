@@ -1,13 +1,39 @@
 import React from 'react';
-import { ProfessionalBusinessTemplate } from '@/components/templates/invoice-templates';
+import PDFTemplate from './PDFTemplates';
+import { PDFTemplateProps } from '@/hooks/pdf/usePDFTemplateData';
 
 // Kompatibilität: Re-exportiere den zentralen Invoice-Datentyp
 export type { InvoiceData } from '@/types/invoiceTypes';
 
-// Nur noch ein universelles Template für alle Dokumenttypen
-export type InvoiceTemplate = 'professional-business';
+// Wrapper-Komponente für Kompatibilität
+const PDFTemplateWrapper: React.FC<{ data: any; companySettings?: any; customizations?: any }> = ({ 
+  data, 
+  companySettings, 
+  customizations 
+}) => {
+  // Konvertiere die Props zum PDFTemplateProps-Format
+  const pdfProps: PDFTemplateProps = {
+    document: data,
+    template: data.template || 'TEMPLATE_STANDARD',
+    color: customizations?.color || '#14ad9f',
+    logoUrl: companySettings?.logoUrl || null,
+    logoSize: customizations?.logoSize || 50,
+    documentType: data.documentType || 'invoice'
+  };
+  
+  return <PDFTemplate {...pdfProps} />;
+};
 
-// Universelles Template für alle Dokumenttypen (Rechnungen, Angebote, Mahnungen, Gutscheine, etc.)
+// PDF-Template-Typen basierend auf den neuen PDF-Templates
+export type InvoiceTemplate = 
+  | 'TEMPLATE_STANDARD'
+  | 'TEMPLATE_NEUTRAL' 
+  | 'TEMPLATE_ELEGANT'
+  | 'TEMPLATE_TECHNICAL'
+  | 'TEMPLATE_GEOMETRIC'
+  | 'TEMPLATE_DYNAMIC';
+
+// Verfügbare PDF-Templates für alle Dokumenttypen
 export const AVAILABLE_TEMPLATES: Array<{
   id: InvoiceTemplate;
   name: string;
@@ -15,23 +41,52 @@ export const AVAILABLE_TEMPLATES: Array<{
   component: React.ComponentType<{ data: any; companySettings?: any; customizations?: any }>;
 }> = [
   {
-    id: 'professional-business',
-    name: 'Universelles Template',
-    description:
-      'Dynamisches Template für alle Dokumenttypen - GoBD-konform für deutsche Unternehmen',
-    component: ProfessionalBusinessTemplate,
+    id: 'TEMPLATE_STANDARD',
+    name: 'Standard Business Template',
+    description: 'Klassisches, professionelles Design für alle Dokumenttypen',
+    component: PDFTemplateWrapper,
+  },
+  {
+    id: 'TEMPLATE_NEUTRAL',
+    name: 'Neutrales Template',
+    description: 'Minimalistisches Design ohne Ablenkungen',
+    component: PDFTemplateWrapper,
+  },
+  {
+    id: 'TEMPLATE_ELEGANT',
+    name: 'Elegantes Template',
+    description: 'Stilvolles Design für gehobene Ansprüche',
+    component: PDFTemplateWrapper,
+  },
+  {
+    id: 'TEMPLATE_TECHNICAL',
+    name: 'Technisches Template',
+    description: 'Strukturiertes Design für technische Dokumente',
+    component: PDFTemplateWrapper,
+  },
+  {
+    id: 'TEMPLATE_GEOMETRIC',
+    name: 'Geometrisches Template',
+    description: 'Modernes Design mit geometrischen Elementen',
+    component: PDFTemplateWrapper,
+  },
+  {
+    id: 'TEMPLATE_DYNAMIC',
+    name: 'Dynamisches Template',
+    description: 'Flexibles Design mit dynamischen Anpassungen',
+    component: PDFTemplateWrapper,
   },
 ];
 
 // Standard Template für normale Rechnungen
-export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplate = 'professional-business';
+export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplate = 'TEMPLATE_STANDARD';
 
 // Template-Konstanten für verschiedene Dokumenttypen
 export const DOCUMENT_TYPE_TEMPLATES = {
-  invoice: 'professional-business',
-  reminder: 'professional-business', // Nutze Business Template auch für Mahnungen
-  quote: 'professional-business',
-  delivery: 'professional-business',
+  invoice: 'TEMPLATE_STANDARD',
+  reminder: 'TEMPLATE_STANDARD',
+  quote: 'TEMPLATE_STANDARD', 
+  delivery: 'TEMPLATE_STANDARD',
 } as const;
 
 export interface InvoiceTemplateRendererProps {
@@ -54,7 +109,7 @@ export const InvoiceTemplateRenderer: React.FC<InvoiceTemplateRendererProps> = (
   companySettings,
   customizations = { showLogo: true },
 }) => {
-  // Ensure data.company and bankDetails are properly structured
+  // PDF-Template verwenden - alle Templates sind jetzt PDF-basiert
   const normalizedData = {
     ...data,
     company: {
@@ -63,29 +118,16 @@ export const InvoiceTemplateRenderer: React.FC<InvoiceTemplateRendererProps> = (
     },
   };
 
-  const templateConfig = AVAILABLE_TEMPLATES.find(t => t.id === template);
+  // PDFTemplate-Props korrekt für die PDFTemplateProps-Interface
+  const pdfTemplateProps = {
+    document: normalizedData, // InvoiceData-Format
+    template, // Template-ID
+    color: customizations?.color || '#14ad9f', // Taskilo-Farbe als Standard
+    logoUrl: customizations?.logoUrl || companySettings?.logoUrl || null,
+    logoSize: customizations?.logoSize || 50,
+    documentType: (data.documentType || 'invoice') as 'invoice' | 'quote' | 'reminder',
+  };
 
-  if (!templateConfig) {
-    console.warn(`Template ${template} nicht gefunden, verwende Standard-Template`);
-    return (
-      <ProfessionalBusinessTemplate
-        data={data}
-        companySettings={companySettings}
-        customizations={customizations}
-      />
-    );
-  }
-
-  const TemplateComponent = templateConfig.component as any;
-
-  // Einheitliche Props für alle Templates
-  return (
-    <TemplateComponent
-      data={data}
-      companySettings={companySettings}
-      customizations={customizations}
-      preview={preview}
-      onRender={onRender}
-    />
-  );
+  // Alle Templates verwenden jetzt PDFTemplate
+  return <PDFTemplate {...pdfTemplateProps} />;
 };

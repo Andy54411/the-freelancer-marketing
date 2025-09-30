@@ -45,6 +45,8 @@ import { InvoiceData } from '@/types/invoiceTypes';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import PDFTemplate from './PDFTemplates';
 import { EmailSendModal } from './EmailSendModal';
+import { SimplePDFViewer } from './SimplePDFViewer';
+import { A4_DIMENSIONS } from '@/utils/a4-page-utils';
 
 interface SendDocumentModalProps {
   isOpen: boolean;
@@ -69,6 +71,14 @@ export function SendDocumentModal({
   const [showCompanySettings, setShowCompanySettings] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
   const templateRef = useRef<HTMLDivElement>(null);
+  
+  // Debug Effect um zu sehen wann templateRef gesetzt wird
+  useEffect(() => {
+    console.log('templateRef status changed:', {
+      hasRef: !!templateRef.current,
+      innerHTML: templateRef.current?.innerHTML?.length || 0
+    });
+  });
   const [emailMessage, setEmailMessage] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [sendCopy, setSendCopy] = useState(false);
@@ -77,9 +87,7 @@ export function SendDocumentModal({
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [activeOption, setActiveOption] = useState<SendOption>('download'); // Start with download like SevDesk
   const [expandedSections, setExpandedSections] = useState<Set<SendOption>>(new Set(['download']));
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages] = useState(1); // For now, assume single page
+  const [zoomLevel, setZoomLevel] = useState(4); // Start at 100% zoom (index 4 in zoomLevels)
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoSize, setLogoSize] = useState(50); // Logo size in percentage
@@ -386,8 +394,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
       // Reset to download option when opening (like SevDesk)
       setActiveOption('download');
       setExpandedSections(new Set(['download']));
-      setZoomLevel(1);
-      setCurrentPage(1);
+      setZoomLevel(4); // Start at 100% zoom
       setLogoFile(null);
       if (logoUrl) {
         URL.revokeObjectURL(logoUrl);
@@ -398,8 +405,47 @@ ${document.companyName || 'Ihr Unternehmen'}`;
   }, [isOpen, document, documentType, documentLabel]);
 
   // ✅ Extract rendered HTML from the current template with ALL EXISTING STYLES
+  // Check if template is ready
+  const isTemplateReady = useCallback(() => {
+    return !loadingEInvoiceData && 
+           (!!realDocumentData || !!document) && 
+           !!templateRef.current && 
+           !!templateRef.current.innerHTML?.trim();
+  }, [loadingEInvoiceData, realDocumentData, document, templateRef.current]);
+
   const getRenderedHtml = useCallback(() => {
-    if (!templateRef.current) return null;
+    console.log('getRenderedHtml called - Debug info:', {
+      loadingEInvoiceData,
+      hasRealDocumentData: !!realDocumentData,
+      hasDocument: !!document,
+      hasTemplateRef: !!templateRef.current,
+      selectedLayout,
+      selectedTemplate: selectedLayout
+    });
+    
+    // Prüfen ob Daten noch geladen werden
+    if (loadingEInvoiceData) {
+      console.error('Data is still loading');
+      return null;
+    }
+    
+    // Prüfen ob Dokument-Daten verfügbar sind
+    if (!realDocumentData && !document) {
+      console.error('No document data available');
+      return null;
+    }
+    
+    if (!templateRef.current) {
+      console.error('templateRef.current is null - Template not rendered yet');
+      return null;
+    }
+    
+    // Prüfen ob Template wirklich Inhalt hat
+    const templateContent = templateRef.current.innerHTML;
+    if (!templateContent || templateContent.trim().length === 0) {
+      console.error('Template content is empty');
+      return null;
+    }
     
     try {
       console.log('🎨 Extracting HTML with existing styles from your templates...');
@@ -1124,93 +1170,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
 
           {/* Right side - Document Preview */}
           <div className="flex-1 flex flex-col min-h-0">
-            {/* Preview Controls */}
-            <div className="flex items-center justify-between p-4 border-b bg-gray-50 flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <Eye className="h-4 w-4 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">Vorschau</span>
-                <Badge variant="outline" className="text-xs">
-                  {layouts.standard.find(l => l.value === selectedLayout)?.name || 'Neutral'}
-                </Badge>
-                {logoUrl && (
-                  <div className="flex items-center gap-1 text-xs text-green-600">
-                    <CheckCircle className="h-3 w-3" />
-                    <span>Logo</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-4">
-                {/* Page Navigation */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Seite</span>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={totalPages}
-                    value={currentPage}
-                    onChange={(e) => setCurrentPage(Math.max(1, Math.min(totalPages, parseInt(e.target.value) || 1)))}
-                    className="w-16 h-8 text-center"
-                  />
-                  <span className="text-sm text-gray-600">von {totalPages}</span>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage <= 1}
-                    >
-                      <ChevronUp className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage >= totalPages}
-                    >
-                      <ChevronDown className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Zoom Controls */}
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setZoomLevel(Math.max(0, zoomLevel - 1))}
-                    disabled={zoomLevel <= 0}
-                  >
-                    <ZoomOut className="h-3 w-3" />
-                  </Button>
-                  <select
-                    value={zoomLevels[zoomLevel]}
-                    onChange={(e) => {
-                      const index = zoomLevels.indexOf(parseFloat(e.target.value));
-                      if (index !== -1) setZoomLevel(index);
-                    }}
-                    className="px-2 py-1 text-sm border rounded"
-                  >
-                    {zoomLevels.map((level, index) => (
-                      <option key={level} value={level}>
-                        {zoomLabels[index]}
-                      </option>
-                    ))}
-                  </select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setZoomLevel(Math.min(zoomLevels.length - 1, zoomLevel + 1))}
-                    disabled={zoomLevel >= zoomLevels.length - 1}
-                  >
-                    <ZoomIn className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Document Preview */}
-            <div className="flex-1 overflow-auto p-6 bg-gray-50 min-h-0">
-              {loadingEInvoiceData ? (
+            {loadingEInvoiceData ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="flex items-center gap-3 text-gray-500">
                     <Loader2 className="h-6 w-6 animate-spin" />
@@ -1218,30 +1178,31 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                   </div>
                 </div>
               ) : (
-                <div
-                  ref={templateRef}
-                  className="mx-auto max-w-4xl"
-                  data-pdf-template
-                  style={{
-                    transform: `scale(${zoomLevels[zoomLevel]})`,
-                    transformOrigin: 'top center',
-                    width: `${100 / zoomLevels[zoomLevel]}%`,
-                    minHeight: '100%'
+                <SimplePDFViewer
+                  zoomLevel={zoomLevels[zoomLevel]}
+                  a4Width={A4_DIMENSIONS.WEB.width}
+                  a4Height={A4_DIMENSIONS.WEB.height}
+                  onZoomChange={(newZoom) => {
+                    const newIndex = zoomLevels.findIndex(z => z === newZoom);
+                    if (newIndex !== -1) {
+                      setZoomLevel(newIndex);
+                    }
                   }}
                 >
-                  <PDFTemplate
-                    document={realDocumentData || document}
-                    template={selectedLayout}
-                    color={selectedColor}
-                    logoUrl={logoUrl}
-                    logoSize={logoSize}
-                    documentType={documentType}
-                  />
-                </div>
+                  <div ref={templateRef} data-pdf-template>
+                    <PDFTemplate
+                      document={realDocumentData || document}
+                      template={selectedLayout}
+                      color={selectedColor}
+                      logoUrl={logoUrl}
+                      logoSize={logoSize}
+                      documentType={documentType}
+                    />
+                  </div>
+                </SimplePDFViewer>
               )}
-            </div>
           </div>
-        </div>
+        </div> {/* End of main flex container */}
       </DialogPrimitive.Content>
       
       {/* Email Send Modal */}
@@ -1253,6 +1214,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
         companyId={companyId}
         selectedTemplate={selectedLayout}
         getRenderedHtml={getRenderedHtml}
+        isTemplateReady={isTemplateReady()}
         onSend={async (emailData) => {
           console.log('SendDocumentModal - Selected Layout passed to EmailSendModal:', selectedLayout);
           if (onSend) {

@@ -37,7 +37,8 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import FooterTextEditor from '@/components/finance/FooterTextEditor';
 import InventorySelector from '@/components/quotes/InventorySelector';
-import { LivePreviewComponent } from '@/components/finance/LivePreviewComponent';
+// Removed: LivePreviewComponent - using PDF-only system
+// import { LivePreviewComponent } from '@/components/finance/LivePreviewComponent';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { COUNTRIES } from '@/constants/countries';
 import {
@@ -110,7 +111,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ProfessionalBusinessTemplate } from '@/components/templates/invoice-templates';
 
 // Use ImportedInvoiceTemplate type from @/components/finance/InvoiceTemplates
 import { UserPreferencesService } from '@/lib/userPreferences';
@@ -179,6 +179,11 @@ type PreviewTemplateData = {
   tax: number;
   total: number;
   vatRate?: number;
+  taxGrouped?: Array<{
+    rate: number;
+    netAmount: number;
+    taxAmount: number;
+  }>;
   isSmallBusiness?: boolean;
   bankDetails?: {
     iban?: string;
@@ -569,18 +574,9 @@ export default function CreateQuotePage() {
   const [emailBody, setEmailBody] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailAttachmentB64, setEmailAttachmentB64] = useState<string | null>(null);
-  const [emailAttachmentName, setEmailAttachmentName] = useState<string>('Angebot.pdf');
+  const [emailAttachmentName, setEmailAttachmentName] = useState<string>('Angebot.docx');
   const [emailAttachmentReady, setEmailAttachmentReady] = useState<boolean>(false);
   const [emailAttachmentError, setEmailAttachmentError] = useState<string | null>(null);
-  // On-demand PDF creation
-  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
-  const [pdfSizeBytes, setPdfSizeBytes] = useState<number | null>(null);
-  const [creatingPdf, setCreatingPdf] = useState<boolean>(false);
-
-  // Template Auswahl & User Preferences - entfernt, da doppelt deklariert
-
-  // PDF Hidden Container Ref
-  const pdfContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Produkt-anlegen Prompt/Modal State
   const [dismissedCreatePromptIds, setDismissedCreatePromptIds] = useState<Set<string>>(new Set());
@@ -764,7 +760,7 @@ export default function CreateQuotePage() {
           // ignoriere Fehler in der Auto-Suche
         }
       })();
-    }, 100);
+    }, 2000); // 2 Sekunden Delay - weniger aufdringlich
     timers.set(id, t);
   };
 
@@ -873,6 +869,7 @@ export default function CreateQuotePage() {
       total: 0,
     },
   ]);
+  const [showDetailsForItem, setShowDetailsForItem] = useState<Set<string>>(new Set());
 
   // Halte itemsRef synchron, damit Debounce/Popover-Logik nicht vor Deklaration auf items zugreift
   useEffect(() => {
@@ -1146,9 +1143,9 @@ export default function CreateQuotePage() {
     console.warn(
       'Unbekannte Template-ID:',
       templateId,
-      'Verwende Professional Business Template als Fallback'
+      'Verwende Standard Template als Fallback'
     );
-    return ProfessionalBusinessTemplate;
+    return null; // Template System wird über AVAILABLE_TEMPLATES verwaltet
   };
   useEffect(() => {
     if (!settings) return;
@@ -1834,438 +1831,13 @@ export default function CreateQuotePage() {
       );
     }
     if (!emailTo && formData.customerEmail) setEmailTo(formData.customerEmail);
-    // PDF vorab erstellen (rein clientseitig)
-    (async () => {
-      try {
-        setEmailAttachmentError(null);
-        setEmailAttachmentReady(false);
-        const filename = `Angebot-${(data.companyName || 'Angebot').replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
-        setEmailAttachmentName(filename);
-        await new Promise(r => setTimeout(r, 100));
-        // Clientseitig erzeugen
-        const blob = await generatePdfBlob();
-        if (!blob || (blob as any).size === 0) throw new Error('Leeres PDF');
-        const base64 = await blobToBase64(blob);
-        setEmailAttachmentB64(base64);
-        setEmailAttachmentReady(true);
-      } catch (err: any) {
-        console.error('PDF-PreRender fehlgeschlagen', err);
-        setEmailAttachmentError(err?.message || 'PDF konnte nicht erstellt werden');
-        setEmailAttachmentReady(false);
-      }
-    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emailCardOpen]);
 
-  // PDF-Generierung mit React-PDF und dem umgeschriebenen Template
-  const generatePdfBlob = async (): Promise<Blob> => {
-    try {
-      console.log('[PDF] Start React-PDF Erzeugung mit umgeschriebenem Template');
-
-      // Verwende das bestehende Template-Datenformat - angepasst für Invoice mit Platzhaltern
-      const templateData = {
-        ...getProcessedPreviewData(),
-        dueDate: getProcessedPreviewData().validUntil, // Fälligkeitsdatum für Rechnungen
-      };
-
-      console.log('[PDF] Template-Daten erstellt', {
-        companyName: templateData.companyName,
-        customerName: templateData.customerName,
-        invoiceNumber: templateData.invoiceNumber,
-        itemCount: templateData.items?.length || 0,
-        total: templateData.total,
-        currency: templateData.currency,
-      });
-
-      // React-PDF importieren
-      const { pdf } = await import('@react-pdf/renderer');
-      const { default: GermanStandardInvoicePDF } = await import(
-        '@/components/pdf/GermanStandardInvoicePDF'
-      );
-
-      // PDF mit dem umgeschriebenen Template generieren
-      const blob = await pdf(<GermanStandardInvoicePDF data={templateData} />).toBlob();
-
-      const size = blob.size;
-      console.log('[PDF] React-PDF Blob erstellt', {
-        size,
-        sizeKB: (size / 1024).toFixed(1),
-        isEmpty: size < 1000,
-      });
-
-      if (size < 1000) {
-        throw new Error('PDF ist zu klein - möglicherweise leer');
-      }
-
-      return blob;
-    } catch (error) {
-      console.error('[PDF] React-PDF Fehler:', error);
-      throw new Error(`PDF-Erstellung fehlgeschlagen: ${error}`);
-    }
-  };
-
-  // Fallback-Erzeugung via html2canvas + jsPDF (mit Seiten-Slicing)
-  const generatePdfViaCanvas = async (element: HTMLElement): Promise<Blob> => {
-    const [{ default: html2canvas }, { default: jsPDF }]: any = await Promise.all([
-      import('html2canvas'),
-      import('jspdf'),
-    ]);
-
-    // Sicherstellen, dass Layout steht
-    await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
-
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#FFFFFF',
-      logging: true,
-      windowWidth: Math.max(794, element.scrollWidth || element.clientWidth || 794),
-      windowHeight: Math.max(1123, element.scrollHeight || 1123),
-    });
-
-    const imgWidthPt = 595.28; // A4 Breite in pt
-    const pageHeightPt = 841.89; // A4 Höhe in pt
-    const canvasWidthPx = canvas.width;
-    const canvasHeightPx = canvas.height;
-    const ratio = imgWidthPt / canvasWidthPx;
-    const imgHeightPt = canvasHeightPx * ratio;
-
-    const pdf = new jsPDF('p', 'pt', 'a4');
-
-    if (imgHeightPt <= pageHeightPt) {
-      const imgData = canvas.toDataURL('image/jpeg', 0.98);
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidthPt, imgHeightPt);
-    } else {
-      // Mehrseitig: in Seitenhöhe-Pixeln schneiden
-      const pageHeightPx = Math.floor(pageHeightPt / ratio);
-      let renderedPx = 0;
-      let pageIndex = 0;
-      const tmp = document.createElement('canvas');
-      const ctx = tmp.getContext('2d')!;
-      tmp.width = canvasWidthPx;
-      while (renderedPx < canvasHeightPx) {
-        const sliceHeightPx = Math.min(pageHeightPx, canvasHeightPx - renderedPx);
-        tmp.height = sliceHeightPx;
-        ctx.clearRect(0, 0, tmp.width, tmp.height);
-        ctx.drawImage(
-          canvas,
-          0,
-          renderedPx,
-          canvasWidthPx,
-          sliceHeightPx,
-          0,
-          0,
-          canvasWidthPx,
-          sliceHeightPx
-        );
-        const imgData = tmp.toDataURL('image/jpeg', 0.98);
-        if (pageIndex > 0) pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidthPt, sliceHeightPx * ratio);
-        renderedPx += sliceHeightPx;
-        pageIndex++;
-      }
-    }
-
-    return pdf.output('blob');
-  };
-
-  const downloadPdf = async () => {
-    try {
-      console.log('[PDF] Download gestartet');
-      const element = pdfContainerRef.current;
-      if (!element) throw new Error('PDF-Container nicht verfügbar');
-      const data = getProcessedPreviewData();
-      const filename = `Rechnung-${(data.companyName || 'Rechnung').replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
-
-      // 1) Server-seitiges PDF versuchen (höchste Qualität)
-      try {
-        const previewData = getProcessedPreviewData();
-        const res = await fetch('/api/pdf/quote', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            uid,
-            quoteId: 'preview',
-            host: window.location.host,
-            data: previewData,
-          }),
-        });
-        if (res.ok) {
-          const arrayBuffer = await res.arrayBuffer();
-          const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
-          if ((blob as any).size > 1500) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => {
-              URL.revokeObjectURL(url);
-              a.remove();
-            }, 1000);
-            console.log('[PDF] Download ausgelöst (server)', {
-              filename,
-              size: (blob as any).size,
-            });
-            return;
-          }
-        } else {
-          const err = await res.json().catch(() => ({}));
-          console.warn('[PDF] Server-PDF fehlgeschlagen', err);
-        }
-      } catch (e) {
-        console.warn('[PDF] Server-PDF Fehler', e);
-      }
-
-      // 2) Client-Fallback
-      const blob = await generatePdfBlob();
-      if (!blob || (blob as any).size === 0) throw new Error('Leeres PDF erhalten');
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-        a.remove();
-      }, 1000);
-      console.log('[PDF] Download ausgelöst (client)', { filename, size: (blob as any).size });
-    } catch (e: any) {
-      console.error('[PDF] Download-Fehler', e);
-      toast.error(`PDF konnte nicht erstellt werden${e?.message ? `: ${e.message}` : ''}`);
-    }
-  };
 
   const printInBrowser = () => {
-    try {
-      // Berechne die aktuellen Summen
-      const subtotal = items.reduce((sum, it) => {
-        const t = it.total || 0;
-        if (it.category === 'discount') {
-          return sum + -Math.abs(t);
-        }
-        const factor = 1 - Math.max(0, Math.min(100, it.discountPercent || 0)) / 100;
-        return sum + t * factor;
-      }, 0);
-      const vat = subtotal * (taxRate / 100);
-      const grandTotal = subtotal + vat;
-
-      // 🔧 WICHTIG: Verwende getProcessedPreviewData() für korrekte Platzhalter-Ersetzung
-      const processedData = getProcessedPreviewData();
-
-      // Vollständige Datenstruktur für die Print-Vorschau
-      const data = {
-        // Rechnungsdetails
-        invoiceNumber: formData.title || 'Vorschau',
-        date: formData.invoiceDate || new Date().toISOString().split('T')[0],
-        validUntil: formData.validUntil || new Date().toISOString().split('T')[0],
-        deliveryDate: formData.deliveryDate,
-        // Lieferzeitraum für Template (falls Range ausgewählt)
-        servicePeriod:
-          deliveryDateType === 'range' && deliveryDateRange.from && deliveryDateRange.to
-            ? `${deliveryDateRange.from.toLocaleDateString('de-DE')} - ${deliveryDateRange.to.toLocaleDateString('de-DE')}`
-            : undefined,
-        serviceDate: deliveryDateType === 'single' ? formData.deliveryDate : undefined,
-        deliveryDateType: deliveryDateType,
-        deliveryDateRange: deliveryDateRange,
-
-        // Kundendaten
-        customerName: formData.customerName || '',
-        customerEmail: formData.customerEmail || '',
-        customerAddress: formData.customerAddress || '',
-        customerOrderNumber: formData.customerOrderNumber || '',
-
-        // Unternehmensdaten
-        companyName:
-          company?.companyName || settings?.companyName || (user as any)?.name || 'Ihr Unternehmen',
-        companyAddress: [
-          [company?.companyStreet?.replace(/\s+/g, ' ').trim(), company?.companyHouseNumber]
-            .filter(Boolean)
-            .join(' '),
-          [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
-          company?.companyCountry,
-        ]
-          .filter(Boolean)
-          .join('\n'),
-        companyEmail:
-          company?.contactEmail || company?.email || (settings as any)?.contactEmail || '',
-        companyPhone:
-          company?.companyPhoneNumber ||
-          company?.phoneNumber ||
-          (settings as any)?.companyPhone ||
-          '',
-        companyWebsite:
-          company?.website || company?.companyWebsite || (settings as any)?.companyWebsite || '',
-        companyVatId: company?.vatId || company?.step3?.vatId || (settings as any)?.vatId || '',
-        companyTaxNumber:
-          company?.taxNumber || company?.step3?.taxNumber || (settings as any)?.taxNumber || '',
-        companyLogo: company?.profilePictureURL || company?.profilePictureFirebaseUrl || '',
-
-        // Bankdaten
-        bankDetails: {
-          iban: company?.iban || company?.step4?.iban || settings?.iban || '',
-          bic: company?.bic || company?.step4?.bic || (settings as any)?.bic || '',
-          bankName:
-            company?.bankName || company?.step4?.bankName || (settings as any)?.bankName || '',
-          accountHolder:
-            company?.accountHolder ||
-            company?.step4?.accountHolder ||
-            (settings as any)?.accountHolder ||
-            company?.companyName ||
-            'Kontoinhaber',
-        },
-
-        // Positionen
-        items: items.filter(item => item.description && item.quantity > 0),
-
-        // Finanzielle Daten
-        subtotal: subtotal,
-        tax: vat,
-        total: grandTotal,
-        currency: formData.currency || 'EUR',
-        vatRate: taxRate,
-        isSmallBusiness:
-          company?.kleinunternehmer === 'ja' || company?.ust === 'kleinunternehmer' || false,
-
-        // 🔧 KORRIGIERT: Verwende verarbeitete Texte mit ersetzten Platzhaltern
-        headTextHtml: processedData.headTextHtml || '',
-        notes: formData.notes || '',
-        footerText: processedData.footerText || '',
-        paymentTerms: formData.paymentTerms || '',
-        deliveryTerms: formData.deliveryTerms || '',
-
-        // Skonto-Daten
-        skontoEnabled: formData.skontoEnabled || false,
-        skontoDays: formData.skontoDays || 0,
-        skontoPercentage: formData.skontoPercentage || 0,
-        skontoText: formData.skontoText || '',
-
-        // Kontaktperson
-        contactPersonName: formData.internalContactPerson || '',
-
-        // Zusätzliche Felder
-        title: formData.title || '',
-        reference: formData.customerOrderNumber || undefined,
-        description: processedData.headTextHtml || '',
-        taxRule: formData.taxRule || 'DE_TAXABLE',
-      };
-
-      // 🔍 DEBUG: Zeige alle gesendeten Daten
-      console.log('=== PRINT BROWSER DEBUG ===');
-      console.log('Gesendete Daten an Print-Preview:', data);
-      console.log('Verarbeitete Platzhalter-Texte:', {
-        originalHeadText: formData.headTextHtml,
-        processedHeadText: processedData.headTextHtml,
-        originalFooterText: formData.footerText,
-        processedFooterText: processedData.footerText,
-      });
-      console.log('FormData State:', {
-        customerName: formData.customerName,
-        customerEmail: formData.customerEmail,
-        customerAddress: formData.customerAddress,
-        title: formData.title,
-        invoiceDate: formData.invoiceDate,
-        validUntil: formData.validUntil,
-        deliveryDate: formData.deliveryDate,
-        headTextHtml: formData.headTextHtml,
-        footerText: formData.footerText,
-        paymentTerms: formData.paymentTerms,
-        notes: formData.notes,
-      });
-      console.log('Company Data:', company);
-      console.log('Items:', items);
-      console.log('Berechnete Summen:', { subtotal, vat, grandTotal });
-      console.log('=== END DEBUG ===');
-
-      // UTF-8-sichere Base64-Kodierung (vermeidet UmsÃ¤tze/ä/ö/ü-Probleme)
-      const encodeBase64Utf8 = (obj: any): string => {
-        const json = typeof obj === 'string' ? obj : JSON.stringify(obj);
-        const bytes = new TextEncoder().encode(json);
-        let bin = '';
-        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-        return btoa(bin);
-      };
-      const payload = encodeURIComponent(encodeBase64Utf8(data));
-      const url = `/print/invoice/preview?auto=1&payload=${payload}`;
-      const win = window.open(url, '_blank');
-      if (!win || win.closed || typeof win.closed === 'undefined') {
-        toast.message('Popup-Blocker aktiv – bitte Popups erlauben und erneut versuchen.');
-      }
-    } catch (e) {
-      console.error('Print Error:', e);
-      toast.error('Browser-Druck konnte nicht gestartet werden');
-    }
-  };
-
-  const blobToBase64 = (blob: Blob): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        const base64 = result.split(',')[1] || '';
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-
-  const sendEmailWithPdf = async () => {
-    if (!emailTo) {
-      toast.error('Empfänger fehlt');
-      return;
-    }
-    try {
-      setSendingEmail(true);
-      const data = getProcessedPreviewData();
-      let base64 = emailAttachmentB64;
-      if (!emailAttachmentReady || !base64) {
-        // als Fallback jetzt erzeugen
-        await new Promise(r => setTimeout(r, 150));
-        toast.message('PDF wird erstellt …');
-        // Clientseitig erzeugen (kein Server-PDF)
-        const blob = await generatePdfBlob();
-        if (!blob || (blob as any).size === 0) {
-          toast.error('PDF ist leer – Erstellung fehlgeschlagen');
-          return;
-        }
-        base64 = await blobToBase64(blob);
-      }
-      // Absender auf firmenname@taskilo.de normalisieren
-      const slug = (data.companyName || 'taskilo')
-        .normalize('NFKD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '');
-      const from = `${slug}@taskilo.de`;
-      toast.message('E-Mail wird versendet …');
-      const res = await fetch('/api/email/send-quote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: [emailTo],
-          subject: emailSubject || `Angebot ${data.companyName}`,
-          html: (emailBody || '').replace(/\n/g, '<br />'),
-          text: emailBody || undefined,
-          from,
-          attachment: { filename: emailAttachmentName || 'Angebot.pdf', contentBase64: base64 },
-          meta: { uid, source: 'create-quote' },
-        }),
-      });
-      const json = await res.json();
-      if (res.ok && json.success) {
-        toast.success('E-Mail wurde versendet');
-        setEmailCardOpen(false);
-      } else {
-        toast.error(json?.error || 'E-Mail Versand fehlgeschlagen');
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error('E-Mail Versand fehlgeschlagen (siehe Konsole)');
-    } finally {
-      setSendingEmail(false);
-    }
+    toast.message('Browser-Druck wurde deaktiviert.');
+    console.log('Browser-Druck wurde deaktiviert - PDF-Funktionen entfernt');
   };
 
   // Guard
@@ -2298,6 +1870,35 @@ export default function CreateQuotePage() {
   }, 0);
   const vat = subtotal * (taxRate / 100);
   const grandTotal = subtotal + vat;
+
+  // SevDesk-style tax grouping: Group items by tax rate for multi-tax invoices
+  const taxGroups: { [rate: number]: { netAmount: number; taxAmount: number } } = {};
+  
+  items.forEach(item => {
+    if (item.category === 'discount') return; // Skip discount items
+    
+    const itemTaxRate = item.taxRate || taxRate;
+    const t = item.total || 0;
+    const factor = 1 - Math.max(0, Math.min(100, item.discountPercent || 0)) / 100;
+    const netAmount = t * factor;
+    const itemTaxAmount = netAmount * (itemTaxRate / 100);
+    
+    if (!taxGroups[itemTaxRate]) {
+      taxGroups[itemTaxRate] = { netAmount: 0, taxAmount: 0 };
+    }
+    
+    taxGroups[itemTaxRate].netAmount += netAmount;
+    taxGroups[itemTaxRate].taxAmount += itemTaxAmount;
+  });
+  
+  // Convert to array format like SevDesk
+  const taxGrouped = Object.entries(taxGroups)
+    .map(([rate, amounts]) => ({
+      rate: Number(rate),
+      netAmount: Math.round(amounts.netAmount * 100) / 100,
+      taxAmount: Math.round(amounts.taxAmount * 100) / 100,
+    }))
+    .sort((a, b) => b.rate - a.rate); // Sort descending (19%, 7%, 0%)
 
   // Handlers
   const handleCustomerSelect = (customerName: string) => {
@@ -2419,7 +2020,7 @@ export default function CreateQuotePage() {
       customerAddress: formData.customerAddress || '',
       customerOrderNumber: formData.customerOrderNumber || '',
       customerPhone: selectedCustomer?.phone || '',
-      customerVatId: selectedCustomer?.vatId || '', // CRITICAL: Customer VAT ID for PDF
+      customerVatId: selectedCustomer?.vatId || '', // Customer VAT ID
       // Rechnungsbeschreibung
       description: formData.title || `Rechnung ${nextNumber}`,
 
@@ -2492,6 +2093,7 @@ export default function CreateQuotePage() {
         unit: item.unit || 'Stk',
         category: item.category || 'Artikel',
         inventoryItemId: item.inventoryItemId || null,
+        extendedDescription: (item as any).extendedDescription || '', // Erweiterte Beschreibung
       })),
 
       // Additional fields
@@ -2517,7 +2119,7 @@ export default function CreateQuotePage() {
         }
         return formData.servicePeriod;
       })(),
-      headTextHtml: formData.headTextHtml || '', // CRITICAL: Kopftext für Modal/PDF
+      headTextHtml: formData.headTextHtml || '', // Kopftext für Modal
       footerText: formData.footerText || '',
       notes: formData.notes || '',
 
@@ -2687,6 +2289,7 @@ export default function CreateQuotePage() {
 
         // Tax & Business Settings - ALLE Steuer-Einstellungen
         vatRate: taxRate,
+        taxGrouped: taxGrouped, // SevDesk-style multi-tax support
         isSmallBusiness: settings?.ust === 'kleinunternehmer' || taxRate === 0,
         priceInput: showNet ? 'netto' : 'brutto',
         taxRuleType: (formData.taxRule as TaxRuleType) || 'DE_TAXABLE',
@@ -2734,8 +2337,7 @@ export default function CreateQuotePage() {
         eInvoiceType: eInvoiceEnabled ? 'zugferd' : null,
         eInvoiceSettings: eInvoiceEnabled ? eInvoiceSettings : null,
 
-        // PDF & Document Paths
-        pdfPath: null,
+        // Document Paths
         eInvoiceXmlPath: null,
 
         // Delivery Date Configuration
@@ -4123,7 +3725,24 @@ export default function CreateQuotePage() {
 
           {/* Positions-Steuerleiste */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
-            <Button type="button" variant="link" onClick={addItem} className="px-0 text-[#14ad9f]">
+            <Button 
+              type="button" 
+              variant="link" 
+              onClick={() => {
+                const newItem: QuoteItem = {
+                  id: typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                    ? crypto.randomUUID()
+                    : Math.random().toString(36).slice(2),
+                  description: '',
+                  quantity: 1,
+                  unitPrice: 0,
+                  total: 0,
+                  taxRate: taxRate, // Verwende globalen Steuersatz als Standard
+                };
+                setItems(prev => [...prev, newItem]);
+              }}
+              className="px-0 text-[#14ad9f]"
+            >
               + Position hinzufügen
             </Button>
             <InventorySelector
@@ -4143,6 +3762,7 @@ export default function CreateQuotePage() {
                   unit: invItem.unit,
                   inventoryItemId: invItem.id,
                   discountPercent: 0,
+                  taxRate: taxRate, // Verwende globalen Steuersatz als Standard
                 };
                 setItems(prev => [...prev, newItem]);
               }}
@@ -4162,6 +3782,7 @@ export default function CreateQuotePage() {
                   unitPrice: 0,
                   total: 0,
                   category: 'discount',
+                  taxRate: 0, // Rabatte haben normalerweise 0% Steuer
                 };
                 setItems(prev => [...prev, newItem]);
               }}
@@ -4226,6 +3847,7 @@ export default function CreateQuotePage() {
                                       unitPrice: price,
                                       total: price,
                                       unit: service.unit || 'Stk',
+                                      taxRate: taxRate, // Verwende globalen Steuersatz als Standard
                                     },
                                   ]);
                                   setNewServiceName('');
@@ -4369,6 +3991,7 @@ export default function CreateQuotePage() {
                           unitPrice: parseFloat(serviceDraft.price),
                           total: parseFloat(serviceDraft.price),
                           unit: serviceDraft.unit,
+                          taxRate: taxRate, // Verwende globalen Steuersatz als Standard
                         },
                       ]);
 
@@ -4391,12 +4014,43 @@ export default function CreateQuotePage() {
             </Dialog>
           </div>
 
+          {/* Header-Zeile für Spalten (nur einmal anzeigen) */}
+          {items.length > 0 && (
+            <div className="flex gap-3 px-4 py-2 bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
+              <div style={{ flex: 1 }}>
+                <label className="block">Produkt oder Service</label>
+              </div>
+              <div style={{ width: '80px' }}>
+                <label className="block">Menge</label>
+              </div>
+              <div style={{ width: '100px' }}>
+                <label className="block">Einheit</label>
+              </div>
+              <div style={{ width: '120px' }}>
+                <label className="block">
+                  Preis <small>({showNet ? 'Netto' : 'Brutto'})</small>
+                </label>
+              </div>
+              <div style={{ width: '80px' }}>
+                <label className="block">USt.</label>
+              </div>
+              <div style={{ width: '80px' }}>
+                <label className="block">Rabatt</label>
+              </div>
+              <div style={{ width: '100px', textAlign: 'right' }}>
+                <label className="block">Betrag</label>
+              </div>
+              <div style={{ width: '36px' }}></div>
+            </div>
+          )}
+
           {/* Positionsliste */}
-          <div className="space-y-4">
+          <div className="space-y-2">
             {items.map((item, index) => {
+              const itemTaxRate = item.taxRate ?? taxRate;
               const unitPriceDisplay = showNet
                 ? item.unitPrice
-                : item.unitPrice * (1 + taxRate / 100);
+                : item.unitPrice * (1 + itemTaxRate / 100);
               // Rabatt-Positionen als negative Beträge darstellen
               const baseTotalNet = item.total || 0;
               const sign = item.category === 'discount' ? -1 : 1;
@@ -4406,14 +4060,13 @@ export default function CreateQuotePage() {
                   ? 1
                   : 1 - Math.max(0, Math.min(100, item.discountPercent || 0)) / 100;
               const totalNet = baseTotalNet * sign * discountFactor;
-              const totalGross = totalNet * (1 + taxRate / 100);
+              const totalGross = totalNet * (1 + itemTaxRate / 100);
               return (
-                <div
-                  key={item.id}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border border-gray-200 rounded-lg"
-                >
-                  <div className="md:col-span-4">
-                    <div className="flex items-center gap-1">
+                <div key={item.id} className="border border-gray-200 rounded-lg">
+                  {/* Hauptzeile mit allen Feldern */}
+                  <div className="flex gap-3 p-4 items-end hover:bg-gray-50">
+                  <div style={{ flex: 1 }}>
+                    <div className="sr-only">
                       <Label>Beschreibung</Label>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -4505,8 +4158,10 @@ export default function CreateQuotePage() {
                       </PopoverContent>
                     </Popover>
                   </div>
-                  <div className="md:col-span-1">
-                    <Label>Menge</Label>
+                  <div style={{ width: '80px' }}>
+                    <div className="sr-only">
+                      <Label>Menge</Label>
+                    </div>
                     <Input
                       type="number"
                       value={item.quantity}
@@ -4517,8 +4172,10 @@ export default function CreateQuotePage() {
                       step="0.01"
                     />
                   </div>
-                  <div className="md:col-span-1">
-                    <Label>Einheit</Label>
+                  <div style={{ width: '100px' }}>
+                    <div className="sr-only">
+                      <Label>Einheit</Label>
+                    </div>
                     <Select
                       value={(item.unit as string) ?? 'Stk'}
                       onValueChange={val => {
@@ -4541,14 +4198,16 @@ export default function CreateQuotePage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="md:col-span-2">
-                    <Label>
-                      Preis
-                      <small className="font-normal text-gray-500">
-                        {' '}
-                        ({showNet ? 'Netto' : 'Brutto'})
-                      </small>
-                    </Label>
+                  <div style={{ width: '120px' }}>
+                    <div className="sr-only">
+                      <Label>
+                        Preis
+                        <small className="font-normal text-gray-500">
+                          {' '}
+                          ({showNet ? 'Netto' : 'Brutto'})
+                        </small>
+                      </Label>
+                    </div>
                     <Input
                       type="number"
                       value={
@@ -4562,9 +4221,36 @@ export default function CreateQuotePage() {
                       className="w-28 md:w-32 h-8 text-sm px-2"
                     />
                   </div>
-                  {/* Rabatt in % (nur für normale Positionen) */}
-                  <div className="md:col-span-1">
-                    <Label>Rabatt %</Label>
+                  <div style={{ width: '80px' }}>
+                    <div className="sr-only">
+                      <Label>USt. %</Label>
+                    </div>
+                    <Select
+                      value={(item.taxRate ?? taxRate).toString()}
+                      onValueChange={val => {
+                        const newTaxRate = parseFloat(val);
+                        setItems(prev =>
+                          prev.map((it, i) =>
+                            i === index ? { ...it, taxRate: newTaxRate } : it
+                          )
+                        );
+                      }}
+                      disabled={item.category === 'discount'}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">0%</SelectItem>
+                        <SelectItem value="7">7%</SelectItem>
+                        <SelectItem value="19">19%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div style={{ width: '80px' }}>
+                    <div className="sr-only">
+                      <Label>Rabatt %</Label>
+                    </div>
                     <Input
                       type="number"
                       min={0}
@@ -4589,15 +4275,17 @@ export default function CreateQuotePage() {
                       disabled={item.category === 'discount'}
                     />
                   </div>
-                  <div className="md:col-span-2">
-                    <Label>Betrag</Label>
+                  <div style={{ width: '100px', textAlign: 'right' }}>
+                    <div className="sr-only">
+                      <Label>Betrag</Label>
+                    </div>
                     <div
-                      className={`h-10 flex items-center text-sm font-medium ${item.category === 'discount' ? 'text-red-600' : ''}`}
+                      className={`h-10 flex items-center justify-end text-sm font-medium ${item.category === 'discount' ? 'text-red-600' : ''}`}
                     >
                       {formatCurrency(showNet ? totalNet : totalGross)}
                     </div>
                   </div>
-                  <div className="md:col-span-1 flex items-end">
+                  <div style={{ width: '36px' }} className="flex items-end">
                     <Button
                       type="button"
                       variant="outline"
@@ -4609,6 +4297,28 @@ export default function CreateQuotePage() {
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
+                  </div>
+
+
+
+                  {/* Erweiterte Beschreibung - Automatisch anzeigen wenn Beschreibung vorhanden */}
+                  {item.description && item.description.trim().length > 0 && (
+                    <div className="px-4 pb-4">
+                      <textarea
+                        placeholder="Erweiterte Beschreibung (optional) - wird auf der Rechnung unter der Position angezeigt"
+                        value={(item as any).extendedDescription || ''}
+                        onChange={e => {
+                          setItems(prev =>
+                            prev.map((it, i) =>
+                              i === index ? { ...it, extendedDescription: e.target.value } : it
+                            )
+                          );
+                        }}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent text-sm"
+                        rows={4}
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -4793,11 +4503,22 @@ export default function CreateQuotePage() {
               <span>Gesamtsumme Netto (inkl. Rabatte / Aufschläge)</span>
               <span>{formatCurrency(subtotal)}</span>
             </li>
-            {!showNet && taxRate > 0 && (
-              <li className="flex justify-between py-2 border-b">
-                <span>Umsatzsteuer {taxRate}%</span>
-                <span>{formatCurrency(vat)}</span>
-              </li>
+            {!showNet && taxGrouped.length > 0 ? (
+              // SevDesk-style: Show multiple tax rates
+              taxGrouped.filter(tax => tax.taxAmount > 0).map((tax, index) => (
+                <li key={index} className="flex justify-between py-2 border-b">
+                  <span>Umsatzsteuer {tax.rate}%</span>
+                  <span>{formatCurrency(tax.taxAmount)}</span>
+                </li>
+              ))
+            ) : (
+              // Fallback: Single tax rate display
+              !showNet && taxRate > 0 && (
+                <li className="flex justify-between py-2 border-b">
+                  <span>Umsatzsteuer {taxRate}%</span>
+                  <span>{formatCurrency(vat)}</span>
+                </li>
+              )
             )}
             <li className="flex justify-between py-2">
               <span className="text-lg font-semibold">
@@ -4828,140 +4549,14 @@ export default function CreateQuotePage() {
 
       {/* E-Rechnung ist ab 2025 PFLICHT - automatisch bei jeder Rechnung */}
 
-      {emailCardOpen && (
-        <div className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>E-Mail versenden</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-3">
-                {pdfPreviewUrl && (
-                  <div className="rounded border p-2 bg-gray-50 text-xs text-gray-600">
-                    PDF bereit • Größe:{' '}
-                    {pdfSizeBytes ? `${(pdfSizeBytes / 1024).toFixed(1)} KB` : '—'} •
-                    <a
-                      className="ml-1 underline text-[#14ad9f]"
-                      href={pdfPreviewUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Anzeigen
-                    </a>
-                    <a
-                      className="ml-2 underline"
-                      href={pdfPreviewUrl}
-                      download={emailAttachmentName || 'Angebot.pdf'}
-                    >
-                      Download
-                    </a>
-                  </div>
-                )}
-                <div className="space-y-1">
-                  <Label>Empfänger</Label>
-                  <Input
-                    value={emailTo}
-                    onChange={e => setEmailTo(e.target.value)}
-                    placeholder="kunde@example.com"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Betreff</Label>
-                  <Input
-                    value={emailSubject}
-                    onChange={e => setEmailSubject(e.target.value)}
-                    placeholder="Angebot …"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Text</Label>
-                  <Textarea
-                    rows={6}
-                    value={emailBody}
-                    onChange={e => setEmailBody(e.target.value)}
-                    placeholder="Ihre Nachricht …"
-                  />
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button
-                    type="button"
-                    onClick={sendEmailWithPdf}
-                    disabled={sendingEmail}
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                  >
-                    {sendingEmail ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Mail className="w-4 h-4 mr-2" />
-                    )}{' '}
-                    Jetzt senden
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => setEmailCardOpen(false)}>
-                    Abbrechen
-                  </Button>
-                </div>
-                <div className="text-xs text-gray-500">
-                  {emailAttachmentReady ? (
-                    <>Anhang bereit: {emailAttachmentName}</>
-                  ) : emailAttachmentError ? (
-                    <>
-                      Anhang fehlgeschlagen: {emailAttachmentError}
-                      <Button
-                        type="button"
-                        variant="link"
-                        className="px-1"
-                        onClick={async () => {
-                          try {
-                            setEmailAttachmentError(null);
-                            setEmailAttachmentReady(false);
-                            const data = buildPreviewData();
-                            const filename = `Angebot-${(data.companyName || 'Angebot').replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
-                            setEmailAttachmentName(filename);
-                            await new Promise(r => setTimeout(r, 100));
-                            const blob = await generatePdfBlob();
-                            if (!blob || (blob as any).size === 0) throw new Error('Leeres PDF');
-                            const base64 = await blobToBase64(blob);
-                            setEmailAttachmentB64(base64);
-                            setEmailAttachmentReady(true);
-                          } catch (err: any) {
-                            setEmailAttachmentError(
-                              err?.message || 'PDF konnte nicht erstellt werden'
-                            );
-                            setEmailAttachmentReady(false);
-                          }
-                        }}
-                      >
-                        Erneut erstellen
-                      </Button>
-                    </>
-                  ) : (
-                    <>Anhang wird erstellt …</>
-                  )}{' '}
-                  • Absender:{' '}
-                  {(() => {
-                    const data = buildPreviewData();
-                    const slug = (data.companyName || 'taskilo')
-                      .normalize('NFKD')
-                      .replace(/[\u0300-\u036f]/g, '')
-                      .toLowerCase()
-                      .replace(/[^a-z0-9]+/g, '');
-                    return `${slug}@taskilo.de`;
-                  })()}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Live-Vorschau Komponente */}
-      <LivePreviewComponent
+      {/* Live-Vorschau Komponente - Removed: Using PDF-only system now */}
+      {/* <LivePreviewComponent
         isVisible={previewOpen}
         onClose={() => setPreviewOpen(false)}
         selectedTemplate={selectedTemplate}
         buildPreviewData={buildPreviewData}
         loadingTemplate={loadingTemplate}
-      />
+      /> */}
 
       {/* Modal: Neues Produkt */}
       <NewProductModal
