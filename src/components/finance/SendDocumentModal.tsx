@@ -466,9 +466,11 @@ ${document.companyName || 'Ihr Unternehmen'}`;
               print-color-adjust: exact !important;
             }
             
-            body { 
+            html, body { 
               margin: 0 !important; 
               padding: 0 !important; 
+              height: 100% !important;
+              overflow: hidden !important;
             }
             
             /* Remove any modal/dialog specific styles */
@@ -478,10 +480,25 @@ ${document.companyName || 'Ihr Unternehmen'}`;
               max-width: none !important;
             }
             
+            /* Ensure footer sticks to bottom without white space */
+            .absolute.bottom-0 {
+              bottom: 0 !important;
+              margin-bottom: 0 !important;
+            }
+            
             @media print {
               * { 
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
+              }
+              
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+              }
+              
+              @page {
+                margin: 0 !important;
               }
             }
           </style>

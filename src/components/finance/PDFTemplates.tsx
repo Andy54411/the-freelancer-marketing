@@ -153,9 +153,11 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({
   const bankDetails = document.bankDetails || {};
 
   const renderStandardTemplate = () => (
-    <div className="bg-white w-full min-h-[297mm] max-w-[210mm] mx-auto p-6 text-xs" style={{ fontFamily: 'Arial, sans-serif' }}>
-      {/* Header with color bar */}
-      <div className="relative mb-8">
+    <div className="bg-white w-full min-h-[297mm] max-w-[210mm] mx-auto text-xs flex flex-col" style={{ fontFamily: 'Arial, sans-serif' }}>
+      {/* Main content area - grows to fill space */}
+      <div className="flex-1 p-6">
+        {/* Header with color bar */}
+      <div className="relative mb-4">
         <div 
           className="absolute top-0 left-0 w-full h-2" 
           style={{ backgroundColor: color }}
@@ -164,8 +166,6 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({
           {/* Rechnung-Informationen links */}
           <div className="text-left flex-shrink-0">
             <div className="text-2xl font-bold mb-2">{documentLabel}</div>
-            <div className="text-gray-600">Nr. {invoiceNumber}</div>
-            {sequentialNumber && <div className="text-gray-500 text-sm">Lfd. Nr.: {sequentialNumber}</div>}
           </div>
           
           {/* Logo rechts */}
@@ -210,7 +210,6 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({
             <div>Lfd. Nr.: {sequentialNumber}</div>
             <div>Rechnungsdatum: {formatDate(invoiceDate)}</div>
             <div>Fälligkeitsdatum: {formatDate(dueDate)}</div>
-            <div>Zahlungsziel: {paymentTerms}</div>
             {servicePeriod && servicePeriod.trim() !== '' ? (
               <div>Leistungszeitraum: {servicePeriod}</div>
             ) : deliveryDate ? (
@@ -416,9 +415,10 @@ const PDFTemplate: React.FC<PDFTemplateProps> = ({
           <div className="text-xs text-yellow-700">{notes}</div>
         </div>
       )}
-
-      {/* Professional Footer with Pipe Separators - Mit Debug-Ausgabe */}
-      <div className="mt-8 pt-4">
+      </div>
+      
+      {/* Professional Footer with Pipe Separators - At bottom without white space */}
+      <div className="mt-auto bg-gray-50 border-t border-gray-200" style={{ margin: 0, padding: '8px 24px' }}>
         {(() => {
           // DEBUG: Zeige alle verfügbaren Daten im document
           console.log('🔍 [PDF FOOTER DEBUG] Available document data:', {
