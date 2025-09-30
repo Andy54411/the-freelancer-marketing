@@ -245,7 +245,7 @@ export const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ data, preview = fa
   }
 
   return (
-    <div className="w-full mt-auto pt-6 border-t-2 border-gray-400 print:mt-10 print:pt-8">
+    <div className="w-full mt-auto pt-6 border-t-2 print:mt-10 print:pt-8" style={{ borderColor: '#14ad9f' }}>
       {preview ? (
         <div className="text-[11px] text-gray-700 text-center leading-relaxed print:text-base print:leading-relaxed">
           <div>{footerParts.join(' | ')}</div>

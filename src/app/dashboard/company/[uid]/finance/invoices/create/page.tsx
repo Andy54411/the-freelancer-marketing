@@ -804,6 +804,31 @@ export default function CreateQuotePage() {
   const [skontoPercentage, setSkontoPercentage] = useState<number | undefined>(undefined);
   const [skontoText, setSkontoText] = useState<string>('');
 
+  // Lade E-Invoice Settings aus Company
+  useEffect(() => {
+    const loadEInvoiceSettings = async () => {
+      try {
+        const companyDoc = await getDoc(doc(db, 'companies', uid));
+        if (companyDoc.exists()) {
+          const companyData = companyDoc.data();
+          const eInvoiceSettings = companyData.eInvoiceSettings;
+          
+          if (eInvoiceSettings && eInvoiceSettings.enableAutoGeneration) {
+            setEInvoiceEnabled(true);
+            setEInvoiceSettings(eInvoiceSettings);
+            console.log('✅ E-Invoice Auto-Generation aktiviert:', eInvoiceSettings);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Fehler beim Laden der E-Invoice Settings:', error);
+      }
+    };
+
+    if (uid) {
+      loadEInvoiceSettings();
+    }
+  }, [uid]);
+
   // Form state
   const [formData, setFormData] = useState<CreateInvoiceFormData>({
     customerName: '',
@@ -2412,7 +2437,14 @@ export default function CreateQuotePage() {
       priceInput: 'brutto', // Standardmäßig brutto
 
       // Erweiterte Steuerregeln
+      taxRule: formData.taxRule || TaxRuleType.DE_TAXABLE,
       taxRuleType: formData.taxRule || TaxRuleType.DE_TAXABLE,
+      
+      // Skonto-Einstellungen
+      skontoEnabled: formData.skontoEnabled || skontoEnabled || false,
+      skontoDays: formData.skontoDays || skontoDays || 0,
+      skontoPercentage: formData.skontoPercentage || skontoPercentage || 0,
+      skontoText: formData.skontoText || skontoText || '',
 
       // Unternehmensdaten
       companyName: company?.companyName || '',
@@ -2463,11 +2495,45 @@ export default function CreateQuotePage() {
       })),
 
       // Additional fields
-      currency: 'EUR',
-      paymentTerms: finalPaymentTerms,
+      currency: formData.currency || 'EUR',
+      paymentTerms: formData.paymentTerms || finalPaymentTerms,
+      internalContactPerson: formData.internalContactPerson || '',
+      deliveryTerms: formData.deliveryTerms || '',
+      deliveryDate: formData.deliveryDate || '',
+      servicePeriod: (() => {
+        // Debug: Schaue was in servicePeriod steht
+        console.log('🔍 servicePeriod Debug:', {
+          servicePeriod: formData.servicePeriod,
+          deliveryDate: formData.deliveryDate,
+          servicePeriodTrimmed: formData.servicePeriod?.trim(),
+          isEmpty: !formData.servicePeriod || formData.servicePeriod.trim() === ''
+        });
+        
+        // Wenn servicePeriod leer ist oder dem deliveryDate entspricht, leeren
+        if (!formData.servicePeriod || 
+            formData.servicePeriod.trim() === '' || 
+            formData.servicePeriod === formData.deliveryDate) {
+          return '';
+        }
+        return formData.servicePeriod;
+      })(),
       headTextHtml: formData.headTextHtml || '', // CRITICAL: Kopftext für Modal/PDF
       footerText: formData.footerText || '',
       notes: formData.notes || '',
+
+      // E-Invoice Daten (falls aktiviert)
+      eInvoice: eInvoiceEnabled ? {
+        format: eInvoiceSettings?.defaultFormat || 'zugferd',
+        version: '1.0',
+        guid: crypto.randomUUID()
+      } : undefined,
+      eInvoiceData: eInvoiceEnabled && eInvoiceSettings ? {
+        format: eInvoiceSettings.defaultFormat || 'zugferd',
+        version: '1.0',
+        guid: crypto.randomUUID(),
+        validationStatus: 'pending' as const,
+        createdAt: new Date().toISOString()
+      } : undefined,
 
       // Metadata
       createdAt: new Date(),
@@ -3839,7 +3905,12 @@ export default function CreateQuotePage() {
                           className={`text-sm font-medium cursor-pointer ${
                             deliveryDateType === 'single' ? 'text-gray-900' : 'text-gray-500'
                           }`}
-                          onClick={() => setDeliveryDateType('single')}
+                          onClick={() => {
+                            setDeliveryDateType('single');
+                            // Leere servicePeriod und deliveryDateRange wenn Einzeldatum-Modus aktiviert wird
+                            setFormData(prev => ({ ...prev, servicePeriod: '' }));
+                            setDeliveryDateRange({});
+                          }}
                         >
                           Lieferdatum
                         </Label>
@@ -3850,7 +3921,11 @@ export default function CreateQuotePage() {
                         className={`text-sm font-medium cursor-pointer ${
                           deliveryDateType === 'range' ? 'text-gray-900' : 'text-gray-500'
                         }`}
-                        onClick={() => setDeliveryDateType('range')}
+                        onClick={() => {
+                          setDeliveryDateType('range');
+                          // Leere deliveryDate wenn Zeitraum-Modus aktiviert wird
+                          setFormData(prev => ({ ...prev, deliveryDate: '' }));
+                        }}
                       >
                         Zeitraum
                       </button>
@@ -3861,7 +3936,11 @@ export default function CreateQuotePage() {
                         type="date"
                         value={formData.deliveryDate}
                         onChange={e => {
-                          setFormData(prev => ({ ...prev, deliveryDate: e.target.value }));
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            deliveryDate: e.target.value,
+                            servicePeriod: '' // Leere servicePeriod wenn Einzeldatum verwendet wird
+                          }));
                         }}
                         required
                       />

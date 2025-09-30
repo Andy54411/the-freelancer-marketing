@@ -152,6 +152,7 @@ export interface InvoiceData {
     from: string | null;
     to: string | null;
   };
+  servicePeriod?: string; // Leistungszeitraum für Services
 
   // Tags für Organisation und Kategorisierung
   tags?: string[]; // Array von Tag-Namen für bessere Rechnungsorganisation

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import {
   Dialog,
@@ -44,6 +44,7 @@ import { toast } from 'sonner';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import PDFTemplate from './PDFTemplates';
+import { EmailSendModal } from './EmailSendModal';
 
 interface SendDocumentModalProps {
   isOpen: boolean;
@@ -67,9 +68,13 @@ export function SendDocumentModal({
   const [sending, setSending] = useState(false);
   const [showCompanySettings, setShowCompanySettings] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
+  const templateRef = useRef<HTMLDivElement>(null);
   const [emailMessage, setEmailMessage] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [sendCopy, setSendCopy] = useState(false);
+  
+  // Email modal state
+  const [showEmailModal, setShowEmailModal] = useState(false);
   const [activeOption, setActiveOption] = useState<SendOption>('download'); // Start with download like SevDesk
   const [expandedSections, setExpandedSections] = useState<Set<SendOption>>(new Set(['download']));
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -97,39 +102,51 @@ export function SendDocumentModal({
 
   // Load real invoice data from database when modal opens
   useEffect(() => {
-    if (!isOpen || !document?.id || !companyId) return;
+    if (!isOpen || !companyId) return;
 
     const loadRealInvoiceData = async () => {
       setLoadingEInvoiceData(true);
       try {
-        console.log('📄 Loading real invoice data for ID:', document.id);
-        
-        // Lade die echte Rechnung aus der Datenbank
-        const { FirestoreInvoiceService } = await import('@/services/firestoreInvoiceService');
-        const realInvoice = await FirestoreInvoiceService.getInvoiceById(companyId, document.id);
-        
-        if (realInvoice) {
-          console.log('✅ Real invoice data loaded:', realInvoice);
-          setRealDocumentData(realInvoice);
+        // Wenn document.id vorhanden ist, lade echte Daten aus der Datenbank
+        if (document?.id) {
+          console.log('📄 Loading real invoice data for ID:', document.id);
           
-          // Lade E-Invoice-Daten wenn vorhanden
-          if (realInvoice.eInvoiceData) {
-            console.log('📧 E-Invoice data found:', realInvoice.eInvoiceData);
-            setEInvoiceData(realInvoice.eInvoiceData);
+          // Lade die echte Rechnung aus der Datenbank
+          const { FirestoreInvoiceService } = await import('@/services/firestoreInvoiceService');
+          const realInvoice = await FirestoreInvoiceService.getInvoiceById(companyId, document.id);
+          
+          if (realInvoice) {
+            console.log('✅ Real invoice data loaded:', realInvoice);
+            setRealDocumentData(realInvoice);
             
-            // Generiere QR-Code für E-Invoice
-            if (realInvoice.eInvoiceData.guid) {
-              await generateQRCode(realInvoice.eInvoiceData.guid, realInvoice);
+            // Lade E-Invoice-Daten wenn vorhanden
+            if (realInvoice.eInvoiceData) {
+              console.log('📧 E-Invoice data found:', realInvoice.eInvoiceData);
+              setEInvoiceData(realInvoice.eInvoiceData);
+              
+              // Generiere QR-Code für E-Invoice
+              if (realInvoice.eInvoiceData.guid) {
+                await generateQRCode(realInvoice.eInvoiceData.guid, realInvoice);
+              }
             }
-          }
-          
-          // Set default email
-          if (realInvoice.customerEmail) {
-            setRecipientEmail(realInvoice.customerEmail);
+            
+            // Set default email
+            if (realInvoice.customerEmail) {
+              setRecipientEmail(realInvoice.customerEmail);
+            }
+          } else {
+            console.log('⚠️ No real invoice data found, using provided document data');
+            setRealDocumentData(document);
           }
         } else {
-          console.log('⚠️ No real invoice data found, using provided document data');
+          // Für neue Rechnungen (ohne ID): Verwende direkt die übergebenen tempInvoiceData
+          console.log('📝 Using provided document data for new invoice preview:', document);
           setRealDocumentData(document);
+          
+          // Set default email from document
+          if (document.customerEmail) {
+            setRecipientEmail(document.customerEmail);
+          }
         }
       } catch (error) {
         console.error('❌ Error loading real invoice data:', error);
@@ -141,7 +158,7 @@ export function SendDocumentModal({
     };
 
     loadRealInvoiceData();
-  }, [isOpen, document?.id, companyId]);
+  }, [isOpen, document?.id, companyId, document]);
 
   // Generate QR Code for E-Invoice
   const generateQRCode = async (guid: string, invoiceData: InvoiceData) => {
@@ -309,47 +326,6 @@ export function SendDocumentModal({
           </svg>
         )
       }
-    ],
-    premium: [
-      {
-        value: 'PREMIUM_FRIENDLY',
-        name: 'Freundlich',
-        svg: (
-          <svg viewBox="0 0 72 102" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-            <rect width="100%" height="100%" rx="4" fill="white"></rect>
-            <path d="M58.915 12C59.3656 12 59.7383 12.1473 60.033 12.442C60.3276 12.7367 60.475 13.118 60.475 13.586V24.584C60.475 25.0347 60.3276 25.416 60.033 25.728C59.7383 26.0227 59.3656 26.17 58.915 26.17C58.4643 26.17 58.0916 26.0227 57.797 25.728C57.5023 25.416 57.355 25.0347 57.355 24.584V23.31L57.927 23.544C57.927 23.7693 57.8056 24.0467 57.563 24.376C57.3203 24.688 56.991 25 56.575 25.312C56.159 25.624 55.665 25.8927 55.093 26.118C54.5383 26.326 53.9316 26.43 53.273 26.43C52.077 26.43 50.9936 26.1267 50.023 25.52C49.0523 24.896 48.281 24.0467 47.709 22.972C47.1543 21.88 46.877 20.632 46.877 19.228C46.877 17.8067 47.1543 16.5587 47.709 15.484C48.281 14.392 49.0436 13.5427 49.997 12.936C50.9503 12.312 52.0076 12 53.169 12C53.9143 12 54.599 12.1127 55.223 12.338C55.847 12.5633 56.3843 12.8493 56.835 13.196C57.303 13.5427 57.6583 13.898 57.901 14.262C58.161 14.6087 58.291 14.9033 58.291 15.146L57.355 15.484V13.586C57.355 13.1353 57.5023 12.7627 57.797 12.468C58.0916 12.156 58.4643 12 58.915 12ZM53.663 23.57C54.4256 23.57 55.093 23.3793 55.665 22.998C56.237 22.6167 56.679 22.0967 56.991 21.438C57.3203 20.7793 57.485 20.0427 57.485 19.228C57.485 18.396 57.3203 17.6507 56.991 16.992C56.679 16.3333 56.237 15.8133 55.665 15.432C55.093 15.0507 54.4256 14.86 53.663 14.86C52.9176 14.86 52.259 15.0507 51.687 15.432C51.115 15.8133 50.6643 16.3333 50.335 16.992C50.023 17.6507 49.867 18.396 49.867 19.228C49.867 20.0427 50.023 20.7793 50.335 21.438C50.6643 22.0967 51.115 22.6167 51.687 22.998C52.259 23.3793 52.9176 23.57 53.663 23.57Z" fill="#283583"></path>
-            <line x1="8" y1="43.5" x2="43" y2="43.5" stroke="#283583" strokeWidth="3"></line>
-            <line x1="48" y1="43.5" x2="60" y2="43.5" stroke="#060314" strokeOpacity="0.46"></line>
-            <line x1="48" y1="47.5" x2="64" y2="47.5" stroke="#060314" strokeOpacity="0.46"></line>
-            <line x1="48" y1="51.5" x2="56" y2="51.5" stroke="#060314" strokeOpacity="0.46"></line>
-            <line x1="48" y1="83.5" x2="60" y2="83.5" stroke="#060314" strokeOpacity="0.46"></line>
-            <line x1="48" y1="87.5" x2="64" y2="87.5" stroke="#060314" strokeOpacity="0.46"></line>
-            <line x1="48" y1="91.5" x2="56" y2="91.5" stroke="#060314" strokeOpacity="0.46"></line>
-            <line x1="8" y1="50.5" x2="43" y2="50.5" stroke="#060314" strokeOpacity="0.28"></line>
-            <line x1="8" y1="56.5" x2="43" y2="56.5" stroke="#060314" strokeOpacity="0.28"></line>
-            <line x1="8" y1="62.5" x2="43" y2="62.5" stroke="#060314" strokeOpacity="0.28"></line>
-          </svg>
-        )
-      },
-      {
-        value: 'PREMIUM_COMPACT',
-        name: 'Kompakt',
-        svg: (
-          <svg viewBox="0 0 72 102" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-            <rect width="100%" height="100%" rx="4" fill="white"></rect>
-            <path d="M53.5352 22.7129C51.4746 22.7129 50 21.707 50 19.6562C50 17.3418 51.8066 16.5898 54.0039 16.4141C55.8496 16.2578 56.5234 16.1113 56.5234 15.4961V15.4473C56.5234 14.832 55.9766 14.4121 55.0879 14.4121C54.1504 14.4121 53.5742 14.8613 53.5059 15.5645H50.3809C50.5273 13.3281 52.2168 12 55.2051 12C58.2031 12 59.8535 13.3184 59.8535 15.5938V22.5371H56.5723V21.0918H56.5332C55.918 22.2051 54.9902 22.7129 53.5352 22.7129ZM54.5605 20.5156C55.6836 20.5156 56.5527 19.8418 56.5527 18.8262V17.8887C56.1914 18.0547 55.5566 18.1816 54.7266 18.3184C53.8281 18.4551 53.1836 18.8262 53.1836 19.5C53.1836 20.1348 53.7402 20.5156 54.5605 20.5156Z" fill={selectedColor}></path>
-            <line x1="12" y1="43.5" x2="61" y2="43.5" stroke="#060314" strokeOpacity="0.28" strokeWidth="3"></line>
-            <line x1="12" y1="47.5" x2="61" y2="47.5" stroke="#060314" strokeOpacity="0.28" strokeWidth="3"></line>
-            <line x1="12" y1="51.5" x2="61" y2="51.5" stroke="#060314" strokeOpacity="0.28" strokeWidth="3"></line>
-            <line x1="12" y1="55.5" x2="61" y2="55.5" stroke="#060314" strokeOpacity="0.28" strokeWidth="3"></line>
-            <line x1="12" y1="59.5" x2="61" y2="59.5" stroke="#060314" strokeOpacity="0.28" strokeWidth="3"></line>
-            <line x1="12" y1="63.5" x2="61" y2="63.5" stroke="#060314" strokeOpacity="0.28" strokeWidth="3"></line>
-            <line x1="12" y1="87.5" x2="56" y2="87.5" stroke={selectedColor}></line>
-            <line x1="12" y1="90.5" x2="60" y2="90.5" stroke={selectedColor}></line>
-            <line x1="12" y1="93.5" x2="41" y2="93.5" stroke={selectedColor}></line>
-          </svg>
-        )
-      }
     ]
   };
 
@@ -420,6 +396,109 @@ ${document.companyName || 'Ihr Unternehmen'}`;
       setLogoSize(50);
     }
   }, [isOpen, document, documentType, documentLabel]);
+
+  // ✅ Extract rendered HTML from the current template with ALL EXISTING STYLES
+  const getRenderedHtml = useCallback(() => {
+    if (!templateRef.current) return null;
+    
+    try {
+      console.log('🎨 Extracting HTML with existing styles from your templates...');
+      
+      // Get ALL stylesheets from the document
+      const allStyles: string[] = [];
+      
+      // Extract all <style> tags
+      window.document.querySelectorAll('style').forEach(styleElement => {
+        allStyles.push(styleElement.textContent || '');
+      });
+      
+      // Extract all linked CSS files
+      window.document.querySelectorAll('link[rel="stylesheet"]').forEach(linkElement => {
+        try {
+          const sheet = (linkElement as HTMLLinkElement).sheet;
+          if (sheet && sheet.cssRules) {
+            let cssText = '';
+            for (let i = 0; i < sheet.cssRules.length; i++) {
+              cssText += sheet.cssRules[i].cssText + '\n';
+            }
+            allStyles.push(cssText);
+          }
+        } catch (e) {
+          // Can't access cross-origin stylesheets, skip them
+        }
+      });
+      
+      // Get the template element and clone it
+      const templateElement = templateRef.current;
+      const clonedElement = templateElement.cloneNode(true) as HTMLElement;
+      
+      // Remove any transform/scale styles that are only for preview
+      const removePreviewStyles = (element: HTMLElement) => {
+        if (element.style) {
+          element.style.removeProperty('transform');
+          element.style.removeProperty('transform-origin');
+        }
+        element.querySelectorAll('*').forEach(child => {
+          if ((child as HTMLElement).style) {
+            (child as HTMLElement).style.removeProperty('transform');
+            (child as HTMLElement).style.removeProperty('transform-origin');
+          }
+        });
+      };
+      
+      removePreviewStyles(clonedElement);
+      
+      // Create full HTML with all existing styles
+      const fullHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Document</title>
+          <style>
+            /* ALL EXISTING STYLES FROM YOUR APP */
+            ${allStyles.join('\n')}
+            
+            /* Additional PDF-specific overrides */
+            * { 
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            
+            body { 
+              margin: 0 !important; 
+              padding: 0 !important; 
+            }
+            
+            /* Remove any modal/dialog specific styles */
+            [data-pdf-template] {
+              transform: none !important;
+              width: auto !important;
+              max-width: none !important;
+            }
+            
+            @media print {
+              * { 
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${clonedElement.outerHTML}
+        </body>
+        </html>
+      `;
+      
+      console.log('✅ HTML extracted with all existing styles');
+      return fullHtml;
+    } catch (error) {
+      console.error('Error extracting rendered HTML:', error);
+      return null;
+    }
+  }, []);
 
   const handleSend = async (method: 'email' | 'download' | 'print') => {
     if (sending) return;
@@ -552,85 +631,15 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                 {/* Email Option */}
                 <div className="border-b">
                   <div
-                    className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                      isExpanded('email') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
-                    }`}
-                    onClick={() => toggleSection('email')}
+                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
+                    onClick={() => setShowEmailModal(true)}
                   >
                     <div className="flex items-center gap-3">
                       <Mail className="h-5 w-5 text-gray-600" />
                       <span className="font-medium">Als E-Mail versenden</span>
                     </div>
-                    {isExpanded('email') ? (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    )}
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
                   </div>
-                  {isExpanded('email') && (
-                    <div className="px-4 pb-4 bg-gray-50 space-y-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="recipient-email" className="text-sm font-medium">
-                          An
-                        </Label>
-                        <Input
-                          id="recipient-email"
-                          type="email"
-                          placeholder="empfaenger@beispiel.de"
-                          value={recipientEmail}
-                          onChange={(e) => setRecipientEmail(e.target.value)}
-                          className="text-sm"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email-subject" className="text-sm font-medium">
-                          Betreff
-                        </Label>
-                        <Input
-                          id="email-subject"
-                          placeholder="Betreff"
-                          value={emailSubject}
-                          onChange={(e) => setEmailSubject(e.target.value)}
-                          className="text-sm"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email-message" className="text-sm font-medium">
-                          Nachricht
-                        </Label>
-                        <Textarea
-                          id="email-message"
-                          placeholder="Nachricht"
-                          rows={4}
-                          value={emailMessage}
-                          onChange={(e) => setEmailMessage(e.target.value)}
-                          className="text-sm"
-                        />
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="send-copy"
-                          checked={sendCopy}
-                          onCheckedChange={(checked) => setSendCopy(checked === true)}
-                        />
-                        <Label htmlFor="send-copy" className="text-sm text-gray-600">
-                          Kopie an mich senden
-                        </Label>
-                      </div>
-                      <Button
-                        onClick={() => handleSend('email')}
-                        disabled={sending}
-                        className="w-full bg-[#14ad9f] hover:bg-[#129488]"
-                      >
-                        {sending ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <Send className="w-4 h-4 mr-2" />
-                        )}
-                        E-Mail senden
-                      </Button>
-                    </div>
-                  )}
                 </div>
 
                 {/* Mail Option */}
@@ -950,36 +959,6 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                               ))}
                             </div>
                           </div>
-
-                          {/* Premium Layouts */}
-                          {layouts.premium.length > 0 && (
-                            <>
-                              <div className="line-spacer border-t border-gray-200 my-3"></div>
-                              <div className="layouts layouts--premium">
-                                <div className="title text-xs font-medium mb-2 text-gray-600">Premium Layouts</div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  {layouts.premium.map((layout) => (
-                                    <div
-                                      key={layout.value}
-                                      className={`layout cursor-pointer border rounded-lg p-2 transition-all hover:border-[#14ad9f] ${
-                                        selectedLayout === layout.value ? 'border-[#14ad9f] ring-2 ring-[#14ad9f]/20' : 'border-gray-200'
-                                      }`}
-                                      onClick={() => setSelectedLayout(layout.value)}
-                                    >
-                                      <div className="w-full h-16 mb-1 flex items-center justify-center">
-                                        <div className="w-12 h-14">
-                                          {layout.svg}
-                                        </div>
-                                      </div>
-                                      <label className="text-xs text-center block cursor-pointer">
-                                        {layout.name}
-                                      </label>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </>
-                          )}
                         </div>
                       </div>
                     )}
@@ -1134,8 +1113,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                 <Eye className="h-4 w-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-700">Vorschau</span>
                 <Badge variant="outline" className="text-xs">
-                  {layouts.standard.find(l => l.value === selectedLayout)?.name || 
-                   layouts.premium.find(l => l.value === selectedLayout)?.name || 'Neutral'}
+                  {layouts.standard.find(l => l.value === selectedLayout)?.name || 'Neutral'}
                 </Badge>
                 {logoUrl && (
                   <div className="flex items-center gap-1 text-xs text-green-600">
@@ -1224,7 +1202,9 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                 </div>
               ) : (
                 <div
+                  ref={templateRef}
                   className="mx-auto max-w-4xl"
+                  data-pdf-template
                   style={{
                     transform: `scale(${zoomLevels[zoomLevel]})`,
                     transformOrigin: 'top center',
@@ -1246,6 +1226,23 @@ ${document.companyName || 'Ihr Unternehmen'}`;
           </div>
         </div>
       </DialogPrimitive.Content>
+      
+      {/* Email Send Modal */}
+      <EmailSendModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        document={realDocumentData || document}
+        documentType={documentType}
+        companyId={companyId}
+        selectedTemplate={selectedLayout}
+        getRenderedHtml={getRenderedHtml}
+        onSend={async (emailData) => {
+          console.log('SendDocumentModal - Selected Layout passed to EmailSendModal:', selectedLayout);
+          if (onSend) {
+            await onSend('email', emailData);
+          }
+        }}
+      />
     </Dialog>
   );
 }
