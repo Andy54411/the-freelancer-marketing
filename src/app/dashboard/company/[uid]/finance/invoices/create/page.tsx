@@ -37,8 +37,7 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import FooterTextEditor from '@/components/finance/FooterTextEditor';
 import InventorySelector from '@/components/quotes/InventorySelector';
-// Removed: LivePreviewComponent - using PDF-only system
-// import { LivePreviewComponent } from '@/components/finance/LivePreviewComponent';
+import { LivePreviewModal } from '@/components/finance/LivePreviewModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { COUNTRIES } from '@/constants/countries';
 import {
@@ -79,7 +78,7 @@ import {
 } from 'firebase/firestore';
 import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteService';
 import { FirestoreInvoiceService as InvoiceService } from '@/services/firestoreInvoiceService';
-import { InvoiceData as InvoiceType } from '@/types/invoiceTypes';
+import { InvoiceData as InvoiceType, InvoiceData } from '@/types/invoiceTypes';
 import { CreateInvoiceFormData } from '@/types/formData';
 import { QuoteItem as InvoiceItem } from '@/services/quoteService';
 import { TaxRuleType } from '@/types/taxRules';
@@ -272,7 +271,7 @@ export default function CreateQuotePage() {
   const [selectedTemplate, setSelectedTemplate] =
     useState<ImportedInvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
 
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const [showLivePreview, setShowLivePreview] = useState(false);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
 
   const renderProductsCard = () => (
@@ -675,6 +674,13 @@ export default function CreateQuotePage() {
     console.log('setCreateCustomerOpen aufgerufen mit:', show);
   };
 
+  // Handle preview settings update
+  const handlePreviewSettingsUpdate = (settings: any) => {
+    console.log('Preview settings updated:', settings);
+    // Here you can update form data based on preview settings if needed
+    // For example: setFormData(prev => ({ ...prev, ...settings }));
+  };
+
   // Nummernkreis Vorschau generieren
   const generateNumberPreview = (format: string, number: number): string => {
     const now = new Date();
@@ -808,7 +814,7 @@ export default function CreateQuotePage() {
         if (companyDoc.exists()) {
           const companyData = companyDoc.data();
           const eInvoiceSettings = companyData.eInvoiceSettings;
-          
+
           if (eInvoiceSettings && eInvoiceSettings.enableAutoGeneration) {
             setEInvoiceEnabled(true);
             setEInvoiceSettings(eInvoiceSettings);
@@ -1140,11 +1146,7 @@ export default function CreateQuotePage() {
     if (template) {
       return template.component;
     }
-    console.warn(
-      'Unbekannte Template-ID:',
-      templateId,
-      'Verwende Standard Template als Fallback'
-    );
+    console.warn('Unbekannte Template-ID:', templateId, 'Verwende Standard Template als Fallback');
     return null; // Template System wird über AVAILABLE_TEMPLATES verwaltet
   };
   useEffect(() => {
@@ -1800,6 +1802,12 @@ export default function CreateQuotePage() {
     return data;
   };
 
+  // Convert current form data to PreviewTemplateData for LivePreviewModal (SAME AS SendDocumentModal!)
+  const buildInvoiceDataForPreview = (): PreviewTemplateData => {
+    // ✅ NUTZT EXAKT DIE GLEICHEN DATEN WIE SendDocumentModal!
+    return buildPreviewData();
+  };
+
   // Platzhalter in Textvorlagen ersetzen
   const getProcessedPreviewData = (): PreviewTemplateData => {
     const data = buildPreviewData();
@@ -1833,7 +1841,6 @@ export default function CreateQuotePage() {
     if (!emailTo && formData.customerEmail) setEmailTo(formData.customerEmail);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emailCardOpen]);
-
 
   const printInBrowser = () => {
     toast.message('Browser-Druck wurde deaktiviert.');
@@ -1873,24 +1880,24 @@ export default function CreateQuotePage() {
 
   // SevDesk-style tax grouping: Group items by tax rate for multi-tax invoices
   const taxGroups: { [rate: number]: { netAmount: number; taxAmount: number } } = {};
-  
+
   items.forEach(item => {
     if (item.category === 'discount') return; // Skip discount items
-    
+
     const itemTaxRate = item.taxRate || taxRate;
     const t = item.total || 0;
     const factor = 1 - Math.max(0, Math.min(100, item.discountPercent || 0)) / 100;
     const netAmount = t * factor;
     const itemTaxAmount = netAmount * (itemTaxRate / 100);
-    
+
     if (!taxGroups[itemTaxRate]) {
       taxGroups[itemTaxRate] = { netAmount: 0, taxAmount: 0 };
     }
-    
+
     taxGroups[itemTaxRate].netAmount += netAmount;
     taxGroups[itemTaxRate].taxAmount += itemTaxAmount;
   });
-  
+
   // Convert to array format like SevDesk
   const taxGrouped = Object.entries(taxGroups)
     .map(([rate, amounts]) => ({
@@ -1972,8 +1979,7 @@ export default function CreateQuotePage() {
     // Zahlungsbedingungen final (inkl. Skonto, falls aktiv)
     const skontoSentence =
       skontoEnabled && skontoDays && skontoPercentage
-        ? skontoText?.trim() ||
-          `Bei Zahlung binnen ${skontoDays} Tagen ${skontoPercentage}% Skonto`
+        ? skontoText?.trim() || `Bei Zahlung binnen ${skontoDays} Tagen ${skontoPercentage}% Skonto`
         : '';
     const finalPaymentTerms =
       [formData.paymentTerms?.trim(), skontoSentence].filter(Boolean).join('\n\n') || undefined;
@@ -2040,7 +2046,7 @@ export default function CreateQuotePage() {
       // Erweiterte Steuerregeln
       taxRule: formData.taxRule || TaxRuleType.DE_TAXABLE,
       taxRuleType: formData.taxRule || TaxRuleType.DE_TAXABLE,
-      
+
       // Skonto-Einstellungen
       skontoEnabled: formData.skontoEnabled || skontoEnabled || false,
       skontoDays: formData.skontoDays || skontoDays || 0,
@@ -2059,7 +2065,8 @@ export default function CreateQuotePage() {
         .filter(Boolean)
         .join('\n'),
       companyEmail: (company?.email as string) || '',
-      companyPhone: (company?.phoneNumber as string) || (company?.companyPhoneNumber as string) || '',
+      companyPhone:
+        (company?.phoneNumber as string) || (company?.companyPhoneNumber as string) || '',
       companyWebsite: '',
       companyLogo: '',
       profilePictureURL: (company?.profilePictureURL as string) || undefined,
@@ -2108,13 +2115,15 @@ export default function CreateQuotePage() {
           servicePeriod: formData.servicePeriod,
           deliveryDate: formData.deliveryDate,
           servicePeriodTrimmed: formData.servicePeriod?.trim(),
-          isEmpty: !formData.servicePeriod || formData.servicePeriod.trim() === ''
+          isEmpty: !formData.servicePeriod || formData.servicePeriod.trim() === '',
         });
-        
+
         // Wenn servicePeriod leer ist oder dem deliveryDate entspricht, leeren
-        if (!formData.servicePeriod || 
-            formData.servicePeriod.trim() === '' || 
-            formData.servicePeriod === formData.deliveryDate) {
+        if (
+          !formData.servicePeriod ||
+          formData.servicePeriod.trim() === '' ||
+          formData.servicePeriod === formData.deliveryDate
+        ) {
           return '';
         }
         return formData.servicePeriod;
@@ -2124,18 +2133,23 @@ export default function CreateQuotePage() {
       notes: formData.notes || '',
 
       // E-Invoice Daten (falls aktiviert)
-      eInvoice: eInvoiceEnabled ? {
-        format: eInvoiceSettings?.defaultFormat || 'zugferd',
-        version: '1.0',
-        guid: crypto.randomUUID()
-      } : undefined,
-      eInvoiceData: eInvoiceEnabled && eInvoiceSettings ? {
-        format: eInvoiceSettings.defaultFormat || 'zugferd',
-        version: '1.0',
-        guid: crypto.randomUUID(),
-        validationStatus: 'pending' as const,
-        createdAt: new Date().toISOString()
-      } : undefined,
+      eInvoice: eInvoiceEnabled
+        ? {
+            format: eInvoiceSettings?.defaultFormat || 'zugferd',
+            version: '1.0',
+            guid: crypto.randomUUID(),
+          }
+        : undefined,
+      eInvoiceData:
+        eInvoiceEnabled && eInvoiceSettings
+          ? {
+              format: eInvoiceSettings.defaultFormat || 'zugferd',
+              version: '1.0',
+              guid: crypto.randomUUID(),
+              validationStatus: 'pending' as const,
+              createdAt: new Date().toISOString(),
+            }
+          : undefined,
 
       // Metadata
       createdAt: new Date(),
@@ -2150,8 +2164,6 @@ export default function CreateQuotePage() {
     if (loading) return;
     setLoading(true);
     try {
-  
-
       // Validation
       if (!formData.customerName || !formData.validUntil) {
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
@@ -2416,7 +2428,6 @@ export default function CreateQuotePage() {
 
       toast.success(asDraft ? 'Rechnung als Entwurf gespeichert' : 'Rechnung erstellt');
       console.log('🎉 INVOICE CREATION COMPLETED SUCCESSFULLY');
-
 
       // 🚀 E-INVOICE GENERIERUNG NACH SPEICHERN (falls aktiviert)
       if (!asDraft && eInvoiceEnabled && createdInvoiceId) {
@@ -2924,9 +2935,7 @@ export default function CreateQuotePage() {
               <Button
                 variant="outline"
                 size="default"
-                onClick={() => {
-                  setPreviewOpen(!previewOpen);
-                }}
+                onClick={() => setShowLivePreview(true)}
                 className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
               >
                 <Eye className="w-4 h-4 mr-2" />
@@ -3538,10 +3547,10 @@ export default function CreateQuotePage() {
                         type="date"
                         value={formData.deliveryDate}
                         onChange={e => {
-                          setFormData(prev => ({ 
-                            ...prev, 
+                          setFormData(prev => ({
+                            ...prev,
                             deliveryDate: e.target.value,
-                            servicePeriod: '' // Leere servicePeriod wenn Einzeldatum verwendet wird
+                            servicePeriod: '', // Leere servicePeriod wenn Einzeldatum verwendet wird
                           }));
                         }}
                         required
@@ -3725,14 +3734,15 @@ export default function CreateQuotePage() {
 
           {/* Positions-Steuerleiste */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
-            <Button 
-              type="button" 
-              variant="link" 
+            <Button
+              type="button"
+              variant="link"
               onClick={() => {
                 const newItem: QuoteItem = {
-                  id: typeof crypto !== 'undefined' && 'randomUUID' in crypto
-                    ? crypto.randomUUID()
-                    : Math.random().toString(36).slice(2),
+                  id:
+                    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                      ? crypto.randomUUID()
+                      : Math.random().toString(36).slice(2),
                   description: '',
                   quantity: 1,
                   unitPrice: 0,
@@ -4065,241 +4075,239 @@ export default function CreateQuotePage() {
                 <div key={item.id} className="border border-gray-200 rounded-lg">
                   {/* Hauptzeile mit allen Feldern */}
                   <div className="flex gap-3 p-4 items-end hover:bg-gray-50">
-                  <div style={{ flex: 1 }}>
-                    <div className="sr-only">
-                      <Label>Beschreibung</Label>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span
-                            aria-label="Hinweis zur Beschreibung"
-                            className="cursor-help inline-flex"
-                          >
-                            <Info className="w-4 h-4 text-[#14ad9f]" />
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" align="start" className="max-w-xs text-sm">
-                          <p>
-                            Hinweis: Die Beschreibung ist für den Kunden sichtbar. Du kannst auch
-                            die SKU oder den exakten Produktnamen eingeben, um Werte automatisch aus
-                            dem Inventar zu übernehmen.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <Popover
-                      open={popoverOpenIds.has(item.id)}
-                      onOpenChange={open => {
-                        if (!open) {
-                          setDismissedCreatePromptIds(prev => new Set(prev).add(item.id));
-                        }
-                      }}
-                    >
-                      <div className="relative">
-                        <Input
-                          value={item.description}
-                          onChange={e => handleDescriptionChange(index, item.id, e.target.value)}
-                          placeholder={
-                            item.category === 'discount'
-                              ? 'Rabatt / Nachlass'
-                              : 'Leistungsbeschreibung'
-                          }
-                        />
-                        <PopoverAnchor />
+                    <div style={{ flex: 1 }}>
+                      <div className="sr-only">
+                        <Label>Beschreibung</Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span
+                              aria-label="Hinweis zur Beschreibung"
+                              className="cursor-help inline-flex"
+                            >
+                              <Info className="w-4 h-4 text-[#14ad9f]" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" align="start" className="max-w-xs text-sm">
+                            <p>
+                              Hinweis: Die Beschreibung ist für den Kunden sichtbar. Du kannst auch
+                              die SKU oder den exakten Produktnamen eingeben, um Werte automatisch
+                              aus dem Inventar zu übernehmen.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
-                      <PopoverContent side="bottom" align="start">
-                        <div className="text-sm">
-                          <div className="font-medium mb-2">Als Produkt speichern?</div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                              onClick={() => {
-                                const rate = Number.isFinite(taxRate) ? taxRate : 19;
-                                const name = item.description || '';
-                                const unit = (item.unit as string) || 'Stk';
-                                const sellingNet = Number.isFinite(item.unitPrice)
-                                  ? item.unitPrice
-                                  : 0;
-                                setNewProduct({
-                                  name,
-                                  imageUrl: '',
-                                  sku: '',
-                                  category: 'Artikel',
-                                  unit,
-                                  stock: 0,
-                                  taxRate: rate,
-                                  purchaseNet: 0,
-                                  purchaseGross: 0,
-                                  sellingNet,
-                                  sellingGross: Number(
-                                    syncGrossFromNet(sellingNet, rate).toFixed(2)
-                                  ),
-                                  description: '',
-                                  internalNote: '',
-                                });
-                                setCreateProductForIndex(index);
-                                setCreateProductOpen(true);
-                                setDismissedCreatePromptIds(prev => new Set(prev).add(item.id));
-                              }}
-                            >
-                              Produkt erstellen
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                setDismissedCreatePromptIds(prev => new Set(prev).add(item.id))
-                              }
-                            >
-                              Später
-                            </Button>
-                          </div>
+                      <Popover
+                        open={popoverOpenIds.has(item.id)}
+                        onOpenChange={open => {
+                          if (!open) {
+                            setDismissedCreatePromptIds(prev => new Set(prev).add(item.id));
+                          }
+                        }}
+                      >
+                        <div className="relative">
+                          <Input
+                            value={item.description}
+                            onChange={e => handleDescriptionChange(index, item.id, e.target.value)}
+                            placeholder={
+                              item.category === 'discount'
+                                ? 'Rabatt / Nachlass'
+                                : 'Leistungsbeschreibung'
+                            }
+                          />
+                          <PopoverAnchor />
                         </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div style={{ width: '80px' }}>
-                    <div className="sr-only">
-                      <Label>Menge</Label>
-                    </div>
-                    <Input
-                      type="number"
-                      value={item.quantity}
-                      onChange={e =>
-                        handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)
-                      }
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                  <div style={{ width: '100px' }}>
-                    <div className="sr-only">
-                      <Label>Einheit</Label>
-                    </div>
-                    <Select
-                      value={(item.unit as string) ?? 'Stk'}
-                      onValueChange={val => {
-                        const mapped = val === 'none' ? '' : val;
-                        setItems(prev =>
-                          prev.map((it, i) => (i === index ? { ...it, unit: mapped } : it))
-                        );
-                      }}
-                      disabled={item.category === 'discount'}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Einheit" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-72">
-                        {UNIT_OPTIONS.map(u => (
-                          <SelectItem key={u.value || 'blank'} value={u.value}>
-                            {u.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div style={{ width: '120px' }}>
-                    <div className="sr-only">
-                      <Label>
-                        Preis
-                        <small className="font-normal text-gray-500">
-                          {' '}
-                          ({showNet ? 'Netto' : 'Brutto'})
-                        </small>
-                      </Label>
-                    </div>
-                    <Input
-                      type="number"
-                      value={
-                        Number.isFinite(unitPriceDisplay) ? Number(unitPriceDisplay.toFixed(2)) : 0
-                      }
-                      onChange={e =>
-                        handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)
-                      }
-                      min="0"
-                      step="0.01"
-                      className="w-28 md:w-32 h-8 text-sm px-2"
-                    />
-                  </div>
-                  <div style={{ width: '80px' }}>
-                    <div className="sr-only">
-                      <Label>USt. %</Label>
-                    </div>
-                    <Select
-                      value={(item.taxRate ?? taxRate).toString()}
-                      onValueChange={val => {
-                        const newTaxRate = parseFloat(val);
-                        setItems(prev =>
-                          prev.map((it, i) =>
-                            i === index ? { ...it, taxRate: newTaxRate } : it
-                          )
-                        );
-                      }}
-                      disabled={item.category === 'discount'}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">0%</SelectItem>
-                        <SelectItem value="7">7%</SelectItem>
-                        <SelectItem value="19">19%</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div style={{ width: '80px' }}>
-                    <div className="sr-only">
-                      <Label>Rabatt %</Label>
-                    </div>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={item.category === 'discount' ? 0 : (item.discountPercent ?? 0)}
-                      onChange={e => {
-                        const v = parseFloat(e.target.value);
-                        setItems(prev =>
-                          prev.map((it, i) =>
-                            i === index
-                              ? {
-                                  ...it,
-                                  discountPercent: Number.isFinite(v)
-                                    ? Math.max(0, Math.min(100, v))
-                                    : 0,
+                        <PopoverContent side="bottom" align="start">
+                          <div className="text-sm">
+                            <div className="font-medium mb-2">Als Produkt speichern?</div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                                onClick={() => {
+                                  const rate = Number.isFinite(taxRate) ? taxRate : 19;
+                                  const name = item.description || '';
+                                  const unit = (item.unit as string) || 'Stk';
+                                  const sellingNet = Number.isFinite(item.unitPrice)
+                                    ? item.unitPrice
+                                    : 0;
+                                  setNewProduct({
+                                    name,
+                                    imageUrl: '',
+                                    sku: '',
+                                    category: 'Artikel',
+                                    unit,
+                                    stock: 0,
+                                    taxRate: rate,
+                                    purchaseNet: 0,
+                                    purchaseGross: 0,
+                                    sellingNet,
+                                    sellingGross: Number(
+                                      syncGrossFromNet(sellingNet, rate).toFixed(2)
+                                    ),
+                                    description: '',
+                                    internalNote: '',
+                                  });
+                                  setCreateProductForIndex(index);
+                                  setCreateProductOpen(true);
+                                  setDismissedCreatePromptIds(prev => new Set(prev).add(item.id));
+                                }}
+                              >
+                                Produkt erstellen
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  setDismissedCreatePromptIds(prev => new Set(prev).add(item.id))
                                 }
-                              : it
-                          )
-                        );
-                      }}
-                      disabled={item.category === 'discount'}
-                    />
-                  </div>
-                  <div style={{ width: '100px', textAlign: 'right' }}>
-                    <div className="sr-only">
-                      <Label>Betrag</Label>
+                              >
+                                Später
+                              </Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
-                    <div
-                      className={`h-10 flex items-center justify-end text-sm font-medium ${item.category === 'discount' ? 'text-red-600' : ''}`}
-                    >
-                      {formatCurrency(showNet ? totalNet : totalGross)}
+                    <div style={{ width: '80px' }}>
+                      <div className="sr-only">
+                        <Label>Menge</Label>
+                      </div>
+                      <Input
+                        type="number"
+                        value={item.quantity}
+                        onChange={e =>
+                          handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)
+                        }
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                    <div style={{ width: '100px' }}>
+                      <div className="sr-only">
+                        <Label>Einheit</Label>
+                      </div>
+                      <Select
+                        value={(item.unit as string) ?? 'Stk'}
+                        onValueChange={val => {
+                          const mapped = val === 'none' ? '' : val;
+                          setItems(prev =>
+                            prev.map((it, i) => (i === index ? { ...it, unit: mapped } : it))
+                          );
+                        }}
+                        disabled={item.category === 'discount'}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Einheit" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-72">
+                          {UNIT_OPTIONS.map(u => (
+                            <SelectItem key={u.value || 'blank'} value={u.value}>
+                              {u.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div style={{ width: '120px' }}>
+                      <div className="sr-only">
+                        <Label>
+                          Preis
+                          <small className="font-normal text-gray-500">
+                            {' '}
+                            ({showNet ? 'Netto' : 'Brutto'})
+                          </small>
+                        </Label>
+                      </div>
+                      <Input
+                        type="number"
+                        value={
+                          Number.isFinite(unitPriceDisplay)
+                            ? Number(unitPriceDisplay.toFixed(2))
+                            : 0
+                        }
+                        onChange={e =>
+                          handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)
+                        }
+                        min="0"
+                        step="0.01"
+                        className="w-28 md:w-32 h-8 text-sm px-2"
+                      />
+                    </div>
+                    <div style={{ width: '80px' }}>
+                      <div className="sr-only">
+                        <Label>USt. %</Label>
+                      </div>
+                      <Select
+                        value={(item.taxRate ?? taxRate).toString()}
+                        onValueChange={val => {
+                          const newTaxRate = parseFloat(val);
+                          setItems(prev =>
+                            prev.map((it, i) => (i === index ? { ...it, taxRate: newTaxRate } : it))
+                          );
+                        }}
+                        disabled={item.category === 'discount'}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">0%</SelectItem>
+                          <SelectItem value="7">7%</SelectItem>
+                          <SelectItem value="19">19%</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div style={{ width: '80px' }}>
+                      <div className="sr-only">
+                        <Label>Rabatt %</Label>
+                      </div>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        value={item.category === 'discount' ? 0 : (item.discountPercent ?? 0)}
+                        onChange={e => {
+                          const v = parseFloat(e.target.value);
+                          setItems(prev =>
+                            prev.map((it, i) =>
+                              i === index
+                                ? {
+                                    ...it,
+                                    discountPercent: Number.isFinite(v)
+                                      ? Math.max(0, Math.min(100, v))
+                                      : 0,
+                                  }
+                                : it
+                            )
+                          );
+                        }}
+                        disabled={item.category === 'discount'}
+                      />
+                    </div>
+                    <div style={{ width: '100px', textAlign: 'right' }}>
+                      <div className="sr-only">
+                        <Label>Betrag</Label>
+                      </div>
+                      <div
+                        className={`h-10 flex items-center justify-end text-sm font-medium ${item.category === 'discount' ? 'text-red-600' : ''}`}
+                      >
+                        {formatCurrency(showNet ? totalNet : totalGross)}
+                      </div>
+                    </div>
+                    <div style={{ width: '36px' }} className="flex items-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeItem(index)}
+                        className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                        disabled={items.length === 1}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div style={{ width: '36px' }} className="flex items-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeItem(index)}
-                      className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-                      disabled={items.length === 1}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  </div>
-
-
 
                   {/* Erweiterte Beschreibung - Automatisch anzeigen wenn Beschreibung vorhanden */}
                   {item.description && item.description.trim().length > 0 && (
@@ -4503,23 +4511,24 @@ export default function CreateQuotePage() {
               <span>Gesamtsumme Netto (inkl. Rabatte / Aufschläge)</span>
               <span>{formatCurrency(subtotal)}</span>
             </li>
-            {!showNet && taxGrouped.length > 0 ? (
-              // SevDesk-style: Show multiple tax rates
-              taxGrouped.filter(tax => tax.taxAmount > 0).map((tax, index) => (
-                <li key={index} className="flex justify-between py-2 border-b">
-                  <span>Umsatzsteuer {tax.rate}%</span>
-                  <span>{formatCurrency(tax.taxAmount)}</span>
-                </li>
-              ))
-            ) : (
-              // Fallback: Single tax rate display
-              !showNet && taxRate > 0 && (
-                <li className="flex justify-between py-2 border-b">
-                  <span>Umsatzsteuer {taxRate}%</span>
-                  <span>{formatCurrency(vat)}</span>
-                </li>
-              )
-            )}
+            {!showNet && taxGrouped.length > 0
+              ? // SevDesk-style: Show multiple tax rates
+                taxGrouped
+                  .filter(tax => tax.taxAmount > 0)
+                  .map((tax, index) => (
+                    <li key={index} className="flex justify-between py-2 border-b">
+                      <span>Umsatzsteuer {tax.rate}%</span>
+                      <span>{formatCurrency(tax.taxAmount)}</span>
+                    </li>
+                  ))
+              : // Fallback: Single tax rate display
+                !showNet &&
+                taxRate > 0 && (
+                  <li className="flex justify-between py-2 border-b">
+                    <span>Umsatzsteuer {taxRate}%</span>
+                    <span>{formatCurrency(vat)}</span>
+                  </li>
+                )}
             <li className="flex justify-between py-2">
               <span className="text-lg font-semibold">
                 {showNet ? 'Gesamt (Netto)' : 'Gesamt (Brutto)'}
@@ -5102,7 +5111,17 @@ export default function CreateQuotePage() {
           }}
         />
       )}
+
+      {/* Live Preview Modal - NUTZT JETZT DIE GLEICHEN DATEN WIE SendDocumentModal! */}
+      <LivePreviewModal
+        isOpen={showLivePreview}
+        onClose={() => setShowLivePreview(false)}
+        document={buildInvoiceDataForPreview()}
+        documentType="invoice"
+        companyId={uid}
+        selectedTemplate={selectedTemplate}
+        replacePlaceholders={replacePlaceholders}
+      />
     </div>
   );
 }
-
