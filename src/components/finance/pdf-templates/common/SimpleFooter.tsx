@@ -4,14 +4,16 @@ import { InvoiceFooter } from './InvoiceFooter';
 
 interface PageFooterProps {
   data: ProcessedPDFData;
+  color?: string;
 }
 
-export const SimpleFooter: React.FC<PageFooterProps> = ({ data }) => {
+export const SimpleFooter: React.FC<PageFooterProps> = ({ data, color = '#14ad9f' }) => {
   const footerData = {
-    companyName: (data as any).companyName || 'Mietkoch Andy',
+    companyName: (data as any).companyName || ' ',
     phoneNumber: (data as any).phoneNumber || '+4901605979000',
     email: (data as any).contactEmail || 'a.staudinger32@icloud.com',
-    website: (data as any).companyWebsiteForBackend || (data as any).website || 'https://taskilo.de',
+    website:
+      (data as any).companyWebsiteForBackend || (data as any).website || 'https://taskilo.de',
     vatId: (data as any).vatId || 'DE123456789',
     taxNumber: (data as any).taxNumber || 'test12345678',
     companyRegister: (data as any).registrationNumber || 'HRB12345',
@@ -28,13 +30,13 @@ export const SimpleFooter: React.FC<PageFooterProps> = ({ data }) => {
     companyPostalCode: (data as any).companyPostalCode || '18586',
     companyCity: (data as any).companyCity || 'Sellin',
     step1: (data as any).step1,
-    step2: (data as any).step2,  
-    step4: (data as any).step4
+    step2: (data as any).step2,
+    step4: (data as any).step4,
   };
 
   return (
     <div className="bg-white p-2 mt-4">
-      <InvoiceFooter data={footerData} />
+      <InvoiceFooter data={footerData} color={color} />
     </div>
   );
 };

@@ -8,6 +8,8 @@ interface SimplePDFViewerProps {
   a4Width: number;
   a4Height: number;
   onZoomChange: (zoomLevel: number) => void;
+  onPageModeChange?: (mode: 'single' | 'multi') => void;
+  pageMode?: 'single' | 'multi';
 }
 
 export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
@@ -15,12 +17,19 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
   zoomLevel,
   a4Width,
   a4Height,
-  onZoomChange
+  onZoomChange,
+  onPageModeChange,
+  pageMode = 'multi',
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const { totalPages, contentHeight } = useSimplePagination(contentRef, a4Height);
   const [currentPage, setCurrentPage] = useState(1);
-  const [viewMode, setViewMode] = useState<'single' | 'scroll'>('scroll');
+
+  const handlePageModeChange = (mode: 'single' | 'multi') => {
+    if (onPageModeChange) {
+      onPageModeChange(mode);
+    }
+  };
 
   const zoomOptions = [
     { value: 2, label: '200%' },
@@ -29,26 +38,26 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
     { value: 1.25, label: '125%' },
     { value: 1, label: '100%' },
     { value: 0.75, label: '75%' },
-    { value: 0.5, label: '50%' }
+    { value: 0.5, label: '50%' },
   ];
 
   return (
     <div className="flex flex-col h-full">
       {/* PDF Toolbar - genau wie im Bild */}
       <div className="flex items-center justify-between px-4 py-2 bg-white border-b">
-        {/* View Mode Buttons */}
+        {/* Page Mode Buttons */}
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setViewMode('single')}
-            className={`p-2 rounded ${viewMode === 'single' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
-            title="Einzelseite"
+            onClick={() => handlePageModeChange('single')}
+            className={`p-2 rounded ${pageMode === 'single' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
+            title="Einzelseite - Alles auf eine Seite zwingen"
           >
             <FileText size={20} />
           </button>
           <button
-            onClick={() => setViewMode('scroll')}
-            className={`p-2 rounded ${viewMode === 'scroll' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
-            title="Scrollansicht"
+            onClick={() => handlePageModeChange('multi')}
+            className={`p-2 rounded ${pageMode === 'multi' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
+            title="Mehrseitig - Automatischer Seitenumbruch"
           >
             <ScrollText size={20} />
           </button>
@@ -62,12 +71,14 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
             min={1}
             max={totalPages}
             value={currentPage}
-            onChange={(e) => setCurrentPage(Math.max(1, Math.min(totalPages, parseInt(e.target.value) || 1)))}
+            onChange={e =>
+              setCurrentPage(Math.max(1, Math.min(totalPages, parseInt(e.target.value) || 1)))
+            }
             className="w-12 px-2 py-1 text-center border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
           />
           <span>von</span>
           <span>{totalPages}</span>
-          
+
           <div className="flex ml-2">
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
@@ -118,7 +129,7 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
           </button>
           <select
             value={zoomLevel}
-            onChange={(e) => {
+            onChange={e => {
               onZoomChange(parseFloat(e.target.value));
             }}
             className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
@@ -142,7 +153,7 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
             left: '-9999px',
             top: '-9999px',
             width: `${a4Width}px`,
-            visibility: 'hidden'
+            visibility: 'hidden',
           }}
         >
           {children}
@@ -156,7 +167,7 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
             style={{
               width: `${a4Width * zoomLevel}px`,
               height: `${a4Height * zoomLevel}px`,
-              overflow: 'hidden'
+              overflow: 'hidden',
             }}
           >
             {/* Seitennummer */}
@@ -169,7 +180,7 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
               style={{
                 transform: `scale(${zoomLevel}) translateY(${-pageIndex * a4Height}px)`,
                 transformOrigin: 'top left',
-                width: `${a4Width}px`
+                width: `${a4Width}px`,
               }}
             >
               {children}
@@ -177,10 +188,11 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
           </div>
         ))}
 
-        {/* Einfache Zusammenfassung */}
+        {/* Seitenzusammenfassung */}
         {totalPages > 1 && (
           <div className="text-center text-sm text-gray-600 mt-4 bg-blue-50 p-2 rounded">
-            📄 {totalPages} A4-Seiten (je {a4Height}px hoch)
+            📄 {totalPages} A4-Seiten
+            {pageMode === 'single' ? ' - Einzelseitenmodus' : ' - Mehrseitenmodus'}
           </div>
         )}
       </div>

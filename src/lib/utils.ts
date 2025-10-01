@@ -18,8 +18,16 @@ export function formatCurrency(amount: number, currency = 'EUR'): string {
 /**
  * Format date to German locale
  */
-export function formatDate(dateString: string): string {
+export function formatDate(dateString: string | undefined | null): string {
+  if (!dateString) {
+    return new Date().toLocaleDateString('de-DE');
+  }
+
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return new Date().toLocaleDateString('de-DE');
+  }
+
   return new Intl.DateTimeFormat('de-DE', {
     year: 'numeric',
     month: '2-digit',

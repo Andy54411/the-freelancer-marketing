@@ -1802,10 +1802,10 @@ export default function CreateQuotePage() {
     return data;
   };
 
-  // Convert current form data to PreviewTemplateData for LivePreviewModal (SAME AS SendDocumentModal!)
-  const buildInvoiceDataForPreview = (): PreviewTemplateData => {
+  // Convert current form data for LivePreviewModal (SAME AS SendDocumentModal!)
+  const buildInvoiceDataForPreview = (): InvoiceData => {
     // ✅ NUTZT EXAKT DIE GLEICHEN DATEN WIE SendDocumentModal!
-    return buildPreviewData();
+    return buildPreviewData() as unknown as InvoiceData;
   };
 
   // Platzhalter in Textvorlagen ersetzen
@@ -5119,8 +5119,6 @@ export default function CreateQuotePage() {
         document={buildInvoiceDataForPreview()}
         documentType="invoice"
         companyId={uid}
-        selectedTemplate={selectedTemplate}
-        replacePlaceholders={replacePlaceholders}
       />
     </div>
   );

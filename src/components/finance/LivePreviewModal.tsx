@@ -1,147 +1,68 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Dialog, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
+  Send,
+  Download,
+  Printer,
+  Eye,
   X,
+  AlertTriangle,
+  FileText,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  ZoomIn,
+  ZoomOut,
+  CheckCircle,
   Palette,
   Layout,
   Settings,
   Image,
   ChevronRight,
-  ChevronDown,
   Upload,
   Minus,
   Plus,
-  Eye,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { InvoiceData } from '@/types/invoiceTypes';
-import { TaxRuleType } from '@/types/taxRules';
+import { formatCurrency, formatDate } from '@/lib/utils';
 import PDFTemplate from './PDFTemplates';
+
 import { SimplePDFViewer } from './SimplePDFViewer';
 import { A4_DIMENSIONS } from '@/utils/a4-page-utils';
-
-// PreviewTemplateData type for compatibility with SendDocumentModal
-type PreviewTemplateData = {
-  invoiceNumber: string;
-  documentNumber: string;
-  date: string;
-  validUntil?: string;
-  dueDate?: string;
-  title?: string;
-  reference?: string;
-  currency?: string;
-  customerName: string;
-  customerAddress?: string;
-  customerEmail?: string;
-  customerPhone?: string;
-  customer: {
-    name: string;
-    email: string;
-    address: {
-      street: string;
-      zipCode: string;
-      city: string;
-      country: string;
-    };
-    taxNumber?: string;
-    vatId?: string;
-  };
-  companyName?: string;
-  companyAddress?: string;
-  companyEmail?: string;
-  companyPhone?: string;
-  companyWebsite?: string;
-  companyLogo?: string;
-  profilePictureURL?: string;
-  companyVatId?: string;
-  companyTaxNumber?: string;
-  items: Array<{
-    id?: string;
-    description: string;
-    quantity: number;
-    unitPrice: number;
-    total: number;
-    taxRate?: number;
-    category?: string;
-    discountPercent?: number;
-    unit?: string;
-  }>;
-  subtotal: number;
-  tax: number;
-  total: number;
-  vatRate?: number;
-  isSmallBusiness?: boolean;
-  bankDetails?: {
-    iban?: string;
-    bic?: string;
-    bankName?: string;
-    accountHolder?: string;
-  };
-  notes?: string;
-  headTextHtml?: string;
-  headerText?: string;
-  introText?: string;
-  description?: string;
-  footerText?: string;
-  contactPersonName?: string;
-  internalContactPerson?: string;
-  paymentTerms?: string;
-  deliveryTerms?: string;
-  selectedTemplate?: string;
-  company?: {
-    name: string;
-    email: string;
-    phone: string;
-    address: {
-      street: string;
-      zipCode: string;
-      city: string;
-      country: string;
-    };
-    taxNumber: string;
-    vatId: string;
-    website: string;
-    bankDetails: {
-      iban: string;
-      bic: string;
-      accountHolder: string;
-    };
-  };
-};
+import { useTemplatePageDetection } from '@/hooks/useTemplatePageDetection';
 
 interface LivePreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  document: PreviewTemplateData; // ✅ NOW COMPATIBLE with SendDocumentModal!
+  document: InvoiceData;
   documentType: 'invoice' | 'quote' | 'reminder';
   companyId: string;
-  selectedTemplate?: any; // Template selection
-  replacePlaceholders?: (text: string, data: PreviewTemplateData) => string; // Placeholder engine
-  // Callback um Änderungen an das Parent zu übertragen
-  onSettingsChange?: (settings: PreviewSettings) => void;
+  onSend?: (method: 'email' | 'download' | 'print', options?: any) => Promise<void>;
 }
 
-interface PreviewSettings {
-  template: string;
-  color: string;
-  logoUrl: string | null;
-  logoSize: number;
-  showPageNumbers: boolean;
-  showFooter: boolean;
-  showWatermark: boolean;
-  language: string;
-  showCustomerNumber: boolean;
-  showContactPerson: boolean;
-  showQrCode: boolean;
-}
-
-type PreviewSection = 'logo' | 'color' | 'layout' | 'settings';
+type SendOption =
+  | 'email'
+  | 'print'
+  | 'save'
+  | 'download'
+  | 'logo'
+  | 'color'
+  | 'layout'
+  | 'settings'
+  | 'einvoice';
 
 export function LivePreviewModal({
   isOpen,
@@ -149,145 +70,139 @@ export function LivePreviewModal({
   document,
   documentType,
   companyId,
-  selectedTemplate,
-  replacePlaceholders,
-  onSettingsChange,
+  onSend,
 }: LivePreviewModalProps) {
-  // Convert PreviewTemplateData to InvoiceData for PDFTemplate compatibility
-  const convertToInvoiceData = (previewData: PreviewTemplateData): InvoiceData => {
-    // Helper function to safely convert date strings to valid dates
-    const parseDate = (dateString?: string): string => {
-      if (!dateString) return new Date().toISOString().split('T')[0];
+  const [sending, setSending] = useState(false);
+  const [showCompanySettings, setShowCompanySettings] = useState(false);
 
-      try {
-        // If it's already in YYYY-MM-DD format, use it directly
-        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-          const testDate = new Date(dateString);
-          if (!isNaN(testDate.getTime())) {
-            return dateString;
-          }
-        }
-
-        // If it's in DD.MM.YYYY format, convert it
-        if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateString)) {
-          const [day, month, year] = dateString.split('.');
-          const isoDate = `${year}-${month}-${day}`;
-          const testDate = new Date(isoDate);
-          if (!isNaN(testDate.getTime())) {
-            return isoDate;
-          }
-        }
-
-        // Try parsing as-is
-        const testDate = new Date(dateString);
-        if (!isNaN(testDate.getTime())) {
-          return testDate.toISOString().split('T')[0];
-        }
-      } catch (e) {
-        console.warn('Invalid date format:', dateString);
-      }
-
-      // Fallback to today's date
-      return new Date().toISOString().split('T')[0];
-    };
-
-    return {
-      // Required fields
-      id: 'preview',
-      number: previewData.documentNumber || previewData.invoiceNumber || 'RE-1000',
-      invoiceNumber: previewData.invoiceNumber || 'RE-1000',
-      sequentialNumber: 1000,
-      date: parseDate(previewData.date),
-      issueDate: parseDate(previewData.date),
-      dueDate: parseDate(previewData.dueDate || previewData.validUntil),
-
-      // Customer data
-      customerName: previewData.customerName || 'Kunde',
-      customerEmail: previewData.customerEmail || '',
-      customerAddress: previewData.customerAddress || '',
-      customerVatId: previewData.customer?.vatId || '',
-
-      // Company data
-      companyName: previewData.companyName || 'Ihr Unternehmen',
-      companyEmail: previewData.companyEmail || '',
-      companyPhone: previewData.companyPhone || '',
-      companyWebsite: previewData.companyWebsite || '',
-      companyLogo: previewData.companyLogo || '',
-      companyAddress: previewData.companyAddress || '',
-      companyVatId: previewData.companyVatId || '',
-      companyTaxNumber: previewData.companyTaxNumber || '',
-
-      // Financial data
-      amount: previewData.subtotal || 0,
-      tax: previewData.tax || 0,
-      total: previewData.total || 0,
-
-      // Items
-      items: previewData.items.map(item => ({
-        id: item.id || Math.random().toString(),
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        total: item.total,
-        taxRate: item.taxRate || 0,
-        unit: item.unit || 'Stk',
-      })),
-
-      // Metadata
-      status: 'draft' as const,
-      createdAt: new Date(),
-      year: new Date().getFullYear(),
-      companyId,
-      isStorno: false,
-
-      // Optional fields
-      description: previewData.description || previewData.title || '',
-      vatRate: previewData.vatRate || 0,
-      isSmallBusiness: previewData.isSmallBusiness || false,
-      priceInput: 'netto',
-      taxRuleType: TaxRuleType.DE_TAXABLE,
-      paymentTerms: previewData.paymentTerms || '',
-      notes: previewData.notes || '',
-      currency: previewData.currency || 'EUR',
-      headTextHtml: previewData.headTextHtml || previewData.headerText || '',
-      footerText: previewData.footerText || '',
-    };
-  };
-
-  // Convert the document for PDFTemplate
-  const invoiceData = convertToInvoiceData(document);
   const templateRef = useRef<HTMLDivElement>(null);
 
-  // Preview settings state
-  const [settings, setSettings] = useState<PreviewSettings>({
-    template: 'TEMPLATE_NEUTRAL',
-    color: '#14ad9f',
-    logoUrl: null,
-    logoSize: 50,
-    showPageNumbers: true,
-    showFooter: true,
-    showWatermark: false,
-    language: 'de_DE',
-    showCustomerNumber: true,
-    showContactPerson: true,
-    showQrCode: false,
+  // Debug Effect um zu sehen wann templateRef gesetzt wird
+  useEffect(() => {
+    console.log('templateRef status changed:', {
+      hasRef: !!templateRef.current,
+      innerHTML: templateRef.current?.innerHTML?.length || 0,
+    });
   });
 
-  const [expandedSections, setExpandedSections] = useState<Set<PreviewSection>>(
-    new Set(['layout']) // Start with layout expanded
+  const [activeOption, setActiveOption] = useState<SendOption>('download'); // Start with download like SevDesk
+  const [expandedSections, setExpandedSections] = useState<Set<SendOption>>(
+    new Set(['download', 'layout'])
   );
-  const [zoomLevel, setZoomLevel] = useState(4); // Start at 100% zoom (index 4)
+  const [zoomLevel, setZoomLevel] = useState(4); // Start at 100% zoom (index 4 in zoomLevels)
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoSize, setLogoSize] = useState(50); // Logo size in percentage
+  const [selectedLayout, setSelectedLayout] = useState('TEMPLATE_NEUTRAL');
+  const [selectedColor, setSelectedColor] = useState('#14ad9f');
+  const [pageMode, setPageMode] = useState<'single' | 'multi'>('multi'); // Default: Mehrseitig
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Zoom levels from SendDocumentModal
-  const zoomLevels = [2, 1.75, 1.5, 1.25, 1, 0.75, 0.5];
+  // E-Invoice specific states
+  const [eInvoiceData, setEInvoiceData] = useState<any>(null);
+  const [loadingEInvoiceData, setLoadingEInvoiceData] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [realDocumentData, setRealDocumentData] = useState<InvoiceData | null>(null);
+
+  // Template Page Detection
+  const templatePageInfo = useTemplatePageDetection({
+    templateId: selectedLayout,
+    documentData: { items: (realDocumentData || document)?.items },
+    enableDynamicAnalysis: true,
+  });
 
   // Document type labels
   const documentLabels = {
     invoice: 'Rechnung',
     quote: 'Angebot',
     reminder: 'Erinnerung',
+  };
+
+  // Load real invoice data from database when modal opens
+  useEffect(() => {
+    if (!isOpen || !companyId) return;
+
+    const loadRealInvoiceData = async () => {
+      setLoadingEInvoiceData(true);
+      try {
+        // Wenn document.id vorhanden ist, lade echte Daten aus der Datenbank
+        if (document?.id) {
+          console.log('📄 Loading real invoice data for ID:', document.id);
+
+          // Lade die echte Rechnung aus der Datenbank
+          const { FirestoreInvoiceService } = await import('@/services/firestoreInvoiceService');
+          const realInvoice = await FirestoreInvoiceService.getInvoiceById(companyId, document.id);
+
+          if (realInvoice) {
+            console.log('✅ Real invoice data loaded:', realInvoice);
+            setRealDocumentData(realInvoice);
+
+            // Lade E-Invoice-Daten wenn vorhanden
+            if (realInvoice.eInvoiceData) {
+              console.log('📧 E-Invoice data found:', realInvoice.eInvoiceData);
+              setEInvoiceData(realInvoice.eInvoiceData);
+
+              // Generiere QR-Code für E-Invoice
+              if (realInvoice.eInvoiceData.guid) {
+                await generateQRCode(realInvoice.eInvoiceData.guid, realInvoice);
+              }
+            }
+          } else {
+            console.log('⚠️ No real invoice data found, using provided document data');
+            setRealDocumentData(document);
+          }
+        } else {
+          // Für neue Rechnungen (ohne ID): Verwende direkt die übergebenen tempInvoiceData
+          console.log('📝 Using provided document data for new invoice preview:', document);
+          setRealDocumentData(document);
+        }
+      } catch (error) {
+        console.error('❌ Error loading real invoice data:', error);
+        setRealDocumentData(document); // Fallback to provided document
+        toast.error('Fehler beim Laden der Rechnungsdaten');
+      } finally {
+        setLoadingEInvoiceData(false);
+      }
+    };
+
+    loadRealInvoiceData();
+  }, [isOpen, document?.id, companyId, document]);
+
+  // Generate QR Code for E-Invoice
+  const generateQRCode = async (guid: string, invoiceData: InvoiceData) => {
+    try {
+      console.log('🔗 Generating QR Code for E-Invoice GUID:', guid);
+
+      // E-Invoice QR-Code-Inhalt nach GS1 Standard
+      const qrContent = JSON.stringify({
+        format: 'ZUGFeRD',
+        version: '2.1.1',
+        guid: guid,
+        invoiceNumber: invoiceData.invoiceNumber || invoiceData.number,
+        issueDate: invoiceData.date || invoiceData.issueDate,
+        dueDate: (invoiceData as any).dueDate || (invoiceData as any).validUntil,
+        totalAmount: invoiceData.total,
+        currency: invoiceData.currency || 'EUR',
+        seller: {
+          name: invoiceData.companyName,
+          vatId: (invoiceData as any).companyVatId,
+        },
+        buyer: {
+          name: invoiceData.customerName,
+          vatId: (invoiceData as any).customerVatId,
+        },
+        downloadUrl: `${window.location.origin}/api/einvoices/${guid}/xml`,
+      });
+
+      // Hier würdest du normalerweise eine QR-Code-Bibliothek verwenden
+      // Für jetzt erstellen wir eine Placeholder-URL
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrContent)}`;
+      setQrCodeUrl(qrUrl);
+
+      console.log('✅ QR Code generated:', qrUrl);
+    } catch (error) {
+      console.error('❌ Error generating QR Code:', error);
+    }
   };
 
   // Layout definitions with SVG previews
@@ -304,7 +219,7 @@ export function LivePreviewModal({
             className="w-full h-full"
           >
             <rect width="100%" height="100%" rx="4" fill="white"></rect>
-            <line y1="5" x2="72" y2="5" stroke={settings.color} strokeWidth="10"></line>
+            <line y1="5" x2="72" y2="5" stroke={selectedColor} strokeWidth="10"></line>
             <path
               d="M51.2451 29.1655C49.2899 29.1655 47.8906 28.211 47.8906 26.265C47.8906 24.0688 49.605 23.3553 51.6899 23.1885C53.4413 23.0403 54.0807 22.9013 54.0807 22.3175V22.2711C54.0807 21.6873 53.5618 21.2889 52.7185 21.2889C51.8289 21.2889 51.2822 21.7151 51.2173 22.3823H48.252C48.391 20.2603 49.9942 19 52.8297 19C55.6746 19 57.2407 20.251 57.2407 22.4101V28.9987H54.1271V27.6272H54.09C53.5062 28.6836 52.6259 29.1655 51.2451 29.1655ZM52.2181 27.0805C53.2838 27.0805 54.1085 26.4411 54.1085 25.4774V24.5878C53.7657 24.7453 53.1633 24.8658 52.3757 24.9955C51.5231 25.1252 50.9115 25.4774 50.9115 26.1168C50.9115 26.7191 51.4397 27.0805 52.2181 27.0805Z"
               fill="black"
@@ -335,7 +250,7 @@ export function LivePreviewModal({
             <rect width="100%" height="100%" rx="4" fill="white"></rect>
             <path
               d="M51.3906 30.1406C48.0938 30.1406 45.7344 28.5312 45.7344 25.25C45.7344 21.5469 48.625 20.3438 52.1406 20.0625C55.0938 19.8125 56.1719 19.5781 56.1719 18.5938V18.5156C56.1719 17.5312 55.2969 16.8594 53.875 16.8594C52.375 16.8594 51.4531 17.5781 51.3438 18.7031H46.3438C46.5781 15.125 49.2812 13 54.0625 13C58.8594 13 61.5 15.1094 61.5 18.75V29.8594H56.25V27.5469H56.1875C55.2031 29.3281 53.7188 30.1406 51.3906 30.1406ZM53.0312 26.625C54.8281 26.625 56.2188 25.5469 56.2188 23.9219V22.4219C55.6406 22.6875 54.625 22.8906 53.2969 23.1094C51.8594 23.3281 50.8281 23.9219 50.8281 25C50.8281 26.0156 51.7188 26.625 53.0312 26.625Z"
-              fill={settings.color}
+              fill={selectedColor}
             ></path>
             <line
               x1="12"
@@ -373,12 +288,12 @@ export function LivePreviewModal({
               strokeOpacity="0.28"
               strokeWidth="3"
             ></line>
-            <line x1="12" y1="85.5" x2="24" y2="85.5" stroke={settings.color}></line>
-            <line x1="12" y1="89.5" x2="28" y2="89.5" stroke={settings.color}></line>
-            <line x1="12" y1="93.5" x2="20" y2="93.5" stroke={settings.color}></line>
-            <line x1="40" y1="85.5" x2="52" y2="85.5" stroke={settings.color}></line>
-            <line x1="40" y1="89.5" x2="56" y2="89.5" stroke={settings.color}></line>
-            <line x1="40" y1="93.5" x2="48" y2="93.5" stroke={settings.color}></line>
+            <line x1="12" y1="85.5" x2="24" y2="85.5" stroke={selectedColor}></line>
+            <line x1="12" y1="89.5" x2="28" y2="89.5" stroke={selectedColor}></line>
+            <line x1="12" y1="93.5" x2="20" y2="93.5" stroke={selectedColor}></line>
+            <line x1="40" y1="85.5" x2="52" y2="85.5" stroke={selectedColor}></line>
+            <line x1="40" y1="89.5" x2="56" y2="89.5" stroke={selectedColor}></line>
+            <line x1="40" y1="93.5" x2="48" y2="93.5" stroke={selectedColor}></line>
           </svg>
         ),
       },
@@ -423,15 +338,15 @@ export function LivePreviewModal({
             <rect width="100%" height="100%" rx="4" fill="white"></rect>
             <path
               d="M61.3374 27.672H59.2974C57.8334 27.672 56.8734 26.88 56.7294 25.488H56.6094C56.1774 27.096 54.7374 27.96 52.8414 27.96C50.4414 27.96 48.8574 26.592 48.8574 24.264C48.8574 21.672 50.8014 20.448 54.4254 20.448H56.4174V19.824C56.4174 18.36 55.7934 17.592 54.1614 17.592C52.6734 17.592 51.8094 18.24 51.1374 19.152L49.1934 17.424C50.0094 16.032 51.8094 15 54.5694 15C57.9534 15 59.9694 16.56 59.9694 19.68V25.104H61.3374V27.672ZM54.1854 25.632C55.4334 25.632 56.4174 25.008 56.4174 23.856V22.368H54.5214C53.1054 22.368 52.3374 22.872 52.3374 23.832V24.312C52.3374 25.176 53.0574 25.632 54.1854 25.632Z"
-              fill={settings.color}
+              fill={selectedColor}
             ></path>
             <line x1="12" y1="44.5" x2="61" y2="44.5" stroke="#060314" strokeOpacity="0.28"></line>
             <line x1="12" y1="50.5" x2="61" y2="50.5" stroke="#060314" strokeOpacity="0.28"></line>
             <line x1="12" y1="56.5" x2="61" y2="56.5" stroke="#060314" strokeOpacity="0.28"></line>
             <line x1="12" y1="62.5" x2="61" y2="62.5" stroke="#060314" strokeOpacity="0.28"></line>
-            <line x1="12" y1="85.5" x2="56" y2="85.5" stroke={settings.color}></line>
-            <line x1="12" y1="89.5" x2="60" y2="89.5" stroke={settings.color}></line>
-            <line x1="12" y1="93.5" x2="41" y2="93.5" stroke={settings.color}></line>
+            <line x1="12" y1="85.5" x2="56" y2="85.5" stroke={selectedColor}></line>
+            <line x1="12" y1="89.5" x2="60" y2="89.5" stroke={selectedColor}></line>
+            <line x1="12" y1="93.5" x2="41" y2="93.5" stroke={selectedColor}></line>
           </svg>
         ),
       },
@@ -534,362 +449,557 @@ export function LivePreviewModal({
     ],
   };
 
-  // Available colors (Taskilo brand colors + additional options)
-  const colors = [
-    '#14ad9f', // Taskilo Teal (Primary)
-    '#129488', // Darker Teal
-    '#313131', // Dark Grey
-    '#848484', // Light Grey
-    '#0d8375', // Dark Teal
-    '#1d65b3', // Blue
-    '#a964d9', // Purple
-    '#c31919', // Red
-    '#f46e32', // Orange
-    '#ffcf00', // Yellow
-    '#fd88ab', // Pink
-    '#c0ab60', // Beige
-    '#7e4528', // Brown
-  ];
+  const documentLabel = documentLabels[documentType];
 
-  // Handle settings changes
-  const updateSettings = (newSettings: Partial<PreviewSettings>) => {
-    const updatedSettings = { ...settings, ...newSettings };
-    setSettings(updatedSettings);
+  // Zoom levels matching SevDesk
+  const zoomLevels = [2, 1.75, 1.5, 1.25, 1, 0.75, 0.5];
+  const zoomLabels = ['200%', '175%', '150%', '125%', '100%', '75%', '50%'];
 
-    // Notify parent component about changes
-    if (onSettingsChange) {
-      onSettingsChange(updatedSettings);
+  const toggleSection = (section: SendOption) => {
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(section)) {
+        newSet.delete(section);
+      } else {
+        newSet.add(section);
+      }
+      return newSet;
+    });
+    setActiveOption(section);
+  };
+
+  const isExpanded = (section: SendOption) => expandedSections.has(section);
+
+  // Cleanup logo URL on unmount
+  useEffect(() => {
+    return () => {
+      if (logoUrl) {
+        URL.revokeObjectURL(logoUrl);
+      }
+    };
+  }, [logoUrl]);
+
+  useEffect(() => {
+    if (isOpen && document) {
+      // Reset to download option when opening (like SevDesk)
+      setActiveOption('download');
+      setExpandedSections(new Set(['download']));
+      setZoomLevel(4); // Start at 100% zoom
+      setLogoFile(null);
+      if (logoUrl) {
+        URL.revokeObjectURL(logoUrl);
+      }
+      setLogoUrl(null);
+      setLogoSize(50);
+    }
+  }, [isOpen, document, documentType, documentLabel]);
+
+  const handleSend = async (method: 'email' | 'download' | 'print') => {
+    if (sending) return;
+
+    try {
+      setSending(true);
+
+      if (onSend) {
+        await onSend(method, {});
+      }
+
+      toast.success(`${documentLabel} erfolgreich versendet`);
+      onClose();
+    } catch (error) {
+      console.error('Error sending document:', error);
+      toast.error(`Fehler beim Versenden der ${documentLabel.toLowerCase()}`);
+    } finally {
+      setSending(false);
     }
   };
 
-  // Toggle expanded sections
-  const toggleSection = (section: PreviewSection) => {
-    const newExpanded = new Set(expandedSections);
-    if (newExpanded.has(section)) {
-      newExpanded.delete(section);
-    } else {
-      newExpanded.add(section);
-    }
-    setExpandedSections(newExpanded);
-  };
-
-  const isExpanded = (section: PreviewSection) => expandedSections.has(section);
-
-  // Handle logo upload
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setLogoFile(file);
-      const reader = new FileReader();
-      reader.onload = e => {
-        const logoUrl = e.target?.result as string;
-        updateSettings({ logoUrl });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  if (!document) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogPrimitive.Content className="fixed inset-0 z-50 flex">
-        {/* Header */}
-        <div className="absolute top-0 left-0 right-0 z-10 bg-[#14ad9f] text-white px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Eye className="h-6 w-6" />
-            <DialogTitle className="text-xl font-semibold">
-              {documentLabels[documentType]} Vorschau
-            </DialogTitle>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="sm"
+    <Dialog open={isOpen} onOpenChange={() => {}}>
+      <DialogPrimitive.Content className="max-w-7xl h-[90vh] w-[95vw] p-0 overflow-hidden flex flex-col fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
+        <DialogHeader className="px-6 py-4 border-b bg-[#14ad9f] text-white flex-shrink-0 relative">
+          {/* Weißes X-Icon */}
+          <button
             onClick={onClose}
-            className="text-white hover:bg-white/20"
+            className="absolute top-2 right-4 text-white hover:text-white/80 hover:bg-white/10 z-[9999] p-2 rounded transition-colors"
+            style={{ color: '#FFFFFF !important', fontSize: '20px', fontWeight: 'bold' }}
           >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex w-full pt-20">
-          {/* Left Sidebar - Settings */}
-          <div className="w-80 bg-white border-r overflow-y-auto">
-            <div className="p-4">
-              <h3 className="font-medium text-gray-900 mb-4">Vorschau-Einstellungen</h3>
-            </div>
-
-            {/* Logo Section */}
-            <div className="border-b">
-              <div
-                className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                  isExpanded('logo') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
-                }`}
-                onClick={() => toggleSection('logo')}
-              >
-                <div className="flex items-center gap-3">
-                  <Image className="h-5 w-5 text-gray-600" />
-                  <span className="font-medium">Dein Firmenlogo</span>
-                </div>
-                {isExpanded('logo') ? (
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                )}
+            ✕
+          </button>
+          <DialogTitle className="text-xl font-semibold text-white">
+            {documentLabel} Vorschau
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex h-full min-h-0 flex-1">
+          {/* Left side - Send Options */}
+          <div className="w-80 flex flex-col border-r bg-white min-h-0">
+            {/* Company Settings Warning */}
+            {showCompanySettings && (
+              <div className="p-4 border-b flex-shrink-0">
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="space-y-2">
+                      <p className="font-medium">Angaben zu deinem Unternehmen</p>
+                      <p className="text-sm">
+                        Damit deine {documentLabel.toLowerCase()} rechtssicher und GoBD-konform
+                        sind, ergänze noch Angaben zu dir und deinem Unternehmen.
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2"
+                        onClick={() => setShowCompanySettings(false)}
+                      >
+                        Angaben vervollständigen
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
               </div>
-              {isExpanded('logo') && (
-                <div className="px-4 pb-4 bg-gray-50">
-                  <div className="space-y-4">
-                    <div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".jpg,.jpeg,.png"
-                        onChange={handleLogoUpload}
-                        className="hidden"
-                      />
+            )}
+
+            {/* Send Options Accordion - SevDesk Style */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {/* Main Actions Section */}
+              <div className="border-b">
+                <div className="px-4 py-3 bg-gray-50 border-b">
+                  <h3 className="text-sm font-medium text-gray-700">Aktionen</h3>
+                </div>
+
+                {/* Download Option - Default active like SevDesk */}
+                <div className="border-b">
+                  <div
+                    className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
+                      isExpanded('download') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
+                    }`}
+                    onClick={() => toggleSection('download')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Download className="h-5 w-5 text-gray-600" />
+                      <span className="font-medium">Herunterladen</span>
+                    </div>
+                    {isExpanded('download') ? (
+                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    )}
+                  </div>
+                  {isExpanded('download') && (
+                    <div className="px-4 pb-4 bg-gray-50">
+                      <Button
+                        onClick={() => handleSend('download')}
+                        disabled={sending}
+                        className="w-full bg-[#14ad9f] hover:bg-[#129488]"
+                      >
+                        {sending ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Download className="w-4 h-4 mr-2" />
+                        )}
+                        PDF herunterladen
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Print Option */}
+                <div className="border-b">
+                  <div
+                    className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
+                      isExpanded('print') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
+                    }`}
+                    onClick={() => toggleSection('print')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Printer className="h-5 w-5 text-gray-600" />
+                      <span className="font-medium">Drucken</span>
+                    </div>
+                    {isExpanded('print') ? (
+                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    )}
+                  </div>
+                  {isExpanded('print') && (
+                    <div className="px-4 pb-4 bg-gray-50">
+                      <Button
+                        variant="outline"
+                        onClick={() => handleSend('print')}
+                        disabled={sending}
+                        className="w-full"
+                      >
+                        <Printer className="w-4 h-4 mr-2" />
+                        Drucken
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Save Option */}
+                <div className="border-b">
+                  <div
+                    className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
+                      isExpanded('save') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
+                    }`}
+                    onClick={() => toggleSection('save')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-5 w-5 text-gray-600" />
+                      <span className="font-medium">Speichern</span>
+                    </div>
+                    {isExpanded('save') ? (
+                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    )}
+                  </div>
+                  {isExpanded('save') && (
+                    <div className="px-4 pb-4 bg-gray-50">
+                      <div className="text-sm text-gray-600 mb-3">
+                        {documentLabel} als finalisiertes Dokument speichern.
+                      </div>
                       <Button
                         variant="outline"
                         className="w-full"
-                        onClick={() => fileInputRef.current?.click()}
+                        onClick={() => {
+                          toast.success(`${documentLabel} gespeichert`);
+                          onClose();
+                        }}
                       >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Logo hochladen
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Speichern
                       </Button>
-                      <p className="text-xs text-gray-500 mt-2">.jpg, .jpeg, .png (max. 10MB)</p>
                     </div>
+                  )}
+                </div>
+              </div>
 
-                    {settings.logoUrl && (
-                      <div>
-                        <Label className="text-sm font-medium">Größe</Label>
-                        <div className="flex items-center gap-2 mt-2">
+              {/* Layout Section - Always visible */}
+              <div>
+                <div className="px-4 py-3 bg-gray-50 border-b">
+                  <h3 className="text-sm font-medium text-gray-700">Layout</h3>
+                </div>
+
+                {/* Layout Option */}
+                <div className="border-b">
+                  <div
+                    className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
+                      isExpanded('layout') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
+                    }`}
+                    onClick={() => toggleSection('layout')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Layout className="h-5 w-5 text-gray-600" />
+                      <span className="font-medium">Template auswählen</span>
+                    </div>
+                    {isExpanded('layout') ? (
+                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    )}
+                  </div>
+                  {isExpanded('layout') && (
+                    <div className="px-4 pb-4 bg-gray-50">
+                      <div
+                        className="layouts-container"
+                        style={{ '--layout-color': selectedColor } as React.CSSProperties}
+                      >
+                        {/* Standard Layouts */}
+                        <div className="layouts layouts--normal layouts--big-thumbnail mb-4">
+                          <div className="grid grid-cols-2 gap-2">
+                            {layouts.standard.map(layout => (
+                              <div
+                                key={layout.value}
+                                className={`layout cursor-pointer border rounded-lg p-2 transition-all hover:border-[#14ad9f] ${
+                                  selectedLayout === layout.value
+                                    ? 'border-[#14ad9f] ring-2 ring-[#14ad9f]/20'
+                                    : 'border-gray-200'
+                                }`}
+                                onClick={() => setSelectedLayout(layout.value)}
+                              >
+                                <div className="w-full h-16 mb-1 flex items-center justify-center">
+                                  <div className="w-12 h-14">{layout.svg}</div>
+                                </div>
+                                <label className="text-xs text-center block cursor-pointer">
+                                  {layout.name}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Color Palette Section */}
+              <div className="border-b">
+                <div
+                  className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
+                    isExpanded('color') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
+                  }`}
+                  onClick={() => toggleSection('color')}
+                >
+                  <div className="flex items-center gap-3">
+                    <Palette className="h-5 w-5 text-gray-600" />
+                    <span className="font-medium">Farbe</span>
+                  </div>
+                  {isExpanded('color') ? (
+                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  )}
+                </div>
+                {isExpanded('color') && (
+                  <div className="px-4 pb-4 bg-gray-50">
+                    <div className="color-palette">
+                      <div className="grid grid-cols-6 gap-2 mb-3">
+                        {[
+                          { name: 'Grau', color: '#313131', label: 'Grey' },
+                          { name: 'Hellgrau', color: '#848484', label: 'Light Grey' },
+                          { name: 'Türkis', color: '#0d8375', label: 'Teal' },
+                          { name: 'Blau', color: '#1d65b3', label: 'Blue' },
+                          { name: 'Lila', color: '#a964d9', label: 'Purple' },
+                          { name: 'Rot', color: '#c31919', label: 'Red' },
+                          { name: 'Orange', color: '#f46e32', label: 'Orange' },
+                          { name: 'Gelb', color: '#ffcf00', label: 'Yellow' },
+                          { name: 'Rosa', color: '#fd88ab', label: 'Pink' },
+                          { name: 'Beige', color: '#c0ab60', label: 'Beige' },
+                          { name: 'Braun', color: '#7e4528', label: 'Brown' },
+                          { name: 'Taskilo Grün', color: '#14ad9f', label: 'Taskilo Green' },
+                        ].map(colorOption => (
+                          <button
+                            key={colorOption.color}
+                            type="button"
+                            aria-label={colorOption.label}
+                            className={`w-8 h-8 rounded border-2 transition-all hover:scale-110 ${
+                              selectedColor === colorOption.color
+                                ? 'border-gray-800 ring-2 ring-gray-300'
+                                : 'border-gray-200 hover:border-gray-400'
+                            }`}
+                            style={{ backgroundColor: colorOption.color }}
+                            onClick={() => setSelectedColor(colorOption.color)}
+                            title={colorOption.name}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Custom Color Input */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Benutzerdefinierte Farbe</Label>
+                        <div className="flex gap-2">
+                          <input
+                            type="color"
+                            value={selectedColor}
+                            onChange={e => setSelectedColor(e.target.value)}
+                            className="w-12 h-8 rounded border border-gray-300 cursor-pointer"
+                            title="Benutzerdefinierte Farbe auswählen"
+                          />
+                          <Input
+                            type="text"
+                            value={selectedColor}
+                            onChange={e => {
+                              const value = e.target.value;
+                              if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+                                setSelectedColor(value);
+                              }
+                            }}
+                            placeholder="#14ad9f"
+                            className="flex-1 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* E-Invoice Section */}
+              {eInvoiceData && (
+                <div className="border-b">
+                  <div
+                    className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
+                      isExpanded('einvoice') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
+                    }`}
+                    onClick={() => toggleSection('einvoice')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-5 w-5 text-green-600" />
+                      <span className="font-medium">E-Rechnung</span>
+                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                        {eInvoiceData.validationStatus === 'valid' ? 'Gültig' : 'Fehlerhaft'}
+                      </Badge>
+                    </div>
+                    {isExpanded('einvoice') ? (
+                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    )}
+                  </div>
+                  {isExpanded('einvoice') && (
+                    <div className="px-4 pb-4 bg-gray-50">
+                      <div className="space-y-4">
+                        {/* E-Invoice Status */}
+                        <div className="bg-white rounded-lg p-3 border">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium">Status</span>
+                            <Badge
+                              variant={
+                                eInvoiceData.validationStatus === 'valid'
+                                  ? 'default'
+                                  : 'destructive'
+                              }
+                              className="text-xs"
+                            >
+                              {eInvoiceData.validationStatus === 'valid' ? 'Gültig' : 'Fehlerhaft'}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-gray-600 space-y-1">
+                            <div>Format: {eInvoiceData.format?.toUpperCase() || 'ZUGFeRD'}</div>
+                            <div>GUID: {eInvoiceData.guid}</div>
+                            <div>Erstellt: {formatDate(eInvoiceData.createdAt)}</div>
+                          </div>
+                        </div>
+
+                        {/* QR Code */}
+                        {qrCodeUrl && (
+                          <div className="bg-white rounded-lg p-3 border text-center">
+                            <div className="text-sm font-medium mb-2">QR-Code</div>
+                            <img
+                              src={qrCodeUrl}
+                              alt="E-Invoice QR Code"
+                              className="mx-auto w-24 h-24 border rounded"
+                            />
+                            <div className="text-xs text-gray-500 mt-2">
+                              Für E-Invoice-Validierung
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Download Actions */}
+                        <div className="space-y-2">
                           <Button
                             variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              updateSettings({ logoSize: Math.max(25, settings.logoSize - 25) })
-                            }
-                            disabled={settings.logoSize <= 25}
+                            className="w-full text-sm"
+                            onClick={async () => {
+                              try {
+                                if (eInvoiceData.xmlUrl) {
+                                  window.open(eInvoiceData.xmlUrl, '_blank');
+                                  toast.success('XML-Datei wird heruntergeladen');
+                                } else {
+                                  toast.error('XML-URL nicht verfügbar');
+                                }
+                              } catch (error) {
+                                console.error('XML download error:', error);
+                                toast.error('Fehler beim XML-Download');
+                              }
+                            }}
                           >
-                            <Minus className="h-4 w-4" />
+                            <Download className="h-4 w-4 mr-2" />
+                            XML herunterladen
                           </Button>
-                          <span className="text-sm font-medium min-w-[3rem] text-center">
-                            {settings.logoSize}%
-                          </span>
+
                           <Button
                             variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              updateSettings({ logoSize: Math.min(100, settings.logoSize + 25) })
-                            }
-                            disabled={settings.logoSize >= 100}
+                            className="w-full text-sm"
+                            onClick={() => {
+                              toast.info('ZUGFeRD-PDF wird generiert...');
+                              // Hier würde die ZUGFeRD-PDF-Generierung stattfinden
+                            }}
                           >
-                            <Plus className="h-4 w-4" />
+                            <Download className="h-4 w-4 mr-2" />
+                            ZUGFeRD-PDF
                           </Button>
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
 
-            {/* Color Section */}
-            <div className="border-b">
-              <div
-                className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                  isExpanded('color') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
-                }`}
-                onClick={() => toggleSection('color')}
-              >
-                <div className="flex items-center gap-3">
-                  <Palette className="h-5 w-5 text-gray-600" />
-                  <span className="font-medium">Farbe</span>
-                </div>
-                {isExpanded('color') ? (
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                )}
-              </div>
-              {isExpanded('color') && (
-                <div className="px-4 pb-4 bg-gray-50">
-                  <div className="grid grid-cols-6 gap-2">
-                    {colors.map(color => (
-                      <button
-                        key={color}
-                        className={`w-8 h-8 rounded border-2 ${
-                          settings.color === color ? 'border-gray-800 scale-110' : 'border-gray-300'
-                        } transition-all hover:scale-105`}
-                        style={{ backgroundColor: color }}
-                        onClick={() => updateSettings({ color })}
-                        title={color}
-                      />
-                    ))}
+              {/* More Settings */}
+              <div className="border-b">
+                <div
+                  className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
+                    isExpanded('settings') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
+                  }`}
+                  onClick={() => toggleSection('settings')}
+                >
+                  <div className="flex items-center gap-3">
+                    <Settings className="h-5 w-5 text-gray-600" />
+                    <span className="font-medium">Weitere Einstellungen</span>
                   </div>
+                  {isExpanded('settings') ? (
+                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  )}
                 </div>
-              )}
-            </div>
-
-            {/* Layout Section */}
-            <div className="border-b">
-              <div
-                className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                  isExpanded('layout') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
-                }`}
-                onClick={() => toggleSection('layout')}
-              >
-                <div className="flex items-center gap-3">
-                  <Layout className="h-5 w-5 text-gray-600" />
-                  <span className="font-medium">Layout auswählen</span>
-                </div>
-                {isExpanded('layout') ? (
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                )}
-              </div>
-              {isExpanded('layout') && (
-                <div className="px-4 pb-4 bg-gray-50">
-                  <div
-                    className="layouts-container"
-                    style={{ '--layout-color': settings.color } as React.CSSProperties}
-                  >
-                    {/* Standard Layouts */}
-                    <div className="layouts layouts--normal layouts--big-thumbnail mb-4">
-                      <div className="grid grid-cols-2 gap-2">
-                        {layouts.standard.map(layout => (
-                          <div
-                            key={layout.value}
-                            className={`layout cursor-pointer border rounded-lg p-2 transition-all hover:border-[#14ad9f] ${
-                              settings.template === layout.value
-                                ? 'border-[#14ad9f] ring-2 ring-[#14ad9f]/20'
-                                : 'border-gray-200'
-                            }`}
-                            onClick={() => updateSettings({ template: layout.value })}
-                          >
-                            <div className="w-full h-16 mb-1 flex items-center justify-center">
-                              <div className="w-12 h-14">{layout.svg}</div>
-                            </div>
-                            <label className="text-xs text-center block cursor-pointer">
-                              {layout.name}
-                            </label>
-                          </div>
-                        ))}
+                {isExpanded('settings') && (
+                  <div className="px-4 pb-4 bg-gray-50">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Seitenzahlen anzeigen</Label>
+                        <Checkbox defaultChecked />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Fußzeile einblenden</Label>
+                        <Checkbox defaultChecked />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Wasserzeichen</Label>
+                        <Checkbox />
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Settings Section */}
-            <div className="border-b">
-              <div
-                className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                  isExpanded('settings') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
-                }`}
-                onClick={() => toggleSection('settings')}
-              >
-                <div className="flex items-center gap-3">
-                  <Settings className="h-5 w-5 text-gray-600" />
-                  <span className="font-medium">Weitere Einstellungen</span>
-                </div>
-                {isExpanded('settings') ? (
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
                 )}
               </div>
-              {isExpanded('settings') && (
-                <div className="px-4 pb-4 bg-gray-50">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">QR-Code anzeigen</Label>
-                      <Checkbox
-                        checked={settings.showQrCode}
-                        onCheckedChange={checked =>
-                          updateSettings({ showQrCode: checked as boolean })
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Kundennummer</Label>
-                      <Checkbox
-                        checked={settings.showCustomerNumber}
-                        onCheckedChange={checked =>
-                          updateSettings({ showCustomerNumber: checked as boolean })
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Kontaktperson</Label>
-                      <Checkbox
-                        checked={settings.showContactPerson}
-                        onCheckedChange={checked =>
-                          updateSettings({ showContactPerson: checked as boolean })
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Seitenzahlen anzeigen</Label>
-                      <Checkbox
-                        checked={settings.showPageNumbers}
-                        onCheckedChange={checked =>
-                          updateSettings({ showPageNumbers: checked as boolean })
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Fußzeile einblenden</Label>
-                      <Checkbox
-                        checked={settings.showFooter}
-                        onCheckedChange={checked =>
-                          updateSettings({ showFooter: checked as boolean })
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Wasserzeichen</Label>
-                      <Checkbox
-                        checked={settings.showWatermark}
-                        onCheckedChange={checked =>
-                          updateSettings({ showWatermark: checked as boolean })
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
           {/* Right side - Document Preview */}
           <div className="flex-1 flex flex-col min-h-0">
-            <SimplePDFViewer
-              zoomLevel={zoomLevels[zoomLevel]}
-              a4Width={A4_DIMENSIONS.WEB.width}
-              a4Height={A4_DIMENSIONS.WEB.height}
-              onZoomChange={newZoom => {
-                const newIndex = zoomLevels.findIndex(z => z === newZoom);
-                if (newIndex !== -1) {
-                  setZoomLevel(newIndex);
-                }
-              }}
-            >
-              <div ref={templateRef} data-pdf-template>
-                <PDFTemplate
-                  document={invoiceData}
-                  template={settings.template}
-                  color={settings.color}
-                  logoUrl={settings.logoUrl}
-                  logoSize={settings.logoSize}
-                  documentType={documentType}
-                />
+            {loadingEInvoiceData ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="flex items-center gap-3 text-gray-500">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <span>Lade Rechnungsdaten aus der Datenbank...</span>
+                </div>
               </div>
-            </SimplePDFViewer>
+            ) : (
+              <SimplePDFViewer
+                zoomLevel={zoomLevels[zoomLevel]}
+                a4Width={A4_DIMENSIONS.WEB.width}
+                a4Height={A4_DIMENSIONS.WEB.height}
+                pageMode={pageMode}
+                onPageModeChange={setPageMode}
+                onZoomChange={newZoom => {
+                  const newIndex = zoomLevels.findIndex(z => z === newZoom);
+                  if (newIndex !== -1) {
+                    setZoomLevel(newIndex);
+                  }
+                }}
+              >
+                <div ref={templateRef} data-pdf-template>
+                  <PDFTemplate
+                    document={realDocumentData || document}
+                    template={selectedLayout}
+                    color={selectedColor}
+                    logoUrl={logoUrl}
+                    logoSize={logoSize}
+                    documentType={documentType}
+                    pageMode={pageMode}
+                  />
+                </div>
+              </SimplePDFViewer>
+            )}
           </div>
-        </div>
+        </div>{' '}
+        {/* End of main flex container */}
       </DialogPrimitive.Content>
     </Dialog>
   );

@@ -81,6 +81,7 @@ interface FooterData {
 
 interface InvoiceFooterProps {
   data: FooterData;
+  color?: string;
   preview?: boolean;
 }
 
@@ -88,7 +89,11 @@ interface InvoiceFooterProps {
  * Invoice Footer Component - Immer am Ende der A4-Seite positioniert
  * Zeigt alle Firmendaten, Kontaktdaten und rechtlichen Informationen
  */
-export const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ data, preview = false }) => {
+export const InvoiceFooter: React.FC<InvoiceFooterProps> = ({
+  data,
+  color = '#14ad9f',
+  preview = false,
+}) => {
   // Sammle alle Footer-Informationen basierend auf der neuen Datenbankstruktur
   const footerParts: string[] = [];
 
@@ -245,7 +250,10 @@ export const InvoiceFooter: React.FC<InvoiceFooterProps> = ({ data, preview = fa
   }
 
   return (
-    <div className="w-full mt-auto pt-6 border-t-2 print:mt-10 print:pt-8" style={{ borderColor: '#14ad9f' }}>
+    <div
+      className="w-full mt-auto pt-6 border-t-2 print:mt-10 print:pt-8"
+      style={{ borderColor: color }}
+    >
       {preview ? (
         <div className="text-[11px] text-gray-700 text-center leading-relaxed print:text-base print:leading-relaxed">
           <div>{footerParts.join(' | ')}</div>

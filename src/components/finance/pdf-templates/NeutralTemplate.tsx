@@ -4,7 +4,6 @@ import { ProcessedPDFData } from '@/hooks/pdf/usePDFTemplateData';
 import { TaxRulesInfo } from './common/TaxRulesInfo';
 import { TotalsDisplay } from './common/TotalsDisplay';
 import { ItemsTable } from './common/ItemsTable';
-import { BankDetails } from './common/BankDetails';
 import { FooterText } from './common/FooterText';
 import { SimpleFooter } from './common/SimpleFooter';
 
@@ -12,12 +11,14 @@ interface NeutralTemplateProps {
   data: ProcessedPDFData;
   color: string;
   logoSize: number;
+  pageMode?: 'single' | 'multi';
 }
 
 export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
   data,
   color,
-  logoSize
+  logoSize,
+  pageMode = 'multi',
 }) => {
   // Footer-Daten - ECHTE Daten verwenden, KEINE Fallbacks!
   const footerData = {
@@ -41,16 +42,21 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
     companyPostalCode: (data as any).companyPostalCode,
     companyCity: (data as any).companyCity,
     step1: (data as any).step1,
-    step2: (data as any).step2,  
-    step4: (data as any).step4
+    step2: (data as any).step2,
+    step4: (data as any).step4,
   };
 
   return (
-    <div className="bg-white w-full max-w-[210mm] mx-auto text-xs" style={{ 
-      fontFamily: 'Arial, sans-serif'
-    }}>
-      <style dangerouslySetInnerHTML={{
-        __html: `
+    <div
+      className={`bg-white w-full max-w-[210mm] mx-auto ${pageMode === 'single' ? 'text-[10px] leading-tight' : 'text-xs'}`}
+      style={{
+        fontFamily: 'Arial, sans-serif',
+        ...(pageMode === 'single' && { maxHeight: '297mm', overflow: 'hidden' }),
+      }}
+    >
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
           @page { size: A4; margin: 0; }
           .pdf-page {
             width: 210mm;
@@ -62,14 +68,18 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
             page-break-after: avoid;
             break-after: avoid;
           }
-        `
-      }} />
-      
+        `,
+        }}
+      />
+
       {/* ========= SEITE 1 ========= */}
-      <div className="pdf-page flex flex-col">
+      <div className="flex flex-col" style={{ minHeight: '297mm' }}>
         {/* Simple Header - Seite 1 */}
         <div className="p-6 pb-4">
-          <div className="border-b-2 border-gray-300 pb-6 mb-8" style={{ minHeight: data.companyLogo ? '120px' : '80px' }}>
+          <div
+            className="border-b-2 pb-6 mb-8"
+            style={{ minHeight: data.companyLogo ? '120px' : '80px', borderColor: color }}
+          >
             <div className="flex justify-between items-start">
               {/* Firmenlogo links */}
               <div className="flex-shrink-0">
@@ -84,15 +94,19 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
                 <h1 className="text-2xl font-medium mb-2 mt-4">{data.documentLabel}</h1>
                 <p className="text-gray-700">Nr. {data.invoiceNumber}</p>
               </div>
-              
+
               {/* Firmendaten rechts */}
               <div className="text-right text-xs text-gray-700 leading-relaxed">
                 <div className="font-bold text-lg text-gray-900">{data.companyName}</div>
                 {data.companyAddressParsed.street && <div>{data.companyAddressParsed.street}</div>}
                 {(data.companyAddressParsed.postalCode || data.companyAddressParsed.city) && (
-                  <div>{data.companyAddressParsed.postalCode} {data.companyAddressParsed.city}</div>
+                  <div>
+                    {data.companyAddressParsed.postalCode} {data.companyAddressParsed.city}
+                  </div>
                 )}
-                {data.companyAddressParsed.country && <div>{data.companyAddressParsed.country}</div>}
+                {data.companyAddressParsed.country && (
+                  <div>{data.companyAddressParsed.country}</div>
+                )}
                 {data.companyPhone && <div>Tel.: {data.companyPhone}</div>}
                 {data.companyEmail && <div>E-Mail: {data.companyEmail}</div>}
                 {data.companyWebsite && <div>Web: {data.companyWebsite}</div>}
@@ -106,15 +120,21 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
               <div className="font-semibold mb-2">Rechnungsempfänger:</div>
               <div className="space-y-1">
                 <div className="font-medium">{data.customerName}</div>
-                {data.customerAddressParsed.street && <div>{data.customerAddressParsed.street}</div>}
-                {(data.customerAddressParsed.postalCode || data.customerAddressParsed.city) && (
-                  <div>{data.customerAddressParsed.postalCode} {data.customerAddressParsed.city}</div>
+                {data.customerAddressParsed.street && (
+                  <div>{data.customerAddressParsed.street}</div>
                 )}
-                {data.customerAddressParsed.country && <div>{data.customerAddressParsed.country}</div>}
+                {(data.customerAddressParsed.postalCode || data.customerAddressParsed.city) && (
+                  <div>
+                    {data.customerAddressParsed.postalCode} {data.customerAddressParsed.city}
+                  </div>
+                )}
+                {data.customerAddressParsed.country && (
+                  <div>{data.customerAddressParsed.country}</div>
+                )}
                 {data.customerVatId && <div>USt-IdNr.: {data.customerVatId}</div>}
               </div>
             </div>
-            
+
             <div>
               <div className="font-semibold mb-2">Rechnungsdetails:</div>
               <div className="space-y-1">
@@ -126,127 +146,173 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
             </div>
           </div>
 
-          <div className="border-t-2 mb-4" style={{ borderColor: '#14ad9f' }}></div>
+          {/* Header Text (Kopftext) */}
+          {data.headerText && (
+            <div
+              className="mb-6 p-4 bg-gray-50 rounded-lg border-l-4"
+              style={{ borderColor: color }}
+            >
+              <div
+                className="text-sm text-gray-700 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: data.headerText }}
+              />
+            </div>
+          )}
+
+          <div className="border-t-2 mb-4" style={{ borderColor: color }}></div>
         </div>
 
         {/* Items Table Seite 1 */}
         <div className="px-6 flex-1">
           <ItemsTable data={data} color={color} variant="neutral" />
-        </div>
 
-        {/* Footer Seite 1 */}
-        <div className="bg-white p-2 mt-auto">
-          <SimpleFooter data={data} />
-        </div>
-      </div>
-
-      {/* ========= SEITENUMBRUCH ========= */}
-      <div className="page-break" style={{ 
-        pageBreakBefore: 'always', 
-        breakBefore: 'page',
-        pageBreakAfter: 'avoid',
-        breakAfter: 'avoid',
-        height: '1px',
-        clear: 'both'
-      }}></div>
-
-      {/* ========= SEITE 2 ========= */}
-      <div 
-        className="flex flex-col" 
-        style={{ 
-          minHeight: '297mm', 
-          height: '297mm',
-          pageBreakAfter: 'avoid',
-          breakAfter: 'avoid'
-        }}
-      >
-        {/* Header Seite 2 */}
-        <div className="p-6 pb-4">
-          <div className="border-b-2 border-gray-300 pb-6 mb-8" style={{ minHeight: data.companyLogo ? '120px' : '80px' }}>
-            <div className="flex justify-between items-start">
-              <div className="flex-shrink-0">
-                {data.companyLogo && (
-                  <img
-                    src={data.companyLogo}
-                    alt={data.companyName}
-                    className="h-16 w-auto object-contain"
-                    style={{ maxHeight: `${logoSize}px` }}
-                  />
-                )}
-                <h1 className="text-2xl font-medium mb-2 mt-4">{data.documentLabel}</h1>
-                <p className="text-gray-700">Nr. {data.invoiceNumber}</p>
+          {/* Totals und Footer NUR bei einseitigem Modus */}
+          {pageMode === 'single' && (
+            <>
+              {/* Totals */}
+              <div className="flex justify-between items-start gap-8 mb-8 mt-8">
+                <div className="flex-1 space-y-4">
+                  <TaxRulesInfo data={data} color={color} />
+                </div>
+                <TotalsDisplay data={data} color={color} variant="standard" />
               </div>
-              
-              <div className="text-right text-xs text-gray-700 leading-relaxed">
-                <div className="font-bold text-lg text-gray-900">{data.companyName}</div>
-                {data.companyAddressParsed.street && <div>{data.companyAddressParsed.street}</div>}
-                {(data.companyAddressParsed.postalCode || data.companyAddressParsed.city) && (
-                  <div>{data.companyAddressParsed.postalCode} {data.companyAddressParsed.city}</div>
-                )}
-                {data.companyAddressParsed.country && <div>{data.companyAddressParsed.country}</div>}
-              </div>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-8 mb-8">
-            <div>
-              <div className="font-semibold mb-2">Rechnungsempfänger:</div>
-              <div className="space-y-1">
-                <div className="font-medium">{data.customerName}</div>
-                {data.customerAddressParsed.street && <div>{data.customerAddressParsed.street}</div>}
-                {(data.customerAddressParsed.postalCode || data.customerAddressParsed.city) && (
-                  <div>{data.customerAddressParsed.postalCode} {data.customerAddressParsed.city}</div>
-                )}
-                {data.customerAddressParsed.country && <div>{data.customerAddressParsed.country}</div>}
-                {data.customerVatId && <div>USt-IdNr.: {data.customerVatId}</div>}
-              </div>
-            </div>
-            
-            <div>
-              <div className="font-semibold mb-2">Rechnungsdetails:</div>
-              <div className="space-y-1">
-                <div>Nr. {data.invoiceNumber}</div>
-                <div>Rechnungsdatum: {formatDate(data.invoiceDate)}</div>
-                <div>Fälligkeitsdatum: {formatDate(data.dueDate)}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t-2 mb-4" style={{ borderColor: '#14ad9f' }}></div>
-        </div>
-
-        {/* Fortsetzung + Totals Seite 2 */}
-        <div className="px-6 flex-1">
-          <div className="mb-8">
-            <div className="text-sm font-semibold mb-2">Fortsetzung - Seite 2</div>
-            <div className="text-xs text-gray-600 mb-4">Weitere Details und Zusammenfassung</div>
-          </div>
-
-          {/* Totals */}
-          <div className="flex justify-between items-start gap-8 mb-8">
-            <div className="flex-1 space-y-4">
-              <TaxRulesInfo data={data} color={color} />
-            </div>
-            <TotalsDisplay data={data} variant="standard" />
-          </div>
-
-          <BankDetails data={data} variant="standard" />
-          <FooterText data={data} variant="standard" />
-
-          {data.notes && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-              <div className="font-semibold mb-1">Hinweise:</div>
-              <div className="text-sm text-gray-700 whitespace-pre-line">{data.notes}</div>
-            </div>
+              {/* FooterText */}
+              <FooterText data={data} variant="standard" />
+            </>
           )}
         </div>
 
-        {/* Footer Seite 2 */}
+        {/* FOOTER IMMER AM ENDE VON SEITE 1 */}
         <div className="bg-white p-2 mt-auto">
-          <SimpleFooter data={data} />
+          <SimpleFooter data={data} color={color} />
         </div>
       </div>
-      
+
+      {/* ========= AUTOMATISCHE EIN-/MEHRSEITIG LOGIK ========= */}
+      {/* Zweite Seite IMMER bei mehrseitigem Modus */}
+      {pageMode !== 'single' && (
+        <>
+          {/* ========= SEITENUMBRUCH (nur bei > 2 Items) ========= */}
+          <div
+            className="page-break"
+            style={{
+              pageBreakBefore: 'always',
+              breakBefore: 'page',
+              pageBreakAfter: 'avoid',
+              breakAfter: 'avoid',
+              height: '1px',
+              clear: 'both',
+            }}
+          ></div>
+
+          {/* ========= SEITE 2 (nur bei > 3 Items) ========= */}
+          <div
+            className="flex flex-col"
+            style={{
+              minHeight: '297mm',
+              height: '297mm',
+              pageBreakAfter: 'avoid',
+              breakAfter: 'avoid',
+            }}
+          >
+            {/* Header Seite 2 */}
+            <div className="p-6 pb-4">
+              <div
+                className="border-b-2 pb-6 mb-8"
+                style={{ minHeight: data.companyLogo ? '120px' : '80px', borderColor: color }}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-shrink-0">
+                    {data.companyLogo && (
+                      <img
+                        src={data.companyLogo}
+                        alt={data.companyName}
+                        className="h-16 w-auto object-contain"
+                        style={{ maxHeight: `${logoSize}px` }}
+                      />
+                    )}
+                    <h1 className="text-2xl font-medium mb-2 mt-4">{data.documentLabel}</h1>
+                    <p className="text-gray-700">Nr. {data.invoiceNumber}</p>
+                  </div>
+
+                  <div className="text-right text-xs text-gray-700 leading-relaxed">
+                    <div className="font-bold text-lg text-gray-900">{data.companyName}</div>
+                    {data.companyAddressParsed.street && (
+                      <div>{data.companyAddressParsed.street}</div>
+                    )}
+                    {(data.companyAddressParsed.postalCode || data.companyAddressParsed.city) && (
+                      <div>
+                        {data.companyAddressParsed.postalCode} {data.companyAddressParsed.city}
+                      </div>
+                    )}
+                    {data.companyAddressParsed.country && (
+                      <div>{data.companyAddressParsed.country}</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-8 mb-8">
+                <div>
+                  <div className="font-semibold mb-2">Rechnungsempfänger:</div>
+                  <div className="space-y-1">
+                    <div className="font-medium">{data.customerName}</div>
+                    {data.customerAddressParsed.street && (
+                      <div>{data.customerAddressParsed.street}</div>
+                    )}
+                    {(data.customerAddressParsed.postalCode || data.customerAddressParsed.city) && (
+                      <div>
+                        {data.customerAddressParsed.postalCode} {data.customerAddressParsed.city}
+                      </div>
+                    )}
+                    {data.customerAddressParsed.country && (
+                      <div>{data.customerAddressParsed.country}</div>
+                    )}
+                    {data.customerVatId && <div>USt-IdNr.: {data.customerVatId}</div>}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="font-semibold mb-2">Rechnungsdetails:</div>
+                  <div className="space-y-1">
+                    <div>Nr. {data.invoiceNumber}</div>
+                    <div>Rechnungsdatum: {formatDate(data.invoiceDate)}</div>
+                    <div>Fälligkeitsdatum: {formatDate(data.dueDate)}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t-2 mb-4" style={{ borderColor: color }}></div>
+            </div>
+
+            {/* Fortsetzung + Totals Seite 2 */}
+            <div className="px-6 flex-1">
+              <div className="mb-8">
+                <div className="text-sm font-semibold mb-2">Fortsetzung - Seite 2</div>
+                <div className="text-xs text-gray-600 mb-4">
+                  Weitere Details und Zusammenfassung
+                </div>
+              </div>
+
+              {/* Totals */}
+              <div className="flex justify-between items-start gap-8 mb-8">
+                <div className="flex-1 space-y-4">
+                  <TaxRulesInfo data={data} color={color} />
+                </div>
+                <TotalsDisplay data={data} color={color} variant="standard" />
+              </div>
+
+              <FooterText data={data} variant="standard" />
+            </div>
+
+            {/* Footer Seite 2 */}
+            <div className="bg-white p-2 mt-auto">
+              <SimpleFooter data={data} color={color} />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

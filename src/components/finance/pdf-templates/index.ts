@@ -10,9 +10,12 @@ export { DynamicTemplate } from './DynamicTemplate';
 export { TaxRulesInfo } from './common/TaxRulesInfo';
 export { TotalsDisplay } from './common/TotalsDisplay';
 export { ItemsTable } from './common/ItemsTable';
-export { BankDetails } from './common/BankDetails';
 export { FooterText } from './common/FooterText';
 
 // Hooks
 export { usePDFTemplateData } from '../../../hooks/pdf/usePDFTemplateData';
-export type { PDFTemplateProps, ProcessedPDFData, ParsedAddress } from '../../../hooks/pdf/usePDFTemplateData';
+export type {
+  PDFTemplateProps,
+  ProcessedPDFData,
+  ParsedAddress,
+} from '../../../hooks/pdf/usePDFTemplateData';
