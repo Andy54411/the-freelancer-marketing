@@ -251,15 +251,30 @@ export const InvoiceFooter: React.FC<InvoiceFooterProps> = ({
 
   return (
     <div
-      className="w-full mt-auto pt-6 border-t-2 print:mt-10 print:pt-8"
-      style={{ borderColor: color }}
+      className="w-full border-t-2"
+      style={{
+        borderColor: color,
+        paddingTop: '2px', // Force minimal padding for PDF
+        marginTop: '0px', // Force no margin for PDF
+      }}
     >
       {preview ? (
-        <div className="text-[11px] text-gray-700 text-center leading-relaxed print:text-base print:leading-relaxed">
+        <div
+          className="text-[11px] text-gray-700 text-center leading-none print:text-base print:leading-none"
+          style={{ lineHeight: '1', margin: '0', padding: '0' }}
+        >
           <div>{footerParts.join(' | ')}</div>
         </div>
       ) : (
-        <div className="text-[10px] text-gray-700 text-center leading-relaxed print:text-[11px] print:leading-relaxed">
+        <div
+          className="text-[10px] text-gray-700 text-center leading-none print:text-[11px] print:leading-none"
+          style={{
+            lineHeight: '1',
+            margin: '0',
+            padding: '0',
+            marginTop: '2px', // Minimal space for PDF generation
+          }}
+        >
           {footerParts.join(' | ')}
         </div>
       )}

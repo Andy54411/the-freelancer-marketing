@@ -198,7 +198,7 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
         </div>
 
         {/* Footer Seite 1 */}
-        <div className="bg-white p-2 mt-auto">
+        <div className="bg-white p-2 mt-4">
           <SimpleFooter data={data} color={color} />
         </div>
       </div>
@@ -353,7 +353,7 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
             </div>
 
             {/* Footer Seite 2 - UNTEN */}
-            <div className="mt-auto p-2 bg-white">
+            <div className="mt-3 p-2 bg-white">
               <SimpleFooter data={data} color={color} />
             </div>
           </div>

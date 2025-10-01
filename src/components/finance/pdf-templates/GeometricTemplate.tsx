@@ -163,7 +163,7 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
         </div>
 
         {/* Footer Seite 1 */}
-        <div className="bg-white p-2 mt-auto">
+        <div className="bg-white p-2 mt-4">
           <SimpleFooter data={data} color={color} />
         </div>
       </div>
@@ -290,7 +290,7 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
             </div>
 
             {/* Footer Seite 2 */}
-            <div className="bg-white p-2 mt-auto">
+            <div className="bg-white p-2 mt-3">
               <SimpleFooter data={data} color={color} />
             </div>
           </div>

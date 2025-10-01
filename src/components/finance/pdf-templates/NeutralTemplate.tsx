@@ -20,6 +20,8 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
   logoSize,
   pageMode = 'multi',
 }) => {
+  // DEBUG: Log pageMode to see what we actually receive
+  console.log('🎯 NeutralTemplate received pageMode:', pageMode);
   // Footer-Daten - ECHTE Daten verwenden, KEINE Fallbacks!
   const footerData = {
     companyName: (data as any).companyName,
@@ -60,13 +62,6 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
           @page { size: A4; margin: 0; }
           .pdf-page {
             width: 210mm;
-            min-height: 297mm;
-            page-break-after: always;
-            break-after: page;
-          }
-          .pdf-page:last-child {
-            page-break-after: avoid;
-            break-after: avoid;
           }
         `,
         }}
@@ -183,8 +178,8 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
           )}
         </div>
 
-        {/* FOOTER IMMER AM ENDE VON SEITE 1 */}
-        <div className="bg-white p-2 mt-auto">
+        {/* FOOTER auf Seite 1 - IMMER bei Single, AUCH bei Multi */}
+        <div className="bg-white p-2 mt-1">
           <SimpleFooter data={data} color={color} />
         </div>
       </div>
@@ -193,22 +188,12 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
       {/* Zweite Seite IMMER bei mehrseitigem Modus */}
       {pageMode !== 'single' && (
         <>
-          {/* ========= SEITENUMBRUCH (nur bei > 2 Items) ========= */}
-          <div
-            className="page-break"
-            style={{
-              pageBreakBefore: 'always',
-              breakBefore: 'page',
-              pageBreakAfter: 'avoid',
-              breakAfter: 'avoid',
-              height: '1px',
-              clear: 'both',
-            }}
-          ></div>
+          {/* ========= SEITENUMBRUCH ========= */}
+          <div style={{ pageBreakBefore: 'always', height: '0' }}></div>
 
           {/* ========= SEITE 2 (nur bei > 3 Items) ========= */}
           <div
-            className="flex flex-col"
+            className="flex flex-col bg-white"
             style={{
               minHeight: '297mm',
               height: '297mm',
@@ -306,8 +291,11 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
               <FooterText data={data} variant="standard" />
             </div>
 
-            {/* Footer Seite 2 */}
-            <div className="bg-white p-2 mt-auto">
+            {/* SPACER um Seite zu füllen */}
+            <div className="flex-1 bg-white"></div>
+
+            {/* === FOOTER AM ENDE DER LETZTEN SEITE === */}
+            <div className="bg-white p-2">
               <SimpleFooter data={data} color={color} />
             </div>
           </div>

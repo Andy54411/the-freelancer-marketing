@@ -1,12 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,14 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  X,
-  Send,
-  FileText,
-  Plus,
-  Loader2,
-  AlertTriangle,
-} from 'lucide-react';
+import { X, Send, FileText, Plus, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { InvoiceData } from '@/types/invoiceTypes';
 
@@ -44,7 +32,8 @@ interface EmailSendModalProps {
   documentType: 'invoice' | 'quote' | 'delivery' | 'order' | 'reminder';
   companyId: string;
   selectedTemplate: string; // Template from SendDocumentModal
-  getRenderedHtml: () => string | null; // ✅ Get rendered HTML from SendDocumentModal
+  pageMode?: 'single' | 'multi'; // ✅ Page mode for PDF generation
+  getRenderedHtml: () => Promise<string | null>; // ✅ Get rendered HTML from SendDocumentModal
   isTemplateReady: boolean; // ✅ Check if template is rendered and ready
   onSend?: (emailData: EmailSendData) => Promise<void>;
 }
@@ -67,12 +56,13 @@ export function EmailSendModal({
   documentType,
   companyId,
   selectedTemplate,
+  pageMode = 'single',
   getRenderedHtml,
   isTemplateReady,
   onSend,
 }: EmailSendModalProps) {
   const [sending, setSending] = useState(false);
-  
+
   // Email form fields
   const [recipients, setRecipients] = useState<EmailRecipient[]>([]);
   const [ccRecipients, setCcRecipients] = useState<EmailRecipient[]>([]);
@@ -80,23 +70,23 @@ export function EmailSendModal({
   const [currentRecipient, setCurrentRecipient] = useState('');
   const [currentCC, setCurrentCC] = useState('');
   const [currentBCC, setCurrentBCC] = useState('');
-  
+
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [signature, setSignature] = useState('');
   const [sendCopy, setSendCopy] = useState(false);
-  
+
   // UI states
   const [showCC, setShowCC] = useState(false);
   const [showBCC, setShowBCC] = useState(false);
-  
+
   // Document type labels
   const documentLabels = {
     invoice: 'Rechnung',
     quote: 'Angebot',
     reminder: 'Erinnerung',
   };
-  
+
   const documentLabel = documentLabels[documentType];
   const documentNumber = document.invoiceNumber || document.number || 'Unbekannt';
 
@@ -107,10 +97,10 @@ export function EmailSendModal({
       if (document.customerEmail) {
         setRecipients([{ email: document.customerEmail, name: document.customerName }]);
       }
-      
+
       // Set default subject
       setSubject(`${documentLabel} ${documentNumber}`);
-      
+
       // Set default message
       setMessage(`Sehr geehrte Damen und Herren,
 
@@ -129,9 +119,9 @@ Mit freundlichen Grüßen`);
   // Add recipient handlers
   const addRecipient = (email: string, type: 'to' | 'cc' | 'bcc' = 'to') => {
     if (!email.trim() || !isValidEmail(email.trim())) return;
-    
+
     const newRecipient = { email: email.trim() };
-    
+
     switch (type) {
       case 'to':
         if (!recipients.find(r => r.email === email.trim())) {
@@ -195,31 +185,57 @@ Mit freundlichen Grüßen`);
       // ✅ Prüfung ob Template bereit ist
       if (!isTemplateReady) {
         console.error('Template not ready - cannot generate PDF');
-        throw new Error('Template is not ready yet. Please wait for the document preview to load completely.');
+        throw new Error(
+          'Template is not ready yet. Please wait for the document preview to load completely.'
+        );
       }
 
       // ✅ Get HTML Content direkt
-      const htmlContent = getRenderedHtml();
-      
+      const htmlContent = await getRenderedHtml();
+
       if (!htmlContent || htmlContent.trim().length === 0) {
         console.error('No HTML content received from template');
-        throw new Error('Template could not be rendered. Please make sure the document preview is visible and try again.');
+        throw new Error(
+          'Template could not be rendered. Please make sure the document preview is visible and try again.'
+        );
       }
-      
+
       console.log('Template ready! HTML content length:', htmlContent.length);
 
       console.log('EmailSendModal - Got HTML content, sending to API');
 
-      // ✅ Send the rendered HTML to our simple API
-      const response = await fetch('/api/generate-document-pdf', {
+      // 🤖 SMART API SELECTION: Auto-detect based on items count
+      const itemsCount = document?.items?.length || 0;
+      const shouldUseSingle = itemsCount < 3; // 1-2 items = single, 3+ items = multi
+      const smartApiEndpoint = shouldUseSingle
+        ? '/api/generate-pdf-single'
+        : '/api/generate-pdf-multi';
+
+      // Use smart detection OR manual pageMode (if user explicitly set it)
+      const finalApiEndpoint =
+        pageMode === 'single'
+          ? '/api/generate-pdf-single'
+          : pageMode === 'multi'
+            ? '/api/generate-pdf-multi'
+            : smartApiEndpoint;
+
+      console.log('🤖 SMART API SELECTION:', {
+        itemsCount,
+        shouldUseSingle,
+        pageMode,
+        smartApiEndpoint,
+        finalApiEndpoint,
+      });
+
+      const response = await fetch(finalApiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           htmlContent: htmlContent,
-          template: selectedTemplate
-        })
+          template: selectedTemplate,
+        }),
       });
 
       if (!response.ok) {
@@ -235,13 +251,16 @@ Mit freundlichen Grüßen`);
       }
 
       const result = await response.json();
-      
+
       if (!result.pdfBase64 || result.pdfBase64.trim().length === 0) {
         console.error('PDF API returned empty base64');
         throw new Error('PDF generation returned empty result');
       }
-      
-      console.log('EmailSendModal - PDF generated successfully, base64 length:', result.pdfBase64.length);
+
+      console.log(
+        'EmailSendModal - PDF generated successfully, base64 length:',
+        result.pdfBase64.length
+      );
       return result.pdfBase64;
     } catch (error) {
       console.error('PDF generation failed:', error);
@@ -255,20 +274,20 @@ Mit freundlichen Grüßen`);
       toast.error('Bitte geben Sie mindestens einen Empfänger ein');
       return;
     }
-    
+
     if (!subject.trim()) {
       toast.error('Bitte geben Sie einen Betreff ein');
       return;
     }
 
     setSending(true);
-    
+
     try {
       toast.message('PDF wird erstellt...');
-      
+
       // Generate PDF - will throw error if it fails
       const pdfBase64 = await generatePdfBase64();
-      
+
       toast.message('E-Mail wird versendet...');
 
       // Get company slug for email sender
@@ -334,15 +353,8 @@ Mit freundlichen Grüßen`);
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
         {/* Header */}
         <DialogHeader className="flex flex-row items-center justify-between p-6 border-b">
-          <DialogTitle className="text-xl font-semibold">
-            E-Mail versenden
-          </DialogTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-8 w-8 p-0"
-          >
+          <DialogTitle className="text-xl font-semibold">E-Mail versenden</DialogTitle>
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
             <X className="h-4 w-4" />
           </Button>
         </DialogHeader>
@@ -378,7 +390,7 @@ Mit freundlichen Grüßen`);
                   )}
                 </div>
               </div>
-              
+
               <div className="flex flex-wrap items-center gap-2 p-3 border rounded-md min-h-[50px] focus-within:ring-2 focus-within:ring-blue-500">
                 {recipients.map((recipient, index) => (
                   <Badge
@@ -398,8 +410,8 @@ Mit freundlichen Grüßen`);
                 ))}
                 <Input
                   value={currentRecipient}
-                  onChange={(e) => setCurrentRecipient(e.target.value)}
-                  onKeyDown={(e) => handleRecipientKeyPress(e, 'to')}
+                  onChange={e => setCurrentRecipient(e.target.value)}
+                  onKeyDown={e => handleRecipientKeyPress(e, 'to')}
                   onBlur={() => handleRecipientBlur('to')}
                   placeholder="empfaenger@beispiel.de"
                   className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0"
@@ -430,8 +442,8 @@ Mit freundlichen Grüßen`);
                   ))}
                   <Input
                     value={currentCC}
-                    onChange={(e) => setCurrentCC(e.target.value)}
-                    onKeyDown={(e) => handleRecipientKeyPress(e, 'cc')}
+                    onChange={e => setCurrentCC(e.target.value)}
+                    onKeyDown={e => handleRecipientKeyPress(e, 'cc')}
                     onBlur={() => handleRecipientBlur('cc')}
                     placeholder="cc@beispiel.de"
                     className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0"
@@ -463,8 +475,8 @@ Mit freundlichen Grüßen`);
                   ))}
                   <Input
                     value={currentBCC}
-                    onChange={(e) => setCurrentBCC(e.target.value)}
-                    onKeyDown={(e) => handleRecipientKeyPress(e, 'bcc')}
+                    onChange={e => setCurrentBCC(e.target.value)}
+                    onKeyDown={e => handleRecipientKeyPress(e, 'bcc')}
                     onBlur={() => handleRecipientBlur('bcc')}
                     placeholder="bcc@beispiel.de"
                     className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0"
@@ -482,7 +494,7 @@ Mit freundlichen Grüßen`);
             <Input
               id="subject"
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              onChange={e => setSubject(e.target.value)}
               placeholder="Betreff eingeben"
               required
             />
@@ -496,7 +508,7 @@ Mit freundlichen Grüßen`);
             <Textarea
               id="message"
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={e => setMessage(e.target.value)}
               placeholder="Nachricht eingeben"
               rows={8}
               className="min-h-[200px]"
@@ -513,7 +525,7 @@ Mit freundlichen Grüßen`);
             <Textarea
               id="signature"
               value={signature}
-              onChange={(e) => setSignature(e.target.value)}
+              onChange={e => setSignature(e.target.value)}
               placeholder="Signatur eingeben"
               rows={4}
             />
@@ -544,19 +556,15 @@ Mit freundlichen Grüßen`);
             <Checkbox
               id="send-copy"
               checked={sendCopy}
-              onCheckedChange={(checked) => setSendCopy(checked === true)}
+              onCheckedChange={checked => setSendCopy(checked === true)}
             />
             <Label htmlFor="send-copy" className="text-sm">
               Kopie an mich selbst
             </Label>
           </div>
-          
+
           <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={handleCancel}
-              disabled={sending}
-            >
+            <Button variant="outline" onClick={handleCancel} disabled={sending}>
               Abbrechen
             </Button>
             <Button

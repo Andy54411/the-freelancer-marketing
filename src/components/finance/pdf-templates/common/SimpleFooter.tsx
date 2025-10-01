@@ -35,7 +35,7 @@ export const SimpleFooter: React.FC<PageFooterProps> = ({ data, color = '#14ad9f
   };
 
   return (
-    <div className="bg-white p-2 mt-4">
+    <div className="bg-white p-2 mt-1">
       <InvoiceFooter data={footerData} color={color} />
     </div>
   );
