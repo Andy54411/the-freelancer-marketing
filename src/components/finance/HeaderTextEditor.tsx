@@ -55,7 +55,7 @@ interface HeaderTextEditorProps {
   className?: string;
   companyId?: string;
   userId?: string;
-  objectType?: 'INVOICE' | 'QUOTE';
+  objectType?: 'INVOICE' | 'QUOTE' | 'REMINDER' | 'CREDIT_NOTE' | 'CANCELLATION';
   textType?: 'HEAD' | 'FOOT';
   onTemplateSelect?: (templateId: string) => void;
 }
@@ -114,6 +114,9 @@ export default function HeaderTextEditor({
       }
 
       setTextTemplates(templates);
+      
+      // Templates sind geladen - der separate useEffect wird die Auto-Ladung handhaben
+      
       console.log('Final loaded header templates:', templates.length, templates); // Debug
     } catch (error) {
       console.error('Fehler beim Laden der Kopftext-Vorlagen:', error);
@@ -126,6 +129,70 @@ export default function HeaderTextEditor({
       loadTextTemplates();
     }
   }, [companyId, objectType, textType, mounted]);
+  
+  // 🆕 Auto-Template-Ladung beim objectType-Wechsel
+  useEffect(() => {
+    if (mounted && textTemplates.length > 0 && objectType) {
+      console.log('🔍 Auto-template check for objectType:', objectType);
+      console.log('🔍 Current value:', value?.substring(0, 100));
+      console.log('🔍 Available templates:', textTemplates.map(t => ({ 
+        name: t.name, 
+        objectType: t.objectType, 
+        textType: t.textType, 
+        isDefault: t.isDefault 
+      })));
+      
+      // Suche nach HEAD-Template für den objectType (bevorzuge Standard-Template)
+      let headTemplate = textTemplates.find(t => 
+        t.objectType === objectType && 
+        t.textType === 'HEAD' && 
+        t.isDefault
+      );
+      
+      // Falls kein Standard-Template, nimm das erste verfügbare HEAD-Template
+      if (!headTemplate) {
+        headTemplate = textTemplates.find(t => 
+          t.objectType === objectType && 
+          t.textType === 'HEAD'
+        );
+      }
+      
+      if (headTemplate) {
+        const currentValue = value || '';
+        
+        // Prüfe ob automatische Template-Ladung erforderlich ist
+        const isEmptyOrWrongType = 
+          currentValue.trim() === '' || 
+          currentValue === '<p></p>' ||
+          // REMINDER sollte nicht Invoice-Texte haben
+          (objectType === 'REMINDER' && (
+            currentValue.includes('Hiermit stelle ich Ihnen die folgenden Leistungen in Rechnung') || 
+            currentValue.includes('vielen Dank für Ihren Auftrag') ||
+            currentValue.includes('Rechnungsstellung')
+          )) ||
+          // INVOICE sollte nicht Reminder-Texte haben  
+          (objectType === 'INVOICE' && (
+            currentValue.includes('sicherlich haben Sie unsere Rechnung in Ihrem Postfach übersehen') ||
+            currentValue.includes('ausstehenden Forderungen')
+          )) ||
+          // Andere Dokumenttypen
+          (objectType === 'CREDIT_NOTE' && currentValue.includes('Hiermit stelle ich Ihnen die folgenden Leistungen in Rechnung')) ||
+          (objectType === 'CANCELLATION' && currentValue.includes('Hiermit stelle ich Ihnen die folgenden Leistungen in Rechnung'));
+        
+        if (isEmptyOrWrongType && headTemplate.text && headTemplate.text !== currentValue) {
+          console.log('🎯 Auto-loading HEAD template for', objectType, ':', headTemplate.name);
+          console.log('📝 Template text:', headTemplate.text?.substring(0, 100) + '...');
+          onChange(headTemplate.text);
+          setSelectedTemplate(headTemplate);
+        } else {
+          console.log('✅ Current text is appropriate for', objectType);
+        }
+      } else {
+        console.log('⚠️ No HEAD template found for objectType:', objectType);
+        console.log('Available templates for debugging:', textTemplates);
+      }
+    }
+  }, [objectType, textTemplates, mounted, value]); // value hinzugefügt für bessere Reaktivität
 
   const editor = useEditor({
     extensions: [

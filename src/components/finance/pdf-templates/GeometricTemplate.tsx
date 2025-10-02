@@ -7,12 +7,14 @@ import { ItemsTable } from './common/ItemsTable';
 
 import { FooterText } from './common/FooterText';
 import { SimpleFooter } from './common/SimpleFooter';
+import { DocumentType, getDocumentTypeConfig, detectDocumentType } from '@/lib/document-utils';
 
 interface GeometricTemplateProps {
   data: ProcessedPDFData;
   color: string;
   logoSize: number;
   pageMode?: 'single' | 'multi';
+  documentType?: DocumentType;
 }
 
 export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
@@ -20,7 +22,12 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
   color,
   logoSize,
   pageMode = 'multi',
+  documentType,
 }) => {
+  // 📋 DYNAMISCHE DOKUMENTTYP-KONFIGURATION
+  const detectedType = documentType || detectDocumentType(data);
+  const config = getDocumentTypeConfig(detectedType, color);
+  
   return (
     <div
       className="bg-white w-full max-w-[210mm] mx-auto text-xs"

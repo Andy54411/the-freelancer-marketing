@@ -8,12 +8,14 @@ import { ItemsTable } from './common/ItemsTable';
 import { FooterText } from './common/FooterText';
 import { PDFSection } from './common/PDFSection';
 import { SimpleFooter } from './common/SimpleFooter';
+import { DocumentType, getDocumentTypeConfig, detectDocumentType } from '@/lib/document-utils';
 
 interface StandardTemplateProps {
   data: ProcessedPDFData;
   color: string;
   logoSize: number;
   pageMode?: 'single' | 'multi';
+  documentType?: DocumentType;
 }
 
 export const StandardTemplate: React.FC<StandardTemplateProps> = ({
@@ -21,7 +23,11 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
   color,
   logoSize,
   pageMode = 'multi',
+  documentType,
 }) => {
+  // 📋 DYNAMISCHE DOKUMENTTYP-KONFIGURATION
+  const detectedType = documentType || detectDocumentType(data);
+  const config = getDocumentTypeConfig(detectedType, color);
   // Footer-Daten - ECHTE Daten verwenden, KEINE Fallbacks!
   const footerData = {
     companyName: (data as any).companyName,
@@ -123,7 +129,7 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
 
           <div className="grid grid-cols-2 gap-8 mb-8">
             <div>
-              <div className="font-semibold mb-2">Rechnungsempfänger:</div>
+              <div className="font-semibold mb-2">{config.recipientLabel}:</div>
               <div className="font-medium">{data.customerName}</div>
               <div className="text-gray-600 mt-1">
                 <div>{data.customerAddressParsed.street}</div>
@@ -138,11 +144,13 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
             </div>
 
             <div>
-              <div className="font-semibold mb-2">Rechnungsdetails:</div>
+              <div className="font-semibold mb-2">Dokumentdetails:</div>
               <div className="space-y-1">
-                <div>Nr. {data.invoiceNumber}</div>
-                <div>Rechnungsdatum: {formatDate(data.invoiceDate)}</div>
-                <div>Fälligkeitsdatum: {formatDate(data.dueDate)}</div>
+                <div>{config.numberLabel}: {data.invoiceNumber}</div>
+                <div>{config.dateLabel}: {formatDate(data.invoiceDate)}</div>
+                {config.showDueDate && data.dueDate && (
+                  <div>{config.dueDateLabel}: {formatDate(data.dueDate)}</div>
+                )}
               </div>
             </div>
           </div>
@@ -256,10 +264,10 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
                 </div>
               </div>
 
-              {/* Rechnungsempfänger und Details auch auf Seite 2 */}
+              {/* Empfänger und Details auch auf Seite 2 */}
               <div className="grid grid-cols-2 gap-8 mb-8">
                 <div>
-                  <div className="font-semibold mb-2">Rechnungsempfänger:</div>
+                  <div className="font-semibold mb-2">{config.recipientLabel}:</div>
                   <div className="font-medium">{data.customerName}</div>
                   <div className="text-gray-600 mt-1">
                     <div>{data.customerAddressParsed.street}</div>
@@ -274,11 +282,13 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
                 </div>
 
                 <div>
-                  <div className="font-semibold mb-2">Rechnungsdetails:</div>
+                  <div className="font-semibold mb-2">Dokumentdetails:</div>
                   <div className="space-y-1">
-                    <div>Nr. {data.invoiceNumber}</div>
-                    <div>Rechnungsdatum: {formatDate(data.invoiceDate)}</div>
-                    <div>Fälligkeitsdatum: {formatDate(data.dueDate)}</div>
+                    <div>{config.numberLabel}: {data.invoiceNumber}</div>
+                    <div>{config.dateLabel}: {formatDate(data.invoiceDate)}</div>
+                    {config.showDueDate && data.dueDate && (
+                      <div>{config.dueDateLabel}: {formatDate(data.dueDate)}</div>
+                    )}
                   </div>
                 </div>
               </div>

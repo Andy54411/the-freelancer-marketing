@@ -79,6 +79,7 @@ export function replacePlaceholders(text: string, data: PlaceholderData): string
   // Kunden-Platzhalter
   if (data.customerName) {
     result = result.replace(/\[%KUNDENNAME%\]/g, data.customerName);
+    result = result.replace(/\[%KUNDENFIRMA%\]/g, data.customerName); // 🆕 KUNDENFIRMA Platzhalter hinzugefügt
     // Anrede generieren
     const anrede =
       data.customerName.includes('GmbH') ||
@@ -105,7 +106,10 @@ export function replacePlaceholders(text: string, data: PlaceholderData): string
   }
   if (data.quoteNumber) result = result.replace(/\[%ANGEBOTSNUMMER%\]/g, data.quoteNumber);
   if (data.documentDate) result = result.replace(/\[%DOKUMENTDATUM%\]/g, data.documentDate);
-  if (data.dueDate) result = result.replace(/\[%FAELLIGKEITSDATUM%\]/g, data.dueDate);
+  if (data.dueDate) {
+    result = result.replace(/\[%FAELLIGKEITSDATUM%\]/g, data.dueDate);
+    result = result.replace(/\[%GUELTIG_BIS%\]/g, data.dueDate); // Für Angebote
+  }
   if (data.serviceDate) result = result.replace(/\[%LEISTUNGSDATUM%\]/g, data.serviceDate);
   if (data.servicePeriod) result = result.replace(/\[%LEISTUNGSZEITRAUM%\]/g, data.servicePeriod);
 

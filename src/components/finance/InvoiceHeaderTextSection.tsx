@@ -18,6 +18,9 @@ interface InvoiceHeaderTextSectionProps {
   companyId: string;
   userId: string;
   
+  // Document Type
+  objectType?: 'INVOICE' | 'QUOTE' | 'REMINDER';
+  
   // Error Styling
   getFieldErrorClass?: (fieldName: string) => string;
 }
@@ -29,6 +32,7 @@ export default function InvoiceHeaderTextSection({
   onHeadTextChange,
   companyId,
   userId,
+  objectType = 'INVOICE',
   getFieldErrorClass = () => '',
 }: InvoiceHeaderTextSectionProps) {
   return (
@@ -72,7 +76,7 @@ export default function InvoiceHeaderTextSection({
                 onChange={onHeadTextChange}
                 companyId={companyId}
                 userId={userId}
-                objectType="INVOICE"
+                objectType={objectType}
                 textType="HEAD"
               />
             </div>

@@ -1,17 +1,24 @@
 import React from 'react';
 import { formatCurrency } from '@/lib/utils';
 import { ProcessedPDFData } from '@/hooks/pdf/usePDFTemplateData';
+import { DocumentType, detectDocumentType, getDocumentTypeConfig } from '@/lib/document-utils';
 
 interface FooterTextProps {
   data: ProcessedPDFData;
   variant?: 'standard' | 'elegant' | 'compact';
+  documentType?: DocumentType;
 }
 
 export const FooterText: React.FC<FooterTextProps> = ({ 
   data, 
-  variant = 'standard' 
+  variant = 'standard',
+  documentType 
 }) => {
   if (!data.footerText) return null;
+
+  // Dynamische Dokumenttyp-Konfiguration
+  const detectedType = detectDocumentType(data) || documentType || 'invoice';
+  const typeConfig = getDocumentTypeConfig(detectedType);
 
   const processFooterText = (text: string) => {
     return text
@@ -23,8 +30,13 @@ export const FooterText: React.FC<FooterTextProps> = ({
         /\[%KONTAKTPERSON%\]/g,
         data.contactPersonName || data.internalContactPerson || data.companyName || ''
       )
+      // Dynamische Label-Ersetzung basierend auf Dokumenttyp
+      .replace(/Rechnungsnummer/g, typeConfig.numberLabel)
+      .replace(/Rechnungsdatum/g, typeConfig.dateLabel)
+      .replace(/Rechnungsbetrag/g, `${typeConfig.title}betrag`)
+      .replace(/in Rechnung/g, detectedType === 'reminder' ? 'in Mahnung' : detectedType === 'quote' ? 'als Angebot' : 'in Rechnung')
       .replace(/Zahlungsziel:/g, '<br><strong>Zahlungsziel:</strong>')
-      .replace(/Rechnungsdatum:/g, '<br><strong>Rechnungsdatum:</strong>')
+      .replace(new RegExp(`${typeConfig.dateLabel}:`, 'g'), `<br><strong>${typeConfig.dateLabel}:</strong>`)
       .replace(/Vielen Dank/g, '<br>Vielen Dank')
       .replace(/Mit freundlichen Grüßen/g, '<br>Mit freundlichen Grüßen');
   };

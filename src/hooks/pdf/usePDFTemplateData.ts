@@ -3,14 +3,16 @@
 import { useMemo } from 'react';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { DocumentType, detectDocumentType, getDocumentTypeConfig } from '@/lib/document-utils';
+import { replacePlaceholders, type PlaceholderData } from '@/utils/placeholderSystem';
 
 export interface PDFTemplateProps {
-  document: InvoiceData;
+  document: InvoiceData | any; // Flexibel für verschiedene Datentypen
   template: string;
   color: string;
   logoUrl?: string | null;
   logoSize?: number;
-  documentType: 'invoice' | 'quote' | 'reminder';
+  documentType: DocumentType;
   pageMode?: 'single' | 'multi';
 }
 
@@ -125,13 +127,10 @@ export const usePDFTemplateData = ({
   documentType,
 }: PDFTemplateProps): ProcessedPDFData => {
   return useMemo(() => {
-    // Document labels
-    const documentLabels = {
-      invoice: 'Rechnung',
-      quote: 'Angebot',
-      reminder: 'Mahnung',
-    };
-    const documentLabel = documentLabels[documentType];
+    // Document labels mit dynamischer Erkennung
+    const detectedType = detectDocumentType(document) || documentType;
+    const typeConfig = getDocumentTypeConfig(detectedType);
+    const documentLabel = typeConfig.title;
 
     // Calculate items and totals
     const realItems = document.items || [];
@@ -209,21 +208,21 @@ export const usePDFTemplateData = ({
     const companyTaxNumber = document.companyTaxNumber || '';
     const companyRegister = (document as any).companyRegister || '';
 
-    // Content fields
-    const headTextHtml = (document as any).headTextHtml || '';
-    const description = document.description || '';
-    const introText = (document as any).introText || '';
-    const headerText = (document as any).headerText || '';
-    const footerText = (document as any).footerText || '';
-    const notes = (document as any).notes || '';
-    const hinweise = (document as any).hinweise || '';
-    const additionalNotes = (document as any).additionalNotes || '';
-    const conclusionText = (document as any).conclusionText || '';
-    const paymentTerms = document.paymentTerms || (document as any).paymentTerms || '14 Tage';
-    const deliveryDate = (document as any).deliveryDate || '';
-    const servicePeriod = (document as any).servicePeriod || '';
-    const internalContactPerson = (document as any).internalContactPerson || '';
-    const contactPersonName = (document as any).contactPersonName || '';
+    // Content fields - NO FALLBACKS für ehrliches Debugging
+    const headTextHtml = (document as any).headTextHtml;
+    const description = document.description;
+    const introText = (document as any).introText;
+    const headerText = (document as any).headerText;
+    const footerText = (document as any).footerText;
+    const notes = (document as any).notes;
+    const hinweise = (document as any).hinweise;
+    const additionalNotes = (document as any).additionalNotes;
+    const conclusionText = (document as any).conclusionText;
+    const paymentTerms = document.paymentTerms || (document as any).paymentTerms;
+    const deliveryDate = (document as any).deliveryDate;
+    const servicePeriod = (document as any).servicePeriod;
+    const internalContactPerson = (document as any).internalContactPerson;
+    const contactPersonName = (document as any).contactPersonName;
 
     // Tax settings
     const isSmallBusiness = document.isSmallBusiness || false;
@@ -283,6 +282,47 @@ export const usePDFTemplateData = ({
     const customerAddressParsed = parseAddress(customerAddress);
     const companyAddressParsed = parseAddress(companyAddress);
 
+    // 🆕 Platzhalter-Daten erstellen und Texte verarbeiten
+    const placeholderData: PlaceholderData = {
+      // Firmen-Informationen
+      companyName,
+      companyStreet: companyAddressParsed.street,
+      companyCity: companyAddressParsed.city,
+      companyPostalCode: companyAddressParsed.postalCode,
+      companyCountry: companyAddressParsed.country,
+      companyPhone,
+      companyEmail,
+      companyWebsite,
+      companyTaxNumber,
+      companyVatId,
+      
+      // Kunden-Informationen
+      customerName,
+      customerEmail,
+      customerAddress,
+      customerStreet: customerAddressParsed.street,
+      customerCity: customerAddressParsed.city,
+      customerPostalCode: customerAddressParsed.postalCode,
+      customerCountry: customerAddressParsed.country,
+      customerPhone,
+      
+      // Dokument-Informationen
+      documentNumber: invoiceNumber,
+      invoiceNumber,
+      documentDate: invoiceDate,
+      dueDate,
+      
+      // Beträge
+      totalAmount: total,
+      subtotalAmount: subtotal,
+      taxAmount: taxAmount,
+    };
+
+    // Platzhalter in Texten ersetzen
+    const processedHeaderText = replacePlaceholders(headerText, placeholderData);
+    const processedFooterText = replacePlaceholders(footerText, placeholderData);
+    const processedHeadTextHtml = replacePlaceholders(headTextHtml, placeholderData);
+
     return {
       documentLabel,
       realItems,
@@ -314,11 +354,11 @@ export const usePDFTemplateData = ({
       companyVatId,
       companyTaxNumber,
       companyRegister,
-      headTextHtml,
+      headTextHtml: processedHeadTextHtml,
       description,
       introText,
-      headerText,
-      footerText,
+      headerText: processedHeaderText,
+      footerText: processedFooterText,
       notes,
       hinweise,
       additionalNotes,

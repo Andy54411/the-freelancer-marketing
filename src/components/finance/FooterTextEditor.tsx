@@ -55,7 +55,7 @@ interface FooterTextEditorProps {
   className?: string;
   companyId?: string;
   userId?: string;
-  objectType?: 'INVOICE' | 'QUOTE';
+  objectType?: 'INVOICE' | 'QUOTE' | 'REMINDER' | 'CREDIT_NOTE' | 'CANCELLATION';
   textType?: 'HEAD' | 'FOOT';
   onTemplateSelect?: (templateId: string) => void;
 }
@@ -114,6 +114,9 @@ export default function FooterTextEditor({
       }
 
       setTextTemplates(templates);
+      
+      // Templates sind geladen - der separate useEffect wird die Auto-Ladung handhaben
+      
       console.log('Final loaded templates:', templates.length, templates); // Debug
     } catch (error) {
       console.error('Fehler beim Laden der Textvorlagen:', error);
@@ -126,6 +129,43 @@ export default function FooterTextEditor({
       loadTextTemplates();
     }
   }, [companyId, objectType, textType, mounted]);
+  
+  // 🆕 Separater Effect für Auto-Template-Ladung beim objectType-Wechsel
+  useEffect(() => {
+    if (mounted && textTemplates.length > 0 && objectType) {
+      console.log('🔍 Footer Auto-template check for objectType:', objectType);
+      console.log('🔍 Available footer templates:', textTemplates.map(t => ({ name: t.name, objectType: t.objectType, isDefault: t.isDefault, textType: t.textType })));
+      
+      // Suche nach FOOT-Template für den objectType
+      const footTemplate = textTemplates.find(t => 
+        t.objectType === objectType && 
+        t.textType === 'FOOT' && 
+        (t.isDefault || textTemplates.filter(tt => tt.objectType === objectType && tt.textType === 'FOOT').length === 1)
+      );
+      
+      if (footTemplate) {
+        // Prüfe ob das aktuelle Value ein Standard-Template von einem anderen Typ ist
+        const isEmptyOrWrongType = !value || 
+          value.trim() === '' || 
+          value === '<p></p>' ||
+          // 🔥 AGGRESSIV: Ersetze auch bekannte falsche Dokument-Texte
+          (objectType === 'REMINDER' && (value.includes('Rechnungsbetrag') || value.includes('freundlichen Grüßen'))) ||
+          (objectType === 'CREDIT_NOTE' && (value.includes('Mahnungsbetrag') || value.includes('Rechnungsbetrag'))) ||
+          (objectType === 'CANCELLATION' && (value.includes('Mahnungsbetrag') || value.includes('Rechnungsbetrag'))) ||
+          (objectType === 'INVOICE' && value.includes('Mahnungsbetrag'));
+        
+        if (isEmptyOrWrongType && footTemplate.text !== value) {
+          console.log('🎯 Auto-loading FOOT template for', objectType, ':', footTemplate.name);
+          console.log('Current value:', value?.substring(0, 100) + '...');
+          console.log('Loading template text:', footTemplate.text?.substring(0, 100) + '...');
+          onChange(footTemplate.text || '');
+          setSelectedTemplate(footTemplate);
+        }
+      } else {
+        console.log('⚠️ No FOOT template found for objectType:', objectType);
+      }
+    }
+  }, [objectType, textTemplates, mounted]); // Nur auf objectType und textTemplates ändern reagieren
 
   const editor = useEditor({
     extensions: [

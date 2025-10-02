@@ -23,7 +23,7 @@ interface PlaceholderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onInsert: (tokens: string[]) => void;
-  objectType?: 'INVOICE' | 'QUOTE';
+  objectType?: 'INVOICE' | 'QUOTE' | 'REMINDER' | 'CREDIT_NOTE' | 'CANCELLATION';
 }
 
 export default function PlaceholderModal({
@@ -93,7 +93,10 @@ export default function PlaceholderModal({
     },
     {
       id: 'document',
-      label: objectType === 'INVOICE' ? 'Rechnung' : 'Angebot',
+      label: objectType === 'INVOICE' ? 'Rechnung' : 
+             objectType === 'REMINDER' ? 'Mahnung' : 
+             objectType === 'CREDIT_NOTE' ? 'Gutschrift' :
+             objectType === 'CANCELLATION' ? 'Storno' : 'Angebot',
       placeholders:
         objectType === 'INVOICE'
           ? [

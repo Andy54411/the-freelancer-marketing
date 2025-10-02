@@ -39,6 +39,7 @@ import { toast } from 'sonner';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import PDFTemplate from './PDFTemplates';
+import { DocumentType } from '@/lib/document-utils';
 
 import { SimplePDFViewer } from './SimplePDFViewer';
 import { A4_DIMENSIONS } from '@/utils/a4-page-utils';
@@ -47,8 +48,8 @@ import { useTemplatePageDetection } from '@/hooks/useTemplatePageDetection';
 interface LivePreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  document: InvoiceData;
-  documentType: 'invoice' | 'quote' | 'reminder';
+  document: InvoiceData | any; // Flexible für verschiedene Datentypen
+  documentType: DocumentType;
   companyId: string;
   onSend?: (method: 'email' | 'download' | 'print', options?: any) => Promise<void>;
 }
@@ -95,7 +96,9 @@ export function LivePreviewModal({
   const [logoSize, setLogoSize] = useState(50); // Logo size in percentage
   const [selectedLayout, setSelectedLayout] = useState('TEMPLATE_NEUTRAL');
   const [selectedColor, setSelectedColor] = useState('#14ad9f');
-  const [pageMode, setPageMode] = useState<'single' | 'multi'>('multi'); // Default: Mehrseitig
+  const [pageMode, setPageMode] = useState<'single' | 'multi'>(
+    documentType === 'quote' ? 'single' : 'multi'
+  ); // Default: Single für Quotes, Multi für Rechnungen
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // E-Invoice specific states
@@ -127,39 +130,45 @@ export function LivePreviewModal({
       try {
         // Wenn document.id vorhanden ist, lade echte Daten aus der Datenbank
         if (document?.id) {
-          console.log('📄 Loading real invoice data for ID:', document.id);
+          console.log(`📄 Loading real ${documentType} data for ID:`, document.id);
 
-          // Lade die echte Rechnung aus der Datenbank
-          const { FirestoreInvoiceService } = await import('@/services/firestoreInvoiceService');
-          const realInvoice = await FirestoreInvoiceService.getInvoiceById(companyId, document.id);
+          // Lade das echte Dokument aus der Datenbank
+          let realDocument;
+          if (documentType === 'quote') {
+            const { QuoteService } = await import('@/services/quoteService');
+            realDocument = await QuoteService.getQuote(companyId, document.id);
+          } else {
+            const { FirestoreInvoiceService } = await import('@/services/firestoreInvoiceService');
+            realDocument = await FirestoreInvoiceService.getInvoiceById(companyId, document.id);
+          }
+          
+          if (realDocument) {
+            console.log(`✅ Real ${documentType} data loaded:`, realDocument);
+            setRealDocumentData(realDocument);
 
-          if (realInvoice) {
-            console.log('✅ Real invoice data loaded:', realInvoice);
-            setRealDocumentData(realInvoice);
-
-            // Lade E-Invoice-Daten wenn vorhanden
-            if (realInvoice.eInvoiceData) {
-              console.log('📧 E-Invoice data found:', realInvoice.eInvoiceData);
-              setEInvoiceData(realInvoice.eInvoiceData);
+            // Lade E-Invoice-Daten wenn vorhanden (nur für Rechnungen)
+            if (documentType === 'invoice' && realDocument.eInvoiceData) {
+              console.log('📧 E-Invoice data found:', realDocument.eInvoiceData);
+              setEInvoiceData(realDocument.eInvoiceData);
 
               // Generiere QR-Code für E-Invoice
-              if (realInvoice.eInvoiceData.guid) {
-                await generateQRCode(realInvoice.eInvoiceData.guid, realInvoice);
+              if (realDocument.eInvoiceData.guid) {
+                await generateQRCode(realDocument.eInvoiceData.guid, realDocument);
               }
             }
           } else {
-            console.log('⚠️ No real invoice data found, using provided document data');
+            console.log(`⚠️ No real ${documentType} data found, using provided document data`);
             setRealDocumentData(document);
           }
         } else {
-          // Für neue Rechnungen (ohne ID): Verwende direkt die übergebenen tempInvoiceData
-          console.log('📝 Using provided document data for new invoice preview:', document);
+          // Für neue Dokumente (ohne ID): Verwende direkt die übergebenen Daten
+          console.log(`📝 Using provided document data for new ${documentType} preview:`, document);
           setRealDocumentData(document);
         }
       } catch (error) {
         console.error('❌ Error loading real invoice data:', error);
         setRealDocumentData(document); // Fallback to provided document
-        toast.error('Fehler beim Laden der Rechnungsdaten');
+        toast.error(`Fehler beim Laden der ${documentLabels[documentType] || 'Dokument'}-Daten`);
       } finally {
         setLoadingEInvoiceData(false);
       }
@@ -818,8 +827,8 @@ export function LivePreviewModal({
                 )}
               </div>
 
-              {/* E-Invoice Section */}
-              {eInvoiceData && (
+              {/* E-Invoice Section - nur für Rechnungen */}
+              {documentType === 'invoice' && eInvoiceData && (
                 <div className="border-b">
                   <div
                     className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
@@ -967,7 +976,7 @@ export function LivePreviewModal({
               <div className="flex items-center justify-center h-full">
                 <div className="flex items-center gap-3 text-gray-500">
                   <Loader2 className="h-6 w-6 animate-spin" />
-                  <span>Lade Rechnungsdaten aus der Datenbank...</span>
+                  <span>Lade {documentLabels[documentType] || 'Dokument'}-Daten aus der Datenbank...</span>
                 </div>
               </div>
             ) : (

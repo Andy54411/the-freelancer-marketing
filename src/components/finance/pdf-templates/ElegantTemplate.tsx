@@ -6,12 +6,14 @@ import { TotalsDisplay } from './common/TotalsDisplay';
 import { ItemsTable } from './common/ItemsTable';
 import { FooterText } from './common/FooterText';
 import { SimpleFooter } from './common/SimpleFooter';
+import { DocumentType, getDocumentTypeConfig, detectDocumentType } from '@/lib/document-utils';
 
 interface ElegantTemplateProps {
   data: ProcessedPDFData;
   color: string;
   logoSize: number;
   pageMode?: 'single' | 'multi';
+  documentType?: DocumentType;
 }
 
 export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
@@ -19,7 +21,12 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
   color,
   logoSize,
   pageMode = 'multi',
+  documentType,
 }) => {
+  // 📋 DYNAMISCHE DOKUMENTTYP-KONFIGURATION
+  const detectedType = documentType || detectDocumentType(data);
+  const config = getDocumentTypeConfig(detectedType, color);
+  
   return (
     <div
       className="bg-white w-full max-w-[210mm] mx-auto text-xs"
@@ -99,8 +106,8 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
             {/* Document Label - Positioned elegantly */}
             <div className="absolute bottom-0 left-0 flex items-end">
               <div>
-                <div className="font-serif text-2xl font-light tracking-wider" style={{ color }}>
-                  {data.documentLabel}
+                <div className="font-serif text-2xl font-light tracking-wider" style={{ color: config.color }}>
+                  {config.title}
                 </div>
                 <div className="flex items-center mt-1">
                   <div className="w-12 h-px" style={{ backgroundColor: color }} />

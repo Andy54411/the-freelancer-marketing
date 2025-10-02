@@ -29,7 +29,7 @@ interface EmailSendModalProps {
   isOpen: boolean;
   onClose: () => void;
   document: InvoiceData | any;
-  documentType: 'invoice' | 'quote' | 'delivery' | 'order' | 'reminder';
+  documentType: 'invoice' | 'quote' | 'delivery' | 'order' | 'reminder' | 'credit-note' | 'cancellation';
   companyId: string;
   selectedTemplate: string; // Template from SendDocumentModal
   pageMode?: 'single' | 'multi'; // ✅ Page mode for PDF generation

@@ -6,12 +6,14 @@ import { TotalsDisplay } from './common/TotalsDisplay';
 import { ItemsTable } from './common/ItemsTable';
 import { FooterText } from './common/FooterText';
 import { SimpleFooter } from './common/SimpleFooter';
+import { DocumentType, detectDocumentType, getDocumentTypeConfig } from '@/lib/document-utils';
 
 interface NeutralTemplateProps {
   data: ProcessedPDFData;
   color: string;
   logoSize: number;
   pageMode?: 'single' | 'multi';
+  documentType?: DocumentType;
 }
 
 export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
@@ -19,9 +21,14 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
   color,
   logoSize,
   pageMode = 'multi',
+  documentType = 'invoice',
 }) => {
   // DEBUG: Log pageMode to see what we actually receive
   console.log('🎯 NeutralTemplate received pageMode:', pageMode);
+  
+  // 📋 DYNAMISCHE DOKUMENTTYP-KONFIGURATION mit centraler document-utils
+  const detectedType = detectDocumentType(data) || documentType || 'invoice';
+  const config = getDocumentTypeConfig(detectedType, color);
   // Footer-Daten - ECHTE Daten verwenden, KEINE Fallbacks!
   const footerData = {
     companyName: (data as any).companyName,
@@ -73,7 +80,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
         <div className="p-6 pb-4">
           <div
             className="border-b-2 pb-6 mb-8"
-            style={{ minHeight: data.companyLogo ? '120px' : '80px', borderColor: color }}
+            style={{ minHeight: data.companyLogo ? '120px' : '80px', borderColor: config.color }}
           >
             <div className="flex justify-between items-start">
               {/* Firmenlogo links */}
@@ -86,8 +93,8 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
                     style={{ maxHeight: `${logoSize}px` }}
                   />
                 )}
-                <h1 className="text-2xl font-medium mb-2 mt-4">{data.documentLabel}</h1>
-                <p className="text-gray-700">Nr. {data.invoiceNumber}</p>
+                <h1 className="text-2xl font-medium mb-2 mt-4">{config.title}</h1>
+                <p className="text-gray-700">{config.numberLabel}: {data.invoiceNumber}</p>
               </div>
 
               {/* Firmendaten rechts */}
@@ -112,7 +119,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
           {/* Customer and Document Info */}
           <div className="grid grid-cols-2 gap-8 mb-8">
             <div>
-              <div className="font-semibold mb-2">Rechnungsempfänger:</div>
+              <div className="font-semibold mb-2">{config.recipientLabel}:</div>
               <div className="space-y-1">
                 <div className="font-medium">{data.customerName}</div>
                 {data.customerAddressParsed.street && (
@@ -131,12 +138,16 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
             </div>
 
             <div>
-              <div className="font-semibold mb-2">Rechnungsdetails:</div>
+              <div className="font-semibold mb-2">Dokumentdetails:</div>
               <div className="space-y-1">
-                <div>Nr. {data.invoiceNumber}</div>
-                <div>Rechnungsdatum: {formatDate(data.invoiceDate)}</div>
-                <div>Fälligkeitsdatum: {formatDate(data.dueDate)}</div>
-                <div>Zahlungsziel: {data.paymentTerms}</div>
+                <div>{config.numberLabel}: {data.invoiceNumber}</div>
+                <div>{config.dateLabel}: {formatDate(data.invoiceDate)}</div>
+                {config.showDueDate && (
+                  <div>{config.dueDateLabel}: {formatDate(data.dueDate)}</div>
+                )}
+                {config.showPaymentTerms && (
+                  <div>Zahlungsziel: {data.paymentTerms}</div>
+                )}
               </div>
             </div>
           </div>
@@ -145,7 +156,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
           {data.headerText && (
             <div
               className="mb-6 p-4 bg-gray-50 rounded-lg border-l-4"
-              style={{ borderColor: color }}
+              style={{ borderColor: config.color }}
             >
               <div
                 className="text-sm text-gray-700 leading-relaxed"
@@ -159,7 +170,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
 
         {/* Items Table Seite 1 */}
         <div className="px-6 flex-1">
-          <ItemsTable data={data} color={color} variant="neutral" />
+          <ItemsTable data={data} color={config.color} variant="neutral" />
 
           {/* Totals und Footer NUR bei einseitigem Modus */}
           {pageMode === 'single' && (
@@ -173,7 +184,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
               </div>
 
               {/* FooterText */}
-              <FooterText data={data} variant="standard" />
+              <FooterText data={data} variant="standard" documentType={detectedType} />
             </>
           )}
         </div>
@@ -288,7 +299,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
                 <TotalsDisplay data={data} color={color} variant="standard" />
               </div>
 
-              <FooterText data={data} variant="standard" />
+              <FooterText data={data} variant="standard" documentType={detectedType} />
             </div>
 
             {/* SPACER um Seite zu füllen */}

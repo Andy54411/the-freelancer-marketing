@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { UserPreferencesService, UserPreferences } from '@/lib/userPreferences';
-import TemplatePreview from '@/components/templates/TemplatePreview';
 import type { InvoiceTemplate } from '@/components/finance/InvoiceTemplates';
 
 // Temporary type definition until module is properly resolved
@@ -134,26 +133,32 @@ export default function TemplateSettingsPage() {
 
   const renderTemplateContent = () => {
     return (
-      <TemplatePreview
-        documentType={currentType as any}
-        templateId={getCurrentTemplateId()}
-        className="w-full"
-        onTemplateSelect={templateId => {
-          // Template-Auswahl verarbeiten
-          const invoiceTypes = ['Invoice', 'Invoicereminder', 'Creditnote'];
-          const quoteTypes = ['Order'];
-          const deliveryTypes = ['Contractnote', 'Packinglist'];
-
-          if (invoiceTypes.includes(currentType)) {
-            updateTemplatePreference('invoiceTemplate', templateId);
-          } else if (quoteTypes.includes(currentType)) {
-            updateTemplatePreference('quoteTemplate', templateId);
-          } else if (deliveryTypes.includes(currentType)) {
-            updateTemplatePreference('deliveryNoteTemplate', templateId);
-          }
-        }}
-      />
+      <div className="w-full p-8 bg-gray-50 rounded-lg">
+        <div className="text-center text-gray-600">
+          <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+          <h3 className="text-lg font-medium mb-2">Template-Vorschau</h3>
+          <p className="text-sm">Template-Vorschau wird geladen...</p>
+          <p className="text-xs mt-2 text-gray-500">
+            Aktueller Typ: {currentType} | Template: {getCurrentTemplateId()}
+          </p>
+        </div>
+      </div>
     );
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    // Template-Auswahl verarbeiten
+    const invoiceTypes = ['Invoice', 'Invoicereminder', 'Creditnote'];
+    const quoteTypes = ['Order'];
+    const deliveryTypes = ['Contractnote', 'Packinglist'];
+
+    if (invoiceTypes.includes(currentType)) {
+      updateTemplatePreference('invoiceTemplate', templateId);
+    } else if (quoteTypes.includes(currentType)) {
+      updateTemplatePreference('quoteTemplate', templateId);
+    } else if (deliveryTypes.includes(currentType)) {
+      updateTemplatePreference('deliveryNoteTemplate', templateId);
+    }
   };
 
   const getCurrentTemplateId = () => {

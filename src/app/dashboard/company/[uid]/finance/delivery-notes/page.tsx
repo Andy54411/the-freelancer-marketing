@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { DeliveryNoteComponent } from '@/components/finance/DeliveryNoteComponent';
+// import { DeliveryNoteComponent } from '@/components/finance/DeliveryNoteComponent';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 
@@ -44,11 +44,14 @@ export default function DeliveryNotesPage() {
         </Button>
       </div>
 
-      <DeliveryNoteComponent
+      {/* <DeliveryNoteComponent
         companyId={uid}
         showCreateModal={showCreateModal}
         setShowCreateModal={setShowCreateModal}
-      />
+      /> */}
+      <div className="text-center py-12">
+        <p className="text-gray-500">DeliveryNoteComponent wird noch implementiert</p>
+      </div>
     </div>
   );
 }

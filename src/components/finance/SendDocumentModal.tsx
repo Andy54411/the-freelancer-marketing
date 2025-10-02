@@ -48,8 +48,8 @@ import { useTemplatePageDetection } from '@/hooks/useTemplatePageDetection';
 interface SendDocumentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  document: InvoiceData;
-  documentType: 'invoice' | 'quote' | 'reminder';
+  document: InvoiceData | any; // Flexibel für verschiedene Datentypen
+  documentType: 'invoice' | 'quote' | 'reminder' | 'credit-note' | 'cancellation';
   companyId: string;
   onSend?: (method: 'email' | 'download' | 'print', options?: any) => Promise<void>;
 }
@@ -96,7 +96,7 @@ const initialTemplateState: TemplateState = {
   logoUrl: null,
   logoFile: null,
   logoSize: 50,
-  pageMode: 'multi',
+  pageMode: 'single',
   zoomLevel: 4, // 100% zoom
   activeOption: 'download',
   expandedSections: new Set(['download']),
@@ -160,7 +160,7 @@ export function SendDocumentModal({
   // Email modal state
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [activeOption, setActiveOption] = useState<SendOption>('download'); // Start with download like SevDesk
-  const [expandedSections, setExpandedSections] = useState<Set<SendOption>>(new Set(['download']));
+  const [expandedSections, setExpandedSections] = useState<Set<SendOption>>(new Set(['download', 'layout', 'color']));
   const [zoomLevel, setZoomLevel] = useState(4); // Start at 100% zoom (index 4 in zoomLevels)
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -168,8 +168,8 @@ export function SendDocumentModal({
   const [selectedLayout, setSelectedLayout] = useState('TEMPLATE_NEUTRAL');
   const [selectedColor, setSelectedColor] = useState('#14ad9f');
 
-  // 🤖 SMART DEFAULT: Start with multi as safe default, then auto-adjust
-  const [pageMode, setPageMode] = useState<'single' | 'multi'>('multi');
+  // 🤖 SMART DEFAULT: Start with single as default, then auto-adjust
+  const [pageMode, setPageMode] = useState<'single' | 'multi'>('single');
   const [manualOverride, setManualOverride] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1151,11 +1151,10 @@ ${document.companyName || 'Ihr Unternehmen'}`;
               </div>
 
               {/* Settings Section */}
-              {document.status === 'draft' && (
-                <div>
-                  <div className="px-4 py-3 bg-gray-50 border-b">
-                    <h3 className="text-sm font-medium text-gray-700">Einstellungen</h3>
-                  </div>
+              <div>
+                <div className="px-4 py-3 bg-gray-50 border-b">
+                  <h3 className="text-sm font-medium text-gray-700">Anpassungen</h3>
+                </div>
 
                   {/* Logo Option */}
                   <div className="border-b">
@@ -1552,7 +1551,6 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                     )}
                   </div>
                 </div>
-              )}
             </div>
           </div>
 
