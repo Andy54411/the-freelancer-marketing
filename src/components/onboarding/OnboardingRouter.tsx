@@ -27,12 +27,8 @@ const OnboardingRouter: React.FC<OnboardingRouterProps> = ({ currentStep, compan
     default:
       return (
         <div className="text-center py-8">
-          <h3 className="text-lg font-medium text-gray-900">
-            Ungültiger Schritt
-          </h3>
-          <p className="text-gray-600 mt-2">
-            Schritt {currentStep} existiert nicht.
-          </p>
+          <h3 className="text-lg font-medium text-gray-900">Ungültiger Schritt</h3>
+          <p className="text-gray-600 mt-2">Schritt {currentStep} existiert nicht.</p>
         </div>
       );
   }

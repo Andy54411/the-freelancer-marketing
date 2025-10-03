@@ -153,7 +153,6 @@ export default function FinanceComponent({ companyUid }: FinanceComponentProps) 
         setPayments(await paymentsResponse.json());
       }
     } catch (error) {
-
     } finally {
       setIsLoading(false);
     }

@@ -24,8 +24,7 @@ export const PageFooter: React.FC<PageFooterProps> = ({
           companyName: (data as any).companyName || '',
           phoneNumber: (data as any).phoneNumber || '',
           email: (data as any).contactEmail || '',
-          website:
-            (data as any).companyWebsiteForBackend || (data as any).website || '',
+          website: (data as any).companyWebsiteForBackend || (data as any).website || '',
           vatId: (data as any).vatId || '',
           taxNumber: (data as any).taxNumber || '',
           companyRegister: (data as any).registrationNumber || '',

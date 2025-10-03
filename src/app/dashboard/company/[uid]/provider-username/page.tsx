@@ -487,10 +487,14 @@ const UserProfilePage = () => {
               {/* Hier könnten Portfolio-Projekte angezeigt werden, ähnlich wie Dienstleistungen */}
 
               {/* Reviews Section - Using ProviderReviews Component */}
-              <ProviderReviews 
-                providerId={profile.uid} 
-                reviewCount={reviews.length} 
-                averageRating={reviews.length > 0 ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length : 0} 
+              <ProviderReviews
+                providerId={profile.uid}
+                reviewCount={reviews.length}
+                averageRating={
+                  reviews.length > 0
+                    ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
+                    : 0
+                }
               />
 
               {/* FAQ-Sektion */}

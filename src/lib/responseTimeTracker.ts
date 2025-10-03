@@ -78,9 +78,7 @@ export class ResponseTimeTracker {
 
       // HINWEIS: Echte Metrics werden durch Cloud Functions erstellt
       // Diese Client-Version dient nur zur lokalen Verfolgung
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   /**
@@ -129,9 +127,7 @@ export class ResponseTimeTracker {
 
         // HINWEIS: Echte Metrics-Updates werden durch Cloud Functions verarbeitet
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   /**
@@ -196,10 +192,7 @@ export class ResponseTimeTracker {
           });
         }
       }
-
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   /**
@@ -217,7 +210,6 @@ export class ResponseTimeTracker {
 
       return null;
     } catch (error) {
-
       return null;
     }
   }
@@ -248,12 +240,9 @@ export class ResponseTimeTracker {
             isOverdue: true,
             hoursOverdue: Math.round((hoursElapsed - metric.guaranteeHours) * 100) / 100,
           });
-
         }
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   /**

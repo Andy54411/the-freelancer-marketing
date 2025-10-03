@@ -43,7 +43,6 @@ export function useRealtimeWorkspace({
       wsRef.current = new WebSocket(fullUrl);
 
       wsRef.current.onopen = () => {
-
         setIsConnected(true);
         setConnectionError(null);
         reconnectAttempts.current = 0;
@@ -59,13 +58,10 @@ export function useRealtimeWorkspace({
           const update: WorkspaceUpdate = JSON.parse(event.data);
 
           onUpdate(update);
-        } catch (error) {
-
-        }
+        } catch (error) {}
       };
 
       wsRef.current.onclose = event => {
-
         setIsConnected(false);
 
         // Auto-reconnect mit exponential backoff
@@ -82,11 +78,9 @@ export function useRealtimeWorkspace({
       };
 
       wsRef.current.onerror = error => {
-
         setConnectionError('WebSocket connection error');
       };
     } catch (error) {
-
       setConnectionError('Failed to create WebSocket connection');
     }
   };
@@ -111,7 +105,6 @@ export function useRealtimeWorkspace({
         workspaceId,
       };
       wsRef.current.send(JSON.stringify(message));
-
     }
   };
 
@@ -122,7 +115,6 @@ export function useRealtimeWorkspace({
         workspaceId,
       };
       wsRef.current.send(JSON.stringify(message));
-
     }
   };
 

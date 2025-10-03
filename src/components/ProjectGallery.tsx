@@ -38,7 +38,6 @@ export default function ProjectGallery({ userId }: Props) {
           }
         }
       } catch (err) {
-
         setImages([]);
       }
     };

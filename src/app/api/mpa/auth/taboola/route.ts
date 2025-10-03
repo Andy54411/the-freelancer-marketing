@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
       authUrl: authUrl,
     });
   } catch (error: any) {
-
     return NextResponse.json(
       {
         success: false,

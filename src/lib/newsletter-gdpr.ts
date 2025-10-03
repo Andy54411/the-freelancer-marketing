@@ -104,7 +104,6 @@ export async function addNewsletterSubscriber(
 
     return { success: true, subscriberId: docRef.id };
   } catch (error) {
-
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -131,7 +130,6 @@ export async function getActiveSubscribers(): Promise<NewsletterSubscriber[]> {
       dataRetentionUntil: doc.data().dataRetentionUntil?.toDate(),
     })) as NewsletterSubscriber[];
   } catch (error) {
-
     return [];
   }
 }
@@ -195,7 +193,6 @@ export async function cleanupExpiredSubscriberData(): Promise<{ deletedCount: nu
 
     return { deletedCount: expiredQuery.docs.length };
   } catch (error) {
-
     return { deletedCount: 0 };
   }
 }

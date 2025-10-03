@@ -128,9 +128,9 @@ export default function InvoicesPage() {
         </div>
       </header>
 
-      <InvoiceListView 
-        invoices={invoices} 
-        onRefresh={loadInvoices} 
+      <InvoiceListView
+        invoices={invoices}
+        onRefresh={loadInvoices}
         companyId={uid}
         activeTab={activeTab}
         setActiveTab={setActiveTab}

@@ -156,7 +156,6 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,
@@ -225,7 +224,6 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

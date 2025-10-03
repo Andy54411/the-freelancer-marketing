@@ -45,7 +45,6 @@ export default function AdminWorkspaceOverview() {
           return;
         }
       } catch (error) {
-
         window.location.href = '/admin/login';
         return;
       } finally {
@@ -82,7 +81,6 @@ export default function AdminWorkspaceOverview() {
       const workspaceWithTasks = await adminWorkspaceService.getWorkspace(workspace.id);
       setSelectedWorkspace(workspaceWithTasks);
     } catch (error) {
-
       // Fallback to basic workspace if detailed loading fails
       setSelectedWorkspace(workspace);
     }
@@ -112,9 +110,7 @@ export default function AdminWorkspaceOverview() {
           prev ? { ...prev, ...updates, updatedAt: new Date() } : null
         );
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleDeleteWorkspace = async (workspaceId: string) => {
@@ -126,9 +122,7 @@ export default function AdminWorkspaceOverview() {
       if (selectedWorkspace?.id === workspaceId) {
         setSelectedWorkspace(null);
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   if (loading) {

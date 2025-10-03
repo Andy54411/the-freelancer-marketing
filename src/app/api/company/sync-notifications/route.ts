@@ -47,10 +47,7 @@ export async function POST(request: NextRequest) {
             lastAdminReply.author || 'Support Team'
           );
           notificationsCreated++;
-
-        } catch (error) {
-
-        }
+        } catch (error) {}
       }
     }
 
@@ -61,7 +58,6 @@ export async function POST(request: NextRequest) {
       notificationsCreated,
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

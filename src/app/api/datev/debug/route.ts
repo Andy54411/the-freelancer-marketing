@@ -107,7 +107,6 @@ export async function GET(request: NextRequest) {
         );
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Debug endpoint error',
@@ -171,7 +170,6 @@ export async function POST(request: NextRequest) {
         );
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Debug operation failed',

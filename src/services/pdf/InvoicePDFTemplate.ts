@@ -15,13 +15,11 @@ export class InvoicePDFTemplate {
    */
   static async generateInvoicePDF(invoiceData: any): Promise<Buffer> {
     try {
-
-
       // Neues PDF-Dokument erstellen
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4'
+        format: 'a4',
       });
 
       // PDF-Content aufbauen - EXAKT wie echte Rechnung MIT LOGO UND FOOTER
@@ -38,11 +36,6 @@ export class InvoicePDFTemplate {
       // PDF als Buffer zurückgeben
       const pdfOutput = doc.output('arraybuffer');
       const pdfBuffer = Buffer.from(pdfOutput);
-
-
-
-
-
 
       return pdfBuffer;
     } catch (error) {
@@ -76,8 +69,8 @@ export class InvoicePDFTemplate {
         margin: 1,
         color: {
           dark: '#000000',
-          light: '#FFFFFF'
-        }
+          light: '#FFFFFF',
+        },
       });
 
       return qrCodeDataURL;
@@ -338,11 +331,11 @@ export class InvoicePDFTemplate {
       // Rabatt
       if (hasDiscount) {
         const discountText =
-        item.discountPercent > 0 ?
-        `${item.discountPercent}%` :
-        item.discount > 0 ?
-        `${item.discount}%` :
-        '';
+          item.discountPercent > 0
+            ? `${item.discountPercent}%`
+            : item.discount > 0
+              ? `${item.discount}%`
+              : '';
         if (discountText) {
           doc.setTextColor(220, 53, 69); // Rot für Rabatt
           doc.text(discountText, rowX + 8, currentY + 2);
@@ -353,11 +346,11 @@ export class InvoicePDFTemplate {
 
       // Gesamtpreis
       const discount =
-      item.discountPercent > 0 ?
-      item.unitPrice * item.quantity * (item.discountPercent / 100) :
-      item.discount > 0 ?
-      item.unitPrice * item.quantity * (item.discount / 100) :
-      0;
+        item.discountPercent > 0
+          ? item.unitPrice * item.quantity * (item.discountPercent / 100)
+          : item.discount > 0
+            ? item.unitPrice * item.quantity * (item.discount / 100)
+            : 0;
       const total = item.unitPrice * item.quantity - discount;
       doc.setFont('helvetica', 'bold');
       doc.text(this.formatCurrency(total), rowX + 18, currentY + 2, { align: 'right' });
@@ -378,10 +371,10 @@ export class InvoicePDFTemplate {
    * Summen und Info-Sektion erstellen
    */
   private static async buildTotalsAndInfoSection(
-  doc: jsPDF,
-  data: any,
-  startY: number)
-  : Promise<number> {
+    doc: jsPDF,
+    data: any,
+    startY: number
+  ): Promise<number> {
     const currentY = startY;
 
     // Linke Spalte: Steuerregel, Skonto, Zahlungsbedingungen
@@ -447,17 +440,17 @@ export class InvoicePDFTemplate {
       doc.text('Status:', 20, leftY);
       doc.setFont('helvetica', 'normal');
       const status =
-      data.eInvoiceData?.validationStatus === 'valid' ?
-      '✓' :
-      data.eInvoiceData?.validationStatus === 'invalid' ?
-      '✗' :
-      '⏳';
+        data.eInvoiceData?.validationStatus === 'valid'
+          ? '✓'
+          : data.eInvoiceData?.validationStatus === 'invalid'
+            ? '✗'
+            : '⏳';
       const statusColor =
-      data.eInvoiceData?.validationStatus === 'valid' ?
-      [34, 197, 94] // grün
-      : data.eInvoiceData?.validationStatus === 'invalid' ?
-      [220, 53, 69] // rot
-      : [251, 191, 36]; // gelb
+        data.eInvoiceData?.validationStatus === 'valid'
+          ? [34, 197, 94] // grün
+          : data.eInvoiceData?.validationStatus === 'invalid'
+            ? [220, 53, 69] // rot
+            : [251, 191, 36]; // gelb
       doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
       doc.text(status, 45, leftY);
       doc.setTextColor(0, 0, 0);
@@ -591,18 +584,18 @@ export class InvoicePDFTemplate {
     doc.rect(margin - 2, currentY - 2, contentWidth + 4, 25, 'F');
 
     // Footer-Text mit Platzhalter-Ersetzung (wie im HTML-Template)
-    let footerText = (data as any).footerText.
-    replace(/\[%GESAMTBETRAG%\]/g, this.formatCurrency(data.total)).
-    replace(/\[%RECHNUNGSNUMMER%\]/g, data.documentNumber || '').
-    replace(/\[%ZAHLUNGSZIEL%\]/g, (data as any).paymentTerms || '').
-    replace(/\[%RECHNUNGSDATUM%\]/g, InvoicePDFTemplate.formatDate(data.date)).
-    replace(/\[%KONTAKTPERSON%\]/g, (data as any).contactPersonName || data.company?.name || '');
+    let footerText = (data as any).footerText
+      .replace(/\[%GESAMTBETRAG%\]/g, this.formatCurrency(data.total))
+      .replace(/\[%RECHNUNGSNUMMER%\]/g, data.documentNumber || '')
+      .replace(/\[%ZAHLUNGSZIEL%\]/g, (data as any).paymentTerms || '')
+      .replace(/\[%RECHNUNGSDATUM%\]/g, InvoicePDFTemplate.formatDate(data.date))
+      .replace(/\[%KONTAKTPERSON%\]/g, (data as any).contactPersonName || data.company?.name || '');
 
     // HTML-Tags für Zeilenumbrüche behandeln
-    footerText = footerText.
-    replace(/<br\s*\/?>/gi, '\n').
-    replace(/<strong>/gi, '').
-    replace(/<\/strong>/gi, '');
+    footerText = footerText
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<strong>/gi, '')
+      .replace(/<\/strong>/gi, '');
 
     // HTML-Tags entfernen
     footerText = InvoicePDFTemplate.stripHtmlTags(footerText);
@@ -641,9 +634,9 @@ export class InvoicePDFTemplate {
     // Adresse
     const street = (data as any).companyStreet || (data as any).company?.address?.street || '';
     const houseNumber =
-    (data as any).companyHouseNumber || (data as any).company?.address?.houseNumber || '';
+      (data as any).companyHouseNumber || (data as any).company?.address?.houseNumber || '';
     const postalCode =
-    (data as any).companyPostalCode || (data as any).company?.address?.zipCode || '';
+      (data as any).companyPostalCode || (data as any).company?.address?.zipCode || '';
     const city = (data as any).companyCity || (data as any).company?.address?.city || '';
 
     if (street || postalCode || city) {
@@ -657,11 +650,11 @@ export class InvoicePDFTemplate {
 
     // Kontaktinformationen
     const phone =
-    (data as any).companyPhone || (data as any).phoneNumber || (data as any).company?.phone || '';
+      (data as any).companyPhone || (data as any).phoneNumber || (data as any).company?.phone || '';
     const email =
-    (data as any).companyEmail || (data as any).email || (data as any).company?.email || '';
+      (data as any).companyEmail || (data as any).email || (data as any).company?.email || '';
     const website =
-    (data as any).companyWebsite || (data as any).website || (data as any).company?.website || '';
+      (data as any).companyWebsite || (data as any).website || (data as any).company?.website || '';
 
     if (phone.trim()) footerParts.push(`Tel: ${phone.trim()}`);
     if (email.trim()) footerParts.push(`E-Mail: ${email.trim()}`);
@@ -695,13 +688,13 @@ export class InvoicePDFTemplate {
 
     // 1. Prüfe direkte managingDirectors Felder
     if (
-    !directorName &&
-    (data as any).managingDirectors &&
-    (data as any).managingDirectors.length > 0)
-    {
+      !directorName &&
+      (data as any).managingDirectors &&
+      (data as any).managingDirectors.length > 0
+    ) {
       const mainDirector =
-      (data as any).managingDirectors.find((dir: any) => dir.isMainDirector) ||
-      (data as any).managingDirectors[0];
+        (data as any).managingDirectors.find((dir: any) => dir.isMainDirector) ||
+        (data as any).managingDirectors[0];
       if (mainDirector && mainDirector.firstName && mainDirector.lastName) {
         directorName = `${mainDirector.firstName} ${mainDirector.lastName}`;
       } else if (mainDirector && mainDirector.name) {
@@ -711,13 +704,13 @@ export class InvoicePDFTemplate {
 
     // 2. Prüfe step1.managingDirectors Array
     if (
-    !directorName &&
-    (data as any).step1?.managingDirectors &&
-    (data as any).step1.managingDirectors.length > 0)
-    {
+      !directorName &&
+      (data as any).step1?.managingDirectors &&
+      (data as any).step1.managingDirectors.length > 0
+    ) {
       const mainDirector =
-      (data as any).step1.managingDirectors.find((dir: any) => dir.isMainDirector) ||
-      (data as any).step1.managingDirectors[0];
+        (data as any).step1.managingDirectors.find((dir: any) => dir.isMainDirector) ||
+        (data as any).step1.managingDirectors[0];
       if (mainDirector && mainDirector.firstName && mainDirector.lastName) {
         directorName = `${mainDirector.firstName} ${mainDirector.lastName}`;
       } else if (mainDirector && mainDirector.name) {
@@ -727,10 +720,10 @@ export class InvoicePDFTemplate {
 
     // 3. Prüfe step1.personalData
     if (
-    !directorName &&
-    (data as any).step1?.personalData?.firstName &&
-    (data as any).step1?.personalData?.lastName)
-    {
+      !directorName &&
+      (data as any).step1?.personalData?.firstName &&
+      (data as any).step1?.personalData?.lastName
+    ) {
       directorName = `${(data as any).step1.personalData.firstName} ${(data as any).step1.personalData.lastName}`;
     }
 
@@ -742,10 +735,10 @@ export class InvoicePDFTemplate {
     // Für GmbH, UG, AG, KG ist Geschäftsführer PFLICHT
     const legalFormLower = legalForm.toLowerCase();
     const requiresDirector =
-    legalFormLower.includes('gmbh') ||
-    legalFormLower.includes('ug') ||
-    legalFormLower.includes('ag') ||
-    legalFormLower.includes('kg');
+      legalFormLower.includes('gmbh') ||
+      legalFormLower.includes('ug') ||
+      legalFormLower.includes('ag') ||
+      legalFormLower.includes('kg');
 
     if (directorName.trim()) {
       if (requiresDirector) {
@@ -794,8 +787,8 @@ export class InvoicePDFTemplate {
       data?.company?.logo ||
       data?.companyLogo ||
       data?.profilePictureURL ||
-      undefined);
-
+      undefined
+    );
   }
 
   private static getDocumentTitle(data: any): string {
@@ -848,14 +841,14 @@ export class InvoicePDFTemplate {
 
   private static cleanStreet(street: string): string {
     if (!street) return '';
-    return street.
-    replace(/<br\s*\/?>/gi, ' ').
-    replace(/\r\n/g, ' ').
-    replace(/\n/g, ' ').
-    replace(/\r/g, ' ').
-    replace(/\t/g, ' ').
-    replace(/\s+/g, ' ').
-    trim();
+    return street
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/\r\n/g, ' ')
+      .replace(/\n/g, ' ')
+      .replace(/\r/g, ' ')
+      .replace(/\t/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   private static getDocumentNumberLabel(documentType?: string): string {

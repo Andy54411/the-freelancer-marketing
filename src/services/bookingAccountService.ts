@@ -7,8 +7,8 @@ import {
   deleteDoc,
   query,
   orderBy,
-  Timestamp } from
-'firebase/firestore';
+  Timestamp,
+} from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 
 export interface BookingAccount {
@@ -39,10 +39,10 @@ export class BookingAccountService {
       const querySnapshot = await getDocs(q);
 
       const bookingAccounts: BookingAccount[] = [];
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         bookingAccounts.push({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         } as BookingAccount);
       });
 
@@ -57,23 +57,23 @@ export class BookingAccountService {
    * Erstellt ein neues Buchungskonto
    */
   static async createBookingAccount(
-  companyUid: string,
-  accountData: BookingAccountData)
-  : Promise<BookingAccount> {
+    companyUid: string,
+    accountData: BookingAccountData
+  ): Promise<BookingAccount> {
     try {
       const bookingAccountsRef = collection(db, 'companies', companyUid, 'bookingAccounts');
 
       const newAccountData = {
         ...accountData,
         createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       };
 
       const docRef = await addDoc(bookingAccountsRef, newAccountData);
 
       return {
         id: docRef.id,
-        ...newAccountData
+        ...newAccountData,
       } as BookingAccount;
     } catch (error) {
       console.error('Fehler beim Erstellen des Buchungskontos:', error);
@@ -85,16 +85,16 @@ export class BookingAccountService {
    * Aktualisiert ein existierendes Buchungskonto
    */
   static async updateBookingAccount(
-  companyUid: string,
-  accountId: string,
-  updates: Partial<BookingAccountData>)
-  : Promise<void> {
+    companyUid: string,
+    accountId: string,
+    updates: Partial<BookingAccountData>
+  ): Promise<void> {
     try {
       const accountRef = doc(db, 'companies', companyUid, 'bookingAccounts', accountId);
 
       const updateData = {
         ...updates,
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       };
 
       await updateDoc(accountRef, updateData);
@@ -123,8 +123,6 @@ export class BookingAccountService {
   static async createDefaultBookingAccounts(companyUid: string): Promise<BookingAccount[]> {
     const defaultAccounts: BookingAccountData[] = [];
 
-
-
     try {
       const createdAccounts: BookingAccount[] = [];
 
@@ -144,15 +142,13 @@ export class BookingAccountService {
    * Prüft ob ein Buchungskonto mit der Nummer bereits existiert
    */
   static async accountNumberExists(
-  companyUid: string,
-  accountNumber: string,
-  excludeId?: string)
-  : Promise<boolean> {
+    companyUid: string,
+    accountNumber: string,
+    excludeId?: string
+  ): Promise<boolean> {
     try {
       const accounts = await this.getBookingAccounts(companyUid);
-      return accounts.some(
-        (account) => account.number === accountNumber && account.id !== excludeId
-      );
+      return accounts.some(account => account.number === accountNumber && account.id !== excludeId);
     } catch (error) {
       console.error('Fehler beim Prüfen der Kontonummer:', error);
       return false;
@@ -165,11 +161,10 @@ export class BookingAccountService {
   static async deleteAllBookingAccounts(companyUid: string): Promise<void> {
     try {
       const accounts = await this.getBookingAccounts(companyUid);
-      const deletePromises = accounts.map((account) =>
-      this.deleteBookingAccount(companyUid, account.id)
+      const deletePromises = accounts.map(account =>
+        this.deleteBookingAccount(companyUid, account.id)
       );
       await Promise.all(deletePromises);
-
     } catch (error) {
       console.error('Fehler beim Löschen aller Buchungskonten:', error);
       throw error;

@@ -39,7 +39,6 @@ export async function POST(request: NextRequest) {
       eventId: result.Entries?.[0]?.EventId,
     });
   } catch (error) {
-
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

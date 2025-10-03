@@ -85,7 +85,6 @@ function CheckoutForm({
           });
         }
       } catch (error) {
-
         setCustomerData({
           name: 'Taskilo Kunde',
           email: '',
@@ -100,7 +99,6 @@ function CheckoutForm({
     event.preventDefault();
 
     if (!stripe || !elements) {
-
       const errorMsg = 'Zahlungssystem ist noch nicht bereit. Bitte versuchen Sie es erneut.';
       setMessage(errorMsg);
       onError(errorMsg);
@@ -117,7 +115,6 @@ function CheckoutForm({
       const { error: submitError } = await elements.submit();
 
       if (submitError) {
-
         setMessage(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         onError(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         return;
@@ -155,24 +152,20 @@ function CheckoutForm({
       });
 
       if (confirmError) {
-
         const errorMessage = confirmError.message || 'Fehler bei der Zahlungsbestätigung';
         setMessage(errorMessage);
         onError(errorMessage);
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-
         setMessage(
           'Zahlung erfolgreich abgeschlossen! Die Stunden werden automatisch als bezahlt markiert.'
         );
         onSuccess(paymentIntent.id);
       } else {
-
         const errorMessage = `Unerwarteter Zahlungsstatus: ${paymentIntent?.status || 'unbekannt'}`;
         setMessage(errorMessage);
         onError(errorMessage);
       }
     } catch (error) {
-
       const errorMessage =
         error instanceof Error ? error.message : 'Unbekannter Fehler bei der Zahlung';
       setMessage(errorMessage);

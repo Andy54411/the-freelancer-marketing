@@ -12,12 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, Plus } from 'lucide-react';
 import NewCategoryModal from './NewCategoryModal';
 
@@ -49,7 +44,7 @@ interface PersonCustomerValues {
   useKundenreferenz: boolean; // true = Kundenreferenz, false = Leitweg-ID
   // Sub-Tab: Adressen
   addresses: Address[];
-  // Sub-Tab: Kontaktdetails  
+  // Sub-Tab: Kontaktdetails
   email: string;
   phone: string;
   website: string;
@@ -106,7 +101,12 @@ interface OrganisationCustomerValues {
 }
 
 type CustomerType = 'Person' | 'Organisation';
-type SubTabType = 'Adresse' | 'Kontaktdetails' | 'Zahlungsinformationen' | 'Konditionen' | 'Weiteres';
+type SubTabType =
+  | 'Adresse'
+  | 'Kontaktdetails'
+  | 'Zahlungsinformationen'
+  | 'Konditionen'
+  | 'Weiteres';
 
 interface NewCustomerValues {
   customerType: CustomerType;
@@ -117,7 +117,7 @@ interface NewCustomerValues {
 export interface NewCustomerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultValues?: Partial<{ 
+  defaultValues?: Partial<{
     name: string;
     firstName?: string;
     lastName?: string;
@@ -136,7 +136,7 @@ const createDefaultAddress = (): Address => ({
   street: '',
   postalCode: '',
   city: '',
-  country: 'Deutschland'
+  country: 'Deutschland',
 });
 
 const DEFAULT_PERSON_VALUES: PersonCustomerValues = {
@@ -238,10 +238,14 @@ export default function NewCustomerModal({
   onSaved,
 }: NewCustomerModalProps) {
   const [values, setValues] = useState<NewCustomerValues>(DEFAULT_VALUES);
-  const [activeTab, setActiveTab] = useState<CustomerType>(contactType === 'person' ? 'Person' : 'Organisation');
+  const [activeTab, setActiveTab] = useState<CustomerType>(
+    contactType === 'person' ? 'Person' : 'Organisation'
+  );
   const [activeSubTab, setActiveSubTab] = useState<SubTabType>('Adresse');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [customCategories, setCustomCategories] = useState<Array<{ id: string; name: string; categoryType: string }>>([]);
+  const [customCategories, setCustomCategories] = useState<
+    Array<{ id: string; name: string; categoryType: string }>
+  >([]);
 
   useEffect(() => {
     if (open) {
@@ -267,7 +271,7 @@ export default function NewCustomerModal({
         }
       }
       setValues(newValues);
-      
+
       // Lade Kategorien
       loadCategories();
     }
@@ -298,8 +302,8 @@ export default function NewCustomerModal({
         ...prev,
         [currentKey]: {
           ...prev[currentKey],
-          addresses: [...prev[currentKey].addresses, newAddress]
-        }
+          addresses: [...prev[currentKey].addresses, newAddress],
+        },
       };
     });
   };
@@ -313,8 +317,8 @@ export default function NewCustomerModal({
           ...prev[currentKey],
           addresses: prev[currentKey].addresses.map((addr: Address) =>
             addr.id === addressId ? { ...addr, [field]: value } : addr
-          )
-        }
+          ),
+        },
       };
     });
   };
@@ -328,8 +332,8 @@ export default function NewCustomerModal({
         ...prev,
         [currentKey]: {
           ...prev[currentKey],
-          [field]: value
-        }
+          [field]: value,
+        },
       };
     });
   };
@@ -348,7 +352,7 @@ export default function NewCustomerModal({
         <DialogHeader>
           <DialogTitle>Kontakt erstellen</DialogTitle>
         </DialogHeader>
-        
+
         {/* Tab Navigation */}
         <div className="flex border-b border-gray-200">
           <button
@@ -407,7 +411,7 @@ export default function NewCustomerModal({
                       />
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Vorname</Label>
@@ -426,7 +430,7 @@ export default function NewCustomerModal({
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>Namenszusatz</Label>
                     <Input
@@ -473,14 +477,17 @@ export default function NewCustomerModal({
                               {category.name} ({category.categoryType})
                             </SelectItem>
                           ))}
-                          <SelectItem value="create-category" className="text-[#14ad9f] font-medium border-t">
+                          <SelectItem
+                            value="create-category"
+                            className="text-[#14ad9f] font-medium border-t"
+                          >
                             + Kategorie erstellen
                           </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Organisation</Label>
@@ -499,7 +506,7 @@ export default function NewCustomerModal({
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>Debitoren-Nr.</Label>
                     <Input
@@ -508,7 +515,7 @@ export default function NewCustomerModal({
                       placeholder="DEB001"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>Kreditoren-Nr.</Label>
                     <Input
@@ -530,7 +537,9 @@ export default function NewCustomerModal({
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2 ${
                         values.person.eRechnungStandard ? 'bg-[#14ad9f]' : 'bg-gray-200'
                       }`}
-                      onClick={() => updateCurrentData('eRechnungStandard', !values.person.eRechnungStandard)}
+                      onClick={() =>
+                        updateCurrentData('eRechnungStandard', !values.person.eRechnungStandard)
+                      }
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -544,21 +553,33 @@ export default function NewCustomerModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                   <div className="space-y-2">
                     <div className="flex items-center space-x-3">
-                      <Label>{values.person.useKundenreferenz ? 'Kundenreferenz' : 'Leitweg-ID'}</Label>
+                      <Label>
+                        {values.person.useKundenreferenz ? 'Kundenreferenz' : 'Leitweg-ID'}
+                      </Label>
                       <button
                         type="button"
                         className="text-sm text-[#14ad9f] hover:text-[#129488] font-medium"
-                        onClick={() => updateCurrentData('useKundenreferenz', !values.person.useKundenreferenz)}
+                        onClick={() =>
+                          updateCurrentData('useKundenreferenz', !values.person.useKundenreferenz)
+                        }
                       >
-                        {values.person.useKundenreferenz ? 'Zu Leitweg-ID wechseln' : 'Zu Kundenreferenz wechseln'}
+                        {values.person.useKundenreferenz
+                          ? 'Zu Leitweg-ID wechseln'
+                          : 'Zu Kundenreferenz wechseln'}
                       </button>
                     </div>
                     <Input
-                      value={values.person.useKundenreferenz ? values.person.kundenreferenz : values.person.leitwegId}
-                      onChange={e => updateCurrentData(
-                        values.person.useKundenreferenz ? 'kundenreferenz' : 'leitwegId', 
-                        e.target.value
-                      )}
+                      value={
+                        values.person.useKundenreferenz
+                          ? values.person.kundenreferenz
+                          : values.person.leitwegId
+                      }
+                      onChange={e =>
+                        updateCurrentData(
+                          values.person.useKundenreferenz ? 'kundenreferenz' : 'leitwegId',
+                          e.target.value
+                        )
+                      }
                       placeholder={values.person.useKundenreferenz ? 'REF001' : '991-12345-12'}
                     />
                   </div>
@@ -580,7 +601,7 @@ export default function NewCustomerModal({
                       placeholder="Musterfirma GmbH"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>Namenszusatz</Label>
                     <Input
@@ -601,7 +622,7 @@ export default function NewCustomerModal({
                       placeholder="1000"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>Typ</Label>
                     <Select
@@ -627,13 +648,16 @@ export default function NewCustomerModal({
                             {category.name} ({category.categoryType})
                           </SelectItem>
                         ))}
-                        <SelectItem value="create-category" className="text-[#14ad9f] font-medium border-t">
+                        <SelectItem
+                          value="create-category"
+                          className="text-[#14ad9f] font-medium border-t"
+                        >
                           + Kategorie erstellen
                         </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>Debitoren-Nr.</Label>
                     <Input
@@ -642,7 +666,7 @@ export default function NewCustomerModal({
                       placeholder="DEB001"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>Kreditoren-Nr.</Label>
                     <Input
@@ -664,7 +688,12 @@ export default function NewCustomerModal({
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2 ${
                         values.organisation.eRechnungStandard ? 'bg-[#14ad9f]' : 'bg-gray-200'
                       }`}
-                      onClick={() => updateCurrentData('eRechnungStandard', !values.organisation.eRechnungStandard)}
+                      onClick={() =>
+                        updateCurrentData(
+                          'eRechnungStandard',
+                          !values.organisation.eRechnungStandard
+                        )
+                      }
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -678,22 +707,39 @@ export default function NewCustomerModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                   <div className="space-y-2">
                     <div className="flex items-center space-x-3">
-                      <Label>{values.organisation.useKundenreferenz ? 'Kundenreferenz' : 'Leitweg-ID'}</Label>
+                      <Label>
+                        {values.organisation.useKundenreferenz ? 'Kundenreferenz' : 'Leitweg-ID'}
+                      </Label>
                       <button
                         type="button"
                         className="text-sm text-[#14ad9f] hover:text-[#129488] font-medium"
-                        onClick={() => updateCurrentData('useKundenreferenz', !values.organisation.useKundenreferenz)}
+                        onClick={() =>
+                          updateCurrentData(
+                            'useKundenreferenz',
+                            !values.organisation.useKundenreferenz
+                          )
+                        }
                       >
-                        {values.organisation.useKundenreferenz ? 'Zu Leitweg-ID wechseln' : 'Zu Kundenreferenz wechseln'}
+                        {values.organisation.useKundenreferenz
+                          ? 'Zu Leitweg-ID wechseln'
+                          : 'Zu Kundenreferenz wechseln'}
                       </button>
                     </div>
                     <Input
-                      value={values.organisation.useKundenreferenz ? values.organisation.kundenreferenz : values.organisation.leitwegId}
-                      onChange={e => updateCurrentData(
-                        values.organisation.useKundenreferenz ? 'kundenreferenz' : 'leitwegId', 
-                        e.target.value
-                      )}
-                      placeholder={values.organisation.useKundenreferenz ? 'REF001' : '991-12345-12'}
+                      value={
+                        values.organisation.useKundenreferenz
+                          ? values.organisation.kundenreferenz
+                          : values.organisation.leitwegId
+                      }
+                      onChange={e =>
+                        updateCurrentData(
+                          values.organisation.useKundenreferenz ? 'kundenreferenz' : 'leitwegId',
+                          e.target.value
+                        )
+                      }
+                      placeholder={
+                        values.organisation.useKundenreferenz ? 'REF001' : '991-12345-12'
+                      }
                     />
                   </div>
                 </div>
@@ -704,7 +750,13 @@ export default function NewCustomerModal({
           {/* Sub-Tab Navigation */}
           <div className="border-t pt-6">
             <div className="flex flex-wrap border-b border-gray-200 mb-6">
-              {['Adresse', 'Kontaktdetails', 'Zahlungsinformationen', 'Konditionen', 'Weiteres'].map((subTab) => (
+              {[
+                'Adresse',
+                'Kontaktdetails',
+                'Zahlungsinformationen',
+                'Konditionen',
+                'Weiteres',
+              ].map(subTab => (
                 <button
                   key={subTab}
                   className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors mr-2 ${
@@ -735,7 +787,7 @@ export default function NewCustomerModal({
                     Adresse hinzufügen
                   </Button>
                 </div>
-                
+
                 {currentData.addresses.map((address, index) => (
                   <div key={address.id} className="space-y-4 border rounded-lg p-4">
                     <div className="flex justify-between items-center">
@@ -755,7 +807,7 @@ export default function NewCustomerModal({
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 gap-4">
                       <div className="space-y-2">
                         <Label>Straße</Label>
@@ -1000,35 +1052,39 @@ export default function NewCustomerModal({
               disabled={Boolean(saving) || !isValid()}
               onClick={async () => {
                 // Transform data for API
-                const apiData = activeTab === 'Person' ? {
-                  name: `${values.person.vorname} ${values.person.nachname}`.trim(),
-                  nameAddition: values.person.nameAddition,
-                  customerNumber: values.person.customerNumber || generateCustomerNumber(),
-                  type: 'Person',
-                  email: values.person.email,
-                  phone: values.person.phone,
-                  street: values.person.addresses[0]?.street || '',
-                  city: values.person.addresses[0]?.city || '',
-                  postalCode: values.person.addresses[0]?.postalCode || '',
-                  country: values.person.addresses[0]?.country || 'Deutschland',
-                  taxNumber: '',
-                  vatId: '',
-                  notes: values.person.notes,
-                } : {
-                  name: values.organisation.name,
-                  nameAddition: values.organisation.nameAddition,
-                  customerNumber: values.organisation.customerNumber || generateCustomerNumber(),
-                  type: 'Organisation',
-                  email: values.organisation.email,
-                  phone: values.organisation.phone,
-                  street: values.organisation.addresses[0]?.street || '',
-                  city: values.organisation.addresses[0]?.city || '',
-                  postalCode: values.organisation.addresses[0]?.postalCode || '',
-                  country: values.organisation.addresses[0]?.country || 'Deutschland',
-                  taxNumber: '',
-                  vatId: '',
-                  notes: values.organisation.notes,
-                };
+                const apiData =
+                  activeTab === 'Person'
+                    ? {
+                        name: `${values.person.vorname} ${values.person.nachname}`.trim(),
+                        nameAddition: values.person.nameAddition,
+                        customerNumber: values.person.customerNumber || generateCustomerNumber(),
+                        type: 'Person',
+                        email: values.person.email,
+                        phone: values.person.phone,
+                        street: values.person.addresses[0]?.street || '',
+                        city: values.person.addresses[0]?.city || '',
+                        postalCode: values.person.addresses[0]?.postalCode || '',
+                        country: values.person.addresses[0]?.country || 'Deutschland',
+                        taxNumber: '',
+                        vatId: '',
+                        notes: values.person.notes,
+                      }
+                    : {
+                        name: values.organisation.name,
+                        nameAddition: values.organisation.nameAddition,
+                        customerNumber:
+                          values.organisation.customerNumber || generateCustomerNumber(),
+                        type: 'Organisation',
+                        email: values.organisation.email,
+                        phone: values.organisation.phone,
+                        street: values.organisation.addresses[0]?.street || '',
+                        city: values.organisation.addresses[0]?.city || '',
+                        postalCode: values.organisation.addresses[0]?.postalCode || '',
+                        country: values.organisation.addresses[0]?.country || 'Deutschland',
+                        taxNumber: '',
+                        vatId: '',
+                        notes: values.organisation.notes,
+                      };
 
                 if (persistDirectly && companyId) {
                   try {
@@ -1064,7 +1120,7 @@ export default function NewCustomerModal({
         onSaved={(categoryId, categoryData) => {
           // Setze die neue Kategorie als aktuellen Typ
           updateCurrentData('type', categoryData.categoryType);
-          
+
           // Lade Kategorien-Liste neu um die neue Kategorie zu erhalten
           loadCategories();
         }}

@@ -142,7 +142,7 @@ export default function UserDashboardPage() {
 
       const ordersData = Array.from(allOrderDocs.values()).map(doc => {
         const data = doc.data() as any; // Temporär any verwenden für Debugging
-         // Debug-Log hinzufügen
+        // Debug-Log hinzufügen
 
         // Mapping der korrekten Felder
         return {
@@ -186,7 +186,6 @@ export default function UserDashboardPage() {
                 providerNameCache.set(providerId, name);
               }
             } catch (error) {
-
               providerNameCache.set(providerId, 'Unbekannter Anbieter');
             }
           })
@@ -208,7 +207,6 @@ export default function UserDashboardPage() {
       setUserOrders(visibleOrders);
       setLoadingOrders(false);
     } catch (err: any) {
-
       setError(
         `Fehler beim Laden der Daten: ${err.message || 'Ein unbekannter Fehler ist aufgetreten.'}`
       );
@@ -242,7 +240,6 @@ export default function UserDashboardPage() {
     const setupIntentClientSecret = urlParams.get('setup_intent_client_secret');
 
     if (setupRedirect === 'true' && setupIntentClientSecret) {
-
       if (redirectStatus === 'succeeded') {
         toast.success('Zahlungsmethode erfolgreich hinzugefügt!');
         handlePaymentMethodAdded(); // Lade Zahlungsmethoden neu
@@ -284,7 +281,6 @@ export default function UserDashboardPage() {
       setClientSecretForSetupIntent(result.data.clientSecret);
       setShowAddPaymentMethodModal(true);
     } catch (err: any) {
-
       setSetupIntentError(
         `Fehler beim Vorbereiten der Zahlungsmethode: ${err.message || 'Unbekannter Fehler'}`
       ); // Typ für msg wird in der Komponente selbst behandelt
@@ -294,7 +290,6 @@ export default function UserDashboardPage() {
   };
 
   const handlePaymentMethodAdded = async () => {
-
     setShowAddPaymentMethodModal(false);
     setClientSecretForSetupIntent(null);
     setSetupIntentError(null);
@@ -309,7 +304,6 @@ export default function UserDashboardPage() {
         }));
       }
     } catch (err: any) {
-
       setError(
         `Fehler beim Aktualisieren der Zahlungsmethoden: ${err.message || 'Unbekannter Fehler'}`
       );
@@ -335,7 +329,6 @@ export default function UserDashboardPage() {
           );
         }
       } catch (err: any) {
-
         alert(`Fehler beim Entfernen: ${err.message || 'Unbekannter Fehler'}`);
         setError(
           `Fehler beim Entfernen der Zahlungsmethode: ${err.message || 'Unbekannter Fehler'}`
@@ -373,7 +366,6 @@ export default function UserDashboardPage() {
       setEditingAddress(null);
       alert('Adresse erfolgreich hinzugefügt.');
     } catch (err: any) {
-
       setError(`Fehler beim Hinzufügen der Adresse: ${err.message || 'Unbekannter Fehler'}`);
     }
   };
@@ -407,7 +399,6 @@ export default function UserDashboardPage() {
       setEditingAddress(null);
       alert('Adresse erfolgreich aktualisiert.');
     } catch (err: any) {
-
       setError(`Fehler beim Aktualisieren der Adresse: ${err.message || 'Unbekannter Fehler'}`);
     }
   };
@@ -420,7 +411,6 @@ export default function UserDashboardPage() {
         const addressToDelete = userProfile.savedAddresses?.find(addr => addr.id === addressId);
 
         if (!addressToDelete) {
-
           return;
         }
 
@@ -434,7 +424,6 @@ export default function UserDashboardPage() {
         }));
         alert('Adresse erfolgreich entfernt.');
       } catch (err: any) {
-
         alert(`Fehler beim Löschen: ${err.message || 'Unbekannter Fehler'}`);
         setError(`Fehler beim Löschen der Adresse: ${err.message || 'Unbekannter Fehler'}`);
       }
@@ -445,9 +434,7 @@ export default function UserDashboardPage() {
     try {
       await signOut(auth);
       router.replace('/login');
-
     } catch (err: any) {
-
       alert(`Fehler beim Abmelden: ${err.message || 'Unbekannter Fehler'}`);
     }
   };
@@ -592,10 +579,10 @@ export default function UserDashboardPage() {
                               <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
                               {order.jobDateFrom
                                 ? `${new Date(order.jobDateFrom).toLocaleDateString('de-DE', {
-                                  day: 'numeric',
-                                  month: 'long',
-                                  year: 'numeric',
-                                })} um ${order.jobTimePreference || '09:00'} Uhr`
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric',
+                                  })} um ${order.jobTimePreference || '09:00'} Uhr`
                                 : 'Datum noch nicht festgelegt'}
                             </p>
                           </div>
@@ -604,17 +591,18 @@ export default function UserDashboardPage() {
                             <div className="text-xl font-bold text-gray-800 mb-1">
                               {order.totalPriceInCents && !isNaN(order.totalPriceInCents)
                                 ? (order.totalPriceInCents / 100).toLocaleString('de-DE', {
-                                  style: 'currency',
-                                  currency: 'EUR',
-                                })
+                                    style: 'currency',
+                                    currency: 'EUR',
+                                  })
                                 : '0,00 €'}
                             </div>
                             <span
-                              className={`px-2 py-1 rounded-full text-xs font-semibold ${order.status === 'bezahlt' ||
-                                  order.status === 'zahlung_erhalten_clearing'
+                              className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                order.status === 'bezahlt' ||
+                                order.status === 'zahlung_erhalten_clearing'
                                   ? 'bg-green-100 text-green-800 border border-green-200'
                                   : 'bg-amber-100 text-amber-800 border border-amber-200'
-                                }`}
+                              }`}
                             >
                               {order.status
                                 .replace(/_/g, ' ')
@@ -719,12 +707,7 @@ export default function UserDashboardPage() {
             <div className="grid md:grid-cols-2 gap-6">
               {/* TimeTracking Overview - Kompakter */}
               <div className="bg-white/90 backdrop-blur-sm border border-white/15 shadow-lg rounded-xl p-4 hover:shadow-xl transition-all duration-300">
-                <TimeTrackingOverview
-                  customerId={currentUser.uid}
-                  onRequestsUpdated={() => {
-
-                  }}
-                />
+                <TimeTrackingOverview customerId={currentUser.uid} onRequestsUpdated={() => {}} />
               </div>
 
               {/* Billing History - Kompakter */}
@@ -808,7 +791,7 @@ export default function UserDashboardPage() {
         {currentUser?.uid && (
           <TaskiloProjectAssistant
             userId={currentUser.uid}
-            onOrderCreate={(orderData) => {
+            onOrderCreate={orderData => {
               toast.success('Auftrag erfolgreich erstellt!');
               // Optional: Refresh der Seite oder Navigation
               window.location.reload();

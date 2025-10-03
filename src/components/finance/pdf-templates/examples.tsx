@@ -1,6 +1,6 @@
 /**
  * Beispiel für die Verwendung der neuen modularen PDF-Template-Struktur
- * 
+ *
  * Diese Datei zeigt, wie die Templates nach der Refactoring verwendet werden.
  */
 
@@ -11,8 +11,8 @@ import {
   TotalsDisplay,
   usePDFTemplateData,
   type PDFTemplateProps,
-  type ProcessedPDFData } from
-'@/components/finance/pdf-templates';
+  type ProcessedPDFData,
+} from '@/components/finance/pdf-templates';
 
 // === GRUNDLEGENDE VERWENDUNG ===
 
@@ -22,12 +22,13 @@ const BasicUsageExample: React.FC = () => {
     companyName: 'Meine Firma GmbH',
     customerName: 'Max Mustermann',
     items: [
-    {
-      description: 'Beratungsleistung',
-      quantity: 5,
-      unitPrice: 100,
-      total: 500
-    }]
+      {
+        description: 'Beratungsleistung',
+        quantity: 5,
+        unitPrice: 100,
+        total: 500,
+      },
+    ],
 
     // ... weitere Felder
   };
@@ -39,37 +40,30 @@ const BasicUsageExample: React.FC = () => {
       color="#14ad9f"
       logoUrl="https://example.com/logo.png"
       logoSize={60}
-      documentType="invoice" />);
-
-
+      documentType="invoice"
+    />
+  );
 };
 
 // === ERWEITERTE VERWENDUNG MIT HOOK ===
 
-const AdvancedUsageExample: React.FC<{document: any;}> = ({ document }) => {
+const AdvancedUsageExample: React.FC<{ document: any }> = ({ document }) => {
   // Verwende den Hook direkt für Custom Logic
   const data = usePDFTemplateData({
     document,
     template: 'TEMPLATE_STANDARD',
     color: '#14ad9f',
     logoSize: 50,
-    documentType: 'invoice'
+    documentType: 'invoice',
   });
 
   // Zugriff auf alle berechneten Werte
 
-
-
-
   return (
     <div className="custom-pdf-wrapper">
-      <StandardTemplate
-        data={data}
-        color="#14ad9f"
-        logoSize={50} />
-
-    </div>);
-
+      <StandardTemplate data={data} color="#14ad9f" logoSize={50} />
+    </div>
+  );
 };
 
 // === EIGENE TEMPLATE-KOMPONENTE ERSTELLEN ===
@@ -88,13 +82,9 @@ const MyCustomTemplate: React.FC<CustomTemplateProps> = ({ data, color, logoSize
         <h1 className="text-3xl font-bold" style={{ color }}>
           {data.documentLabel} - {data.invoiceNumber}
         </h1>
-        {data.companyLogo &&
-        <img
-          src={data.companyLogo}
-          alt="Logo"
-          style={{ height: `${logoSize}px` }} />
-
-        }
+        {data.companyLogo && (
+          <img src={data.companyLogo} alt="Logo" style={{ height: `${logoSize}px` }} />
+        )}
       </header>
 
       {/* Verwende Common Components */}
@@ -102,26 +92,26 @@ const MyCustomTemplate: React.FC<CustomTemplateProps> = ({ data, color, logoSize
         <h2 className="text-lg font-semibold mb-4">Kundeninformationen</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <strong>{data.customerName}</strong><br />
-            {data.customerAddressParsed.street}<br />
+            <strong>{data.customerName}</strong>
+            <br />
+            {data.customerAddressParsed.street}
+            <br />
             {data.customerAddressParsed.postalCode} {data.customerAddressParsed.city}
           </div>
           <div>
-            <strong>Rechnungsdetails</strong><br />
-            Nummer: {data.invoiceNumber}<br />
+            <strong>Rechnungsdetails</strong>
+            <br />
+            Nummer: {data.invoiceNumber}
+            <br />
             Datum: {data.invoiceDate}
           </div>
         </div>
       </div>
 
       {/* Wiederverwendbare Totals-Komponente */}
-      <TotalsDisplay
-        data={data}
-        color={color}
-        variant="elegant" />
-
-    </div>);
-
+      <TotalsDisplay data={data} color={color} variant="elegant" />
+    </div>
+  );
 };
 
 // === TEMPLATE IN MAIN CONTAINER REGISTRIEREN ===
@@ -158,7 +148,7 @@ const createMockInvoiceData = (overrides = {}) => ({
   customerName: 'Test Customer',
   items: [{ description: 'Test Item', quantity: 1, unitPrice: 100, total: 100 }],
   vatRate: 19,
-  ...overrides
+  ...overrides,
 });
 
 // Jest Test Beispiel
@@ -202,8 +192,4 @@ describe('PDF Templates', () => {
 });
 */
 
-export {
-  BasicUsageExample,
-  AdvancedUsageExample,
-  MyCustomTemplate,
-  createMockInvoiceData };
+export { BasicUsageExample, AdvancedUsageExample, MyCustomTemplate, createMockInvoiceData };

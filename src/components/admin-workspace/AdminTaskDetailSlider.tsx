@@ -275,7 +275,6 @@ export default function AdminTaskDetailSlider({
       await onTaskUpdated(task.id, updates);
       setIsEditing(false);
     } catch (error) {
-
       setErrors({ general: 'Fehler beim Speichern der Aufgabe' });
     } finally {
       setLoading(false);
@@ -391,7 +390,6 @@ export default function AdminTaskDetailSlider({
         };
         setActivities(prev => [activity, ...prev]);
       } catch (error) {
-
         setUploadProgress(prev => {
           const newProgress = { ...prev };
           delete newProgress[fileId];
@@ -433,7 +431,6 @@ export default function AdminTaskDetailSlider({
       };
       setActivities(prev => [activity, ...prev]);
     } catch (error) {
-
       setErrors(prev => ({ ...prev, delete: `Fehler beim Löschen von ${attachment.name}` }));
     }
   };

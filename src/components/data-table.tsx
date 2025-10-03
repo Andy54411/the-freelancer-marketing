@@ -156,7 +156,6 @@ export function DataTable<TData extends { id: UniqueIdentifier }, TValue>({
   // KORREKTUR: Dieser Effekt synchronisiert den internen Zustand der Tabelle mit den Daten, die als Prop übergeben werden.
   // Dies ist entscheidend, da die Daten von der übergeordneten Komponente asynchron geladen werden.
   React.useEffect(() => {
-
     setData(initialData);
   }, [initialData]);
 

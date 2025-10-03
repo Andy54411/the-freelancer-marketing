@@ -28,7 +28,6 @@ export async function GET(request: NextRequest) {
       replies,
     });
   } catch (error) {
-
     return NextResponse.json(
       { success: false, error: 'Fehler beim Laden der Antworten' },
       { status: 500 }
@@ -60,7 +59,6 @@ export async function POST(request: NextRequest) {
       reply: updatedTicket.comments[updatedTicket.comments.length - 1],
     });
   } catch (error) {
-
     return NextResponse.json(
       { success: false, error: 'Fehler beim Senden der Antwort' },
       { status: 500 }

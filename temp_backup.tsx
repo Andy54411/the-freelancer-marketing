@@ -39,7 +39,7 @@ export default function InvoiceDetailPage() {
     try {
       setLoading(true);
       console.log('Loading invoice:', { uid, invoiceId });
-      
+
       const invoiceData = await FirestoreInvoiceService.getInvoiceById(uid, invoiceId);
       console.log('Invoice data loaded:', invoiceData);
 
@@ -50,7 +50,10 @@ export default function InvoiceDetailPage() {
       }
 
       if (invoiceData.companyId !== uid) {
-        console.log('Company ID mismatch:', { invoiceCompanyId: invoiceData.companyId, expectedUid: uid });
+        console.log('Company ID mismatch:', {
+          invoiceCompanyId: invoiceData.companyId,
+          expectedUid: uid,
+        });
         setError('Keine Berechtigung für diese Rechnung');
         return;
       }
@@ -59,7 +62,10 @@ export default function InvoiceDetailPage() {
       setError(null); // Clear any previous errors
     } catch (err) {
       console.error('Error loading invoice:', err);
-      setError('Fehler beim Laden der Rechnung: ' + (err instanceof Error ? err.message : 'Unbekannter Fehler'));
+      setError(
+        'Fehler beim Laden der Rechnung: ' +
+          (err instanceof Error ? err.message : 'Unbekannter Fehler')
+      );
     } finally {
       setLoading(false);
     }
@@ -201,8 +207,8 @@ export default function InvoiceDetailPage() {
       });
 
       // Update local state
-      setInvoice(prev => prev ? { ...prev, status: 'paid', paidDate: new Date() } : null);
-      
+      setInvoice(prev => (prev ? { ...prev, status: 'paid', paidDate: new Date() } : null));
+
       toast.success('Rechnung als bezahlt markiert');
     } catch (error) {
       console.error('Error marking invoice as paid:', error);
@@ -250,7 +256,7 @@ export default function InvoiceDetailPage() {
 
         // Open PDF in new tab instead of downloading
         window.open(pdfUrl, '_blank');
-        
+
         // Clean up after a short delay
         setTimeout(() => {
           window.URL.revokeObjectURL(pdfUrl);
@@ -428,15 +434,14 @@ export default function InvoiceDetailPage() {
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <Button
-                  variant="ghost"
-                  onClick={handleBackToInvoices}
-                  className="p-2"
-                >
+                <Button variant="ghost" onClick={handleBackToInvoices} className="p-2">
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Rechnung Nr. {invoice.invoiceNumber || invoice.number || `#${invoice.sequentialNumber || 'TEMP'}`}
+                  Rechnung Nr.{' '}
+                  {invoice.invoiceNumber ||
+                    invoice.number ||
+                    `#${invoice.sequentialNumber || 'TEMP'}`}
                 </h2>
               </div>
 

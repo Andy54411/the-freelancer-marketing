@@ -85,7 +85,6 @@ const Chatbot = () => {
       const modelMessage: Message = { role: 'model', parts: [{ text: data.text }] };
       setMessages(prev => [...prev, modelMessage]);
     } catch (error) {
-
       const errorMessage: Message = {
         role: 'model',
         parts: [

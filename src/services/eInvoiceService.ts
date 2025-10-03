@@ -13,8 +13,8 @@ import {
   getDoc,
   query,
   where,
-  orderBy } from
-'firebase/firestore';
+  orderBy,
+} from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 import * as xml2js from 'xml2js';
@@ -103,17 +103,9 @@ export class EInvoiceService {
    * Erstellt eine neue E-Rechnung
    */
   static async createEInvoice(
-  eInvoiceData: Omit<EInvoiceData, 'id' | 'createdAt' | 'updatedAt'>)
-  : Promise<string> {
+    eInvoiceData: Omit<EInvoiceData, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
     try {
-
-
-
-
-
-
-
-
       // Validate required fields
       if (!eInvoiceData.invoiceId || !eInvoiceData.companyId || !eInvoiceData.xmlContent) {
         throw new Error(
@@ -124,7 +116,7 @@ export class EInvoiceService {
       const docRef = await addDoc(collection(db, this.COLLECTION), {
         ...eInvoiceData,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
 
       return docRef.id;
@@ -140,10 +132,10 @@ export class EInvoiceService {
    * Generiert ZUGFeRD XML für eine Rechnung
    */
   static async generateZUGFeRDXML(
-  invoiceData: any,
-  metadata: ZUGFeRDMetadata,
-  companyData: any)
-  : Promise<string> {
+    invoiceData: any,
+    metadata: ZUGFeRDMetadata,
+    companyData: any
+  ): Promise<string> {
     try {
       const xmlTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 <rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
@@ -242,10 +234,10 @@ export class EInvoiceService {
    * Generiert XRechnung XML für eine Rechnung
    */
   static async generateXRechnungXML(
-  invoiceData: any,
-  metadata: XRechnungMetadata,
-  companyData: any)
-  : Promise<string> {
+    invoiceData: any,
+    metadata: XRechnungMetadata,
+    companyData: any
+  ): Promise<string> {
     try {
       const xmlTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 <Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
@@ -341,9 +333,9 @@ export class EInvoiceService {
    * Validiert E-Rechnung nach EN 16931 Standard
    */
   static async validateEInvoice(
-  xmlContent: string,
-  format: 'zugferd' | 'xrechnung')
-  : Promise<{
+    xmlContent: string,
+    format: 'zugferd' | 'xrechnung'
+  ): Promise<{
     isValid: boolean;
     errors: string[];
     warnings: string[];
@@ -366,14 +358,14 @@ export class EInvoiceService {
 
         // ZUGFeRD spezifische Pflichtfelder prüfen
         const zugferdRequiredFields = [
-        'rsm:ExchangedDocument',
-        'ram:ID',
-        'ram:TypeCode',
-        'ram:IssueDateTime',
-        'ram:InvoiceCurrencyCode',
-        'ram:SellerTradeParty',
-        'ram:BuyerTradeParty'];
-
+          'rsm:ExchangedDocument',
+          'ram:ID',
+          'ram:TypeCode',
+          'ram:IssueDateTime',
+          'ram:InvoiceCurrencyCode',
+          'ram:SellerTradeParty',
+          'ram:BuyerTradeParty',
+        ];
 
         for (const field of zugferdRequiredFields) {
           if (!xmlContent.includes(field)) {
@@ -394,13 +386,13 @@ export class EInvoiceService {
 
         // XRechnung spezifische Pflichtfelder prüfen
         const xrechnungRequiredFields = [
-        'ID',
-        'IssueDate',
-        'InvoiceTypeCode',
-        'DocumentCurrencyCode',
-        'AccountingSupplierParty',
-        'AccountingCustomerParty'];
-
+          'ID',
+          'IssueDate',
+          'InvoiceTypeCode',
+          'DocumentCurrencyCode',
+          'AccountingSupplierParty',
+          'AccountingCustomerParty',
+        ];
 
         for (const field of xrechnungRequiredFields) {
           if (!xmlContent.includes(field)) {
@@ -412,13 +404,13 @@ export class EInvoiceService {
       return {
         isValid: errors.length === 0,
         errors,
-        warnings
+        warnings,
       };
     } catch (error) {
       return {
         isValid: false,
         errors: ['Validierung fehlgeschlagen: ' + (error as Error).message],
-        warnings: []
+        warnings: [],
       };
     }
   }
@@ -435,11 +427,11 @@ export class EInvoiceService {
       );
 
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map((doc) => ({
+      return querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date()
+        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       })) as EInvoiceData[];
     } catch (error) {
       throw new Error('E-Rechnungen konnten nicht geladen werden');
@@ -465,7 +457,7 @@ export class EInvoiceService {
 
       return {
         id: docSnap.id,
-        ...data
+        ...data,
       } as EInvoiceData;
     } catch (error) {
       console.error('Error getting E-Invoice by ID:', error);
@@ -477,8 +469,8 @@ export class EInvoiceService {
    * Speichert oder aktualisiert E-Rechnungs-Einstellungen
    */
   static async saveEInvoiceSettings(
-  settings: Omit<EInvoiceSettings, 'id' | 'createdAt' | 'updatedAt'>)
-  : Promise<void> {
+    settings: Omit<EInvoiceSettings, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<void> {
     try {
       const q = query(
         collection(db, this.SETTINGS_COLLECTION),
@@ -492,14 +484,14 @@ export class EInvoiceService {
         await addDoc(collection(db, this.SETTINGS_COLLECTION), {
           ...settings,
           createdAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         });
       } else {
         // Bestehende Einstellungen aktualisieren
         const docRef = doc(db, this.SETTINGS_COLLECTION, querySnapshot.docs[0].id);
         await updateDoc(docRef, {
           ...settings,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         });
       }
     } catch (error) {
@@ -528,7 +520,7 @@ export class EInvoiceService {
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date()
+        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       } as EInvoiceSettings;
     } catch (error) {
       console.error('Fehler beim Laden der E-Rechnungs-Einstellungen:', error);
@@ -561,9 +553,9 @@ export class EInvoiceService {
 
   // Generiert Positionen für ZUGFeRD
   private static generateLineItems(items: any[]): string {
-    return items.
-    map(
-      (item, index) => `
+    return items
+      .map(
+        (item, index) => `
     <ram:IncludedSupplyChainTradeLineItem>
       <ram:AssociatedDocumentLineDocument>
         <ram:LineID>${index + 1}</ram:LineID>
@@ -585,15 +577,15 @@ export class EInvoiceService {
         </ram:SpecifiedTradeSettlementLineMonetarySummation>
       </ram:SpecifiedLineTradeSettlement>
     </ram:IncludedSupplyChainTradeLineItem>`
-    ).
-    join('');
+      )
+      .join('');
   }
 
   // Generiert Positionen für XRechnung
   private static generateXRechnungLineItems(items: any[]): string {
-    return items.
-    map(
-      (item, index) => `
+    return items
+      .map(
+        (item, index) => `
   <cac:InvoiceLine>
     <cbc:ID>${index + 1}</cbc:ID>
     <cbc:InvoicedQuantity unitCode="HUR">${item.quantity}</cbc:InvoicedQuantity>
@@ -605,8 +597,8 @@ export class EInvoiceService {
       <cbc:PriceAmount currencyID="EUR">${item.unitPrice.toFixed(2)}</cbc:PriceAmount>
     </cac:Price>
   </cac:InvoiceLine>`
-    ).
-    join('');
+      )
+      .join('');
   }
 
   /**
@@ -621,7 +613,7 @@ export class EInvoiceService {
       const parser = new XMLParser({
         ignoreAttributes: false,
         attributeNamePrefix: '@_',
-        allowBooleanAttributes: true
+        allowBooleanAttributes: true,
       });
 
       const parsedData = parser.parse(xmlContent);
@@ -630,19 +622,19 @@ export class EInvoiceService {
       if (!parsedData) {
         return {
           isValid: false,
-          errors: ['XML konnte nicht geparst werden']
+          errors: ['XML konnte nicht geparst werden'],
         };
       }
 
       return {
         isValid: true,
         parsedData,
-        errors: []
+        errors: [],
       };
     } catch (error) {
       return {
         isValid: false,
-        errors: [`XML-Parsing Fehler: ${(error as Error).message}`]
+        errors: [`XML-Parsing Fehler: ${(error as Error).message}`],
       };
     }
   }
@@ -651,11 +643,11 @@ export class EInvoiceService {
    * Generiert ZUGFeRD XML mit TSE-Daten
    */
   static async generateZUGFeRDWithTSE(
-  invoiceData: any,
-  metadata: ZUGFeRDMetadata,
-  companyData: any,
-  tseData?: TSEData)
-  : Promise<string> {
+    invoiceData: any,
+    metadata: ZUGFeRDMetadata,
+    companyData: any,
+    tseData?: TSEData
+  ): Promise<string> {
     try {
       const baseXML = await this.generateZUGFeRDXML(invoiceData, metadata, companyData);
 
@@ -666,13 +658,13 @@ export class EInvoiceService {
       // TSE-Daten in XML integrieren
       const parser = new XMLParser({
         ignoreAttributes: false,
-        attributeNamePrefix: '@_'
+        attributeNamePrefix: '@_',
       });
 
       const builder = new XMLBuilder({
         ignoreAttributes: false,
         attributeNamePrefix: '@_',
-        format: true
+        format: true,
       });
 
       const parsedXML = parser.parse(baseXML);
@@ -686,22 +678,22 @@ export class EInvoiceService {
         // TSE-Daten als Notiz hinzufügen
         parsedXML['rsm:CrossIndustryInvoice']['rsm:ExchangedDocument']['ram:IncludedNote'].push({
           'ram:Content': `TSE: ${tseData.serialNumber}`,
-          'ram:SubjectCode': 'TSE'
+          'ram:SubjectCode': 'TSE',
         });
 
         // TSE-spezifische Felder in SupplyChainTradeTransaction
         if (parsedXML['rsm:CrossIndustryInvoice']['rsm:SupplyChainTradeTransaction']) {
           parsedXML['rsm:CrossIndustryInvoice']['rsm:SupplyChainTradeTransaction']['ram:TSEData'] =
-          {
-            'ram:SerialNumber': tseData.serialNumber,
-            'ram:SignatureAlgorithm': tseData.signatureAlgorithm,
-            'ram:TransactionNumber': tseData.transactionNumber,
-            'ram:StartTime': tseData.startTime,
-            'ram:FinishTime': tseData.finishTime,
-            'ram:Signature': tseData.signature,
-            'ram:PublicKey': tseData.publicKey,
-            'ram:CertificateSerial': tseData.certificateSerial
-          };
+            {
+              'ram:SerialNumber': tseData.serialNumber,
+              'ram:SignatureAlgorithm': tseData.signatureAlgorithm,
+              'ram:TransactionNumber': tseData.transactionNumber,
+              'ram:StartTime': tseData.startTime,
+              'ram:FinishTime': tseData.finishTime,
+              'ram:Signature': tseData.signature,
+              'ram:PublicKey': tseData.publicKey,
+              'ram:CertificateSerial': tseData.certificateSerial,
+            };
         }
       }
 
@@ -716,10 +708,10 @@ export class EInvoiceService {
    * Erstellt PDF/A-3 Datei mit eingebetteter XML (ZUGFeRD)
    */
   static async createPDFA3WithXML(
-  pdfBuffer: ArrayBuffer,
-  xmlContent: string,
-  filename: string = 'zugferd-data.xml')
-  : Promise<ArrayBuffer> {
+    pdfBuffer: ArrayBuffer,
+    xmlContent: string,
+    filename: string = 'zugferd-data.xml'
+  ): Promise<ArrayBuffer> {
     try {
       const pdfDoc = await PDFDocument.load(pdfBuffer);
 
@@ -730,7 +722,7 @@ export class EInvoiceService {
         mimeType: 'text/xml',
         description: 'ZUGFeRD Invoice Data',
         creationDate: new Date(),
-        modificationDate: new Date()
+        modificationDate: new Date(),
       });
 
       // PDF/A-3 Metadaten setzen
@@ -752,12 +744,12 @@ export class EInvoiceService {
       pdfDoc.setModificationDate(new Date());
 
       const pdfBytes = await pdfDoc.save();
-      return new ArrayBuffer(pdfBytes.byteLength).slice(0).constructor === ArrayBuffer ?
-      pdfBytes.buffer as ArrayBuffer :
-      pdfBytes.buffer.slice(
-        pdfBytes.byteOffset,
-        pdfBytes.byteOffset + pdfBytes.byteLength
-      ) as ArrayBuffer;
+      return new ArrayBuffer(pdfBytes.byteLength).slice(0).constructor === ArrayBuffer
+        ? (pdfBytes.buffer as ArrayBuffer)
+        : (pdfBytes.buffer.slice(
+            pdfBytes.byteOffset,
+            pdfBytes.byteOffset + pdfBytes.byteLength
+          ) as ArrayBuffer);
     } catch (error) {
       console.error('Fehler beim Erstellen der PDF/A-3 Datei:', error);
       throw new Error('PDF/A-3 Datei konnte nicht erstellt werden');
@@ -768,10 +760,10 @@ export class EInvoiceService {
    * Konvertiert XML zwischen verschiedenen Formaten
    */
   static async convertXMLFormat(
-  xmlContent: string,
-  fromFormat: 'zugferd' | 'xrechnung',
-  toFormat: 'zugferd' | 'xrechnung')
-  : Promise<string> {
+    xmlContent: string,
+    fromFormat: 'zugferd' | 'xrechnung',
+    toFormat: 'zugferd' | 'xrechnung'
+  ): Promise<string> {
     if (fromFormat === toFormat) {
       return xmlContent;
     }
@@ -779,7 +771,7 @@ export class EInvoiceService {
     try {
       const parser = new XMLParser({
         ignoreAttributes: false,
-        attributeNamePrefix: '@_'
+        attributeNamePrefix: '@_',
       });
 
       const parsedData = parser.parse(xmlContent);

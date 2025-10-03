@@ -23,7 +23,6 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Fehler beim Cleanup' }, { status: 500 });
   }
 }
@@ -49,7 +48,6 @@ export async function GET(_request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Fehler beim Abrufen der Statistiken' }, { status: 500 });
   }
 }

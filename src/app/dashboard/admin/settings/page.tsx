@@ -41,7 +41,6 @@ export default function AdminSettingsPage() {
         setSystemStatus(data);
       }
     } catch (error) {
-
       // Fallback Status
       setSystemStatus({
         dynamodb: 'healthy',

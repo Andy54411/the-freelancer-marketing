@@ -15,7 +15,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-
     const events = await stripe.events.list({
       limit: 20,
       types: ['payment_intent.succeeded'],
@@ -50,7 +49,6 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: any) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Abrufen der Stripe Events',

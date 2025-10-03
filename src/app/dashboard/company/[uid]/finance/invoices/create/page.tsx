@@ -8,23 +8,23 @@ import {
   InvoiceTemplateRenderer,
   DEFAULT_INVOICE_TEMPLATE,
   type InvoiceTemplate as ImportedInvoiceTemplate,
-  AVAILABLE_TEMPLATES } from
-'@/components/finance/InvoiceTemplates';
+  AVAILABLE_TEMPLATES,
+} from '@/components/finance/InvoiceTemplates';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from
-'@/components/ui/select';
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
-  CommandItem } from
-'@/components/ui/command';
+  CommandItem,
+} from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check, ChevronsUpDown, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -58,8 +58,8 @@ import {
   Copy,
   Download,
   Settings,
-  Send } from
-'lucide-react';
+  Send,
+} from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { db } from '@/firebase/clients';
@@ -74,8 +74,8 @@ import {
   deleteDoc,
   FieldValue,
   DocumentData,
-  QuerySnapshot } from
-'firebase/firestore';
+  QuerySnapshot,
+} from 'firebase/firestore';
 import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteService';
 import { FirestoreInvoiceService as InvoiceService } from '@/services/firestoreInvoiceService';
 import { InvoiceData as InvoiceType, InvoiceData } from '@/types/invoiceTypes';
@@ -91,8 +91,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogClose } from
-'@/components/ui/dialog';
+  DialogClose,
+} from '@/components/ui/dialog';
 // ...
 // State für Dienstleistungs-Modal innerhalb der Komponente anlegen!
 import {
@@ -101,15 +101,15 @@ import {
   SheetDescription,
   SheetFooter,
   SheetHeader,
-  SheetTitle } from
-'@/components/ui/sheet';
+  SheetTitle,
+} from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger } from
-'@/components/ui/dropdown-menu';
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 // Use ImportedInvoiceTemplate type from @/components/finance/InvoiceTemplates
 import { UserPreferencesService } from '@/lib/userPreferences';
@@ -121,8 +121,8 @@ import { useTaxCalculation } from '@/hooks/useTaxCalculation';
 // Import der zentralen Platzhalter-Engine
 import {
   replacePlaceholders as centralReplacePlaceholders,
-  PlaceholderContext } from
-'@/utils/placeholders';
+  PlaceholderContext,
+} from '@/utils/placeholders';
 type PreviewTemplateData = {
   companyId?: string;
   invoiceNumber: string;
@@ -273,13 +273,13 @@ export default function CreateQuotePage() {
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
   const [selectedTemplate, setSelectedTemplate] =
-  useState<ImportedInvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
+    useState<ImportedInvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
 
   const [showLivePreview, setShowLivePreview] = useState(false);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
 
-  const renderProductsCard = () =>
-  <Card>
+  const renderProductsCard = () => (
+    <Card>
       <CardHeader>
         <CardTitle>
           <Calculator className="h-5 w-5 mr-2 text-[#14ad9f]" />
@@ -288,19 +288,20 @@ export default function CreateQuotePage() {
       </CardHeader>
       <CardContent>
         <QuickAddService
-        companyId={uid}
-        onServiceAdded={(service) => {
-          setItems((prev) => [...prev, service]);
-          toast.success('Dienstleistung wurde zur Rechnung hinzugefügt');
-        }} />
+          companyId={uid}
+          onServiceAdded={service => {
+            setItems(prev => [...prev, service]);
+            toast.success('Dienstleistung wurde zur Rechnung hinzugefügt');
+          }}
+        />
 
         {/* Rest des Card Contents */}
         <div className="flex items-center justify-between mb-3">
           {/* ... existierender Content ... */}
         </div>
       </CardContent>
-    </Card>;
-
+    </Card>
+  );
 
   interface InvoiceService {
     id: string;
@@ -328,7 +329,7 @@ export default function CreateQuotePage() {
     name: '',
     description: '',
     price: '',
-    unit: 'Stk'
+    unit: 'Stk',
   });
   const [savingService, setSavingService] = useState(false);
 
@@ -341,9 +342,7 @@ export default function CreateQuotePage() {
         const inlineInvoiceServicesCol = collection(db, 'companies', uid, 'inlineInvoiceServices');
         const inlineInvoiceServicesSnap = await getDocs(inlineInvoiceServicesCol);
 
-
-
-        const inlineInvoiceServices = inlineInvoiceServicesSnap.docs.map((doc) => {
+        const inlineInvoiceServices = inlineInvoiceServicesSnap.docs.map(doc => {
           const data = doc.data();
 
           return {
@@ -352,7 +351,7 @@ export default function CreateQuotePage() {
             description: data.description,
             price: data.price || 0,
             unit: data.unit || 'Stk',
-            source: 'inlineInvoiceServices' as const
+            source: 'inlineInvoiceServices' as const,
           };
         });
 
@@ -369,110 +368,113 @@ export default function CreateQuotePage() {
     loadExistingServices();
   }, [uid]);
   // ComboBox für Dienstleistungsauswahl
-  const ServiceSelector = () =>
-  <div className="flex items-center gap-2 border-l border-gray-200 pl-4 ml-2">
+  const ServiceSelector = () => (
+    <div className="flex items-center gap-2 border-l border-gray-200 pl-4 ml-2">
       <Popover>
         <PopoverTrigger asChild>
           <Button
-          variant="outline"
-          role="combobox"
-          className={cn(
-            'min-w-[280px] justify-between border-input',
-            'hover:bg-accent hover:text-accent-foreground',
-            'focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2',
-            selectedService && 'text-[#14ad9f] border-[#14ad9f]'
-          )}>
-
-            {selectedService ?
-          existingServices.find((service) => service.name === selectedService)?.name :
-          'Dienstleistung auswählen oder neu erstellen...'}
+            variant="outline"
+            role="combobox"
+            className={cn(
+              'min-w-[280px] justify-between border-input',
+              'hover:bg-accent hover:text-accent-foreground',
+              'focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2',
+              selectedService && 'text-[#14ad9f] border-[#14ad9f]'
+            )}
+          >
+            {selectedService
+              ? existingServices.find(service => service.name === selectedService)?.name
+              : 'Dienstleistung auswählen oder neu erstellen...'}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[280px] p-0">
           <Command>
             <CommandInput
-            placeholder="Dienstleistung suchen..."
-            className="border-none focus:ring-0 focus-visible:ring-0" />
+              placeholder="Dienstleistung suchen..."
+              className="border-none focus:ring-0 focus-visible:ring-0"
+            />
 
             <CommandEmpty>
               <div className="p-4 text-sm text-center">
                 <p className="text-muted-foreground mb-2">Keine Dienstleistung gefunden.</p>
                 <Button
-                variant="ghost"
-                className="w-full mt-2 text-[#14ad9f]"
-                onClick={() => {
-                  setServiceDraft((prev) => ({ ...prev, name: '' }));
-                  setServiceModalOpen(true);
-                }}>
-
+                  variant="ghost"
+                  className="w-full mt-2 text-[#14ad9f]"
+                  onClick={() => {
+                    setServiceDraft(prev => ({ ...prev, name: '' }));
+                    setServiceModalOpen(true);
+                  }}
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Neue Dienstleistung erstellen
                 </Button>
               </div>
             </CommandEmpty>
             <CommandGroup>
-              {existingServices.map((service) =>
-            <CommandItem
-              key={service.id}
-              onSelect={() => {
-                setSelectedService(service.name);
-                setServiceDraft({
-                  name: service.name,
-                  description: service.description || '',
-                  price: service.price?.toString() || '',
-                  unit: service.unit || 'Stk'
-                });
-              }}
-              className="text-sm hover:bg-[#14ad9f]/10 aria-selected:bg-[#14ad9f]/10">
-
+              {existingServices.map(service => (
+                <CommandItem
+                  key={service.id}
+                  onSelect={() => {
+                    setSelectedService(service.name);
+                    setServiceDraft({
+                      name: service.name,
+                      description: service.description || '',
+                      price: service.price?.toString() || '',
+                      unit: service.unit || 'Stk',
+                    });
+                  }}
+                  className="text-sm hover:bg-[#14ad9f]/10 aria-selected:bg-[#14ad9f]/10"
+                >
                   <Check
-                className={cn(
-                  'mr-2 h-4 w-4',
-                  selectedService === service.name ? 'opacity-100 text-[#14ad9f]' : 'opacity-0'
-                )} />
+                    className={cn(
+                      'mr-2 h-4 w-4',
+                      selectedService === service.name ? 'opacity-100 text-[#14ad9f]' : 'opacity-0'
+                    )}
+                  />
 
                   {service.name}
                 </CommandItem>
-            )}
+              ))}
             </CommandGroup>
           </Command>
         </PopoverContent>
       </Popover>
 
-      {selectedService ?
-    <Button
-      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-      onClick={saveServiceToSubcollection}
-      disabled={savingService}>
-
+      {selectedService ? (
+        <Button
+          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+          onClick={saveServiceToSubcollection}
+          disabled={savingService}
+        >
           {savingService ? <>Speichert...</> : <>Dienstleistung übernehmen</>}
-        </Button> :
-
-    <Button
-      variant="outline"
-      className="text-[#14ad9f] border-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
-      onClick={() => {
-        setServiceDraft((prev) => ({ ...prev, name: '' }));
-        setServiceModalOpen(true);
-      }}>
-
+        </Button>
+      ) : (
+        <Button
+          variant="outline"
+          className="text-[#14ad9f] border-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+          onClick={() => {
+            setServiceDraft(prev => ({ ...prev, name: '' }));
+            setServiceModalOpen(true);
+          }}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Neu
         </Button>
-    }
-    </div>;
+      )}
+    </div>
+  );
 
   // Dienstleistung in Subcollection speichern
   const saveServiceToSubcollection = async () => {
     toast('SERVICE SAVE TRIGGERED (UI)', {
-      description: 'Die Save-Funktion wurde im Client aufgerufen.'
+      description: 'Die Save-Funktion wurde im Client aufgerufen.',
     });
 
     if (!uid || !serviceDraft.name.trim()) {
       console.warn('[Dienstleistung speichern] Abbruch: UID oder Name fehlt', {
         uid,
-        name: serviceDraft.name
+        name: serviceDraft.name,
       });
       return;
     }
@@ -484,7 +486,7 @@ export default function CreateQuotePage() {
         price: parseFloat(serviceDraft.price) || 0,
         unit: serviceDraft.unit || 'Stk',
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       };
 
       const ref = collection(db, 'companies', uid, 'inlineInvoiceServices');
@@ -522,7 +524,7 @@ export default function CreateQuotePage() {
         price: parseFloat(quickServicePrice) || 0,
         unit: 'Std',
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       };
 
       const ref = collection(db, 'companies', uid, 'inlineInvoiceServices');
@@ -537,10 +539,10 @@ export default function CreateQuotePage() {
         unit: serviceData.unit,
         total: serviceData.price,
         category: 'Dienstleistung',
-        inventoryItemId: result.id
+        inventoryItemId: result.id,
       };
 
-      setItems((prev) => [...prev, newItem]);
+      setItems(prev => [...prev, newItem]);
 
       // 3. UI zurücksetzen
       setQuickServiceName('');
@@ -599,7 +601,7 @@ export default function CreateQuotePage() {
     sellingNet: 0,
     sellingGross: 0,
     description: '',
-    internalNote: ''
+    internalNote: '',
   });
 
   // Kunden-anlegen Modal State
@@ -615,7 +617,7 @@ export default function CreateQuotePage() {
 
   // Lieferdatum State (Einzeldatum vs. Zeitraum)
   const [deliveryDateType, setDeliveryDateType] = useState<'single' | 'range'>('single');
-  const [deliveryDateRange, setDeliveryDateRange] = useState<{from?: Date;to?: Date;}>({});
+  const [deliveryDateRange, setDeliveryDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [deliveryDatePopoverOpen, setDeliveryDatePopoverOpen] = useState(false);
 
   // Textvorlagen State
@@ -653,56 +655,49 @@ export default function CreateQuotePage() {
     email: '',
     phone: '',
     iban: '',
-    bic: ''
+    bic: '',
   });
 
   // Customer helper functions
   const selectCustomer = (customer: Customer) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       customerName: customer.name,
       customerEmail: customer.email,
       customerNumber: customer.customerNumber || '',
       customerAddress:
-      customer.street && customer.city ?
-      `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}` :
-      prev.customerAddress
+        customer.street && customer.city
+          ? `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}`
+          : prev.customerAddress,
     }));
     setShowCustomerSearchPopup(false);
   };
 
   const setShowNewCustomerModal = (show: boolean) => {
-
-
     setCreateCustomerOpen(show);
-
   };
 
   // Handle preview settings update
-  const handlePreviewSettingsUpdate = (settings: any) => {
-
-
-
-  };
+  const handlePreviewSettingsUpdate = (settings: any) => {};
 
   // Nummernkreis Vorschau generieren
   const generateNumberPreview = (format: string, number: number): string => {
     const now = new Date();
-    return format.
-    replace('%NUMBER', number.toString()).
-    replace('%YYYY', now.getFullYear().toString()).
-    replace('%YY', now.getFullYear().toString().slice(-2)).
-    replace('%MM', (now.getMonth() + 1).toString().padStart(2, '0')).
-    replace('%M', (now.getMonth() + 1).toString()).
-    replace('%DD', now.getDate().toString().padStart(2, '0')).
-    replace('%D', now.getDate().toString());
+    return format
+      .replace('%NUMBER', number.toString())
+      .replace('%YYYY', now.getFullYear().toString())
+      .replace('%YY', now.getFullYear().toString().slice(-2))
+      .replace('%MM', (now.getMonth() + 1).toString().padStart(2, '0'))
+      .replace('%M', (now.getMonth() + 1).toString())
+      .replace('%DD', now.getDate().toString().padStart(2, '0'))
+      .replace('%D', now.getDate().toString());
   };
 
   // Sync Preisfelder Netto/Brutto
   const syncGrossFromNet = (net: number, rate: number) =>
-  Number.isFinite(net) ? net * (1 + Math.max(0, rate) / 100) : 0;
+    Number.isFinite(net) ? net * (1 + Math.max(0, rate) / 100) : 0;
   const syncNetFromGross = (gross: number, rate: number) =>
-  Number.isFinite(gross) ? gross / (1 + Math.max(0, rate) / 100) : 0;
+    Number.isFinite(gross) ? gross / (1 + Math.max(0, rate) / 100) : 0;
 
   // Popover-Open-Status pro Zeile und Debounce-Timer pro Item
   const itemsRef = useRef<InvoiceItem[]>([]);
@@ -717,77 +712,77 @@ export default function CreateQuotePage() {
     if (existing) clearTimeout(existing);
     const t = setTimeout(() => {
       const list = itemsRef.current;
-      const current = list.find((i) => i.id === id);
+      const current = list.find(i => i.id === id);
       const shouldOpen =
-      Boolean(current) &&
-      current!.category !== 'discount' &&
-      Boolean((current!.description || '').trim()) &&
-      !current!.inventoryItemId &&
-      !dismissedCreatePromptIds.has(id) &&
-      !createProductOpen;
-      setPopoverOpenIds((prev) => {
-        const next = new Set(prev);
-        if (shouldOpen) next.add(id);else
-        next.delete(id);
-        return next;
-      });
-
-      // Auto-Mapping aus Inventar: Wenn Beschreibung wie Name oder SKU passt, Produktdaten übernehmen
-      (async () => {
-        try {
-          const row = itemsRef.current.find((i) => i.id === id);
-          if (!row || row.inventoryItemId) return;
-          const term = (row.description || '').trim();
-          if (!term || term.length < 2) return;
-          const results = await InventoryService.findInventoryItems(uid, term);
-          if (!results || results.length === 0) return;
-          const lower = term.toLowerCase();
-          const exactSku = results.find((r) => (r.sku || '').toLowerCase() === lower);
-          const exactName = results.find((r) => (r.name || '').toLowerCase() === lower);
-          const match = exactSku || exactName || (results.length === 1 ? results[0] : undefined);
-          if (!match) return;
-          setItems((prev) =>
-          prev.map((it, i) => {
-            if (i !== index) return it;
-            const unitPriceNet = Number(match.sellingPrice) || 0;
-            const qty = Number.isFinite(it.quantity) ? it.quantity : 1;
-            return {
-              ...it,
-              description: match.name || it.description,
-              unit: match.unit || 'Stk',
-              unitPrice: unitPriceNet,
-              total: computeItemTotalNet(qty, unitPriceNet),
-              inventoryItemId: match.id
-            };
-          })
-          );
-          setPopoverOpenIds((prev) => {
-            const next = new Set(prev);
-            next.delete(id);
-            return next;
-          });
-        } catch (_) {
-
-          // ignoriere Fehler in der Auto-Suche
-        }})();
-    }, 2000); // 2 Sekunden Delay - weniger aufdringlich
-    timers.set(id, t);
-  };
-
-  // Konsistenz: Wenn Items/Modal/“dismissed” sich ändern, Popover neu bewerten
-  useEffect(() => {
-    setPopoverOpenIds((prev) => {
-      const next = new Set(prev);
-      const list = itemsRef.current;
-      for (const id of Array.from(prev)) {
-        const current = list.find((i) => i.id === id);
-        const shouldOpen =
         Boolean(current) &&
         current!.category !== 'discount' &&
         Boolean((current!.description || '').trim()) &&
         !current!.inventoryItemId &&
         !dismissedCreatePromptIds.has(id) &&
         !createProductOpen;
+      setPopoverOpenIds(prev => {
+        const next = new Set(prev);
+        if (shouldOpen) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+
+      // Auto-Mapping aus Inventar: Wenn Beschreibung wie Name oder SKU passt, Produktdaten übernehmen
+      (async () => {
+        try {
+          const row = itemsRef.current.find(i => i.id === id);
+          if (!row || row.inventoryItemId) return;
+          const term = (row.description || '').trim();
+          if (!term || term.length < 2) return;
+          const results = await InventoryService.findInventoryItems(uid, term);
+          if (!results || results.length === 0) return;
+          const lower = term.toLowerCase();
+          const exactSku = results.find(r => (r.sku || '').toLowerCase() === lower);
+          const exactName = results.find(r => (r.name || '').toLowerCase() === lower);
+          const match = exactSku || exactName || (results.length === 1 ? results[0] : undefined);
+          if (!match) return;
+          setItems(prev =>
+            prev.map((it, i) => {
+              if (i !== index) return it;
+              const unitPriceNet = Number(match.sellingPrice) || 0;
+              const qty = Number.isFinite(it.quantity) ? it.quantity : 1;
+              return {
+                ...it,
+                description: match.name || it.description,
+                unit: match.unit || 'Stk',
+                unitPrice: unitPriceNet,
+                total: computeItemTotalNet(qty, unitPriceNet),
+                inventoryItemId: match.id,
+              };
+            })
+          );
+          setPopoverOpenIds(prev => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+        } catch (_) {
+          // ignoriere Fehler in der Auto-Suche
+        }
+      })();
+    }, 2000); // 2 Sekunden Delay - weniger aufdringlich
+    timers.set(id, t);
+  };
+
+  // Konsistenz: Wenn Items/Modal/“dismissed” sich ändern, Popover neu bewerten
+  useEffect(() => {
+    setPopoverOpenIds(prev => {
+      const next = new Set(prev);
+      const list = itemsRef.current;
+      for (const id of Array.from(prev)) {
+        const current = list.find(i => i.id === id);
+        const shouldOpen =
+          Boolean(current) &&
+          current!.category !== 'discount' &&
+          Boolean((current!.description || '').trim()) &&
+          !current!.inventoryItemId &&
+          !dismissedCreatePromptIds.has(id) &&
+          !createProductOpen;
         if (!shouldOpen) next.delete(id);
       }
       return next;
@@ -822,7 +817,6 @@ export default function CreateQuotePage() {
           if (eInvoiceSettings && eInvoiceSettings.enableAutoGeneration) {
             setEInvoiceEnabled(true);
             setEInvoiceSettings(eInvoiceSettings);
-
           }
         }
       } catch (error) {
@@ -849,10 +843,9 @@ export default function CreateQuotePage() {
     invoiceDate: '',
     deliveryDate: new Date().toISOString().split('T')[0],
     servicePeriod: '', // Lieferzeitraum/Leistungszeitraum
-    headTextHtml:
-    '[%VOLLEANREDE%],\n\n[%INVOICE_INTRO_TEXT%]',
+    headTextHtml: '[%VOLLEANREDE%],\n\n[%INVOICE_INTRO_TEXT%]',
     footerText:
-    'Wir bitten Sie, den Rechnungsbetrag von [%GESAMTBETRAG%] unter Angabe der Rechnungsnummer [%RECHNUNGSNUMMER%] auf das unten angegebene Konto zu überweisen. Zahlungsziel: [%ZAHLUNGSZIEL%] Rechnungsdatum: [%RECHNUNGSDATUM%] Vielen Dank für Ihr Vertrauen und die angenehme Zusammenarbeit!<br>Mit freundlichen Grüßen<br>[%KONTAKTPERSON%]',
+      'Wir bitten Sie, den Rechnungsbetrag von [%GESAMTBETRAG%] unter Angabe der Rechnungsnummer [%RECHNUNGSNUMMER%] auf das unten angegebene Konto zu überweisen. Zahlungsziel: [%ZAHLUNGSZIEL%] Rechnungsdatum: [%RECHNUNGSDATUM%] Vielen Dank für Ihr Vertrauen und die angenehme Zusammenarbeit!<br>Mit freundlichen Grüßen<br>[%KONTAKTPERSON%]',
     notes: '',
     currency: 'EUR',
     internalContactPerson: '',
@@ -863,22 +856,22 @@ export default function CreateQuotePage() {
     skontoEnabled: false,
     skontoDays: 0,
     skontoPercentage: 0,
-    skontoText: ''
+    skontoText: '',
   });
 
   // Items (Netto im State)
   const [items, setItems] = useState<QuoteItem[]>([
-  {
-    id:
-    typeof crypto !== 'undefined' && 'randomUUID' in crypto ?
-    crypto.randomUUID() :
-    Math.random().toString(36).slice(2),
-    description: 'Leistung',
-    quantity: 1,
-    unitPrice: 0,
-    total: 0
-  }]
-  );
+    {
+      id:
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : Math.random().toString(36).slice(2),
+      description: 'Leistung',
+      quantity: 1,
+      unitPrice: 0,
+      total: 0,
+    },
+  ]);
   const [showDetailsForItem, setShowDetailsForItem] = useState<Set<string>>(new Set());
 
   // Halte itemsRef synchron, damit Debounce/Popover-Logik nicht vor Deklaration auf items zugreift
@@ -888,17 +881,17 @@ export default function CreateQuotePage() {
 
   // Bei jeder Items-Änderung Popover-Entscheidungen neu evaluieren
   useEffect(() => {
-    setPopoverOpenIds((prev) => {
+    setPopoverOpenIds(prev => {
       const next = new Set(prev);
       for (const id of Array.from(prev)) {
-        const current = items.find((i) => i.id === id);
+        const current = items.find(i => i.id === id);
         const shouldOpen =
-        Boolean(current) &&
-        current!.category !== 'discount' &&
-        Boolean((current!.description || '').trim()) &&
-        !current!.inventoryItemId &&
-        !dismissedCreatePromptIds.has(id) &&
-        !createProductOpen;
+          Boolean(current) &&
+          current!.category !== 'discount' &&
+          Boolean((current!.description || '').trim()) &&
+          !current!.inventoryItemId &&
+          !dismissedCreatePromptIds.has(id) &&
+          !createProductOpen;
         if (!shouldOpen) next.delete(id);
       }
       return next;
@@ -952,19 +945,19 @@ export default function CreateQuotePage() {
 
           // Prüfe Vollständigkeit der Unternehmensdaten für Banner
           const requiredFields = [
-          companyData.companyName,
-          companyData.companyStreet,
-          companyData.companyCity,
-          companyData.companyPostalCode,
-          companyData.vatId ||
-          companyData.taxNumber ||
-          companyData.step3?.vatId ||
-          companyData.step3?.taxNumber];
+            companyData.companyName,
+            companyData.companyStreet,
+            companyData.companyCity,
+            companyData.companyPostalCode,
+            companyData.vatId ||
+              companyData.taxNumber ||
+              companyData.step3?.vatId ||
+              companyData.step3?.taxNumber,
+          ];
 
-
-          const missingRequiredFields = requiredFields.some((field) => !field?.trim());
+          const missingRequiredFields = requiredFields.some(field => !field?.trim());
           const missingOptionalFields =
-          !companyData.email && !companyData.phoneNumber && !companyData.iban;
+            !companyData.email && !companyData.phoneNumber && !companyData.iban;
 
           // Zeige Banner wenn wichtige Felder fehlen
           if (missingRequiredFields || missingOptionalFields) {
@@ -973,9 +966,9 @@ export default function CreateQuotePage() {
             // Vorausfüllen der Formulardaten für das Modal
             setCompanySettingsFormData({
               companyOwner:
-              companyData.firstName && companyData.lastName ?
-              `${companyData.firstName} ${companyData.lastName}` :
-              '',
+                companyData.firstName && companyData.lastName
+                  ? `${companyData.firstName} ${companyData.lastName}`
+                  : '',
               companyName: companyData.companyName || '',
               street: companyData.companyStreet || '',
               zip: companyData.companyPostalCode || '',
@@ -985,14 +978,14 @@ export default function CreateQuotePage() {
               email: companyData.email || '',
               phone: companyData.phoneNumber || companyData.companyPhoneNumber || '',
               iban: companyData.iban || companyData.step4?.iban || '',
-              bic: companyData.bic || companyData.step4?.bic || ''
+              bic: companyData.bic || companyData.step4?.bic || '',
             });
           }
         }
       } catch (e) {
-
         // still render, but without company info
-      }};
+      }
+    };
     loadCompany();
   }, [uid, user, settings]); // settings als Dependency hinzugefügt für automatische Template-Updates
 
@@ -1014,12 +1007,12 @@ export default function CreateQuotePage() {
             setNextNumber(numbering.nextNumber || 1000);
 
             // Setze die aktuelle Rechnungsnummer basierend auf den geladenen Einstellungen
-            setFormData((prev) => ({
+            setFormData(prev => ({
               ...prev,
               title: generateNumberPreview(
                 numbering.format || 'RE-%NUMBER',
                 numbering.nextNumber || 1000
-              )
+              ),
             }));
           }
         }
@@ -1052,7 +1045,7 @@ export default function CreateQuotePage() {
       dueDate.setDate(invoiceDate.getDate() + paymentDays);
 
       const dueDateString = dueDate.toISOString().split('T')[0];
-      setFormData((prev) => ({ ...prev, validUntil: dueDateString }));
+      setFormData(prev => ({ ...prev, validUntil: dueDateString }));
     }
   }, [paymentDays, formData.invoiceDate]);
 
@@ -1066,7 +1059,7 @@ export default function CreateQuotePage() {
       dueDate.setDate(invoiceDate.getDate() + 14);
 
       const dueDateString = dueDate.toISOString().split('T')[0];
-      setFormData((prev) => ({ ...prev, validUntil: dueDateString }));
+      setFormData(prev => ({ ...prev, validUntil: dueDateString }));
     } else if (currentInvoiceDate && formData.validUntil) {
       // Wenn beide Daten vorhanden sind, berechne die Tage aus dem Datum
       const invoiceDate = new Date(currentInvoiceDate);
@@ -1119,20 +1112,20 @@ export default function CreateQuotePage() {
 
         // Standard-Templates automatisch auswählen
         const headTemplate = templates.find(
-          (t) => t.objectType === 'INVOICE' && t.textType === 'HEAD' && t.isDefault
+          t => t.objectType === 'INVOICE' && t.textType === 'HEAD' && t.isDefault
         );
         const footerTemplate = templates.find(
-          (t) => t.objectType === 'INVOICE' && t.textType === 'FOOT' && t.isDefault
+          t => t.objectType === 'INVOICE' && t.textType === 'FOOT' && t.isDefault
         );
 
         if (headTemplate && !formData.headTextHtml) {
           setSelectedHeadTemplate(headTemplate.id);
-          setFormData((prev) => ({ ...prev, headTextHtml: headTemplate.text }));
+          setFormData(prev => ({ ...prev, headTextHtml: headTemplate.text }));
         }
 
         if (footerTemplate && !formData.footerText) {
           setSelectedFooterTemplate(footerTemplate.id);
-          setFormData((prev) => ({ ...prev, footerText: footerTemplate.text }));
+          setFormData(prev => ({ ...prev, footerText: footerTemplate.text }));
         }
       } catch (error) {
         console.error('Fehler beim Laden der Textvorlagen:', error);
@@ -1146,7 +1139,7 @@ export default function CreateQuotePage() {
 
   // Template-Komponente dynamisch rendern
   const renderTemplateComponent = (templateId: ImportedInvoiceTemplate) => {
-    const template = AVAILABLE_TEMPLATES.find((t) => t.id === templateId);
+    const template = AVAILABLE_TEMPLATES.find(t => t.id === templateId);
     if (template) {
       return template.component;
     }
@@ -1160,7 +1153,7 @@ export default function CreateQuotePage() {
     setShowNet(settings.priceInput !== 'brutto');
 
     // Steuerregel aus USt-Status ableiten
-    setFormData((prev) => {
+    setFormData(prev => {
       const next = { ...prev };
       if (settings.ust === 'kleinunternehmer') {
         // Für Kleinunternehmer: keine USt -> sinnvolle Default-Regelung
@@ -1178,7 +1171,7 @@ export default function CreateQuotePage() {
       }
 
       // Währung vorbelegen (falls vorhanden und noch nicht bewusst geändert)
-      if (prev.currency === 'EUR' && company?.defaultCurrency as string) {
+      if (prev.currency === 'EUR' && (company?.defaultCurrency as string)) {
         next.currency = company?.defaultCurrency as string;
       }
 
@@ -1192,14 +1185,14 @@ export default function CreateQuotePage() {
     const d = settings.defaultPaymentTerms as Record<string, unknown>;
     // Skonto nur aktivieren, wenn gültige Daten vorhanden sind
     const shouldEnableSkonto =
-    Boolean(d.skontoEnabled) && typeof d.skontoPercentage === 'number' && d.skontoPercentage > 0;
+      Boolean(d.skontoEnabled) && typeof d.skontoPercentage === 'number' && d.skontoPercentage > 0;
     setSkontoEnabled(shouldEnableSkonto);
     setSkontoDays(
-      typeof d.skontoDays === 'number' ?
-      d.skontoDays :
-      typeof d.days === 'number' ?
-      d.days :
-      undefined
+      typeof d.skontoDays === 'number'
+        ? d.skontoDays
+        : typeof d.days === 'number'
+          ? d.days
+          : undefined
     );
     setSkontoPercentage(typeof d.skontoPercentage === 'number' ? d.skontoPercentage : undefined);
     setSkontoText(typeof d.skontoText === 'string' ? d.skontoText : '');
@@ -1231,7 +1224,6 @@ export default function CreateQuotePage() {
           setEInvoiceEnabled(false);
         }
       } catch (error) {
-
         setEInvoiceEnabled(false);
       }
     };
@@ -1242,47 +1234,48 @@ export default function CreateQuotePage() {
   const allCurrencies = React.useMemo(() => getAllCurrencies('de-DE'), []);
 
   // Quick-Add Service Komponente
-  const QuickAddServiceSection = () =>
-  <div className="mb-4 border-b pb-4">
+  const QuickAddServiceSection = () => (
+    <div className="mb-4 border-b pb-4">
       <QuickAddService
-      companyId={uid}
-      onServiceAdded={(service) => {
-        setItems((prev) => [...prev, service]);
-        toast.success('Dienstleistung wurde zur Rechnung hinzugefügt');
-      }} />
-
-    </div>;
-
+        companyId={uid}
+        onServiceAdded={service => {
+          setItems(prev => [...prev, service]);
+          toast.success('Dienstleistung wurde zur Rechnung hinzugefügt');
+        }}
+      />
+    </div>
+  );
 
   // CardContent rendern
-  const renderCardContent = () =>
-  <div data-slot="card-content" className="px-6">
+  const renderCardContent = () => (
+    <div data-slot="card-content" className="px-6">
       <QuickAddServiceSection />
       {/* Rest des Card Contents */}
       <div className="flex items-center justify-between mb-3">
         {/* ... existierender Content ... */}
       </div>
-    </div>;
-
+    </div>
+  );
 
   // Einheiten-Auswahl (analog zur gewünschten Liste)
   const UNIT_OPTIONS = React.useMemo(
     () => [
-    { label: 'Stk', value: 'Stk' },
-    { label: 'pauschal', value: 'pauschal' },
-    { label: 'Std', value: 'Std' },
-    { label: '%', value: '%' },
-    { label: 'Tag(e)', value: 'Tag(e)' },
-    // Hinweis: SelectItem darf keinen leeren value haben – 'none' dient als Platzhalter und wird auf '' gemappt
-    { label: '—', value: 'none' },
-    { label: 'm²', value: 'm²' },
-    { label: 'm', value: 'm' },
-    { label: 'kg', value: 'kg' },
-    { label: 't', value: 't' },
-    { label: 'lfm', value: 'lfm' },
-    { label: 'm³', value: 'm³' },
-    { label: 'km', value: 'km' },
-    { label: 'L', value: 'L' }],
+      { label: 'Stk', value: 'Stk' },
+      { label: 'pauschal', value: 'pauschal' },
+      { label: 'Std', value: 'Std' },
+      { label: '%', value: '%' },
+      { label: 'Tag(e)', value: 'Tag(e)' },
+      // Hinweis: SelectItem darf keinen leeren value haben – 'none' dient als Platzhalter und wird auf '' gemappt
+      { label: '—', value: 'none' },
+      { label: 'm²', value: 'm²' },
+      { label: 'm', value: 'm' },
+      { label: 'kg', value: 'kg' },
+      { label: 't', value: 't' },
+      { label: 'lfm', value: 'lfm' },
+      { label: 'm³', value: 'm³' },
+      { label: 'km', value: 'km' },
+      { label: 'L', value: 'L' },
+    ],
 
     []
   );
@@ -1292,7 +1285,7 @@ export default function CreateQuotePage() {
     try {
       return new Intl.NumberFormat('de-DE', {
         style: 'currency',
-        currency: formData.currency || 'EUR'
+        currency: formData.currency || 'EUR',
       }).format(Number.isFinite(amount) ? amount : 0);
     } catch {
       return `${(Number.isFinite(amount) ? amount : 0).toFixed(2)} ${formData.currency || 'EUR'}`;
@@ -1324,19 +1317,19 @@ export default function CreateQuotePage() {
   };
 
   const getMonthName = (monthIndex: number): string => {
-    const adjustedMonth = (monthIndex % 12 + 12) % 12; // Handle negative values
+    const adjustedMonth = ((monthIndex % 12) + 12) % 12; // Handle negative values
     const date = new Date(2000, adjustedMonth, 1);
     return date.toLocaleDateString('de-DE', { month: 'long' });
   };
 
   const getMonthNameShort = (monthIndex: number): string => {
-    const adjustedMonth = (monthIndex % 12 + 12) % 12;
+    const adjustedMonth = ((monthIndex % 12) + 12) % 12;
     const date = new Date(2000, adjustedMonth, 1);
     return date.toLocaleDateString('de-DE', { month: 'short' });
   };
 
   const getMonthNumber = (monthIndex: number): string => {
-    const adjustedMonth = (monthIndex % 12 + 12) % 12;
+    const adjustedMonth = ((monthIndex % 12) + 12) % 12;
     return (adjustedMonth + 1).toString().padStart(2, '0');
   };
 
@@ -1383,14 +1376,14 @@ export default function CreateQuotePage() {
         city: data.companyAddress?.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
         country: data.companyAddress?.split('\n')[2] || '',
         // Bankdaten
-        bankDetails: data.bankDetails ?
-        {
-          iban: data.bankDetails.iban || '',
-          bic: data.bankDetails.bic || '',
-          bankName: data.bankDetails.bankName || '',
-          accountHolder: data.bankDetails.accountHolder || ''
-        } :
-        undefined
+        bankDetails: data.bankDetails
+          ? {
+              iban: data.bankDetails.iban || '',
+              bic: data.bankDetails.bic || '',
+              bankName: data.bankDetails.bankName || '',
+              accountHolder: data.bankDetails.accountHolder || '',
+            }
+          : undefined,
       },
       selectedCustomer: {
         companyName: data.customerName || '',
@@ -1401,7 +1394,7 @@ export default function CreateQuotePage() {
         street: (data.customerAddress?.split('\n')[0] || '').replace(/\s+/g, ' ').trim(),
         postalCode: data.customerAddress?.split('\n')[1]?.split(' ')[0] || '',
         city: data.customerAddress?.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
-        country: data.customerAddress?.split('\n')[2] || ''
+        country: data.customerAddress?.split('\n')[2] || '',
       },
       invoice: {
         invoiceNumber: data.invoiceNumber || '',
@@ -1417,15 +1410,15 @@ export default function CreateQuotePage() {
         paymentTerms: parseInt(data.paymentTerms || '14'),
         notes: data.notes || '',
         reference: data.reference || '',
-        title: data.title || ''
+        title: data.title || '',
       },
       contactPerson: {
         name:
-        data.internalContactPerson ||
-        company?.contactPerson?.name as string ||
-        [company?.firstName, company?.lastName].filter(Boolean).join(' ') ||
-        ''
-      }
+          data.internalContactPerson ||
+          (company?.contactPerson?.name as string) ||
+          [company?.firstName, company?.lastName].filter(Boolean).join(' ') ||
+          '',
+      },
     };
 
     // Spezial: Kontaktperson ODER Firmenname am Ende
@@ -1433,19 +1426,12 @@ export default function CreateQuotePage() {
     if (result.includes('[%KONTAKTPERSON]')) {
       const kontakt = context.contactPerson?.name?.trim();
       const fallbackFirma =
-      context.company?.companyName?.trim() || context.company?.name?.trim() || '';
+        context.company?.companyName?.trim() || context.company?.name?.trim() || '';
       const value = kontakt ? kontakt : fallbackFirma;
       result = result.replace(/\[%KONTAKTPERSON_ODER_FIRMENNAME%\]/g, value);
     }
 
     // Debug: Platzhalter-Ersetzung validieren
-
-
-
-
-
-
-
 
     return result;
   };
@@ -1456,11 +1442,11 @@ export default function CreateQuotePage() {
 
     // Firmenname und -adresse aus companies-Collection, mit Fallbacks
     const companyName =
-    company?.companyName as string ||
-    settings?.companyName as string ||
-    (user as any)?.companyName as string ||
-    (user as any)?.displayName as string ||
-    'Ihr Unternehmen';
+      (company?.companyName as string) ||
+      (settings?.companyName as string) ||
+      ((user as any)?.companyName as string) ||
+      ((user as any)?.displayName as string) ||
+      'Ihr Unternehmen';
     // Kontaktperson: interne Eingabe > Customer-Kontakt > Company-Kontakt > Vor-/Nachname
     const contactPersonNameForFooter = (() => {
       // Zuerst interne Eingabe prüfen
@@ -1469,47 +1455,38 @@ export default function CreateQuotePage() {
       }
 
       // Dann Customer-Kontaktperson prüfen
-      const selectedCustomer = customers.find((c) => c.name === formData.customerName);
+      const selectedCustomer = customers.find(c => c.name === formData.customerName);
 
       // DEBUG: Customer-Daten loggen
-
-
-
-
-
-
-
-
-
-
-
 
       if (selectedCustomer?.contactPersons && selectedCustomer.contactPersons.length > 0) {
         return selectedCustomer.contactPersons[0]; // Erste Kontaktperson nehmen
       }
 
       // Fallback auf Company-Kontakt
-      return company?.contactPerson?.name as string ||
-      [company?.firstName, company?.lastName].filter(Boolean).join(' ') ||
-      undefined;
+      return (
+        (company?.contactPerson?.name as string) ||
+        [company?.firstName, company?.lastName].filter(Boolean).join(' ') ||
+        undefined
+      );
     })();
     const companyAddress = [
-    [company?.companyStreet?.replace(/\s+/g, ' ').trim(), company?.companyHouseNumber].
-    filter(Boolean).
-    join(' '),
-    [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
-    company?.companyCountry].
-
-    filter(Boolean).
-    join('\n');
+      [company?.companyStreet?.replace(/\s+/g, ' ').trim(), company?.companyHouseNumber]
+        .filter(Boolean)
+        .join(' '),
+      [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
+      company?.companyCountry,
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     // Kopf-Text (HTML) rudimentär in Text wandeln + weitere Metadaten als Bemerkungen bündeln
     const htmlToText = (html: string) =>
-    (html || '').
-    replace(/<br\s*\/?>(\s*)/gi, '\n').
-    replace(/<[^>]+>/g, '').
-    replace(/&nbsp;/gi, ' ').
-    replace(/&amp;/gi, '&');
+      (html || '')
+        .replace(/<br\s*\/?>(\s*)/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&');
     const noteLines: string[] = [];
     // Kopf-Text und Referenz werden separat im Template angezeigt
     if (formData.deliveryTerms) noteLines.push(`Lieferbedingungen: ${formData.deliveryTerms}`);
@@ -1527,50 +1504,50 @@ export default function CreateQuotePage() {
     }
     const finalPaymentTerms = [basePaymentTerms, skontoSentence].filter(Boolean).join('\n\n');
     const previewNotes =
-    [
-    formData.deliveryTerms ? `Lieferbedingungen: ${formData.deliveryTerms}` : '',
-    finalPaymentTerms ? `Zahlungsbedingungen: ${finalPaymentTerms}` : ''].
-
-    filter(Boolean).
-    join('\n\n') || undefined;
+      [
+        formData.deliveryTerms ? `Lieferbedingungen: ${formData.deliveryTerms}` : '',
+        finalPaymentTerms ? `Zahlungsbedingungen: ${finalPaymentTerms}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n') || undefined;
 
     const taxRuleLabelMap: Record<TaxRuleType, string> = {
       [TaxRuleType.DE_TAXABLE]:
-      'Steuerpflichtiger Umsatz (Regelsteuersatz 19 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 1 UStG)',
+        'Steuerpflichtiger Umsatz (Regelsteuersatz 19 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 1 UStG)',
       [TaxRuleType.DE_TAXABLE_REDUCED]:
-      'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 12 Abs. 2 UStG)',
+        'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 12 Abs. 2 UStG)',
       [TaxRuleType.DE_EXEMPT_4_USTG]: 'Steuerfreie Lieferung/Leistung gemäß § 4 UStG',
       [TaxRuleType.DE_REVERSE_13B]:
-      'Reverse-Charge – Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)',
+        'Reverse-Charge – Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)',
       [TaxRuleType.EU_REVERSE_18B]:
-      'Reverse-Charge – Steuerschuldnerschaft des Leistungsempfängers (Art. 196 MwStSystRL, § 18b UStG)',
+        'Reverse-Charge – Steuerschuldnerschaft des Leistungsempfängers (Art. 196 MwStSystRL, § 18b UStG)',
       [TaxRuleType.EU_INTRACOMMUNITY_SUPPLY]:
-      'Innergemeinschaftliche Lieferung, steuerfrei gemäß § 4 Nr. 1b i.V.m. § 6a UStG',
+        'Innergemeinschaftliche Lieferung, steuerfrei gemäß § 4 Nr. 1b i.V.m. § 6a UStG',
       [TaxRuleType.EU_OSS]: 'Fernverkauf über das OSS-Verfahren (§ 18j UStG)',
       [TaxRuleType.NON_EU_EXPORT]: 'Steuerfreie Ausfuhrlieferung (§ 4 Nr. 1a i.V.m. § 6 UStG)',
       [TaxRuleType.NON_EU_OUT_OF_SCOPE]:
-      'Nicht im Inland steuerbare Leistung (Leistungsort außerhalb Deutschlands, § 3a Abs. 2 UStG)'
+        'Nicht im Inland steuerbare Leistung (Leistungsort außerhalb Deutschlands, § 3a Abs. 2 UStG)',
     };
 
     const data: PreviewTemplateData = {
       companyId: uid,
       invoiceNumber: 'Vorschau',
       documentNumber: formData.title || 'RE-1000',
-      date: formData.invoiceDate ?
-      formatDateDE(new Date(formData.invoiceDate)) :
-      formatDateDE(today),
+      date: formData.invoiceDate
+        ? formatDateDE(new Date(formData.invoiceDate))
+        : formatDateDE(today),
       dueDate: formData.validUntil ? formatDateDE(new Date(formData.validUntil)) : undefined,
       validUntil: formatDateDE(formData.validUntil),
-      deliveryDate: formData.deliveryDate ?
-      formatDateDE(new Date(formData.deliveryDate)) :
-      undefined,
+      deliveryDate: formData.deliveryDate
+        ? formatDateDE(new Date(formData.deliveryDate))
+        : undefined,
       title: formData.title || undefined,
       reference: formData.customerOrderNumber || undefined,
       currency:
-      formData.currency ||
-      company?.defaultCurrency as string ||
-      (settings as any)?.defaultCurrency as string ||
-      'EUR',
+        formData.currency ||
+        (company?.defaultCurrency as string) ||
+        ((settings as any)?.defaultCurrency as string) ||
+        'EUR',
       taxRule: formData.taxRule,
       taxRuleLabel: taxRuleLabelMap[formData.taxRule] || undefined,
       customerName: formData.customerName || '',
@@ -1578,46 +1555,46 @@ export default function CreateQuotePage() {
       customerEmail: formData.customerEmail || undefined,
       companyName,
       companyAddress,
-      companyEmail: company?.email as string || undefined,
+      companyEmail: (company?.email as string) || undefined,
       companyPhone:
-      company?.phoneNumber as string || company?.companyPhoneNumber as string || undefined,
+        (company?.phoneNumber as string) || (company?.companyPhoneNumber as string) || undefined,
       companyWebsite:
-      company?.website as string ||
-      company?.companyWebsite as string ||
-      company?.companyWebsiteForBackend as string ||
-      (company as any)?.step1?.website as string ||
-      (company as any)?.step2?.website as string ||
-      undefined,
-      companyLogo: company?.companyLogo as string || undefined,
-      profilePictureURL: company?.profilePictureURL as string || undefined,
+        (company?.website as string) ||
+        (company?.companyWebsite as string) ||
+        (company?.companyWebsiteForBackend as string) ||
+        ((company as any)?.step1?.website as string) ||
+        ((company as any)?.step2?.website as string) ||
+        undefined,
+      companyLogo: (company?.companyLogo as string) || undefined,
+      profilePictureURL: (company?.profilePictureURL as string) || undefined,
       companyVatId:
-      company?.vatId as string ||
-      (company as any)?.vatIdForBackend ||
-      (company as any)?.step3?.vatId ||
-      (settings as any)?.vatId as string ||
-      undefined,
+        (company?.vatId as string) ||
+        (company as any)?.vatIdForBackend ||
+        (company as any)?.step3?.vatId ||
+        ((settings as any)?.vatId as string) ||
+        undefined,
       companyTaxNumber:
-      company?.taxNumber as string ||
-      (company as any)?.taxNumberForBackend ||
-      (company as any)?.step3?.taxNumber ||
-      (settings as any)?.taxNumber as string ||
-      undefined,
+        (company?.taxNumber as string) ||
+        (company as any)?.taxNumberForBackend ||
+        (company as any)?.step3?.taxNumber ||
+        ((settings as any)?.taxNumber as string) ||
+        undefined,
       companyRegister:
-      company?.companyRegisterPublic as string ||
-      company?.companyRegister as string ||
-      (company as any)?.step3?.companyRegister ||
-      (settings as any)?.districtCourt as string ||
-      (settings as any)?.companyRegister as string ||
-      undefined,
-      items: items.map((it) => {
+        (company?.companyRegisterPublic as string) ||
+        (company?.companyRegister as string) ||
+        (company as any)?.step3?.companyRegister ||
+        ((settings as any)?.districtCourt as string) ||
+        ((settings as any)?.companyRegister as string) ||
+        undefined,
+      items: items.map(it => {
         const qty = Number.isFinite(it.quantity) ? it.quantity : 0;
         const unit = Number.isFinite(it.unitPrice) ? it.unitPrice : 0;
         const baseTotal = Number.isFinite(it.total) ? it.total : qty * unit;
         const sign = it.category === 'discount' ? -1 : 1;
         const factor =
-        it.category === 'discount' ?
-        1 :
-        1 - Math.max(0, Math.min(100, it.discountPercent || 0)) / 100;
+          it.category === 'discount'
+            ? 1
+            : 1 - Math.max(0, Math.min(100, it.discountPercent || 0)) / 100;
         const lineTotalNet = baseTotal * sign * factor;
         return {
           id: it.id,
@@ -1628,35 +1605,35 @@ export default function CreateQuotePage() {
           taxRate: undefined,
           category: it.category as any,
           discountPercent: it.discountPercent || 0,
-          unit: it.unit
+          unit: it.unit,
         };
       }),
       subtotal,
       tax: (() => {
         // Für Reverse Charge und bestimmte steuerfreie Regeln ist die Steuer immer 0
         const isReverseCharge =
-        formData.taxRule?.includes('REVERSE') ||
-        formData.taxRule === TaxRuleType.DE_REVERSE_13B ||
-        formData.taxRule === TaxRuleType.EU_REVERSE_18B;
+          formData.taxRule?.includes('REVERSE') ||
+          formData.taxRule === TaxRuleType.DE_REVERSE_13B ||
+          formData.taxRule === TaxRuleType.EU_REVERSE_18B;
         const isTaxExempt =
-        formData.taxRule === TaxRuleType.DE_EXEMPT_4_USTG ||
-        formData.taxRule === TaxRuleType.EU_INTRACOMMUNITY_SUPPLY ||
-        formData.taxRule === TaxRuleType.NON_EU_EXPORT ||
-        formData.taxRule === TaxRuleType.NON_EU_OUT_OF_SCOPE;
+          formData.taxRule === TaxRuleType.DE_EXEMPT_4_USTG ||
+          formData.taxRule === TaxRuleType.EU_INTRACOMMUNITY_SUPPLY ||
+          formData.taxRule === TaxRuleType.NON_EU_EXPORT ||
+          formData.taxRule === TaxRuleType.NON_EU_OUT_OF_SCOPE;
         if (isReverseCharge || isTaxExempt) return 0;
         // Bei Netto-Anzeige keine Steuer anzeigen
         return showNet ? 0 : vat;
       })(),
       total: (() => {
         const isReverseCharge =
-        formData.taxRule?.includes('REVERSE') ||
-        formData.taxRule === TaxRuleType.DE_REVERSE_13B ||
-        formData.taxRule === TaxRuleType.EU_REVERSE_18B;
+          formData.taxRule?.includes('REVERSE') ||
+          formData.taxRule === TaxRuleType.DE_REVERSE_13B ||
+          formData.taxRule === TaxRuleType.EU_REVERSE_18B;
         const isTaxExempt =
-        formData.taxRule === TaxRuleType.DE_EXEMPT_4_USTG ||
-        formData.taxRule === TaxRuleType.EU_INTRACOMMUNITY_SUPPLY ||
-        formData.taxRule === TaxRuleType.NON_EU_EXPORT ||
-        formData.taxRule === TaxRuleType.NON_EU_OUT_OF_SCOPE;
+          formData.taxRule === TaxRuleType.DE_EXEMPT_4_USTG ||
+          formData.taxRule === TaxRuleType.EU_INTRACOMMUNITY_SUPPLY ||
+          formData.taxRule === TaxRuleType.NON_EU_EXPORT ||
+          formData.taxRule === TaxRuleType.NON_EU_OUT_OF_SCOPE;
         if (isReverseCharge || isTaxExempt) return subtotal;
         // Bei Netto-Anzeige nur Netto-Summe zeigen
         return showNet ? subtotal : grandTotal;
@@ -1664,45 +1641,45 @@ export default function CreateQuotePage() {
       vatRate: (() => {
         // Für Reverse Charge und steuerfreie Regeln ist die Steuer-Rate 0
         const isReverseCharge =
-        formData.taxRule?.includes('REVERSE') ||
-        formData.taxRule === TaxRuleType.DE_REVERSE_13B ||
-        formData.taxRule === TaxRuleType.EU_REVERSE_18B;
+          formData.taxRule?.includes('REVERSE') ||
+          formData.taxRule === TaxRuleType.DE_REVERSE_13B ||
+          formData.taxRule === TaxRuleType.EU_REVERSE_18B;
         const isTaxExempt =
-        formData.taxRule === TaxRuleType.DE_EXEMPT_4_USTG ||
-        formData.taxRule === TaxRuleType.EU_INTRACOMMUNITY_SUPPLY ||
-        formData.taxRule === TaxRuleType.NON_EU_EXPORT ||
-        formData.taxRule === TaxRuleType.NON_EU_OUT_OF_SCOPE;
+          formData.taxRule === TaxRuleType.DE_EXEMPT_4_USTG ||
+          formData.taxRule === TaxRuleType.EU_INTRACOMMUNITY_SUPPLY ||
+          formData.taxRule === TaxRuleType.NON_EU_EXPORT ||
+          formData.taxRule === TaxRuleType.NON_EU_OUT_OF_SCOPE;
         if (isReverseCharge || isTaxExempt) return 0;
         // Bei Netto-Anzeige keine Steuer-Rate anzeigen
         return showNet ? 0 : taxRate;
       })(),
       isSmallBusiness: false, // Wird durch taxRule bestimmt, nicht durch settings
-      bankDetails: company ?
-      {
-        iban:
-        (company as any)?.step4?.iban ||
-        company?.iban as string ||
-        (settings as any)?.step4?.iban as string ||
-        undefined,
-        bic:
-        (company as any)?.step4?.bic ||
-        company?.bic as string ||
-        (settings as any)?.step4?.bic as string ||
-        undefined,
-        bankName:
-        (company as any)?.step4?.bankName ||
-        company?.bankName as string ||
-        (settings as any)?.step4?.bankName as string ||
-        undefined,
-        accountHolder:
-        (company as any)?.step4?.accountHolder ||
-        company?.accountHolder as string ||
-        (settings as any)?.step4?.accountHolder as string ||
-        (settings as any)?.accountHolder ||
-        companyName as string ||
-        undefined
-      } :
-      undefined,
+      bankDetails: company
+        ? {
+            iban:
+              (company as any)?.step4?.iban ||
+              (company?.iban as string) ||
+              ((settings as any)?.step4?.iban as string) ||
+              undefined,
+            bic:
+              (company as any)?.step4?.bic ||
+              (company?.bic as string) ||
+              ((settings as any)?.step4?.bic as string) ||
+              undefined,
+            bankName:
+              (company as any)?.step4?.bankName ||
+              (company?.bankName as string) ||
+              ((settings as any)?.step4?.bankName as string) ||
+              undefined,
+            accountHolder:
+              (company as any)?.step4?.accountHolder ||
+              (company?.accountHolder as string) ||
+              ((settings as any)?.step4?.accountHolder as string) ||
+              (settings as any)?.accountHolder ||
+              (companyName as string) ||
+              undefined,
+          }
+        : undefined,
       notes: previewNotes,
       headTextHtml: formData.headTextHtml || undefined,
       headerText: formData.headTextHtml || undefined, // Template erwartet headerText
@@ -1713,13 +1690,13 @@ export default function CreateQuotePage() {
       paymentTerms: finalPaymentTerms || undefined,
       deliveryTerms: formData.deliveryTerms || undefined,
       // Lieferzeit/Leistungszeitraum für Template
-      serviceDate: formData.deliveryDate ?
-      formatDateDE(new Date(formData.deliveryDate)) :
-      undefined,
+      serviceDate: formData.deliveryDate
+        ? formatDateDE(new Date(formData.deliveryDate))
+        : undefined,
       servicePeriod:
-      deliveryDateType === 'range' && deliveryDateRange.from && deliveryDateRange.to ?
-      `${formatDateDE(deliveryDateRange.from)} - ${formatDateDE(deliveryDateRange.to)}` :
-      formData.servicePeriod || undefined,
+        deliveryDateType === 'range' && deliveryDateRange.from && deliveryDateRange.to
+          ? `${formatDateDE(deliveryDateRange.from)} - ${formatDateDE(deliveryDateRange.to)}`
+          : formData.servicePeriod || undefined,
       // Customer-Objekt für Template-Kompatibilität
       customer: {
         name: formData.customerName || '',
@@ -1734,71 +1711,70 @@ export default function CreateQuotePage() {
             street: streetLine,
             zipCode: zipCodeMatch ? zipCodeMatch[1] : '',
             city: zipCodeMatch ? zipCodeMatch[2] : cityLine,
-            country: addressLines[2] || 'Deutschland'
+            country: addressLines[2] || 'Deutschland',
           };
         })(),
         taxNumber: (() => {
-          const selectedCustomer = customers.find((c) => c.name === formData.customerName);
+          const selectedCustomer = customers.find(c => c.name === formData.customerName);
           return selectedCustomer?.taxNumber || undefined;
         })(),
         vatId: (() => {
-          const selectedCustomer = customers.find((c) => c.name === formData.customerName);
+          const selectedCustomer = customers.find(c => c.name === formData.customerName);
           return selectedCustomer?.vatId || undefined;
-        })()
-
+        })(),
       },
       // Company-Objekt für Template-Kompatibilität
       company: {
         name: companyName,
-        email: company?.email as string || '',
-        phone: company?.phoneNumber as string || company?.companyPhoneNumber as string || '',
+        email: (company?.email as string) || '',
+        phone: (company?.phoneNumber as string) || (company?.companyPhoneNumber as string) || '',
         address: (() => {
           const lines = companyAddress.split('\n');
           return {
             street: lines[0] || '',
             zipCode: (lines[1] || '').split(' ')[0] || '',
             city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
-            country: lines[2] || ''
+            country: lines[2] || '',
           };
         })(),
         taxNumber:
-        company?.taxNumber as string ||
-        (company as any)?.taxNumberForBackend ||
-        (company as any)?.step3?.taxNumber ||
-        (settings as any)?.taxNumber as string ||
-        '',
+          (company?.taxNumber as string) ||
+          (company as any)?.taxNumberForBackend ||
+          (company as any)?.step3?.taxNumber ||
+          ((settings as any)?.taxNumber as string) ||
+          '',
         vatId:
-        company?.vatId as string ||
-        (company as any)?.vatIdForBackend ||
-        (company as any)?.step3?.vatId ||
-        (settings as any)?.vatId as string ||
-        '',
+          (company?.vatId as string) ||
+          (company as any)?.vatIdForBackend ||
+          (company as any)?.step3?.vatId ||
+          ((settings as any)?.vatId as string) ||
+          '',
         website:
-        company?.website as string ||
-        company?.companyWebsite as string ||
-        company?.companyWebsiteForBackend as string ||
-        (company as any)?.step1?.website as string ||
-        (company as any)?.step2?.website as string ||
-        '',
+          (company?.website as string) ||
+          (company?.companyWebsite as string) ||
+          (company?.companyWebsiteForBackend as string) ||
+          ((company as any)?.step1?.website as string) ||
+          ((company as any)?.step2?.website as string) ||
+          '',
         bankDetails: {
           iban:
-          (company as any)?.step4?.iban ||
-          company?.iban as string ||
-          (settings as any)?.step4?.iban as string ||
-          '',
+            (company as any)?.step4?.iban ||
+            (company?.iban as string) ||
+            ((settings as any)?.step4?.iban as string) ||
+            '',
           bic:
-          (company as any)?.step4?.bic ||
-          company?.bic as string ||
-          (settings as any)?.step4?.bic as string ||
-          '',
+            (company as any)?.step4?.bic ||
+            (company?.bic as string) ||
+            ((settings as any)?.step4?.bic as string) ||
+            '',
           accountHolder:
-          (company as any)?.step4?.accountHolder ||
-          company?.accountHolder as string ||
-          (settings as any)?.step4?.accountHolder as string ||
-          (settings as any)?.accountHolder ||
-          companyName ||
-          ''
-        }
+            (company as any)?.step4?.accountHolder ||
+            (company?.accountHolder as string) ||
+            ((settings as any)?.step4?.accountHolder as string) ||
+            (settings as any)?.accountHolder ||
+            companyName ||
+            '',
+        },
       },
       // Footer-Daten aus Company-Objekt
       step1: company?.step1 || (company as any)?.step1,
@@ -1806,7 +1782,7 @@ export default function CreateQuotePage() {
       step3: company?.step3 || (company as any)?.step3,
       step4: company?.step4 || (company as any)?.step4,
       managingDirectors:
-      (company as any)?.managingDirectors || (company as any)?.step1?.managingDirectors,
+        (company as any)?.managingDirectors || (company as any)?.step1?.managingDirectors,
       districtCourt: (company as any)?.districtCourt || (company as any)?.step3?.districtCourt,
       legalForm: (company as any)?.step2?.legalForm || (company as any)?.legalForm,
       firstName: (company as any)?.firstName || (company as any)?.step1?.personalData?.firstName,
@@ -1818,35 +1794,21 @@ export default function CreateQuotePage() {
       skontoText: skontoEnabled ? skontoText || '' : '',
       // Template-Informationen
       selectedTemplate:
-      typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
+        typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
       // Customer-Spezifische Daten
       customerNumber: (() => {
-        const selectedCustomer = customers.find((c) => c.name === formData.customerName);
+        const selectedCustomer = customers.find(c => c.name === formData.customerName);
         return selectedCustomer?.customerNumber || undefined;
       })(),
       displayCustomerNumber: (() => {
-        const selectedCustomer = customers.find((c) => c.name === formData.customerName);
+        const selectedCustomer = customers.find(c => c.name === formData.customerName);
         return selectedCustomer?.customerNumber || '';
-      })()
+      })(),
     };
 
     // DEBUG: Tax Rule Ausgabe
 
-
-
-
-
-
-
     // DEBUG: CompanyId und Customer-Daten
-
-
-
-
-
-
-
-
 
     return data;
   };
@@ -1857,7 +1819,7 @@ export default function CreateQuotePage() {
     const previewData = buildPreviewData();
     return {
       ...previewData,
-      companyId: uid // Explizit die companyId hinzufügen
+      companyId: uid, // Explizit die companyId hinzufügen
     } as unknown as InvoiceData;
   };
 
@@ -1872,8 +1834,12 @@ export default function CreateQuotePage() {
     // Deutsch als Standard, da das ein deutsches System ist
     const processedData = {
       ...data,
-      headTextHtml: data.headTextHtml ? systemReplacePlaceholders(data.headTextHtml, data, 'de') : undefined,
-      footerText: data.footerText ? systemReplacePlaceholders(data.footerText, data, 'de') : undefined
+      headTextHtml: data.headTextHtml
+        ? systemReplacePlaceholders(data.headTextHtml, data, 'de')
+        : undefined,
+      footerText: data.footerText
+        ? systemReplacePlaceholders(data.footerText, data, 'de')
+        : undefined,
     };
 
     return processedData;
@@ -1889,10 +1855,10 @@ export default function CreateQuotePage() {
     if (!emailBody) {
       setEmailBody(
         `Hallo ${data.customerName || ''},\n\n` +
-        `anbei erhalten Sie unser Angebot${data.title ? ' zu: ' + data.title : ''}.` +
-        `\n\nGesamtbetrag: ${formatCurrency(data.total)}\nGültig bis: ${data.validUntil}` +
-        `\n\nBei Fragen melden Sie sich gerne.` +
-        `\n\nBeste Grüße\n${data.companyName}`
+          `anbei erhalten Sie unser Angebot${data.title ? ' zu: ' + data.title : ''}.` +
+          `\n\nGesamtbetrag: ${formatCurrency(data.total)}\nGültig bis: ${data.validUntil}` +
+          `\n\nBei Fragen melden Sie sich gerne.` +
+          `\n\nBeste Grüße\n${data.companyName}`
       );
     }
     if (!emailTo && formData.customerEmail) setEmailTo(formData.customerEmail);
@@ -1901,7 +1867,6 @@ export default function CreateQuotePage() {
 
   const printInBrowser = () => {
     toast.message('Browser-Druck wurde deaktiviert.');
-
   };
 
   // Guard
@@ -1912,8 +1877,8 @@ export default function CreateQuotePage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
           <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
         </div>
-      </div>);
-
+      </div>
+    );
   }
 
   // Helpers
@@ -1936,9 +1901,9 @@ export default function CreateQuotePage() {
   const grandTotal = subtotal + vat;
 
   // SevDesk-style tax grouping: Group items by tax rate for multi-tax invoices
-  const taxGroups: {[rate: number]: {netAmount: number;taxAmount: number;};} = {};
+  const taxGroups: { [rate: number]: { netAmount: number; taxAmount: number } } = {};
 
-  items.forEach((item) => {
+  items.forEach(item => {
     if (item.category === 'discount') return; // Skip discount items
 
     const itemTaxRate = item.taxRate || taxRate;
@@ -1956,65 +1921,65 @@ export default function CreateQuotePage() {
   });
 
   // Convert to array format like SevDesk
-  const taxGrouped = Object.entries(taxGroups).
-  map(([rate, amounts]) => ({
-    rate: Number(rate),
-    netAmount: Math.round(amounts.netAmount * 100) / 100,
-    taxAmount: Math.round(amounts.taxAmount * 100) / 100
-  })).
-  sort((a, b) => b.rate - a.rate); // Sort descending (19%, 7%, 0%)
+  const taxGrouped = Object.entries(taxGroups)
+    .map(([rate, amounts]) => ({
+      rate: Number(rate),
+      netAmount: Math.round(amounts.netAmount * 100) / 100,
+      taxAmount: Math.round(amounts.taxAmount * 100) / 100,
+    }))
+    .sort((a, b) => b.rate - a.rate); // Sort descending (19%, 7%, 0%)
 
   // Handlers
   const handleCustomerSelect = (customerName: string) => {
-    const customer = customers.find((c) => c.name === customerName);
+    const customer = customers.find(c => c.name === customerName);
     if (!customer) return;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       customerName: customer.name,
       customerNumber: customer.customerNumber || '',
       customerEmail: customer.email || '',
       customerAddress:
-      customer.street && customer.city ?
-      `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}` :
-      prev.customerAddress
+        customer.street && customer.city
+          ? `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}`
+          : prev.customerAddress,
     }));
   };
 
   const addItem = () => {
     const newItem: QuoteItem = {
       id:
-      typeof crypto !== 'undefined' && 'randomUUID' in crypto ?
-      crypto.randomUUID() :
-      Math.random().toString(36).slice(2),
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : Math.random().toString(36).slice(2),
       description: '',
       quantity: 1,
       unitPrice: 0,
       total: 0,
       unit: 'Stk',
-      discountPercent: 0
+      discountPercent: 0,
     };
-    setItems((prev) => [...prev, newItem]);
+    setItems(prev => [...prev, newItem]);
   };
 
   const removeItem = (index: number) => {
-    setItems((prev) => prev.length > 1 ? prev.filter((_, i) => i !== index) : prev);
+    setItems(prev => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
   };
 
   const handleItemChange = (index: number, field: keyof QuoteItem, value: any) => {
-    setItems((prev) =>
-    prev.map((item, i) => {
-      if (i !== index) return item;
-      const next: QuoteItem = { ...item };
-      if (field === 'description') next.description = String(value);
-      if (field === 'quantity') next.quantity = parseFloat(String(value)) || 0;
-      if (field === 'unitPrice') {
-        const input = parseFloat(String(value)) || 0;
-        const net = showNet ? input : input / (1 + taxRate / 100);
-        next.unitPrice = net;
-      }
-      next.total = computeItemTotalNet(next.quantity, next.unitPrice);
-      return next;
-    })
+    setItems(prev =>
+      prev.map((item, i) => {
+        if (i !== index) return item;
+        const next: QuoteItem = { ...item };
+        if (field === 'description') next.description = String(value);
+        if (field === 'quantity') next.quantity = parseFloat(String(value)) || 0;
+        if (field === 'unitPrice') {
+          const input = parseFloat(String(value)) || 0;
+          const net = showNet ? input : input / (1 + taxRate / 100);
+          next.unitPrice = net;
+        }
+        next.total = computeItemTotalNet(next.quantity, next.unitPrice);
+        return next;
+      })
     );
   };
 
@@ -2024,22 +1989,22 @@ export default function CreateQuotePage() {
       toast.error('Bitte füllen Sie alle Pflichtfelder aus');
       return;
     }
-    const hasValidItems = items.some((it) => it.description && it.quantity > 0);
+    const hasValidItems = items.some(it => it.description && it.quantity > 0);
     if (!hasValidItems) {
       toast.error('Bitte fügen Sie mindestens eine gültige Position hinzu');
       return;
     }
 
     // Kundensuche für vollständige Daten
-    const selectedCustomer = customers.find((c) => c.name === formData.customerName);
+    const selectedCustomer = customers.find(c => c.name === formData.customerName);
 
     // Zahlungsbedingungen final (inkl. Skonto, falls aktiv)
     const skontoSentence =
-    skontoEnabled && skontoDays && skontoPercentage ?
-    skontoText?.trim() || `Bei Zahlung binnen ${skontoDays} Tagen ${skontoPercentage}% Skonto` :
-    '';
+      skontoEnabled && skontoDays && skontoPercentage
+        ? skontoText?.trim() || `Bei Zahlung binnen ${skontoDays} Tagen ${skontoPercentage}% Skonto`
+        : '';
     const finalPaymentTerms =
-    [formData.paymentTerms?.trim(), skontoSentence].filter(Boolean).join('\n\n') || undefined;
+      [formData.paymentTerms?.trim(), skontoSentence].filter(Boolean).join('\n\n') || undefined;
 
     // Calculate totals for preview
     const subtotal = items.reduce((sum, it) => {
@@ -2064,15 +2029,15 @@ export default function CreateQuotePage() {
       status: 'draft',
 
       // Dates
-      date: formData.invoiceDate ?
-      new Date(formData.invoiceDate).toISOString().split('T')[0] :
-      new Date().toISOString().split('T')[0],
-      issueDate: formData.invoiceDate ?
-      new Date(formData.invoiceDate).toISOString().split('T')[0] :
-      new Date().toISOString().split('T')[0],
-      dueDate: formData.validUntil ?
-      new Date(formData.validUntil).toISOString().split('T')[0] :
-      new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      date: formData.invoiceDate
+        ? new Date(formData.invoiceDate).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0],
+      issueDate: formData.invoiceDate
+        ? new Date(formData.invoiceDate).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0],
+      dueDate: formData.validUntil
+        ? new Date(formData.validUntil).toISOString().split('T')[0]
+        : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
 
       // Customer Data
       customerName: formData.customerName || '',
@@ -2113,40 +2078,40 @@ export default function CreateQuotePage() {
       // Unternehmensdaten
       companyName: company?.companyName || '',
       companyAddress: [
-      [company?.companyStreet?.replace(/\s+/g, ' ').trim(), company?.companyHouseNumber].
-      filter(Boolean).
-      join(' '),
-      [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
-      company?.companyCountry].
-
-      filter(Boolean).
-      join('\n'),
-      companyEmail: company?.email as string || '',
+        [company?.companyStreet?.replace(/\s+/g, ' ').trim(), company?.companyHouseNumber]
+          .filter(Boolean)
+          .join(' '),
+        [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
+        company?.companyCountry,
+      ]
+        .filter(Boolean)
+        .join('\n'),
+      companyEmail: (company?.email as string) || '',
       companyPhone:
-      company?.phoneNumber as string || company?.companyPhoneNumber as string || '',
+        (company?.phoneNumber as string) || (company?.companyPhoneNumber as string) || '',
       companyWebsite: '',
       companyLogo: '',
-      profilePictureURL: company?.profilePictureURL as string || undefined,
+      profilePictureURL: (company?.profilePictureURL as string) || undefined,
       companyVatId:
-      company?.vatId as string ||
-      (company as any)?.vatIdForBackend ||
-      (company as any)?.step3?.vatId ||
-      undefined,
+        (company?.vatId as string) ||
+        (company as any)?.vatIdForBackend ||
+        (company as any)?.step3?.vatId ||
+        undefined,
       companyTaxNumber:
-      company?.taxNumber as string ||
-      (company as any)?.taxNumberForBackend ||
-      (company as any)?.step3?.taxNumber ||
-      undefined,
+        (company?.taxNumber as string) ||
+        (company as any)?.taxNumberForBackend ||
+        (company as any)?.step3?.taxNumber ||
+        undefined,
       companyRegister:
-      company?.companyRegisterPublic as string ||
-      company?.companyRegister as string ||
-      (company as any)?.step3?.companyRegister ||
-      (settings as any)?.districtCourt as string ||
-      (settings as any)?.companyRegister as string ||
-      undefined,
+        (company?.companyRegisterPublic as string) ||
+        (company?.companyRegister as string) ||
+        (company as any)?.step3?.companyRegister ||
+        ((settings as any)?.districtCourt as string) ||
+        ((settings as any)?.companyRegister as string) ||
+        undefined,
 
       // Items and totals
-      items: items.map((item) => ({
+      items: items.map(item => ({
         id: item.id,
         description: item.description,
         quantity: item.quantity,
@@ -2157,7 +2122,7 @@ export default function CreateQuotePage() {
         unit: item.unit || 'Stk',
         category: item.category || 'Artikel',
         inventoryItemId: item.inventoryItemId || null,
-        extendedDescription: (item as any).extendedDescription || '' // Erweiterte Beschreibung
+        extendedDescription: (item as any).extendedDescription || '', // Erweiterte Beschreibung
       })),
 
       // Additional fields
@@ -2169,18 +2134,12 @@ export default function CreateQuotePage() {
       servicePeriod: (() => {
         // Debug: Schaue was in servicePeriod steht
 
-
-
-
-
-
-
         // Wenn servicePeriod leer ist oder dem deliveryDate entspricht, leeren
         if (
-        !formData.servicePeriod ||
-        formData.servicePeriod.trim() === '' ||
-        formData.servicePeriod === formData.deliveryDate)
-        {
+          !formData.servicePeriod ||
+          formData.servicePeriod.trim() === '' ||
+          formData.servicePeriod === formData.deliveryDate
+        ) {
           return '';
         }
         return formData.servicePeriod;
@@ -2190,27 +2149,27 @@ export default function CreateQuotePage() {
       notes: formData.notes || '',
 
       // E-Invoice Daten (falls aktiviert)
-      eInvoice: eInvoiceEnabled ?
-      {
-        format: eInvoiceSettings?.defaultFormat || 'zugferd',
-        version: '1.0',
-        guid: crypto.randomUUID()
-      } :
-      undefined,
+      eInvoice: eInvoiceEnabled
+        ? {
+            format: eInvoiceSettings?.defaultFormat || 'zugferd',
+            version: '1.0',
+            guid: crypto.randomUUID(),
+          }
+        : undefined,
       eInvoiceData:
-      eInvoiceEnabled && eInvoiceSettings ?
-      {
-        format: eInvoiceSettings.defaultFormat || 'zugferd',
-        version: '1.0',
-        guid: crypto.randomUUID(),
-        validationStatus: 'pending' as const,
-        createdAt: new Date().toISOString()
-      } :
-      undefined,
+        eInvoiceEnabled && eInvoiceSettings
+          ? {
+              format: eInvoiceSettings.defaultFormat || 'zugferd',
+              version: '1.0',
+              guid: crypto.randomUUID(),
+              validationStatus: 'pending' as const,
+              createdAt: new Date().toISOString(),
+            }
+          : undefined,
 
       // Metadata
       createdAt: new Date(),
-      isStorno: false
+      isStorno: false,
     };
 
     setCreatedDocument(tempInvoiceData);
@@ -2226,23 +2185,23 @@ export default function CreateQuotePage() {
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
         return;
       }
-      const hasValidItems = items.some((it) => it.description && it.quantity > 0);
+      const hasValidItems = items.some(it => it.description && it.quantity > 0);
       if (!hasValidItems) {
         toast.error('Bitte fügen Sie mindestens eine gültige Position hinzu');
         return;
       }
 
       // Kundensuche für vollständige Daten
-      const selectedCustomer = customers.find((c) => c.name === formData.customerName);
+      const selectedCustomer = customers.find(c => c.name === formData.customerName);
 
       // Zahlungsbedingungen final (inkl. Skonto, falls aktiv)
       const skontoSentence =
-      skontoEnabled && skontoDays && skontoPercentage ?
-      skontoText?.trim() ||
-      `Bei Zahlung binnen ${skontoDays} Tagen ${skontoPercentage}% Skonto` :
-      '';
+        skontoEnabled && skontoDays && skontoPercentage
+          ? skontoText?.trim() ||
+            `Bei Zahlung binnen ${skontoDays} Tagen ${skontoPercentage}% Skonto`
+          : '';
       const finalPaymentTerms =
-      [formData.paymentTerms?.trim(), skontoSentence].filter(Boolean).join('\n\n') || undefined;
+        [formData.paymentTerms?.trim(), skontoSentence].filter(Boolean).join('\n\n') || undefined;
 
       // 🚨 COMPLETE INVOICE DATA OBJECT - **EVERY SINGLE FIELD** FROM THE FORM!
       // This object must contain ALL form fields to ensure complete data persistence
@@ -2256,15 +2215,15 @@ export default function CreateQuotePage() {
         status: asDraft ? 'draft' : 'finalized',
 
         // Dates - ALLE Datumswerte aus dem Formular
-        date: formData.invoiceDate ?
-        new Date(formData.invoiceDate).toISOString().split('T')[0] :
-        new Date().toISOString().split('T')[0],
-        issueDate: formData.invoiceDate ?
-        new Date(formData.invoiceDate).toISOString().split('T')[0] :
-        new Date().toISOString().split('T')[0],
-        dueDate: formData.validUntil ?
-        new Date(formData.validUntil).toISOString().split('T')[0] :
-        new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        date: formData.invoiceDate
+          ? new Date(formData.invoiceDate).toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0],
+        issueDate: formData.invoiceDate
+          ? new Date(formData.invoiceDate).toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0],
+        dueDate: formData.validUntil
+          ? new Date(formData.validUntil).toISOString().split('T')[0]
+          : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         invoiceDate: formData.invoiceDate || '',
         validUntil: formData.validUntil || '',
         deliveryDate: formData.deliveryDate || '',
@@ -2288,30 +2247,30 @@ export default function CreateQuotePage() {
 
         // Company Data - ALLE Firmendaten aus Settings
         companyName:
-        company?.companyName ||
-        settings?.companyName ||
-        (user as any)?.displayName ||
-        'Ihr Unternehmen',
+          company?.companyName ||
+          settings?.companyName ||
+          (user as any)?.displayName ||
+          'Ihr Unternehmen',
         companyAddress: [
-        [company?.companyStreet?.replace(/\s+/g, ' ').trim(), company?.companyHouseNumber].
-        filter(Boolean).
-        join(' '),
-        [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
-        company?.companyCountry].
-
-        filter(Boolean).
-        join('\n'),
-        companyEmail: company?.email as string || '',
+          [company?.companyStreet?.replace(/\s+/g, ' ').trim(), company?.companyHouseNumber]
+            .filter(Boolean)
+            .join(' '),
+          [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
+          company?.companyCountry,
+        ]
+          .filter(Boolean)
+          .join('\n'),
+        companyEmail: (company?.email as string) || '',
         companyPhone:
-        company?.phoneNumber as string || company?.companyPhoneNumber as string || '',
-        companyWebsite: company?.website as string || company?.companyWebsite as string || '',
-        companyVatId: company?.vatId as string || (company as any)?.vatIdForBackend || '',
+          (company?.phoneNumber as string) || (company?.companyPhoneNumber as string) || '',
+        companyWebsite: (company?.website as string) || (company?.companyWebsite as string) || '',
+        companyVatId: (company?.vatId as string) || (company as any)?.vatIdForBackend || '',
         companyTaxNumber:
-        company?.taxNumber as string || (company as any)?.taxNumberForBackend || '',
+          (company?.taxNumber as string) || (company as any)?.taxNumberForBackend || '',
         companyRegister:
-        company?.companyRegisterPublic as string || company?.companyRegister as string || '',
-        companyLogo: company?.companyLogo as string || '',
-        profilePictureURL: company?.profilePictureURL as string || '',
+          (company?.companyRegisterPublic as string) || (company?.companyRegister as string) || '',
+        companyLogo: (company?.companyLogo as string) || '',
+        profilePictureURL: (company?.profilePictureURL as string) || '',
 
         // **CRITICAL**: ALLE Textfelder - Kopftext, Footer, Notizen
         description: formData.headTextHtml || '',
@@ -2325,7 +2284,7 @@ export default function CreateQuotePage() {
 
         // Payment & Delivery Terms - ALLE Zahlungs- und Lieferbedingungen
         paymentTerms:
-        finalPaymentTerms || formData.paymentTerms || 'Zahlbar binnen 14 Tagen ohne Abzug',
+          finalPaymentTerms || formData.paymentTerms || 'Zahlbar binnen 14 Tagen ohne Abzug',
         deliveryTerms: formData.deliveryTerms || '',
         deliveryMethod: formData.deliveryTerms ? 'custom' : null,
 
@@ -2336,20 +2295,20 @@ export default function CreateQuotePage() {
         skontoText: skontoText || '',
 
         // Financial Data - ALLE Items mit vollständigen Details
-        items: items.
-        filter((it) => it.description && it.quantity > 0).
-        map((item) => ({
-          id: item.id || crypto.randomUUID(),
-          description: item.description,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          total: item.total,
-          taxRate: item.taxRate || taxRate,
-          unit: item.unit || 'Stk',
-          category: item.category || 'Artikel',
-          discountPercent: item.discountPercent || 0,
-          inventoryItemId: item.inventoryItemId || null
-        })),
+        items: items
+          .filter(it => it.description && it.quantity > 0)
+          .map(item => ({
+            id: item.id || crypto.randomUUID(),
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.total,
+            taxRate: item.taxRate || taxRate,
+            unit: item.unit || 'Stk',
+            category: item.category || 'Artikel',
+            discountPercent: item.discountPercent || 0,
+            inventoryItemId: item.inventoryItemId || null,
+          })),
         amount: subtotal, // Nettobetrag
         tax: vat, // Steuerbetrag
         total: grandTotal, // Gesamtbetrag
@@ -2361,8 +2320,8 @@ export default function CreateQuotePage() {
         taxGrouped: taxGrouped, // SevDesk-style multi-tax support
         isSmallBusiness: settings?.ust === 'kleinunternehmer' || taxRate === 0,
         priceInput: showNet ? 'netto' : 'brutto',
-        taxRuleType: formData.taxRule as TaxRuleType || 'DE_TAXABLE',
-        taxRule: formData.taxRule as TaxRuleType || 'DE_TAXABLE',
+        taxRuleType: (formData.taxRule as TaxRuleType) || 'DE_TAXABLE',
+        taxRule: (formData.taxRule as TaxRuleType) || 'DE_TAXABLE',
         showNet: showNet,
 
         // Currency & Formatting
@@ -2378,23 +2337,23 @@ export default function CreateQuotePage() {
         lastModifiedBy: uid,
 
         // Bank Details - ALLE Bankdaten
-        bankDetails: company ?
-        {
-          iban: (company as any)?.step4?.iban || company?.iban as string || '',
-          bic: (company as any)?.step4?.bic || company?.bic as string || '',
-          bankName: (company as any)?.step4?.bankName || company?.bankName as string || '',
-          accountHolder:
-          (company as any)?.step4?.accountHolder ||
-          company?.accountHolder as string ||
-          company?.companyName ||
-          ''
-        } :
-        undefined,
+        bankDetails: company
+          ? {
+              iban: (company as any)?.step4?.iban || (company?.iban as string) || '',
+              bic: (company as any)?.step4?.bic || (company?.bic as string) || '',
+              bankName: (company as any)?.step4?.bankName || (company?.bankName as string) || '',
+              accountHolder:
+                (company as any)?.step4?.accountHolder ||
+                (company?.accountHolder as string) ||
+                company?.companyName ||
+                '',
+            }
+          : undefined,
 
         // Template & UI Settings
         template: typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
         templateType:
-        typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
+          typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
         language: 'de',
 
         // Additional Control Fields
@@ -2412,12 +2371,12 @@ export default function CreateQuotePage() {
         // Delivery Date Configuration
         deliveryDateType: deliveryDateType || 'single',
         deliveryDateRange:
-        deliveryDateType === 'range' ?
-        {
-          from: deliveryDateRange.from?.toISOString().split('T')[0] || null,
-          to: deliveryDateRange.to?.toISOString().split('T')[0] || null
-        } :
-        null,
+          deliveryDateType === 'range'
+            ? {
+                from: deliveryDateRange.from?.toISOString().split('T')[0] || null,
+                to: deliveryDateRange.to?.toISOString().split('T')[0] || null,
+              }
+            : null,
 
         // Original form state preservation for debugging
         _originalFormData: {
@@ -2431,8 +2390,8 @@ export default function CreateQuotePage() {
           taxRate,
           eInvoiceEnabled,
           deliveryDateType,
-          deliveryDateRange
-        }
+          deliveryDateRange,
+        },
       } as any;
 
       // 🚨 CRITICAL: Remove all undefined values (Firestore doesn't accept undefined)
@@ -2447,22 +2406,16 @@ export default function CreateQuotePage() {
       cleanInvoiceData.createdAt = new Date(cleanInvoiceData.createdAt);
       cleanInvoiceData.updatedAt = new Date(cleanInvoiceData.updatedAt);
 
-
-
       // Save Invoice using FirestoreInvoiceService - TARGET: invoices subcollection
       const createdInvoiceId = await InvoiceService.saveInvoice(cleanInvoiceData);
 
-
       // Inventory Management
       try {
-        const inventoryItems = (items || []).
-        filter((it) => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount').
-        map((it) => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
+        const inventoryItems = (items || [])
+          .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
+          .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
 
         if (inventoryItems.length > 0) {
-
-
-
         }
       } catch (reserveErr: any) {
         console.error('❌ Inventory reservation failed:', reserveErr);
@@ -2474,10 +2427,9 @@ export default function CreateQuotePage() {
         try {
           const companyRef = doc(db, 'companies', uid);
           await updateDoc(companyRef, {
-            'invoiceNumbering.nextNumber': nextNumber + 1
+            'invoiceNumbering.nextNumber': nextNumber + 1,
           });
-          setNextNumber((prev) => prev + 1);
-
+          setNextNumber(prev => prev + 1);
         } catch (error) {
           console.error('❌ Failed to update invoice number sequence:', error);
         }
@@ -2485,18 +2437,14 @@ export default function CreateQuotePage() {
 
       toast.success(asDraft ? 'Rechnung als Entwurf gespeichert' : 'Rechnung erstellt');
 
-
       // 🚀 E-INVOICE GENERIERUNG NACH SPEICHERN (falls aktiviert)
       if (!asDraft && eInvoiceEnabled && createdInvoiceId) {
-
         try {
           const { AutoEInvoiceService } = await import('@/services/autoEInvoiceService');
 
           // Lade die gerade gespeicherte Rechnung
           const savedInvoice = await InvoiceService.getInvoiceById(uid, createdInvoiceId);
           if (savedInvoice) {
-
-
             const eInvoiceResult = await AutoEInvoiceService.generateEInvoiceForInvoice(
               savedInvoice,
               {
@@ -2504,18 +2452,11 @@ export default function CreateQuotePage() {
                 enabled: true,
                 defaultFormat: 'zugferd',
                 autoTransmit: false,
-                tseEnabled: false
+                tseEnabled: false,
               }
             );
 
             if (eInvoiceResult) {
-
-
-
-
-
-
-
               // Update die Rechnung mit den E-Invoice-Daten
               const updateData = {
                 eInvoiceData: {
@@ -2524,16 +2465,15 @@ export default function CreateQuotePage() {
                   guid: eInvoiceResult.id || crypto.randomUUID(), // Use the E-Invoice ID as GUID
                   xmlUrl: `/api/einvoices/${eInvoiceResult.id}/xml`, // Generate XML URL
                   validationStatus: eInvoiceResult.validationStatus,
-                  createdAt: eInvoiceResult.createdAt?.toISOString() || new Date().toISOString()
+                  createdAt: eInvoiceResult.createdAt?.toISOString() || new Date().toISOString(),
                 },
-                companyId: uid // Required for updateInvoice method
+                companyId: uid, // Required for updateInvoice method
               };
 
               await InvoiceService.updateInvoice(createdInvoiceId, updateData);
 
               toast.success('E-Rechnung erfolgreich generiert');
             } else {
-
             }
           }
         } catch (eInvoiceError) {
@@ -2624,9 +2564,9 @@ export default function CreateQuotePage() {
 
         // Kleinunternehmer-spezifische Prüfung (aus der echten DB-Struktur)
         const isKleinunternehmer =
-        companyData.kleinunternehmer === 'ja' ||
-        companyData.ust === 'kleinunternehmer' ||
-        companyData.step2?.kleinunternehmer === 'ja';
+          companyData.kleinunternehmer === 'ja' ||
+          companyData.ust === 'kleinunternehmer' ||
+          companyData.step2?.kleinunternehmer === 'ja';
 
         if (isKleinunternehmer) {
           if (hasVatId) {
@@ -2651,9 +2591,9 @@ export default function CreateQuotePage() {
         if (legalForm && legalForm !== 'Einzelunternehmen' && legalForm !== 'Freiberufler') {
           // Kapitalgesellschaften benötigen Handelsregistereintrag
           const hasRegister =
-          companyData.companyRegister?.trim() ||
-          companyData.step3?.companyRegister?.trim() ||
-          companyData.registrationNumber?.trim();
+            companyData.companyRegister?.trim() ||
+            companyData.step3?.companyRegister?.trim() ||
+            companyData.registrationNumber?.trim();
           if (!hasRegister) {
             complianceErrors.push(
               'Handelsregisternummer ist für Kapitalgesellschaften erforderlich'
@@ -2666,7 +2606,7 @@ export default function CreateQuotePage() {
         const hasBic = companyData.bic?.trim() || companyData.step4?.bic?.trim();
         const hasBankName = companyData.bankName?.trim() || companyData.step4?.bankName?.trim();
         const hasAccountHolder =
-        companyData.accountHolder?.trim() || companyData.step4?.accountHolder?.trim();
+          companyData.accountHolder?.trim() || companyData.step4?.accountHolder?.trim();
 
         if (!hasIban) {
           complianceErrors.push('IBAN ist für E-Rechnungen erforderlich');
@@ -2683,26 +2623,26 @@ export default function CreateQuotePage() {
 
         // Website (aus der echten DB-Struktur)
         const hasWebsite =
-        companyData.website?.trim() ||
-        companyData.companyWebsite?.trim() ||
-        companyData.step1?.website?.trim() ||
-        companyData.companyWebsiteForBackend?.trim();
+          companyData.website?.trim() ||
+          companyData.companyWebsite?.trim() ||
+          companyData.step1?.website?.trim() ||
+          companyData.companyWebsiteForBackend?.trim();
         if (!hasWebsite) {
           complianceErrors.push('Firmen-Website ist für professionelle E-Rechnungen empfohlen');
         }
 
         // Logo für Branding (aus der echten DB-Struktur)
         const hasLogo =
-        companyData.profilePictureURL?.trim() || companyData.profilePictureFirebaseUrl?.trim();
+          companyData.profilePictureURL?.trim() || companyData.profilePictureFirebaseUrl?.trim();
         if (!hasLogo) {
           complianceErrors.push('Firmen-Logo ist für professionelle E-Rechnungen empfohlen');
         }
 
         // Branchenangabe (aus der echten DB-Struktur)
         const hasIndustry =
-        companyData.selectedCategory?.trim() ||
-        companyData.step2?.industry?.trim() ||
-        companyData.industry?.trim();
+          companyData.selectedCategory?.trim() ||
+          companyData.step2?.industry?.trim() ||
+          companyData.industry?.trim();
         if (!hasIndustry) {
           complianceErrors.push('Branchenangabe ist für E-Rechnungen empfohlen');
         }
@@ -2720,7 +2660,7 @@ export default function CreateQuotePage() {
       }
 
       // 3. Kundendaten Prüfung - Prüfe ob gültiger Kunde ausgewählt wurde
-      const selectedCustomer = customers.find((c) => c.name === formData.customerName);
+      const selectedCustomer = customers.find(c => c.name === formData.customerName);
 
       if (!formData.customerName.trim()) {
         complianceErrors.push('Kundenname ist erforderlich');
@@ -2731,7 +2671,7 @@ export default function CreateQuotePage() {
           complianceErrors.push('Vollständige Kundenanschrift ist erforderlich');
           invalidFieldsSet.add('customerAddress');
         } else {
-          const addressLines = formData.customerAddress.split('\n').filter((line) => line.trim());
+          const addressLines = formData.customerAddress.split('\n').filter(line => line.trim());
           if (addressLines.length < 3) {
             complianceErrors.push('Kundenanschrift muss Straße, PLZ/Ort und Land enthalten');
             invalidFieldsSet.add('customerAddress');
@@ -2751,10 +2691,10 @@ export default function CreateQuotePage() {
         }
 
         if (
-        !selectedCustomer.street?.trim() ||
-        !selectedCustomer.city?.trim() ||
-        !selectedCustomer.postalCode?.trim())
-        {
+          !selectedCustomer.street?.trim() ||
+          !selectedCustomer.city?.trim() ||
+          !selectedCustomer.postalCode?.trim()
+        ) {
           complianceErrors.push(
             `Kunde &quot;${selectedCustomer.name}&quot; hat unvollständige Adressdaten`
           );
@@ -2778,11 +2718,11 @@ export default function CreateQuotePage() {
 
       // 5. Positionen Prüfung
       const validItems = items.filter(
-        (item) =>
-        item.description?.trim() &&
-        item.quantity > 0 &&
-        item.unitPrice >= 0 &&
-        item.category !== 'discount'
+        item =>
+          item.description?.trim() &&
+          item.quantity > 0 &&
+          item.unitPrice >= 0 &&
+          item.category !== 'discount'
       );
 
       if (validItems.length === 0) {
@@ -2843,7 +2783,7 @@ export default function CreateQuotePage() {
         // Kurze Toast-Nachricht mit Hinweis auf Panel
         toast.error('E-Rechnung kann nicht aktiviert werden', {
           description: `${complianceErrors.length} Probleme gefunden. Fehlende Felder sind rot markiert.`,
-          duration: 5000
+          duration: 5000,
         });
 
         return;
@@ -2865,18 +2805,18 @@ export default function CreateQuotePage() {
           peppol: eInvoiceSettings?.peppol || {
             enabled: false,
             participantId: '',
-            endpoint: ''
+            endpoint: '',
           },
           validation: eInvoiceSettings?.validation || {
             strictMode: true,
-            autoCorrection: false
+            autoCorrection: false,
           },
-          updatedAt: new Date()
+          updatedAt: new Date(),
         };
 
         const companyRef = doc(db, 'companies', uid);
         await updateDoc(companyRef, {
-          eInvoiceSettings: updatedSettings
+          eInvoiceSettings: updatedSettings,
         });
 
         setEInvoiceSettings(updatedSettings);
@@ -2887,13 +2827,13 @@ export default function CreateQuotePage() {
 
       toast.success('E-Rechnung aktiviert', {
         description:
-        'Alle Compliance-Anforderungen erfüllt. E-Rechnungen werden automatisch generiert.'
+          'Alle Compliance-Anforderungen erfüllt. E-Rechnungen werden automatisch generiert.',
       });
     } catch (error) {
       console.error('Fehler bei E-Rechnung Compliance-Prüfung:', error);
       toast.error('E-Rechnung Prüfung fehlgeschlagen', {
         description:
-        'Technischer Fehler bei der Compliance-Prüfung. Bitte versuchen Sie es erneut.'
+          'Technischer Fehler bei der Compliance-Prüfung. Bitte versuchen Sie es erneut.',
       });
       setEInvoiceEnabled(false);
     }
@@ -2916,7 +2856,7 @@ export default function CreateQuotePage() {
         bic: companySettingsFormData.bic,
         firstName: companySettingsFormData.companyOwner.split(' ')[0] || '',
         lastName: companySettingsFormData.companyOwner.split(' ').slice(1).join(' ') || '',
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
 
       toast.success('Unternehmensdaten gespeichert');
@@ -2936,9 +2876,9 @@ export default function CreateQuotePage() {
 
   // Hilfsfunktion für fehlerhafte Felder
   const getFieldErrorClass = (fieldName: string) => {
-    return invalidFields.has(fieldName) ?
-    'border-red-500 focus:border-red-500 focus:ring-red-500' :
-    '';
+    return invalidFields.has(fieldName)
+      ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+      : '';
   };
 
   return (
@@ -2962,9 +2902,10 @@ export default function CreateQuotePage() {
                   checked={eInvoiceEnabled}
                   onCheckedChange={handleEInvoiceToggle}
                   style={{
-                    backgroundColor: eInvoiceEnabled ? '#14ad9f' : undefined
+                    backgroundColor: eInvoiceEnabled ? '#14ad9f' : undefined,
                   }}
-                  className="" />
+                  className=""
+                />
 
                 <span className="text-sm font-medium text-gray-700">E-Rechnung</span>
               </div>
@@ -2979,13 +2920,13 @@ export default function CreateQuotePage() {
                 variant="outline"
                 size="default"
                 onClick={() => handleSubmit(true)}
-                disabled={loading}>
-
-                {loading ?
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
-
-                <Save className="w-4 h-4 mr-2" />
-                }
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
                 Als Entwurf speichern
               </Button>
 
@@ -2993,8 +2934,8 @@ export default function CreateQuotePage() {
                 variant="outline"
                 size="default"
                 onClick={() => setShowLivePreview(true)}
-                className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white">
-
+                className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+              >
                 <Eye className="w-4 h-4 mr-2" />
                 Live-Vorschau
               </Button>
@@ -3003,13 +2944,13 @@ export default function CreateQuotePage() {
                 className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                 size="default"
                 onClick={handleOpenSendModal}
-                disabled={loading}>
-
-                {loading ?
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
-
-                <Send className="w-4 h-4 mr-2" />
-                }
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4 mr-2" />
+                )}
                 Rechnung erstellen
               </Button>
 
@@ -3026,14 +2967,14 @@ export default function CreateQuotePage() {
                       // TODO: Aufgabe erstellen Funktionalität implementieren
                       toast.success('Aufgabe erstellen - Feature wird implementiert');
                     }}
-                    className="w-full">
-
+                    className="w-full"
+                  >
                     <div className="w-full">
                       <Button
                         variant="default"
                         className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white justify-center"
-                        size="sm">
-
+                        size="sm"
+                      >
                         Aufgabe erstellen
                       </Button>
                     </div>
@@ -3043,14 +2984,14 @@ export default function CreateQuotePage() {
                       // TODO: Löschen Funktionalität implementieren
                       toast.success('Löschen - Feature wird implementiert');
                     }}
-                    className="w-full">
-
+                    className="w-full"
+                  >
                     <div className="w-full">
                       <Button
                         variant="default"
                         className="w-full bg-gray-600 hover:bg-gray-700 text-white justify-center"
-                        size="sm">
-
+                        size="sm"
+                      >
                         Löschen
                       </Button>
                     </div>
@@ -3063,8 +3004,8 @@ export default function CreateQuotePage() {
       </header>
 
       {/* Company Settings Warning Banner */}
-      {showCompanySettingsBanner &&
-      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+      {showCompanySettingsBanner && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-6 w-6 text-orange-600 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
@@ -3074,28 +3015,28 @@ export default function CreateQuotePage() {
                 dir und deinem Unternehmen.
               </div>
               <Button
-              onClick={() => setShowCompanySettingsModal(true)}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-              size="sm">
-
+                onClick={() => setShowCompanySettingsModal(true)}
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                size="sm"
+              >
                 Angaben vervollständigen
               </Button>
             </div>
             <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowCompanySettingsBanner(false)}
-            className="p-1 h-auto">
-
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCompanySettingsBanner(false)}
+              className="p-1 h-auto"
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
-      }
+      )}
 
       {/* E-Rechnung Compliance Panel */}
-      {showCompliancePanel &&
-      <Sheet open={showCompliancePanel} onOpenChange={setShowCompliancePanel}>
+      {showCompliancePanel && (
+        <Sheet open={showCompliancePanel} onOpenChange={setShowCompliancePanel}>
           <SheetContent className="w-[400px] sm:w-[540px] bg-white border-l border-[#14ad9f]/20">
             <SheetHeader className="border-b border-[#14ad9f]/10 pb-4">
               <SheetTitle className="flex items-center gap-2 text-[#14ad9f]">
@@ -3108,8 +3049,8 @@ export default function CreateQuotePage() {
             </SheetHeader>
 
             <div className="mt-6 space-y-3">
-              {complianceErrors.length > 0 &&
-            <div className="p-3 bg-[#14ad9f]/5 border border-[#14ad9f]/20 rounded-lg">
+              {complianceErrors.length > 0 && (
+                <div className="p-3 bg-[#14ad9f]/5 border border-[#14ad9f]/20 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-4 h-4 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-xs font-bold">
                       !
@@ -3120,15 +3061,15 @@ export default function CreateQuotePage() {
                     </span>
                   </div>
                   <div className="text-xs text-gray-700 space-y-1">
-                    {complianceErrors.map((error, index) =>
-                <div key={index} className="flex items-start gap-1.5">
+                    {complianceErrors.map((error, index) => (
+                      <div key={index} className="flex items-start gap-1.5">
                         <span className="text-[#14ad9f] mt-0.5 text-xs">•</span>
                         <span className="leading-tight">{error}</span>
                       </div>
-                )}
+                    ))}
                   </div>
                 </div>
-            }
+              )}
             </div>
 
             <div className="mt-4 p-3 bg-[#14ad9f]/5 border border-[#14ad9f]/20 rounded-lg">
@@ -3144,28 +3085,28 @@ export default function CreateQuotePage() {
 
             <SheetFooter className="mt-6 pt-4 border-t border-[#14ad9f]/10">
               <Button
-              onClick={() => setShowCompliancePanel(false)}
-              variant="default"
-              className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
-              size="sm"
-              style={{
-                backgroundColor: '#14ad9f',
-                color: 'white',
-                border: 'none'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#129488';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#14ad9f';
-              }}>
-
+                onClick={() => setShowCompliancePanel(false)}
+                variant="default"
+                className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
+                size="sm"
+                style={{
+                  backgroundColor: '#14ad9f',
+                  color: 'white',
+                  border: 'none',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.backgroundColor = '#129488';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.backgroundColor = '#14ad9f';
+                }}
+              >
                 Schließen
               </Button>
             </SheetFooter>
           </SheetContent>
         </Sheet>
-      }
+      )}
 
       {/* Allgemeine Angaben - SevDesk Style */}
       <Card>
@@ -3193,12 +3134,12 @@ export default function CreateQuotePage() {
                       variant={contactType === 'organisation' ? 'default' : 'outline'}
                       size="sm"
                       className={`rounded-r-none ${
-                      contactType === 'organisation' ?
-                      'bg-[#14ad9f] hover:bg-[#129488] text-white' :
-                      'hover:bg-gray-50'}`
-                      }
-                      onClick={() => setContactType('organisation')}>
-
+                        contactType === 'organisation'
+                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => setContactType('organisation')}
+                    >
                       Organisation
                     </Button>
                     <Button
@@ -3206,12 +3147,12 @@ export default function CreateQuotePage() {
                       variant={contactType === 'person' ? 'default' : 'outline'}
                       size="sm"
                       className={`rounded-l-none ${
-                      contactType === 'person' ?
-                      'bg-[#14ad9f] hover:bg-[#129488] text-white' :
-                      'hover:bg-gray-50'}`
-                      }
-                      onClick={() => setContactType('person')}>
-
+                        contactType === 'person'
+                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => setContactType('person')}
+                    >
                       Person
                     </Button>
                   </div>
@@ -3220,191 +3161,188 @@ export default function CreateQuotePage() {
                 {/* Kontakt Name Input */}
                 <div className="space-y-2 mb-4">
                   {contactType === 'organisation' ? (
-                  /* Organisation - Ein Feld für Organisationsname */
-                  <div className="relative customer-search-container">
+                    /* Organisation - Ein Feld für Organisationsname */
+                    <div className="relative customer-search-container">
                       <Input
-                      type="text"
-                      value={formData.customerName}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setFormData((prev) => ({
-                          ...prev,
-                          customerName: value
-                        }));
+                        type="text"
+                        value={formData.customerName}
+                        onChange={e => {
+                          const value = e.target.value;
+                          setFormData(prev => ({
+                            ...prev,
+                            customerName: value,
+                          }));
 
-                        // Zeige Popup nur wenn mindestens 2 Zeichen eingegeben wurden
-                        if (value.length >= 2) {
-                          setShowCustomerSearchPopup(true);
-                        } else {
-                          setShowCustomerSearchPopup(false);
-                        }
-                      }}
-                      placeholder="Name der Organisation"
-                      className={`flex-1 ${getFieldErrorClass('customerName')}`}
-                      required />
-
+                          // Zeige Popup nur wenn mindestens 2 Zeichen eingegeben wurden
+                          if (value.length >= 2) {
+                            setShowCustomerSearchPopup(true);
+                          } else {
+                            setShowCustomerSearchPopup(false);
+                          }
+                        }}
+                        placeholder="Name der Organisation"
+                        className={`flex-1 ${getFieldErrorClass('customerName')}`}
+                        required
+                      />
 
                       {/* Intelligenter Such-Popup */}
-                      {showCustomerSearchPopup && formData.customerName.length >= 2 &&
-                    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      {showCustomerSearchPopup && formData.customerName.length >= 2 && (
+                        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
                           {/* Gefilterte Kunden anzeigen */}
-                          {customers.
-                      filter((customer) =>
-                      customer.name.
-                      toLowerCase().
-                      includes(formData.customerName.toLowerCase())
-                      ).
-                      slice(0, 5).
-                      map((customer) =>
-                      <div
-                        key={customer.id}
-                        className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
-                        onClick={() => selectCustomer(customer)}>
-
+                          {customers
+                            .filter(customer =>
+                              customer.name
+                                .toLowerCase()
+                                .includes(formData.customerName.toLowerCase())
+                            )
+                            .slice(0, 5)
+                            .map(customer => (
+                              <div
+                                key={customer.id}
+                                className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                onClick={() => selectCustomer(customer)}
+                              >
                                 <div className="font-medium">{customer.name}</div>
-                                {customer.email &&
-                        <div className="text-gray-500">{customer.email}</div>
-                        }
+                                {customer.email && (
+                                  <div className="text-gray-500">{customer.email}</div>
+                                )}
                               </div>
-                      )}
+                            ))}
 
                           {/* "Neuen Kunden erstellen" Option */}
                           <div
-                        className="p-2 hover:bg-gray-100 rounded-md cursor-pointer"
-                        onClick={() => {
-                          setShowNewCustomerModal(true);
-                          setShowCustomerSearchPopup(false);
-                        }}>
-
+                            className="p-2 hover:bg-gray-100 rounded-md cursor-pointer"
+                            onClick={() => {
+                              setShowNewCustomerModal(true);
+                              setShowCustomerSearchPopup(false);
+                            }}
+                          >
                             + Neuen Kunden &quot;{formData.customerName}&quot; erstellen
                           </div>
                         </div>
-                    }
-                    </div>) : (
-
-                  /* Person - Zwei Felder für Vor- und Nachname mit Kundensuche */
-                  <div className="relative customer-search-container">
+                      )}
+                    </div>
+                  ) : (
+                    /* Person - Zwei Felder für Vor- und Nachname mit Kundensuche */
+                    <div className="relative customer-search-container">
                       <div className="grid grid-cols-2 gap-3 mb-3">
                         <div>
                           <Label className="text-sm font-medium text-gray-700">Vorname</Label>
                           <span className="text-red-500">*</span>
                           <Input
-                          type="text"
-                          value={formData.customerFirstName || ''}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setFormData((prev) => ({
-                              ...prev,
-                              customerFirstName: value,
-                              // Kombiniere Vor- und Nachname für customerName
-                              customerName: `${value} ${prev.customerLastName || ''}`.trim()
-                            }));
+                            type="text"
+                            value={formData.customerFirstName || ''}
+                            onChange={e => {
+                              const value = e.target.value;
+                              setFormData(prev => ({
+                                ...prev,
+                                customerFirstName: value,
+                                // Kombiniere Vor- und Nachname für customerName
+                                customerName: `${value} ${prev.customerLastName || ''}`.trim(),
+                              }));
 
-                            // Trigger Kundensuche wenn kombinierter Name >= 2 Zeichen
-                            const combinedName =
-                            `${value} ${formData.customerLastName || ''}`.trim();
-                            if (combinedName.length >= 2) {
-                              setShowCustomerSearchPopup(true);
-                            } else {
-                              setShowCustomerSearchPopup(false);
-                            }
-                          }}
-                          placeholder="Vorname"
-                          className={getFieldErrorClass('customerName')}
-                          required />
-
+                              // Trigger Kundensuche wenn kombinierter Name >= 2 Zeichen
+                              const combinedName =
+                                `${value} ${formData.customerLastName || ''}`.trim();
+                              if (combinedName.length >= 2) {
+                                setShowCustomerSearchPopup(true);
+                              } else {
+                                setShowCustomerSearchPopup(false);
+                              }
+                            }}
+                            placeholder="Vorname"
+                            className={getFieldErrorClass('customerName')}
+                            required
+                          />
                         </div>
                         <div>
                           <Label className="text-sm font-medium text-gray-700">Nachname</Label>
                           <span className="text-red-500">*</span>
                           <Input
-                          type="text"
-                          value={formData.customerLastName || ''}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setFormData((prev) => ({
-                              ...prev,
-                              customerLastName: value,
-                              // Kombiniere Vor- und Nachname für customerName
-                              customerName: `${prev.customerFirstName || ''} ${value}`.trim()
-                            }));
+                            type="text"
+                            value={formData.customerLastName || ''}
+                            onChange={e => {
+                              const value = e.target.value;
+                              setFormData(prev => ({
+                                ...prev,
+                                customerLastName: value,
+                                // Kombiniere Vor- und Nachname für customerName
+                                customerName: `${prev.customerFirstName || ''} ${value}`.trim(),
+                              }));
 
-                            // Trigger Kundensuche wenn kombinierter Name >= 2 Zeichen
-                            const combinedName =
-                            `${formData.customerFirstName || ''} ${value}`.trim();
-                            if (combinedName.length >= 2) {
-                              setShowCustomerSearchPopup(true);
-                            } else {
-                              setShowCustomerSearchPopup(false);
-                            }
-                          }}
-                          placeholder="Nachname"
-                          className={getFieldErrorClass('customerName')}
-                          required />
-
+                              // Trigger Kundensuche wenn kombinierter Name >= 2 Zeichen
+                              const combinedName =
+                                `${formData.customerFirstName || ''} ${value}`.trim();
+                              if (combinedName.length >= 2) {
+                                setShowCustomerSearchPopup(true);
+                              } else {
+                                setShowCustomerSearchPopup(false);
+                              }
+                            }}
+                            placeholder="Nachname"
+                            className={getFieldErrorClass('customerName')}
+                            required
+                          />
                         </div>
                       </div>
 
                       {/* Intelligenter Such-Popup für Person - gleiche Struktur wie Organisation */}
-                      {showCustomerSearchPopup && formData.customerName.length >= 2 &&
-                    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      {showCustomerSearchPopup && formData.customerName.length >= 2 && (
+                        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
                           {/* Gefilterte Kunden anzeigen */}
-                          {customers.
-                      filter((customer) =>
-                      customer.name.
-                      toLowerCase().
-                      includes(formData.customerName.toLowerCase())
-                      ).
-                      slice(0, 5).
-                      map((customer) =>
-                      <div
-                        key={customer.id}
-                        className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
-                        onClick={() => {
-                          // Bei Person-Auswahl Namen splitten
-                          const nameParts = customer.name.split(' ');
-                          const firstName = nameParts[0] || '';
-                          const lastName = nameParts.slice(1).join(' ') || '';
+                          {customers
+                            .filter(customer =>
+                              customer.name
+                                .toLowerCase()
+                                .includes(formData.customerName.toLowerCase())
+                            )
+                            .slice(0, 5)
+                            .map(customer => (
+                              <div
+                                key={customer.id}
+                                className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                onClick={() => {
+                                  // Bei Person-Auswahl Namen splitten
+                                  const nameParts = customer.name.split(' ');
+                                  const firstName = nameParts[0] || '';
+                                  const lastName = nameParts.slice(1).join(' ') || '';
 
-                          setFormData((prev) => ({
-                            ...prev,
-                            customerName: customer.name,
-                            customerFirstName: firstName,
-                            customerLastName: lastName,
-                            customerEmail: customer.email,
-                            customerNumber: customer.customerNumber || '',
-                            customerAddress:
-                            customer.street && customer.city ?
-                            `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}` :
-                            prev.customerAddress
-                          }));
-                          setShowCustomerSearchPopup(false);
-                        }}>
-
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    customerName: customer.name,
+                                    customerFirstName: firstName,
+                                    customerLastName: lastName,
+                                    customerEmail: customer.email,
+                                    customerNumber: customer.customerNumber || '',
+                                    customerAddress:
+                                      customer.street && customer.city
+                                        ? `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}`
+                                        : prev.customerAddress,
+                                  }));
+                                  setShowCustomerSearchPopup(false);
+                                }}
+                              >
                                 <div className="font-medium">{customer.name}</div>
-                                {customer.email &&
-                        <div className="text-gray-500">{customer.email}</div>
-                        }
+                                {customer.email && (
+                                  <div className="text-gray-500">{customer.email}</div>
+                                )}
                               </div>
-                      )}
+                            ))}
 
                           {/* "Neuen Kunden erstellen" Option */}
                           <div
-                        className="p-2 hover:bg-gray-100 rounded-md cursor-pointer"
-                        onClick={() => {
-
-
-                          setCreateCustomerOpen(true);
-                          setShowCustomerSearchPopup(false);
-
-                        }}>
-
+                            className="p-2 hover:bg-gray-100 rounded-md cursor-pointer"
+                            onClick={() => {
+                              setCreateCustomerOpen(true);
+                              setShowCustomerSearchPopup(false);
+                            }}
+                          >
                             + Neuen Kunden &quot;{formData.customerName}&quot; erstellen
                           </div>
                         </div>
-                    }
-                    </div>)
-                  }
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Anschrift */}
@@ -3417,8 +3355,8 @@ export default function CreateQuotePage() {
                     <button
                       type="button"
                       className="text-sm text-[#14ad9f] hover:text-[#129488] font-medium"
-                      onClick={() => setShowAddressAddition(true)}>
-
+                      onClick={() => setShowAddressAddition(true)}
+                    >
                       Adresszusatz +
                     </button>
                   </div>
@@ -3427,115 +3365,117 @@ export default function CreateQuotePage() {
                   <Input
                     placeholder="Straße und Hausnummer"
                     value={formData.customerAddress?.split('\n')[0] || ''}
-                    onChange={(e) => {
+                    onChange={e => {
                       const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
                       lines[0] = e.target.value;
-                      setFormData((prev) => ({ ...prev, customerAddress: lines.join('\n') }));
+                      setFormData(prev => ({ ...prev, customerAddress: lines.join('\n') }));
                     }}
-                    className={getFieldErrorClass('customerAddress')} />
-
+                    className={getFieldErrorClass('customerAddress')}
+                  />
 
                   {/* Adresszusatz (optional) */}
-                  {showAddressAddition &&
-                  <div className="relative">
+                  {showAddressAddition && (
+                    <div className="relative">
                       <Input
-                      placeholder="Adresszusatz (z.B. c/o, Abteilung, etc.)"
-                      value={formData.customerAddress?.split('\n')[1] || ''}
-                      onChange={(e) => {
-                        const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
-                        lines[1] = e.target.value;
-                        setFormData((prev) => ({ ...prev, customerAddress: lines.join('\n') }));
-                      }} />
+                        placeholder="Adresszusatz (z.B. c/o, Abteilung, etc.)"
+                        value={formData.customerAddress?.split('\n')[1] || ''}
+                        onChange={e => {
+                          const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
+                          lines[1] = e.target.value;
+                          setFormData(prev => ({ ...prev, customerAddress: lines.join('\n') }));
+                        }}
+                      />
 
                       <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-                      onClick={() => {
-                        setShowAddressAddition(false);
-                        // Entferne den Adresszusatz aus der Adresse
-                        const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
-                        lines[1] = ''; // Leere den Adresszusatz
-                        setFormData((prev) => ({ ...prev, customerAddress: lines.join('\n') }));
-                      }}
-                      title="Adresszusatz entfernen">
-
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                        onClick={() => {
+                          setShowAddressAddition(false);
+                          // Entferne den Adresszusatz aus der Adresse
+                          const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
+                          lines[1] = ''; // Leere den Adresszusatz
+                          setFormData(prev => ({ ...prev, customerAddress: lines.join('\n') }));
+                        }}
+                        title="Adresszusatz entfernen"
+                      >
                         <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2">
-
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
                           <line x1="18" y1="6" x2="6" y2="18"></line>
                           <line x1="6" y1="6" x2="18" y2="18"></line>
                         </svg>
                       </Button>
                     </div>
-                  }
+                  )}
 
                   {/* PLZ und Ort */}
                   <div className="grid grid-cols-2 gap-3">
                     <Input
                       placeholder="Postleitzahl"
                       value={
-                      formData.customerAddress?.
-                      split('\n')[
-                      showAddressAddition ? 2 : 1]?.split(' ')[0] || ''
+                        formData.customerAddress
+                          ?.split('\n')
+                          [showAddressAddition ? 2 : 1]?.split(' ')[0] || ''
                       }
-                      onChange={(e) => {
+                      onChange={e => {
                         const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
                         const lineIndex = showAddressAddition ? 2 : 1;
                         const city = lines[lineIndex]?.split(' ').slice(1).join(' ') || '';
                         lines[lineIndex] = `${e.target.value} ${city}`.trim();
-                        setFormData((prev) => ({ ...prev, customerAddress: lines.join('\n') }));
+                        setFormData(prev => ({ ...prev, customerAddress: lines.join('\n') }));
                       }}
-                      className={getFieldErrorClass('customerAddress')} />
+                      className={getFieldErrorClass('customerAddress')}
+                    />
 
                     <Input
                       placeholder="Ort"
                       value={
-                      formData.customerAddress?.
-                      split('\n')[
-                      showAddressAddition ? 2 : 1]?.split(' ').
-                      slice(1).
-                      join(' ') || ''
+                        formData.customerAddress
+                          ?.split('\n')
+                          [showAddressAddition ? 2 : 1]?.split(' ')
+                          .slice(1)
+                          .join(' ') || ''
                       }
-                      onChange={(e) => {
+                      onChange={e => {
                         const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
                         const lineIndex = showAddressAddition ? 2 : 1;
                         const zip = lines[lineIndex]?.split(' ')[0] || '';
                         lines[lineIndex] = `${zip} ${e.target.value}`.trim();
-                        setFormData((prev) => ({ ...prev, customerAddress: lines.join('\n') }));
+                        setFormData(prev => ({ ...prev, customerAddress: lines.join('\n') }));
                       }}
-                      className={getFieldErrorClass('customerAddress')} />
-
+                      className={getFieldErrorClass('customerAddress')}
+                    />
                   </div>
 
                   {/* Land */}
                   <Select
                     value={
-                    formData.customerAddress?.split('\n')[showAddressAddition ? 3 : 2] ||
-                    'Deutschland'
+                      formData.customerAddress?.split('\n')[showAddressAddition ? 3 : 2] ||
+                      'Deutschland'
                     }
-                    onValueChange={(value) => {
+                    onValueChange={value => {
                       const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
                       const lineIndex = showAddressAddition ? 3 : 2;
                       lines[lineIndex] = value;
-                      setFormData((prev) => ({ ...prev, customerAddress: lines.join('\n') }));
-                    }}>
-
+                      setFormData(prev => ({ ...prev, customerAddress: lines.join('\n') }));
+                    }}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Bitte auswählen" />
                     </SelectTrigger>
                     <SelectContent>
-                      {COUNTRIES.map((country) =>
-                      <SelectItem key={country.value} value={country.value}>
+                      {COUNTRIES.map(country => (
+                        <SelectItem key={country.value} value={country.value}>
                           {country.label}
                         </SelectItem>
-                      )}
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -3558,11 +3498,11 @@ export default function CreateQuotePage() {
                     <Input
                       type="date"
                       value={formData.invoiceDate || new Date().toISOString().split('T')[0]}
-                      onChange={(e) => {
-                        setFormData((prev) => ({ ...prev, invoiceDate: e.target.value }));
+                      onChange={e => {
+                        setFormData(prev => ({ ...prev, invoiceDate: e.target.value }));
                       }}
-                      required />
-
+                      required
+                    />
                   </div>
 
                   {/* Lieferdatum */}
@@ -3571,15 +3511,15 @@ export default function CreateQuotePage() {
                       <div className="flex items-center gap-1">
                         <Label
                           className={`text-sm font-medium cursor-pointer ${
-                          deliveryDateType === 'single' ? 'text-gray-900' : 'text-gray-500'}`
-                          }
+                            deliveryDateType === 'single' ? 'text-gray-900' : 'text-gray-500'
+                          }`}
                           onClick={() => {
                             setDeliveryDateType('single');
                             // Leere servicePeriod und deliveryDateRange wenn Einzeldatum-Modus aktiviert wird
-                            setFormData((prev) => ({ ...prev, servicePeriod: '' }));
+                            setFormData(prev => ({ ...prev, servicePeriod: '' }));
                             setDeliveryDateRange({});
-                          }}>
-
+                          }}
+                        >
                           Lieferdatum
                         </Label>
                         <span className="text-red-500">*</span>
@@ -3587,85 +3527,85 @@ export default function CreateQuotePage() {
                       <button
                         type="button"
                         className={`text-sm font-medium cursor-pointer ${
-                        deliveryDateType === 'range' ? 'text-gray-900' : 'text-gray-500'}`
-                        }
+                          deliveryDateType === 'range' ? 'text-gray-900' : 'text-gray-500'
+                        }`}
                         onClick={() => {
                           setDeliveryDateType('range');
                           // Leere deliveryDate wenn Zeitraum-Modus aktiviert wird
-                          setFormData((prev) => ({ ...prev, deliveryDate: '' }));
-                        }}>
-
+                          setFormData(prev => ({ ...prev, deliveryDate: '' }));
+                        }}
+                      >
                         Zeitraum
                       </button>
                     </div>
 
-                    {deliveryDateType === 'single' ?
-                    <Input
-                      type="date"
-                      value={formData.deliveryDate}
-                      onChange={(e) => {
-                        setFormData((prev) => ({
-                          ...prev,
-                          deliveryDate: e.target.value,
-                          servicePeriod: '' // Leere servicePeriod wenn Einzeldatum verwendet wird
-                        }));
-                      }}
-                      required /> :
-
-
-                    <Popover
-                      open={deliveryDatePopoverOpen}
-                      onOpenChange={setDeliveryDatePopoverOpen}>
-
+                    {deliveryDateType === 'single' ? (
+                      <Input
+                        type="date"
+                        value={formData.deliveryDate}
+                        onChange={e => {
+                          setFormData(prev => ({
+                            ...prev,
+                            deliveryDate: e.target.value,
+                            servicePeriod: '', // Leere servicePeriod wenn Einzeldatum verwendet wird
+                          }));
+                        }}
+                        required
+                      />
+                    ) : (
+                      <Popover
+                        open={deliveryDatePopoverOpen}
+                        onOpenChange={setDeliveryDatePopoverOpen}
+                      >
                         <PopoverTrigger asChild>
                           <Button
-                          variant="outline"
-                          className="w-full justify-start text-left font-normal"
-                          onClick={() => setDeliveryDatePopoverOpen(true)}>
-
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                            onClick={() => setDeliveryDatePopoverOpen(true)}
+                          >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {deliveryDateRange.from ?
-                          deliveryDateRange.to ?
-                          <>
+                            {deliveryDateRange.from ? (
+                              deliveryDateRange.to ? (
+                                <>
                                   {format(deliveryDateRange.from, 'dd.MM.yyyy', { locale: de })} -{' '}
                                   {format(deliveryDateRange.to, 'dd.MM.yyyy', { locale: de })}
-                                </> :
-
-                          format(deliveryDateRange.from, 'dd.MM.yyyy', { locale: de }) :
-
-
-                          'Zeitraum auswählen'
-                          }
+                                </>
+                              ) : (
+                                format(deliveryDateRange.from, 'dd.MM.yyyy', { locale: de })
+                              )
+                            ) : (
+                              'Zeitraum auswählen'
+                            )}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
-                          initialFocus
-                          mode="range"
-                          defaultMonth={deliveryDateRange.from}
-                          selected={{
-                            from: deliveryDateRange.from,
-                            to: deliveryDateRange.to
-                          }}
-                          onSelect={(range) => {
-                            setDeliveryDateRange(range || {});
-                            // Aktualisiere servicePeriod in formData wenn Zeitraum komplett ist
-                            if (range?.from && range?.to) {
-                              const servicePeriodText = `${formatDateDE(range.from)} - ${formatDateDE(range.to)}`;
-                              setFormData((prev) => ({
-                                ...prev,
-                                servicePeriod: servicePeriodText
-                              }));
-                              setDeliveryDatePopoverOpen(false);
-                            }
-                          }}
-                          numberOfMonths={2}
-                          locale={de}
-                          className="rounded-md border" />
-
+                            initialFocus
+                            mode="range"
+                            defaultMonth={deliveryDateRange.from}
+                            selected={{
+                              from: deliveryDateRange.from,
+                              to: deliveryDateRange.to,
+                            }}
+                            onSelect={range => {
+                              setDeliveryDateRange(range || {});
+                              // Aktualisiere servicePeriod in formData wenn Zeitraum komplett ist
+                              if (range?.from && range?.to) {
+                                const servicePeriodText = `${formatDateDE(range.from)} - ${formatDateDE(range.to)}`;
+                                setFormData(prev => ({
+                                  ...prev,
+                                  servicePeriod: servicePeriodText,
+                                }));
+                                setDeliveryDatePopoverOpen(false);
+                              }
+                            }}
+                            numberOfMonths={2}
+                            locale={de}
+                            className="rounded-md border"
+                          />
                         </PopoverContent>
                       </Popover>
-                    }
+                    )}
                   </div>
 
                   {/* Rechnungsnummer */}
@@ -3678,25 +3618,26 @@ export default function CreateQuotePage() {
                       <Input
                         placeholder="RE-1000"
                         value={formData.title || ''}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+                        onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
                         required
-                        className="pr-10" />
+                        className="pr-10"
+                      />
 
                       <Button
                         variant="ghost"
                         size="sm"
                         className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-gray-100"
                         type="button"
-                        onClick={() => setShowNumberingModal(true)}>
-
+                        onClick={() => setShowNumberingModal(true)}
+                      >
                         <svg
                           width="14"
                           height="14"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
-                          strokeWidth="2">
-
+                          strokeWidth="2"
+                        >
                           <circle cx="12" cy="12" r="3" />
                           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.06 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1.06H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1.06-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.06 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1.06H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1.06z" />
                         </svg>
@@ -3710,10 +3651,10 @@ export default function CreateQuotePage() {
                     <Input
                       placeholder="Optional"
                       value={formData.customerOrderNumber}
-                      onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, customerOrderNumber: e.target.value }))
-                      } />
-
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, customerOrderNumber: e.target.value }))
+                      }
+                    />
                   </div>
                 </div>
 
@@ -3724,16 +3665,18 @@ export default function CreateQuotePage() {
                     <Input
                       type="date"
                       value={formData.validUntil}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, validUntil: e.target.value }))}
-                      className="flex-1" />
+                      onChange={e => setFormData(prev => ({ ...prev, validUntil: e.target.value }))}
+                      className="flex-1"
+                    />
 
                     <span className="text-sm text-gray-500">in</span>
                     <Input
                       type="number"
                       placeholder="14"
                       value={paymentDays}
-                      onChange={(e) => setPaymentDays(Number(e.target.value) || 0)}
-                      className="w-16 text-center" />
+                      onChange={e => setPaymentDays(Number(e.target.value) || 0)}
+                      className="w-16 text-center"
+                    />
 
                     <span className="text-sm text-gray-500">Tagen</span>
                   </div>
@@ -3748,12 +3691,12 @@ export default function CreateQuotePage() {
       <InvoiceHeaderTextSection
         title={formData.title}
         headTextHtml={formData.headTextHtml}
-        onTitleChange={(value) => setFormData((prev) => ({ ...prev, title: value }))}
-        onHeadTextChange={(html) => setFormData((prev) => ({ ...prev, headTextHtml: html }))}
+        onTitleChange={value => setFormData(prev => ({ ...prev, title: value }))}
+        onHeadTextChange={html => setFormData(prev => ({ ...prev, headTextHtml: html }))}
         companyId={uid}
         userId={user?.uid || ''}
-        getFieldErrorClass={getFieldErrorClass} />
-
+        getFieldErrorClass={getFieldErrorClass}
+      />
 
       {/* Produkte / Positionen */}
       <Card>
@@ -3773,8 +3716,8 @@ export default function CreateQuotePage() {
                 variant={showNet ? 'default' : 'outline'}
                 className={showNet ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' : ''}
                 onClick={() => setShowNet(true)}
-                size="sm">
-
+                size="sm"
+              >
                 Netto
               </Button>
               <Button
@@ -3782,8 +3725,8 @@ export default function CreateQuotePage() {
                 variant={!showNet ? 'default' : 'outline'}
                 className={!showNet ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' : ''}
                 onClick={() => setShowNet(false)}
-                size="sm">
-
+                size="sm"
+              >
                 Brutto
               </Button>
             </div>
@@ -3797,19 +3740,19 @@ export default function CreateQuotePage() {
               onClick={() => {
                 const newItem: QuoteItem = {
                   id:
-                  typeof crypto !== 'undefined' && 'randomUUID' in crypto ?
-                  crypto.randomUUID() :
-                  Math.random().toString(36).slice(2),
+                    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                      ? crypto.randomUUID()
+                      : Math.random().toString(36).slice(2),
                   description: '',
                   quantity: 1,
                   unitPrice: 0,
                   total: 0,
-                  taxRate: taxRate // Verwende globalen Steuersatz als Standard
+                  taxRate: taxRate, // Verwende globalen Steuersatz als Standard
                 };
-                setItems((prev) => [...prev, newItem]);
+                setItems(prev => [...prev, newItem]);
               }}
-              className="px-0 text-[#14ad9f]">
-
+              className="px-0 text-[#14ad9f]"
+            >
               + Position hinzufügen
             </Button>
             <InventorySelector
@@ -3819,9 +3762,9 @@ export default function CreateQuotePage() {
                 const unitPriceNet = invItem.sellingPrice || 0;
                 const newItem: QuoteItem = {
                   id:
-                  typeof crypto !== 'undefined' && 'randomUUID' in crypto ?
-                  crypto.randomUUID() :
-                  Math.random().toString(36).slice(2),
+                    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                      ? crypto.randomUUID()
+                      : Math.random().toString(36).slice(2),
                   description: invItem.name,
                   quantity: qty,
                   unitPrice: unitPriceNet,
@@ -3829,11 +3772,12 @@ export default function CreateQuotePage() {
                   unit: invItem.unit,
                   inventoryItemId: invItem.id,
                   discountPercent: 0,
-                  taxRate: taxRate // Verwende globalen Steuersatz als Standard
+                  taxRate: taxRate, // Verwende globalen Steuersatz als Standard
                 };
-                setItems((prev) => [...prev, newItem]);
+                setItems(prev => [...prev, newItem]);
               }}
-              selectedItems={items.map((i) => i.inventoryItemId).filter(Boolean) as string[]} />
+              selectedItems={items.map(i => i.inventoryItemId).filter(Boolean) as string[]}
+            />
 
             <Button
               type="button"
@@ -3841,20 +3785,20 @@ export default function CreateQuotePage() {
               onClick={() => {
                 const newItem: QuoteItem = {
                   id:
-                  typeof crypto !== 'undefined' && 'randomUUID' in crypto ?
-                  crypto.randomUUID() :
-                  Math.random().toString(36).slice(2),
+                    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                      ? crypto.randomUUID()
+                      : Math.random().toString(36).slice(2),
                   description: 'Gesamtrabatt',
                   quantity: 1,
                   unitPrice: 0,
                   total: 0,
                   category: 'discount',
-                  taxRate: 0 // Rabatte haben normalerweise 0% Steuer
+                  taxRate: 0, // Rabatte haben normalerweise 0% Steuer
                 };
-                setItems((prev) => [...prev, newItem]);
+                setItems(prev => [...prev, newItem]);
               }}
-              className="px-0 text-[#14ad9f]">
-
+              className="px-0 text-[#14ad9f]"
+            >
               + Gesamtrabatt hinzufügen
             </Button>
 
@@ -3864,7 +3808,7 @@ export default function CreateQuotePage() {
                 <Input
                   type="text"
                   value={newServiceName || ''}
-                  onChange={(e) => {
+                  onChange={e => {
                     const value = e.target.value;
                     setNewServiceName(value);
                     // Zeige Dropdown ab 2 Zeichen
@@ -3875,92 +3819,92 @@ export default function CreateQuotePage() {
                     }
                   }}
                   placeholder="Dienstleistung suchen oder neue erstellen..."
-                  className="w-full" />
-
+                  className="w-full"
+                />
 
                 {/* Dropdown für Vorschläge */}
-                {showPopover &&
-                <div className="absolute left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-50">
+                {showPopover && (
+                  <div className="absolute left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-50">
                     <div className="max-h-[400px] overflow-y-auto p-4">
-                      {loadingSavedServices ?
-                    <div className="p-2 flex items-center gap-2">
+                      {loadingSavedServices ? (
+                        <div className="p-2 flex items-center gap-2">
                           <Loader2 className="w-4 h-4 animate-spin" />
                           <span>Lade Dienstleistungen...</span>
-                        </div> :
-
-                    <>
+                        </div>
+                      ) : (
+                        <>
                           {/* Vorhandene Dienstleistungen */}
-                          {(savedServices || []).
-                      filter(
-                        (service) =>
-                        !newServiceName ||
-                        service.name.toLowerCase().includes(newServiceName.toLowerCase())
-                      ).
-                      map((service) =>
-                      <div
-                        key={service.id}
-                        className="flex items-center justify-between p-2 hover:bg-gray-100 cursor-pointer rounded-md"
-                        onClick={() => {
-                          const price =
-                          typeof service.price === 'string' ?
-                          parseFloat(service.price) :
-                          service.price;
-                          setItems((prev) => [
-                          ...prev,
-                          {
-                            id: crypto.randomUUID(),
-                            description: service.name,
-                            quantity: 1,
-                            unitPrice: price,
-                            total: price,
-                            unit: service.unit || 'Stk',
-                            taxRate: taxRate // Verwende globalen Steuersatz als Standard
-                          }]
-                          );
-                          setNewServiceName('');
-                          setShowPopover(false);
-                          toast.success('Dienstleistung zur Rechnung hinzugefügt');
-                        }}>
-
+                          {(savedServices || [])
+                            .filter(
+                              service =>
+                                !newServiceName ||
+                                service.name.toLowerCase().includes(newServiceName.toLowerCase())
+                            )
+                            .map(service => (
+                              <div
+                                key={service.id}
+                                className="flex items-center justify-between p-2 hover:bg-gray-100 cursor-pointer rounded-md"
+                                onClick={() => {
+                                  const price =
+                                    typeof service.price === 'string'
+                                      ? parseFloat(service.price)
+                                      : service.price;
+                                  setItems(prev => [
+                                    ...prev,
+                                    {
+                                      id: crypto.randomUUID(),
+                                      description: service.name,
+                                      quantity: 1,
+                                      unitPrice: price,
+                                      total: price,
+                                      unit: service.unit || 'Stk',
+                                      taxRate: taxRate, // Verwende globalen Steuersatz als Standard
+                                    },
+                                  ]);
+                                  setNewServiceName('');
+                                  setShowPopover(false);
+                                  toast.success('Dienstleistung zur Rechnung hinzugefügt');
+                                }}
+                              >
                                 <div>
                                   <div className="font-medium">{service.name}</div>
                                   <div className="text-sm text-gray-500">{service.unit}</div>
                                 </div>
                                 <div className="font-medium">
                                   {formatCurrency(
-                            typeof service.price === 'string' ?
-                            parseFloat(service.price) :
-                            service.price
-                          )}
+                                    typeof service.price === 'string'
+                                      ? parseFloat(service.price)
+                                      : service.price
+                                  )}
                                 </div>
                               </div>
-                      )}
+                            ))}
 
                           {/* Option zum Erstellen einer neuen Dienstleistung */}
-                          {newServiceName && newServiceName.trim().length >= 2 &&
-                      <div
-                        className={
-                        savedServices.filter((service) =>
-                        service.name.toLowerCase().includes(newServiceName.toLowerCase())
-                        ).length > 0 ?
-                        'border-t border-gray-200 mt-2 pt-2' :
-                        ''
-                        }>
-
+                          {newServiceName && newServiceName.trim().length >= 2 && (
+                            <div
+                              className={
+                                savedServices.filter(service =>
+                                  service.name.toLowerCase().includes(newServiceName.toLowerCase())
+                                ).length > 0
+                                  ? 'border-t border-gray-200 mt-2 pt-2'
+                                  : ''
+                              }
+                            >
                               <div
-                          className="p-2 hover:bg-gray-100 rounded-md cursor-pointer"
-                          onClick={() => {
-                            setServiceDraft({
-                              name: newServiceName,
-                              description: '',
-                              price: '',
-                              unit: 'Stk'
-                            });
-                            setServiceModalOpen(true);
-                            setNewServiceName('');
-                            setShowPopover(false);
-                          }}>
-
+                                className="p-2 hover:bg-gray-100 rounded-md cursor-pointer"
+                                onClick={() => {
+                                  setServiceDraft({
+                                    name: newServiceName,
+                                    description: '',
+                                    price: '',
+                                    unit: 'Stk',
+                                  });
+                                  setServiceModalOpen(true);
+                                  setNewServiceName('');
+                                  setShowPopover(false);
+                                }}
+                              >
                                 <div className="flex items-center gap-2 text-sm text-gray-600">
                                   <Plus className="w-4 h-4" />
                                   <span>
@@ -3969,12 +3913,12 @@ export default function CreateQuotePage() {
                                 </div>
                               </div>
                             </div>
-                      }
+                          )}
                         </>
-                    }
+                      )}
                     </div>
                   </div>
-                }
+                )}
               </div>
             </div>
             {/* Modal für neue Dienstleistung */}
@@ -3993,18 +3937,18 @@ export default function CreateQuotePage() {
                       type="text"
                       className="w-full border rounded px-2 py-1"
                       value={serviceDraft.name}
-                      onChange={(e) => setServiceDraft((d) => ({ ...d, name: e.target.value }))}
-                      required />
-
+                      onChange={e => setServiceDraft(d => ({ ...d, name: e.target.value }))}
+                      required
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">Beschreibung</label>
                     <textarea
                       className="w-full border rounded px-2 py-1"
                       value={serviceDraft.description}
-                      onChange={(e) => setServiceDraft((d) => ({ ...d, description: e.target.value }))}
-                      rows={2} />
-
+                      onChange={e => setServiceDraft(d => ({ ...d, description: e.target.value }))}
+                      rows={2}
+                    />
                   </div>
                   <div className="flex gap-2">
                     <div className="flex-1">
@@ -4013,18 +3957,18 @@ export default function CreateQuotePage() {
                         type="number"
                         className="w-full border rounded px-2 py-1"
                         value={serviceDraft.price}
-                        onChange={(e) => setServiceDraft((d) => ({ ...d, price: e.target.value }))}
+                        onChange={e => setServiceDraft(d => ({ ...d, price: e.target.value }))}
                         min="0"
-                        required />
-
+                        required
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Einheit</label>
                       <select
                         className="border rounded px-2 py-1"
                         value={serviceDraft.unit}
-                        onChange={(e) => setServiceDraft((d) => ({ ...d, unit: e.target.value }))}>
-
+                        onChange={e => setServiceDraft(d => ({ ...d, unit: e.target.value }))}
+                      >
                         <option value="Stk">Stk</option>
                         <option value="Std">Std</option>
                         <option value="Pauschale">Pauschale</option>
@@ -4044,31 +3988,31 @@ export default function CreateQuotePage() {
                       await saveServiceToSubcollection();
 
                       // 2. Dann als Position zur Rechnung hinzufügen
-                      setItems((prev) => [
-                      ...prev,
-                      {
-                        id:
-                        typeof crypto !== 'undefined' && 'randomUUID' in crypto ?
-                        crypto.randomUUID() :
-                        Math.random().toString(36).slice(2),
-                        description:
-                        serviceDraft.name + (
-                        serviceDraft.description ? `: ${serviceDraft.description}` : ''),
-                        quantity: 1,
-                        unitPrice: parseFloat(serviceDraft.price),
-                        total: parseFloat(serviceDraft.price),
-                        unit: serviceDraft.unit,
-                        taxRate: taxRate // Verwende globalen Steuersatz als Standard
-                      }]
-                      );
+                      setItems(prev => [
+                        ...prev,
+                        {
+                          id:
+                            typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                              ? crypto.randomUUID()
+                              : Math.random().toString(36).slice(2),
+                          description:
+                            serviceDraft.name +
+                            (serviceDraft.description ? `: ${serviceDraft.description}` : ''),
+                          quantity: 1,
+                          unitPrice: parseFloat(serviceDraft.price),
+                          total: parseFloat(serviceDraft.price),
+                          unit: serviceDraft.unit,
+                          taxRate: taxRate, // Verwende globalen Steuersatz als Standard
+                        },
+                      ]);
 
                       // 3. Dialog schließen und Form zurücksetzen
                       setServiceModalOpen(false);
                       setServiceDraft({ name: '', description: '', price: '', unit: 'Stk' });
                       toast.success('Dienstleistung zur Rechnung hinzugefügt');
                     }}
-                    disabled={!serviceDraft.name.trim() || !serviceDraft.price}>
-
+                    disabled={!serviceDraft.name.trim() || !serviceDraft.price}
+                  >
                     Speichern & hinzufügen
                   </Button>
                   <DialogClose asChild>
@@ -4082,8 +4026,8 @@ export default function CreateQuotePage() {
           </div>
 
           {/* Header-Zeile für Spalten (nur einmal anzeigen) */}
-          {items.length > 0 &&
-          <div className="flex gap-3 px-4 py-2 bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
+          {items.length > 0 && (
+            <div className="flex gap-3 px-4 py-2 bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
               <div style={{ flex: 1 }}>
                 <label className="block">Produkt oder Service</label>
               </div>
@@ -4109,23 +4053,23 @@ export default function CreateQuotePage() {
               </div>
               <div style={{ width: '36px' }}></div>
             </div>
-          }
+          )}
 
           {/* Positionsliste */}
           <div className="space-y-2">
             {items.map((item, index) => {
               const itemTaxRate = item.taxRate ?? taxRate;
-              const unitPriceDisplay = showNet ?
-              item.unitPrice :
-              item.unitPrice * (1 + itemTaxRate / 100);
+              const unitPriceDisplay = showNet
+                ? item.unitPrice
+                : item.unitPrice * (1 + itemTaxRate / 100);
               // Rabatt-Positionen als negative Beträge darstellen
               const baseTotalNet = item.total || 0;
               const sign = item.category === 'discount' ? -1 : 1;
               // Positions-Rabatt anwenden, außer bei speziellen Rabatt-Positionszeilen
               const discountFactor =
-              item.category === 'discount' ?
-              1 :
-              1 - Math.max(0, Math.min(100, item.discountPercent || 0)) / 100;
+                item.category === 'discount'
+                  ? 1
+                  : 1 - Math.max(0, Math.min(100, item.discountPercent || 0)) / 100;
               const totalNet = baseTotalNet * sign * discountFactor;
               const totalGross = totalNet * (1 + itemTaxRate / 100);
               return (
@@ -4139,8 +4083,8 @@ export default function CreateQuotePage() {
                           <TooltipTrigger asChild>
                             <span
                               aria-label="Hinweis zur Beschreibung"
-                              className="cursor-help inline-flex">
-
+                              className="cursor-help inline-flex"
+                            >
                               <Info className="w-4 h-4 text-[#14ad9f]" />
                             </span>
                           </TooltipTrigger>
@@ -4155,21 +4099,22 @@ export default function CreateQuotePage() {
                       </div>
                       <Popover
                         open={popoverOpenIds.has(item.id)}
-                        onOpenChange={(open) => {
+                        onOpenChange={open => {
                           if (!open) {
-                            setDismissedCreatePromptIds((prev) => new Set(prev).add(item.id));
+                            setDismissedCreatePromptIds(prev => new Set(prev).add(item.id));
                           }
-                        }}>
-
+                        }}
+                      >
                         <div className="relative">
                           <Input
                             value={item.description}
-                            onChange={(e) => handleDescriptionChange(index, item.id, e.target.value)}
+                            onChange={e => handleDescriptionChange(index, item.id, e.target.value)}
                             placeholder={
-                            item.category === 'discount' ?
-                            'Rabatt / Nachlass' :
-                            'Leistungsbeschreibung'
-                            } />
+                              item.category === 'discount'
+                                ? 'Rabatt / Nachlass'
+                                : 'Leistungsbeschreibung'
+                            }
+                          />
 
                           <PopoverAnchor />
                         </div>
@@ -4183,10 +4128,10 @@ export default function CreateQuotePage() {
                                 onClick={() => {
                                   const rate = Number.isFinite(taxRate) ? taxRate : 19;
                                   const name = item.description || '';
-                                  const unit = item.unit as string || 'Stk';
-                                  const sellingNet = Number.isFinite(item.unitPrice) ?
-                                  item.unitPrice :
-                                  0;
+                                  const unit = (item.unit as string) || 'Stk';
+                                  const sellingNet = Number.isFinite(item.unitPrice)
+                                    ? item.unitPrice
+                                    : 0;
                                   setNewProduct({
                                     name,
                                     imageUrl: '',
@@ -4202,22 +4147,22 @@ export default function CreateQuotePage() {
                                       syncGrossFromNet(sellingNet, rate).toFixed(2)
                                     ),
                                     description: '',
-                                    internalNote: ''
+                                    internalNote: '',
                                   });
                                   setCreateProductForIndex(index);
                                   setCreateProductOpen(true);
-                                  setDismissedCreatePromptIds((prev) => new Set(prev).add(item.id));
-                                }}>
-
+                                  setDismissedCreatePromptIds(prev => new Set(prev).add(item.id));
+                                }}
+                              >
                                 Produkt erstellen
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() =>
-                                setDismissedCreatePromptIds((prev) => new Set(prev).add(item.id))
-                                }>
-
+                                  setDismissedCreatePromptIds(prev => new Set(prev).add(item.id))
+                                }
+                              >
                                 Später
                               </Button>
                             </div>
@@ -4232,36 +4177,36 @@ export default function CreateQuotePage() {
                       <Input
                         type="number"
                         value={item.quantity}
-                        onChange={(e) =>
-                        handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)
+                        onChange={e =>
+                          handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)
                         }
                         min="0"
-                        step="0.01" />
-
+                        step="0.01"
+                      />
                     </div>
                     <div style={{ width: '100px' }}>
                       <div className="sr-only">
                         <Label>Einheit</Label>
                       </div>
                       <Select
-                        value={item.unit as string ?? 'Stk'}
-                        onValueChange={(val) => {
+                        value={(item.unit as string) ?? 'Stk'}
+                        onValueChange={val => {
                           const mapped = val === 'none' ? '' : val;
-                          setItems((prev) =>
-                          prev.map((it, i) => i === index ? { ...it, unit: mapped } : it)
+                          setItems(prev =>
+                            prev.map((it, i) => (i === index ? { ...it, unit: mapped } : it))
                           );
                         }}
-                        disabled={item.category === 'discount'}>
-
+                        disabled={item.category === 'discount'}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Einheit" />
                         </SelectTrigger>
                         <SelectContent className="max-h-72">
-                          {UNIT_OPTIONS.map((u) =>
-                          <SelectItem key={u.value || 'blank'} value={u.value}>
+                          {UNIT_OPTIONS.map(u => (
+                            <SelectItem key={u.value || 'blank'} value={u.value}>
                               {u.label}
                             </SelectItem>
-                          )}
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -4278,17 +4223,17 @@ export default function CreateQuotePage() {
                       <Input
                         type="number"
                         value={
-                        Number.isFinite(unitPriceDisplay) ?
-                        Number(unitPriceDisplay.toFixed(2)) :
-                        0
+                          Number.isFinite(unitPriceDisplay)
+                            ? Number(unitPriceDisplay.toFixed(2))
+                            : 0
                         }
-                        onChange={(e) =>
-                        handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)
+                        onChange={e =>
+                          handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)
                         }
                         min="0"
                         step="0.01"
-                        className="w-28 md:w-32 h-8 text-sm px-2" />
-
+                        className="w-28 md:w-32 h-8 text-sm px-2"
+                      />
                     </div>
                     <div style={{ width: '80px' }}>
                       <div className="sr-only">
@@ -4296,14 +4241,14 @@ export default function CreateQuotePage() {
                       </div>
                       <Select
                         value={(item.taxRate ?? taxRate).toString()}
-                        onValueChange={(val) => {
+                        onValueChange={val => {
                           const newTaxRate = parseFloat(val);
-                          setItems((prev) =>
-                          prev.map((it, i) => i === index ? { ...it, taxRate: newTaxRate } : it)
+                          setItems(prev =>
+                            prev.map((it, i) => (i === index ? { ...it, taxRate: newTaxRate } : it))
                           );
                         }}
-                        disabled={item.category === 'discount'}>
-
+                        disabled={item.category === 'discount'}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -4323,32 +4268,32 @@ export default function CreateQuotePage() {
                         min={0}
                         max={100}
                         step={0.1}
-                        value={item.category === 'discount' ? 0 : item.discountPercent ?? 0}
-                        onChange={(e) => {
+                        value={item.category === 'discount' ? 0 : (item.discountPercent ?? 0)}
+                        onChange={e => {
                           const v = parseFloat(e.target.value);
-                          setItems((prev) =>
-                          prev.map((it, i) =>
-                          i === index ?
-                          {
-                            ...it,
-                            discountPercent: Number.isFinite(v) ?
-                            Math.max(0, Math.min(100, v)) :
-                            0
-                          } :
-                          it
-                          )
+                          setItems(prev =>
+                            prev.map((it, i) =>
+                              i === index
+                                ? {
+                                    ...it,
+                                    discountPercent: Number.isFinite(v)
+                                      ? Math.max(0, Math.min(100, v))
+                                      : 0,
+                                  }
+                                : it
+                            )
                           );
                         }}
-                        disabled={item.category === 'discount'} />
-
+                        disabled={item.category === 'discount'}
+                      />
                     </div>
                     <div style={{ width: '100px', textAlign: 'right' }}>
                       <div className="sr-only">
                         <Label>Betrag</Label>
                       </div>
                       <div
-                        className={`h-10 flex items-center justify-end text-sm font-medium ${item.category === 'discount' ? 'text-red-600' : ''}`}>
-
+                        className={`h-10 flex items-center justify-end text-sm font-medium ${item.category === 'discount' ? 'text-red-600' : ''}`}
+                      >
                         {formatCurrency(showNet ? totalNet : totalGross)}
                       </div>
                     </div>
@@ -4359,33 +4304,33 @@ export default function CreateQuotePage() {
                         size="sm"
                         onClick={() => removeItem(index)}
                         className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-                        disabled={items.length === 1}>
-
+                        disabled={items.length === 1}
+                      >
                         <X className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
 
                   {/* Erweiterte Beschreibung - Automatisch anzeigen wenn Beschreibung vorhanden */}
-                  {item.description && item.description.trim().length > 0 &&
-                  <div className="px-4 pb-4">
+                  {item.description && item.description.trim().length > 0 && (
+                    <div className="px-4 pb-4">
                       <textarea
-                      placeholder="Erweiterte Beschreibung (optional) - wird auf der Rechnung unter der Position angezeigt"
-                      value={(item as any).extendedDescription || ''}
-                      onChange={(e) => {
-                        setItems((prev) =>
-                        prev.map((it, i) =>
-                        i === index ? { ...it, extendedDescription: e.target.value } : it
-                        )
-                        );
-                      }}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent text-sm"
-                      rows={4} />
-
+                        placeholder="Erweiterte Beschreibung (optional) - wird auf der Rechnung unter der Position angezeigt"
+                        value={(item as any).extendedDescription || ''}
+                        onChange={e => {
+                          setItems(prev =>
+                            prev.map((it, i) =>
+                              i === index ? { ...it, extendedDescription: e.target.value } : it
+                            )
+                          );
+                        }}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent text-sm"
+                        rows={4}
+                      />
                     </div>
-                  }
-                </div>);
-
+                  )}
+                </div>
+              );
             })}
           </div>
         </CardContent>
@@ -4400,11 +4345,11 @@ export default function CreateQuotePage() {
           <Label htmlFor="footerText">Fuß-Text mit Platzhaltern</Label>
           <FooterTextEditor
             value={formData.footerText}
-            onChange={(html: string) => setFormData((prev) => ({ ...prev, footerText: html }))}
+            onChange={(html: string) => setFormData(prev => ({ ...prev, footerText: html }))}
             companyId={uid}
             objectType="INVOICE"
-            textType="FOOT" />
-
+            textType="FOOT"
+          />
         </CardContent>
       </Card>
 
@@ -4417,34 +4362,34 @@ export default function CreateQuotePage() {
               type="button"
               variant="link"
               className="px-0 text-[#14ad9f]"
-              onClick={() => setShowDetailedOptions((v) => !v)}>
-
+              onClick={() => setShowDetailedOptions(v => !v)}
+            >
               {!showDetailedOptions ? 'Weitere Optionen einblenden' : 'Weitere Optionen ausblenden'}
             </Button>
           </div>
         </CardHeader>
-        {showDetailedOptions &&
-        <CardContent className="space-y-6">
+        {showDetailedOptions && (
+          <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Währung</Label>
                   <Select
-                  value={formData.currency}
-                  onValueChange={(val) => setFormData((prev) => ({ ...prev, currency: val }))}>
-
+                    value={formData.currency}
+                    onValueChange={val => setFormData(prev => ({ ...prev, currency: val }))}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Bitte auswählen" />
                     </SelectTrigger>
                     <SelectContent
-                    className="max-h-96 overflow-y-auto"
-                    style={{ scrollbarGutter: 'stable' }}>
-
-                      {allCurrencies.map((c) =>
-                    <SelectItem key={c.code} value={c.code}>
+                      className="max-h-96 overflow-y-auto"
+                      style={{ scrollbarGutter: 'stable' }}
+                    >
+                      {allCurrencies.map(c => (
+                        <SelectItem key={c.code} value={c.code}>
                           {c.name} ({c.code})
                         </SelectItem>
-                    )}
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -4452,30 +4397,30 @@ export default function CreateQuotePage() {
                 <div className="space-y-2">
                   <Label>Interne Kontaktperson</Label>
                   <Input
-                  value={formData.internalContactPerson}
-                  onChange={(e) =>
-                  setFormData((p) => ({ ...p, internalContactPerson: e.target.value }))
-                  }
-                  placeholder="Name der Kontaktperson" />
-
+                    value={formData.internalContactPerson}
+                    onChange={e =>
+                      setFormData(p => ({ ...p, internalContactPerson: e.target.value }))
+                    }
+                    placeholder="Name der Kontaktperson"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Lieferbedingungen</Label>
                   <Input
-                  value={formData.deliveryTerms}
-                  onChange={(e) => setFormData((p) => ({ ...p, deliveryTerms: e.target.value }))}
-                  placeholder="z.B. Lieferung innerhalb von 14 Tagen" />
-
+                    value={formData.deliveryTerms}
+                    onChange={e => setFormData(p => ({ ...p, deliveryTerms: e.target.value }))}
+                    placeholder="z.B. Lieferung innerhalb von 14 Tagen"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Zahlungsbedingungen</Label>
                   <Input
-                  value={formData.paymentTerms}
-                  onChange={(e) => setFormData((p) => ({ ...p, paymentTerms: e.target.value }))}
-                  placeholder="z.B. 14 Tage netto" />
-
+                    value={formData.paymentTerms}
+                    onChange={e => setFormData(p => ({ ...p, paymentTerms: e.target.value }))}
+                    placeholder="z.B. 14 Tage netto"
+                  />
                 </div>
 
                 {/* Skonto-Einstellungen */}
@@ -4487,54 +4432,54 @@ export default function CreateQuotePage() {
                       <Switch checked={skontoEnabled} onCheckedChange={setSkontoEnabled} />
                     </div>
                   </div>
-                  {skontoEnabled &&
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {skontoEnabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div className="space-y-1">
                         <Label>Skontotage</Label>
                         <Input
-                      type="number"
-                      min={1}
-                      value={skontoDays ?? ''}
-                      onChange={(e) => {
-                        const v = parseInt(e.target.value, 10);
-                        setSkontoDays(Number.isFinite(v) ? Math.max(1, v) : undefined);
-                      }}
-                      placeholder="z.B. 10" />
-
+                          type="number"
+                          min={1}
+                          value={skontoDays ?? ''}
+                          onChange={e => {
+                            const v = parseInt(e.target.value, 10);
+                            setSkontoDays(Number.isFinite(v) ? Math.max(1, v) : undefined);
+                          }}
+                          placeholder="z.B. 10"
+                        />
                       </div>
                       <div className="space-y-1">
                         <Label>Skonto %</Label>
                         <Input
-                      type="number"
-                      min={0}
-                      step={0.1}
-                      value={skontoPercentage ?? ''}
-                      onChange={(e) => {
-                        const v = parseFloat(e.target.value);
-                        setSkontoPercentage(Number.isFinite(v) ? Math.max(0, v) : undefined);
-                      }}
-                      placeholder="z.B. 2" />
-
+                          type="number"
+                          min={0}
+                          step={0.1}
+                          value={skontoPercentage ?? ''}
+                          onChange={e => {
+                            const v = parseFloat(e.target.value);
+                            setSkontoPercentage(Number.isFinite(v) ? Math.max(0, v) : undefined);
+                          }}
+                          placeholder="z.B. 2"
+                        />
                       </div>
                       <div className="space-y-1 md:col-span-1">
                         <Label>Text (optional)</Label>
                         <Input
-                      value={skontoText}
-                      onChange={(e) => setSkontoText(e.target.value)}
-                      placeholder="Bei Zahlung binnen X Tagen Y% Skonto" />
-
+                          value={skontoText}
+                          onChange={e => setSkontoText(e.target.value)}
+                          placeholder="Bei Zahlung binnen X Tagen Y% Skonto"
+                        />
                       </div>
                     </div>
-                }
-                  {skontoEnabled &&
-                <div className="text-xs text-gray-500">
+                  )}
+                  {skontoEnabled && (
+                    <div className="text-xs text-gray-500">
                       Vorschau:{' '}
-                      {skontoText?.trim() || (
-                  skontoDays && skontoPercentage ?
-                  `Bei Zahlung binnen ${skontoDays} Tagen ${skontoPercentage}% Skonto` :
-                  '—')}
+                      {skontoText?.trim() ||
+                        (skontoDays && skontoPercentage
+                          ? `Bei Zahlung binnen ${skontoDays} Tagen ${skontoPercentage}% Skonto`
+                          : '—')}
                     </div>
-                }
+                  )}
                 </div>
               </div>
 
@@ -4543,9 +4488,9 @@ export default function CreateQuotePage() {
                 <Label className="font-semibold">Umsatzsteuerregelung</Label>
 
                 <TaxRuleSelector
-                value={formData.taxRule}
-                onChange={(value) => setFormData((p) => ({ ...p, taxRule: value }))} />
-
+                  value={formData.taxRule}
+                  onChange={value => setFormData(p => ({ ...p, taxRule: value }))}
+                />
 
                 <div className="text-xs text-gray-500">
                   Hinweis: Je nach Regelung setzen wir den USt.-Satz automatisch (DE steuerpflichtig
@@ -4554,7 +4499,7 @@ export default function CreateQuotePage() {
               </div>
             </div>
           </CardContent>
-        }
+        )}
       </Card>
 
       {/* Summen */}
@@ -4568,24 +4513,24 @@ export default function CreateQuotePage() {
               <span>Gesamtsumme Netto (inkl. Rabatte / Aufschläge)</span>
               <span>{formatCurrency(subtotal)}</span>
             </li>
-            {!showNet && taxGrouped.length > 0 ?
-            // SevDesk-style: Show multiple tax rates
-            taxGrouped.
-            filter((tax) => tax.taxAmount > 0).
-            map((tax, index) =>
-            <li key={index} className="flex justify-between py-2 border-b">
+            {!showNet && taxGrouped.length > 0
+              ? // SevDesk-style: Show multiple tax rates
+                taxGrouped
+                  .filter(tax => tax.taxAmount > 0)
+                  .map((tax, index) => (
+                    <li key={index} className="flex justify-between py-2 border-b">
                       <span>Umsatzsteuer {tax.rate}%</span>
                       <span>{formatCurrency(tax.taxAmount)}</span>
                     </li>
-            ) :
-            // Fallback: Single tax rate display
-            !showNet &&
-            taxRate > 0 &&
-            <li className="flex justify-between py-2 border-b">
+                  ))
+              : // Fallback: Single tax rate display
+                !showNet &&
+                taxRate > 0 && (
+                  <li className="flex justify-between py-2 border-b">
                     <span>Umsatzsteuer {taxRate}%</span>
                     <span>{formatCurrency(vat)}</span>
                   </li>
-            }
+                )}
             <li className="flex justify-between py-2">
               <span className="text-lg font-semibold">
                 {showNet ? 'Gesamt (Netto)' : 'Gesamt (Brutto)'}
@@ -4606,10 +4551,10 @@ export default function CreateQuotePage() {
         <CardContent>
           <Textarea
             value={formData.notes}
-            onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
+            onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
             placeholder="Interne Notizen (werden nicht im Angebot angezeigt)..."
-            rows={3} />
-
+            rows={3}
+          />
         </CardContent>
       </Card>
 
@@ -4630,7 +4575,7 @@ export default function CreateQuotePage() {
         onOpenChange={setCreateProductOpen}
         defaultValues={newProduct}
         saving={creatingProduct}
-        onSave={async (vals) => {
+        onSave={async vals => {
           if (!uid || !vals.name.trim()) return;
           setCreatingProduct(true);
           try {
@@ -4655,30 +4600,30 @@ export default function CreateQuotePage() {
               status: 'active',
               weight: undefined,
               dimensions: undefined,
-              notes: vals.internalNote || undefined
+              notes: vals.internalNote || undefined,
             });
 
             if (createProductForIndex !== null) {
-              setItems((prev) =>
-              prev.map((it, i) =>
-              i === createProductForIndex ?
-              {
-                ...it,
-                inventoryItemId: itemId,
-                unit: vals.unit,
-                unitPrice:
-                Number.isFinite(it.unitPrice) && it.unitPrice > 0 ?
-                it.unitPrice :
-                vals.sellingNet || 0,
-                total: computeItemTotalNet(
-                  it.quantity,
-                  Number.isFinite(it.unitPrice) && it.unitPrice > 0 ?
-                  it.unitPrice :
-                  vals.sellingNet || 0
+              setItems(prev =>
+                prev.map((it, i) =>
+                  i === createProductForIndex
+                    ? {
+                        ...it,
+                        inventoryItemId: itemId,
+                        unit: vals.unit,
+                        unitPrice:
+                          Number.isFinite(it.unitPrice) && it.unitPrice > 0
+                            ? it.unitPrice
+                            : vals.sellingNet || 0,
+                        total: computeItemTotalNet(
+                          it.quantity,
+                          Number.isFinite(it.unitPrice) && it.unitPrice > 0
+                            ? it.unitPrice
+                            : vals.sellingNet || 0
+                        ),
+                      }
+                    : it
                 )
-              } :
-              it
-              )
               );
             }
 
@@ -4690,8 +4635,8 @@ export default function CreateQuotePage() {
           } finally {
             setCreatingProduct(false);
           }
-        }} />
-
+        }}
+      />
 
       {/* Company Settings Modal */}
       <Dialog open={showCompanySettingsModal} onOpenChange={setShowCompanySettingsModal}>
@@ -4708,24 +4653,24 @@ export default function CreateQuotePage() {
                   <Label>Inhaber</Label>
                   <Input
                     value={companySettingsFormData.companyOwner}
-                    onChange={(e) =>
-                    setCompanySettingsFormData((prev) => ({
-                      ...prev,
-                      companyOwner: e.target.value
-                    }))
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({
+                        ...prev,
+                        companyOwner: e.target.value,
+                      }))
                     }
-                    placeholder="Inhaber" />
-
+                    placeholder="Inhaber"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Firma</Label>
                   <Input
                     value={companySettingsFormData.companyName}
-                    onChange={(e) =>
-                    setCompanySettingsFormData((prev) => ({ ...prev, companyName: e.target.value }))
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, companyName: e.target.value }))
                     }
-                    placeholder="Firma" />
-
+                    placeholder="Firma"
+                  />
                 </div>
               </div>
 
@@ -4734,30 +4679,30 @@ export default function CreateQuotePage() {
                   <Label>Anschrift</Label>
                   <Input
                     value={companySettingsFormData.street}
-                    onChange={(e) =>
-                    setCompanySettingsFormData((prev) => ({ ...prev, street: e.target.value }))
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, street: e.target.value }))
                     }
-                    placeholder="Straße und Hausnummer" />
-
+                    placeholder="Straße und Hausnummer"
+                  />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Input
                       value={companySettingsFormData.zip}
-                      onChange={(e) =>
-                      setCompanySettingsFormData((prev) => ({ ...prev, zip: e.target.value }))
+                      onChange={e =>
+                        setCompanySettingsFormData(prev => ({ ...prev, zip: e.target.value }))
                       }
-                      placeholder="PLZ" />
-
+                      placeholder="PLZ"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Input
                       value={companySettingsFormData.city}
-                      onChange={(e) =>
-                      setCompanySettingsFormData((prev) => ({ ...prev, city: e.target.value }))
+                      onChange={e =>
+                        setCompanySettingsFormData(prev => ({ ...prev, city: e.target.value }))
                       }
-                      placeholder="Ort" />
-
+                      placeholder="Ort"
+                    />
                   </div>
                 </div>
               </div>
@@ -4767,21 +4712,21 @@ export default function CreateQuotePage() {
                   <Label>Steuernummer</Label>
                   <Input
                     value={companySettingsFormData.taxNumber}
-                    onChange={(e) =>
-                    setCompanySettingsFormData((prev) => ({ ...prev, taxNumber: e.target.value }))
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, taxNumber: e.target.value }))
                     }
-                    placeholder="Steuernummer" />
-
+                    placeholder="Steuernummer"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Umsatzsteuer-ID</Label>
                   <Input
                     value={companySettingsFormData.vatNumber}
-                    onChange={(e) =>
-                    setCompanySettingsFormData((prev) => ({ ...prev, vatNumber: e.target.value }))
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, vatNumber: e.target.value }))
                     }
-                    placeholder="Umsatzsteuer-ID" />
-
+                    placeholder="Umsatzsteuer-ID"
+                  />
                 </div>
               </div>
             </div>
@@ -4795,21 +4740,21 @@ export default function CreateQuotePage() {
                   <Input
                     type="email"
                     value={companySettingsFormData.email}
-                    onChange={(e) =>
-                    setCompanySettingsFormData((prev) => ({ ...prev, email: e.target.value }))
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, email: e.target.value }))
                     }
-                    placeholder="marie@musterfrau.de" />
-
+                    placeholder="marie@musterfrau.de"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Telefon</Label>
                   <Input
                     value={companySettingsFormData.phone}
-                    onChange={(e) =>
-                    setCompanySettingsFormData((prev) => ({ ...prev, phone: e.target.value }))
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, phone: e.target.value }))
                     }
-                    placeholder="07821 127384" />
-
+                    placeholder="07821 127384"
+                  />
                 </div>
               </div>
 
@@ -4818,21 +4763,21 @@ export default function CreateQuotePage() {
                   <Label>IBAN</Label>
                   <Input
                     value={companySettingsFormData.iban}
-                    onChange={(e) =>
-                    setCompanySettingsFormData((prev) => ({ ...prev, iban: e.target.value }))
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, iban: e.target.value }))
                     }
-                    placeholder="DE01100100000010101010" />
-
+                    placeholder="DE01100100000010101010"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>BIC</Label>
                   <Input
                     value={companySettingsFormData.bic}
-                    onChange={(e) =>
-                    setCompanySettingsFormData((prev) => ({ ...prev, bic: e.target.value }))
+                    onChange={e =>
+                      setCompanySettingsFormData(prev => ({ ...prev, bic: e.target.value }))
                     }
-                    placeholder="BELADEBE" />
-
+                    placeholder="BELADEBE"
+                  />
                 </div>
               </div>
             </div>
@@ -4844,8 +4789,8 @@ export default function CreateQuotePage() {
             </Button>
             <Button
               onClick={handleCompanySettingsSave}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white">
-
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            >
               Speichern
             </Button>
           </div>
@@ -4859,13 +4804,13 @@ export default function CreateQuotePage() {
         defaultValues={{
           name: formData.customerName || '',
           firstName: contactType === 'person' ? formData.customerFirstName : undefined,
-          lastName: contactType === 'person' ? formData.customerLastName : undefined
+          lastName: contactType === 'person' ? formData.customerLastName : undefined,
         }}
         contactType={contactType}
         saving={creatingCustomer}
         persistDirectly={true}
         companyId={uid}
-        onSaved={async (customerId) => {
+        onSaved={async customerId => {
           try {
             // Lade Kunden neu mit der existierenden Funktion
             const response = await getCustomers(uid);
@@ -4876,8 +4821,8 @@ export default function CreateQuotePage() {
           } catch (error) {
             console.error('Fehler beim Aktualisieren der Kundenliste:', error);
           }
-        }} />
-
+        }}
+      />
 
       {/* Modal: Textvorlagen verwalten */}
       <Dialog open={showTemplateModal} onOpenChange={setShowTemplateModal}>
@@ -4915,9 +4860,9 @@ export default function CreateQuotePage() {
               <Label className="text-sm font-medium text-gray-700">Format</Label>
               <Input
                 value={numberingFormat}
-                onChange={(e) => setNumberingFormat(e.target.value)}
-                placeholder="RE-%NUMBER" />
-
+                onChange={e => setNumberingFormat(e.target.value)}
+                placeholder="RE-%NUMBER"
+              />
             </div>
 
             {/* Nächste Zahl */}
@@ -4926,9 +4871,9 @@ export default function CreateQuotePage() {
               <Input
                 type="number"
                 value={nextNumber}
-                onChange={(e) => setNextNumber(parseInt(e.target.value) || 0)}
-                placeholder="1000" />
-
+                onChange={e => setNextNumber(parseInt(e.target.value) || 0)}
+                placeholder="1000"
+              />
             </div>
 
             {/* Vorschau */}
@@ -4986,13 +4931,13 @@ export default function CreateQuotePage() {
                     await updateDoc(companyRef, {
                       'invoiceNumbering.format': numberingFormat,
                       'invoiceNumbering.nextNumber': nextNumber,
-                      'invoiceNumbering.lastUpdated': new Date().toISOString()
+                      'invoiceNumbering.lastUpdated': new Date().toISOString(),
                     });
 
                     // Aktualisiere das Rechnungsnummer-Feld mit der neuen Vorschau
-                    setFormData((prev) => ({
+                    setFormData(prev => ({
                       ...prev,
-                      title: generateNumberPreview(numberingFormat, nextNumber)
+                      title: generateNumberPreview(numberingFormat, nextNumber),
                     }));
 
                     setShowNumberingModal(false);
@@ -5001,8 +4946,8 @@ export default function CreateQuotePage() {
                     console.error('Fehler beim Speichern der Nummernkreis-Einstellungen:', error);
                     toast.error('Fehler beim Speichern der Einstellungen');
                   }
-                }}>
-
+                }}
+              >
                 Übernehmen
               </Button>
             </div>
@@ -5027,30 +4972,30 @@ export default function CreateQuotePage() {
             {(() => {
               // Kategorisiere die Compliance-Fehler in Pflicht und Empfohlen
               const criticalErrors = complianceErrors.filter(
-                (error) =>
-                !error.includes('empfohlen') &&
-                !error.includes('Website') &&
-                !error.includes('Logo') &&
-                !error.includes('Branchenangabe') &&
-                !error.includes('Geschäftsbeschreibung') &&
-                !error.includes('Telefonnummer')
+                error =>
+                  !error.includes('empfohlen') &&
+                  !error.includes('Website') &&
+                  !error.includes('Logo') &&
+                  !error.includes('Branchenangabe') &&
+                  !error.includes('Geschäftsbeschreibung') &&
+                  !error.includes('Telefonnummer')
               );
 
               const recommendedErrors = complianceErrors.filter(
-                (error) =>
-                error.includes('empfohlen') ||
-                error.includes('Website') ||
-                error.includes('Logo') ||
-                error.includes('Branchenangabe') ||
-                error.includes('Geschäftsbeschreibung') ||
-                error.includes('Telefonnummer')
+                error =>
+                  error.includes('empfohlen') ||
+                  error.includes('Website') ||
+                  error.includes('Logo') ||
+                  error.includes('Branchenangabe') ||
+                  error.includes('Geschäftsbeschreibung') ||
+                  error.includes('Telefonnummer')
               );
 
               return (
                 <>
                   {/* Kritische Fehler - Kompakt */}
-                  {criticalErrors.length > 0 &&
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  {criticalErrors.length > 0 && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                           !
@@ -5063,24 +5008,24 @@ export default function CreateQuotePage() {
                         </span>
                       </div>
                       <div className="text-xs text-red-700 space-y-1">
-                        {criticalErrors.slice(0, 5).map((error, index) =>
-                      <div key={index} className="flex items-start gap-1.5">
+                        {criticalErrors.slice(0, 5).map((error, index) => (
+                          <div key={index} className="flex items-start gap-1.5">
                             <span className="text-red-400 mt-0.5 text-xs">•</span>
                             <span className="leading-tight">{error}</span>
                           </div>
-                      )}
-                        {criticalErrors.length > 5 &&
-                      <div className="text-xs text-red-600 font-medium mt-1">
+                        ))}
+                        {criticalErrors.length > 5 && (
+                          <div className="text-xs text-red-600 font-medium mt-1">
                             ... und {criticalErrors.length - 5} weitere
                           </div>
-                      }
+                        )}
                       </div>
                     </div>
-                  }
+                  )}
 
                   {/* Empfehlungen - Kollapsible */}
-                  {recommendedErrors.length > 0 &&
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  {recommendedErrors.length > 0 && (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-4 h-4 bg-yellow-500 text-white rounded-full flex items-center justify-center text-xs">
                           i
@@ -5094,13 +5039,13 @@ export default function CreateQuotePage() {
                         <div className="leading-tight">
                           {recommendedErrors.slice(0, 2).join(', ')}
                           {recommendedErrors.length > 2 &&
-                        ` und ${recommendedErrors.length - 2} weitere Verbesserungen`}
+                            ` und ${recommendedErrors.length - 2} weitere Verbesserungen`}
                         </div>
                       </div>
                     </div>
-                  }
-                </>);
-
+                  )}
+                </>
+              );
             })()}
           </div>
 
@@ -5120,8 +5065,8 @@ export default function CreateQuotePage() {
             <Button
               variant="outline"
               onClick={() => setShowCompliancePanel(false)}
-              className="w-full h-8 text-sm">
-
+              className="w-full h-8 text-sm"
+            >
               Schließen
             </Button>
           </SheetFooter>
@@ -5129,45 +5074,45 @@ export default function CreateQuotePage() {
       </Sheet>
 
       {/* Send Document Modal */}
-      {createdDocument &&
-      <SendDocumentModal
-        isOpen={showSendDocumentModal}
-        onClose={() => {
-          setShowSendDocumentModal(false);
-          setCreatedDocument(null);
-        }}
-        document={createdDocument}
-        documentType="invoice"
-        companyId={uid}
-        onSend={async (method, options) => {
-          try {
-            // First save the invoice
-            await handleSubmit(false); // Save as finalized
+      {createdDocument && (
+        <SendDocumentModal
+          isOpen={showSendDocumentModal}
+          onClose={() => {
+            setShowSendDocumentModal(false);
+            setCreatedDocument(null);
+          }}
+          document={createdDocument}
+          documentType="invoice"
+          companyId={uid}
+          onSend={async (method, options) => {
+            try {
+              // First save the invoice
+              await handleSubmit(false); // Save as finalized
 
-            // Then handle the sending logic
-            if (method === 'email') {
-              // TODO: Implement actual email sending
+              // Then handle the sending logic
+              if (method === 'email') {
+                // TODO: Implement actual email sending
 
-              toast.success('Rechnung wurde gespeichert und E-Mail-Versand wird vorbereitet');
-            } else if (method === 'download') {
-              // TODO: Implement PDF download
+                toast.success('Rechnung wurde gespeichert und E-Mail-Versand wird vorbereitet');
+              } else if (method === 'download') {
+                // TODO: Implement PDF download
 
-              toast.success('PDF-Download wird vorbereitet');
-            } else if (method === 'print') {
-              // TODO: Implement print functionality
+                toast.success('PDF-Download wird vorbereitet');
+              } else if (method === 'print') {
+                // TODO: Implement print functionality
 
-              toast.success('Druckvorbereitung abgeschlossen');
+                toast.success('Druckvorbereitung abgeschlossen');
+              }
+
+              // Navigate to invoices list after successful send
+              router.push(`/dashboard/company/${uid}/finance/invoices`);
+            } catch (error) {
+              console.error('Error sending document:', error);
+              toast.error('Fehler beim Versenden der Rechnung');
             }
-
-            // Navigate to invoices list after successful send
-            router.push(`/dashboard/company/${uid}/finance/invoices`);
-          } catch (error) {
-            console.error('Error sending document:', error);
-            toast.error('Fehler beim Versenden der Rechnung');
-          }
-        }} />
-
-      }
+          }}
+        />
+      )}
 
       {/* Live Preview Modal - NUTZT JETZT DIE GLEICHEN DATEN WIE SendDocumentModal! */}
       <LivePreviewModal
@@ -5175,8 +5120,8 @@ export default function CreateQuotePage() {
         onClose={() => setShowLivePreview(false)}
         document={buildInvoiceDataForPreview()}
         documentType="invoice"
-        companyId={uid} />
-
-    </div>);
-
+        companyId={uid}
+      />
+    </div>
+  );
 }

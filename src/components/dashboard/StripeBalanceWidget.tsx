@@ -57,7 +57,6 @@ export default function StripeBalanceWidget({
       const data = await response.json();
       setBalance(data);
     } catch (err) {
-
       setError(err instanceof Error ? err.message : 'Fehler beim Laden des Guthabens');
     } finally {
       setLoading(false);
@@ -99,7 +98,9 @@ export default function StripeBalanceWidget({
       const payoutData = await response.json();
 
       // Success feedback
-      alert(`Auszahlung erfolgreich angefordert! Payout-ID: ${payoutData.payoutId}\n\nDer Betrag wird in 1-2 Werktagen auf Ihr Bankkonto überwiesen.`);
+      alert(
+        `Auszahlung erfolgreich angefordert! Payout-ID: ${payoutData.payoutId}\n\nDer Betrag wird in 1-2 Werktagen auf Ihr Bankkonto überwiesen.`
+      );
 
       // Reload balance to reflect changes
       await loadBalance();
@@ -107,8 +108,9 @@ export default function StripeBalanceWidget({
       // Navigate to payouts page to show details
       router.push(`/dashboard/company/${companyUid}/payouts`);
     } catch (err) {
-
-      alert(`Fehler bei der Auszahlung: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
+      alert(
+        `Fehler bei der Auszahlung: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`
+      );
     } finally {
       setPayoutLoading(false);
     }
@@ -150,12 +152,7 @@ export default function StripeBalanceWidget({
             <AlertCircle className="w-4 h-4" />
             {error}
           </div>
-          <Button
-            onClick={loadBalance}
-            variant="outline"
-            size="sm"
-            className="mt-2 w-full"
-          >
+          <Button onClick={loadBalance} variant="outline" size="sm" className="mt-2 w-full">
             Erneut versuchen
           </Button>
         </CardContent>
@@ -183,7 +180,9 @@ export default function StripeBalanceWidget({
           {/* Available Balance */}
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">Verfügbar</span>
-            <span className={`font-semibold ${hasAvailableBalance ? 'text-green-600' : 'text-gray-500'}`}>
+            <span
+              className={`font-semibold ${hasAvailableBalance ? 'text-green-600' : 'text-gray-500'}`}
+            >
               {formatCurrency(balance.available, balance.currency)}
             </span>
           </div>
@@ -218,12 +217,7 @@ export default function StripeBalanceWidget({
               </Button>
             )}
 
-            <Button
-              onClick={handleViewPayouts}
-              variant="outline"
-              size="sm"
-              className="w-full"
-            >
+            <Button onClick={handleViewPayouts} variant="outline" size="sm" className="w-full">
               Auszahlungshistorie
             </Button>
           </div>
@@ -249,16 +243,16 @@ export default function StripeBalanceWidget({
           <Euro className="w-5 h-5 text-[#14ad9f]" />
           Stripe Guthaben
         </CardTitle>
-        <CardDescription>
-          Verfügbares Guthaben für Auszahlungen
-        </CardDescription>
+        <CardDescription>Verfügbares Guthaben für Auszahlungen</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Balance Summary */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 bg-green-50 rounded-lg">
             <div className="text-sm text-green-600 font-medium">Verfügbar</div>
-            <div className={`text-2xl font-bold ${hasAvailableBalance ? 'text-green-700' : 'text-gray-500'}`}>
+            <div
+              className={`text-2xl font-bold ${hasAvailableBalance ? 'text-green-700' : 'text-gray-500'}`}
+            >
               {formatCurrency(balance.available, balance.currency)}
             </div>
           </div>
@@ -295,10 +289,7 @@ export default function StripeBalanceWidget({
             </Button>
           )}
 
-          <Button
-            onClick={handleViewPayouts}
-            variant="outline"
-          >
+          <Button onClick={handleViewPayouts} variant="outline">
             Auszahlungshistorie anzeigen
           </Button>
         </div>

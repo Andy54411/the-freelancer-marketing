@@ -288,24 +288,24 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
       // Versuche zuerst users Collection
       const userDocRef = doc(db, 'users', uid);
       const userDocSnap = await getDoc(userDocRef);
-      
+
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data() as FirestoreUserData;
         setFirestoreUserData(userData);
         return;
       }
-      
+
       // Falls nicht in users gefunden, versuche companies Collection
       const companyDocRef = doc(db, 'companies', uid);
       const companyDocSnap = await getDoc(companyDocRef);
-      
+
       if (companyDocSnap.exists()) {
         const companyData = companyDocSnap.data();
         // Mappe Company-Daten auf User-Format
         const userData: FirestoreUserData = {
           firstName: companyData.firstName || '',
           lastName: companyData.lastName || '',
-          user_type: 'firma'
+          user_type: 'firma',
         };
         setFirestoreUserData(userData);
       } else {

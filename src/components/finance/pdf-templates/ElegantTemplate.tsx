@@ -25,33 +25,28 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
   logoSize,
   pageMode = 'multi',
   documentType,
-  documentSettings
+  documentSettings,
 }) => {
   // 📋 DYNAMISCHE DOKUMENTTYP-KONFIGURATION
   // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
   const detectedType = documentType || detectDocumentType(data) || 'invoice';
   const config = getDocumentTypeConfig(detectedType, color);
 
-
-
-
-
-
-
-
   return (
     <div
       className="bg-white w-full max-w-[210mm] mx-auto text-xs"
-      style={{ fontFamily: 'Georgia, serif' }}>
-
-            <style
+      style={{ fontFamily: 'Georgia, serif' }}
+    >
+      <style
         dangerouslySetInnerHTML={{
           __html: `
           @media print {
             .pdf-page { page-break-before: always; }
             body { margin: 0; padding: 0; }
           }
-          ${documentSettings?.showFoldLines ? `
+          ${
+            documentSettings?.showFoldLines
+              ? `
           .pdf-page::before {
             content: '';
             position: absolute;
@@ -82,27 +77,27 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
             border-radius: 50%;
             z-index: 100;
           }
-          ` : ''}
-        `
-        }} />
-
+          `
+              : ''
+          }
+        `,
+        }}
+      />
 
       {/* ========= SEITE 1 ========= */}
       <div className="pdf-page flex flex-col relative">
         {/* Wasserzeichen */}
-        {documentSettings?.showWatermark &&
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+        {documentSettings?.showWatermark && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
             <div className="text-6xl font-bold text-gray-100 transform rotate-45 select-none">
               {data.documentLabel}
             </div>
           </div>
-        }
+        )}
         {/* Seitenzahl */}
-        {documentSettings?.showPageNumbers &&
-        <div className="absolute bottom-4 right-6 text-xs text-gray-500 z-10">
-            Seite 1
-          </div>
-        }
+        {documentSettings?.showPageNumbers && (
+          <div className="absolute bottom-4 right-6 text-xs text-gray-500 z-10">Seite 1</div>
+        )}
         {/* Elegant Header - Redesigned */}
         <div className="p-4 pb-2">
           <div className="relative mb-3" style={{ minHeight: data.companyLogo ? '90px' : '75px' }}>
@@ -110,23 +105,23 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
             <div
               className="absolute top-0 left-0 w-full h-0.5"
               style={{
-                background: `linear-gradient(90deg, ${color} 0%, ${color}80 50%, transparent 100%)`
-              }} />
-
+                background: `linear-gradient(90deg, ${color} 0%, ${color}80 50%, transparent 100%)`,
+              }}
+            />
 
             <div className="flex justify-between items-start pt-4">
               {/* Logo Section */}
               <div className="flex-shrink-0">
-                {data.companyLogo &&
-                <div className="relative">
+                {data.companyLogo && (
+                  <div className="relative">
                     <img
-                    src={data.companyLogo}
-                    alt={data.companyName}
-                    className="h-16 w-auto object-contain"
-                    style={{ maxHeight: `${logoSize}px` }} />
-
+                      src={data.companyLogo}
+                      alt={data.companyName}
+                      className="h-16 w-auto object-contain"
+                      style={{ maxHeight: `${logoSize}px` }}
+                    />
                   </div>
-                }
+                )}
               </div>
 
               {/* Company Info Section */}
@@ -137,19 +132,19 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
                   </div>
                   <div
                     className="w-16 h-px ml-auto"
-                    style={{ backgroundColor: color, opacity: 0.6 }} />
-
+                    style={{ backgroundColor: color, opacity: 0.6 }}
+                  />
                 </div>
 
                 <div className="text-xs text-gray-600 space-y-0.5 leading-relaxed">
-                  {data.companyAddress &&
-                  <div
-                    className="font-light"
-                    dangerouslySetInnerHTML={{
-                      __html: data.companyAddress.replace(/\n/g, '<br/>')
-                    }} />
-
-                  }
+                  {data.companyAddress && (
+                    <div
+                      className="font-light"
+                      dangerouslySetInnerHTML={{
+                        __html: data.companyAddress.replace(/\n/g, '<br/>'),
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -157,15 +152,18 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
             {/* Document Label - Positioned elegantly */}
             <div className="absolute bottom-0 left-0 flex items-end">
               <div>
-                <div className="font-serif text-2xl font-light tracking-wider" style={{ color: config.color }}>
+                <div
+                  className="font-serif text-2xl font-light tracking-wider"
+                  style={{ color: config.color }}
+                >
                   {config.title}
                 </div>
                 <div className="flex items-center mt-1">
                   <div className="w-12 h-px" style={{ backgroundColor: color }} />
                   <div
                     className="w-1.5 h-1.5 rounded-full ml-2"
-                    style={{ backgroundColor: color }} />
-
+                    style={{ backgroundColor: color }}
+                  />
                 </div>
               </div>
             </div>
@@ -178,20 +176,20 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
               </div>
               <div className="space-y-2">
                 <div className="font-medium text-lg">{data.customerName}</div>
-                {data.customerAddressParsed.street &&
-                <div>{data.customerAddressParsed.street}</div>
-                }
-                {(data.customerAddressParsed.postalCode || data.customerAddressParsed.city) &&
-                <div>
+                {data.customerAddressParsed.street && (
+                  <div>{data.customerAddressParsed.street}</div>
+                )}
+                {(data.customerAddressParsed.postalCode || data.customerAddressParsed.city) && (
+                  <div>
                     {data.customerAddressParsed.postalCode} {data.customerAddressParsed.city}
                   </div>
-                }
-                {data.customerAddressParsed.country &&
-                <div>{data.customerAddressParsed.country}</div>
-                }
-                {data.customerVatId &&
-                <div className="mt-2 text-sm">USt-IdNr.: {data.customerVatId}</div>
-                }
+                )}
+                {data.customerAddressParsed.country && (
+                  <div>{data.customerAddressParsed.country}</div>
+                )}
+                {data.customerVatId && (
+                  <div className="mt-2 text-sm">USt-IdNr.: {data.customerVatId}</div>
+                )}
               </div>
             </div>
 
@@ -204,44 +202,44 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
                 <div>Datum: {formatDate(data.invoiceDate)}</div>
                 <div>Fälligkeitsdatum: {formatDate(data.dueDate)}</div>
               </div>
-              
+
               {/* QR-Code unter Dokumentdetails */}
-              {documentSettings?.showQRCode &&
-              <div className="mt-4">
-                  {documentSettings?.qrCodeUrl ?
-                <img
-                  src={documentSettings.qrCodeUrl}
-                  alt="QR Code"
-                  className="w-20 h-20 border border-gray-300" /> :
-
-
-                <div className="w-20 h-20 bg-gray-200 border border-gray-300 flex items-center justify-center text-xs text-gray-500">
+              {documentSettings?.showQRCode && (
+                <div className="mt-4">
+                  {documentSettings?.qrCodeUrl ? (
+                    <img
+                      src={documentSettings.qrCodeUrl}
+                      alt="QR Code"
+                      className="w-20 h-20 border border-gray-300"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-gray-200 border border-gray-300 flex items-center justify-center text-xs text-gray-500">
                       QR
                     </div>
-                }
+                  )}
                 </div>
-              }
+              )}
             </div>
           </div>
 
           {/* Header Text (Kopftext) */}
-          {data.headerText &&
-          <div
-            className="mb-2 p-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border-l-4"
-            style={{ borderColor: color }}>
-
+          {data.headerText && (
+            <div
+              className="mb-2 p-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border-l-4"
+              style={{ borderColor: color }}
+            >
               <div
-              className="text-sm text-gray-700 leading-relaxed"
-              dangerouslySetInnerHTML={{
-                __html: replacePlaceholders(
-                  data.headerText,
-                  data,
-                  documentSettings?.language || 'de'
-                )
-              }} />
-
+                className="text-sm text-gray-700 leading-relaxed"
+                dangerouslySetInnerHTML={{
+                  __html: replacePlaceholders(
+                    data.headerText,
+                    data,
+                    documentSettings?.language || 'de'
+                  ),
+                }}
+              />
             </div>
-          }
+          )}
 
           <div className="flex items-center mb-4">
             <div className="flex-1 h-px" style={{ backgroundColor: color, opacity: 0.3 }} />
@@ -260,12 +258,12 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
             variant="elegant"
             showArticleNumber={documentSettings?.showArticleNumber}
             showVATPerPosition={documentSettings?.showVATPerPosition}
-            language={documentSettings?.language || 'de'} />
-
+            language={documentSettings?.language || 'de'}
+          />
 
           {/* Totals und Footer NUR bei einseitigem Modus */}
-          {pageMode === 'single' &&
-          <>
+          {pageMode === 'single' && (
+            <>
               {/* Totals */}
               <div className="flex justify-between items-start gap-6 mb-4 mt-4">
                 <div className="flex-1">
@@ -273,108 +271,116 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
                     <div className="font-medium text-sm mb-2" style={{ color }}>
                       Steuerliche Behandlung
                     </div>
-                    <TaxRulesInfo data={data} color={color} language={documentSettings?.language || 'de'} />
+                    <TaxRulesInfo
+                      data={data}
+                      color={color}
+                      language={documentSettings?.language || 'de'}
+                    />
                   </div>
                 </div>
-                <TotalsDisplay data={data} color={color} variant="elegant" language={documentSettings?.language || 'de'} />
+                <TotalsDisplay
+                  data={data}
+                  color={color}
+                  variant="elegant"
+                  language={documentSettings?.language || 'de'}
+                />
               </div>
 
               {/* FooterText */}
-              <FooterText data={data} language={data.language || "de"} variant="elegant" />
-              
-              {/* EPC-QR-Code */}
-              {documentSettings?.epcQrCodeUrl &&
-            <div className="mt-2">
-                  <img
-                src={documentSettings.epcQrCodeUrl}
-                alt="EPC-QR-Code"
-                className="w-12 h-12" />
+              <FooterText data={data} language={data.language || 'de'} variant="elegant" />
 
+              {/* EPC-QR-Code */}
+              {documentSettings?.epcQrCodeUrl && (
+                <div className="mt-2">
+                  <img
+                    src={documentSettings.epcQrCodeUrl}
+                    alt="EPC-QR-Code"
+                    className="w-12 h-12"
+                  />
                 </div>
-            }
+              )}
             </>
-          }
+          )}
         </div>
 
         {/* Footer Seite 1 */}
-        {documentSettings?.showFooter !== false &&
-        <div className="bg-white p-2 mt-4">
+        {documentSettings?.showFooter !== false && (
+          <div className="bg-white p-2 mt-4">
             <SimpleFooter data={data} color={color} />
           </div>
-        }
+        )}
       </div>
 
       {/* ========= MEHRSEITIG MODUS ========= */}
-      {pageMode !== 'single' &&
-      <>
+      {pageMode !== 'single' && (
+        <>
           {/* ========= SEITENUMBRUCH (nur bei > 2 Items) ========= */}
           <div
-          className="page-break"
-          style={{
-            pageBreakBefore: 'always',
-            breakBefore: 'page',
-            pageBreakAfter: 'avoid',
-            breakAfter: 'avoid',
-            height: '1px',
-            clear: 'both'
-          }}>
-        </div>
+            className="page-break"
+            style={{
+              pageBreakBefore: 'always',
+              breakBefore: 'page',
+              pageBreakAfter: 'avoid',
+              breakAfter: 'avoid',
+              height: '1px',
+              clear: 'both',
+            }}
+          ></div>
 
           {/* ========= SEITE 2 ========= */}
           <div
-          className="pdf-page flex flex-col relative"
-          style={{
-            minHeight: '297mm',
-            height: '297mm',
-            pageBreakAfter: 'avoid',
-            breakAfter: 'avoid'
-          }}>
-
+            className="pdf-page flex flex-col relative"
+            style={{
+              minHeight: '297mm',
+              height: '297mm',
+              pageBreakAfter: 'avoid',
+              breakAfter: 'avoid',
+            }}
+          >
             {/* Seitenzahl Seite 2 */}
-            {documentSettings?.showPageNumbers &&
-          <div className="absolute bottom-4 right-6 text-xs text-gray-500 z-10">
-                Seite 2
-              </div>
-          }
+            {documentSettings?.showPageNumbers && (
+              <div className="absolute bottom-4 right-6 text-xs text-gray-500 z-10">Seite 2</div>
+            )}
             {/* Header Seite 2 */}
             <div className="p-6 pb-4">
               <div
-              className="relative mb-8"
-              style={{ minHeight: data.companyLogo ? '160px' : '120px' }}>
-
+                className="relative mb-8"
+                style={{ minHeight: data.companyLogo ? '160px' : '120px' }}
+              >
                 <div
-                className="absolute top-0 left-0 w-full h-1"
-                style={{ background: `linear-gradient(90deg, ${color} 0%, transparent 100%)` }} />
-
+                  className="absolute top-0 left-0 w-full h-1"
+                  style={{ background: `linear-gradient(90deg, ${color} 0%, transparent 100%)` }}
+                />
 
                 <div className="flex justify-between items-start pt-6">
                   <div className="flex-shrink-0">
-                    {data.companyLogo &&
-                  <div className="relative">
+                    {data.companyLogo && (
+                      <div className="relative">
                         <img
-                      src={data.companyLogo}
-                      alt={data.companyName}
-                      className="h-20 w-auto object-contain"
-                      style={{ maxHeight: `${logoSize}px` }} />
+                          src={data.companyLogo}
+                          alt={data.companyName}
+                          className="h-20 w-auto object-contain"
+                          style={{ maxHeight: `${logoSize}px` }}
+                        />
 
                         <div
-                      className="absolute -bottom-2 left-0 w-16 h-0.5"
-                      style={{ backgroundColor: color }} />
-
+                          className="absolute -bottom-2 left-0 w-16 h-0.5"
+                          style={{ backgroundColor: color }}
+                        />
                       </div>
-                  }
+                    )}
                   </div>
 
                   <div className="text-right">
                     <div className="font-light text-2xl text-gray-900 mb-2">{data.companyName}</div>
                     <div className="text-xs text-gray-600 leading-relaxed space-y-1">
-                      {data.companyAddress &&
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: data.companyAddress.replace(/\n/g, '<br/>')
-                      }} />
-
-                    }
+                      {data.companyAddress && (
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: data.companyAddress.replace(/\n/g, '<br/>'),
+                          }}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -394,20 +400,20 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
                   </div>
                   <div className="space-y-2">
                     <div className="font-medium text-lg">{data.customerName}</div>
-                    {data.customerAddressParsed.street &&
-                  <div>{data.customerAddressParsed.street}</div>
-                  }
-                    {(data.customerAddressParsed.postalCode || data.customerAddressParsed.city) &&
-                  <div>
+                    {data.customerAddressParsed.street && (
+                      <div>{data.customerAddressParsed.street}</div>
+                    )}
+                    {(data.customerAddressParsed.postalCode || data.customerAddressParsed.city) && (
+                      <div>
                         {data.customerAddressParsed.postalCode} {data.customerAddressParsed.city}
                       </div>
-                  }
-                    {data.customerAddressParsed.country &&
-                  <div>{data.customerAddressParsed.country}</div>
-                  }
-                    {data.customerVatId &&
-                  <div className="mt-2 text-sm">USt-IdNr.: {data.customerVatId}</div>
-                  }
+                    )}
+                    {data.customerAddressParsed.country && (
+                      <div>{data.customerAddressParsed.country}</div>
+                    )}
+                    {data.customerVatId && (
+                      <div className="mt-2 text-sm">USt-IdNr.: {data.customerVatId}</div>
+                    )}
                   </div>
                 </div>
 
@@ -447,40 +453,47 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
                     <div className="font-medium text-sm mb-2" style={{ color }}>
                       Steuerliche Behandlung
                     </div>
-                    <TaxRulesInfo data={data} color={color} language={documentSettings?.language || 'de'} />
+                    <TaxRulesInfo
+                      data={data}
+                      color={color}
+                      language={documentSettings?.language || 'de'}
+                    />
                   </div>
                 </div>
-                <TotalsDisplay data={data} color={color} variant="elegant" language={documentSettings?.language || 'de'} />
+                <TotalsDisplay
+                  data={data}
+                  color={color}
+                  variant="elegant"
+                  language={documentSettings?.language || 'de'}
+                />
               </div>
 
-              <FooterText data={data} language={data.language || "de"} variant="elegant" />
-              
-              {/* EPC-QR-Code */}
-              {documentSettings?.epcQrCodeUrl &&
-            <div className="mt-2">
-                  <img
-                src={documentSettings.epcQrCodeUrl}
-                alt="EPC-QR-Code"
-                className="w-12 h-12" />
+              <FooterText data={data} language={data.language || 'de'} variant="elegant" />
 
+              {/* EPC-QR-Code */}
+              {documentSettings?.epcQrCodeUrl && (
+                <div className="mt-2">
+                  <img
+                    src={documentSettings.epcQrCodeUrl}
+                    alt="EPC-QR-Code"
+                    className="w-12 h-12"
+                  />
                 </div>
-            }
+              )}
 
               {/* Spacer um Footer nach unten zu drücken */}
               <div className="flex-1"></div>
             </div>
 
             {/* Footer Seite 2 - UNTEN */}
-            {documentSettings?.showFooter !== false &&
-          <div className="mt-3 p-2 bg-white">
+            {documentSettings?.showFooter !== false && (
+              <div className="mt-3 p-2 bg-white">
                 <SimpleFooter data={data} color={color} />
               </div>
-          }
+            )}
           </div>
         </>
-      }
-
-
-    </div>);
-
+      )}
+    </div>
+  );
 };

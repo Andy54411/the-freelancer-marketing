@@ -144,7 +144,6 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
           );
           const hasStartDate = !!order.jobDateFrom;
           if (!hasValidStatus || !hasStartDate) {
-
           }
           return hasValidStatus && hasStartDate;
         });
@@ -224,7 +223,6 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
 
   // Effekt zum Erstellen der Kalender-Events, wenn sich die Aufträge, Projekte, Rechnungen oder die Auswahl ändern
   useEffect(() => {
-
     // Events für Aufträge erstellen
     const orderEvents = allOrders.map(order => {
       const isSelected = order.id === selectedOrderId;

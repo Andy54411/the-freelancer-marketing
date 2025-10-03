@@ -25,7 +25,6 @@ export default function SentEmailsView({ onEmailClick, refreshTrigger }: SentEma
   // Reagiere auf refreshTrigger Änderungen
   useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
-
       // Verzögerung, damit IMAP-Speicherung Zeit hat
       setTimeout(() => {
         loadSentEmails();
@@ -50,7 +49,6 @@ export default function SentEmailsView({ onEmailClick, refreshTrigger }: SentEma
       const result = await response.json();
 
       if (result.success && result.data?.emails) {
-
         // Konvertiere zu SentEmail-Format
         const sentEmailsData = result.data.emails.map((email: any) => ({
           id: email.id || `sent_${Date.now()}_${Math.random()}`,
@@ -65,14 +63,11 @@ export default function SentEmailsView({ onEmailClick, refreshTrigger }: SentEma
         }));
 
         setSentEmails(sentEmailsData);
-
       } else {
-
         // Fallback zu Demo-Daten
         loadDemoSentEmails();
       }
     } catch (error) {
-
       setError('Fehler beim Laden der gesendeten E-Mails');
       // Fallback zu Demo-Daten
       loadDemoSentEmails();
@@ -82,7 +77,6 @@ export default function SentEmailsView({ onEmailClick, refreshTrigger }: SentEma
   };
 
   const loadDemoSentEmails = () => {
-
     setSentEmails([
       {
         id: 'demo_1',

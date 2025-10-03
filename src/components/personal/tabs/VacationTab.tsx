@@ -54,7 +54,6 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
       const employeeRequests = requests.filter(req => req.employeeId === employee.id);
       setVacationRequests(employeeRequests);
     } catch (error) {
-
       toast.error('Fehler beim Laden der Urlaubsdaten');
 
       // Fallback zu Mock-Daten wenn Firebase fehlt
@@ -216,7 +215,6 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
         approve ? 'Antrag genehmigt und im Dienstplan aktualisiert' : 'Antrag abgelehnt'
       );
     } catch (error) {
-
       toast.error('Fehler beim Verarbeiten des Antrags');
     }
   };
@@ -258,9 +256,7 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
           });
         }
       }
-
     } catch (error) {
-
       throw error;
     }
   };

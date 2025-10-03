@@ -161,9 +161,7 @@ export default function SidebarFilters({
 
         // console.warn wiederherstellen
         console.warn = originalConsoleWarn;
-      } catch (error) {
-
-      }
+      } catch (error) {}
 
       return () => {
         // Cleanup: Entferne alle Event Listener

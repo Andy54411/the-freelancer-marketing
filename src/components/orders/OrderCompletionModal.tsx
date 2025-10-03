@@ -90,7 +90,6 @@ const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
       onOrderCompleted();
       onClose();
     } catch (error: any) {
-
       toast.error('Fehler beim Abschließen des Auftrags', {
         description: error.message || 'Bitte versuchen Sie es später erneut.',
       });

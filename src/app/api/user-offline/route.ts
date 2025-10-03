@@ -24,7 +24,6 @@ export async function POST(req: NextRequest) {
 
     // Check if database is properly configured
     if (!admin.database) {
-
       return NextResponse.json({ success: true, warning: 'Database not available' });
     }
 
@@ -40,7 +39,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-
     // Immer success zurückgeben, um Client-Fehler zu vermeiden
     return NextResponse.json(
       { success: true, warning: 'Offline status update failed' },

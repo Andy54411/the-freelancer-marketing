@@ -109,7 +109,6 @@ function CheckoutForm({
     event.preventDefault();
 
     if (!stripe || !elements) {
-
       return;
     }
 
@@ -122,7 +121,6 @@ function CheckoutForm({
       const { error: submitError } = await elements.submit();
 
       if (submitError) {
-
         setMessage(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         onError(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         return;
@@ -144,20 +142,16 @@ function CheckoutForm({
       });
 
       if (confirmError) {
-
         setMessage(confirmError.message || 'B2B-Zahlung fehlgeschlagen');
         onError(confirmError.message || 'B2B-Zahlung fehlgeschlagen');
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-
         setMessage('B2B-Zahlung erfolgreich abgeschlossen!');
         onSuccess(paymentIntent.id);
       } else {
-
         setMessage(`B2B-Zahlung Status: ${paymentIntent?.status}`);
         onError(`B2B-Zahlung unvollständig. Status: ${paymentIntent?.status}`);
       }
     } catch (error: any) {
-
       setMessage('Unerwarteter Fehler bei der B2B-Zahlung');
       onError('Unerwarteter Fehler bei der B2B-Zahlung');
     } finally {
@@ -323,7 +317,6 @@ export default function B2BPaymentModal({
     setError('');
 
     try {
-
       const response = await fetch('/api/b2b/create-project-payment', {
         method: 'POST',
         headers: {
@@ -356,9 +349,7 @@ export default function B2BPaymentModal({
 
       setClientSecret(data.clientSecret);
       setPaymentDetails(data.paymentDetails);
-
     } catch (error: any) {
-
       setError(error.message || 'B2B Payment Setup fehlgeschlagen');
       onError(error.message || 'B2B Payment Setup fehlgeschlagen');
     } finally {

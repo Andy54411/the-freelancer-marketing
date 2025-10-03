@@ -110,7 +110,6 @@ export default function UserInboxPage() {
         setLoadingChats(false);
       },
       err => {
-
         setError('Fehler beim Laden der Chats.');
         setLoadingChats(false);
       }
@@ -141,7 +140,6 @@ export default function UserInboxPage() {
           setError('Zugehöriger Auftrag für diesen Chat nicht gefunden.');
         }
       } catch (err) {
-
         setError('Fehler beim Laden des Auftragsstatus.');
       } finally {
         setLoadingOrderStatus(false);

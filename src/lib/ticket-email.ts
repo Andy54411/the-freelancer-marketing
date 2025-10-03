@@ -25,7 +25,7 @@ export class TicketEmailService {
       low: '🟢',
       medium: '🟡',
       high: '🟠',
-      urgent: '🔴'
+      urgent: '🔴',
     };
     return priorities[priority as keyof typeof priorities] || '⚪';
   }
@@ -40,7 +40,7 @@ export class TicketEmailService {
       account: '👤',
       technical: '⚙️',
       feedback: '💬',
-      other: '📋'
+      other: '📋',
     };
     return categories[category as keyof typeof categories] || '📋';
   }
@@ -52,7 +52,7 @@ export class TicketEmailService {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: 'Europe/Berlin'
+      timeZone: 'Europe/Berlin',
     }).format(date);
   }
 
@@ -71,19 +71,16 @@ export class TicketEmailService {
         html,
         headers: {
           'X-Ticket-ID': ticket.id,
-          'X-Ticket-Type': type
-        }
+          'X-Ticket-Type': type,
+        },
       });
 
       if (emailResponse.error) {
-
         return false;
       }
 
       return true;
-
     } catch (error) {
-
       return false;
     }
   }
@@ -97,10 +94,13 @@ export class TicketEmailService {
       updated: `${priorityEmoji} Ticket aktualisiert: ${ticket.title} [#${ticket.id}]`,
       comment: `💬 Neue Antwort: ${ticket.title} [#${ticket.id}]`,
       resolved: `✅ Ticket gelöst: ${ticket.title} [#${ticket.id}]`,
-      assigned: `👤 Ticket zugewiesen: ${ticket.title} [#${ticket.id}]`
+      assigned: `👤 Ticket zugewiesen: ${ticket.title} [#${ticket.id}]`,
     };
 
-    return subjects[type as keyof typeof subjects] || `${categoryEmoji} Ticket-Update: ${ticket.title} [#${ticket.id}]`;
+    return (
+      subjects[type as keyof typeof subjects] ||
+      `${categoryEmoji} Ticket-Update: ${ticket.title} [#${ticket.id}]`
+    );
   }
 
   private static generateEmailTemplate(
@@ -112,9 +112,8 @@ export class TicketEmailService {
     const priorityEmoji = this.getPriorityEmoji(ticket.priority);
     const categoryEmoji = this.getCategoryEmoji(ticket.category);
 
-    const baseUrl = process.env.NODE_ENV === 'production'
-      ? 'https://taskilo.de'
-      : 'http://localhost:3000';
+    const baseUrl =
+      process.env.NODE_ENV === 'production' ? 'https://taskilo.de' : 'http://localhost:3000';
 
     const ticketUrl = `${baseUrl}/dashboard/admin/tickets?ticket=${ticket.id}`;
 
@@ -164,17 +163,25 @@ export class TicketEmailService {
               </div>
             </div>
 
-            ${ticket.assignedTo ? `
+            ${
+              ticket.assignedTo
+                ? `
               <div style="margin-bottom: 15px;">
                 <strong>Zugewiesen an:</strong> ${ticket.assignedTo}
               </div>
-            ` : ''}
+            `
+                : ''
+            }
 
-            ${ticket.dueDate ? `
+            ${
+              ticket.dueDate
+                ? `
               <div style="margin-bottom: 15px;">
                 <strong>Fälligkeitsdatum:</strong> ${this.formatDate(ticket.dueDate)}
               </div>
-            ` : ''}
+            `
+                : ''
+            }
 
             <div style="margin-bottom: 15px;">
               <strong>Beschreibung:</strong>
@@ -183,12 +190,16 @@ export class TicketEmailService {
               </div>
             </div>
 
-            ${ticket.tags.length > 0 ? `
+            ${
+              ticket.tags.length > 0
+                ? `
               <div>
                 <strong>Tags:</strong>
                 ${ticket.tags.map(tag => `<span style="background: #14ad9f; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-right: 5px;">${tag}</span>`).join('')}
               </div>
-            ` : ''}
+            `
+                : ''
+            }
           </div>
 
           ${this.generateTypeSpecificContent(type, comment, assignedBy)}
@@ -219,7 +230,11 @@ export class TicketEmailService {
     `;
   }
 
-  private static generateTypeSpecificContent(type: string, comment?: TicketComment, assignedBy?: string): string {
+  private static generateTypeSpecificContent(
+    type: string,
+    comment?: TicketComment,
+    assignedBy?: string
+  ): string {
     switch (type) {
       case 'created':
         return `
@@ -230,7 +245,8 @@ export class TicketEmailService {
         `;
 
       case 'comment':
-        return comment ? `
+        return comment
+          ? `
           <div style="background: #cce7ff; color: #004085; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
             <strong>💬 Neue Antwort von ${comment.userDisplayName}</strong><br>
             <div style="background: white; padding: 10px; border-radius: 4px; margin-top: 10px;">
@@ -240,7 +256,8 @@ export class TicketEmailService {
               ${this.formatDate(comment.createdAt)} ${comment.isInternal ? '(Interne Notiz)' : ''}
             </small>
           </div>
-        ` : '';
+        `
+          : '';
 
       case 'resolved':
         return `
@@ -275,7 +292,7 @@ export class TicketEmailService {
       'in-progress': { label: 'In Bearbeitung', color: '#fd7e14' },
       waiting: { label: 'Wartet', color: '#ffc107' },
       resolved: { label: 'Gelöst', color: '#28a745' },
-      closed: { label: 'Geschlossen', color: '#6c757d' }
+      closed: { label: 'Geschlossen', color: '#6c757d' },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.open;
@@ -289,14 +306,14 @@ export class TicketEmailService {
     await this.sendTicketEmail({
       ticket,
       recipient: ticket.reportedBy,
-      type: 'created'
+      type: 'created',
     });
 
     // Benachrichtige den Admin
     await this.sendTicketEmail({
       ticket,
       recipient: 'andy.staudinger@taskilo.de',
-      type: 'created'
+      type: 'created',
     });
 
     // Benachrichtige zugewiesene Person (falls vorhanden)
@@ -304,17 +321,14 @@ export class TicketEmailService {
       await this.sendTicketEmail({
         ticket,
         recipient: ticket.assignedTo,
-        type: 'assigned'
+        type: 'assigned',
       });
     }
   }
 
   static async notifyTicketComment(ticket: Ticket, comment: TicketComment): Promise<void> {
     // Sammle alle Empfänger (ohne Duplikate)
-    const recipients = new Set([
-      ticket.reportedBy,
-      'andy.staudinger@taskilo.de'
-    ]);
+    const recipients = new Set([ticket.reportedBy, 'andy.staudinger@taskilo.de']);
 
     if (ticket.assignedTo) {
       recipients.add(ticket.assignedTo);
@@ -331,7 +345,7 @@ export class TicketEmailService {
         ticket,
         recipient,
         type: 'comment',
-        comment
+        comment,
       });
     }
   }
@@ -341,14 +355,14 @@ export class TicketEmailService {
     await this.sendTicketEmail({
       ticket,
       recipient: ticket.reportedBy,
-      type: 'resolved'
+      type: 'resolved',
     });
 
     // Benachrichtige den Admin
     await this.sendTicketEmail({
       ticket,
       recipient: 'andy.staudinger@taskilo.de',
-      type: 'resolved'
+      type: 'resolved',
     });
   }
 
@@ -358,7 +372,7 @@ export class TicketEmailService {
         ticket,
         recipient: ticket.assignedTo,
         type: 'assigned',
-        assignedBy
+        assignedBy,
       });
     }
   }

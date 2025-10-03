@@ -5,8 +5,8 @@ import { PlaceholderRegistry, PlaceholderContext } from '../types';
 function formatDateDE(date: Date): string {
   return date.toLocaleDateString('de-DE', {
     day: '2-digit',
-    month: '2-digit', 
-    year: 'numeric'
+    month: '2-digit',
+    year: 'numeric',
   });
 }
 
@@ -17,7 +17,7 @@ function getISOWeek(date: Date): number {
   const firstThursday = target.valueOf();
   target.setMonth(0, 1);
   if (target.getDay() !== 4) {
-    target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+    target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7));
   }
   return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
 }
@@ -66,35 +66,35 @@ function getDaysInCurrentMonth(): number {
 // Hauptregistry für Datum/Zeit-Platzhalter
 export const dateTimePlaceholders: PlaceholderRegistry = {
   // Basis-Datum Platzhalter
-  'HEUTE': () => formatDateDE(new Date()),
-  'DATUM': () => formatDateDE(new Date()),
-  'JAHR': () => new Date().getFullYear().toString(),
+  HEUTE: () => formatDateDE(new Date()),
+  DATUM: () => formatDateDE(new Date()),
+  JAHR: () => new Date().getFullYear().toString(),
   'JAHR.KURZ': () => new Date().getFullYear().toString().slice(-2),
-  
+
   // Monat Platzhalter
-  'MONAT': () => getMonthName(new Date()),
+  MONAT: () => getMonthName(new Date()),
   'MONAT.KURZ': () => getMonthNameShort(new Date()),
   'MONAT.ZAHL': () => getMonthNumber(new Date()),
-  
+
   // Tag und Wochentag
-  'TAG': () => new Date().getDate().toString().padStart(2, '0'),
-  'WOCHENTAG': () => getWeekdayName(new Date()),
-  'HEUTETAG': () => new Date().getDate().toString().padStart(2, '0'),
-  'HEUTETAG_NAME': () => getWeekdayName(new Date()),
-  
+  TAG: () => new Date().getDate().toString().padStart(2, '0'),
+  WOCHENTAG: () => getWeekdayName(new Date()),
+  HEUTETAG: () => new Date().getDate().toString().padStart(2, '0'),
+  HEUTETAG_NAME: () => getWeekdayName(new Date()),
+
   // Kalenderwoche und Quartal
-  'KALENDERWOCHE': () => getISOWeek(new Date()).toString(),
-  'KW_NUMMER': () => getISOWeek(new Date()).toString(),
-  'QUARTAL': () => getQuarter(new Date()).toString(),
-  
+  KALENDERWOCHE: () => getISOWeek(new Date()).toString(),
+  KW_NUMMER: () => getISOWeek(new Date()).toString(),
+  QUARTAL: () => getQuarter(new Date()).toString(),
+
   // Vorjahr Platzhalter
-  'VORJAHR': () => (new Date().getFullYear() - 1).toString(),
+  VORJAHR: () => (new Date().getFullYear() - 1).toString(),
   'VORJAHR.KURZ': () => (new Date().getFullYear() - 1).toString().slice(-2),
-  'LETZTES_JAHR': () => (new Date().getFullYear() - 1).toString(),
-  'LETZTES_JAHR_KURZ': () => (new Date().getFullYear() - 1).toString().slice(-2),
-  
+  LETZTES_JAHR: () => (new Date().getFullYear() - 1).toString(),
+  LETZTES_JAHR_KURZ: () => (new Date().getFullYear() - 1).toString().slice(-2),
+
   // Vormonat Platzhalter
-  'VORMONAT': () => {
+  VORMONAT: () => {
     const lastMonth = new Date();
     lastMonth.setMonth(lastMonth.getMonth() - 1);
     return getMonthName(lastMonth);
@@ -109,30 +109,30 @@ export const dateTimePlaceholders: PlaceholderRegistry = {
     lastMonth.setMonth(lastMonth.getMonth() - 1);
     return getMonthNumber(lastMonth);
   },
-  'LETZTER_MONAT': () => {
+  LETZTER_MONAT: () => {
     const lastMonth = new Date();
     lastMonth.setMonth(lastMonth.getMonth() - 1);
     return getMonthName(lastMonth);
   },
-  'LETZTER_MONAT_KURZ': () => {
+  LETZTER_MONAT_KURZ: () => {
     const lastMonth = new Date();
     lastMonth.setMonth(lastMonth.getMonth() - 1);
     return getMonthNameShort(lastMonth);
   },
-  'LETZTER_MONAT_ZAHL': () => {
+  LETZTER_MONAT_ZAHL: () => {
     const lastMonth = new Date();
     lastMonth.setMonth(lastMonth.getMonth() - 1);
     return getMonthNumber(lastMonth);
   },
-  
+
   // Folgejahr Platzhalter
-  'FOLGEJAHR': () => (new Date().getFullYear() + 1).toString(),
+  FOLGEJAHR: () => (new Date().getFullYear() + 1).toString(),
   'FOLGEJAHR.KURZ': () => (new Date().getFullYear() + 1).toString().slice(-2),
-  'NAECHSTES_JAHR': () => (new Date().getFullYear() + 1).toString(),
-  'NAECHSTES_JAHR_KURZ': () => (new Date().getFullYear() + 1).toString().slice(-2),
-  
+  NAECHSTES_JAHR: () => (new Date().getFullYear() + 1).toString(),
+  NAECHSTES_JAHR_KURZ: () => (new Date().getFullYear() + 1).toString().slice(-2),
+
   // Folgemonat Platzhalter
-  'FOLGEMONAT': () => {
+  FOLGEMONAT: () => {
     const nextMonth = new Date();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     return getMonthName(nextMonth);
@@ -147,46 +147,46 @@ export const dateTimePlaceholders: PlaceholderRegistry = {
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     return getMonthNumber(nextMonth);
   },
-  'NAECHSTER_MONAT': () => {
+  NAECHSTER_MONAT: () => {
     const nextMonth = new Date();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     return getMonthName(nextMonth);
   },
-  'NAECHSTER_MONAT_KURZ': () => {
+  NAECHSTER_MONAT_KURZ: () => {
     const nextMonth = new Date();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     return getMonthNameShort(nextMonth);
   },
-  'NAECHSTER_MONAT_ZAHL': () => {
+  NAECHSTER_MONAT_ZAHL: () => {
     const nextMonth = new Date();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     return getMonthNumber(nextMonth);
   },
-  
+
   // Folge-Quartal
-  'FOLGEQUARTAL': () => getNextQuarter(new Date()).toString(),
-  'NAECHSTES_QUARTAL': () => getNextQuarter(new Date()).toString(),
-  'VORHERIGES_QUARTAL': () => getPreviousQuarter(new Date()).toString(),
-  
+  FOLGEQUARTAL: () => getNextQuarter(new Date()).toString(),
+  NAECHSTES_QUARTAL: () => getNextQuarter(new Date()).toString(),
+  VORHERIGES_QUARTAL: () => getPreviousQuarter(new Date()).toString(),
+
   // Weitere erweiterte Datum-Funktionen
-  'GESTERN': () => formatDateDE(getYesterday()),
-  'GESTERN_TAG': () => getYesterday().getDate().toString().padStart(2, '0'),
-  'GESTERN_MONAT': () => getMonthName(getYesterday()),
-  'GESTERN_JAHR': () => getYesterday().getFullYear().toString(),
-  
+  GESTERN: () => formatDateDE(getYesterday()),
+  GESTERN_TAG: () => getYesterday().getDate().toString().padStart(2, '0'),
+  GESTERN_MONAT: () => getMonthName(getYesterday()),
+  GESTERN_JAHR: () => getYesterday().getFullYear().toString(),
+
   // Monat-spezifische Funktionen
-  'TAGE_IM_MONAT': () => getDaysInCurrentMonth().toString(),
-  'MONAT_ERSTER_TAG': () => '01',
-  'MONAT_LETZTER_TAG': () => getDaysInCurrentMonth().toString(),
-  
+  TAGE_IM_MONAT: () => getDaysInCurrentMonth().toString(),
+  MONAT_ERSTER_TAG: () => '01',
+  MONAT_LETZTER_TAG: () => getDaysInCurrentMonth().toString(),
+
   // ISO-Datum Formate
-  'DATUM_ISO': () => new Date().toISOString().split('T')[0],
-  'ZEIT_ISO': () => new Date().toTimeString().split(' ')[0],
-  'DATETIME_ISO': () => new Date().toISOString(),
-  
+  DATUM_ISO: () => new Date().toISOString().split('T')[0],
+  ZEIT_ISO: () => new Date().toTimeString().split(' ')[0],
+  DATETIME_ISO: () => new Date().toISOString(),
+
   // Timestamp
-  'TIMESTAMP': () => Math.floor(Date.now() / 1000).toString(),
-  'TIMESTAMP_MS': () => Date.now().toString(),
+  TIMESTAMP: () => Math.floor(Date.now() / 1000).toString(),
+  TIMESTAMP_MS: () => Date.now().toString(),
 };
 
 export default dateTimePlaceholders;

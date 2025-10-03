@@ -93,13 +93,13 @@ export default function CustomerQuotesOverviewPage() {
 
       if (result.success) {
         setQuotes(result.quotes || []);
-
       } else {
         setError(result.error || 'Fehler beim Laden der Angebote');
       }
     } catch (err) {
-
-      setError(`Fehler beim Laden der Angebote: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
+      setError(
+        `Fehler beim Laden der Angebote: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`
+      );
     } finally {
       setLoading(false);
     }
@@ -243,147 +243,153 @@ export default function CustomerQuotesOverviewPage() {
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10 pt-20 px-4 lg:px-6 pb-6">
         <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <Link
-          href={`/dashboard/user/${uid}`}
-          className="inline-flex items-center text-sm text-white/80 hover:text-white mb-4 transition-colors"
-        >
-          <FiArrowLeft className="mr-1 h-4 w-4" />
-          Zurück zum Dashboard
-        </Link>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Meine Angebotsanfragen</h1>
-            <p className="mt-1 text-sm text-white/80">
-              Verwalten Sie Ihre Angebotsanfragen und eingegangene Angebote
-            </p>
+          {/* Header */}
+          <div className="mb-8">
+            <Link
+              href={`/dashboard/user/${uid}`}
+              className="inline-flex items-center text-sm text-white/80 hover:text-white mb-4 transition-colors"
+            >
+              <FiArrowLeft className="mr-1 h-4 w-4" />
+              Zurück zum Dashboard
+            </Link>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-white">Meine Angebotsanfragen</h1>
+                <p className="mt-1 text-sm text-white/80">
+                  Verwalten Sie Ihre Angebotsanfragen und eingegangene Angebote
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Tab Navigation */}
-      <div className="mb-6">
-        <div className="border-b border-white/30">
-          <nav className="-mb-px flex space-x-8">
-            {[
-              { key: 'ALLE', label: 'Alle', count: quotes.length },
-              { key: 'WARTEND', label: 'Wartend', count: getTabCount('WARTEND') },
-              { key: 'ANGEBOTE', label: 'Neue Angebote', count: getTabCount('ANGEBOTE') },
-              { key: 'ANGENOMMEN', label: 'Angenommen', count: getTabCount('ANGENOMMEN') },
-              { key: 'ABGELEHNT', label: 'Abgelehnt', count: getTabCount('ABGELEHNT') },
-            ].map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key as 'ALLE' | 'WARTEND' | 'ANGEBOTE' | 'ANGENOMMEN' | 'ABGELEHNT')}
-                className={`${
-                  activeTab === tab.key
-                    ? 'border-white text-white'
-                    : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
-                } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
-              >
-                {tab.label}
-                <span
-                  className={`ml-2 py-0.5 px-2 rounded-full text-xs font-medium ${
-                    activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-white/10 text-white/80'
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
+          {/* Tab Navigation */}
+          <div className="mb-6">
+            <div className="border-b border-white/30">
+              <nav className="-mb-px flex space-x-8">
+                {[
+                  { key: 'ALLE', label: 'Alle', count: quotes.length },
+                  { key: 'WARTEND', label: 'Wartend', count: getTabCount('WARTEND') },
+                  { key: 'ANGEBOTE', label: 'Neue Angebote', count: getTabCount('ANGEBOTE') },
+                  { key: 'ANGENOMMEN', label: 'Angenommen', count: getTabCount('ANGENOMMEN') },
+                  { key: 'ABGELEHNT', label: 'Abgelehnt', count: getTabCount('ABGELEHNT') },
+                ].map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() =>
+                      setActiveTab(
+                        tab.key as 'ALLE' | 'WARTEND' | 'ANGEBOTE' | 'ANGENOMMEN' | 'ABGELEHNT'
+                      )
+                    }
+                    className={`${
+                      activeTab === tab.key
+                        ? 'border-white text-white'
+                        : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
+                    } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
+                  >
+                    {tab.label}
+                    <span
+                      className={`ml-2 py-0.5 px-2 rounded-full text-xs font-medium ${
+                        activeTab === tab.key
+                          ? 'bg-white/20 text-white'
+                          : 'bg-white/10 text-white/80'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </div>
 
-      {/* Content */}
-      {filteredQuotes.length === 0 ? (
-        <div className="text-center py-12">
-          <FiFileText className="mx-auto h-12 w-12 text-white/60" />
-          <h3 className="mt-2 text-sm font-medium text-white">Keine Angebotsanfragen</h3>
-          <p className="mt-1 text-sm text-white/80">
-            Sie haben noch keine Angebotsanfragen gestellt.
-          </p>
-        </div>
-      ) : (
-        <div className="bg-white/95 shadow-2xl overflow-hidden sm:rounded-lg border border-white/20">
-          <ul role="list" className="divide-y divide-gray-200">
-            {filteredQuotes.map(quote => (
-              <li key={quote.id}>
-                <Link
-                  href={`/dashboard/user/${uid}/quotes/${quote.id}`}
-                  className="block hover:bg-gray-50/80 px-4 py-4 sm:px-6 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
+          {/* Content */}
+          {filteredQuotes.length === 0 ? (
+            <div className="text-center py-12">
+              <FiFileText className="mx-auto h-12 w-12 text-white/60" />
+              <h3 className="mt-2 text-sm font-medium text-white">Keine Angebotsanfragen</h3>
+              <p className="mt-1 text-sm text-white/80">
+                Sie haben noch keine Angebotsanfragen gestellt.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white/95 shadow-2xl overflow-hidden sm:rounded-lg border border-white/20">
+              <ul role="list" className="divide-y divide-gray-200">
+                {filteredQuotes.map(quote => (
+                  <li key={quote.id}>
+                    <Link
+                      href={`/dashboard/user/${uid}/quotes/${quote.id}`}
+                      className="block hover:bg-gray-50/80 px-4 py-4 sm:px-6 transition-colors"
+                    >
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-[#14ad9f] truncate">
-                          {quote.projectTitle || quote.service || 'Angebotsanfrage'}
-                        </p>
-                        <div className="ml-2 flex-shrink-0 flex space-x-2">
-                          {quote.response && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#14ad9f] text-white">
-                              Angebot verfügbar
-                            </span>
-                          )}
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(quote.status)}`}
-                          >
-                            {getStatusText(quote.status)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="mt-2 sm:flex sm:justify-between">
-                        <div className="sm:flex space-y-2 sm:space-y-0 sm:space-x-6">
-                          <p className="flex items-center text-sm text-gray-500">
-                            <FiBuilding className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                            {quote.projectCategory && quote.projectSubcategory
-                              ? `${quote.projectCategory} - ${quote.projectSubcategory}`
-                              : 'Kategorie nicht angegeben'}
-                          </p>
-                          {quote.budgetRange && (
-                            <p className="flex items-center text-sm text-gray-500">
-                              <FiEuro className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                              Budget: {quote.budgetRange}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-[#14ad9f] truncate">
+                              {quote.projectTitle || quote.service || 'Angebotsanfrage'}
                             </p>
-                          )}
-                          <p className="flex items-center text-sm text-gray-500">
-                            <FiClock className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                            {quote.createdAt
-                              ? new Date(quote.createdAt._seconds * 1000).toLocaleDateString(
-                                  'de-DE'
-                                )
-                              : 'Datum unbekannt'}
-                          </p>
+                            <div className="ml-2 flex-shrink-0 flex space-x-2">
+                              {quote.response && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#14ad9f] text-white">
+                                  Angebot verfügbar
+                                </span>
+                              )}
+                              <span
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(quote.status)}`}
+                              >
+                                {getStatusText(quote.status)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="mt-2 sm:flex sm:justify-between">
+                            <div className="sm:flex space-y-2 sm:space-y-0 sm:space-x-6">
+                              <p className="flex items-center text-sm text-gray-500">
+                                <FiBuilding className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                                {quote.projectCategory && quote.projectSubcategory
+                                  ? `${quote.projectCategory} - ${quote.projectSubcategory}`
+                                  : 'Kategorie nicht angegeben'}
+                              </p>
+                              {quote.budgetRange && (
+                                <p className="flex items-center text-sm text-gray-500">
+                                  <FiEuro className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                                  Budget: {quote.budgetRange}
+                                </p>
+                              )}
+                              <p className="flex items-center text-sm text-gray-500">
+                                <FiClock className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                                {quote.createdAt
+                                  ? new Date(quote.createdAt._seconds * 1000).toLocaleDateString(
+                                      'de-DE'
+                                    )
+                                  : 'Datum unbekannt'}
+                              </p>
+                            </div>
+                            <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs font-medium ${getUrgencyColor(quote.urgency)}`}
+                              >
+                                {quote.urgency}
+                              </span>
+                              {quote.response && quote.response.estimatedPrice && (
+                                <span className="ml-4 flex items-center text-sm font-medium text-[#14ad9f]">
+                                  <FiEuro className="mr-1 h-4 w-4" />
+                                  {quote.response.estimatedPrice.toLocaleString('de-DE', {
+                                    minimumFractionDigits: 2,
+                                  })}{' '}
+                                  €
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${getUrgencyColor(quote.urgency)}`}
-                          >
-                            {quote.urgency}
-                          </span>
-                          {quote.response && quote.response.estimatedPrice && (
-                            <span className="ml-4 flex items-center text-sm font-medium text-[#14ad9f]">
-                              <FiEuro className="mr-1 h-4 w-4" />
-                              {quote.response.estimatedPrice.toLocaleString('de-DE', {
-                                minimumFractionDigits: 2,
-                              })}{' '}
-                              €
-                            </span>
-                          )}
+                        <div className="ml-4 flex-shrink-0">
+                          <FiEye className="h-5 w-5 text-gray-400" />
                         </div>
                       </div>
-                    </div>
-                    <div className="ml-4 flex-shrink-0">
-                      <FiEye className="h-5 w-5 text-gray-400" />
-                    </div>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>

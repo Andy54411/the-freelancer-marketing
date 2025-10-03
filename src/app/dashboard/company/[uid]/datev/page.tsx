@@ -47,7 +47,6 @@ export default function DatevMainPage() {
       setLoading(true);
 
       if (!firebaseUser) {
-
         setConnections([]);
         return;
       }
@@ -65,25 +64,29 @@ export default function DatevMainPage() {
 
       if (response.ok && data.success && data.userInfo) {
         // Transform UserInfo response to expected format
-        const datevConnections: DatevConnection[] = [{
-          id: data.userInfo.account_id || data.userInfo.sub || 'unknown',
-          organizationName: data.userInfo.name || data.userInfo.preferred_username || 'DATEV User',
-          status: 'connected',
-          accountCount: 1,
-          lastSync: new Date().toISOString(),
-        }];
+        const datevConnections: DatevConnection[] = [
+          {
+            id: data.userInfo.account_id || data.userInfo.sub || 'unknown',
+            organizationName:
+              data.userInfo.name || data.userInfo.preferred_username || 'DATEV User',
+            status: 'connected',
+            accountCount: 1,
+            lastSync: new Date().toISOString(),
+          },
+        ];
 
         setConnections(datevConnections);
-      } else if (response.status === 401 && (data.error === 'no_tokens' || data.error === 'invalid_token')) {
+      } else if (
+        response.status === 401 &&
+        (data.error === 'no_tokens' || data.error === 'invalid_token')
+      ) {
         // DATEV Authentication required - this is expected for fresh installations
 
         setConnections([]);
       } else {
-
         setConnections([]);
       }
     } catch (error) {
-
       setConnections([]);
     } finally {
       setLoading(false);

@@ -60,7 +60,6 @@ export default function CompanyProfilePage() {
         const metrics = await calculateCompanyMetrics(uid);
         setCompanyMetrics(metrics);
       } catch (error) {
-
       } finally {
         setLoading(false);
       }
@@ -101,9 +100,7 @@ export default function CompanyProfilePage() {
       // Metriken neu berechnen
       const metrics = await calculateCompanyMetrics(uid);
       setCompanyMetrics(metrics);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   if (loading) {

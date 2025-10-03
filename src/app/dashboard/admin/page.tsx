@@ -48,7 +48,6 @@ export default function AdminDashboardPage() {
         setStats(data);
       }
     } catch (error) {
-
     } finally {
       setLoading(false);
     }

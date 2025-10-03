@@ -40,7 +40,6 @@ export async function GET() {
       ].filter(Boolean),
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

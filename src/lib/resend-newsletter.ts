@@ -82,7 +82,6 @@ export async function sendNewsletterConfirmationViaResend(
     });
 
     if (error) {
-
       return {
         success: false,
         error: error.message || 'E-Mail-Versand fehlgeschlagen',
@@ -94,7 +93,6 @@ export async function sendNewsletterConfirmationViaResend(
       messageId: data?.id,
     };
   } catch (error) {
-
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -143,7 +141,6 @@ export async function sendBulkNewsletterViaResend(
         });
 
         if (error) {
-
           results.push({
             batch: i / batchSize + 1,
             recipients: batch,
@@ -151,7 +148,6 @@ export async function sendBulkNewsletterViaResend(
             error: error.message,
           });
         } else {
-
           results.push({
             batch: i / batchSize + 1,
             recipients: batch,
@@ -165,7 +161,6 @@ export async function sendBulkNewsletterViaResend(
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       } catch (batchError) {
-
         results.push({
           batch: i / batchSize + 1,
           recipients: batch,
@@ -183,7 +178,6 @@ export async function sendBulkNewsletterViaResend(
       results,
     };
   } catch (error) {
-
     return {
       success: false,
       results: [],

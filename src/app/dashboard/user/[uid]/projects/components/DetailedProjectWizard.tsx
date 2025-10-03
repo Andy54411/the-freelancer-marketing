@@ -86,7 +86,6 @@ const DetailedProjectWizard: React.FC<DetailedProjectWizardProps> = ({
         toast.error('Fehler beim Laden der Fragen');
       }
     } catch (error) {
-
       toast.error('Fehler beim Laden der kategorie-spezifischen Fragen');
     }
 
@@ -143,7 +142,6 @@ const DetailedProjectWizard: React.FC<DetailedProjectWizardProps> = ({
         toast.error('Fehler beim Erstellen des Projekts');
       }
     } catch (error) {
-
       toast.error('Fehler beim Erstellen der detaillierten Projektbeschreibung');
     }
 

@@ -30,7 +30,7 @@ export function InvoiceItemsCard({
   onAddItem,
   onAddInventoryItem,
   onAddDiscount,
-  onServiceAdded
+  onServiceAdded,
 }: InvoiceItemsCardProps) {
   return (
     <Card>
@@ -45,17 +45,13 @@ export function InvoiceItemsCard({
           <div className="text-sm text-gray-600">Preisanzeige</div>
           <div className="flex gap-2">
             <Button
-              className={cn(
-                showNet ? "bg-[#14ad9f] hover:bg-[#129488] text-white" : "border"
-              )}
+              className={cn(showNet ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' : 'border')}
               onClick={() => setShowNet(true)}
             >
               Netto
             </Button>
             <Button
-              className={cn(
-                !showNet ? "bg-[#14ad9f] hover:bg-[#129488] text-white" : "border"
-              )}
+              className={cn(!showNet ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' : 'border')}
               onClick={() => setShowNet(false)}
             >
               Brutto
@@ -64,11 +60,7 @@ export function InvoiceItemsCard({
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-4">
-          <Button
-            variant="link"
-            className="text-[#14ad9f]"
-            onClick={onAddItem}
-          >
+          <Button variant="link" className="text-[#14ad9f]" onClick={onAddItem}>
             + Position hinzufügen
           </Button>
 
@@ -81,19 +73,12 @@ export function InvoiceItemsCard({
             Aus Inventar hinzufügen
           </Button>
 
-          <Button
-            variant="link"
-            className="text-[#14ad9f]"
-            onClick={onAddDiscount}
-          >
+          <Button variant="link" className="text-[#14ad9f]" onClick={onAddDiscount}>
             + Gesamtrabatt hinzufügen
           </Button>
 
           <div className="flex items-center gap-2 border-l border-gray-200 pl-4 ml-2">
-            <QuickAddService
-              companyId={uid}
-              onServiceAdded={onServiceAdded}
-            />
+            <QuickAddService companyId={uid} onServiceAdded={onServiceAdded} />
           </div>
         </div>
 

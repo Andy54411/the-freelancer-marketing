@@ -21,7 +21,6 @@ export async function getAiConfigData(): Promise<AiConfig> {
   const configDoc = await docRef.get();
 
   if (!configDoc.exists) {
-
     return { persona: '', context: '', faqs: [], rules: [], coreProcesses: [] };
   }
 

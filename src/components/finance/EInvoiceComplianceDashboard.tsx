@@ -9,18 +9,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { 
-  CheckCircle2, 
-  AlertTriangle, 
-  Shield, 
-  FileText, 
-  Globe, 
+import {
+  CheckCircle2,
+  AlertTriangle,
+  Shield,
+  FileText,
+  Globe,
   Zap,
   Settings,
   TrendingUp,
   Clock,
   Award,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react';
 import { AutoEInvoiceService } from '@/services/autoEInvoiceService';
 
@@ -29,9 +29,9 @@ interface ComplianceDashboardProps {
   onConfigureClick?: () => void;
 }
 
-export function EInvoiceComplianceDashboard({ 
-  companyId, 
-  onConfigureClick 
+export function EInvoiceComplianceDashboard({
+  companyId,
+  onConfigureClick,
 }: ComplianceDashboardProps) {
   const [complianceData, setComplianceData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -58,9 +58,7 @@ export function EInvoiceComplianceDashboard({
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-center">
-            <div className="animate-pulse text-gray-500">
-              Compliance-Status wird geladen...
-            </div>
+            <div className="animate-pulse text-gray-500">Compliance-Status wird geladen...</div>
           </div>
         </CardContent>
       </Card>
@@ -86,8 +84,8 @@ export function EInvoiceComplianceDashboard({
               <Award className="h-6 w-6 text-[#14ad9f]" />
               <span>Deutsche E-Rechnung-Compliance</span>
             </div>
-            <Badge 
-              variant="secondary" 
+            <Badge
+              variant="secondary"
               className={`${complianceLevel.bg} ${complianceLevel.color} border-0`}
             >
               {complianceData?.overallCompliance || 0}%
@@ -103,10 +101,7 @@ export function EInvoiceComplianceDashboard({
                 {complianceLevel.level}
               </span>
             </div>
-            <Progress 
-              value={complianceData?.overallCompliance || 0} 
-              className="h-3"
-            />
+            <Progress value={complianceData?.overallCompliance || 0} className="h-3" />
           </div>
 
           {/* Feature-Status Grid */}
@@ -215,15 +210,11 @@ export function EInvoiceComplianceDashboard({
 
           {/* Action Button */}
           <div className="pt-2">
-            <Button 
-              onClick={onConfigureClick}
-              className="w-full bg-[#14ad9f] hover:bg-[#129488]"
-            >
+            <Button onClick={onConfigureClick} className="w-full bg-[#14ad9f] hover:bg-[#129488]">
               <Settings className="h-4 w-4 mr-2" />
-              {complianceData?.overallCompliance < 100 
-                ? 'Compliance vervollständigen' 
-                : 'Einstellungen verwalten'
-              }
+              {complianceData?.overallCompliance < 100
+                ? 'Compliance vervollständigen'
+                : 'Einstellungen verwalten'}
             </Button>
           </div>
         </CardContent>
@@ -301,8 +292,8 @@ export function EInvoiceComplianceDashboard({
                   🎉 Vollständige E-Rechnung-Compliance erreicht!
                 </h3>
                 <p className="text-sm text-green-600 mt-1">
-                  Ihr System erfüllt alle deutschen E-Rechnung-Standards und ist bereit für 
-                  die automatische Generierung und Übertragung von E-Rechnungen.
+                  Ihr System erfüllt alle deutschen E-Rechnung-Standards und ist bereit für die
+                  automatische Generierung und Übertragung von E-Rechnungen.
                 </p>
               </div>
             </div>

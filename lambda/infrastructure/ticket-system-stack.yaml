@@ -77,7 +77,7 @@ Resources:
                   - dynamodb:DeleteItem
                   - dynamodb:Query
                   - dynamodb:Scan
-                Resource: 
+                Resource:
                   - !GetAtt TicketsTable.Arn
                   - !Sub '${TicketsTable.Arn}/index/*'
               - Effect: Allow

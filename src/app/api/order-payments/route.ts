@@ -96,7 +96,6 @@ export async function GET(request: NextRequest) {
       payments: formattedPayments,
     });
   } catch (error: any) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Abrufen der Order Payments',

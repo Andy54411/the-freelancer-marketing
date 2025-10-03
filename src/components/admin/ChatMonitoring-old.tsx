@@ -1,30 +1,30 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  collection, 
-  query, 
-  orderBy, 
-  limit, 
-  onSnapshot, 
+import {
+  collection,
+  query,
+  orderBy,
+  limit,
+  onSnapshot,
   collectionGroup,
   where,
   Timestamp,
-  startAfter
+  startAfter,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  MessageSquare, 
-  Users, 
-  AlertTriangle, 
-  Search, 
+import {
+  MessageSquare,
+  Users,
+  AlertTriangle,
+  Search,
   Filter,
   Eye,
   Clock,
-  TrendingUp
+  TrendingUp,
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -56,7 +56,9 @@ const ChatMonitoring: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedChatType, setSelectedChatType] = useState<'all' | 'support' | 'order' | 'direct'>('all');
+  const [selectedChatType, setSelectedChatType] = useState<'all' | 'support' | 'order' | 'direct'>(
+    'all'
+  );
   const [flaggedOnly, setFlaggedOnly] = useState(false);
 
   // Real-time Chat Overview
@@ -64,16 +66,16 @@ const ChatMonitoring: React.FC = () => {
     const queries = [
       // Support Chats
       query(collection(db, 'supportChats'), orderBy('lastUpdated', 'desc'), limit(50)),
-      // Direct Chats  
+      // Direct Chats
       query(collection(db, 'directChats'), orderBy('lastUpdated', 'desc'), limit(50)),
       // Order Chats
-      query(collection(db, 'chats'), orderBy('lastUpdated', 'desc'), limit(50))
+      query(collection(db, 'chats'), orderBy('lastUpdated', 'desc'), limit(50)),
     ];
 
     const unsubscribes = queries.map((q, index) => {
-      return onSnapshot(q, (snapshot) => {
+      return onSnapshot(q, snapshot => {
         const chatType = ['support', 'direct', 'order'][index] as 'support' | 'direct' | 'order';
-        
+
         const newChats = snapshot.docs.map(doc => ({
           id: doc.id,
           type: chatType,
@@ -83,14 +85,14 @@ const ChatMonitoring: React.FC = () => {
           messageCount: 0, // Wird separat geladen
           status: doc.data().status,
           flagged: doc.data().flagged || false,
-          ...doc.data()
+          ...doc.data(),
         })) as ChatOverview[];
 
         setChats(prev => {
           // Entferne alte Chats dieses Typs und füge neue hinzu
           const filtered = prev.filter(chat => chat.type !== chatType);
-          return [...filtered, ...newChats].sort((a, b) => 
-            b.lastUpdated?.toDate().getTime() - a.lastUpdated?.toDate().getTime()
+          return [...filtered, ...newChats].sort(
+            (a, b) => b.lastUpdated?.toDate().getTime() - a.lastUpdated?.toDate().getTime()
           );
         });
         setLoading(false);
@@ -108,7 +110,7 @@ const ChatMonitoring: React.FC = () => {
       limit(100)
     );
 
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+    const unsubscribe = onSnapshot(messagesQuery, snapshot => {
       const newMessages = snapshot.docs.map(doc => ({
         id: doc.id,
         chatId: doc.ref.parent.parent?.id || '',
@@ -118,7 +120,7 @@ const ChatMonitoring: React.FC = () => {
         text: doc.data().text,
         timestamp: doc.data().timestamp,
         flagged: checkMessageForFlags(doc.data().text),
-        escalated: doc.data().escalated || false
+        escalated: doc.data().escalated || false,
       })) as ChatMessage[];
 
       setMessages(newMessages);
@@ -147,14 +149,16 @@ const ChatMonitoring: React.FC = () => {
   const filteredChats = chats.filter(chat => {
     if (selectedChatType !== 'all' && chat.type !== selectedChatType) return false;
     if (flaggedOnly && !chat.flagged) return false;
-    if (searchQuery && !chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (searchQuery && !chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase()))
+      return false;
     return true;
   });
 
-  // Filter Messages  
+  // Filter Messages
   const filteredMessages = messages.filter(message => {
     if (flaggedOnly && !message.flagged) return false;
-    if (searchQuery && !message.text.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (searchQuery && !message.text.toLowerCase().includes(searchQuery.toLowerCase()))
+      return false;
     return true;
   });
 
@@ -164,10 +168,14 @@ const ChatMonitoring: React.FC = () => {
 
   const getChatTypeColor = (type: string) => {
     switch (type) {
-      case 'support': return 'bg-red-100 text-red-800';
-      case 'order': return 'bg-blue-100 text-blue-800';
-      case 'direct': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'support':
+        return 'bg-red-100 text-red-800';
+      case 'order':
+        return 'bg-blue-100 text-blue-800';
+      case 'direct':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -188,7 +196,10 @@ const ChatMonitoring: React.FC = () => {
             <Users className="h-3 w-3" />
             {chats.length} Aktive Chats
           </Badge>
-          <Badge variant={flaggedOnly ? "destructive" : "outline"} className="flex items-center gap-1">
+          <Badge
+            variant={flaggedOnly ? 'destructive' : 'outline'}
+            className="flex items-center gap-1"
+          >
             <AlertTriangle className="h-3 w-3" />
             {messages.filter(m => m.flagged).length} Flagged
           </Badge>
@@ -200,14 +211,14 @@ const ChatMonitoring: React.FC = () => {
         {[
           { id: 'overview', label: 'Chat Übersicht', icon: MessageSquare },
           { id: 'messages', label: 'Live Nachrichten', icon: Eye },
-          { id: 'analytics', label: 'Analytics', icon: TrendingUp }
+          { id: 'analytics', label: 'Analytics', icon: TrendingUp },
         ].map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id as any)}
             className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-              activeTab === id 
-                ? 'bg-white text-blue-600 shadow-sm' 
+              activeTab === id
+                ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -225,15 +236,15 @@ const ChatMonitoring: React.FC = () => {
             <Input
               placeholder="Nachrichten durchsuchen..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
         </div>
-        
-        <select 
-          value={selectedChatType} 
-          onChange={(e) => setSelectedChatType(e.target.value as any)}
+
+        <select
+          value={selectedChatType}
+          onChange={e => setSelectedChatType(e.target.value as any)}
           className="px-3 py-2 border rounded-md"
         >
           <option value="all">Alle Chat-Typen</option>
@@ -243,7 +254,7 @@ const ChatMonitoring: React.FC = () => {
         </select>
 
         <Button
-          variant={flaggedOnly ? "destructive" : "outline"}
+          variant={flaggedOnly ? 'destructive' : 'outline'}
           onClick={() => setFlaggedOnly(!flaggedOnly)}
           className="flex items-center gap-2"
         >
@@ -261,9 +272,7 @@ const ChatMonitoring: React.FC = () => {
               <div key={chat.id} className="p-4 border rounded-lg hover:bg-gray-50">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2">
-                    <Badge className={getChatTypeColor(chat.type)}>
-                      {chat.type}
-                    </Badge>
+                    <Badge className={getChatTypeColor(chat.type)}>{chat.type}</Badge>
                     <span className="font-medium">{chat.id}</span>
                     {chat.flagged && (
                       <Badge variant="destructive" className="flex items-center gap-1">
@@ -277,17 +286,15 @@ const ChatMonitoring: React.FC = () => {
                     {formatTimestamp(chat.lastUpdated)}
                   </div>
                 </div>
-                
+
                 <p className="text-gray-700 mb-2 line-clamp-2">
                   {chat.lastMessage || 'Keine Nachrichten'}
                 </p>
-                
+
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4 text-sm text-gray-500">
                     <span>{chat.participants.length} Teilnehmer</span>
-                    {chat.status && (
-                      <Badge variant="outline">{chat.status}</Badge>
-                    )}
+                    {chat.status && <Badge variant="outline">{chat.status}</Badge>}
                   </div>
                   <Button variant="outline" size="sm">
                     Chat öffnen
@@ -304,8 +311,8 @@ const ChatMonitoring: React.FC = () => {
           <h2 className="text-lg font-semibold">Live Nachrichten ({filteredMessages.length})</h2>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {filteredMessages.map(message => (
-              <div 
-                key={message.id} 
+              <div
+                key={message.id}
                 className={`p-3 border rounded-lg ${message.flagged ? 'border-red-200 bg-red-50' : ''}`}
               >
                 <div className="flex justify-between items-start mb-1">
@@ -326,9 +333,7 @@ const ChatMonitoring: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-gray-700">{message.text}</p>
-                <div className="mt-2 text-xs text-gray-500">
-                  Chat: {message.chatId}
-                </div>
+                <div className="mt-2 text-xs text-gray-500">Chat: {message.chatId}</div>
               </div>
             ))}
           </div>
@@ -342,7 +347,9 @@ const ChatMonitoring: React.FC = () => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Support Chats:</span>
-                <span className="font-medium">{chats.filter(c => c.type === 'support').length}</span>
+                <span className="font-medium">
+                  {chats.filter(c => c.type === 'support').length}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Auftragschats:</span>
@@ -379,21 +386,25 @@ const ChatMonitoring: React.FC = () => {
               <div className="flex justify-between">
                 <span>Neue Nachrichten:</span>
                 <span className="font-medium">
-                  {messages.filter(m => {
-                    const today = new Date();
-                    const msgDate = m.timestamp?.toDate();
-                    return msgDate && msgDate.toDateString() === today.toDateString();
-                  }).length}
+                  {
+                    messages.filter(m => {
+                      const today = new Date();
+                      const msgDate = m.timestamp?.toDate();
+                      return msgDate && msgDate.toDateString() === today.toDateString();
+                    }).length
+                  }
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Neue Chats:</span>
                 <span className="font-medium">
-                  {chats.filter(c => {
-                    const today = new Date();
-                    const chatDate = c.lastUpdated?.toDate();
-                    return chatDate && chatDate.toDateString() === today.toDateString();
-                  }).length}
+                  {
+                    chats.filter(c => {
+                      const today = new Date();
+                      const chatDate = c.lastUpdated?.toDate();
+                      return chatDate && chatDate.toDateString() === today.toDateString();
+                    }).length
+                  }
                 </span>
               </div>
             </div>

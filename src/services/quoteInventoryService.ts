@@ -39,7 +39,6 @@ export class QuoteInventoryService {
 
       return tempQuoteId;
     } catch (error) {
-
       throw error;
     }
   }
@@ -59,9 +58,7 @@ export class QuoteInventoryService {
 
       // Quote-Status aktualisieren
       // TODO: Implementiere Quote-Status-Update in Firestore
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -81,9 +78,7 @@ export class QuoteInventoryService {
 
       // Quote-Status aktualisieren
       // TODO: Implementiere Quote-Status-Update in Firestore
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -97,9 +92,7 @@ export class QuoteInventoryService {
       // 1. Finde alle Quotes mit Status 'pending' und älter als X Tage
       // 2. Gebe Reservierungen frei
       // 3. Markiere Quotes als 'expired'
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -113,7 +106,6 @@ export class QuoteInventoryService {
       // Momentan als Platzhalter
       return [];
     } catch (error) {
-
       throw error;
     }
   }

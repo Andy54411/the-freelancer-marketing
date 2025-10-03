@@ -15,39 +15,36 @@ const db = admin.firestore();
 async function verifyMigration() {
   console.log('✅ Verifiziere Migration - Prüfe Subcollections...\n');
 
-  const companyIds = [
-    'LLc8PX1VYHfpoFknk8o51LAOfSA2',
-    't0VQOV5RfTMIIgo6UDhy5b3z0BL2'
-  ];
+  const companyIds = ['LLc8PX1VYHfpoFknk8o51LAOfSA2', 't0VQOV5RfTMIIgo6UDhy5b3z0BL2'];
 
   const collections = [
     'customers',
     'inventory',
     'stockMovements',
     'timeEntries',
-    'quotes', 
+    'quotes',
     'expenses',
-    'orderTimeTracking'
+    'orderTimeTracking',
   ];
 
   let totalMigrated = 0;
 
   for (const companyId of companyIds) {
     console.log(`🏢 Company: ${companyId}`);
-    
+
     for (const collectionName of collections) {
       try {
         const subcollectionRef = db
           .collection('companies')
           .doc(companyId)
           .collection(collectionName);
-        
+
         const snapshot = await subcollectionRef.get();
-        
+
         if (!snapshot.empty) {
           console.log(`   📂 ${collectionName}: ${snapshot.size} Dokumente`);
           totalMigrated += snapshot.size;
-          
+
           // Zeige erste paar Dokument-IDs als Bestätigung
           const docIds = snapshot.docs.slice(0, 3).map(doc => doc.id);
           console.log(`      IDs: ${docIds.join(', ')}${snapshot.size > 3 ? '...' : ''}`);
@@ -64,7 +61,7 @@ async function verifyMigration() {
   console.log(`📊 Migration-Zusammenfassung:`);
   console.log(`   Gesamt migrierte Dokumente: ${totalMigrated}`);
   console.log(`   Erwartete Dokumente: 23 (basierend auf vorheriger Migration)`);
-  
+
   if (totalMigrated === 23) {
     console.log('✅ Migration vollständig erfolgreich!');
   } else if (totalMigrated > 0) {

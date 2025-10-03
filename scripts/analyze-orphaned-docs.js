@@ -18,7 +18,7 @@ async function analyzeOrphanedDocuments() {
   // Prüfe quotes Collection (sollte leer sein nach Migration)
   try {
     const quotesSnapshot = await db.collection('quotes').get();
-    
+
     if (!quotesSnapshot.empty) {
       console.log('📄 QUOTES Collection (sollte leer sein):');
       quotesSnapshot.forEach(doc => {
@@ -28,7 +28,9 @@ async function analyzeOrphanedDocuments() {
         console.log(`   companyId: ${data.companyId || 'FEHLT'}`);
         console.log(`   providerId: ${data.providerId || 'N/A'}`);
         console.log(`   customerId: ${data.customerId || 'N/A'}`);
-        console.log(`   createdAt: ${data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt}`);
+        console.log(
+          `   createdAt: ${data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt}`
+        );
         console.log('   ---');
       });
     } else {
@@ -41,7 +43,7 @@ async function analyzeOrphanedDocuments() {
   // Prüfe orderTimeTracking Collection (sollte leer sein nach Migration)
   try {
     const trackingSnapshot = await db.collection('orderTimeTracking').get();
-    
+
     if (!trackingSnapshot.empty) {
       console.log('\n📄 ORDER_TIME_TRACKING Collection (sollte leer sein):');
       trackingSnapshot.forEach(doc => {
@@ -52,7 +54,9 @@ async function analyzeOrphanedDocuments() {
         console.log(`   orderId: ${data.orderId || 'N/A'}`);
         console.log(`   providerId: ${data.providerId || 'N/A'}`);
         console.log(`   userId: ${data.userId || 'N/A'}`);
-        console.log(`   createdAt: ${data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt}`);
+        console.log(
+          `   createdAt: ${data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt}`
+        );
         console.log('   ---');
       });
     } else {

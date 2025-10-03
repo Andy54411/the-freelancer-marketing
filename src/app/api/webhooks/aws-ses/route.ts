@@ -10,18 +10,15 @@ export async function POST(request: NextRequest) {
     try {
       snsMessage = JSON.parse(body);
     } catch (error) {
-
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
 
     // Handle SNS subscription confirmation
     if (snsMessage.Type === 'SubscriptionConfirmation') {
-
       // Auto-confirm subscription
       const confirmUrl = snsMessage.SubscribeURL;
       if (confirmUrl) {
         const response = await fetch(confirmUrl);
-
       }
 
       return NextResponse.json({ message: 'Subscription confirmed' });
@@ -33,13 +30,9 @@ export async function POST(request: NextRequest) {
 
       // Process different SES event types
       if (sesMessage.eventType === 'send') {
-
       } else if (sesMessage.eventType === 'delivery') {
-
       } else if (sesMessage.eventType === 'bounce') {
-
       } else if (sesMessage.eventType === 'complaint') {
-
       } else if (sesMessage.eventType === 'receive') {
         // This is an incoming email!
 
@@ -57,10 +50,7 @@ export async function POST(request: NextRequest) {
             timestamp: Date.now(),
             raw: sesMessage,
           });
-
-        } catch (error) {
-
-        }
+        } catch (error) {}
       }
 
       return NextResponse.json({ message: 'Event processed' });
@@ -68,7 +58,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: 'Unknown message type' }, { status: 400 });
   } catch (error) {
-
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

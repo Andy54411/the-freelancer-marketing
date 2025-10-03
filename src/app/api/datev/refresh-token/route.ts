@@ -9,7 +9,6 @@ import { DatevCookieManager } from '@/lib/datev-cookie-manager';
 
 export async function POST(request: NextRequest) {
   try {
-
     const { refresh_token, company_id } = await request.json();
 
     if (!refresh_token || !company_id) {
@@ -67,7 +66,6 @@ export async function POST(request: NextRequest) {
       token_type: tokenData.token_type || 'Bearer',
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

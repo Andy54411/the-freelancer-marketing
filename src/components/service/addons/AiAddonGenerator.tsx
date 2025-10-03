@@ -24,7 +24,7 @@ interface AiAddonGeneratorProps {
 export default function AiAddonGenerator({
   onAddAddon,
   selectedAddons = [],
-  onToggleAddon
+  onToggleAddon,
 }: AiAddonGeneratorProps) {
   const [aiDescription, setAiDescription] = useState('');
   const [aiSuggestions, setAiSuggestions] = useState<AddonItem[]>([]);
@@ -49,7 +49,7 @@ export default function AiAddonGenerator({
       const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           prompt: `Analysiere diese Dienstleistungsbeschreibung und erstelle 6 sinnvolle Add-ons/Zusatzleistungen.
@@ -72,8 +72,8 @@ Achte darauf, dass:
 - Realistische Preise vorgeschlagen werden (in Euro)
 - Die Namen prägnant und ansprechend sind
 - Die Beschreibungen kurz aber aussagekräftig sind
-- NUR das JSON-Array zurückgegeben wird, kein Markdown-Code`
-        })
+- NUR das JSON-Array zurückgegeben wird, kein Markdown-Code`,
+        }),
       });
 
       if (!response.ok) {
@@ -85,7 +85,9 @@ Achte darauf, dass:
         const isRetryable = errorData.retryable;
 
         if (response.status === 503) {
-          throw new Error(`🤖 ${errorMessage}${isRetryable ? ' (Automatische Wiederholung erfolgte bereits)' : ''}`);
+          throw new Error(
+            `🤖 ${errorMessage}${isRetryable ? ' (Automatische Wiederholung erfolgte bereits)' : ''}`
+          );
         } else if (response.status === 429) {
           throw new Error(`⏱️ ${errorMessage}`);
         } else if (response.status === 401) {
@@ -117,19 +119,22 @@ Achte darauf, dass:
           cleanResponse = jsonMatch[0];
         }
 
-
-
         const suggestions = JSON.parse(cleanResponse);
         if (Array.isArray(suggestions)) {
           setAiSuggestions(suggestions);
 
           // Check if fallback was used and show appropriate message
           if (data.fallbackUsed) {
-            toast.info(`${suggestions.length} Vorschläge generiert! (KI temporär nicht verfügbar - vorgefertigte Vorschläge verwendet)`, {
-              duration: 5000
-            });
+            toast.info(
+              `${suggestions.length} Vorschläge generiert! (KI temporär nicht verfügbar - vorgefertigte Vorschläge verwendet)`,
+              {
+                duration: 5000,
+              }
+            );
           } else {
-            toast.success(`${suggestions.length} Add-on Vorschläge von ${data.modelUsed || 'KI'} generiert!`);
+            toast.success(
+              `${suggestions.length} Add-on Vorschläge von ${data.modelUsed || 'KI'} generiert!`
+            );
           }
         } else {
           throw new Error('AI-Antwort ist kein Array');
@@ -137,25 +142,26 @@ Achte darauf, dass:
       } catch (parseError) {
         console.error('Fehler beim Parsen der AI-Antwort:', parseError);
         console.error('Rohe AI-Antwort:', data.response);
-        toast.error('Die KI-Antwort konnte nicht verarbeitet werden. Die Antwort war nicht im erwarteten JSON-Format.');
+        toast.error(
+          'Die KI-Antwort konnte nicht verarbeitet werden. Die Antwort war nicht im erwarteten JSON-Format.'
+        );
       }
     } catch (error: any) {
       console.error('Fehler bei AI-Generierung:', error);
 
       // Check if we should retry for specific error types
-      const shouldRetry = retryCount < maxRetries && (
-      error.message?.includes('503') ||
-      error.message?.includes('overloaded') ||
-      error.message?.includes('Service Unavailable'));
-
+      const shouldRetry =
+        retryCount < maxRetries &&
+        (error.message?.includes('503') ||
+          error.message?.includes('overloaded') ||
+          error.message?.includes('Service Unavailable'));
 
       if (shouldRetry) {
-
         toast.info(`🔄 Server überlastet - Wiederholung ${retryCount + 1}/${maxRetries}...`);
 
         // Wait before retry with exponential backoff
         const delay = 2000 * Math.pow(2, retryCount); // 2s, 4s, 8s
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await new Promise(resolve => setTimeout(resolve, delay));
 
         // Recursive retry - don't set loading to false yet
         return generateAiAddons(retryCount + 1);
@@ -179,8 +185,8 @@ Achte darauf, dass:
 
   // Apply AI suggestion to main addons
   const applyAiSuggestion = (suggestion: AddonItem) => {
-    const isSelected = selectedAddons.some((addon) =>
-    addon.name === suggestion.name && addon.price === suggestion.price
+    const isSelected = selectedAddons.some(
+      addon => addon.name === suggestion.name && addon.price === suggestion.price
     );
 
     if (onToggleAddon) {
@@ -211,147 +217,154 @@ Achte darauf, dass:
           <div className="space-y-3">
             <Textarea
               value={aiDescription}
-              onChange={(e) => setAiDescription(e.target.value)}
+              onChange={e => setAiDescription(e.target.value)}
               placeholder="Beschreiben Sie Ihre Dienstleistung für personalisierte Add-on Vorschläge..."
               rows={2}
-              className="focus:border-[#14ad9f] focus:ring-[#14ad9f]" />
+              className="focus:border-[#14ad9f] focus:ring-[#14ad9f]"
+            />
 
             <Button
               onClick={handleGenerateClick}
               disabled={isGeneratingAi || !aiDescription.trim()}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white">
-
-              {isGeneratingAi ?
-              <>
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            >
+              {isGeneratingAi ? (
+                <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Generiert...
-                </> :
-
-              <>
+                </>
+              ) : (
+                <>
                   <Sparkles className="mr-2 h-4 w-4" />
                   Add-ons generieren
                 </>
-              }
+              )}
             </Button>
-            
+
             {/* Info-Hinweis */}
             <div className="text-xs text-[#14ad9f] bg-teal-50 p-2 rounded border border-teal-200">
-              💡 Die KI kann manchmal überlastet sein. Falls ein Fehler auftritt, warten Sie kurz und versuchen Sie es erneut.
+              💡 Die KI kann manchmal überlastet sein. Falls ein Fehler auftritt, warten Sie kurz
+              und versuchen Sie es erneut.
             </div>
           </div>
 
           {/* AI Suggestions */}
-          {aiSuggestions.length > 0 &&
-          <div className="mt-4">
+          {aiSuggestions.length > 0 && (
+            <div className="mt-4">
               <div className="flex items-center justify-between mb-3">
                 <Label className="text-sm font-medium text-[#14ad9f]">
                   KI-Vorschläge ({aiSuggestions.length}) - Bearbeitbar
                 </Label>
                 <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setAiSuggestions([])}
-                className="text-red-600 hover:text-red-700">
-
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setAiSuggestions([])}
+                  className="text-red-600 hover:text-red-700"
+                >
                   Alle löschen
                 </Button>
               </div>
               <div className="space-y-3">
                 {aiSuggestions.map((suggestion, index) => {
-                const isSelected = selectedAddons.some((addon) =>
-                addon.name === suggestion.name && addon.price === suggestion.price
-                );
-                return (
-                  <div
-                    key={index}
-                    className={`p-3 bg-white rounded border ${
-                    isSelected ? 'border-[#14ad9f]' : 'border-teal-200'}`
-                    }>
-
-                    <div className="grid gap-3">
-                      {/* Name bearbeitbar */}
-                      <div>
-                        <Label className="text-xs text-gray-600">Name</Label>
-                        <Input
-                          value={suggestion.name}
-                          onChange={(e) => {
-                            const updated = [...aiSuggestions];
-                            updated[index].name = e.target.value;
-                            setAiSuggestions(updated);
-                          }}
-                          className="font-medium focus:ring-[#14ad9f] focus:border-[#14ad9f]" />
-
-                      </div>
-                      
-                      {/* Beschreibung bearbeitbar */}
-                      <div>
-                        <Label className="text-xs text-gray-600">Beschreibung</Label>
-                        <Textarea
-                          value={suggestion.description}
-                          onChange={(e) => {
-                            const updated = [...aiSuggestions];
-                            updated[index].description = e.target.value;
-                            setAiSuggestions(updated);
-                          }}
-                          rows={2}
-                          className="text-sm focus:ring-[#14ad9f] focus:border-[#14ad9f]" />
-
-                      </div>
-                      
-                      {/* Preis bearbeitbar und Buttons */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1">
-                          <Label className="text-xs text-gray-600">Preis (€)</Label>
+                  const isSelected = selectedAddons.some(
+                    addon => addon.name === suggestion.name && addon.price === suggestion.price
+                  );
+                  return (
+                    <div
+                      key={index}
+                      className={`p-3 bg-white rounded border ${
+                        isSelected ? 'border-[#14ad9f]' : 'border-teal-200'
+                      }`}
+                    >
+                      <div className="grid gap-3">
+                        {/* Name bearbeitbar */}
+                        <div>
+                          <Label className="text-xs text-gray-600">Name</Label>
                           <Input
-                            type="number"
-                            value={suggestion.price}
-                            onChange={(e) => {
+                            value={suggestion.name}
+                            onChange={e => {
                               const updated = [...aiSuggestions];
-                              updated[index].price = Number(e.target.value);
+                              updated[index].name = e.target.value;
                               setAiSuggestions(updated);
                             }}
-                            className="focus:ring-[#14ad9f] focus:border-[#14ad9f]" />
-
+                            className="font-medium focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                          />
                         </div>
-                        <div className="flex gap-2 pt-4">
-                          <Button
-                            size="sm"
-                            onClick={() => applyAiSuggestion(suggestion)}
-                            className={
-                            selectedAddons.some((addon) =>
-                            addon.name === suggestion.name && addon.price === suggestion.price
-                            ) ?
-                            "bg-gray-400 hover:bg-gray-500 text-white" :
-                            "bg-[#14ad9f] hover:bg-[#129488] text-white"
-                            }>
 
-                            <Plus className="h-4 w-4 mr-1" />
-                            {selectedAddons.some((addon) =>
-                            addon.name === suggestion.name && addon.price === suggestion.price
-                            ) ? 'Ausgewählt' : 'Auswählen'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              const updated = aiSuggestions.filter((_, i) => i !== index);
+                        {/* Beschreibung bearbeitbar */}
+                        <div>
+                          <Label className="text-xs text-gray-600">Beschreibung</Label>
+                          <Textarea
+                            value={suggestion.description}
+                            onChange={e => {
+                              const updated = [...aiSuggestions];
+                              updated[index].description = e.target.value;
                               setAiSuggestions(updated);
                             }}
-                            className="text-red-600 hover:text-red-700">
+                            rows={2}
+                            className="text-sm focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                          />
+                        </div>
 
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        {/* Preis bearbeitbar und Buttons */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <Label className="text-xs text-gray-600">Preis (€)</Label>
+                            <Input
+                              type="number"
+                              value={suggestion.price}
+                              onChange={e => {
+                                const updated = [...aiSuggestions];
+                                updated[index].price = Number(e.target.value);
+                                setAiSuggestions(updated);
+                              }}
+                              className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                            />
+                          </div>
+                          <div className="flex gap-2 pt-4">
+                            <Button
+                              size="sm"
+                              onClick={() => applyAiSuggestion(suggestion)}
+                              className={
+                                selectedAddons.some(
+                                  addon =>
+                                    addon.name === suggestion.name &&
+                                    addon.price === suggestion.price
+                                )
+                                  ? 'bg-gray-400 hover:bg-gray-500 text-white'
+                                  : 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                              }
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              {selectedAddons.some(
+                                addon =>
+                                  addon.name === suggestion.name && addon.price === suggestion.price
+                              )
+                                ? 'Ausgewählt'
+                                : 'Auswählen'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const updated = aiSuggestions.filter((_, i) => i !== index);
+                                setAiSuggestions(updated);
+                              }}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>);
-
-              })}
+                  );
+                })}
               </div>
             </div>
-          }
+          )}
         </div>
       </CardContent>
-    </Card>);
-
+    </Card>
+  );
 }

@@ -6,11 +6,8 @@ export async function GET(request: NextRequest) {
     const forwarded = request.headers.get('x-forwarded-for');
     const real = request.headers.get('x-real-ip');
     const cfConnecting = request.headers.get('cf-connecting-ip');
-    
-    let ip = forwarded?.split(',')[0]?.trim() || 
-             real || 
-             cfConnecting || 
-             'unknown';
+
+    let ip = forwarded?.split(',')[0]?.trim() || real || cfConnecting || 'unknown';
 
     // Fallback für Development (localhost)
     if (ip === '::1' || ip === '127.0.0.1') {

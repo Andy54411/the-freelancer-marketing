@@ -53,7 +53,6 @@ export default function WorkspaceManager() {
           setLoading(false);
         });
       } catch (error) {
-
         setLoading(false);
       }
     };
@@ -83,9 +82,7 @@ export default function WorkspaceManager() {
 
       setWorkspaces(prev => [newWorkspace, ...prev]);
       // Modal wurde entfernt, da wir jetzt eine separate Seite verwenden
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleUpdateWorkspace = async (workspaceId: string, updates: Partial<Workspace>) => {
@@ -102,7 +99,6 @@ export default function WorkspaceManager() {
       // Update in Realtime Database - real-time listener will sync automatically
       await WorkspaceService.updateWorkspace(workspaceId, updates);
     } catch (error) {
-
       // Revert optimistic update on error by re-triggering realtime sync
       // The subscription will automatically refresh the data
     }
@@ -112,9 +108,7 @@ export default function WorkspaceManager() {
     try {
       await WorkspaceService.deleteWorkspace(workspaceId);
       setWorkspaces(prev => prev.filter(workspace => workspace.id !== workspaceId));
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleWorkspaceClick = (workspace: Workspace) => {

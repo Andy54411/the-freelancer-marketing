@@ -44,7 +44,6 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
   // SICHERHEITS-CHECK: Stelle sicher, dass immer eine gültige E-Mail ausgewählt ist
   useEffect(() => {
     if (!senderEmails.includes(selectedSenderEmail)) {
-
       setSelectedSenderEmail(senderEmails[0]);
     }
   }, [selectedSenderEmail, senderEmails]);
@@ -207,7 +206,6 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
           errorText = responseText;
           errorData = JSON.parse(responseText);
         } catch (parseError) {
-
           errorData = {
             error: `Server-Fehler: ${response.status} ${response.statusText}`,
             rawResponse: errorText,
@@ -233,7 +231,6 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
 
       onEmailSent?.();
     } catch (error) {
-
       // Detaillierte Fehlerbehandlung
       if (error instanceof Error) {
         if (error.message.includes('AWS SES')) {
@@ -293,7 +290,6 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
       toast.success(`E-Mail an ${activeContacts.length} Kontakte gesendet`);
       onEmailSent?.();
     } catch (error) {
-
       toast.error('Fehler beim Senden der Bulk-E-Mail');
     } finally {
       setLoading(false);

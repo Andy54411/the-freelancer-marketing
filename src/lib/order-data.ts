@@ -55,9 +55,7 @@ export async function getAllOrders() {
           const userData = userDoc.data();
           return { uid, data: userData };
         }
-      } catch (error) {
-
-      }
+      } catch (error) {}
       return { uid, data: null };
     });
 
@@ -75,7 +73,6 @@ export async function getAllOrders() {
     let customerName = 'Unbekannt';
 
     if (customer) {
-
       // Versuche verschiedene Feldkombinationen
       const firstName = customer.firstName || customer.firstname || customer.vorname || '';
       const lastName = customer.lastName || customer.lastname || customer.nachname || '';

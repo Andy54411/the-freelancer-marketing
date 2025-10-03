@@ -132,7 +132,6 @@ Diese E-Mail wurde automatisch von Taskilo gesendet.
       recipient: providerEmail,
     });
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Fehler beim Senden der E-Mail-Benachrichtigung' },
       { status: 500 }

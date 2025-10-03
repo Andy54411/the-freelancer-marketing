@@ -312,10 +312,8 @@ class GoogleAdsClientService {
     managerCustomerId?: string
   ): Promise<GoogleAdsApiResponse<GoogleAdsAccount[]>> {
     try {
-
       // STRATEGIE 1: Client Library listAccessibleCustomers - für echte Accounts
       try {
-
         // Nutze die offizielle listAccessibleCustomers Methode der Client Library
         const accessibleCustomersResponse = await this.client.listAccessibleCustomers(refreshToken);
 
@@ -324,7 +322,6 @@ class GoogleAdsClientService {
           accessibleCustomersResponse.resource_names &&
           accessibleCustomersResponse.resource_names.length > 0
         ) {
-
           // Konvertiere resource names zu customer IDs und hole Details
           const customerAccounts: GoogleAdsAccount[] = [];
 
@@ -367,7 +364,6 @@ class GoogleAdsClientService {
                   });
                 }
               } catch (customerError) {
-
                 // Füge Account trotzdem hinzu, auch ohne Details
                 customerAccounts.push({
                   id: customerId,
@@ -384,16 +380,13 @@ class GoogleAdsClientService {
           }
 
           if (customerAccounts.length > 0) {
-
             return {
               success: true,
               data: customerAccounts,
             };
           }
         }
-      } catch (clientLibraryError) {
-
-      }
+      } catch (clientLibraryError) {}
 
       // STRATEGIE 2: REST API als Fallback
 
@@ -401,7 +394,6 @@ class GoogleAdsClientService {
       try {
         accessToken = await this.getValidAccessToken(refreshToken);
       } catch (tokenError) {
-
         return {
           success: false,
           error: {
@@ -425,7 +417,6 @@ class GoogleAdsClientService {
       );
 
       if (listCustomersResponse.status === 404) {
-
         // Fallback: Erstelle einen Dummy-Account für Testzwecke
         return {
           success: true,
@@ -454,7 +445,6 @@ class GoogleAdsClientService {
 
       // Wenn keine Kunden gefunden, versuche alternative Methode
       if (!listData.resourceNames || listData.resourceNames.length === 0) {
-
         // Fallback: Versuche mit dem aktuellen Account selbst
         const customer = this.client.Customer({
           customer_id: managerCustomerId || '0', // Default customer ID
@@ -505,7 +495,6 @@ class GoogleAdsClientService {
           .filter(Boolean) || [];
 
       if (customerIds.length === 0) {
-
         return {
           success: true,
           data: [
@@ -561,7 +550,6 @@ class GoogleAdsClientService {
             });
           }
         } catch (customerError) {
-
           // Füge trotzdem einen Basic-Account hinzu
           formattedAccounts.push({
             id: customerId,
@@ -581,7 +569,6 @@ class GoogleAdsClientService {
         data: formattedAccounts,
       };
     } catch (error: any) {
-
       return {
         success: false,
         error: {
@@ -614,7 +601,6 @@ class GoogleAdsClientService {
 
           // Wenn Token noch 5 Minuten gültig ist, verwende es
           if (tokenExpiry.getTime() - now.getTime() > 5 * 60 * 1000) {
-
             return storedData.data.accountConfig.accessToken;
           }
         }
@@ -622,12 +608,10 @@ class GoogleAdsClientService {
 
       const refreshResult = await this.refreshAccessToken(refreshToken);
       if (refreshResult.success && refreshResult.data) {
-
         return refreshResult.data.access_token;
       }
       throw new Error('Failed to refresh access token');
     } catch (error: any) {
-
       throw new Error(`Token refresh failed: ${error.message}`);
     }
   }
@@ -640,7 +624,6 @@ class GoogleAdsClientService {
     customerId: string
   ): Promise<GoogleAdsApiResponse<GoogleAdsCampaignResponse>> {
     try {
-
       const customer = this.client.Customer({
         customer_id: customerId,
         refresh_token: refreshToken,
@@ -715,7 +698,6 @@ class GoogleAdsClientService {
         },
       };
     } catch (error: any) {
-
       return {
         success: false,
         error: {
@@ -742,7 +724,6 @@ class GoogleAdsClientService {
     }
   ): Promise<GoogleAdsApiResponse<{ campaignId: string }>> {
     try {
-
       // Validiere Customer ID Format
       if (!customerId || customerId === 'auto-detect') {
         throw new Error('Invalid customer ID provided');
@@ -761,9 +742,7 @@ class GoogleAdsClientService {
           FROM customer
           LIMIT 1
         `);
-
       } catch (accessError: any) {
-
         throw new Error(`Customer access failed: ${accessError.message}`);
       }
 
@@ -782,9 +761,7 @@ class GoogleAdsClientService {
         ]);
 
         budgetResourceName = budgetResult.results[0].resource_name;
-
       } catch (budgetError: any) {
-
         throw new Error(
           `Budget creation failed: ${budgetError.message || budgetError.details || 'Unknown budget error'}`
         );
@@ -823,34 +800,28 @@ class GoogleAdsClientService {
           data: { campaignId },
         };
       } catch (campaignError: any) {
-
         throw new Error(
           `Campaign creation failed: ${campaignError.message || 'Unknown campaign error'}`
         );
       }
     } catch (error: any) {
-
       // Detaillierte Fehleranalyse
       let errorMessage = 'Failed to create campaign';
       let errorCode = 'CAMPAIGN_CREATION_ERROR';
 
       if (error.details) {
-
         errorMessage = error.details;
       }
 
       if (error.message) {
-
         errorMessage = error.message;
       }
 
       if (error.code) {
-
         errorCode = error.code;
       }
 
       if (error.status) {
-
       }
 
       // Log vollständiges Error-Objekt für Debugging
@@ -906,7 +877,6 @@ class GoogleAdsClientService {
     }
   ): Promise<GoogleAdsApiResponse<{ campaignId: string; adGroupIds: string[] }>> {
     try {
-
       // Validiere Customer ID Format
       if (!customerId || customerId === 'auto-detect') {
         throw new Error('Invalid customer ID provided');
@@ -925,9 +895,7 @@ class GoogleAdsClientService {
           FROM customer
           LIMIT 1
         `);
-
       } catch (accessError: any) {
-
         throw new Error(`Customer access failed: ${accessError.message}`);
       }
 
@@ -946,9 +914,7 @@ class GoogleAdsClientService {
         ]);
 
         budgetResourceName = budgetResult.results[0].resource_name;
-
       } catch (budgetError: any) {
-
         throw new Error(
           `Budget creation failed: ${budgetError.message || budgetError.details || 'Unknown budget error'}`
         );
@@ -984,9 +950,7 @@ class GoogleAdsClientService {
 
         campaignResourceName = campaignResult.results[0].resource_name;
         campaignId = campaignResourceName.split('/')[3]; // Extract ID from resource name
-
       } catch (campaignError: any) {
-
         throw new Error(
           `Campaign creation failed: ${campaignError.message || 'Unknown campaign error'}`
         );
@@ -1017,7 +981,6 @@ class GoogleAdsClientService {
 
           // Erstelle Keywords für diese Ad Group
           if (adGroupData.keywords && adGroupData.keywords.length > 0) {
-
             const keywordOperations = adGroupData.keywords.map(keyword => ({
               ad_group: adGroupResourceName,
               status: 'ENABLED' as any,
@@ -1030,30 +993,23 @@ class GoogleAdsClientService {
 
             try {
               const keywordResult = await customer.adGroupCriteria.create(keywordOperations);
-
-            } catch (keywordError: any) {
-
-            }
+            } catch (keywordError: any) {}
           }
 
           // Erstelle Ads für diese Ad Group
           if (adGroupData.ads && adGroupData.ads.length > 0) {
-
             for (const adData of adGroupData.ads) {
               try {
                 // Validiere Ad-Daten
                 if (!adData.headlines || adData.headlines.length === 0) {
-
                   continue;
                 }
 
                 if (!adData.descriptions || adData.descriptions.length === 0) {
-
                   continue;
                 }
 
                 if (!adData.finalUrls || adData.finalUrls.length === 0) {
-
                   continue;
                 }
 
@@ -1062,12 +1018,10 @@ class GoogleAdsClientService {
                 const validDescriptions = adData.descriptions.filter(d => d && d.trim().length > 0);
 
                 if (validHeadlines.length < 3) {
-
                   continue;
                 }
 
                 if (validDescriptions.length < 2) {
-
                   continue;
                 }
 
@@ -1090,22 +1044,18 @@ class GoogleAdsClientService {
                 };
 
                 const adResult = await customer.adGroupAds.create([adPayload]);
-
               } catch (adError: any) {
-
                 // Continue mit anderen Ads
               }
             }
           }
         } catch (adGroupError: any) {
-
           // Continue mit anderen Ad Groups
         }
       }
 
       // 4. Füge Targeting hinzu (optional)
       if (campaignData.targetingOptions) {
-
         // TODO: Implement targeting options
         // - Locations
         // - Languages
@@ -1121,7 +1071,6 @@ class GoogleAdsClientService {
         },
       };
     } catch (error: any) {
-
       // Detaillierte Fehleranalyse
       let errorMessage = 'Failed to create comprehensive campaign';
       let errorCode = 'COMPREHENSIVE_CAMPAIGN_CREATION_ERROR';
@@ -1135,22 +1084,18 @@ class GoogleAdsClientService {
       }
 
       if (error.details) {
-
         errorMessage = error.details;
       }
 
       if (error.message) {
-
         errorMessage = error.message;
       }
 
       if (error.code) {
-
         errorCode = error.code;
       }
 
       if (error.status) {
-
       }
 
       // Log vollständiges Error-Objekt für Debugging
@@ -1344,7 +1289,6 @@ class GoogleAdsClientService {
     }
   ): Promise<GoogleAdsApiResponse<any>> {
     try {
-
       const customer = this.client.Customer({
         customer_id: customerId,
         refresh_token: refreshToken,
@@ -1384,7 +1328,6 @@ class GoogleAdsClientService {
         },
       };
     } catch (error: any) {
-
       return {
         success: false,
         error: {
@@ -1406,7 +1349,6 @@ class GoogleAdsClientService {
     adGroupId?: string
   ): Promise<GoogleAdsApiResponse<any[]>> {
     try {
-
       const customer = this.client.Customer({
         customer_id: customerId,
         refresh_token: refreshToken,
@@ -1467,7 +1409,6 @@ class GoogleAdsClientService {
         data: keywords,
       };
     } catch (error: any) {
-
       return {
         success: false,
         error: {
@@ -1487,7 +1428,6 @@ class GoogleAdsClientService {
     adGroupId?: string
   ): Promise<GoogleAdsApiResponse<any[]>> {
     try {
-
       const customer = this.client.Customer({
         customer_id: customerId,
         refresh_token: refreshToken,
@@ -1563,7 +1503,6 @@ class GoogleAdsClientService {
         data: ads,
       };
     } catch (error: any) {
-
       return {
         success: false,
         error: {
@@ -1583,7 +1522,6 @@ class GoogleAdsClientService {
     campaignId?: string
   ): Promise<GoogleAdsApiResponse<any[]>> {
     try {
-
       const customer = this.client.Customer({
         customer_id: customerId,
         refresh_token: refreshToken,
@@ -1641,7 +1579,6 @@ class GoogleAdsClientService {
         data: adGroups,
       };
     } catch (error: any) {
-
       return {
         success: false,
         error: {
@@ -1657,7 +1594,6 @@ class GoogleAdsClientService {
    */
   async getBudgets(refreshToken: string, customerId: string): Promise<GoogleAdsApiResponse<any[]>> {
     try {
-
       const customer = this.client.Customer({
         customer_id: customerId,
         refresh_token: refreshToken,
@@ -1694,7 +1630,6 @@ class GoogleAdsClientService {
         data: budgets,
       };
     } catch (error: any) {
-
       return {
         success: false,
         error: {
@@ -1714,7 +1649,6 @@ class GoogleAdsClientService {
     dateRange?: { startDate: string; endDate: string }
   ): Promise<GoogleAdsApiResponse<any>> {
     try {
-
       const customer = this.client.Customer({
         customer_id: customerId,
         refresh_token: refreshToken,
@@ -1802,7 +1736,6 @@ class GoogleAdsClientService {
         },
       };
     } catch (error: any) {
-
       return {
         success: false,
         error: {
@@ -1818,7 +1751,6 @@ class GoogleAdsClientService {
    */
   async getUserProfile(accessToken: string): Promise<GoogleAdsApiResponse<any>> {
     try {
-
       const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -1843,7 +1775,6 @@ class GoogleAdsClientService {
         },
       };
     } catch (error: any) {
-
       return {
         success: false,
         error: {

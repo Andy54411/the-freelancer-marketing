@@ -100,7 +100,6 @@ export default function CompanyChatPage() {
         }
         orderDataFromDb = orderDocSnap.data();
       } catch (err: any) {
-
         if (err.code === 'permission-denied') {
           setError(
             'Zugriff auf diesen Auftrag verweigert. Dies liegt wahrscheinlich an inkonsistenten Auftragsdaten (z.B. eine fehlende Anbieter-ID). Bitte kontaktieren Sie den Support.'
@@ -147,7 +146,6 @@ export default function CompanyChatPage() {
 
         setOrder(orderData);
       } catch (err: any) {
-
         if (err.code === 'permission-denied' || err.code === 'functions/permission-denied') {
           setError(
             'Zugriff auf Kundendetails verweigert. Dies kann an fehlenden Berechtigungen (Custom Claims) für Ihr Firmenkonto liegen. Bitte kontaktieren Sie den Support.'

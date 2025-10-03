@@ -180,7 +180,6 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
       toast.success('Company Profile wurde erfolgreich aktualisiert!');
       onDataSaved();
     } catch (error) {
-
       toast.error('Fehler beim Speichern des Profils');
     } finally {
       setSaving(false);

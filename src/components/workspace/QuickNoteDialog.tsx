@@ -100,7 +100,6 @@ export function QuickNoteDialog({
         onNoteAdded();
       }
     } catch (error) {
-
     } finally {
       setLoading(false);
     }

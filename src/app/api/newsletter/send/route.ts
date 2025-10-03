@@ -102,7 +102,6 @@ export async function POST(request: NextRequest) {
       service: 'Resend',
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,
@@ -125,7 +124,6 @@ export async function GET(_request: NextRequest) {
       service: 'Resend',
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }

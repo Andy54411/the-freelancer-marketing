@@ -9,13 +9,12 @@ interface PDFSectionProps {
   hasFooter?: boolean;
 }
 
-export const PDFSection: React.FC<PDFSectionProps> = ({ 
-  data, 
+export const PDFSection: React.FC<PDFSectionProps> = ({
+  data,
   children,
   sectionType,
-  hasFooter = true
+  hasFooter = true,
 }) => {
-  
   const footerData = {
     companyName: (data as any).companyName || '',
     phoneNumber: (data as any).phoneNumber || '',
@@ -37,8 +36,8 @@ export const PDFSection: React.FC<PDFSectionProps> = ({
     companyPostalCode: (data as any).companyPostalCode || '18586',
     companyCity: (data as any).companyCity || 'Sellin',
     step1: (data as any).step1,
-    step2: (data as any).step2,  
-    step4: (data as any).step4
+    step2: (data as any).step2,
+    step4: (data as any).step4,
   };
 
   return (

@@ -17,7 +17,7 @@ export const useSimplePagination = (
     if (!contentRef.current) return;
 
     const element = contentRef.current;
-    
+
     // Einfach: Messe die Höhe und teile durch Seitenhöhe
     const observer = new ResizeObserver(() => {
       const height = element.scrollHeight;

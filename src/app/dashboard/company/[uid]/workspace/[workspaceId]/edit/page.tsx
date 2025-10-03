@@ -68,7 +68,6 @@ export default function EditWorkspacePage() {
           tags: workspaceData.tags || [],
         });
       } catch (error) {
-
         router.push(`/dashboard/company/${companyId}/workspace`);
       } finally {
         setLoading(false);
@@ -110,7 +109,6 @@ export default function EditWorkspacePage() {
       // Navigate back to workspace overview
       router.push(`/dashboard/company/${companyId}/workspace`);
     } catch (error) {
-
       // TODO: Show error toast
     } finally {
       setSaving(false);
@@ -131,7 +129,6 @@ export default function EditWorkspacePage() {
       await WorkspaceService.deleteWorkspace(workspace.id);
       router.push(`/dashboard/company/${companyId}/workspace`);
     } catch (error) {
-
       // TODO: Show error toast
     }
   };

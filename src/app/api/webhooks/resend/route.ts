@@ -40,7 +40,6 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-
     }
 
     return NextResponse.json({
@@ -48,7 +47,6 @@ export async function POST(request: NextRequest) {
       message: 'Webhook verarbeitet',
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Webhook-Verarbeitungsfehler' }, { status: 500 });
   }
 }
@@ -104,7 +102,6 @@ async function handleIncomingEmail(data: any) {
 
     return docRef.id;
   } catch (error) {
-
     throw error;
   }
 }
@@ -131,11 +128,8 @@ async function updateEmailStatus(messageId: string, status: string, data: any) {
           },
         ],
       });
-
     }
-  } catch (error) {
-
-  }
+  } catch (error) {}
 }
 
 // Hilfsfunktion: Message ID generieren
@@ -181,10 +175,7 @@ async function createTicketFromEmail(emailId: string, emailData: any) {
     };
 
     await addDoc(collection(db, 'tickets'), ticket);
-
-  } catch (error) {
-
-  }
+  } catch (error) {}
 }
 
 // Hilfsfunktion: Namen aus E-Mail extrahieren

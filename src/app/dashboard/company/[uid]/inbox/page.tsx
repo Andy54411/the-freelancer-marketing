@@ -61,15 +61,17 @@ export default function CompanyInboxPage() {
 
       if (companyDocSnap.exists()) {
         const companyData = companyDocSnap.data();
-        
+
         // Prüfe ob profileBannerImage eine gültige URL ist (nicht blob:)
         let avatarUrl = null;
-        if (companyData.profileBannerImage && 
-            !companyData.profileBannerImage.startsWith('blob:') &&
-            companyData.profileBannerImage.startsWith('http')) {
+        if (
+          companyData.profileBannerImage &&
+          !companyData.profileBannerImage.startsWith('blob:') &&
+          companyData.profileBannerImage.startsWith('http')
+        ) {
           avatarUrl = companyData.profileBannerImage;
         }
-        
+
         return {
           name: companyData.companyName || companyData.name || UNKNOWN_USER_NAME,
           avatarUrl: avatarUrl,
@@ -173,8 +175,13 @@ export default function CompanyInboxPage() {
 
             // Versuche zuerst die gespeicherten userDetails zu verwenden
             const userDetails = otherUserId ? chatData.userDetails?.[otherUserId] : null;
-            
-            if (userDetails && userDetails.name && userDetails.name !== UNKNOWN_USER_NAME && userDetails.name !== 'Kunde') {
+
+            if (
+              userDetails &&
+              userDetails.name &&
+              userDetails.name !== UNKNOWN_USER_NAME &&
+              userDetails.name !== 'Kunde'
+            ) {
               otherUserData = {
                 name: userDetails.name,
                 avatarUrl: userDetails.avatarUrl || null,
@@ -231,8 +238,12 @@ export default function CompanyInboxPage() {
 
             // Versuche zuerst die gespeicherten participantNames zu verwenden
             const participantName = chatData.participantNames?.[otherUserId];
-            
-            if (participantName && participantName !== UNKNOWN_USER_NAME && participantName !== 'Kunde') {
+
+            if (
+              participantName &&
+              participantName !== UNKNOWN_USER_NAME &&
+              participantName !== 'Kunde'
+            ) {
               otherUserData.name = participantName;
             } else if (otherUserId) {
               // Fallback: Lade Daten mit Collection-Fallback
@@ -293,10 +304,10 @@ export default function CompanyInboxPage() {
 
   const selectedChat = useMemo(() => {
     if (!selectedChatId) return null;
-    
+
     // Direkter Vergleich - Chats haben bereits prefixed IDs
     const foundChat = chats.find(chat => chat.id === selectedChatId);
-    
+
     return foundChat || null;
   }, [chats, selectedChatId]);
 

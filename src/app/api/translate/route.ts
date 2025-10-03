@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     // Google Translate API
     const GOOGLE_TRANSLATE_API_KEY = process.env.GOOGLE_TRANSLATE_API_KEY;
-    
+
     if (!GOOGLE_TRANSLATE_API_KEY) {
       // Development: Returniere einfach den Original-Text mit einem Hinweis
       return NextResponse.json({
@@ -58,7 +58,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Translation error:', error);
     // Development Fallback
-    const { text, targetLang } = await request.json().catch(() => ({ text: 'Text nicht verfügbar', targetLang: 'de' }));
+    const { text, targetLang } = await request
+      .json()
+      .catch(() => ({ text: 'Text nicht verfügbar', targetLang: 'de' }));
     return NextResponse.json({
       translatedText: `[DE] ${text}`,
       originalText: text,

@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
       await browser.close();
     }
   } catch (error) {
-
     return NextResponse.json({ error: 'PDF konnte nicht generiert werden' }, { status: 500 });
   }
 }

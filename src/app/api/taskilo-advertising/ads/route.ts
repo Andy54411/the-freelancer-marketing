@@ -10,7 +10,6 @@ import { db } from '@/firebase/server';
  */
 export async function GET(request: NextRequest) {
   try {
-
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const adGroupId = searchParams.get('adGroupId') || undefined;
@@ -101,7 +100,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-
     return NextResponse.json(
       {
         error: 'Interner Server-Fehler',
@@ -117,7 +115,6 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-
     const body = await request.json();
     const { companyId, adGroupId, type, headlines, descriptions, finalUrls, displayUrl } = body;
 
@@ -147,7 +144,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Erstellen der Anzeige',

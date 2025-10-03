@@ -11,12 +11,7 @@ export async function GET(request: NextRequest) {
 
     // Debug-Parameter
     const testState = `company:debug:${Date.now()}`;
-    const scopes = [
-      'accounting-data:read',
-      'accounting-data:write',
-      'userinfo:read',
-      'user:read',
-    ];
+    const scopes = ['accounting-data:read', 'accounting-data:write', 'userinfo:read', 'user:read'];
     const scope = scopes.join(' ');
 
     const redirectUri =
@@ -50,7 +45,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(debugInfo);
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

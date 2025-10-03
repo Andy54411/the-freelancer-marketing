@@ -120,7 +120,6 @@ const ProviderProfilePage = () => {
         const reviewsSnapshot = await getDocs(reviewsQuery);
         setReviews(reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Review));
       } catch (err) {
-
         setError('Fehler beim Laden des Profils.');
       } finally {
         setLoading(false);

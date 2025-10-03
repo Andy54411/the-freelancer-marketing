@@ -247,7 +247,6 @@ export class TaxService {
 
       // CRITICAL: Check if using mock data for tax calculations
       if (USE_MOCK_DATA) {
-
         // Umsätze und Steuern aus Transaktionen berechnen
         // TODO: Integration mit FinanceService für echte Daten
         const mockData = {
@@ -271,7 +270,6 @@ export class TaxService {
         '🚨 TAX SERVICE: Real UStVA calculation not implemented! Cannot proceed without FinanceService integration.'
       );
     } catch (error) {
-
       throw new Error('UStVA konnte nicht berechnet werden');
     }
   }
@@ -287,7 +285,6 @@ export class TaxService {
 
       // CRITICAL: Check if using mock data for tax calculations
       if (USE_MOCK_DATA) {
-
         // TODO: Integration mit FinanceService für echte Buchungen
         const mockData = {
           umsaetze: 200000,
@@ -340,7 +337,6 @@ export class TaxService {
         '🚨 TAX SERVICE: Real EÜR calculation not implemented! Cannot proceed without FinanceService integration.'
       );
     } catch (error) {
-
       throw new Error('EÜR konnte nicht berechnet werden');
     }
   }
@@ -352,7 +348,6 @@ export class TaxService {
     try {
       // CRITICAL: Check if using mock data for tax calculations
       if (USE_MOCK_DATA) {
-
         // TODO: Integration mit echten Buchhaltungsdaten
         const mockData = {
           umsatzerlöse: 200000,
@@ -400,7 +395,6 @@ export class TaxService {
         '🚨 TAX SERVICE: Real GuV calculation not implemented! Cannot proceed without accounting system integration.'
       );
     } catch (error) {
-
       throw new Error('GuV konnte nicht berechnet werden');
     }
   }
@@ -420,7 +414,6 @@ export class TaxService {
 
       // CRITICAL: Check if using mock data for business analysis
       if (USE_MOCK_DATA) {
-
         // TODO: Integration mit echten Buchhaltungsdaten
         const mockData = {
           gesamtleistung: 16667, // 200000 / 12 Monate
@@ -456,7 +449,6 @@ export class TaxService {
         '🚨 TAX SERVICE: Real BWA calculation not implemented! Cannot proceed without accounting system integration.'
       );
     } catch (error) {
-
       throw new Error('BWA konnte nicht berechnet werden');
     }
   }
@@ -476,7 +468,6 @@ export class TaxService {
 
       return docRef.id;
     } catch (error) {
-
       throw new Error('Steuerbericht konnte nicht erstellt werden');
     }
   }
@@ -506,7 +497,6 @@ export class TaxService {
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       })) as TaxReport[];
     } catch (error) {
-
       throw new Error('Steuerberichte konnten nicht geladen werden');
     }
   }
@@ -567,7 +557,6 @@ export class TaxService {
 
       return validation;
     } catch (error) {
-
       return {
         isValid: false,
         errors: ['Validierung fehlgeschlagen'],
@@ -607,12 +596,9 @@ export class TaxService {
             'elsterData.acknowledged': true,
             updatedAt: new Date(),
           });
-        } catch (error) {
-
-        }
+        } catch (error) {}
       }, 5000);
     } catch (error) {
-
       throw new Error('ELSTER-Übermittlung fehlgeschlagen');
     }
   }
@@ -671,7 +657,6 @@ export class TaxService {
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       } as TaxSettings;
     } catch (error) {
-
       return null;
     }
   }
@@ -706,7 +691,6 @@ export class TaxService {
         });
       }
     } catch (error) {
-
       throw new Error('Steuereinstellungen konnten nicht gespeichert werden');
     }
   }
@@ -747,7 +731,6 @@ export class TaxService {
         estimatedTaxLiability,
       };
     } catch (error) {
-
       return {
         openReports: 0,
         submittedReports: 0,

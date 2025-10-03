@@ -125,7 +125,6 @@ export function useB2BPayment() {
 
         return projectId;
       } catch (err: any) {
-
         setError(err.message || 'Failed to create B2B project');
         throw err;
       } finally {
@@ -150,7 +149,6 @@ export function useB2BPayment() {
 
         return { id: projectDoc.id, ...projectDoc.data() } as B2BPaymentProject;
       } catch (err: any) {
-
         setError(err.message || 'Failed to get B2B project');
         return null;
       } finally {
@@ -224,9 +222,7 @@ export function useB2BPayment() {
             updatedAt: serverTimestamp(),
           });
         }
-
       } catch (err: any) {
-
         setError(err.message || 'Failed to process B2B payment');
         throw err;
       } finally {
@@ -258,7 +254,6 @@ export function useB2BPayment() {
 
         return payments;
       } catch (err: any) {
-
         setError(err.message || 'Failed to get B2B payment history');
         return [];
       } finally {

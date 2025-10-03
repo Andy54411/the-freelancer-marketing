@@ -73,3 +73,7 @@ firestore.rules
 storage.rules
 vercel.json
 eslint.config.mjs
+# iOS Pod-Dateien ignorieren
+taskoapp/ios/Pods/**
+taskoapp/ios/Pods/
+**/Pods/**

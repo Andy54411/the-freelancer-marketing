@@ -19,7 +19,6 @@ export async function GET() {
       message: 'Debug info logged to console',
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

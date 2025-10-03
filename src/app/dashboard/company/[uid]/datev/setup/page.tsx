@@ -16,7 +16,6 @@ export default async function DatevSetupPage({ params }: DatevSetupPageProps) {
 
   // Additional validation
   if (!uid || uid === 'unknown' || uid.trim() === '') {
-
   }
 
   return (

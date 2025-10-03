@@ -44,7 +44,9 @@ export class InvoiceValidationService {
 
       case TaxRuleType.EU_INTRACOMMUNITY_SUPPLY:
         if (!invoice.reverseChargeInfo?.customerVatId) {
-          errors.push('USt-IdNr. des EU-Kunden ist für innergemeinschaftliche Lieferung erforderlich');
+          errors.push(
+            'USt-IdNr. des EU-Kunden ist für innergemeinschaftliche Lieferung erforderlich'
+          );
         }
         if (!invoice.reverseChargeInfo?.euCountryCode) {
           errors.push('EU-Ländercode ist für innergemeinschaftliche Lieferung erforderlich');
@@ -56,14 +58,18 @@ export class InvoiceValidationService {
 
       case TaxRuleType.EU_OSS:
         if (!invoice.taxRuleText?.includes('OSS')) {
-          errors.push('Bei OSS-Regelung muss ein entsprechender Hinweis auf der Rechnung erscheinen');
+          errors.push(
+            'Bei OSS-Regelung muss ein entsprechender Hinweis auf der Rechnung erscheinen'
+          );
         }
         // Hier könnten weitere OSS-spezifische Validierungen erfolgen
         break;
 
       case TaxRuleType.NON_EU_EXPORT:
         if (!invoice.taxRuleText?.includes('Ausfuhrlieferung')) {
-          errors.push('Bei Ausfuhrlieferungen muss ein entsprechender Hinweis auf der Rechnung erscheinen');
+          errors.push(
+            'Bei Ausfuhrlieferungen muss ein entsprechender Hinweis auf der Rechnung erscheinen'
+          );
         }
         if (invoice.tax > 0) {
           errors.push('Bei Ausfuhrlieferungen darf keine MwSt. ausgewiesen werden');
@@ -72,7 +78,9 @@ export class InvoiceValidationService {
 
       case TaxRuleType.NON_EU_OUT_OF_SCOPE:
         if (!invoice.taxRuleText?.includes('nicht steuerbar')) {
-          errors.push('Bei nicht steuerbaren Leistungen muss ein entsprechender Hinweis auf der Rechnung erscheinen');
+          errors.push(
+            'Bei nicht steuerbaren Leistungen muss ein entsprechender Hinweis auf der Rechnung erscheinen'
+          );
         }
         if (invoice.tax > 0) {
           errors.push('Bei nicht steuerbaren Leistungen darf keine MwSt. ausgewiesen werden');
@@ -80,8 +88,13 @@ export class InvoiceValidationService {
         break;
 
       case TaxRuleType.DE_TAXABLE:
-        if (invoice.taxRuleText?.includes('steuerfrei') || invoice.taxRuleText?.includes('nicht steuerbar')) {
-          errors.push('Bei steuerpflichtigen Leistungen darf kein Hinweis auf Steuerbefreiung erscheinen');
+        if (
+          invoice.taxRuleText?.includes('steuerfrei') ||
+          invoice.taxRuleText?.includes('nicht steuerbar')
+        ) {
+          errors.push(
+            'Bei steuerpflichtigen Leistungen darf kein Hinweis auf Steuerbefreiung erscheinen'
+          );
         }
         if (invoice.tax <= 0 && !invoice.isSmallBusiness) {
           errors.push('Bei steuerpflichtigen Leistungen muss MwSt. ausgewiesen werden');

@@ -11,12 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 
 interface CategoryValues {
@@ -72,7 +67,7 @@ export default function NewCategoryModal({
     try {
       // Import API function dynamically
       const { createCategory } = await import('@/utils/api/companyApi');
-      
+
       const response = await createCategory(values);
       if (response.success && response.categoryId) {
         if (onSaved) onSaved(response.categoryId, values);
@@ -95,7 +90,7 @@ export default function NewCategoryModal({
         <DialogHeader>
           <DialogTitle>Kategorie erstellen</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Name *</Label>

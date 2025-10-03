@@ -16,7 +16,7 @@ export interface BaseItem {
 
 // Service-spezifisches Interface
 export interface ServiceItem extends BaseItem {
-  price: number;  // Alias für sellingPrice
+  price: number; // Alias für sellingPrice
   currentStock?: never;
   reservedStock?: never;
   availableStock?: never;

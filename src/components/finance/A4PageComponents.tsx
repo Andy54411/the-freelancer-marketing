@@ -19,7 +19,7 @@ export const A4PageWrapper: React.FC<A4PageWrapperProps> = ({
   pageNumber,
   showPageNumber = false,
   pageBreakBefore = false,
-  dimensions = A4_DIMENSIONS.WEB
+  dimensions = A4_DIMENSIONS.WEB,
 }) => {
   return (
     <div
@@ -38,13 +38,13 @@ export const A4PageWrapper: React.FC<A4PageWrapperProps> = ({
         margin: '0 auto',
         fontSize: '12px',
         lineHeight: '1.5',
-        color: '#000000'
+        color: '#000000',
       }}
     >
       {children}
-      
+
       {showPageNumber && pageNumber && (
-        <div 
+        <div
           className="absolute bottom-4 right-4 text-xs text-gray-500"
           style={{ fontSize: '10px' }}
         >
@@ -58,16 +58,14 @@ export const A4PageWrapper: React.FC<A4PageWrapperProps> = ({
 /**
  * A4PageBreak - Forces a page break for multi-page documents
  */
-export const A4PageBreak: React.FC<{ className?: string }> = ({ 
-  className = '' 
-}) => (
-  <div 
+export const A4PageBreak: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <div
     className={`page-break ${className}`}
     style={{
       pageBreakBefore: 'always',
       breakBefore: 'page',
       height: '0px',
-      visibility: 'hidden'
+      visibility: 'hidden',
     }}
   />
 );
@@ -88,21 +86,17 @@ export const A4Section: React.FC<A4SectionProps> = ({
   className = '',
   keepTogether = false,
   breakBefore = false,
-  title
+  title,
 }) => (
   <div
     className={className}
     style={{
       pageBreakBefore: breakBefore ? 'always' : 'auto',
       pageBreakInside: keepTogether ? 'avoid' : 'auto',
-      breakInside: keepTogether ? 'avoid' : 'auto'
+      breakInside: keepTogether ? 'avoid' : 'auto',
     }}
   >
-    {title && (
-      <h3 className="text-sm font-semibold mb-2 text-gray-800">
-        {title}
-      </h3>
-    )}
+    {title && <h3 className="text-sm font-semibold mb-2 text-gray-800">{title}</h3>}
     {children}
   </div>
 );
@@ -154,5 +148,5 @@ export default {
   A4PageWrapper,
   A4PageBreak,
   A4Section,
-  A4_PAGE_CLASSES
+  A4_PAGE_CLASSES,
 };

@@ -73,11 +73,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (emailResponse.error) {
-
       return NextResponse.json(
         {
           error: 'E-Mail konnte nicht gesendet werden',
-          details: emailResponse.error.message
+          details: emailResponse.error.message,
         },
         { status: 500 }
       );
@@ -86,15 +85,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Test-E-Mail erfolgreich gesendet',
-      emailId: emailResponse.data?.id
+      emailId: emailResponse.data?.id,
     });
-
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Interner Serverfehler',
-        details: error instanceof Error ? error.message : 'Unbekannter Fehler'
+        details: error instanceof Error ? error.message : 'Unbekannter Fehler',
       },
       { status: 500 }
     );

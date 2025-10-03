@@ -72,18 +72,19 @@ export class ClientEmailService {
 
       return result;
     } catch (error) {
-
       return { success: false, error: 'Netzwerkfehler beim E-Mail-Versand' };
     }
   }
 
   // Bulk-E-Mail senden über API-Route
-  async sendBulkEmails(messages: Array<{
-    to: string[];
-    subject: string;
-    htmlContent: string;
-    from?: string;
-  }>): Promise<{
+  async sendBulkEmails(
+    messages: Array<{
+      to: string[];
+      subject: string;
+      htmlContent: string;
+      from?: string;
+    }>
+  ): Promise<{
     success: boolean;
     results: Array<{ messageId?: string; error?: string; to: string[] }>;
     totalSent: number;
@@ -109,7 +110,10 @@ export class ClientEmailService {
       if (!response.ok) {
         return {
           success: false,
-          results: messages.map(m => ({ error: result.error || 'Bulk-Versand fehlgeschlagen', to: m.to })),
+          results: messages.map(m => ({
+            error: result.error || 'Bulk-Versand fehlgeschlagen',
+            to: m.to,
+          })),
           totalSent: messages.length,
           successCount: 0,
           failureCount: messages.length,
@@ -118,7 +122,6 @@ export class ClientEmailService {
 
       return result;
     } catch (error) {
-
       return {
         success: false,
         results: messages.map(m => ({ error: 'Netzwerkfehler', to: m.to })),
@@ -161,7 +164,6 @@ export class ClientEmailService {
 
       return result;
     } catch (error) {
-
       return { success: false, error: 'Netzwerkfehler beim Template-E-Mail-Versand' };
     }
   }
@@ -172,14 +174,12 @@ export class ClientEmailService {
       const response = await fetch('/api/admin/emails/templates');
 
       if (!response.ok) {
-
         return [];
       }
 
       const result = await response.json();
       return result.templates || [];
     } catch (error) {
-
       return [];
     }
   }
@@ -191,7 +191,9 @@ export class ClientEmailService {
     error?: string;
   }> {
     try {
-      const response = await fetch(`/api/admin/emails/send?messageId=${encodeURIComponent(messageId)}`);
+      const response = await fetch(
+        `/api/admin/emails/send?messageId=${encodeURIComponent(messageId)}`
+      );
 
       if (!response.ok) {
         return { status: 'sent', error: 'Status nicht verfügbar' };
@@ -204,7 +206,6 @@ export class ClientEmailService {
         error: result.error,
       };
     } catch (error) {
-
       return { status: 'sent', error: 'Netzwerkfehler' };
     }
   }

@@ -1,14 +1,24 @@
 import type { Metadata } from 'next';
-import { ArrowLeft, AlertTriangle, CheckCircle, XCircle, Lightbulb, DollarSign, Clock } from 'lucide-react';
+import {
+  ArrowLeft,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Lightbulb,
+  DollarSign,
+  Clock,
+} from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Die 5 häufigsten Fehler bei der Renovierung - Taskilo Ratgeber',
-  description: 'Vermeiden Sie diese 5 kostspieligen Renovierungsfehler. Professionelle Tipps für erfolgreiche Renovierungen und wann Sie Experten beauftragen sollten.',
+  description:
+    'Vermeiden Sie diese 5 kostspieligen Renovierungsfehler. Professionelle Tipps für erfolgreiche Renovierungen und wann Sie Experten beauftragen sollten.',
   keywords: 'Renovierung, Renovierungsfehler, Sanierung, Handwerker, Taskilo, Renovierungstipps',
   openGraph: {
     title: 'Die 5 häufigsten Fehler bei der Renovierung',
-    description: 'Professionelle Tipps um kostspielige Renovierungsfehler zu vermeiden. Expertenwissen für erfolgreiche Renovierungen.',
+    description:
+      'Professionelle Tipps um kostspielige Renovierungsfehler zu vermeiden. Expertenwissen für erfolgreiche Renovierungen.',
     type: 'article',
   },
 };
@@ -49,22 +59,21 @@ export default function RenovierungsfehlerPage() {
               </h1>
             </div>
             <p className="text-xl text-red-100 leading-relaxed">
-              Vermeiden Sie diese kostspieligen Fehler bei Ihrer nächsten Renovierung.
-              Lernen Sie aus den Erfahrungen anderer und sparen Sie Zeit, Geld und Nerven.
+              Vermeiden Sie diese kostspieligen Fehler bei Ihrer nächsten Renovierung. Lernen Sie
+              aus den Erfahrungen anderer und sparen Sie Zeit, Geld und Nerven.
             </p>
           </div>
         </section>
 
         {/* Main Content */}
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-
           {/* Introduction */}
           <div className="prose prose-lg max-w-none mb-12">
             <p className="text-xl text-gray-700 leading-relaxed">
-              Eine Renovierung kann Ihr Zuhause verwandeln - aber nur, wenn sie richtig gemacht wird.
-              Leider machen viele Hausbesitzer immer wieder dieselben Fehler, die zu Verzögerungen,
-              Mehrkosten und schlechten Ergebnissen führen. Hier sind die fünf häufigsten Fallstricke
-              und wie Sie sie vermeiden können.
+              Eine Renovierung kann Ihr Zuhause verwandeln - aber nur, wenn sie richtig gemacht
+              wird. Leider machen viele Hausbesitzer immer wieder dieselben Fehler, die zu
+              Verzögerungen, Mehrkosten und schlechten Ergebnissen führen. Hier sind die fünf
+              häufigsten Fallstricke und wie Sie sie vermeiden können.
             </p>
           </div>
 
@@ -109,7 +118,9 @@ export default function RenovierungsfehlerPage() {
                 <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">1</span>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900">Mangelnde oder schlechte Planung</h2>
+                <h2 className="text-3xl font-bold text-gray-900">
+                  Mangelnde oder schlechte Planung
+                </h2>
               </div>
 
               <div className="grid lg:grid-cols-2 gap-8">
@@ -172,8 +183,9 @@ export default function RenovierungsfehlerPage() {
               <div className="mt-6 bg-[#14ad9f] bg-opacity-10 p-4 rounded-lg">
                 <h4 className="font-semibold text-[#14ad9f] mb-2">💡 Taskilo-Tipp:</h4>
                 <p className="text-gray-700">
-                  Nutzen Sie unsere Planungsberatung! Unsere erfahrenen Projektmanager helfen Ihnen bei der
-                  detaillierten Planung und Koordination aller Gewerke - von der ersten Idee bis zur Fertigstellung.
+                  Nutzen Sie unsere Planungsberatung! Unsere erfahrenen Projektmanager helfen Ihnen
+                  bei der detaillierten Planung und Koordination aller Gewerke - von der ersten Idee
+                  bis zur Fertigstellung.
                 </p>
               </div>
             </div>
@@ -206,7 +218,9 @@ export default function RenovierungsfehlerPage() {
                   </div>
 
                   <div className="bg-orange-100 p-4 rounded-lg">
-                    <h4 className="font-semibold text-orange-800 mb-3">📊 Kostenfaktoren Beispiel Badezimmer:</h4>
+                    <h4 className="font-semibold text-orange-800 mb-3">
+                      📊 Kostenfaktoren Beispiel Badezimmer:
+                    </h4>
                     <div className="space-y-1 text-orange-700 text-sm">
                       <p>• Material: 3.000€ (30%)</p>
                       <p>• Handwerker: 5.000€ (50%)</p>
@@ -251,7 +265,8 @@ export default function RenovierungsfehlerPage() {
                   <div className="mt-6 bg-blue-50 p-4 rounded-lg">
                     <h4 className="font-semibold text-blue-800 mb-2">💰 Spartipp:</h4>
                     <p className="text-blue-700 text-sm">
-                      Eigenleistung kann 20-40% der Kosten sparen, aber nur bei einfachen Arbeiten wie Streichen oder Fliesen legen.
+                      Eigenleistung kann 20-40% der Kosten sparen, aber nur bei einfachen Arbeiten
+                      wie Streichen oder Fliesen legen.
                     </p>
                   </div>
                 </div>
@@ -266,7 +281,9 @@ export default function RenovierungsfehlerPage() {
                 <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">3</span>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900">Falsche Reihenfolge der Arbeiten</h2>
+                <h2 className="text-3xl font-bold text-gray-900">
+                  Falsche Reihenfolge der Arbeiten
+                </h2>
               </div>
 
               <div className="grid lg:grid-cols-2 gap-8">
@@ -286,10 +303,12 @@ export default function RenovierungsfehlerPage() {
                   </div>
 
                   <div className="bg-red-100 p-4 rounded-lg">
-                    <h4 className="font-semibold text-red-800 mb-2">⚠️ Folgen falscher Reihenfolge:</h4>
+                    <h4 className="font-semibold text-red-800 mb-2">
+                      ⚠️ Folgen falscher Reihenfolge:
+                    </h4>
                     <p className="text-red-700 text-sm">
-                      Nacharbeiten, beschädigte neue Oberflächen, doppelte Kosten
-                      und Verzögerungen von mehreren Wochen.
+                      Nacharbeiten, beschädigte neue Oberflächen, doppelte Kosten und Verzögerungen
+                      von mehreren Wochen.
                     </p>
                   </div>
                 </div>
@@ -302,31 +321,45 @@ export default function RenovierungsfehlerPage() {
                     </h3>
                     <div className="space-y-2 text-green-700">
                       <div className="flex items-center space-x-2">
-                        <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</span>
+                        <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                          1
+                        </span>
                         <span>Rohbau / Abriss / Entrümpelung</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</span>
+                        <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                          2
+                        </span>
                         <span>Elektro / Sanitär / Heizung (Rohinstallation)</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</span>
+                        <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                          3
+                        </span>
                         <span>Estrich / Trockenbau</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">4</span>
+                        <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                          4
+                        </span>
                         <span>Fliesen / Malerarbeiten</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">5</span>
+                        <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                          5
+                        </span>
                         <span>Elektro / Sanitär (Fertiginstallation)</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">6</span>
+                        <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                          6
+                        </span>
                         <span>Bodenbeläge / Türen</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">7</span>
+                        <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                          7
+                        </span>
                         <span>Küche / Möbel / Endmontage</span>
                       </div>
                     </div>
@@ -343,7 +376,9 @@ export default function RenovierungsfehlerPage() {
                 <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">4</span>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900">Unseriöse oder unqualifizierte Handwerker</h2>
+                <h2 className="text-3xl font-bold text-gray-900">
+                  Unseriöse oder unqualifizierte Handwerker
+                </h2>
               </div>
 
               <div className="grid lg:grid-cols-2 gap-8">
@@ -366,8 +401,8 @@ export default function RenovierungsfehlerPage() {
                   <div className="bg-red-100 p-4 rounded-lg">
                     <h4 className="font-semibold text-red-800 mb-2">💸 Schäden durch Pfuscher:</h4>
                     <p className="text-red-700 text-sm">
-                      Mangelhhafte Arbeiten kosten oft das 2-3fache der ursprünglichen
-                      Summe für Nachbesserungen durch echte Profis.
+                      Mangelhhafte Arbeiten kosten oft das 2-3fache der ursprünglichen Summe für
+                      Nachbesserungen durch echte Profis.
                     </p>
                   </div>
                 </div>
@@ -447,8 +482,8 @@ export default function RenovierungsfehlerPage() {
                   <div className="bg-purple-100 p-4 rounded-lg">
                     <h4 className="font-semibold text-purple-800 mb-2">⚠️ Beispiel Laminat:</h4>
                     <p className="text-purple-700 text-sm">
-                      Billiges Laminat (8€/m²) hält nur 2-3 Jahre. Hochwertiges (25€/m²)
-                      hält 15+ Jahre. Langfristig ist teuer oft günstiger!
+                      Billiges Laminat (8€/m²) hält nur 2-3 Jahre. Hochwertiges (25€/m²) hält 15+
+                      Jahre. Langfristig ist teuer oft günstiger!
                     </p>
                   </div>
                 </div>
@@ -490,8 +525,8 @@ export default function RenovierungsfehlerPage() {
                   <div className="mt-6 bg-yellow-50 p-4 rounded-lg">
                     <h4 className="font-semibold text-yellow-800 mb-2">💡 Profi-Tipp:</h4>
                     <p className="text-yellow-700 text-sm">
-                      Lassen Sie sich von Ihrem Handwerker eine Materialliste erstellen.
-                      Profis kennen die besten Lieferanten und Qualitätsstufen.
+                      Lassen Sie sich von Ihrem Handwerker eine Materialliste erstellen. Profis
+                      kennen die besten Lieferanten und Qualitätsstufen.
                     </p>
                   </div>
                 </div>
@@ -640,7 +675,6 @@ export default function RenovierungsfehlerPage() {
               </Link>
             </div>
           </div>
-
         </main>
 
         {/* Footer */}
@@ -648,8 +682,13 @@ export default function RenovierungsfehlerPage() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p className="text-gray-300">
               © 2025 Taskilo. Alle Rechte vorbehalten. |
-              <Link href="/datenschutz" className="hover:text-[#14ad9f] ml-2">Datenschutz</Link> |
-              <Link href="/agb" className="hover:text-[#14ad9f] ml-2">AGB</Link>
+              <Link href="/datenschutz" className="hover:text-[#14ad9f] ml-2">
+                Datenschutz
+              </Link>{' '}
+              |
+              <Link href="/agb" className="hover:text-[#14ad9f] ml-2">
+                AGB
+              </Link>
             </p>
           </div>
         </footer>

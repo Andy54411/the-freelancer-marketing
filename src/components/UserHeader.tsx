@@ -759,7 +759,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                             } else if (authUser?.user_type === 'kunde') {
                               return 'Kunde';
                             }
-                            
+
                             // Fallback auf URL-basierte Erkennung
                             if (typeof window !== 'undefined') {
                               const currentPath = window.location.pathname;
@@ -769,7 +769,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                                 return 'Kunde';
                               }
                             }
-                            
+
                             // Letzter Fallback
                             return authUser?.user_type
                               ? authUser.user_type.charAt(0).toUpperCase() +
@@ -783,9 +783,10 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                       {(() => {
                         // Verbesserte Logik: Verwende authUser.user_type als primäre Quelle
                         const isCompany = authUser?.user_type === 'firma' || authUser?.companyName;
-                        
+
                         // Fallback auf URL-basierte Erkennung wenn user_type nicht klar ist
-                        const urlBasedCompany = typeof window !== 'undefined' && 
+                        const urlBasedCompany =
+                          typeof window !== 'undefined' &&
                           window.location.pathname.includes('/dashboard/company/');
 
                         if (isCompany || urlBasedCompany) {

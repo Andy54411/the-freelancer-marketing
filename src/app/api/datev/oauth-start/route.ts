@@ -45,7 +45,6 @@ export async function GET(request: NextRequest) {
     // Dies ist der KORREKTE Weg für OAuth Authorization
     return NextResponse.redirect(authUrl.toString());
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,
@@ -96,7 +95,6 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

@@ -236,9 +236,7 @@ export default function TimeBasedQuoteForm({
 
     try {
       await onSubmit(formData);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   return (

@@ -39,7 +39,6 @@ export default function AdminUsersPage() {
         setUsers(data.users || []);
       }
     } catch (error) {
-
     } finally {
       setLoading(false);
     }

@@ -27,7 +27,6 @@ export async function verifyAdmin(sessionCookieValue?: string) {
 
     return { uid: decodedToken.uid, role: decodedToken.role as string };
   } catch (error) {
-
     throw new Error('Sitzung ungültig oder abgelaufen. Bitte melden Sie sich erneut an.');
   }
 }

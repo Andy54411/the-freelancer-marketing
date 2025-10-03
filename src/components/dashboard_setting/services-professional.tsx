@@ -61,21 +61,15 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
         if (companySnap.exists()) {
           const companyData = companySnap.data();
 
-
           // Lade die spezifische Unterkategorie der Firma
           const selectedSubcategory = companyData.selectedSubcategory;
-
 
           if (selectedSubcategory) {
             // Zeige nur die spezifische Unterkategorie der Firma
             setAllowedSubcategories([selectedSubcategory]);
-
           } else {
-
-
             // Fallback: Schaue nach 'category' Feld
             const companyCategory = companyData.category;
-
 
             if (companyCategory) {
               // Zeige nur diese eine Kategorie
@@ -102,7 +96,7 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
         const querySnapshot = await getDocs(servicePackagesRef);
 
         const servicesList: TestService[] = [];
-        querySnapshot.forEach((doc) => {
+        querySnapshot.forEach(doc => {
           const data = doc.data();
           servicesList.push({
             id: doc.id,
@@ -119,12 +113,11 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
             name: data.name || '',
             subcategory: data.subcategory || '',
             serviceId: data.serviceId || '',
-            active: data.active !== false // Default to true if not specified
+            active: data.active !== false, // Default to true if not specified
           });
         });
 
         setServices(servicesList);
-
       } catch (error) {
         console.error('Error loading services:', error);
         toast.error('Fehler beim Laden der Services');
@@ -141,7 +134,7 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
     setEditForm({
       title: service.title,
       price: service.price,
-      description: service.description
+      description: service.description,
     });
     setActiveTab('edit');
   };
@@ -155,15 +148,22 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
         title: editForm.title,
         price: editForm.price,
         description: editForm.description,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
 
       // Update local state
-      setServices((prev) => prev.map((s) =>
-      s.id === editingService.id ?
-      { ...s, title: editForm.title, price: editForm.price, description: editForm.description } :
-      s
-      ));
+      setServices(prev =>
+        prev.map(s =>
+          s.id === editingService.id
+            ? {
+                ...s,
+                title: editForm.title,
+                price: editForm.price,
+                description: editForm.description,
+              }
+            : s
+        )
+      );
 
       toast.success('Service erfolgreich aktualisiert!');
       setEditingService(null);
@@ -189,7 +189,7 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
         const servicePackagesRef = collection(db, 'companies', user.uid, 'servicePackages');
         const querySnapshot = await getDocs(servicePackagesRef);
         const servicesList: TestService[] = [];
-        querySnapshot.forEach((doc) => {
+        querySnapshot.forEach(doc => {
           const data = doc.data();
           servicesList.push({
             id: doc.id,
@@ -206,7 +206,7 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
             name: data.name || '',
             subcategory: data.subcategory || '',
             serviceId: data.serviceId || '',
-            active: data.active !== false
+            active: data.active !== false,
           });
         });
         setServices(servicesList);
@@ -233,7 +233,7 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
           duration: testService.duration || 0,
           description: testService.description || '',
           features: testService.features || [],
-          additionalServices: testService.additionalServices || []
+          additionalServices: testService.additionalServices || [],
         },
         standard: {
           tier: 'standard',
@@ -242,7 +242,7 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
           duration: 0,
           description: '',
           features: [],
-          additionalServices: []
+          additionalServices: [],
         },
         premium: {
           tier: 'premium',
@@ -251,18 +251,19 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
           duration: 0,
           description: '',
           features: [],
-          additionalServices: []
-        }
+          additionalServices: [],
+        },
       },
       addons: testService.additionalServices || [],
-      active: testService.active || true
+      active: testService.active || true,
     };
   };
 
   // Berechnet den Gesamtpreis eines Services (Grundpreis + Add-ons)
   const calculateTotalPrice = (service: TestService): number => {
     const basePrice = service.price || 0;
-    const addOnsPrice = service.additionalServices?.reduce((sum, addon) => sum + (addon.price || 0), 0) || 0;
+    const addOnsPrice =
+      service.additionalServices?.reduce((sum, addon) => sum + (addon.price || 0), 0) || 0;
     return basePrice + addOnsPrice;
   };
 
@@ -279,7 +280,7 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
       await deleteDoc(serviceRef);
 
       // Update local state
-      setServices((prev) => prev.filter((s) => s.id !== service.id));
+      setServices(prev => prev.filter(s => s.id !== service.id));
 
       toast.success('Service erfolgreich gelöscht!');
     } catch (error) {
@@ -294,16 +295,16 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
         <div className="text-center">
           <p className="text-gray-500">Benutzer nicht gefunden</p>
         </div>
-      </div>);
-
+      </div>
+    );
   }
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
-      </div>);
-
+      </div>
+    );
   }
 
   return (
@@ -318,37 +319,36 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
         </TabsList>
 
         <TabsContent value="manage" className="mt-6">
-          {services.length === 0 ?
-          <div className="text-center py-12">
+          {services.length === 0 ? (
+            <div className="text-center py-12">
               <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                 <Package className="w-8 h-8 text-gray-400" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Keine Services gefunden
-              </h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Services gefunden</h3>
               <p className="text-gray-500 mb-4">
                 Erstellen Sie zunächst Services über das normale Interface.
               </p>
-            </div> :
-
-          <div className="space-y-4">
+            </div>
+          ) : (
+            <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Gefundene Services</h3>
               </div>
 
               <div className="grid gap-4">
-                {services.map((service) =>
-              <div key={service.id} className="border rounded-lg p-6 bg-white shadow-sm">
+                {services.map(service => (
+                  <div key={service.id} className="border rounded-lg p-6 bg-white shadow-sm">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <h4 className="text-lg font-semibold text-gray-900 mb-2">
                           {service.title}
                         </h4>
-                        {service.description && service.description.trim() &&
-                    !service.description.match(/^[a-z]{20,}$/) &&
-                    <p className="text-gray-600 mb-3">{service.description}</p>
-                    }
-                        
+                        {service.description &&
+                          service.description.trim() &&
+                          !service.description.match(/^[a-z]{20,}$/) && (
+                            <p className="text-gray-600 mb-3">{service.description}</p>
+                          )}
+
                         {/* Preisaufschlüsselung */}
                         <div className="mb-4">
                           <div className="text-xl font-bold text-[#14ad9f]">
@@ -358,54 +358,54 @@ const ServicesWorkingForm = ({ formData, setFormData }: any) => {
                       </div>
                       <div className="flex gap-2 ml-4">
                         <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditService(service)}>
-
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditService(service)}
+                        >
                           <Edit className="w-4 h-4 mr-2" />
                           Bearbeiten
                         </Button>
                         <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteService(service)}
-                      className="text-red-600 hover:text-red-700 hover:border-red-300">
-
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteService(service)}
+                          className="text-red-600 hover:text-red-700 hover:border-red-300"
+                        >
                           <Trash2 className="w-4 h-4 mr-2" />
                           Löschen
                         </Button>
                       </div>
                     </div>
-                    
+
                     <div className="text-sm text-gray-500 border-t pt-2">
                       Service ID: {service.id}
                     </div>
                   </div>
-              )}
+                ))}
               </div>
             </div>
-          }
+          )}
         </TabsContent>
 
         <TabsContent value="create" className="mt-6">
           <ServiceCreate
             allowedSubcategories={allowedSubcategories}
-            onServiceCreated={handleServiceCreated} />
-
+            onServiceCreated={handleServiceCreated}
+          />
         </TabsContent>
 
         <TabsContent value="edit" className="mt-6">
-          {editingService &&
-          <ServiceEdit
-            service={convertToServiceItem(editingService)}
-            editingPackageType="basic" // Default zu basic - später dynamisch machen
-            onCancel={handleCancelEdit} />
-
-          }
+          {editingService && (
+            <ServiceEdit
+              service={convertToServiceItem(editingService)}
+              editingPackageType="basic" // Default zu basic - später dynamisch machen
+              onCancel={handleCancelEdit}
+            />
+          )}
         </TabsContent>
       </Tabs>
-    </div>);
-
+    </div>
+  );
 };
 
 export default ServicesWorkingForm;

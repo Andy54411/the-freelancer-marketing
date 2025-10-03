@@ -39,7 +39,6 @@ async function verifyAdminAuth(): Promise<any> {
     const { payload } = await jwtVerify(token, JWT_SECRET);
     return payload;
   } catch (error) {
-
     return null;
   }
 }
@@ -98,7 +97,6 @@ export async function GET() {
       },
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,
@@ -179,7 +177,6 @@ export async function POST(request: NextRequest) {
         );
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

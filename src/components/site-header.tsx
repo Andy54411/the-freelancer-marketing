@@ -16,7 +16,6 @@ export function SiteHeader({
   showSidebarTrigger = true,
   translateCurrentTab = false,
 }: SiteHeaderProps) {
-
   // Übersetze currentTab falls translateCurrentTab true ist
   const displayTab = translateCurrentTab ? currentTab : currentTab;
 

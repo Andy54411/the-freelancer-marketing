@@ -11,12 +11,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const webhookSecret = process.env.STRIPE_B2B_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
 
 export async function POST(request: NextRequest) {
-
   const body = await request.text();
   const signature = request.headers.get('stripe-signature');
 
   if (!signature || !webhookSecret) {
-
     return NextResponse.json({ error: 'Webhook configuration error' }, { status: 400 });
   }
 
@@ -25,7 +23,6 @@ export async function POST(request: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err: unknown) {
-
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
@@ -48,22 +45,18 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-
     }
 
     return NextResponse.json({ received: true });
   } catch (error: unknown) {
-
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 }
 
 async function handleB2BPaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-
   const metadata = paymentIntent.metadata;
 
   if (metadata.paymentType !== 'b2b_project') {
-
     return;
   }
 
@@ -100,19 +93,16 @@ async function handleB2BPaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
         // Update milestones if applicable
         let updatedMilestones = project.milestones || [];
         if (milestoneId) {
-          updatedMilestones = updatedMilestones.map((milestone: {
-            id: string;
-            status: string;
-            [key: string]: unknown;
-          }) =>
-            milestone.id === milestoneId
-              ? {
-                  ...milestone,
-                  status: 'paid',
-                  paidAt: serverTimestamp(),
-                  paymentIntentId: paymentIntent.id,
-                }
-              : milestone
+          updatedMilestones = updatedMilestones.map(
+            (milestone: { id: string; status: string; [key: string]: unknown }) =>
+              milestone.id === milestoneId
+                ? {
+                    ...milestone,
+                    status: 'paid',
+                    paidAt: serverTimestamp(),
+                    paymentIntentId: paymentIntent.id,
+                  }
+                : milestone
           );
         }
 
@@ -132,22 +122,18 @@ async function handleB2BPaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
           lastPaymentAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
-
       }
     }
 
     // Send notification to provider (TODO: implement notification system)
 
     // Send confirmation to customer (TODO: implement notification system)
-
   } catch (error: unknown) {
-
     throw error;
   }
 }
 
 async function handleB2BPaymentFailed(paymentIntent: Stripe.PaymentIntent) {
-
   const metadata = paymentIntent.metadata;
 
   if (metadata.paymentType !== 'b2b_project') {
@@ -164,15 +150,12 @@ async function handleB2BPaymentFailed(paymentIntent: Stripe.PaymentIntent) {
     });
 
     // Send failure notification (TODO: implement notification system)
-
   } catch (error: unknown) {
-
     throw error;
   }
 }
 
 async function handleB2BTransferCreated(transfer: Stripe.Transfer) {
-
   try {
     // Log B2B transfer for audit purposes
     const transferData = {
@@ -186,15 +169,12 @@ async function handleB2BTransferCreated(transfer: Stripe.Transfer) {
     };
 
     await updateDoc(doc(db, 'b2b_transfers', transfer.id), transferData);
-
   } catch (error: unknown) {
-
     throw error;
   }
 }
 
 async function handleB2BAccountUpdated(account: Stripe.Account) {
-
   try {
     // Update provider account status in our database
     const _accountUpdate = {
@@ -209,9 +189,7 @@ async function handleB2BAccountUpdated(account: Stripe.Account) {
     // Find and update provider records that use this Stripe account
     // Note: This is a simplified approach - in production, you'd want to maintain
     // a mapping between Stripe accounts and Firebase user IDs
-
   } catch (error: unknown) {
-
     throw error;
   }
 }

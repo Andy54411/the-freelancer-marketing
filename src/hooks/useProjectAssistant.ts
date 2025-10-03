@@ -103,7 +103,6 @@ export const useProjectAssistant = (existingOrderId?: string): UseProjectAssista
           setOrderData(prev => ({ ...prev, ...data.orderData }));
         }
       } catch (error) {
-
         // Fehler-Nachricht hinzufügen
         const errorMessage: Message = {
           id: `error_${Date.now()}`,

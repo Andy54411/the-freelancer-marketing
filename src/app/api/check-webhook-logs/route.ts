@@ -29,9 +29,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (relatedEvent) {
-
     } else {
-
     }
 
     return NextResponse.json({
@@ -56,7 +54,6 @@ export async function POST(req: NextRequest) {
         : 'No webhook event found - Stripe might not have sent webhook',
     });
   } catch (error: any) {
-
     return NextResponse.json(
       {
         success: false,

@@ -60,7 +60,8 @@ export default function AddPaymentMethodForm({
       });
       // **DIESE LOGIK WIRD JETZT MIT DOPPELTER TYP-ASSERTION ANGEWENDET**
       if (result.error) {
-        const errorMessage = result.error.message || 'Einrichtung der Zahlungsmethode fehlgeschlagen';
+        const errorMessage =
+          result.error.message || 'Einrichtung der Zahlungsmethode fehlgeschlagen';
         setMessage(errorMessage);
         onError(errorMessage);
         setIsSuccess(false);
@@ -82,7 +83,8 @@ export default function AddPaymentMethodForm({
         }
       }
     } catch (err: any) {
-      const caughtErrorMessage = err.message || 'Unerwarteter Fehler beim Hinzufügen der Zahlungsmethode';
+      const caughtErrorMessage =
+        err.message || 'Unerwarteter Fehler beim Hinzufügen der Zahlungsmethode';
       setMessage(caughtErrorMessage);
       onError(caughtErrorMessage);
       setIsSuccess(false);

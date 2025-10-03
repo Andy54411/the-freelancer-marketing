@@ -38,12 +38,10 @@ export async function getOrCreateDatevUser(
   config?: Partial<DatevUserConfig>
 ): Promise<{ success: boolean; datefUserId?: string; error?: string }> {
   try {
-
     const userRef = doc(db, 'users', firebaseUserId);
     const userDoc = await getDoc(userRef);
 
     if (!userDoc.exists()) {
-
       return { success: false, error: 'Firebase user not found' };
     }
 
@@ -53,7 +51,6 @@ export async function getOrCreateDatevUser(
     if (!datefUserId) {
       // Generate DATEV user ID if not exists
       datefUserId = generateDatefUserId(firebaseUserId);
-
     }
 
     // Update user document with DATEV configuration
@@ -74,7 +71,6 @@ export async function getOrCreateDatevUser(
 
     return { success: true, datefUserId };
   } catch (error: any) {
-
     return { success: false, error: error.message };
   }
 }
@@ -87,12 +83,10 @@ export async function getDatevUserToken(
   firebaseUserId: string
 ): Promise<{ success: boolean; token?: DatevTokenData; error?: string }> {
   try {
-
     const tokenRef = doc(db, 'datev_tokens', firebaseUserId);
     const tokenDoc = await getDoc(tokenRef);
 
     if (!tokenDoc.exists()) {
-
       return { success: false, error: 'No token found' };
     }
 
@@ -100,13 +94,11 @@ export async function getDatevUserToken(
 
     // Check if token is expired
     if (tokenData.expiresAt && Date.now() >= tokenData.expiresAt) {
-
       return { success: false, error: 'Token expired' };
     }
 
     return { success: true, token: tokenData };
   } catch (error: any) {
-
     return { success: false, error: error.message };
   }
 }
@@ -121,7 +113,6 @@ export async function storeDatevUserToken(
   tokenData: Omit<DatevTokenData, 'userId' | 'createdAt' | 'updatedAt'>
 ): Promise<{ success: boolean; error?: string }> {
   try {
-
     const tokenRef = doc(db, 'datev_tokens', firebaseUserId);
     const now = Date.now();
 
@@ -136,7 +127,6 @@ export async function storeDatevUserToken(
 
     return { success: true };
   } catch (error: any) {
-
     return { success: false, error: error.message };
   }
 }
@@ -149,7 +139,6 @@ export async function validateDatevUserExists(
   firebaseUserId: string
 ): Promise<{ exists: boolean; isActive: boolean; datefUserId?: string; error?: string }> {
   try {
-
     const userRef = doc(db, 'users', firebaseUserId);
     const userDoc = await getDoc(userRef);
 
@@ -161,7 +150,6 @@ export async function validateDatevUserExists(
     const datefConfig = userData.datefConfig as DatevUserConfig;
 
     if (!datefConfig || !userData.datefUserId) {
-
       return { exists: false, isActive: false };
     }
 
@@ -171,7 +159,6 @@ export async function validateDatevUserExists(
       datefUserId: userData.datefUserId,
     };
   } catch (error: any) {
-
     return { exists: false, isActive: false, error: error.message };
   }
 }
@@ -184,7 +171,6 @@ export async function revokeDatevUserToken(
   firebaseUserId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-
     const tokenRef = doc(db, 'datev_tokens', firebaseUserId);
 
     // Set token as expired rather than deleting for audit purposes
@@ -196,7 +182,6 @@ export async function revokeDatevUserToken(
 
     return { success: true };
   } catch (error: any) {
-
     return { success: false, error: error.message };
   }
 }
@@ -214,7 +199,6 @@ export async function handleDatevOAuthCallback(
   firebaseUserId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-
     // Validate state parameter
     if (!validateOAuthState(state, firebaseUserId)) {
       return { success: false, error: 'Invalid OAuth state parameter' };
@@ -249,7 +233,6 @@ export async function handleDatevOAuthCallback(
 
     return { success: true };
   } catch (error: any) {
-
     return { success: false, error: error.message };
   }
 }
@@ -263,7 +246,6 @@ export async function initiateDatevAuthFlow(
   userId: string,
   redirectUri?: string
 ): Promise<{ authUrl: string; state: string }> {
-
   // Generate secure state parameter
   const state = generateSecureState(userId);
 
@@ -310,7 +292,6 @@ function generateSecureState(userId: string): string {
 
 function storeAuthState(state: string, userId: string): void {
   // Store state for OAuth flow verification
-
 }
 
 export { type DatevTokenData, type DatevUserConfig };

@@ -9,7 +9,6 @@ export function onAuthStateChangedSafe(
   callback: (user: User | null) => void | Promise<void>
 ): (() => void) | null {
   if (!auth) {
-
     // Rufe Callback mit null auf, um zu signalisieren, dass kein User vorhanden ist
     callback(null);
     return null; // Kein Cleanup nötig

@@ -120,7 +120,6 @@ export default function PersonalAnalyticsPage() {
       );
       setPerformanceData(performance);
     } catch (error) {
-
     } finally {
       setLoading(false);
     }
@@ -151,9 +150,7 @@ export default function PersonalAnalyticsPage() {
       a.download = `personal-analytics-${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   if (loading) {

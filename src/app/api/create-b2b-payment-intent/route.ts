@@ -7,7 +7,6 @@ function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecret) {
-
     return null;
   }
 
@@ -17,10 +16,8 @@ function getStripeInstance() {
 }
 
 export async function POST(request: NextRequest) {
-
   const stripe = getStripeInstance();
   if (!stripe) {
-
     return NextResponse.json(
       { error: 'Stripe-Konfiguration auf dem Server fehlt.' },
       { status: 500 }
@@ -46,12 +43,10 @@ export async function POST(request: NextRequest) {
 
     // B2B-spezifische Validierung
     if (!projectId || typeof projectId !== 'string') {
-
       return NextResponse.json({ error: 'Ungültige Projekt-ID.' }, { status: 400 });
     }
 
     if (typeof amount !== 'number' || amount <= 0) {
-
       return NextResponse.json(
         { error: 'Ungültiger Betrag. Muss eine positive Zahl sein.' },
         { status: 400 }
@@ -63,7 +58,6 @@ export async function POST(request: NextRequest) {
       typeof providerStripeAccountId !== 'string' ||
       !providerStripeAccountId.startsWith('acct_')
     ) {
-
       return NextResponse.json(
         { error: 'Ungültige Provider Stripe Account ID. Muss mit "acct_" beginnen.' },
         { status: 400 }
@@ -71,7 +65,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!billingDetails?.companyName || !billingDetails?.address) {
-
       return NextResponse.json(
         { error: 'Vollständige B2B Rechnungsdetails sind erforderlich.' },
         { status: 400 }
@@ -147,7 +140,6 @@ export async function POST(request: NextRequest) {
       message: 'B2B Payment Intent erfolgreich erstellt',
     });
   } catch (error: any) {
-
     // B2B-spezifische Fehlerbehandlung
     if (error.type === 'StripeInvalidRequestError') {
       if (error.message.includes('application_fee_amount')) {

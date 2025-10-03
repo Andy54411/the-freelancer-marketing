@@ -56,7 +56,9 @@ export async function POST(req: NextRequest) {
       metadata: {
         ...(meta || {}),
         attachmentBytes: attachment?.contentBase64?.length || 0,
-        attachmentPresent: Boolean(attachment?.contentBase64 && attachment.contentBase64.length > 1000),
+        attachmentPresent: Boolean(
+          attachment?.contentBase64 && attachment.contentBase64.length > 1000
+        ),
       },
     });
 

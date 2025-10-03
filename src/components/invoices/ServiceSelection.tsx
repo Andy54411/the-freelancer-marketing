@@ -1,7 +1,13 @@
-"use client";
+'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +27,7 @@ export const ServiceSelection: React.FC<ExtendedServiceSelectionProps> = ({
   onServiceCreate,
   isLoading = false,
   error,
-  services = []
+  services = [],
 }) => {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -33,7 +39,7 @@ export const ServiceSelection: React.FC<ExtendedServiceSelectionProps> = ({
     name: '',
     description: '',
     price: '',
-    unit: 'Stk'
+    unit: 'Stk',
   });
 
   useEffect(() => {
@@ -44,9 +50,10 @@ export const ServiceSelection: React.FC<ExtendedServiceSelectionProps> = ({
 
   useEffect(() => {
     setFilteredServices(
-      services.filter((service) =>
-        service.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        (service.description?.toLowerCase() || '').includes(searchValue.toLowerCase())
+      services.filter(
+        service =>
+          service.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+          (service.description?.toLowerCase() || '').includes(searchValue.toLowerCase())
       )
     );
   }, [services, searchValue]);
@@ -77,7 +84,7 @@ export const ServiceSelection: React.FC<ExtendedServiceSelectionProps> = ({
       try {
         await onServiceCreate({
           ...newServiceDraft,
-          name: searchValue
+          name: searchValue,
         });
         setIsCreatingNew(false);
         setOpen(false);
@@ -137,9 +144,7 @@ export const ServiceSelection: React.FC<ExtendedServiceSelectionProps> = ({
               )}
             </CommandEmpty>
             {error ? (
-              <div className="p-4 text-sm text-red-500">
-                {error}
-              </div>
+              <div className="p-4 text-sm text-red-500">{error}</div>
             ) : isLoading ? (
               <div className="p-4 flex items-center justify-center">
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -147,7 +152,7 @@ export const ServiceSelection: React.FC<ExtendedServiceSelectionProps> = ({
               </div>
             ) : (
               <CommandGroup heading="Gespeicherte Dienstleistungen">
-                {filteredServices.map((service) => (
+                {filteredServices.map(service => (
                   <CommandItem
                     key={service.id}
                     onSelect={() => handleServiceSelect(service)}
@@ -165,9 +170,7 @@ export const ServiceSelection: React.FC<ExtendedServiceSelectionProps> = ({
                   </CommandItem>
                 ))}
                 {filteredServices.length === 0 && !searchValue && (
-                  <div className="p-2 text-sm text-gray-500">
-                    Keine Dienstleistungen gefunden
-                  </div>
+                  <div className="p-2 text-sm text-gray-500">Keine Dienstleistungen gefunden</div>
                 )}
               </CommandGroup>
             )}

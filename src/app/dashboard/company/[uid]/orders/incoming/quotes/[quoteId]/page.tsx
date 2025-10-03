@@ -91,7 +91,6 @@ export default function IncomingQuoteDetailPage() {
         setQuote(data.quote);
       }
     } catch (error) {
-
       setError('Fehler beim Laden der Angebots-Details');
     } finally {
       setLoading(false);
@@ -130,7 +129,6 @@ export default function IncomingQuoteDetailPage() {
       // Show success message or redirect
       router.push(`/dashboard/company/${user.uid}/orders/incoming/quotes?success=${action}`);
     } catch (error) {
-
       setError(`Fehler beim ${action === 'accept' ? 'Annehmen' : 'Ablehnen'} der Anfrage`);
     } finally {
       setActionLoading(false);

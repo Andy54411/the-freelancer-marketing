@@ -48,7 +48,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
   // Validierung basierend auf stepValidationRules
   const validateField = (field: keyof Step2Data, value: any): string => {
     const requiredFields = ['kleinunternehmer', 'taxRate', 'iban', 'accountHolder'];
-    
+
     if (requiredFields.includes(field)) {
       if (!value || value === '') {
         return 'Dieses Feld ist erforderlich';
@@ -58,7 +58,10 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
     // Spezifische Validierungen
     switch (field) {
       case 'iban':
-        if (value && !/^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/.test(value.replace(/\s/g, ''))) {
+        if (
+          value &&
+          !/^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/.test(value.replace(/\s/g, ''))
+        ) {
           return 'Ungültige IBAN-Format';
         }
         break;
@@ -79,7 +82,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
 
   const validateAllFields = (): Record<string, string> => {
     const newErrors: Record<string, string> = {};
-    
+
     Object.keys(formData).forEach(field => {
       const error = validateField(field as keyof Step2Data, formData[field as keyof Step2Data]);
       if (error) {
@@ -118,16 +121,13 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
             bic: userData.step4?.bic || '',
             bankName: userData.step4?.bankName || '',
           });
-
         }
 
         // Load step data if exists (onboarding data overrides registration where present)
         if (stepData[2]) {
-
           setFormData(prev => ({ ...prev, ...stepData[2] }));
         }
       } catch (error) {
-
       } finally {
         setLoading(false);
       }
@@ -171,7 +171,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
     const fieldError = validateField(field, value);
     setErrors(prev => ({
       ...prev,
-      [field]: fieldError
+      [field]: fieldError,
     }));
   };
 
@@ -206,7 +206,9 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
               </span>
             )}
           </label>
-          <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 ${errors.kleinunternehmer ? 'ring-2 ring-red-200 rounded-lg p-2' : ''}`}>
+          <div
+            className={`grid grid-cols-1 md:grid-cols-2 gap-3 ${errors.kleinunternehmer ? 'ring-2 ring-red-200 rounded-lg p-2' : ''}`}
+          >
             {[
               {
                 value: 'ja',
@@ -365,8 +367,8 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
                 value={formData.taxRate}
                 onChange={e => handleChange('taxRate', e.target.value)}
                 className={`w-full md:w-1/3 px-3 py-2 border rounded-md ${
-                  errors.taxRate 
-                    ? 'border-red-300 bg-red-50 focus:ring-red-500 focus:border-red-500' 
+                  errors.taxRate
+                    ? 'border-red-300 bg-red-50 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-[#14ad9f] focus:border-[#14ad9f]'
                 }`}
               >
@@ -429,8 +431,8 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
               value={formData.accountHolder}
               onChange={e => handleChange('accountHolder', e.target.value)}
               className={`w-full px-3 py-2 border rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f] ${
-                errors.accountHolder 
-                  ? 'border-red-300 bg-red-50 focus:ring-red-500 focus:border-red-500' 
+                errors.accountHolder
+                  ? 'border-red-300 bg-red-50 focus:ring-red-500 focus:border-red-500'
                   : 'border-gray-300'
               }`}
               placeholder="Max Mustermann"
@@ -455,8 +457,8 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
                 value={formData.iban}
                 onChange={e => handleChange('iban', e.target.value.toUpperCase())}
                 className={`w-full px-3 py-2 border rounded-md font-mono ${
-                  errors.iban 
-                    ? 'border-red-300 bg-red-50 focus:ring-red-500 focus:border-red-500' 
+                  errors.iban
+                    ? 'border-red-300 bg-red-50 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-[#14ad9f] focus:border-[#14ad9f]'
                 }`}
                 placeholder="DE89 3704 0044 0532 0130 00"
@@ -479,8 +481,8 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
                 value={formData.bic}
                 onChange={e => handleChange('bic', e.target.value.toUpperCase())}
                 className={`w-full px-3 py-2 border rounded-md font-mono ${
-                  errors.bic 
-                    ? 'border-red-300 bg-red-50 focus:ring-red-500 focus:border-red-500' 
+                  errors.bic
+                    ? 'border-red-300 bg-red-50 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-[#14ad9f] focus:border-[#14ad9f]'
                 }`}
                 placeholder="COBADEFFXXX"
@@ -522,7 +524,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
                     taxRate: 'Umsatzsteuersatz',
                     iban: 'IBAN',
                     accountHolder: 'Kontoinhaber',
-                    bic: 'BIC'
+                    bic: 'BIC',
                   };
                   return (
                     <li key={field} className="flex items-center">

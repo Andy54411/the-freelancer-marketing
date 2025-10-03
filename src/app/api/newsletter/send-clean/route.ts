@@ -62,7 +62,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-
       return NextResponse.json(
         {
           success: false,
@@ -79,7 +78,6 @@ export async function POST(request: NextRequest) {
       service: 'Resend',
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

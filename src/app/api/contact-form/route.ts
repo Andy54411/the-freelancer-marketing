@@ -116,7 +116,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (emailResponse.error) {
-
       return NextResponse.json(
         {
           error: 'E-Mail konnte nicht gesendet werden',
@@ -132,7 +131,6 @@ export async function POST(request: NextRequest) {
       emailId: emailResponse.data?.id,
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Interner Serverfehler',

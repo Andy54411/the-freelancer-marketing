@@ -193,17 +193,17 @@ const AppHeaderNavigation: React.FC = () => {
   const filteredCategories = getFilteredCategories();
   const megaMenuColumns = Array.isArray(filteredCategories)
     ? [
-      filteredCategories.slice(0, Math.ceil(filteredCategories.length / 4)),
-      filteredCategories.slice(
-        Math.ceil(filteredCategories.length / 4),
-        Math.ceil((filteredCategories.length * 2) / 4)
-      ),
-      filteredCategories.slice(
-        Math.ceil((filteredCategories.length * 2) / 4),
-        Math.ceil((filteredCategories.length * 3) / 4)
-      ),
-      filteredCategories.slice(Math.ceil((filteredCategories.length * 3) / 4)),
-    ]
+        filteredCategories.slice(0, Math.ceil(filteredCategories.length / 4)),
+        filteredCategories.slice(
+          Math.ceil(filteredCategories.length / 4),
+          Math.ceil((filteredCategories.length * 2) / 4)
+        ),
+        filteredCategories.slice(
+          Math.ceil((filteredCategories.length * 2) / 4),
+          Math.ceil((filteredCategories.length * 3) / 4)
+        ),
+        filteredCategories.slice(Math.ceil((filteredCategories.length * 3) / 4)),
+      ]
     : [[], [], [], []];
 
   return (

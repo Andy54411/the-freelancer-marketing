@@ -159,7 +159,6 @@ export class AWSTicketStorage {
 
       return ticket;
     } catch (error) {
-
       await EnhancedTicketService.logToCloudWatch(
         'tickets-errors',
         {
@@ -189,7 +188,6 @@ export class AWSTicketStorage {
 
       return unmarshall(result.Item) as TicketData;
     } catch (error) {
-
       throw error;
     }
   }
@@ -253,7 +251,6 @@ export class AWSTicketStorage {
 
       return updatedTicket;
     } catch (error) {
-
       await EnhancedTicketService.logToCloudWatch(
         'tickets-errors',
         {
@@ -307,7 +304,6 @@ export class AWSTicketStorage {
 
       return updatedTicket;
     } catch (error) {
-
       throw error;
     }
   }
@@ -383,7 +379,6 @@ export class AWSTicketStorage {
 
       return tickets;
     } catch (error) {
-
       throw error;
     }
   }
@@ -408,7 +403,6 @@ export class AWSTicketStorage {
 
       return true;
     } catch (error) {
-
       return false;
     }
   }

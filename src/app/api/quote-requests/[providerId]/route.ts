@@ -5,8 +5,9 @@ import { db } from '../../../../firebase/server'; /**
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ providerId: string }> }
-, companyId: string) {
+  { params }: { params: Promise<{ providerId: string }> },
+  companyId: string
+) {
   let providerId: string = '';
 
   try {
@@ -25,7 +26,9 @@ export async function GET(
     // Abrufen aller Angebotsanfragen für diesen Anbieter
 
     const quoteRequestsSnapshot = await db
-      .collection('companies').doc(companyId).collection('quotes')
+      .collection('companies')
+      .doc(companyId)
+      .collection('quotes')
       .where('providerId', '==', providerId)
       .get();
 

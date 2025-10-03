@@ -18,12 +18,12 @@ const OnboardingProgressBar: React.FC<OnboardingProgressBarProps> = ({
   onNext,
   onBack,
   isSaving = false,
-  lastSaved
+  lastSaved,
 }) => {
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('de-DE', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -59,11 +59,7 @@ const OnboardingProgressBar: React.FC<OnboardingProgressBarProps> = ({
                           : 'bg-gray-100 text-gray-400'
                   }`}
                 >
-                  {isCompleted ? (
-                    <Check className="w-4 h-4" />
-                  ) : (
-                    stepNumber
-                  )}
+                  {isCompleted ? <Check className="w-4 h-4" /> : stepNumber}
                 </div>
 
                 {/* Step connector line */}
@@ -83,7 +79,8 @@ const OnboardingProgressBar: React.FC<OnboardingProgressBarProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">
-              {Math.round(completionPercentage)}% abgeschlossen • Schritt {currentStep} von {totalSteps}
+              {Math.round(completionPercentage)}% abgeschlossen • Schritt {currentStep} von{' '}
+              {totalSteps}
             </span>
 
             {/* Auto-save indicator */}

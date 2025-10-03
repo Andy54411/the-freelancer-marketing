@@ -58,7 +58,6 @@ export async function GET(request: NextRequest) {
       message: 'Admin-Benutzer erfolgreich geladen',
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Laden der Admin-Benutzer',
@@ -123,7 +122,6 @@ export async function POST(request: NextRequest) {
       message: `Admin-Benutzer ${name} erfolgreich erstellt`,
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Erstellen des Admin-Benutzers',
@@ -159,7 +157,6 @@ export async function PUT(request: NextRequest) {
       message: 'Admin-Benutzer erfolgreich aktualisiert',
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Aktualisieren des Admin-Benutzers',
@@ -205,7 +202,6 @@ export async function DELETE(request: NextRequest) {
       message: 'Admin-Benutzer erfolgreich gelöscht',
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Löschen des Admin-Benutzers',

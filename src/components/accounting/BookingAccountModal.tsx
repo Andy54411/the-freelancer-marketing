@@ -78,9 +78,9 @@ function BookingAccountModal({
   }, [isOpen, account]);
 
   // Gefilterte Konten basierend auf Suchbegriff
-  const filteredAccounts = STANDARD_ACCOUNTS.filter(acc => 
-    acc.number.includes(searchTerm) || 
-    acc.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAccounts = STANDARD_ACCOUNTS.filter(
+    acc =>
+      acc.number.includes(searchTerm) || acc.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAccountSelect = (accountNumber: string) => {
@@ -106,7 +106,7 @@ function BookingAccountModal({
 
   const handleSave = () => {
     if (!customName.trim()) return;
-    
+
     const accountData = {
       number: customNumber || selectedAccount,
       name: customName.trim(),
@@ -123,9 +123,7 @@ function BookingAccountModal({
   };
 
   const isFormValid = () => {
-    return customName.trim() && 
-           (customNumber || selectedAccount) && 
-           customType;
+    return customName.trim() && (customNumber || selectedAccount) && customType;
   };
 
   // Modal title based on context
@@ -137,7 +135,7 @@ function BookingAccountModal({
         <DialogHeader className="flex-shrink-0 bg-[#14ad9f] text-white p-4 -m-6 mb-4 rounded-t-lg">
           <DialogTitle className="text-lg">{modalTitle}</DialogTitle>
         </DialogHeader>
-        
+
         <div className="flex-1 overflow-y-auto space-y-4 px-1">
           {/* Buchungskonto Auswahl */}
           {!account && (
@@ -145,37 +143,37 @@ function BookingAccountModal({
               <Label htmlFor="account-select" className="text-sm font-medium">
                 Buchungskonto <span className="text-red-500">*</span>
               </Label>
-              
+
               {/* Suchfeld */}
               <div className="relative">
                 <Input
                   placeholder="Konto suchen..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   onFocus={() => setIsDropdownOpen(true)}
                   className="text-sm h-9"
                 />
-                
+
                 {/* Dropdown mit gefilterten Ergebnissen */}
                 {isDropdownOpen && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-[300px] overflow-y-auto">
                     {/* Benutzerdefiniertes Konto Option */}
-                    <div 
+                    <div
                       className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b text-sm"
                       onClick={() => handleAccountSelect('custom')}
                     >
                       <div className="font-medium">Benutzerdefiniertes Konto</div>
                     </div>
-                    
+
                     {/* Gefilterte Konten */}
                     {filteredAccounts.length > 0 ? (
                       <>
                         {['ASSET', 'LIABILITY', 'INCOME', 'EXPENSE'].map(type => {
                           const accountsOfType = filteredAccounts.filter(acc => acc.type === type);
                           if (accountsOfType.length === 0) return null;
-                          
+
                           const typeLabel = ACCOUNT_TYPES.find(t => t.value === type)?.label;
-                          
+
                           return (
                             <div key={type}>
                               <div className="px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-50 border-b">
@@ -198,28 +196,24 @@ function BookingAccountModal({
                         })}
                       </>
                     ) : (
-                      <div className="px-3 py-2 text-gray-500 text-sm">
-                        Keine Konten gefunden
-                      </div>
+                      <div className="px-3 py-2 text-gray-500 text-sm">Keine Konten gefunden</div>
                     )}
                   </div>
                 )}
-                
+
                 {/* Overlay zum Schließen */}
                 {isDropdownOpen && (
-                  <div 
-                    className="fixed inset-0 z-40"
-                    onClick={() => setIsDropdownOpen(false)}
-                  />
+                  <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
                 )}
               </div>
-              
+
               {/* Anzeige der aktuellen Auswahl */}
               {(selectedAccount || isCustom) && (
                 <div className="p-2 bg-gray-50 rounded-md">
                   <div className="text-xs font-medium">
-                    {isCustom ? 'Benutzerdefiniertes Konto' : 
-                     `(${selectedAccount}) ${STANDARD_ACCOUNTS.find(acc => acc.number === selectedAccount)?.name}`}
+                    {isCustom
+                      ? 'Benutzerdefiniertes Konto'
+                      : `(${selectedAccount}) ${STANDARD_ACCOUNTS.find(acc => acc.number === selectedAccount)?.name}`}
                   </div>
                 </div>
               )}
@@ -234,7 +228,7 @@ function BookingAccountModal({
             <Input
               id="account-name"
               value={customName}
-              onChange={(e) => setCustomName(e.target.value)}
+              onChange={e => setCustomName(e.target.value)}
               placeholder={isCustom || account ? 'Kontoname eingeben' : ''}
               disabled={!isCustom && !account && !selectedAccount}
               className="text-sm"
@@ -251,7 +245,7 @@ function BookingAccountModal({
                 <Input
                   id="account-number"
                   value={customNumber}
-                  onChange={(e) => setCustomNumber(e.target.value)}
+                  onChange={e => setCustomNumber(e.target.value)}
                   placeholder="z.B. 8400"
                   className="text-sm"
                 />
@@ -282,8 +276,8 @@ function BookingAccountModal({
           <Button type="button" variant="outline" onClick={handleCancel}>
             Abbrechen
           </Button>
-          <Button 
-            type="button" 
+          <Button
+            type="button"
             onClick={handleSave}
             disabled={!isFormValid()}
             className="bg-[#14ad9f] hover:bg-[#129488] text-white"

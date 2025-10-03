@@ -12,8 +12,8 @@ import {
   query,
   orderBy,
   onSnapshot,
-  DocumentData } from
-'firebase/firestore';
+  DocumentData,
+} from 'firebase/firestore';
 import { db } from '@/firebase/clients'; // Client Firebase for realtime updates
 import { useAuth } from '@/contexts/AuthContext';
 import { Send as FiSend, Loader2 as FiLoader, User as FiUser, AlertTriangle } from 'lucide-react';
@@ -102,7 +102,7 @@ const formatMessageTimestamp = (timestamp: any): string => {
 const formatStatus = (status: string | null | undefined): string => {
   if (!status) return 'Unbekannt';
   // Ersetzt Unterstriche durch Leerzeichen und macht den ersten Buchstaben jedes Wortes groß
-  return status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
 const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, orderStatus }) => {
@@ -111,7 +111,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
   const firebaseUser = authContext?.firebaseUser || null;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [userProfiles, setUserProfiles] = useState<{[key: string]: UserProfile;}>({});
+  const [userProfiles, setUserProfiles] = useState<{ [key: string]: UserProfile }>({});
   const [newMessageText, setNewMessageText] = useState('');
   const [chatLoading, setChatLoading] = useState(true);
   const [userProfileLoading, setUserProfileLoading] = useState(true);
@@ -135,17 +135,17 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
         const profile: UserProfile = {
           name: data.companyName || data.name || 'Unbekanntes Unternehmen',
           avatar:
-          data.profilePictureFirebaseUrl ||
-          data.profilePictureURL ||
-          data.logoUrl ||
-          data.avatarUrl,
+            data.profilePictureFirebaseUrl ||
+            data.profilePictureURL ||
+            data.logoUrl ||
+            data.avatarUrl,
           companyData: {
             companyName: data.companyName || data.name || 'Unbekanntes Unternehmen',
-            logoUrl: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl
-          }
+            logoUrl: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl,
+          },
         };
 
-        setUserProfiles((prev) => ({ ...prev, [userId]: profile }));
+        setUserProfiles(prev => ({ ...prev, [userId]: profile }));
         return profile;
       }
 
@@ -156,12 +156,12 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
         const profile: UserProfile = {
           name: data.name || data.firstName || 'Unbekannter Nutzer',
           avatar:
-          data.profilePictureFirebaseUrl ||
-          data.profilePictureURL ||
-          data.avatarUrl ||
-          data.profilePicture
+            data.profilePictureFirebaseUrl ||
+            data.profilePictureURL ||
+            data.avatarUrl ||
+            data.profilePicture,
         };
-        setUserProfiles((prev) => ({ ...prev, [userId]: profile }));
+        setUserProfiles(prev => ({ ...prev, [userId]: profile }));
         return profile;
       }
     } catch (error) {
@@ -174,8 +174,8 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
   // Lade Profile für alle Nachrichten
   useEffect(() => {
     const loadProfilesForMessages = async () => {
-      const uniqueSenderIds = [...new Set(messages.map((msg) => msg.senderId))];
-      await Promise.all(uniqueSenderIds.map((senderId) => loadUserProfile(senderId)));
+      const uniqueSenderIds = [...new Set(messages.map(msg => msg.senderId))];
+      await Promise.all(uniqueSenderIds.map(senderId => loadUserProfile(senderId)));
     };
 
     if (messages.length > 0) {
@@ -200,7 +200,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
             setLoggedInUserProfile({
               firstName: currentUser.firstName,
               lastName: currentUser.lastName,
-              user_type: 'kunde' // Default fallback
+              user_type: 'kunde', // Default fallback
             });
             setUserProfileLoading(false);
             return;
@@ -219,13 +219,13 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
               const companyData = companyDocSnap.data();
               setLoggedInUserProfile({
                 companyName: companyData.companyName || companyData.name,
-                user_type: 'firma'
+                user_type: 'firma',
               });
             } else {
               // Set basic profile if nothing found
               setLoggedInUserProfile({
                 firstName: 'Benutzer',
-                user_type: 'kunde'
+                user_type: 'kunde',
               });
             }
           }
@@ -233,7 +233,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
           // Set basic profile instead of showing error
           setLoggedInUserProfile({
             firstName: 'Benutzer',
-            user_type: 'kunde'
+            user_type: 'kunde',
           });
           // Don't set error - just use fallback profile
         } finally {
@@ -264,9 +264,9 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
 
     const unsubscribe = onSnapshot(
       messagesQuery,
-      async (querySnapshot) => {
+      async querySnapshot => {
         try {
-          const fetchedMessages: ChatMessage[] = querySnapshot.docs.map((doc) => {
+          const fetchedMessages: ChatMessage[] = querySnapshot.docs.map(doc => {
             const data = doc.data() as DocumentData;
             return {
               id: doc.id,
@@ -275,13 +275,13 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
               senderType: data.senderType,
               text: data.text,
               timestamp: data.timestamp,
-              senderAvatar: data.senderAvatar
+              senderAvatar: data.senderAvatar,
             };
           });
 
           // Lade Benutzerprofile für alle einzigartigen Sender
-          const uniqueSenderIds = [...new Set(fetchedMessages.map((msg) => msg.senderId))];
-          await Promise.all(uniqueSenderIds.map((senderId) => loadUserProfile(senderId)));
+          const uniqueSenderIds = [...new Set(fetchedMessages.map(msg => msg.senderId))];
+          await Promise.all(uniqueSenderIds.map(senderId => loadUserProfile(senderId)));
 
           setMessages(fetchedMessages);
           setChatLoading(false);
@@ -290,7 +290,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
           setChatLoading(false);
         }
       },
-      (error) => {
+      error => {
         setChatError('Fehler beim Laden der Nachrichten');
         setChatLoading(false);
       }
@@ -309,13 +309,13 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
 
     // Deaktiviere das Senden, wenn Text leer, Benutzer nicht angemeldet oder Profil noch lädt/fehlt
     if (
-    !messageToSend ||
-    !currentUser ||
-    !orderId ||
-    !loggedInUserProfile ||
-    isSendingMessage ||
-    !participants)
-    {
+      !messageToSend ||
+      !currentUser ||
+      !orderId ||
+      !loggedInUserProfile ||
+      isSendingMessage ||
+      !participants
+    ) {
       return;
     }
 
@@ -326,8 +326,8 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
         duration: 5000,
         action: {
           label: 'Verstanden',
-          onClick: () => {}
-        }
+          onClick: () => {},
+        },
       });
       return;
     }
@@ -357,14 +357,14 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
       senderType: senderType,
       text: messageToSend,
       timestamp: serverTimestamp(),
-      chatUsers: chatUsers // Hinzufügen, um die Sicherheitsregel zu erfüllen
+      chatUsers: chatUsers, // Hinzufügen, um die Sicherheitsregel zu erfüllen
     };
 
     const lastMessagePayload = {
       text: messageToSend,
       senderId: currentUser.uid,
       timestamp: serverTimestamp(),
-      isRead: false // Wichtig für die Benachrichtigung!
+      isRead: false, // Wichtig für die Benachrichtigung!
     };
 
     try {
@@ -381,7 +381,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
         {
           users: [participants.customerId, participants.providerId], // Beide Teilnehmer
           lastMessage: lastMessagePayload,
-          lastUpdated: serverTimestamp()
+          lastUpdated: serverTimestamp(),
         },
         { merge: true }
       );
@@ -423,8 +423,8 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
       <div className="flex justify-center items-center h-64">
         <FiLoader className="animate-spin text-3xl text-[#14ad9f] mr-2" />
         {chatLoading ? 'Lade Chat...' : 'Lade Benutzerdaten...'}
-      </div>);
-
+      </div>
+    );
   }
 
   // Zeige Fehler, wenn kein Benutzer angemeldet ist oder Profil nicht geladen werden konnte
@@ -432,8 +432,8 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
     return (
       <div className="text-center p-4 text-gray-600">
         {chatError || 'Fehler beim Laden des Profils'}
-      </div>);
-
+      </div>
+    );
   }
 
   return (
@@ -443,68 +443,59 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
         <div className="flex justify-between items-center gap-4">
           <h3 className="text-lg font-semibold text-gray-800 truncate">Chat: {orderId}</h3>
           {/* Zeige den Status-Badge nur an, wenn ein Status übergeben wurde */}
-          {orderStatus &&
-          <Badge variant="outline" className="flex-shrink-0">
+          {orderStatus && (
+            <Badge variant="outline" className="flex-shrink-0">
               {formatStatus(orderStatus)}
             </Badge>
-          }
+          )}
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 ?
-        <div className="text-center text-gray-500 py-10">Keine Nachrichten vorhanden</div> :
+        {messages.length === 0 ? (
+          <div className="text-center text-gray-500 py-10">Keine Nachrichten vorhanden</div>
+        ) : (
+          messages.map(msg => {
+            const userProfile = userProfiles[msg.senderId];
+            const isOwnMessage = msg.senderId === currentUser.uid;
 
-        messages.map((msg) => {
-          const userProfile = userProfiles[msg.senderId];
-          const isOwnMessage = msg.senderId === currentUser.uid;
-
-
-
-          return (
-            <div key={msg.id} className={`flex items-start gap-3`}>
+            return (
+              <div key={msg.id} className={`flex items-start gap-3`}>
                 {/* Profilbild - immer links */}
                 <div className="flex-shrink-0">
-                  {userProfile?.avatar ?
-                <Image
-                  src={userProfile.avatar}
-                  alt={userProfile.name || msg.senderName}
-                  width={40}
-                  height={40}
-                  className="rounded-full object-cover w-10 h-10"
-                  onError={(e) => {
-
-                  }} /> :
-
-
-                <>
-                      {null
-
-
-
-
-                  }
+                  {userProfile?.avatar ? (
+                    <Image
+                      src={userProfile.avatar}
+                      alt={userProfile.name || msg.senderName}
+                      width={40}
+                      height={40}
+                      className="rounded-full object-cover w-10 h-10"
+                      onError={e => {}}
+                    />
+                  ) : (
+                    <>
+                      {null}
                       <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
                         <FiUser size={20} className="text-gray-600" />
                       </div>
                     </>
-                }
+                  )}
                 </div>
 
                 {/* Nachrichteninhalt mit Name daneben */}
                 <div
-                className={`flex flex-col max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-
+                  className={`flex flex-col max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}
+                >
                   {/* Nachrichtenblase mit allem in einer Reihe */}
                   <div
-                  className={`p-3 rounded-lg ${
-                  isOwnMessage ? 'bg-[#14ad9f] text-white' : 'bg-gray-200 text-gray-800'}`
-                  }>
-
+                    className={`p-3 rounded-lg ${
+                      isOwnMessage ? 'bg-[#14ad9f] text-white' : 'bg-gray-200 text-gray-800'
+                    }`}
+                  >
                     {/* Name und Text in einer Reihe */}
                     <div className="flex items-start gap-2">
                       <span
-                      className={`text-xs font-semibold flex-shrink-0 ${isOwnMessage ? 'text-teal-100' : 'text-gray-600'}`}>
-
+                        className={`text-xs font-semibold flex-shrink-0 ${isOwnMessage ? 'text-teal-100' : 'text-gray-600'}`}
+                      >
                         {userProfile?.name || msg.senderName}
                         <span className="ml-1 opacity-75">
                           ({msg.senderType === 'kunde' ? 'Kunde' : 'Anbieter'}):
@@ -515,28 +506,28 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
 
                     {/* Uhrzeit unten rechts */}
                     <p
-                    className={`text-right text-xs mt-1 opacity-75 ${
-                    isOwnMessage ? 'text-white' : 'text-gray-600'}`
-                    }>
-
+                      className={`text-right text-xs mt-1 opacity-75 ${
+                        isOwnMessage ? 'text-white' : 'text-gray-600'
+                      }`}
+                    >
                       {formatMessageTimestamp(msg.timestamp)}
                     </p>
                   </div>
                 </div>
-              </div>);
-
-        })
-        }
+              </div>
+            );
+          })
+        )}
         <div ref={messagesEndRef} />
       </div>
       <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200">
         {/* Validierungsfehler anzeigen */}
-        {validationError &&
-        <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+        {validationError && (
+          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-red-700">{validationError}</p>
           </div>
-        }
+        )}
 
         <div className="flex items-center">
           <textarea
@@ -544,32 +535,32 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
             onChange={handleMessageChange}
             placeholder="Nachricht eingeben..."
             className={`flex-1 p-2 border rounded-md resize-none mr-2 focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
-            validationError ?
-            'border-red-300 focus:ring-red-500' :
-            'border-gray-300 focus:ring-[#14ad9f]'}`
-            }
+              validationError
+                ? 'border-red-300 focus:ring-red-500'
+                : 'border-gray-300 focus:ring-[#14ad9f]'
+            }`}
             rows={1}
-            onKeyPress={(e) => {
+            onKeyPress={e => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 handleSendMessage(e);
               }
-            }} />
-
+            }}
+          />
 
           <button
             type="submit"
             className="bg-[#14ad9f] text-white p-3 rounded-full hover:bg-[#129a8f] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
             disabled={
-            !newMessageText.trim() || overallLoading || isSendingMessage || !!validationError
-            }>
-
+              !newMessageText.trim() || overallLoading || isSendingMessage || !!validationError
+            }
+          >
             {isSendingMessage ? <FiLoader className="animate-spin" /> : <FiSend size={20} />}
           </button>
         </div>
       </form>
-    </div>);
-
+    </div>
+  );
 };
 
 export default ChatComponent;

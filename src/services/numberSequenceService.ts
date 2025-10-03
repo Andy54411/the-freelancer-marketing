@@ -1,7 +1,18 @@
 'use client';
 
 import { db } from '@/firebase/clients';
-import { doc, getDoc, setDoc, runTransaction, collection, query, where, getDocs, addDoc, updateDoc } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  runTransaction,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  updateDoc,
+} from 'firebase/firestore';
 
 export interface NumberSequence {
   id: string;
@@ -36,18 +47,15 @@ export class NumberSequenceService {
    */
   static async getNumberSequences(companyId: string): Promise<NumberSequence[]> {
     try {
-      const q = query(
-        collection(db, 'numberSequences'),
-        where('companyId', '==', companyId)
-      );
+      const q = query(collection(db, 'numberSequences'), where('companyId', '==', companyId));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
         const sequences: NumberSequence[] = [];
-        querySnapshot.forEach((doc) => {
+        querySnapshot.forEach(doc => {
           sequences.push({
             id: doc.id,
-            ...doc.data()
+            ...doc.data(),
           } as NumberSequence);
         });
         return sequences.sort((a, b) => a.type.localeCompare(b.type));
@@ -77,15 +85,15 @@ export class NumberSequenceService {
           createdAt: new Date(),
           updatedAt: new Date(),
         };
-        
+
         const docRef = await addDoc(collection(db, 'numberSequences'), sequenceData);
-        
+
         createdSequences.push({
           ...sequenceData,
           id: docRef.id,
         });
       }
-      
+
       return createdSequences.sort((a, b) => a.type.localeCompare(b.type));
     } catch (error) {
       console.error('Fehler beim Erstellen der Standard-Nummerkreise:', error);
@@ -106,7 +114,7 @@ export class NumberSequenceService {
     format: string;
   }> {
     try {
-      return await runTransaction(db, async (transaction) => {
+      return await runTransaction(db, async transaction => {
         // Finde das spezifische Nummerkreis-Dokument für diesen Typ
         const q = query(
           collection(db, 'numberSequences'),
@@ -130,7 +138,7 @@ export class NumberSequenceService {
         // Inkrementiere die nächste Nummer
         const newNextNumber = currentNumber + 1;
         const docRef = doc(db, 'numberSequences', sequenceDoc.id);
-        
+
         transaction.update(docRef, {
           nextNumber: newNextNumber,
           nextFormatted: this.formatNumber(newNextNumber, format),

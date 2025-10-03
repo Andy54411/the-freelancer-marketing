@@ -25,7 +25,7 @@ export function formatDate(dateString: string | undefined | null): string {
   }
 
   let date: Date;
-  
+
   // Wenn String im Format YYYY-MM-DD (HTML date input), dann korrekt parsen
   if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
     const [year, month, day] = dateString.split('-');
@@ -33,7 +33,7 @@ export function formatDate(dateString: string | undefined | null): string {
   } else {
     date = new Date(dateString);
   }
-  
+
   if (isNaN(date.getTime())) {
     return new Date().toLocaleDateString('de-DE');
   }

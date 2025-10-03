@@ -31,39 +31,50 @@ export default function PressPage() {
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow-md p-8">
                   <p className="text-white leading-relaxed mb-4 drop-shadow-lg">
                     Taskilo ist eine innovative Plattform, die lokale Dienstleister mit Kunden
-                    verbindet. Unser Ziel ist es, die Vermittlung von hochwertigen Dienstleistungen zu
-                    vereinfachen und dabei sowohl Anbietern als auch Kunden die bestmögliche Erfahrung
-                    zu bieten.
+                    verbindet. Unser Ziel ist es, die Vermittlung von hochwertigen Dienstleistungen
+                    zu vereinfachen und dabei sowohl Anbietern als auch Kunden die bestmögliche
+                    Erfahrung zu bieten.
                   </p>
                   <p className="text-white leading-relaxed drop-shadow-lg">
-                    Seit unserer Gründung haben wir uns zu einer vertrauenswürdigen Plattform entwickelt,
-                    die lokale Wirtschaft stärkt und den Alltag unserer Nutzer erleichtert.
+                    Seit unserer Gründung haben wir uns zu einer vertrauenswürdigen Plattform
+                    entwickelt, die lokale Wirtschaft stärkt und den Alltag unserer Nutzer
+                    erleichtert.
                   </p>
                 </div>
               </section>
 
               {/* Key Facts */}
               <section>
-                <h2 className="text-2xl font-bold text-white drop-shadow-lg mb-6">Unternehmensdaten</h2>
+                <h2 className="text-2xl font-bold text-white drop-shadow-lg mb-6">
+                  Unternehmensdaten
+                </h2>
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow-md p-6 text-center">
                     <FiUsers className="text-4xl text-white mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2 text-white drop-shadow-lg">Gemeinschaft</h3>
+                    <h3 className="text-lg font-semibold mb-2 text-white drop-shadow-lg">
+                      Gemeinschaft
+                    </h3>
                     <p className="text-white/90 drop-shadow-lg">
                       Verbindung zwischen lokalen Dienstleistern und Kunden
                     </p>
                   </div>
                   <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow-md p-6 text-center">
                     <FiAward className="text-4xl text-white mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2 text-white drop-shadow-lg">Qualität</h3>
+                    <h3 className="text-lg font-semibold mb-2 text-white drop-shadow-lg">
+                      Qualität
+                    </h3>
                     <p className="text-white/90 drop-shadow-lg">
                       Fokus auf hochwertige Dienstleistungen und Kundenzufriedenheit
                     </p>
                   </div>
                   <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow-md p-6 text-center">
                     <FiFileText className="text-4xl text-white mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2 text-white drop-shadow-lg">Innovation</h3>
-                    <p className="text-white/90 drop-shadow-lg">Moderne Technologie für einfache Vermittlung</p>
+                    <h3 className="text-lg font-semibold mb-2 text-white drop-shadow-lg">
+                      Innovation
+                    </h3>
+                    <p className="text-white/90 drop-shadow-lg">
+                      Moderne Technologie für einfache Vermittlung
+                    </p>
                   </div>
                 </div>
               </section>
@@ -73,12 +84,15 @@ export default function PressPage() {
                 <h2 className="text-2xl font-bold text-white drop-shadow-lg mb-6">Presse-Kit</h2>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow-md p-8">
                   <p className="text-white mb-6 drop-shadow-lg">
-                    Für Medienanfragen und detaillierte Informationen stehen wir gerne zur Verfügung.
+                    Für Medienanfragen und detaillierte Informationen stehen wir gerne zur
+                    Verfügung.
                   </p>
                   <div className="space-y-4">
                     <div className="flex items-center space-x-3">
                       <FiFileText className="text-white" />
-                      <span className="text-white drop-shadow-lg">Firmenlogos und Bildmaterial</span>
+                      <span className="text-white drop-shadow-lg">
+                        Firmenlogos und Bildmaterial
+                      </span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <FiFileText className="text-white" />

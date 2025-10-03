@@ -30,9 +30,7 @@ export default function AdminLoginPage() {
           router.push('/dashboard/admin');
         }
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleLogin = async (e: React.FormEvent) => {

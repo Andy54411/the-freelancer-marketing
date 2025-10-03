@@ -42,7 +42,6 @@ function NewsletterConfirmContent() {
       } catch (error) {
         setStatus('error');
         setMessage('Netzwerkfehler bei der Bestätigung.');
-
       }
     };
 

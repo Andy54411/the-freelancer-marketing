@@ -11,7 +11,7 @@ export const categories: Category[] = [
     title: 'Handwerk',
     subcategories: [
       'Tischler',
-      'Klempner', 
+      'Klempner',
       'Maler & Lackierer',
       'Elektriker',
       'HeizungSanitär',
@@ -29,8 +29,8 @@ export const categories: Category[] = [
       'Heizung',
       'Autoreparatur',
       'Montageservice',
-      'Umzugshelfer'
-    ]
+      'Umzugshelfer',
+    ],
   },
   {
     id: 'haushalt',
@@ -41,8 +41,8 @@ export const categories: Category[] = [
       'Fensterputzer',
       'Teppichreinigung',
       'Bodenreinigung',
-      'Hausreinigung'
-    ]
+      'Hausreinigung',
+    ],
   },
   {
     id: 'transport',
@@ -53,8 +53,8 @@ export const categories: Category[] = [
       'Transportdienstleistungen',
       'Lagerlogistik',
       'Logistik',
-      'MöbelTransportieren'
-    ]
+      'MöbelTransportieren',
+    ],
   },
   {
     id: 'it_digital',
@@ -74,8 +74,8 @@ export const categories: Category[] = [
       'Webdesign',
       'UX/UI Design',
       'Systemintegration',
-      'Cloud Computing'
-    ]
+      'Cloud Computing',
+    ],
   },
   {
     id: 'garten',
@@ -87,8 +87,8 @@ export const categories: Category[] = [
       'Heckenschnitt',
       'Baumpflege',
       'Gartenplanung',
-      'Bewässerungsanlagen'
-    ]
+      'Bewässerungsanlagen',
+    ],
   },
   {
     id: 'wellness',
@@ -100,17 +100,13 @@ export const categories: Category[] = [
       'Kosmetik',
       'Friseur',
       'FitnessTraining',
-      'Seniorenbetreuung'
-    ]
+      'Seniorenbetreuung',
+    ],
   },
   {
     id: 'gastronomie',
     title: 'Hotel & Gastronomie',
-    subcategories: [
-      'Mietkoch',
-      'Mietkellner',
-      'Catering'
-    ]
+    subcategories: ['Mietkoch', 'Mietkellner', 'Catering'],
   },
   {
     id: 'marketing',
@@ -120,8 +116,8 @@ export const categories: Category[] = [
       'Social Media Marketing',
       'ContentMarketing',
       'Marketingberater',
-      'Marktforschung'
-    ]
+      'Marktforschung',
+    ],
   },
   {
     id: 'finanzen',
@@ -134,8 +130,8 @@ export const categories: Category[] = [
       'Versicherungsberatung',
       'Rechnungswesen',
       'Unternehmensberatung',
-      'Verwaltung'
-    ]
+      'Verwaltung',
+    ],
   },
   {
     id: 'bildung',
@@ -146,57 +142,34 @@ export const categories: Category[] = [
       'Sprachunterricht',
       'Musikunterricht',
       'Übersetzer',
-      'Kinderbetreuung'
-    ]
+      'Kinderbetreuung',
+    ],
   },
   {
     id: 'tiere',
     title: 'Tiere & Pflanzen',
-    subcategories: [
-      'Tierbetreuung',
-      'Hundetrainer',
-      'TierarztAssistenz',
-      'Tierpflege'
-    ]
+    subcategories: ['Tierbetreuung', 'Hundetrainer', 'TierarztAssistenz', 'Tierpflege'],
   },
   {
     id: 'kreativ',
     title: 'Kreativ & Kunst',
-    subcategories: [
-      'Fotograf',
-      'Videograf',
-      'Grafiker',
-      'Musiker',
-      'Texter',
-      'Dekoration'
-    ]
+    subcategories: ['Fotograf', 'Videograf', 'Grafiker', 'Musiker', 'Texter', 'Dekoration'],
   },
   {
     id: 'event',
     title: 'Event & Veranstaltung',
-    subcategories: [
-      'Eventplanung',
-      'Sicherheitsdienst',
-      'DJService',
-      'Musiker'
-    ]
+    subcategories: ['Eventplanung', 'Sicherheitsdienst', 'DJService', 'Musiker'],
   },
   {
     id: 'buero',
     title: 'Büro & Administration',
-    subcategories: [
-      'Telefonservice',
-      'Inventur',
-      'Recherche'
-    ]
-  }
+    subcategories: ['Telefonservice', 'Inventur', 'Recherche'],
+  },
 ];
 
 // Hilfsfunktion: Finde Kategorie anhand der Subkategorie
 export const getCategoryBySubcategory = (subcategory: string): Category | null => {
-  return categories.find(cat => 
-    cat.subcategories.includes(subcategory)
-  ) || null;
+  return categories.find(cat => cat.subcategories.includes(subcategory)) || null;
 };
 
 // Hilfsfunktion: Alle Subkategorien als Array

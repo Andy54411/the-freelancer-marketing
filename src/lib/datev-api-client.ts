@@ -42,7 +42,6 @@ export class DatevApiClient {
     let authHeader = DatevTokenManager.getServerAuthHeader(request);
 
     if (authHeader) {
-
       return authHeader;
     }
 
@@ -57,7 +56,6 @@ export class DatevApiClient {
 
     // If we have a company ID, try Firestore
     if (companyId) {
-
       try {
         const tokenDoc = await db
           .collection('users')
@@ -76,12 +74,9 @@ export class DatevApiClient {
 
             return authHeader;
           } else {
-
           }
         }
-      } catch (firestoreError) {
-
-      }
+      } catch (firestoreError) {}
     }
 
     return null;

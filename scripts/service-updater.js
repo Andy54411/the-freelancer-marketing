@@ -12,7 +12,7 @@ class ServiceUpdater {
     this.serviceDirectory = path.join(__dirname, '..', 'src', 'services');
     this.componentDirectory = path.join(__dirname, '..', 'src', 'components');
     this.appDirectory = path.join(__dirname, '..', 'src', 'app');
-    
+
     this.collectionsToMigrate = [
       'customers',
       'inventory',
@@ -20,9 +20,9 @@ class ServiceUpdater {
       'timeEntries',
       'quotes',
       'expenses',
-      'orderTimeTracking'
+      'orderTimeTracking',
     ];
-    
+
     this.changedFiles = [];
     this.errors = [];
   }
@@ -30,7 +30,7 @@ class ServiceUpdater {
   updateFile(filePath) {
     try {
       console.log(`🔍 Analysiere: ${path.relative(process.cwd(), filePath)}`);
-      
+
       let content = fs.readFileSync(filePath, 'utf8');
       let originalContent = content;
       let hasChanges = false;
@@ -39,7 +39,7 @@ class ServiceUpdater {
       for (const collectionName of this.collectionsToMigrate) {
         const oldPattern = new RegExp(`collection\\(['"\`]${collectionName}['"\`]\\)`, 'g');
         const newPattern = `collection('companies').doc(companyId).collection('${collectionName}')`;
-        
+
         if (oldPattern.test(content)) {
           content = content.replace(oldPattern, newPattern);
           hasChanges = true;
@@ -51,7 +51,7 @@ class ServiceUpdater {
       for (const collectionName of this.collectionsToMigrate) {
         const oldPattern = new RegExp(`doc\\(db,\\s*['"\`]${collectionName}['"\`],`, 'g');
         const newPattern = `doc(db, 'companies', companyId, '${collectionName}',`;
-        
+
         if (oldPattern.test(content)) {
           content = content.replace(oldPattern, newPattern);
           hasChanges = true;
@@ -70,12 +70,14 @@ class ServiceUpdater {
       // Pattern 4: Füge companyId Parameter hinzu, falls nicht vorhanden
       if (hasChanges && !content.includes('companyId: string')) {
         // Finde Funktionsdefinitionen und füge companyId Parameter hinzu
-        const functionPattern = /(async\s+function\s+\w+|static\s+async\s+\w+|\w+:\s*async\s*)\s*\([^)]*\)/g;
-        content = content.replace(functionPattern, (match) => {
+        const functionPattern =
+          /(async\s+function\s+\w+|static\s+async\s+\w+|\w+:\s*async\s*)\s*\([^)]*\)/g;
+        content = content.replace(functionPattern, match => {
           if (!match.includes('companyId')) {
             const insertPos = match.lastIndexOf(')');
             const beforeClosing = match.substring(0, insertPos);
-            const hasParams = beforeClosing.includes('(') && beforeClosing.split('(')[1].trim().length > 0;
+            const hasParams =
+              beforeClosing.includes('(') && beforeClosing.split('(')[1].trim().length > 0;
             const newParam = hasParams ? ', companyId: string' : 'companyId: string';
             return match.substring(0, insertPos) + newParam + match.substring(insertPos);
           }
@@ -91,7 +93,6 @@ class ServiceUpdater {
       } else if (!hasChanges) {
         console.log(`   ⏭️  Keine Änderungen erforderlich`);
       }
-
     } catch (error) {
       this.errors.push({ file: filePath, error: error.message });
       console.error(`   ❌ Fehler: ${error.message}`);
@@ -100,25 +101,25 @@ class ServiceUpdater {
 
   findFiles(directory, extensions = ['.ts', '.tsx', '.js', '.jsx']) {
     const files = [];
-    
+
     if (!fs.existsSync(directory)) {
       console.log(`⚠️  Verzeichnis nicht gefunden: ${directory}`);
       return files;
     }
 
     const items = fs.readdirSync(directory);
-    
+
     for (const item of items) {
       const fullPath = path.join(directory, item);
       const stat = fs.statSync(fullPath);
-      
+
       if (stat.isDirectory()) {
         files.push(...this.findFiles(fullPath, extensions));
       } else if (extensions.some(ext => item.endsWith(ext))) {
         files.push(fullPath);
       }
     }
-    
+
     return files;
   }
 
@@ -133,7 +134,7 @@ class ServiceUpdater {
     const allFiles = [
       ...this.findFiles(this.serviceDirectory),
       ...this.findFiles(this.componentDirectory),
-      ...this.findFiles(this.appDirectory)
+      ...this.findFiles(this.appDirectory),
     ];
 
     console.log(`📄 Gefundene Dateien: ${allFiles.length}\n`);
@@ -163,7 +164,7 @@ class ServiceUpdater {
     }
 
     console.log('🎯 Service-Updates abgeschlossen!\n');
-    
+
     if (this.changedFiles.length > 0) {
       console.log('⚠️  WICHTIG: Bitte prüfen Sie die Änderungen vor dem nächsten Schritt:');
       console.log('   git diff # Änderungen überprüfen');

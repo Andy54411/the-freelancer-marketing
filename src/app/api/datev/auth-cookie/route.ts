@@ -39,12 +39,12 @@ export async function GET(request: NextRequest) {
 
     // Build correct redirect URI for cookie-based callback - DATEV Sandbox Requirement
     // Für Confidential Clients ist nur "http://localhost" erlaubt (Port 80 implizit)
-    const baseUrl = process.env.NODE_ENV === 'development'
-      ? 'http://localhost'
-      : 'https://taskilo.de';
-    const cookieRedirectUri = process.env.NODE_ENV === 'development'
-      ? 'http://localhost'  // DATEV Sandbox Anforderung - Port 80
-      : `${baseUrl}/api/datev/callback`;
+    const baseUrl =
+      process.env.NODE_ENV === 'development' ? 'http://localhost' : 'https://taskilo.de';
+    const cookieRedirectUri =
+      process.env.NODE_ENV === 'development'
+        ? 'http://localhost' // DATEV Sandbox Anforderung - Port 80
+        : `${baseUrl}/api/datev/callback`;
 
     // Build authorization URL
     const authParams = new URLSearchParams({
@@ -60,10 +60,9 @@ export async function GET(request: NextRequest) {
 
     const authUrl = `${config.authUrl}?${authParams.toString()}`;
 
-        // Redirect to DATEV authorization server
+    // Redirect to DATEV authorization server
     return NextResponse.redirect(authUrl);
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'auth_url_generation_failed',

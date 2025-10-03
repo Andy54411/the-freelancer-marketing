@@ -33,7 +33,6 @@ export async function GET(request: NextRequest) {
     const userInfo = await userInfoResponse.json();
 
     if (!userInfoResponse.ok) {
-
       return NextResponse.json(
         {
           error: 'datev_userinfo_error',
@@ -61,7 +60,6 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'internal_error',
@@ -105,7 +103,6 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   } catch (error) {
-
     return NextResponse.json(
       { error: 'internal_error', message: 'Failed to process mock request' },
       { status: 500 }

@@ -30,8 +30,8 @@ import {
   Download,
   Image,
   FileImage,
-  RefreshCw } from
-'lucide-react';
+  RefreshCw,
+} from 'lucide-react';
 
 interface CompanyDetails {
   id: string;
@@ -67,7 +67,7 @@ interface CompanyDetails {
   description?: string;
   skills?: string[];
   services?: string[]; // Legacy-Kompatibilität
-  languages?: Array<{language: string;proficiency: string;}>;
+  languages?: Array<{ language: string; proficiency: string }>;
   serviceAreas?: string[];
 
   // Stripe und Payment
@@ -181,7 +181,7 @@ export default function AdminCompanyDetailsPage() {
   const router = useRouter();
   const [company, setCompany] = useState<CompanyDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedDocument, setSelectedDocument] = useState<{url: string;title: string;} | null>(
+  const [selectedDocument, setSelectedDocument] = useState<{ url: string; title: string } | null>(
     null
   );
   const [isUpdatingApproval, setIsUpdatingApproval] = useState(false);
@@ -203,7 +203,6 @@ export default function AdminCompanyDetailsPage() {
         const data = await response.json();
         setCompany(data.company);
         setLastUpdated(new Date());
-
       } else {
         console.error('❌ Fehler beim Laden der Unternehmensdaten:', response.status);
       }
@@ -229,9 +228,9 @@ export default function AdminCompanyDetailsPage() {
   };
 
   const handleApprovalAction = async (
-  action: 'approve' | 'reject' | 'suspend' | 'unsuspend',
-  notes: string = '') =>
-  {
+    action: 'approve' | 'reject' | 'suspend' | 'unsuspend',
+    notes: string = ''
+  ) => {
     if (!company) return;
 
     setIsUpdatingApproval(true);
@@ -239,13 +238,13 @@ export default function AdminCompanyDetailsPage() {
       const response = await fetch(`/api/admin/companies/${companyId}/approval`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           action,
           notes,
-          adminId: 'current-admin' // TODO: Get from auth context
-        })
+          adminId: 'current-admin', // TODO: Get from auth context
+        }),
       });
 
       if (response.ok) {
@@ -256,7 +255,7 @@ export default function AdminCompanyDetailsPage() {
           approve: 'freigegeben',
           reject: 'abgelehnt',
           suspend: 'gesperrt',
-          unsuspend: 'entsperrt'
+          unsuspend: 'entsperrt',
         }[action];
         alert(`Unternehmen wurde erfolgreich ${actionText}.`);
       } else {
@@ -276,8 +275,8 @@ export default function AdminCompanyDetailsPage() {
         <Badge className="bg-green-100 text-green-800">
           <CheckCircle className="h-3 w-3 mr-1" />
           Admin Freigegeben
-        </Badge>);
-
+        </Badge>
+      );
     }
 
     switch (status) {
@@ -286,16 +285,16 @@ export default function AdminCompanyDetailsPage() {
           <Badge className="bg-green-100 text-green-800">
             <CheckCircle className="h-3 w-3 mr-1" />
             Freigegeben
-          </Badge>);
-
+          </Badge>
+        );
 
       case 'rejected':
         return (
           <Badge className="bg-red-100 text-red-800">
             <Ban className="h-3 w-3 mr-1" />
             Abgelehnt
-          </Badge>);
-
+          </Badge>
+        );
 
       case 'needs_review':
         return <Badge className="bg-yellow-100 text-yellow-800">Überprüfung erforderlich</Badge>;
@@ -324,8 +323,8 @@ export default function AdminCompanyDetailsPage() {
           <Badge className="bg-green-100 text-green-800">
             <CheckCircle className="h-3 w-3 mr-1" />
             Verifiziert
-          </Badge>);
-
+          </Badge>
+        );
 
       case 'pending':
         return <Badge className="bg-yellow-100 text-yellow-800">Ausstehend</Badge>;
@@ -340,8 +339,8 @@ export default function AdminCompanyDetailsPage() {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
-      </div>);
-
+      </div>
+    );
   }
 
   if (!company) {
@@ -354,8 +353,8 @@ export default function AdminCompanyDetailsPage() {
             Zurück
           </Button>
         </div>
-      </div>);
-
+      </div>
+    );
   }
 
   return (
@@ -371,11 +370,11 @@ export default function AdminCompanyDetailsPage() {
             <h1 className="text-3xl font-bold text-gray-900">{company.companyName}</h1>
             <div className="flex items-center space-x-4">
               <p className="text-gray-600">Unternehmen #{company.id}</p>
-              {lastUpdated &&
-              <p className="text-xs text-gray-500">
+              {lastUpdated && (
+                <p className="text-xs text-gray-500">
                   Zuletzt aktualisiert: {lastUpdated.toLocaleTimeString('de-DE')}
                 </p>
-              }
+              )}
             </div>
           </div>
         </div>
@@ -392,13 +391,13 @@ export default function AdminCompanyDetailsPage() {
           onClick={loadCompanyDetails}
           disabled={loading}
           variant="outline"
-          className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white">
-
-          {loading ?
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#14ad9f] mr-2" /> :
-
-          <RefreshCw className="h-4 w-4 mr-2" />
-          }
+          className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+        >
+          {loading ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#14ad9f] mr-2" />
+          ) : (
+            <RefreshCw className="h-4 w-4 mr-2" />
+          )}
           {loading ? 'Lädt...' : 'Aktualisieren'}
         </Button>
         <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
@@ -413,10 +412,10 @@ export default function AdminCompanyDetailsPage() {
           variant="outline"
           className={`${company.accountSuspended ? 'text-green-600 hover:text-green-700' : 'text-red-600 hover:text-red-700'}`}
           onClick={() =>
-          handleApprovalAction(company.accountSuspended ? 'unsuspend' : 'suspend', '')
+            handleApprovalAction(company.accountSuspended ? 'unsuspend' : 'suspend', '')
           }
-          disabled={isUpdatingApproval}>
-
+          disabled={isUpdatingApproval}
+        >
           <Ban className="h-4 w-4 mr-2" />
           {company.accountSuspended ? 'Entsperren' : 'Sperren'}
         </Button>
@@ -464,18 +463,18 @@ export default function AdminCompanyDetailsPage() {
                   <label className="text-sm font-medium text-gray-500">Website</label>
                   <p className="font-medium flex items-center">
                     <Globe className="h-4 w-4 mr-2 text-gray-400" />
-                    {company.website ?
-                    <a
-                      href={company.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#14ad9f] hover:underline">
-
+                    {company.website ? (
+                      <a
+                        href={company.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#14ad9f] hover:underline"
+                      >
                         {company.website}
-                      </a> :
-
-                    'Nicht angegeben'
-                    }
+                      </a>
+                    ) : (
+                      'Nicht angegeben'
+                    )}
                   </p>
                 </div>
                 <div>
@@ -508,15 +507,15 @@ export default function AdminCompanyDetailsPage() {
                 </div>
               </div>
 
-              {company.description &&
-              <>
+              {company.description && (
+                <>
                   <Separator />
                   <div>
                     <label className="text-sm font-medium text-gray-500">Beschreibung</label>
                     <p className="mt-1 text-gray-700">{company.description}</p>
                   </div>
                 </>
-              }
+              )}
             </CardContent>
           </Card>
 
@@ -551,9 +550,9 @@ export default function AdminCompanyDetailsPage() {
           </Card>
 
           {/* Skills und Services */}
-          {(company.skills && company.skills.length > 0 ||
-          company.services && company.services.length > 0) &&
-          <Card>
+          {((company.skills && company.skills.length > 0) ||
+            (company.services && company.services.length > 0)) && (
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Settings className="h-5 w-5 mr-2" />
@@ -561,74 +560,74 @@ export default function AdminCompanyDetailsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {company.skills && company.skills.length > 0 &&
-              <div>
+                {company.skills && company.skills.length > 0 && (
+                  <div>
                     <label className="text-sm font-medium text-gray-500 mb-2 block">Skills</label>
                     <div className="flex flex-wrap gap-2">
-                      {company.skills.map((skill, index) =>
-                  <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700">
+                      {company.skills.map((skill, index) => (
+                        <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700">
                           {skill}
                         </Badge>
-                  )}
+                      ))}
                     </div>
                   </div>
-              }
+                )}
 
-                {company.services && company.services.length > 0 &&
-              <div>
+                {company.services && company.services.length > 0 && (
+                  <div>
                     <label className="text-sm font-medium text-gray-500 mb-2 block">
                       Services (Legacy)
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {company.services.map((service, index) =>
-                  <Badge key={index} variant="outline" className="bg-green-50 text-green-700">
+                      {company.services.map((service, index) => (
+                        <Badge key={index} variant="outline" className="bg-green-50 text-green-700">
                           {service}
                         </Badge>
-                  )}
+                      ))}
                     </div>
                   </div>
-              }
+                )}
 
-                {company.serviceAreas && company.serviceAreas.length > 0 &&
-              <div>
+                {company.serviceAreas && company.serviceAreas.length > 0 && (
+                  <div>
                     <label className="text-sm font-medium text-gray-500 mb-2 block">
                       Service-Bereiche
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {company.serviceAreas.map((area, index) =>
-                  <Badge
-                    key={index}
-                    variant="outline"
-                    className="bg-purple-50 text-purple-700">
-
+                      {company.serviceAreas.map((area, index) => (
+                        <Badge
+                          key={index}
+                          variant="outline"
+                          className="bg-purple-50 text-purple-700"
+                        >
                           {area}
                         </Badge>
-                  )}
+                      ))}
                     </div>
                   </div>
-              }
+                )}
 
-                {company.languages && company.languages.length > 0 &&
-              <div>
+                {company.languages && company.languages.length > 0 && (
+                  <div>
                     <label className="text-sm font-medium text-gray-500 mb-2 block">Sprachen</label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {company.languages.map((lang, index) =>
-                  <div
-                    key={index}
-                    className="flex justify-between items-center bg-gray-50 p-2 rounded">
-
+                      {company.languages.map((lang, index) => (
+                        <div
+                          key={index}
+                          className="flex justify-between items-center bg-gray-50 p-2 rounded"
+                        >
                           <span className="font-medium">{lang.language}</span>
                           <Badge variant="outline" className="text-xs">
                             {lang.proficiency}
                           </Badge>
                         </div>
-                  )}
+                      ))}
                     </div>
                   </div>
-              }
+                )}
 
-                {company.availabilityType &&
-              <div className="border-t pt-4 mt-4">
+                {company.availabilityType && (
+                  <div className="border-t pt-4 mt-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-500">
@@ -649,15 +648,15 @@ export default function AdminCompanyDetailsPage() {
                           Max. Reiseentfernung
                         </label>
                         <p className="font-medium">
-                          {company.maxTravelDistance ?
-                      `${company.maxTravelDistance} km` :
-                      'Nicht gesetzt'}
+                          {company.maxTravelDistance
+                            ? `${company.maxTravelDistance} km`
+                            : 'Nicht gesetzt'}
                         </p>
                       </div>
                     </div>
 
-                    {(company.travelCosts || company.travelCostPerKm) &&
-                <div className="mt-4 p-3 bg-yellow-50 rounded border">
+                    {(company.travelCosts || company.travelCostPerKm) && (
+                      <div className="mt-4 p-3 bg-yellow-50 rounded border">
                         <h4 className="font-medium text-yellow-800 mb-2">Reisekosten</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           <div>
@@ -669,23 +668,23 @@ export default function AdminCompanyDetailsPage() {
                           <div>
                             <label className="text-sm text-yellow-700">Kosten pro km</label>
                             <p className="font-medium text-yellow-800">
-                              {company.travelCostPerKm ?
-                        `${company.travelCostPerKm}€` :
-                        'Nicht gesetzt'}
+                              {company.travelCostPerKm
+                                ? `${company.travelCostPerKm}€`
+                                : 'Nicht gesetzt'}
                             </p>
                           </div>
                         </div>
                       </div>
-                }
+                    )}
                   </div>
-              }
+                )}
               </CardContent>
             </Card>
-          }
+          )}
 
           {/* Profilbilder */}
-          {(company.profilePictureURL || company.profileBannerImage) &&
-          <Card>
+          {(company.profilePictureURL || company.profileBannerImage) && (
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Image className="h-5 w-5 mr-2" />
@@ -693,86 +692,86 @@ export default function AdminCompanyDetailsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {company.profilePictureURL &&
-              <div className="bg-gray-50 p-3 rounded-lg">
+                {company.profilePictureURL && (
+                  <div className="bg-gray-50 p-3 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-gray-900">Profilbild</h4>
                       <Badge className="bg-blue-100 text-blue-800">Verfügbar</Badge>
                     </div>
                     <div className="flex items-center space-x-4">
                       <img
-                    src={company.profilePictureURL}
-                    alt="Profilbild"
-                    className="h-16 w-16 rounded-lg object-cover border" />
-
+                        src={company.profilePictureURL}
+                        alt="Profilbild"
+                        className="h-16 w-16 rounded-lg object-cover border"
+                      />
 
                       <div className="flex space-x-2">
                         <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openDocument(company.profilePictureURL!, 'Profilbild')}
-                      title="Vollbild anzeigen">
-
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDocument(company.profilePictureURL!, 'Profilbild')}
+                          title="Vollbild anzeigen"
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                      downloadDocument(company.profilePictureURL!, 'profilbild.jpg')
-                      }
-                      title="Download">
-
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            downloadDocument(company.profilePictureURL!, 'profilbild.jpg')
+                          }
+                          title="Download"
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                   </div>
-              }
+                )}
 
-                {company.profileBannerImage &&
-              <div className="bg-gray-50 p-3 rounded-lg">
+                {company.profileBannerImage && (
+                  <div className="bg-gray-50 p-3 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-gray-900">Banner-Bild</h4>
                       <Badge className="bg-blue-100 text-blue-800">Verfügbar</Badge>
                     </div>
                     <div className="flex items-center space-x-4">
                       <img
-                    src={company.profileBannerImage}
-                    alt="Banner-Bild"
-                    className="h-16 w-24 rounded-lg object-cover border" />
-
+                        src={company.profileBannerImage}
+                        alt="Banner-Bild"
+                        className="h-16 w-24 rounded-lg object-cover border"
+                      />
 
                       <div className="flex space-x-2">
                         <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openDocument(company.profileBannerImage!, 'Banner-Bild')}
-                      title="Vollbild anzeigen">
-
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDocument(company.profileBannerImage!, 'Banner-Bild')}
+                          title="Vollbild anzeigen"
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                      downloadDocument(company.profileBannerImage!, 'banner.jpg')
-                      }
-                      title="Download">
-
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            downloadDocument(company.profileBannerImage!, 'banner.jpg')
+                          }
+                          title="Download"
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                   </div>
-              }
+                )}
               </CardContent>
             </Card>
-          }
+          )}
 
           {/* Portfolio */}
-          {company.portfolio && company.portfolio.length > 0 &&
-          <Card>
+          {company.portfolio && company.portfolio.length > 0 && (
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <FileImage className="h-5 w-5 mr-2" />
@@ -780,99 +779,99 @@ export default function AdminCompanyDetailsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {company.portfolio.map((project, index) =>
-              <div key={project.id || index} className="bg-gray-50 p-4 rounded-lg">
+                {company.portfolio.map((project, index) => (
+                  <div key={project.id || index} className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-start space-x-4">
                       {/* Hauptbild */}
-                      {project.imageUrl &&
-                  <div className="flex-shrink-0">
+                      {project.imageUrl && (
+                        <div className="flex-shrink-0">
                           <img
-                      src={project.imageUrl}
-                      alt={project.title}
-                      className="h-20 w-20 rounded-lg object-cover border cursor-pointer hover:shadow-md transition-shadow"
-                      onClick={() =>
-                      openDocument(project.imageUrl, `${project.title} - Hauptbild`)
-                      } />
-
+                            src={project.imageUrl}
+                            alt={project.title}
+                            className="h-20 w-20 rounded-lg object-cover border cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={() =>
+                              openDocument(project.imageUrl, `${project.title} - Hauptbild`)
+                            }
+                          />
                         </div>
-                  }
+                      )}
 
                       {/* Projektinfo */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-medium text-gray-900 truncate">{project.title}</h4>
-                          {project.featured &&
-                      <Badge className="bg-yellow-100 text-yellow-800 ml-2">Featured</Badge>
-                      }
-                          {project.category &&
-                      <Badge variant="outline" className="ml-2">
+                          {project.featured && (
+                            <Badge className="bg-yellow-100 text-yellow-800 ml-2">Featured</Badge>
+                          )}
+                          {project.category && (
+                            <Badge variant="outline" className="ml-2">
                               {project.category}
                             </Badge>
-                      }
+                          )}
                         </div>
 
-                        {project.description &&
-                    <p
-                      className="text-sm text-gray-600 mb-3"
-                      style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
-                      }}>
-
+                        {project.description && (
+                          <p
+                            className="text-sm text-gray-600 mb-3"
+                            style={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}
+                          >
                             {project.description}
                           </p>
-                    }
+                        )}
 
                         {/* Zusätzliche Bilder */}
-                        {project.additionalImages && project.additionalImages.length > 0 &&
-                    <div className="space-y-2">
+                        {project.additionalImages && project.additionalImages.length > 0 && (
+                          <div className="space-y-2">
                             <label className="text-xs font-medium text-gray-500">
                               Zusätzliche Bilder ({project.additionalImages.length})
                             </label>
                             <div className="flex flex-wrap gap-2">
-                              {project.additionalImages.map((image, imgIndex) =>
-                        <img
-                          key={imgIndex}
-                          src={image}
-                          alt={`${project.title} - Bild ${imgIndex + 1}`}
-                          className="h-12 w-12 rounded object-cover border cursor-pointer hover:shadow-md transition-shadow"
-                          onClick={() =>
-                          openDocument(image, `${project.title} - Bild ${imgIndex + 1}`)
-                          } />
-
-                        )}
+                              {project.additionalImages.map((image, imgIndex) => (
+                                <img
+                                  key={imgIndex}
+                                  src={image}
+                                  alt={`${project.title} - Bild ${imgIndex + 1}`}
+                                  className="h-12 w-12 rounded object-cover border cursor-pointer hover:shadow-md transition-shadow"
+                                  onClick={() =>
+                                    openDocument(image, `${project.title} - Bild ${imgIndex + 1}`)
+                                  }
+                                />
+                              ))}
                             </div>
                           </div>
-                    }
+                        )}
 
                         {/* Technologien */}
-                        {project.technologies && project.technologies.length > 0 &&
-                    <div className="mt-2">
+                        {project.technologies && project.technologies.length > 0 && (
+                          <div className="mt-2">
                             <div className="flex flex-wrap gap-1">
-                              {project.technologies.map((tech, techIndex) =>
-                        <Badge key={techIndex} variant="outline" className="text-xs">
+                              {project.technologies.map((tech, techIndex) => (
+                                <Badge key={techIndex} variant="outline" className="text-xs">
                                   {tech}
                                 </Badge>
-                        )}
+                              ))}
                             </div>
                           </div>
-                    }
+                        )}
 
                         {/* Datum */}
-                        {project.createdAt &&
-                    <p className="text-xs text-gray-500 mt-2">
+                        {project.createdAt && (
+                          <p className="text-xs text-gray-500 mt-2">
                             Erstellt: {new Date(project.createdAt).toLocaleDateString('de-DE')}
                           </p>
-                    }
+                        )}
                       </div>
                     </div>
                   </div>
-              )}
+                ))}
               </CardContent>
             </Card>
-          }
+          )}
         </div>
 
         {/* Sidebar */}
@@ -892,46 +891,46 @@ export default function AdminCompanyDetailsPage() {
                   €
                   {company.totalRevenue.toLocaleString('de-DE', {
                     minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
+                    maximumFractionDigits: 2,
                   })}
                 </p>
-                {(company.auftraegeRevenue || company.quotesRevenue) &&
-                <div className="text-xs text-gray-500 mt-1 space-y-1">
-                    {company.auftraegeRevenue &&
-                  <div>
+                {(company.auftraegeRevenue || company.quotesRevenue) && (
+                  <div className="text-xs text-gray-500 mt-1 space-y-1">
+                    {company.auftraegeRevenue && (
+                      <div>
                         Aufträge: €
                         {company.auftraegeRevenue.toLocaleString('de-DE', {
-                      minimumFractionDigits: 2
-                    })}
+                          minimumFractionDigits: 2,
+                        })}
                       </div>
-                  }
-                    {company.quotesRevenue &&
-                  <div>
+                    )}
+                    {company.quotesRevenue && (
+                      <div>
                         Quotes: €
                         {company.quotesRevenue.toLocaleString('de-DE', {
-                      minimumFractionDigits: 2
-                    })}
+                          minimumFractionDigits: 2,
+                        })}
                       </div>
-                  }
+                    )}
                   </div>
-                }
+                )}
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Gesamtbestellungen</label>
                 <p className="text-2xl font-bold">{company.totalOrders}</p>
-                {(company.auftraegeCount || company.quotesCount) &&
-                <div className="text-xs text-gray-500 mt-1 space-y-1">
-                    {company.auftraegeCount !== undefined &&
-                  <div>Aufträge: {company.auftraegeCount}</div>
-                  }
-                    {company.quotesCount !== undefined &&
-                  <div>Bezahlte Quotes: {company.quotesCount}</div>
-                  }
-                    {company.completedOrders !== undefined &&
-                  <div>Abgeschlossen: {company.completedOrders}</div>
-                  }
+                {(company.auftraegeCount || company.quotesCount) && (
+                  <div className="text-xs text-gray-500 mt-1 space-y-1">
+                    {company.auftraegeCount !== undefined && (
+                      <div>Aufträge: {company.auftraegeCount}</div>
+                    )}
+                    {company.quotesCount !== undefined && (
+                      <div>Bezahlte Quotes: {company.quotesCount}</div>
+                    )}
+                    {company.completedOrders !== undefined && (
+                      <div>Abgeschlossen: {company.completedOrders}</div>
+                    )}
                   </div>
-                }
+                )}
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Durchschnittsbewertung</label>
@@ -960,17 +959,17 @@ export default function AdminCompanyDetailsPage() {
                 </p>
               </div>
 
-              {company.stripeAccountId &&
-              <div className="space-y-3">
+              {company.stripeAccountId && (
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Charges aktiviert</span>
                     <Badge
-                    className={
-                    company.stripeAccountChargesEnabled ?
-                    'bg-green-100 text-green-800' :
-                    'bg-red-100 text-red-800'
-                    }>
-
+                      className={
+                        company.stripeAccountChargesEnabled
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }
+                    >
                       {company.stripeAccountChargesEnabled ? 'Aktiv' : 'Inaktiv'}
                     </Badge>
                   </div>
@@ -978,12 +977,12 @@ export default function AdminCompanyDetailsPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Payouts aktiviert</span>
                     <Badge
-                    className={
-                    company.stripeAccountPayoutsEnabled ?
-                    'bg-green-100 text-green-800' :
-                    'bg-red-100 text-red-800'
-                    }>
-
+                      className={
+                        company.stripeAccountPayoutsEnabled
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }
+                    >
                       {company.stripeAccountPayoutsEnabled ? 'Aktiv' : 'Inaktiv'}
                     </Badge>
                   </div>
@@ -991,78 +990,78 @@ export default function AdminCompanyDetailsPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Details übermittelt</span>
                     <Badge
-                    className={
-                    company.stripeAccountDetailsSubmitted ?
-                    'bg-green-100 text-green-800' :
-                    'bg-yellow-100 text-yellow-800'
-                    }>
-
+                      className={
+                        company.stripeAccountDetailsSubmitted
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }
+                    >
                       {company.stripeAccountDetailsSubmitted ? 'Ja' : 'Nein'}
                     </Badge>
                   </div>
 
-                  {company.stripeAccountCreationDate &&
-                <div>
+                  {company.stripeAccountCreationDate && (
+                    <div>
                       <label className="text-sm font-medium text-gray-500">Account erstellt</label>
                       <p className="text-sm">
                         {new Date(company.stripeAccountCreationDate).toLocaleDateString('de-DE')}
                       </p>
                     </div>
-                }
+                  )}
                 </div>
-              }
+              )}
 
-              {(company.iban || company.bic || company.bankName) &&
-              <div className="border-t pt-3 space-y-3">
+              {(company.iban || company.bic || company.bankName) && (
+                <div className="border-t pt-3 space-y-3">
                   <h4 className="text-sm font-medium text-gray-700">Bankverbindung</h4>
 
-                  {company.iban &&
-                <div>
+                  {company.iban && (
+                    <div>
                       <label className="text-sm font-medium text-gray-500">IBAN</label>
                       <p className="font-mono text-sm bg-gray-100 p-2 rounded">{company.iban}</p>
                     </div>
-                }
+                  )}
 
-                  {company.bic &&
-                <div>
+                  {company.bic && (
+                    <div>
                       <label className="text-sm font-medium text-gray-500">BIC</label>
                       <p className="font-mono text-sm bg-gray-100 p-2 rounded">{company.bic}</p>
                     </div>
-                }
+                  )}
 
-                  {company.bankName &&
-                <div>
+                  {company.bankName && (
+                    <div>
                       <label className="text-sm font-medium text-gray-500">Bank</label>
                       <p className="text-sm bg-gray-100 p-2 rounded">{company.bankName}</p>
                     </div>
-                }
+                  )}
 
-                  {company.accountHolder &&
-                <div>
+                  {company.accountHolder && (
+                    <div>
                       <label className="text-sm font-medium text-gray-500">Kontoinhaber</label>
                       <p className="text-sm bg-gray-100 p-2 rounded">{company.accountHolder}</p>
                     </div>
-                }
+                  )}
 
-                  {company.bankCountry &&
-                <div>
+                  {company.bankCountry && (
+                    <div>
                       <label className="text-sm font-medium text-gray-500">Land</label>
                       <p className="text-sm">{company.bankCountry}</p>
                     </div>
-                }
+                  )}
                 </div>
-              }
+              )}
             </CardContent>
           </Card>
 
           {/* Geschäftsdaten & Steuerliche Informationen */}
           {(company.vatId ||
-          company.taxNumber ||
-          company.kleinunternehmer ||
-          company.legalForm ||
-          company.businessType ||
-          company.accountHolder) &&
-          <Card>
+            company.taxNumber ||
+            company.kleinunternehmer ||
+            company.legalForm ||
+            company.businessType ||
+            company.accountHolder) && (
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <FileText className="h-5 w-5 mr-2" />
@@ -1071,92 +1070,92 @@ export default function AdminCompanyDetailsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {company.legalForm &&
-                <div>
+                  {company.legalForm && (
+                    <div>
                       <label className="text-sm font-medium text-gray-500">Rechtsform</label>
                       <p className="font-medium">{company.legalForm}</p>
                     </div>
-                }
+                  )}
 
-                  {company.businessType &&
-                <div>
+                  {company.businessType && (
+                    <div>
                       <label className="text-sm font-medium text-gray-500">Geschäftstyp</label>
                       <p className="font-medium">{company.businessType}</p>
                     </div>
-                }
+                  )}
 
-                  {company.accountHolder &&
-                <div>
+                  {company.accountHolder && (
+                    <div>
                       <label className="text-sm font-medium text-gray-500">Kontoinhaber</label>
                       <p className="font-medium">{company.accountHolder}</p>
                     </div>
-                }
+                  )}
 
-                  {company.employees &&
-                <div>
+                  {company.employees && (
+                    <div>
                       <label className="text-sm font-medium text-gray-500">Mitarbeiter</label>
                       <p className="font-medium">{company.employees}</p>
                     </div>
-                }
+                  )}
                 </div>
 
-                {(company.vatId || company.taxNumber || company.kleinunternehmer) &&
-              <div className="border-t pt-4">
+                {(company.vatId || company.taxNumber || company.kleinunternehmer) && (
+                  <div className="border-t pt-4">
                     <h4 className="font-medium text-gray-900 mb-3">Steuerliche Informationen</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {company.vatId &&
-                  <div>
+                      {company.vatId && (
+                        <div>
                           <label className="text-sm font-medium text-gray-500">USt-IdNr.</label>
                           <p className="font-mono text-sm bg-gray-100 p-2 rounded">
                             {company.vatId}
                           </p>
                         </div>
-                  }
+                      )}
 
-                      {company.taxNumber &&
-                  <div>
+                      {company.taxNumber && (
+                        <div>
                           <label className="text-sm font-medium text-gray-500">Steuernummer</label>
                           <p className="font-mono text-sm bg-gray-100 p-2 rounded">
                             {company.taxNumber}
                           </p>
                         </div>
-                  }
+                      )}
 
-                      {company.kleinunternehmer &&
-                  <div>
+                      {company.kleinunternehmer && (
+                        <div>
                           <label className="text-sm font-medium text-gray-500">
                             Kleinunternehmer (§19 UStG)
                           </label>
                           <Badge
-                      className={
-                      company.kleinunternehmer === 'ja' ?
-                      'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                      }>
-
+                            className={
+                              company.kleinunternehmer === 'ja'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }
+                          >
                             {company.kleinunternehmer === 'ja' ? 'Ja' : 'Nein'}
                           </Badge>
                         </div>
-                  }
+                      )}
 
-                      {company.taxRate &&
-                  <div>
+                      {company.taxRate && (
+                        <div>
                           <label className="text-sm font-medium text-gray-500">Steuersatz</label>
                           <p className="font-medium">{company.taxRate}%</p>
                         </div>
-                  }
+                      )}
 
-                      {company.priceInput &&
-                  <div>
+                      {company.priceInput && (
+                        <div>
                           <label className="text-sm font-medium text-gray-500">Preiseingabe</label>
                           <Badge variant="outline">
                             {company.priceInput === 'netto' ? 'Netto' : 'Brutto'}
                           </Badge>
                         </div>
-                  }
+                      )}
 
-                      {company.profitMethod &&
-                  <div>
+                      {company.profitMethod && (
+                        <div>
                           <label className="text-sm font-medium text-gray-500">
                             Gewinnermittlung
                           </label>
@@ -1164,17 +1163,17 @@ export default function AdminCompanyDetailsPage() {
                             {company.profitMethod === 'euer' ? 'EÜR' : 'Bilanz'}
                           </Badge>
                         </div>
-                  }
+                      )}
                     </div>
                   </div>
-              }
+                )}
               </CardContent>
             </Card>
-          }
+          )}
 
           {/* Zertifikate */}
-          {company.certifications && company.certifications.length > 0 &&
-          <Card>
+          {company.certifications && company.certifications.length > 0 && (
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Shield className="h-5 w-5 mr-2" />
@@ -1182,37 +1181,37 @@ export default function AdminCompanyDetailsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {company.certifications.map((cert, index) =>
-              <div key={index} className="bg-gray-50 p-3 rounded-lg">
+                {company.certifications.map((cert, index) => (
+                  <div key={index} className="bg-gray-50 p-3 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-medium text-gray-900">
                           {cert.name || cert.title || `Zertifikat ${index + 1}`}
                         </h4>
-                        {cert.issuer &&
-                    <p className="text-sm text-gray-600">Ausgestellt von: {cert.issuer}</p>
-                    }
-                        {cert.date &&
-                    <p className="text-xs text-gray-500">
+                        {cert.issuer && (
+                          <p className="text-sm text-gray-600">Ausgestellt von: {cert.issuer}</p>
+                        )}
+                        {cert.date && (
+                          <p className="text-xs text-gray-500">
                             Datum: {new Date(cert.date).toLocaleDateString('de-DE')}
                           </p>
-                    }
+                        )}
                       </div>
-                      {cert.url &&
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openDocument(cert.url, cert.name || 'Zertifikat')}>
-
+                      {cert.url && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDocument(cert.url, cert.name || 'Zertifikat')}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                  }
+                      )}
                     </div>
                   </div>
-              )}
+                ))}
               </CardContent>
             </Card>
-          }
+          )}
 
           {/* Admin Freigabe */}
           <Card>
@@ -1230,80 +1229,80 @@ export default function AdminCompanyDetailsPage() {
                 </div>
               </div>
 
-              {company.adminApprovedAt &&
-              <div>
+              {company.adminApprovedAt && (
+                <div>
                   <label className="text-sm font-medium text-gray-500">Freigegeben am</label>
                   <p className="text-sm">
                     {new Date(company.adminApprovedAt).toLocaleDateString('de-DE', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </p>
                 </div>
-              }
+              )}
 
-              {company.adminApprovedBy &&
-              <div>
+              {company.adminApprovedBy && (
+                <div>
                   <label className="text-sm font-medium text-gray-500">Freigegeben von</label>
                   <p className="text-sm">{company.adminApprovedBy}</p>
                 </div>
-              }
+              )}
 
-              {company.adminNotes &&
-              <div>
+              {company.adminNotes && (
+                <div>
                   <label className="text-sm font-medium text-gray-500">Admin Notizen</label>
                   <p className="text-sm bg-gray-50 p-2 rounded">{company.adminNotes}</p>
                 </div>
-              }
+              )}
 
-              {!company.adminApproved && company.approvalStatus !== 'approved' &&
-              <div className="space-y-3 border-t pt-4">
+              {!company.adminApproved && company.approvalStatus !== 'approved' && (
+                <div className="space-y-3 border-t pt-4">
                   <div>
                     <label htmlFor="adminNotes" className="text-sm font-medium text-gray-700">
                       Notizen (optional)
                     </label>
                     <textarea
-                    id="adminNotes"
-                    value={adminNotes}
-                    onChange={(e) => setAdminNotes(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#14ad9f] focus:ring-[#14ad9f] sm:text-sm"
-                    rows={3}
-                    placeholder="Interne Notizen oder Begründung..." />
-
+                      id="adminNotes"
+                      value={adminNotes}
+                      onChange={e => setAdminNotes(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#14ad9f] focus:ring-[#14ad9f] sm:text-sm"
+                      rows={3}
+                      placeholder="Interne Notizen oder Begründung..."
+                    />
                   </div>
 
                   <div className="flex space-x-2">
                     <Button
-                    onClick={() => handleApprovalAction('approve', adminNotes)}
-                    disabled={isUpdatingApproval}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white">
-
-                      {isUpdatingApproval ?
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" /> :
-
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    }
+                      onClick={() => handleApprovalAction('approve', adminNotes)}
+                      disabled={isUpdatingApproval}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {isUpdatingApproval ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                      )}
                       Freigeben
                     </Button>
                     <Button
-                    onClick={() => handleApprovalAction('reject', adminNotes)}
-                    disabled={isUpdatingApproval}
-                    variant="outline"
-                    className="flex-1 border-red-300 text-red-700 hover:bg-red-50">
-
-                      {isUpdatingApproval ?
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2" /> :
-
-                    <Ban className="h-4 w-4 mr-2" />
-                    }
+                      onClick={() => handleApprovalAction('reject', adminNotes)}
+                      disabled={isUpdatingApproval}
+                      variant="outline"
+                      className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
+                    >
+                      {isUpdatingApproval ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2" />
+                      ) : (
+                        <Ban className="h-4 w-4 mr-2" />
+                      )}
                       Ablehnen
                     </Button>
                   </div>
                 </div>
-              }
+              )}
             </CardContent>
           </Card>
 
@@ -1316,45 +1315,45 @@ export default function AdminCompanyDetailsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {company.accountSuspended &&
-              <div className="space-y-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+              {company.accountSuspended && (
+                <div className="space-y-3 p-4 bg-red-50 border border-red-200 rounded-lg">
                   <div className="flex items-center">
                     <Ban className="h-5 w-5 mr-2 text-red-600" />
                     <span className="font-medium text-red-800">Account ist gesperrt</span>
                   </div>
 
-                  {company.suspendedAt &&
-                <div>
+                  {company.suspendedAt && (
+                    <div>
                       <label className="text-sm font-medium text-red-700">Gesperrt am</label>
                       <p className="text-sm text-red-600">
                         {new Date(company.suspendedAt).toLocaleDateString('de-DE', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </p>
                     </div>
-                }
+                  )}
 
-                  {company.suspendedBy &&
-                <div>
+                  {company.suspendedBy && (
+                    <div>
                       <label className="text-sm font-medium text-red-700">Gesperrt von</label>
                       <p className="text-sm text-red-600">{company.suspendedBy}</p>
                     </div>
-                }
+                  )}
 
-                  {company.suspensionReason &&
-                <div>
+                  {company.suspensionReason && (
+                    <div>
                       <label className="text-sm font-medium text-red-700">Sperrgrund</label>
                       <p className="text-sm bg-red-100 p-2 rounded text-red-800">
                         {company.suspensionReason}
                       </p>
                     </div>
-                }
+                  )}
                 </div>
-              }
+              )}
 
               <div className="space-y-3">
                 <div>
@@ -1364,46 +1363,46 @@ export default function AdminCompanyDetailsPage() {
                   <textarea
                     id="suspensionNotes"
                     value={adminNotes}
-                    onChange={(e) => setAdminNotes(e.target.value)}
+                    onChange={e => setAdminNotes(e.target.value)}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#14ad9f] focus:ring-[#14ad9f] sm:text-sm"
                     rows={3}
                     placeholder={
-                    company.accountSuspended ?
-                    'Grund für Entsperrung...' :
-                    'Grund für Sperrung...'
-                    } />
-
+                      company.accountSuspended
+                        ? 'Grund für Entsperrung...'
+                        : 'Grund für Sperrung...'
+                    }
+                  />
                 </div>
 
                 <div className="flex space-x-2">
-                  {company.accountSuspended ?
-                  <Button
-                    onClick={() => handleApprovalAction('unsuspend', adminNotes)}
-                    disabled={isUpdatingApproval}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white">
-
-                      {isUpdatingApproval ?
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" /> :
-
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    }
+                  {company.accountSuspended ? (
+                    <Button
+                      onClick={() => handleApprovalAction('unsuspend', adminNotes)}
+                      disabled={isUpdatingApproval}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {isUpdatingApproval ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                      )}
                       Account entsperren
-                    </Button> :
-
-                  <Button
-                    onClick={() => handleApprovalAction('suspend', adminNotes)}
-                    disabled={isUpdatingApproval}
-                    variant="outline"
-                    className="flex-1 border-red-300 text-red-700 hover:bg-red-50">
-
-                      {isUpdatingApproval ?
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2" /> :
-
-                    <Ban className="h-4 w-4 mr-2" />
-                    }
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => handleApprovalAction('suspend', adminNotes)}
+                      disabled={isUpdatingApproval}
+                      variant="outline"
+                      className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
+                    >
+                      {isUpdatingApproval ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2" />
+                      ) : (
+                        <Ban className="h-4 w-4 mr-2" />
+                      )}
                       Account sperren
                     </Button>
-                  }
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -1423,101 +1422,101 @@ export default function AdminCompanyDetailsPage() {
                 <p>{new Date(company.createdAt).toLocaleDateString('de-DE')}</p>
               </div>
 
-              {company.onboardingCompletedAt &&
-              <div>
+              {company.onboardingCompletedAt && (
+                <div>
                   <label className="text-sm font-medium text-gray-500">
                     Onboarding abgeschlossen
                   </label>
                   <p>{new Date(company.onboardingCompletedAt).toLocaleDateString('de-DE')}</p>
                 </div>
-              }
+              )}
 
-              {company.lastLogin &&
-              <div>
+              {company.lastLogin && (
+                <div>
                   <label className="text-sm font-medium text-gray-500">Letzter Login</label>
                   <p>{new Date(company.lastLogin).toLocaleDateString('de-DE')}</p>
                 </div>
-              }
+              )}
 
-              {company.lastVerificationUpdate &&
-              <div>
+              {company.lastVerificationUpdate && (
+                <div>
                   <label className="text-sm font-medium text-gray-500">Letzte Verifizierung</label>
                   <p>{new Date(company.lastVerificationUpdate).toLocaleDateString('de-DE')}</p>
                 </div>
-              }
+              )}
 
               <Separator />
 
-              {company.onboardingCompleted !== undefined &&
-              <div className="flex items-center justify-between">
+              {company.onboardingCompleted !== undefined && (
+                <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Onboarding Status</span>
                   <Badge
-                  className={
-                  company.onboardingCompleted ?
-                  'bg-green-100 text-green-800' :
-                  'bg-yellow-100 text-yellow-800'
-                  }>
-
+                    className={
+                      company.onboardingCompleted
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }
+                  >
                     {company.onboardingCompleted ? 'Abgeschlossen' : 'Ausstehend'}
                   </Badge>
                 </div>
-              }
+              )}
 
-              {company.onboardingCompletionPercentage !== undefined &&
-              <div>
+              {company.onboardingCompletionPercentage !== undefined && (
+                <div>
                   <label className="text-sm font-medium text-gray-500">Fortschritt</label>
                   <div className="flex items-center space-x-2">
                     <div className="flex-1 bg-gray-200 rounded-full h-2">
                       <div
-                      className="bg-[#14ad9f] h-2 rounded-full"
-                      style={{ width: `${company.onboardingCompletionPercentage}%` }}>
-                    </div>
+                        className="bg-[#14ad9f] h-2 rounded-full"
+                        style={{ width: `${company.onboardingCompletionPercentage}%` }}
+                      ></div>
                     </div>
                     <span className="text-sm font-medium">
                       {company.onboardingCompletionPercentage}%
                     </span>
                   </div>
                 </div>
-              }
+              )}
 
-              {company.profileComplete !== undefined &&
-              <div className="flex items-center justify-between">
+              {company.profileComplete !== undefined && (
+                <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Profil vollständig</span>
                   <Badge
-                  className={
-                  company.profileComplete ?
-                  'bg-green-100 text-green-800' :
-                  'bg-red-100 text-red-800'
-                  }>
-
+                    className={
+                      company.profileComplete
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }
+                  >
                     {company.profileComplete ? 'Ja' : 'Nein'}
                   </Badge>
                 </div>
-              }
+              )}
 
-              {company.documentsCompleted !== undefined &&
-              <div className="flex items-center justify-between">
+              {company.documentsCompleted !== undefined && (
+                <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Dokumente vollständig</span>
                   <Badge
-                  className={
-                  company.documentsCompleted ?
-                  'bg-green-100 text-green-800' :
-                  'bg-red-100 text-red-800'
-                  }>
-
+                    className={
+                      company.documentsCompleted
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }
+                  >
                     {company.documentsCompleted ? 'Ja' : 'Nein'}
                   </Badge>
                 </div>
-              }
+              )}
 
               {(company.hasIdentityDocuments ||
-              company.hasBusinessLicense ||
-              company.hasCompanyRegister ||
-              company.identityFrontUrl ||
-              company.identityBackUrl ||
-              company.businessLicenseURL ||
-              company.companyRegister) &&
-              <>
+                company.hasBusinessLicense ||
+                company.hasCompanyRegister ||
+                company.identityFrontUrl ||
+                company.identityBackUrl ||
+                company.businessLicenseURL ||
+                company.companyRegister) && (
+                <>
                   <Separator />
                   <div className="space-y-3">
                     <label className="text-sm font-medium text-gray-500">
@@ -1532,15 +1531,15 @@ export default function AdminCompanyDetailsPage() {
                           Ausweisdokumente
                         </h4>
                         <Badge
-                        className={
-                        company.identityFrontUrl || company.identityBackUrl ?
-                        'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
-                        }>
-
-                          {company.identityFrontUrl || company.identityBackUrl ?
-                        'Hochgeladen' :
-                        'Fehlend'}
+                          className={
+                            company.identityFrontUrl || company.identityBackUrl
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }
+                        >
+                          {company.identityFrontUrl || company.identityBackUrl
+                            ? 'Hochgeladen'
+                            : 'Fehlend'}
                         </Badge>
                       </div>
                       <div className="space-y-2">
@@ -1550,39 +1549,39 @@ export default function AdminCompanyDetailsPage() {
                             <span className="text-sm text-gray-600 font-medium">
                               Ausweis Vorderseite
                             </span>
-                            {company.identityFrontUrl ?
-                          <div className="flex flex-wrap gap-2">
+                            {company.identityFrontUrl ? (
+                              <div className="flex flex-wrap gap-2">
                                 <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                              openDocument(company.identityFrontUrl!, 'Ausweis Vorderseite')
-                              }
-                              className="flex-shrink-0"
-                              title="Anzeigen">
-
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    openDocument(company.identityFrontUrl!, 'Ausweis Vorderseite')
+                                  }
+                                  className="flex-shrink-0"
+                                  title="Anzeigen"
+                                >
                                   <Eye className="h-4 w-4" />
                                 </Button>
                                 <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                              downloadDocument(
-                                company.identityFrontUrl!,
-                                'ausweis_vorderseite.jpg'
-                              )
-                              }
-                              className="flex-shrink-0"
-                              title="Download">
-
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    downloadDocument(
+                                      company.identityFrontUrl!,
+                                      'ausweis_vorderseite.jpg'
+                                    )
+                                  }
+                                  className="flex-shrink-0"
+                                  title="Download"
+                                >
                                   <Download className="h-4 w-4" />
                                 </Button>
-                              </div> :
-
-                          <Badge variant="outline" className="text-red-600 border-red-300">
+                              </div>
+                            ) : (
+                              <Badge variant="outline" className="text-red-600 border-red-300">
                                 Nicht hochgeladen
                               </Badge>
-                          }
+                            )}
                           </div>
                         </div>
 
@@ -1592,39 +1591,39 @@ export default function AdminCompanyDetailsPage() {
                             <span className="text-sm text-gray-600 font-medium">
                               Ausweis Rückseite
                             </span>
-                            {company.identityBackUrl ?
-                          <div className="flex flex-wrap gap-2">
+                            {company.identityBackUrl ? (
+                              <div className="flex flex-wrap gap-2">
                                 <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                              openDocument(company.identityBackUrl!, 'Ausweis Rückseite')
-                              }
-                              className="flex-shrink-0"
-                              title="Anzeigen">
-
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    openDocument(company.identityBackUrl!, 'Ausweis Rückseite')
+                                  }
+                                  className="flex-shrink-0"
+                                  title="Anzeigen"
+                                >
                                   <Eye className="h-4 w-4" />
                                 </Button>
                                 <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                              downloadDocument(
-                                company.identityBackUrl!,
-                                'ausweis_rueckseite.jpg'
-                              )
-                              }
-                              className="flex-shrink-0"
-                              title="Download">
-
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    downloadDocument(
+                                      company.identityBackUrl!,
+                                      'ausweis_rueckseite.jpg'
+                                    )
+                                  }
+                                  className="flex-shrink-0"
+                                  title="Download"
+                                >
                                   <Download className="h-4 w-4" />
                                 </Button>
-                              </div> :
-
-                          <Badge variant="outline" className="text-red-600 border-red-300">
+                              </div>
+                            ) : (
+                              <Badge variant="outline" className="text-red-600 border-red-300">
                                 Nicht hochgeladen
                               </Badge>
-                          }
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1638,48 +1637,48 @@ export default function AdminCompanyDetailsPage() {
                           Gewerbeschein
                         </h4>
                         <Badge
-                        className={
-                        company.businessLicenseURL ?
-                        'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
-                        }>
-
+                          className={
+                            company.businessLicenseURL
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }
+                        >
                           {company.businessLicenseURL ? 'Hochgeladen' : 'Fehlend'}
                         </Badge>
                       </div>
-                      {company.businessLicenseURL ?
-                    <div className="flex items-center justify-between bg-white p-2 rounded border">
+                      {company.businessLicenseURL ? (
+                        <div className="flex items-center justify-between bg-white p-2 rounded border">
                           <span className="text-sm text-gray-600">Gewerbeschein Dokument</span>
                           <div className="flex space-x-2">
                             <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                          openDocument(company.businessLicenseURL!, 'Gewerbeschein')
-                          }
-                          title="Anzeigen">
-
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                openDocument(company.businessLicenseURL!, 'Gewerbeschein')
+                              }
+                              title="Anzeigen"
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                          downloadDocument(company.businessLicenseURL!, 'gewerbeschein.pdf')
-                          }
-                          title="Download">
-
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                downloadDocument(company.businessLicenseURL!, 'gewerbeschein.pdf')
+                              }
+                              title="Download"
+                            >
                               <Download className="h-4 w-4" />
                             </Button>
                           </div>
-                        </div> :
-
-                    <div className="bg-white p-2 rounded border text-center">
+                        </div>
+                      ) : (
+                        <div className="bg-white p-2 rounded border text-center">
                           <span className="text-sm text-gray-500">
                             Kein Gewerbeschein hochgeladen
                           </span>
                         </div>
-                    }
+                      )}
                     </div>
 
                     {/* Handelsregister */}
@@ -1690,17 +1689,17 @@ export default function AdminCompanyDetailsPage() {
                           Handelsregister
                         </h4>
                         <Badge
-                        className={
-                        company.companyRegister ?
-                        'bg-green-100 text-green-800' :
-                        'bg-yellow-100 text-yellow-800'
-                        }>
-
+                          className={
+                            company.companyRegister
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }
+                        >
                           {company.companyRegister ? 'Eingetragen' : 'Optional'}
                         </Badge>
                       </div>
-                      {company.companyRegister ?
-                    <div className="bg-white p-2 rounded border">
+                      {company.companyRegister ? (
+                        <div className="bg-white p-2 rounded border">
                           <div className="flex items-center justify-between">
                             <div>
                               <span className="text-sm text-gray-600">Handelsregister-Nummer</span>
@@ -1710,55 +1709,55 @@ export default function AdminCompanyDetailsPage() {
                             </div>
                             {/* Prüfe ob es eine URL ist oder nur eine Nummer */}
                             {company.companyRegister.startsWith('http') ||
-                        company.companyRegister.includes('.') ?
-                        <div className="flex space-x-2">
+                            company.companyRegister.includes('.') ? (
+                              <div className="flex space-x-2">
                                 <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                            openDocument(company.companyRegister!, 'Handelsregister')
-                            }
-                            title="Anzeigen">
-
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    openDocument(company.companyRegister!, 'Handelsregister')
+                                  }
+                                  title="Anzeigen"
+                                >
                                   <Eye className="h-4 w-4" />
                                 </Button>
                                 <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                            downloadDocument(
-                              company.companyRegister!,
-                              'handelsregister.pdf'
-                            )
-                            }
-                            title="Download">
-
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    downloadDocument(
+                                      company.companyRegister!,
+                                      'handelsregister.pdf'
+                                    )
+                                  }
+                                  title="Download"
+                                >
                                   <Download className="h-4 w-4" />
                                 </Button>
-                              </div> :
-
-                        <Badge variant="outline" className="text-green-600">
+                              </div>
+                            ) : (
+                              <Badge variant="outline" className="text-green-600">
                                 Nummer registriert
                               </Badge>
-                        }
+                            )}
                           </div>
-                        </div> :
-
-                    <div className="bg-white p-2 rounded border text-center">
+                        </div>
+                      ) : (
+                        <div className="bg-white p-2 rounded border text-center">
                           <span className="text-sm text-gray-500">
                             Kein Handelsregister-Auszug hochgeladen (nur für bestimmte Rechtsformen
                             erforderlich)
                           </span>
                         </div>
-                    }
+                      )}
                     </div>
 
                     {/* Zusammenfassung */}
                     {!company.identityFrontUrl &&
-                  !company.identityBackUrl &&
-                  !company.businessLicenseURL &&
-                  !company.companyRegister &&
-                  <div className="text-center py-4 text-gray-500 bg-red-50 rounded-lg border border-red-200">
+                      !company.identityBackUrl &&
+                      !company.businessLicenseURL &&
+                      !company.companyRegister && (
+                        <div className="text-center py-4 text-gray-500 bg-red-50 rounded-lg border border-red-200">
                           <FileText className="h-8 w-8 mx-auto mb-2 text-red-400" />
                           <p className="text-sm font-medium text-red-600">
                             Keine Dokumente hochgeladen
@@ -1768,22 +1767,22 @@ export default function AdminCompanyDetailsPage() {
                             erforderlich
                           </p>
                         </div>
-                  }
+                      )}
                   </div>
                 </>
-              }
+              )}
 
               {/* Zeige Dokumenten-Sektion immer an, auch wenn keine Dokumente vorhanden */}
               {!(
-              company.hasIdentityDocuments ||
-              company.hasBusinessLicense ||
-              company.hasCompanyRegister ||
-              company.identityFrontUrl ||
-              company.identityBackUrl ||
-              company.businessLicenseURL ||
-              company.companyRegister) &&
-
-              <>
+                company.hasIdentityDocuments ||
+                company.hasBusinessLicense ||
+                company.hasCompanyRegister ||
+                company.identityFrontUrl ||
+                company.identityBackUrl ||
+                company.businessLicenseURL ||
+                company.companyRegister
+              ) && (
+                <>
                   <Separator />
                   <div className="space-y-3">
                     <label className="text-sm font-medium text-gray-500">Dokumente Status</label>
@@ -1804,24 +1803,24 @@ export default function AdminCompanyDetailsPage() {
                     </div>
                   </div>
                 </>
-              }
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
 
       {/* Document Viewer Modal */}
-      {selectedDocument &&
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      {selectedDocument && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] w-full overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="text-lg font-semibold">{selectedDocument.title}</h3>
               <div className="flex space-x-2">
                 <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(selectedDocument.url, '_blank')}>
-
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(selectedDocument.url, '_blank')}
+                >
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Neues Fenster
                 </Button>
@@ -1833,22 +1832,22 @@ export default function AdminCompanyDetailsPage() {
             <div className="overflow-auto max-h-[calc(90vh-80px)]">
               {/* Verbesserte Dokument-Erkennung */}
               {selectedDocument.url.toLowerCase().includes('.pdf') ||
-            selectedDocument.url.includes('application/pdf') ||
-            selectedDocument.title.toLowerCase().includes('handelsregister') ||
-            selectedDocument.title.toLowerCase().includes('gewerbeschein') ||
-            selectedDocument.url.includes('firebasestorage') ?
-            <>
+              selectedDocument.url.includes('application/pdf') ||
+              selectedDocument.title.toLowerCase().includes('handelsregister') ||
+              selectedDocument.title.toLowerCase().includes('gewerbeschein') ||
+              selectedDocument.url.includes('firebasestorage') ? (
+                <>
                   {/* Für Firebase Storage URLs oder PDFs - versuche iframe zuerst */}
                   <iframe
-                src={selectedDocument.url}
-                className="w-full h-[600px]"
-                title={selectedDocument.title}
-                onError={(e) => {
-                  console.error('❌ Iframe-Fehler für:', selectedDocument.url);
-                  // Fallback: Link zum direkten Öffnen
-                  const container = e.currentTarget.parentElement;
-                  if (container) {
-                    container.innerHTML = `
+                    src={selectedDocument.url}
+                    className="w-full h-[600px]"
+                    title={selectedDocument.title}
+                    onError={e => {
+                      console.error('❌ Iframe-Fehler für:', selectedDocument.url);
+                      // Fallback: Link zum direkten Öffnen
+                      const container = e.currentTarget.parentElement;
+                      if (container) {
+                        container.innerHTML = `
                           <div class="p-8 text-center">
                             <div class="mb-4">
                               <svg class="h-16 w-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1866,23 +1865,23 @@ export default function AdminCompanyDetailsPage() {
                             </a>
                           </div>
                         `;
-                  }
-                }} />
-
-                </> :
-
-            <div className="p-4 flex justify-center">
+                      }
+                    }}
+                  />
+                </>
+              ) : (
+                <div className="p-4 flex justify-center">
                   <img
-                src={selectedDocument.url}
-                alt={selectedDocument.title}
-                className="max-w-full max-h-full object-contain"
-                style={{ maxHeight: 'calc(90vh - 120px)' }}
-                onError={(e) => {
-                  console.error('❌ Bild-Fehler für:', selectedDocument.url);
-                  const img = e.currentTarget;
-                  const container = img.parentElement;
-                  if (container) {
-                    container.innerHTML = `
+                    src={selectedDocument.url}
+                    alt={selectedDocument.title}
+                    className="max-w-full max-h-full object-contain"
+                    style={{ maxHeight: 'calc(90vh - 120px)' }}
+                    onError={e => {
+                      console.error('❌ Bild-Fehler für:', selectedDocument.url);
+                      const img = e.currentTarget;
+                      const container = img.parentElement;
+                      if (container) {
+                        container.innerHTML = `
                           <div class="text-center py-8">
                             <div class="mb-4">
                               <svg class="h-16 w-16 mx-auto text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1900,15 +1899,15 @@ export default function AdminCompanyDetailsPage() {
                             </a>
                           </div>
                         `;
-                  }
-                }} />
-
+                      }
+                    }}
+                  />
                 </div>
-            }
+              )}
             </div>
           </div>
         </div>
-      }
-    </div>);
-
+      )}
+    </div>
+  );
 }

@@ -9,7 +9,6 @@ export class TimeTrackingMigration {
    */
   static async fixTimeTrackingForOrder(orderId: string): Promise<void> {
     try {
-
       const orderRef = doc(db, 'auftraege', orderId);
       const orderDoc = await getDoc(orderRef);
 
@@ -20,7 +19,6 @@ export class TimeTrackingMigration {
       const orderData = orderDoc.data();
 
       if (!orderData.timeTracking) {
-
         return;
       }
 
@@ -38,9 +36,7 @@ export class TimeTrackingMigration {
           Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
         const hoursPerDay = parseFloat(String(orderData.jobDurationString || 8));
         correctOriginalPlannedHours = totalDays * hoursPerDay;
-
       } else {
-
       }
 
       // 2. Kategorisiere Time Entries neu und korrigiere billableAmount mit Firmen-Stundensatz
@@ -60,7 +56,6 @@ export class TimeTrackingMigration {
           if (companyDoc.exists()) {
             const companyData = companyDoc.data();
             correctHourlyRateInEuros = companyData.hourlyRate || 41;
-
           } else {
             // 2. Fallback: Suche in users Collection
             const userRef = doc(db, 'users', providerId);
@@ -69,14 +64,10 @@ export class TimeTrackingMigration {
             if (userDoc.exists()) {
               const userData = userDoc.data();
               correctHourlyRateInEuros = userData.hourlyRate || 41;
-
             } else {
-
             }
           }
-        } catch (error) {
-
-        }
+        } catch (error) {}
       }
 
       const correctHourlyRateInCents = Math.round(correctHourlyRateInEuros * 100);
@@ -142,7 +133,6 @@ export class TimeTrackingMigration {
       );
 
       if (additionalEntries.length > 0) {
-
         // Importiere TimeTracker dynamisch um zirkuläre Abhängigkeiten zu vermeiden
         const { TimeTracker } = await import('@/lib/timeTracker');
 
@@ -152,12 +142,9 @@ export class TimeTrackingMigration {
           additionalEntryIds,
           `Automatische Einreichung nach TimeTracking-Korrektur: ${additionalHours}h zusätzliche Arbeit über die geplanten ${correctOriginalPlannedHours}h hinaus.`
         );
-
       } else {
-
       }
     } catch (error) {
-
       throw error;
     }
   }
@@ -197,12 +184,10 @@ export class TimeTrackingMigration {
       const needsMigration = timeTracking.originalPlannedHours !== correctOriginalPlannedHours;
 
       if (needsMigration) {
-
       }
 
       return needsMigration;
     } catch (error) {
-
       return false;
     }
   }

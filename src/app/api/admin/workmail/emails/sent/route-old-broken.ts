@@ -5,7 +5,6 @@ import Imap from 'imap';
 
 // Quoted-Printable Decoder (gleiche Logik wie in der Haupt-API)
 function decodeQuotedPrintable(encoded: string): string {
-
   if (!encoded || typeof encoded !== 'string') {
     return encoded || '';
   }
@@ -134,14 +133,12 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
       const emails: any[] = [];
 
       imap.once('ready', () => {
-
         // Versuche verschiedene Sent-Folder Namen
         const sentFolders = ['Sent', 'SENT', 'Sent Items', 'Gesendet', 'Sent Messages'];
 
         let folderIndex = 0;
         const tryFolder = () => {
           if (folderIndex >= sentFolders.length) {
-
             imap.end();
             return reject(new Error('Sent folder not found'));
           }
@@ -150,14 +147,12 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
 
           imap.openBox(currentFolder, true, (err: any, box: any) => {
             if (err) {
-
               folderIndex++;
               tryFolder();
               return;
             }
 
             if (box.messages.total === 0) {
-
               imap.end();
               return resolve({
                 emails: [],
@@ -173,7 +168,6 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
             const total = box.messages.total;
 
             if (total === 0) {
-
               imap.end();
               resolve({
                 emails: [],
@@ -202,7 +196,6 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
             const messageData = new Map();
 
             fetch.on('message', (msg: any, seqno: number) => {
-
               // Initialize message data
               if (!messageData.has(seqno)) {
                 messageData.set(seqno, {
@@ -230,7 +223,6 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
                 email.flags = attrs.flags || [];
                 email.uid = attrs.uid;
                 email.isRead = email.flags.includes('\\Seen');
-
               });
 
               // Handle message body parts
@@ -245,7 +237,6 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
                   if (info.which === 'TEXT') {
                     email.body = decodeQuotedPrintable(buffer.trim());
                     email.hasBody = true;
-
                   } else if (info.which.includes('HEADER')) {
                     try {
                       const header = Imap.parseHeader(buffer);
@@ -262,9 +253,7 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
                       }
 
                       email.hasHeader = true;
-
                     } catch (parseError) {
-
                       email.hasHeader = true; // Mark as processed even if failed
                     }
                   }
@@ -287,7 +276,6 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
 
                       // Check if all messages are processed
                       if (processedMessages >= expectedMessages) {
-
                         // Sort by date (newest first)
                         emails.sort(
                           (a, b) =>
@@ -305,11 +293,9 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
                         });
                       }
                     } else {
-
                       processedMessages++;
 
                       if (processedMessages >= expectedMessages) {
-
                         emails.sort(
                           (a, b) =>
                             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -332,17 +318,14 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
             });
 
             fetch.once('error', (err: any) => {
-
               imap.end();
               reject(err);
             });
 
             fetch.once('end', () => {
-
               // Set timeout in case some messages don't complete
               setTimeout(() => {
                 if (processedMessages < expectedMessages) {
-
                   imap.end();
 
                   emails.sort(
@@ -367,13 +350,11 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
       });
 
       imap.once('error', (err: any) => {
-
         reject(err);
       });
 
       imap.connect();
     } catch (error) {
-
       reject(error);
     }
   });
@@ -382,7 +363,6 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
 // GET - Gesendete E-Mails abrufen
 export async function GET(request: NextRequest) {
   try {
-
     // URL-Parameter
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
@@ -393,7 +373,6 @@ export async function GET(request: NextRequest) {
     const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
 
     if (!tokenCookie) {
-
       return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
     }
 
@@ -406,7 +385,6 @@ export async function GET(request: NextRequest) {
       // Find admin credentials
       const adminConfig = WORKMAIL_ADMIN_MAPPING[adminEmail];
       if (!adminConfig) {
-
         return NextResponse.json(
           { error: 'Admin not configured for WorkMail access' },
           { status: 403 }
@@ -414,7 +392,6 @@ export async function GET(request: NextRequest) {
       }
 
       if (!adminConfig.password) {
-
         return NextResponse.json(
           { error: 'IMAP credentials not configured for this admin' },
           { status: 403 }
@@ -435,11 +412,9 @@ export async function GET(request: NextRequest) {
         },
       });
     } catch (jwtError) {
-
       return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Internal server error',

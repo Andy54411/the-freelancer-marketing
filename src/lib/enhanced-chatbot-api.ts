@@ -48,7 +48,6 @@ export async function sendChatMessage(
       throw new Error(data.error || 'Fehler beim Senden der Nachricht');
     }
   } catch (error) {
-
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -89,7 +88,6 @@ export async function takeoverSession(
       throw new Error(data.error || 'Fehler bei der Übernahme');
     }
   } catch (error) {
-
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -126,7 +124,6 @@ export async function getSessionStatus(sessionId: string) {
       throw new Error(data.error || 'Fehler beim Abrufen des Status');
     }
   } catch (error) {
-
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -158,7 +155,6 @@ export async function getSupportDashboardData() {
       throw new Error(data.error || 'Fehler beim Laden der Dashboard-Daten');
     }
   } catch (error) {
-
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',

@@ -19,13 +19,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ message: 'Webhook verarbeitet' });
-
   } catch (error) {
-
-    return NextResponse.json(
-      { error: 'Webhook-Verarbeitung fehlgeschlagen' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Webhook-Verarbeitung fehlgeschlagen' }, { status: 500 });
   }
 }
 
@@ -44,13 +39,8 @@ async function handleIncomingEmail(emailData: any) {
       // Neues Ticket aus E-Mail erstellen
       return await createTicketFromEmail(from, subject, text || html);
     }
-
   } catch (error) {
-
-    return NextResponse.json(
-      { error: 'E-Mail-Verarbeitung fehlgeschlagen' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'E-Mail-Verarbeitung fehlgeschlagen' }, { status: 500 });
   }
 }
 
@@ -72,7 +62,7 @@ async function addCommentToTicket(ticketId: string, from: string, content: strin
       createdAt: new Date(),
       updatedAt: new Date(),
       tags: [],
-      comments: []
+      comments: [],
     };
 
     // Neuen Kommentar hinzufügen
@@ -84,7 +74,7 @@ async function addCommentToTicket(ticketId: string, from: string, content: strin
       userRole: 'user' as const,
       content: content,
       createdAt: new Date(),
-      isInternal: false
+      isInternal: false,
     };
 
     // TODO: Kommentar in Datenbank speichern
@@ -95,18 +85,15 @@ async function addCommentToTicket(ticketId: string, from: string, content: strin
     return NextResponse.json({
       message: 'Kommentar hinzugefügt',
       ticketId,
-      commentId: newComment.id
+      commentId: newComment.id,
     });
-
   } catch (error) {
-
     throw error;
   }
 }
 
 async function createTicketFromEmail(from: string, subject: string, content: string) {
   try {
-
     // Kategorie basierend auf Subject bestimmen
     const category = determineCategory(subject, content);
 
@@ -125,7 +112,7 @@ async function createTicketFromEmail(from: string, subject: string, content: str
       createdAt: new Date(),
       updatedAt: new Date(),
       tags: ['email-created'],
-      comments: []
+      comments: [],
     };
 
     // TODO: Ticket in Datenbank speichern
@@ -135,11 +122,9 @@ async function createTicketFromEmail(from: string, subject: string, content: str
 
     return NextResponse.json({
       message: 'Ticket aus E-Mail erstellt',
-      ticketId: newTicket.id
+      ticketId: newTicket.id,
     });
-
   } catch (error) {
-
     throw error;
   }
 }
@@ -189,16 +174,12 @@ async function sendTicketConfirmationEmail(to: string, ticket: Ticket) {
       },
       body: JSON.stringify({
         type: 'created',
-        ticket
-      })
+        ticket,
+      }),
     });
 
     if (response.ok) {
-
     } else {
-
     }
-  } catch (error) {
-
-  }
+  } catch (error) {}
 }

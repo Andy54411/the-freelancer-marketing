@@ -661,7 +661,6 @@ export class PersonalService {
    */
   static async getEmployees(companyId: string): Promise<Employee[]> {
     try {
-
       const employeesQuery = query(
         collection(db, 'companies', companyId, 'employees'),
         orderBy('lastName', 'asc')
@@ -682,7 +681,6 @@ export class PersonalService {
 
       return employees;
     } catch (error) {
-
       throw error;
     }
   }
@@ -694,7 +692,6 @@ export class PersonalService {
     employee: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-
       // Berechne automatisch Zusatzdaten
       const calculatedData = this.calculateEmployeeCosts(employee);
 
@@ -714,7 +711,6 @@ export class PersonalService {
 
       return docRef.id;
     } catch (error) {
-
       throw error;
     }
   }
@@ -756,7 +752,6 @@ export class PersonalService {
 
       return newEmployee;
     } catch (error) {
-
       throw error;
     }
   }
@@ -766,12 +761,9 @@ export class PersonalService {
    */
   static async deleteEmployee(companyId: string, employeeId: string): Promise<void> {
     try {
-
       const employeeRef = doc(db, 'companies', companyId, 'employees', employeeId);
       await deleteDoc(employeeRef);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -785,7 +777,6 @@ export class PersonalService {
     updates: Partial<Employee>
   ): Promise<void> {
     try {
-
       // Berechne Kosten neu wenn relevante Felder geändert wurden
       if (
         updates.grossSalary ||
@@ -803,9 +794,7 @@ export class PersonalService {
       };
 
       await updateDoc(doc(db, 'companies', companyId, 'employees', employeeId), updateData);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -815,15 +804,12 @@ export class PersonalService {
    */
   static async deactivateEmployee(companyId: string, employeeId: string): Promise<void> {
     try {
-
       await updateDoc(doc(db, 'companies', companyId, 'employees', employeeId), {
         isActive: false,
         endDate: new Date().toISOString().split('T')[0],
         updatedAt: new Date(),
       });
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -837,7 +823,6 @@ export class PersonalService {
     vacationSettings: VacationSettings
   ): Promise<void> {
     try {
-
       const updateData = {
         'vacation.settings': {
           ...vacationSettings,
@@ -847,9 +832,7 @@ export class PersonalService {
       };
 
       await updateDoc(doc(db, 'companies', companyId, 'employees', employeeId), updateData);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -863,7 +846,6 @@ export class PersonalService {
     vacationRequest: Omit<VacationRequest, 'id'>
   ): Promise<string> {
     try {
-
       const requestId = Date.now().toString();
       const newRequest: VacationRequest = {
         ...vacationRequest,
@@ -884,7 +866,6 @@ export class PersonalService {
 
       return requestId;
     } catch (error) {
-
       throw error;
     }
   }
@@ -901,7 +882,6 @@ export class PersonalService {
     reviewComment?: string
   ): Promise<void> {
     try {
-
       const employee = await this.getEmployee(companyId, employeeId);
       const requests = employee.vacation?.requests || [];
 
@@ -924,9 +904,7 @@ export class PersonalService {
       };
 
       await updateDoc(doc(db, 'companies', companyId, 'employees', employeeId), updateData);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -980,7 +958,6 @@ export class PersonalService {
    */
   static async getPersonalStats(companyId: string): Promise<PersonalStats> {
     try {
-
       const employees = await this.getEmployees(companyId);
 
       const activeEmployees = employees.filter(emp => emp.isActive);
@@ -1034,7 +1011,6 @@ export class PersonalService {
 
       return stats;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1114,7 +1090,6 @@ export class PersonalService {
 
       return csvRows.join('\n');
     } catch (error) {
-
       throw error;
     }
   }
@@ -1124,7 +1099,6 @@ export class PersonalService {
    */
   static async importEmployeesCSV(companyId: string, csvData: string): Promise<number> {
     try {
-
       const lines = csvData.trim().split('\n');
       let importedCount = 0;
 
@@ -1169,7 +1143,6 @@ export class PersonalService {
 
       return importedCount;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1181,7 +1154,6 @@ export class PersonalService {
    */
   static async getShifts(companyId: string, startDate?: Date, endDate?: Date): Promise<Shift[]> {
     try {
-
       let shiftsQuery = query(
         collection(db, 'companies', companyId, 'shifts'),
         orderBy('date', 'asc')
@@ -1211,7 +1183,6 @@ export class PersonalService {
 
       return shifts;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1221,7 +1192,6 @@ export class PersonalService {
    */
   static async createShift(shift: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
-
       const shiftData = {
         ...shift,
         createdAt: new Date(),
@@ -1235,7 +1205,6 @@ export class PersonalService {
 
       return docRef.id;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1249,16 +1218,13 @@ export class PersonalService {
     updates: Partial<Shift>
   ): Promise<void> {
     try {
-
       const updateData = {
         ...updates,
         updatedAt: new Date(),
       };
 
       await updateDoc(doc(db, 'companies', companyId, 'shifts', shiftId), updateData);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -1268,11 +1234,8 @@ export class PersonalService {
    */
   static async deleteShift(companyId: string, shiftId: string): Promise<void> {
     try {
-
       await deleteDoc(doc(db, 'companies', companyId, 'shifts', shiftId));
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -1287,7 +1250,6 @@ export class PersonalService {
     date: string
   ): Promise<boolean> {
     try {
-
       // Prüfe genehmigte Abwesenheitsanträge
       const absenceRequests = await this.getAbsenceRequests(companyId);
       const employeeAbsences = absenceRequests.filter(
@@ -1299,7 +1261,6 @@ export class PersonalService {
       );
 
       if (employeeAbsences.length > 0) {
-
         return false;
       }
 
@@ -1313,13 +1274,11 @@ export class PersonalService {
       );
 
       if (employeeShift) {
-
         return false;
       }
 
       return true;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1329,7 +1288,6 @@ export class PersonalService {
    */
   static async getAvailableEmployees(companyId: string, date: string): Promise<Employee[]> {
     try {
-
       const allEmployees = await this.getEmployees(companyId);
       const availableEmployees: Employee[] = [];
 
@@ -1341,7 +1299,6 @@ export class PersonalService {
 
       return availableEmployees;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1358,7 +1315,6 @@ export class PersonalService {
     endDate?: Date
   ): Promise<TimeEntry[]> {
     try {
-
       let timeQuery = query(
         collection(db, 'companies', companyId, 'timeEntries'),
         orderBy('date', 'desc')
@@ -1397,7 +1353,6 @@ export class PersonalService {
 
       return timeEntries;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1409,7 +1364,6 @@ export class PersonalService {
     timeEntry: Omit<TimeEntry, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-
       const entryData = {
         ...timeEntry,
         createdAt: new Date(),
@@ -1423,7 +1377,6 @@ export class PersonalService {
 
       return docRef.id;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1437,7 +1390,6 @@ export class PersonalService {
     description: string = 'Arbeitszeit'
   ): Promise<string> {
     try {
-
       // Prüfe ob bereits ein aktiver Timer läuft
       const activeTimerQuery = query(
         collection(db, 'companies', companyId, 'timeEntries'),
@@ -1467,7 +1419,6 @@ export class PersonalService {
 
       return timerId;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1477,7 +1428,6 @@ export class PersonalService {
    */
   static async stopTimer(companyId: string, employeeId: string): Promise<void> {
     try {
-
       // Finde aktiven Timer
       const activeTimerQuery = query(
         collection(db, 'companies', companyId, 'timeEntries'),
@@ -1507,9 +1457,7 @@ export class PersonalService {
         status: 'COMPLETED',
         updatedAt: new Date(),
       });
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -1523,16 +1471,13 @@ export class PersonalService {
     updates: Partial<TimeEntry>
   ): Promise<void> {
     try {
-
       const updateData = {
         ...updates,
         updatedAt: new Date(),
       };
 
       await updateDoc(doc(db, 'companies', companyId, 'timeEntries', entryId), updateData);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -1542,11 +1487,8 @@ export class PersonalService {
    */
   static async deleteTimeEntry(companyId: string, entryId: string): Promise<void> {
     try {
-
       await deleteDoc(doc(db, 'companies', companyId, 'timeEntries', entryId));
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -1561,7 +1503,6 @@ export class PersonalService {
     period?: { year: number; month: number }
   ): Promise<Payroll[]> {
     try {
-
       let payrollQuery = query(
         collection(db, 'companies', companyId, 'payrolls'),
         orderBy('period.year', 'desc'),
@@ -1592,7 +1533,6 @@ export class PersonalService {
 
       return payrolls;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1606,7 +1546,6 @@ export class PersonalService {
     period: { year: number; month: number }
   ): Promise<string> {
     try {
-
       // Lade Mitarbeiterdaten
       const employees = await this.getEmployees(companyId);
       const employee = employees.find(emp => emp.id === employeeId);
@@ -1670,7 +1609,6 @@ export class PersonalService {
 
       return docRef.id;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1684,7 +1622,6 @@ export class PersonalService {
     status: 'DRAFT' | 'CALCULATED' | 'APPROVED' | 'SENT' | 'PAID'
   ): Promise<void> {
     try {
-
       const updateData: any = {
         status,
         updatedAt: new Date(),
@@ -1695,9 +1632,7 @@ export class PersonalService {
       }
 
       await updateDoc(doc(db, 'companies', companyId, 'payrolls', payrollId), updateData);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -1709,7 +1644,6 @@ export class PersonalService {
    */
   static async getAbsenceRequests(companyId: string): Promise<AbsenceRequest[]> {
     try {
-
       const requestsQuery = query(
         collection(db, 'companies', companyId, 'absenceRequests'),
         orderBy('requestedAt', 'desc')
@@ -1728,7 +1662,6 @@ export class PersonalService {
 
       return requests;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1738,7 +1671,6 @@ export class PersonalService {
    */
   static async createAbsenceRequest(request: Omit<AbsenceRequest, 'id'>): Promise<string> {
     try {
-
       const docRef = await addDoc(
         collection(db, 'companies', request.companyId, 'absenceRequests'),
         request
@@ -1751,7 +1683,6 @@ export class PersonalService {
 
       return requestId;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1764,7 +1695,6 @@ export class PersonalService {
     requestId: string
   ): Promise<void> {
     try {
-
       const startDate = new Date(request.startDate);
       const endDate = new Date(request.endDate);
 
@@ -1817,9 +1747,7 @@ export class PersonalService {
           absenceRequestId: requestId,
         });
       }
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -1847,7 +1775,6 @@ export class PersonalService {
     newStatus: 'APPROVED' | 'REJECTED'
   ): Promise<void> {
     try {
-
       // Lade alle Schichten, die zu diesem Abwesenheitsantrag gehören
       const shiftsQuery = query(
         collection(db, 'companies', companyId, 'shifts'),
@@ -1872,9 +1799,7 @@ export class PersonalService {
           await deleteDoc(shiftDoc.ref);
         }
       }
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -1890,7 +1815,6 @@ export class PersonalService {
     notes?: string
   ): Promise<void> {
     try {
-
       const updateData = {
         status,
         approvedBy,
@@ -1902,9 +1826,7 @@ export class PersonalService {
 
       // Aktualisiere entsprechende Dienstplan-Einträge
       await this.updateAbsenceShifts(companyId, requestId, status);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -1929,9 +1851,7 @@ export class PersonalService {
       };
 
       await updateDoc(doc(db, 'companies', companyId, 'absenceRequests', requestId), updateData);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -1992,7 +1912,6 @@ export class PersonalService {
 
       return csvRows.join('\n');
     } catch (error) {
-
       throw error;
     }
   }
@@ -2047,7 +1966,6 @@ export class PersonalService {
 
       return csvRows.join('\n');
     } catch (error) {
-
       throw error;
     }
   }
@@ -2096,7 +2014,6 @@ export class PersonalService {
 
       return csvRows.join('\n');
     } catch (error) {
-
       throw error;
     }
   }
@@ -2113,7 +2030,6 @@ export class PersonalService {
 
       return employee;
     } catch (error) {
-
       throw error;
     }
   }
@@ -2124,7 +2040,6 @@ export class PersonalService {
     feedback: Omit<EmployeeFeedback, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-
       const feedbackData: EmployeeFeedback = {
         ...feedback,
         companyId,
@@ -2139,7 +2054,6 @@ export class PersonalService {
 
       return docRef.id;
     } catch (error) {
-
       throw error;
     }
   }
@@ -2150,7 +2064,6 @@ export class PersonalService {
     employeeId: string
   ): Promise<EmployeeFeedback[]> {
     try {
-
       const feedbackRef = collection(db, `companies/${companyId}/employee_feedback`);
       const q = query(feedbackRef, where('employeeId', '==', employeeId), orderBy('date', 'desc'));
 
@@ -2166,7 +2079,6 @@ export class PersonalService {
 
       return feedback;
     } catch (error) {
-
       throw error;
     }
   }
@@ -2178,15 +2090,12 @@ export class PersonalService {
     updates: Partial<EmployeeFeedback>
   ): Promise<void> {
     try {
-
       const feedbackDoc = doc(db, `companies/${companyId}/employee_feedback`, feedbackId);
       await updateDoc(feedbackDoc, {
         ...updates,
         updatedAt: new Date(),
       });
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -2194,12 +2103,9 @@ export class PersonalService {
   // Feedback löschen
   static async deleteFeedback(companyId: string, feedbackId: string): Promise<void> {
     try {
-
       const feedbackDoc = doc(db, `companies/${companyId}/employee_feedback`, feedbackId);
       await deleteDoc(feedbackDoc);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -2212,7 +2118,6 @@ export class PersonalService {
     document: Omit<EmployeeDocument, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-
       const documentsRef = collection(db, `companies/${companyId}/employee_documents`);
       const docRef = await addDoc(documentsRef, {
         ...document,
@@ -2222,7 +2127,6 @@ export class PersonalService {
 
       return docRef.id;
     } catch (error) {
-
       throw error;
     }
   }
@@ -2233,7 +2137,6 @@ export class PersonalService {
     employeeId: string
   ): Promise<EmployeeDocument[]> {
     try {
-
       const documentsRef = collection(db, `companies/${companyId}/employee_documents`);
       const q = query(
         documentsRef,
@@ -2253,7 +2156,6 @@ export class PersonalService {
 
       return documents;
     } catch (error) {
-
       throw error;
     }
   }
@@ -2261,12 +2163,9 @@ export class PersonalService {
   // Dokument löschen
   static async deleteEmployeeDocument(companyId: string, documentId: string): Promise<void> {
     try {
-
       const documentDoc = doc(db, `companies/${companyId}/employee_documents`, documentId);
       await deleteDoc(documentDoc);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -2279,7 +2178,6 @@ export class PersonalService {
     leave: Omit<EmployeeLeave, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-
       const leavesRef = collection(db, `companies/${companyId}/employee_leaves`);
       const leaveRef = await addDoc(leavesRef, {
         ...leave,
@@ -2289,7 +2187,6 @@ export class PersonalService {
 
       return leaveRef.id;
     } catch (error) {
-
       throw error;
     }
   }
@@ -2297,7 +2194,6 @@ export class PersonalService {
   // Urlaub/Abwesenheiten für einen Mitarbeiter abrufen
   static async getEmployeeLeaves(companyId: string, employeeId: string): Promise<EmployeeLeave[]> {
     try {
-
       const leavesRef = collection(db, `companies/${companyId}/employee_leaves`);
       const q = query(
         leavesRef,
@@ -2317,7 +2213,6 @@ export class PersonalService {
 
       return leaves;
     } catch (error) {
-
       throw error;
     }
   }
@@ -2330,7 +2225,6 @@ export class PersonalService {
     approvedBy?: string
   ): Promise<void> {
     try {
-
       const leaveDoc = doc(db, `companies/${companyId}/employee_leaves`, leaveId);
       await updateDoc(leaveDoc, {
         status,
@@ -2338,9 +2232,7 @@ export class PersonalService {
         approvalDate: status === 'APPROVED' ? new Date().toISOString() : null,
         updatedAt: new Date(),
       });
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -2353,7 +2245,6 @@ export class PersonalService {
     timeEntry: Omit<TimeTracking, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-
       const timeRef = collection(db, `companies/${companyId}/time_tracking`);
       const entryRef = await addDoc(timeRef, {
         ...timeEntry,
@@ -2363,7 +2254,6 @@ export class PersonalService {
 
       return entryRef.id;
     } catch (error) {
-
       throw error;
     }
   }
@@ -2376,7 +2266,6 @@ export class PersonalService {
     endDate?: string
   ): Promise<TimeTracking[]> {
     try {
-
       const timeRef = collection(db, `companies/${companyId}/time_tracking`);
       const q = query(timeRef, where('employeeId', '==', employeeId), orderBy('date', 'desc'));
 
@@ -2403,7 +2292,6 @@ export class PersonalService {
 
       return timeEntries;
     } catch (error) {
-
       throw error;
     }
   }
@@ -2411,11 +2299,8 @@ export class PersonalService {
   // Zeiterfassung löschen
   static async deleteTimeTracking(companyId: string, timeTrackingId: string): Promise<void> {
     try {
-
       await deleteDoc(doc(db, `companies/${companyId}/time_tracking`, timeTrackingId));
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -2428,7 +2313,6 @@ export class PersonalService {
     review: Omit<PerformanceReview, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-
       const reviewsRef = collection(db, `companies/${companyId}/performance_reviews`);
       const reviewRef = await addDoc(reviewsRef, {
         ...review,
@@ -2438,7 +2322,6 @@ export class PersonalService {
 
       return reviewRef.id;
     } catch (error) {
-
       throw error;
     }
   }
@@ -2449,7 +2332,6 @@ export class PersonalService {
     employeeId: string
   ): Promise<PerformanceReview[]> {
     try {
-
       const reviewsRef = collection(db, `companies/${companyId}/performance_reviews`);
       const q = query(
         reviewsRef,
@@ -2469,7 +2351,6 @@ export class PersonalService {
 
       return reviews;
     } catch (error) {
-
       throw error;
     }
   }
@@ -2482,7 +2363,6 @@ export class PersonalService {
     action: Omit<DisciplinaryAction, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-
       const actionsRef = collection(db, `companies/${companyId}/disciplinary_actions`);
       const actionRef = await addDoc(actionsRef, {
         ...action,
@@ -2492,7 +2372,6 @@ export class PersonalService {
 
       return actionRef.id;
     } catch (error) {
-
       throw error;
     }
   }
@@ -2503,7 +2382,6 @@ export class PersonalService {
     employeeId: string
   ): Promise<DisciplinaryAction[]> {
     try {
-
       const actionsRef = collection(db, `companies/${companyId}/disciplinary_actions`);
       const q = query(actionsRef, where('employeeId', '==', employeeId), orderBy('date', 'desc'));
 
@@ -2519,7 +2397,6 @@ export class PersonalService {
 
       return actions;
     } catch (error) {
-
       throw error;
     }
   }
@@ -2535,7 +2412,6 @@ export class PersonalService {
     onError?: (error: Error) => void
   ): () => void {
     try {
-
       const q = query(
         collection(db, 'companies', companyId, 'employees'),
         orderBy('lastName', 'asc')
@@ -2556,14 +2432,12 @@ export class PersonalService {
           onUpdate(employees);
         },
         error => {
-
           onError?.(error as Error);
         }
       );
 
       return unsubscribe;
     } catch (error) {
-
       onError?.(error as Error);
       return () => {};
     }
@@ -2578,7 +2452,6 @@ export class PersonalService {
     onError?: (error: Error) => void
   ): () => void {
     try {
-
       // Lade Schichten für aktuellen und nächsten Monat
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -2610,14 +2483,12 @@ export class PersonalService {
           onUpdate(shifts);
         },
         error => {
-
           onError?.(error as Error);
         }
       );
 
       return unsubscribe;
     } catch (error) {
-
       onError?.(error as Error);
       return () => {};
     }
@@ -2632,7 +2503,6 @@ export class PersonalService {
     onError?: (error: Error) => void
   ): () => void {
     try {
-
       const q = query(
         collection(db, 'companies', companyId, 'absenceRequests'),
         orderBy('startDate', 'desc')
@@ -2653,14 +2523,12 @@ export class PersonalService {
           onUpdate(requests);
         },
         error => {
-
           onError?.(error as Error);
         }
       );
 
       return unsubscribe;
     } catch (error) {
-
       onError?.(error as Error);
       return () => {};
     }

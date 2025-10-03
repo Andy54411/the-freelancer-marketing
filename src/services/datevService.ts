@@ -102,13 +102,9 @@ export class DatevService {
 
         if (auth.currentUser) {
           authToken = await auth.currentUser.getIdToken();
-
         } else {
-
         }
-      } catch (authError) {
-
-      }
+      } catch (authError) {}
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -119,9 +115,7 @@ export class DatevService {
       // Add Authorization header if we have an auth token
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
-
       } else {
-
       }
 
       const response = await fetch(`/api/datev${endpoint}`, {
@@ -174,7 +168,6 @@ export class DatevService {
       return JSON.parse(responseText);
     } catch (error) {
       if (error instanceof Error) {
-
         throw error;
       }
 
@@ -202,7 +195,6 @@ export class DatevService {
 
       return accounts;
     } catch (error) {
-
       throw error;
     }
   }
@@ -220,7 +212,6 @@ export class DatevService {
 
       return [];
     } catch (error) {
-
       throw error;
     }
   }
@@ -237,7 +228,6 @@ export class DatevService {
 
       throw new Error('createTransaction not yet implemented');
     } catch (error) {
-
       throw error;
     }
   }
@@ -255,7 +245,6 @@ export class DatevService {
 
       throw new Error('uploadDocument not yet implemented');
     } catch (error) {
-
       throw error;
     }
   }
@@ -269,7 +258,6 @@ export class DatevService {
 
       return [];
     } catch (error) {
-
       throw error;
     }
   }
@@ -289,7 +277,6 @@ export class DatevService {
 
       throw new Error('createExportJob not yet implemented');
     } catch (error) {
-
       throw error;
     }
   }
@@ -303,7 +290,6 @@ export class DatevService {
 
       throw new Error('getExportJob not yet implemented');
     } catch (error) {
-
       throw error;
     }
   }
@@ -329,7 +315,6 @@ export class DatevService {
 
       throw new Error('importInvoiceToDatev requires transaction creation');
     } catch (error) {
-
       throw error;
     }
   }
@@ -352,7 +337,6 @@ export class DatevService {
 
       throw new Error('syncPaymentToDatev requires transaction creation');
     } catch (error) {
-
       throw error;
     }
   }

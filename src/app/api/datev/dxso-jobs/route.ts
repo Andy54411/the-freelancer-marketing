@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-
       return NextResponse.json(
         {
           error: 'no_tokens',
@@ -41,7 +40,6 @@ export async function GET(request: NextRequest) {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
     } catch (parseError) {
-
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -53,7 +51,6 @@ export async function GET(request: NextRequest) {
     const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
 
     if (now >= expiresAt) {
-
       return NextResponse.json(
         {
           error: 'token_expired',
@@ -100,7 +97,6 @@ export async function GET(request: NextRequest) {
               errorDescription.includes('Token malformed') ||
               errorDescription.includes('invalid_token')))
         ) {
-
           // Clear the invalid token cookie
           const response = NextResponse.json(
             {
@@ -144,7 +140,6 @@ export async function GET(request: NextRequest) {
       timestamp: Date.now(),
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'internal_server_error',
@@ -184,7 +179,6 @@ export async function POST(request: NextRequest) {
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-
       return NextResponse.json(
         {
           error: 'no_tokens',
@@ -200,7 +194,6 @@ export async function POST(request: NextRequest) {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
     } catch (parseError) {
-
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -212,7 +205,6 @@ export async function POST(request: NextRequest) {
     const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
 
     if (now >= expiresAt) {
-
       return NextResponse.json(
         {
           error: 'token_expired',
@@ -256,7 +248,6 @@ export async function POST(request: NextRequest) {
       timestamp: Date.now(),
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'internal_server_error',

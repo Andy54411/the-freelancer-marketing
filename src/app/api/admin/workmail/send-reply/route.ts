@@ -33,7 +33,6 @@ export async function POST(request: NextRequest) {
     try {
       verify(token, JWT_SECRET);
     } catch (error) {
-
       return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 });
     }
 
@@ -78,7 +77,6 @@ export async function POST(request: NextRequest) {
       message: 'E-Mail erfolgreich gesendet',
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Failed to send email reply',

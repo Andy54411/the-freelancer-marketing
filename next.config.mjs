@@ -16,7 +16,7 @@ const nextConfig = {
       '@tabler/icons-react',
       '@radix-ui/react-dialog',
       '@radix-ui/react-dropdown-menu',
-      'react-hook-form'
+      'react-hook-form',
     ],
     cpus: Math.max(1, os.cpus().length - 1),
   },
@@ -56,7 +56,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'storage.googleapis.com', 
+        hostname: 'storage.googleapis.com',
         port: '',
         pathname: '/**',
       },
@@ -103,14 +103,15 @@ const nextConfig = {
       {
         source: '/sitemap.xml',
         headers: [
-          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=600, stale-while-revalidate=86400' },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, s-maxage=600, stale-while-revalidate=86400',
+          },
         ],
       },
       {
         source: '/robots.txt',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=3600' },
-        ],
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=0, s-maxage=3600' }],
       },
       {
         source: '/(.*)',
@@ -129,13 +130,13 @@ const nextConfig = {
               "worker-src 'self' blob:;",
               "object-src 'none';",
               "base-uri 'self';",
-              "form-action 'self'"
-            ].join(' ')
+              "form-action 'self'",
+            ].join(' '),
           },
         ],
       },
-    ]
+    ];
   },
-}
+};
 
-export default nextConfig
+export default nextConfig;

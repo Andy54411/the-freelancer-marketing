@@ -64,7 +64,6 @@ export const useOverdueInvoices = (companyId: string) => {
 
         setOverdueInvoices(overdue);
       } catch (err: any) {
-
         setError(err.message || 'Fehler beim Laden der überfälligen Rechnungen');
       } finally {
         setLoading(false);

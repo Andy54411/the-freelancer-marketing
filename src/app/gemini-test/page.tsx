@@ -19,7 +19,6 @@ export default function GeminiTestPage() {
       const data = await response.json();
       setBlogContent(data);
     } catch (error) {
-
     } finally {
       setLoading(false);
     }
@@ -32,7 +31,6 @@ export default function GeminiTestPage() {
       const data = await response.json();
       setSyncData(data);
     } catch (error) {
-
     } finally {
       setLoading(false);
     }
@@ -67,19 +65,21 @@ export default function GeminiTestPage() {
             <nav className="flex space-x-8 px-6">
               <button
                 onClick={() => setActiveTab('content')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'content'
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'content'
                     ? 'border-[#14ad9f] text-[#14ad9f]'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
+                }`}
               >
                 Blog Content API
               </button>
               <button
                 onClick={() => setActiveTab('sync')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'sync'
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'sync'
                     ? 'border-[#14ad9f] text-[#14ad9f]'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
+                }`}
               >
                 Sync Blog API
               </button>
@@ -218,10 +218,11 @@ export default function GeminiTestPage() {
                               <div key={url} className="flex items-center justify-between">
                                 <span className="truncate">{url}</span>
                                 <span
-                                  className={`px-2 py-1 rounded text-xs ${result.status === 'success'
+                                  className={`px-2 py-1 rounded text-xs ${
+                                    result.status === 'success'
                                       ? 'bg-green-100 text-green-800'
                                       : 'bg-red-100 text-red-800'
-                                    }`}
+                                  }`}
                                 >
                                   {result.status}
                                 </span>

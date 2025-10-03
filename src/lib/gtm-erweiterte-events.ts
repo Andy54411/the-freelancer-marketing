@@ -3,7 +3,11 @@
 
 declare global {
   interface Window {
-    gtag: (command: "consent" | "config" | "event" | "js", targetId: string | Date, config?: any) => void;
+    gtag: (
+      command: 'consent' | 'config' | 'event' | 'js',
+      targetId: string | Date,
+      config?: any
+    ) => void;
     dataLayer: any[];
   }
 }
@@ -17,7 +21,15 @@ export interface UserRegistrationData {
 }
 
 export interface OrderCreationData {
-  category: 'reinigung' | 'garten_landschaft' | 'handwerk' | 'transport_umzug' | 'it_technik' | 'beratung_coaching' | 'gesundheit_wellness' | 'sonstiges';
+  category:
+    | 'reinigung'
+    | 'garten_landschaft'
+    | 'handwerk'
+    | 'transport_umzug'
+    | 'it_technik'
+    | 'beratung_coaching'
+    | 'gesundheit_wellness'
+    | 'sonstiges';
   subcategory?: string;
   orderId: string;
   userId: string;
@@ -37,7 +49,7 @@ export const trackUserRegistration = (data: UserRegistrationData) => {
       user_id: data.userId,
       registration_method: data.registrationMethod || 'email',
       timestamp: data.timestamp,
-      email_hash: data.email ? btoa(data.email) : undefined // Gehashed für Datenschutz
+      email_hash: data.email ? btoa(data.email) : undefined, // Gehashed für Datenschutz
     });
   }
 
@@ -47,10 +59,9 @@ export const trackUserRegistration = (data: UserRegistrationData) => {
       method: data.registrationMethod || 'email',
       custom_parameter_1: data.category,
       user_id: data.userId,
-      timestamp: data.timestamp
+      timestamp: data.timestamp,
     });
   }
-
 };
 
 // Order Creation Events
@@ -66,7 +77,7 @@ export const trackOrderCreation = (data: OrderCreationData) => {
       order_value: data.value || 0,
       currency: data.currency || 'EUR',
       timestamp: data.timestamp,
-      location: data.location || ''
+      location: data.location || '',
     });
   }
 
@@ -76,20 +87,21 @@ export const trackOrderCreation = (data: OrderCreationData) => {
       transaction_id: data.orderId,
       value: data.value || 0,
       currency: data.currency || 'EUR',
-      items: [{
-        item_id: data.orderId,
-        item_name: `${data.category} - ${data.subcategory || 'Allgemein'}`,
-        item_category: data.category,
-        item_category2: data.subcategory,
-        quantity: 1,
-        price: data.value || 0
-      }],
+      items: [
+        {
+          item_id: data.orderId,
+          item_name: `${data.category} - ${data.subcategory || 'Allgemein'}`,
+          item_category: data.category,
+          item_category2: data.subcategory,
+          quantity: 1,
+          price: data.value || 0,
+        },
+      ],
       custom_parameter_1: data.category,
       custom_parameter_2: data.subcategory,
-      user_id: data.userId
+      user_id: data.userId,
     });
   }
-
 };
 
 // Spezifische Kategorie-Events für besseres Tracking
@@ -116,7 +128,7 @@ export const trackOrderByCategory = {
     trackOrderCreation({ ...data, category: 'gesundheit_wellness' }),
 
   sonstiges: (data: Omit<OrderCreationData, 'category'>) =>
-    trackOrderCreation({ ...data, category: 'sonstiges' })
+    trackOrderCreation({ ...data, category: 'sonstiges' }),
 };
 
 // User Registration nach Kategorie
@@ -125,18 +137,22 @@ export const trackRegistrationByCategory = {
     trackUserRegistration({ ...data, category: 'kunde' }),
 
   dienstleister: (data: Omit<UserRegistrationData, 'category'>) =>
-    trackUserRegistration({ ...data, category: 'dienstleister' })
+    trackUserRegistration({ ...data, category: 'dienstleister' }),
 };
 
 // Erweiterte Analytics Events
-export const trackOrderInteraction = (action: 'view' | 'edit' | 'cancel' | 'complete', orderId: string, category: string) => {
+export const trackOrderInteraction = (
+  action: 'view' | 'edit' | 'cancel' | 'complete',
+  orderId: string,
+  category: string
+) => {
   if (typeof window !== 'undefined' && window.dataLayer) {
     window.dataLayer.push({
       event: 'order_interaction',
       order_action: action,
       order_id: orderId,
       order_category: category,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -144,35 +160,41 @@ export const trackOrderInteraction = (action: 'view' | 'edit' | 'cancel' | 'comp
     window.gtag('event', 'order_interaction', {
       action: action,
       order_id: orderId,
-      category: category
+      category: category,
     });
   }
 };
 
-export const trackUserJourney = (step: 'registration' | 'profile_complete' | 'first_order' | 'recurring_user', userId: string) => {
+export const trackUserJourney = (
+  step: 'registration' | 'profile_complete' | 'first_order' | 'recurring_user',
+  userId: string
+) => {
   if (typeof window !== 'undefined' && window.dataLayer) {
     window.dataLayer.push({
       event: 'user_journey',
       journey_step: step,
       user_id: userId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
   if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('event', 'user_journey', {
       step: step,
-      user_id: userId
+      user_id: userId,
     });
   }
 };
 
 // Performance Tracking für verschiedene Kategorien
-export const trackCategoryPerformance = (category: string, metrics: {
-  loadTime?: number;
-  interactionTime?: number;
-  conversionStep?: string;
-}) => {
+export const trackCategoryPerformance = (
+  category: string,
+  metrics: {
+    loadTime?: number;
+    interactionTime?: number;
+    conversionStep?: string;
+  }
+) => {
   if (typeof window !== 'undefined' && window.dataLayer) {
     window.dataLayer.push({
       event: 'category_performance',
@@ -180,7 +202,7 @@ export const trackCategoryPerformance = (category: string, metrics: {
       load_time: metrics.loadTime || 0,
       interaction_time: metrics.interactionTime || 0,
       conversion_step: metrics.conversionStep || '',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -189,7 +211,7 @@ export const trackCategoryPerformance = (category: string, metrics: {
       category: category,
       load_time: metrics.loadTime,
       interaction_time: metrics.interactionTime,
-      conversion_step: metrics.conversionStep
+      conversion_step: metrics.conversionStep,
     });
   }
 };
@@ -203,7 +225,6 @@ export const trackWithConsent = (trackingFunction: () => void) => {
       if (consentData.analytics) {
         trackingFunction();
       } else {
-
       }
     }
   }
@@ -216,7 +237,7 @@ export const safeTrackEvent = (eventName: string, parameters: Record<string, any
       window.dataLayer.push({
         event: eventName,
         ...parameters,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   });

@@ -32,9 +32,7 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ employeeId, companyId }) => {
     try {
       const history = await PersonalService.getEmployeeFeedback(companyId, employeeId);
       setFeedbackHistory(history);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const saveFeedback = async () => {
@@ -73,7 +71,6 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ employeeId, companyId }) => {
       // Historie neu laden
       await loadFeedbackHistory();
     } catch (error) {
-
       toast.error('Fehler beim Speichern des Feedbacks');
     } finally {
       setLoading(false);

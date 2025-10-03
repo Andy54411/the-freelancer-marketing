@@ -71,7 +71,6 @@ export async function POST(request: NextRequest) {
       scope: tokenData.scope,
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

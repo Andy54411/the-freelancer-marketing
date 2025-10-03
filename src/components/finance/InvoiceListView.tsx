@@ -5,11 +5,42 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Eye, Edit, Trash2, X, Mail, Download, MoreHorizontal, Filter, Search, Calendar, DollarSign, Tag } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Eye,
+  Edit,
+  Trash2,
+  X,
+  Mail,
+  Download,
+  MoreHorizontal,
+  Filter,
+  Search,
+  Calendar,
+  DollarSign,
+  Tag,
+} from 'lucide-react';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import StornoInvoice from './StornoInvoice';
@@ -70,18 +101,46 @@ export function InvoiceListView({
 
   const getStatusBadge = (invoice: InvoiceData) => {
     const status = invoice.status;
-    
+
     // Check if invoice is overdue
     const isOverdueStatus = isOverdue(invoice);
 
     const statusConfig = {
-      draft: { label: 'Entwurf', variant: 'secondary' as const, className: 'bg-gray-100 text-gray-800' },
-      finalized: { label: isOverdueStatus ? 'Fällig' : 'Offen', variant: isOverdueStatus ? 'destructive' as const : 'default' as const, className: isOverdueStatus ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' },
-      sent: { label: isOverdueStatus ? 'Fällig' : 'Offen', variant: isOverdueStatus ? 'destructive' as const : 'default' as const, className: isOverdueStatus ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' },
-      paid: { label: 'Bezahlt', variant: 'default' as const, className: 'bg-green-100 text-green-800' },
-      overdue: { label: 'Fällig', variant: 'destructive' as const, className: 'bg-red-100 text-red-800' },
-      cancelled: { label: 'Storno', variant: 'secondary' as const, className: 'bg-gray-100 text-gray-800' },
-      storno: { label: 'Storno', variant: 'destructive' as const, className: 'bg-red-100 text-red-800' },
+      draft: {
+        label: 'Entwurf',
+        variant: 'secondary' as const,
+        className: 'bg-gray-100 text-gray-800',
+      },
+      finalized: {
+        label: isOverdueStatus ? 'Fällig' : 'Offen',
+        variant: isOverdueStatus ? ('destructive' as const) : ('default' as const),
+        className: isOverdueStatus ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800',
+      },
+      sent: {
+        label: isOverdueStatus ? 'Fällig' : 'Offen',
+        variant: isOverdueStatus ? ('destructive' as const) : ('default' as const),
+        className: isOverdueStatus ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800',
+      },
+      paid: {
+        label: 'Bezahlt',
+        variant: 'default' as const,
+        className: 'bg-green-100 text-green-800',
+      },
+      overdue: {
+        label: 'Fällig',
+        variant: 'destructive' as const,
+        className: 'bg-red-100 text-red-800',
+      },
+      cancelled: {
+        label: 'Storno',
+        variant: 'secondary' as const,
+        className: 'bg-gray-100 text-gray-800',
+      },
+      storno: {
+        label: 'Storno',
+        variant: 'destructive' as const,
+        className: 'bg-red-100 text-red-800',
+      },
     };
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
     return (
@@ -93,12 +152,12 @@ export function InvoiceListView({
 
   const getDueDateText = (dueDate: string, status: string) => {
     if (status === 'paid') return 'Bezahlt';
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Set to start of day
     const due = new Date(dueDate);
     due.setHours(0, 0, 0, 0); // Set to start of day
-    
+
     const diffTime = due.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -159,7 +218,12 @@ export function InvoiceListView({
           if (invoice.status !== 'draft') return false;
           break;
         case 'open':
-          if (!['sent', 'finalized'].includes(invoice.status) || invoice.status === 'paid' || isOverdue(invoice)) return false;
+          if (
+            !['sent', 'finalized'].includes(invoice.status) ||
+            invoice.status === 'paid' ||
+            isOverdue(invoice)
+          )
+            return false;
           break;
         case 'overdue':
           if (!['sent', 'finalized'].includes(invoice.status) || !isOverdue(invoice)) return false;
@@ -185,8 +249,10 @@ export function InvoiceListView({
     // Search filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-      if (!invoice.customerName?.toLowerCase().includes(searchLower) &&
-          !invoice.number?.toLowerCase().includes(searchLower)) {
+      if (
+        !invoice.customerName?.toLowerCase().includes(searchLower) &&
+        !invoice.number?.toLowerCase().includes(searchLower)
+      ) {
         return false;
       }
     }
@@ -205,12 +271,36 @@ export function InvoiceListView({
   const tabs = [
     { id: 'all', label: 'Alle', count: invoices.length },
     { id: 'draft', label: 'Entwurf', count: invoices.filter(i => i.status === 'draft').length },
-    { id: 'open', label: 'Offen', count: invoices.filter(i => ['sent', 'finalized'].includes(i.status) && !isOverdue(i) && i.status !== 'paid').length },
-    { id: 'overdue', label: 'Fällig', count: invoices.filter(i => ['sent', 'finalized'].includes(i.status) && isOverdue(i)).length },
-    { id: 'finalized', label: 'Festgeschrieben', count: invoices.filter(i => i.status === 'finalized').length },
-    { id: 'paid', label: 'Bezahlt', count: invoices.filter(i => i.status === 'paid').length, locked: true },
+    {
+      id: 'open',
+      label: 'Offen',
+      count: invoices.filter(
+        i => ['sent', 'finalized'].includes(i.status) && !isOverdue(i) && i.status !== 'paid'
+      ).length,
+    },
+    {
+      id: 'overdue',
+      label: 'Fällig',
+      count: invoices.filter(i => ['sent', 'finalized'].includes(i.status) && isOverdue(i)).length,
+    },
+    {
+      id: 'finalized',
+      label: 'Festgeschrieben',
+      count: invoices.filter(i => i.status === 'finalized').length,
+    },
+    {
+      id: 'paid',
+      label: 'Bezahlt',
+      count: invoices.filter(i => i.status === 'paid').length,
+      locked: true,
+    },
     { id: 'partial', label: 'Teilbezahlt', count: 0, locked: true },
-    { id: 'cancelled', label: 'Storno', count: invoices.filter(i => ['cancelled', 'storno'].includes(i.status)).length, locked: true },
+    {
+      id: 'cancelled',
+      label: 'Storno',
+      count: invoices.filter(i => ['cancelled', 'storno'].includes(i.status)).length,
+      locked: true,
+    },
     { id: 'recurring', label: 'Wiederkehrend', count: 0, locked: true },
   ];
 
@@ -266,7 +356,7 @@ export function InvoiceListView({
                     <Input
                       placeholder="Rechnungsnr. oder Kontakt"
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={e => setSearchTerm(e.target.value)}
                       className="pl-9"
                     />
                   </div>
@@ -292,13 +382,13 @@ export function InvoiceListView({
                       placeholder="Min"
                       type="number"
                       value={minAmount}
-                      onChange={(e) => setMinAmount(e.target.value)}
+                      onChange={e => setMinAmount(e.target.value)}
                     />
                     <Input
                       placeholder="Max"
                       type="number"
                       value={maxAmount}
-                      onChange={(e) => setMaxAmount(e.target.value)}
+                      onChange={e => setMaxAmount(e.target.value)}
                     />
                   </div>
                 </div>
@@ -308,17 +398,13 @@ export function InvoiceListView({
                   <Input
                     type="date"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={e => setStartDate(e.target.value)}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Enddatum</label>
-                  <Input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
+                  <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
                 </div>
 
                 <div className="space-y-2">
@@ -338,18 +424,21 @@ export function InvoiceListView({
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => {
-                  setSearchTerm('');
-                  setSelectedContact('');
-                  setMinAmount('');
-                  setMaxAmount('');
-                  setStartDate('');
-                  setEndDate('');
-                  setPaymentMethod('');
-                }}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedContact('');
+                    setMinAmount('');
+                    setMaxAmount('');
+                    setStartDate('');
+                    setEndDate('');
+                    setPaymentMethod('');
+                  }}
+                >
                   Zurücksetzen
                 </Button>
-                <Button 
+                <Button
                   className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                   onClick={() => setShowFilters(false)}
                 >
@@ -384,29 +473,26 @@ export function InvoiceListView({
                 ) : (
                   filteredInvoices.map(invoice => (
                     <TableRow key={invoice.id}>
-                      <TableCell>
-                        {getStatusBadge(invoice)}
-                      </TableCell>
+                      <TableCell>{getStatusBadge(invoice)}</TableCell>
                       <TableCell>
                         <span className={invoice.status === 'overdue' ? 'text-red-600' : ''}>
                           {getDueDateText(invoice.dueDate, invoice.status)}
                         </span>
                       </TableCell>
                       <TableCell>
-                        {invoice.status === 'draft' ? 'Entwurf' : 
-                         invoice.number || 
-                         invoice.invoiceNumber || 
-                         (invoice.sequentialNumber && invoice.sequentialNumber > 0
-                           ? `R-${new Date().getFullYear()}-${String(invoice.sequentialNumber).padStart(3, '0')}`
-                           : `R-${invoice.id.substring(0, 8)}`)}
+                        {invoice.status === 'draft'
+                          ? 'Entwurf'
+                          : invoice.number ||
+                            invoice.invoiceNumber ||
+                            (invoice.sequentialNumber && invoice.sequentialNumber > 0
+                              ? `R-${new Date().getFullYear()}-${String(invoice.sequentialNumber).padStart(3, '0')}`
+                              : `R-${invoice.id.substring(0, 8)}`)}
                       </TableCell>
                       <TableCell>{invoice.customerName}</TableCell>
                       <TableCell>
                         {new Date(invoice.createdAt).toLocaleDateString('de-DE')}
                       </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(invoice.total)}
-                      </TableCell>
+                      <TableCell className="text-right">{formatCurrency(invoice.total)}</TableCell>
                       <TableCell className="text-right">
                         {invoice.status === 'paid' ? '0,00 €' : formatCurrency(invoice.total)}
                       </TableCell>

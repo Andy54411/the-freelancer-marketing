@@ -183,10 +183,7 @@ export default function ProfilePage() {
     providerId: string
   ): Promise<{ averageRating: number; totalReviews: number }> => {
     try {
-      const reviewsQuery = query(
-        collection(db, `companies/${providerId}/reviews`),
-        limit(100)
-      );
+      const reviewsQuery = query(collection(db, `companies/${providerId}/reviews`), limit(100));
 
       const reviewsSnapshot = await getDocs(reviewsQuery);
       const reviews = reviewsSnapshot.docs.map(doc => doc.data());
@@ -216,10 +213,8 @@ export default function ProfilePage() {
   // Funktion zum Laden der Service-Pakete für Profil-Seite
   const loadProfileServicePackages = async (providerId: string): Promise<ServicePackage[]> => {
     try {
-      const servicePackagesQuery = query(
-        collection(db, `companies/${providerId}/servicePackages`)
-      );
-      
+      const servicePackagesQuery = query(collection(db, `companies/${providerId}/servicePackages`));
+
       const servicePackagesSnapshot = await getDocs(servicePackagesQuery);
       const servicePackages = servicePackagesSnapshot.docs.map(doc => {
         const data = doc.data();
@@ -232,10 +227,10 @@ export default function ProfilePage() {
           totalPrice: data.totalPrice || data.price || 0,
           addonsTotal: data.addonsTotal || 0,
           features: data.features || [],
-          additionalServices: data.additionalServices || []
+          additionalServices: data.additionalServices || [],
         } as ServicePackage;
       });
-      
+
       return servicePackages;
     } catch (error) {
       console.error('Error loading service packages:', error);
@@ -637,7 +632,7 @@ export default function ProfilePage() {
     };
 
     fetchReviews();
-    
+
     // Service-Pakete laden
     const loadServicePackages = async () => {
       try {
@@ -645,14 +640,14 @@ export default function ProfilePage() {
         const querySnapshot = await getDocs(packagesRef);
         const packagesData = querySnapshot.docs.map(doc => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         }));
         setServicePackages(packagesData);
       } catch (error) {
         console.error('Error loading service packages:', error);
       }
     };
-    
+
     loadServicePackages();
   }, [companyId]);
 
@@ -1513,7 +1508,7 @@ export default function ProfilePage() {
                               onChange={() => setActivePackageTab(index)}
                             />
                           ))}
-                          
+
                           {/* Tab Navigation */}
                           <div className="flex border-b border-gray-200">
                             {servicePackages.map((pkg, index) => (
@@ -1529,10 +1524,13 @@ export default function ProfilePage() {
                                 aria-selected={activePackageTab === index}
                                 tabIndex={0}
                               >
-                                {pkg.packageType === 'basic' ? 'Basic' : 
-                                 pkg.packageType === 'standard' ? 'Standard' : 
-                                 pkg.packageType === 'premium' ? 'Premium' : 
-                                 pkg.name || pkg.title || `Paket ${index + 1}`}
+                                {pkg.packageType === 'basic'
+                                  ? 'Basic'
+                                  : pkg.packageType === 'standard'
+                                    ? 'Standard'
+                                    : pkg.packageType === 'premium'
+                                      ? 'Premium'
+                                      : pkg.name || pkg.title || `Paket ${index + 1}`}
                               </label>
                             ))}
                           </div>
@@ -1546,17 +1544,25 @@ export default function ProfilePage() {
                                   <h3 className="mb-4">
                                     <div className="price-wrapper mb-2">
                                       <span className="text-3xl font-bold text-gray-900">
-                                        €{servicePackages[activePackageTab].totalPrice || servicePackages[activePackageTab].price}
+                                        €
+                                        {servicePackages[activePackageTab].totalPrice ||
+                                          servicePackages[activePackageTab].price}
                                       </span>
                                     </div>
                                     <p className="text-sm text-gray-600">
                                       <strong>
-                                        {servicePackages[activePackageTab].packageType === 'basic' ? 'Basic' : 
-                                         servicePackages[activePackageTab].packageType === 'standard' ? 'Standard' : 
-                                         servicePackages[activePackageTab].packageType === 'premium' ? 'Premium' : 
-                                         servicePackages[activePackageTab].name}
+                                        {servicePackages[activePackageTab].packageType === 'basic'
+                                          ? 'Basic'
+                                          : servicePackages[activePackageTab].packageType ===
+                                              'standard'
+                                            ? 'Standard'
+                                            : servicePackages[activePackageTab].packageType ===
+                                                'premium'
+                                              ? 'Premium'
+                                              : servicePackages[activePackageTab].name}
                                       </strong>{' '}
-                                      {servicePackages[activePackageTab].title || servicePackages[activePackageTab].description}
+                                      {servicePackages[activePackageTab].title ||
+                                        servicePackages[activePackageTab].description}
                                     </p>
                                   </h3>
                                 </header>
@@ -1565,92 +1571,161 @@ export default function ProfilePage() {
                                 <article className="mb-6">
                                   <div className="additional-info flex gap-6 mb-4">
                                     {/* Service Duration - für zeitbasierte Services wie Mietkoch, Friseur etc. */}
-                                    {servicePackages[activePackageTab].duration && 
-                                     ['Mietkoch', 'Friseur', 'Kosmetik', 'Massage', 'Fitness', 'Reinigung'].includes(servicePackages[activePackageTab].subcategory || '') && (
-                                      <div className="duration-wrapper flex items-center gap-2">
-                                        <FiClock className="text-gray-600" size={16} />
-                                        <span className="text-sm font-medium text-gray-900">
-                                          {servicePackages[activePackageTab].duration}
-                                        </span>
-                                      </div>
-                                    )}
+                                    {servicePackages[activePackageTab].duration &&
+                                      [
+                                        'Mietkoch',
+                                        'Friseur',
+                                        'Kosmetik',
+                                        'Massage',
+                                        'Fitness',
+                                        'Reinigung',
+                                      ].includes(
+                                        servicePackages[activePackageTab].subcategory || ''
+                                      ) && (
+                                        <div className="duration-wrapper flex items-center gap-2">
+                                          <FiClock className="text-gray-600" size={16} />
+                                          <span className="text-sm font-medium text-gray-900">
+                                            {servicePackages[activePackageTab].duration}
+                                          </span>
+                                        </div>
+                                      )}
 
                                     {/* Delivery Time - nur für Projekte/Produkte */}
-                                    {servicePackages[activePackageTab].deliveryTime && 
-                                     servicePackages[activePackageTab].deliveryTime > 0 && 
-                                     !['Mietkoch', 'Friseur', 'Kosmetik', 'Massage', 'Fitness', 'Reinigung'].includes(servicePackages[activePackageTab].subcategory || '') && (
-                                      <div className="delivery-wrapper flex items-center gap-2">
-                                        <FiClock className="text-gray-600" size={16} />
-                                        <span className="text-sm font-medium text-gray-900">
-                                          {servicePackages[activePackageTab].deliveryTime} Tag(e) Lieferzeit
-                                        </span>
-                                      </div>
-                                    )}
+                                    {servicePackages[activePackageTab].deliveryTime &&
+                                      servicePackages[activePackageTab].deliveryTime > 0 &&
+                                      ![
+                                        'Mietkoch',
+                                        'Friseur',
+                                        'Kosmetik',
+                                        'Massage',
+                                        'Fitness',
+                                        'Reinigung',
+                                      ].includes(
+                                        servicePackages[activePackageTab].subcategory || ''
+                                      ) && (
+                                        <div className="delivery-wrapper flex items-center gap-2">
+                                          <FiClock className="text-gray-600" size={16} />
+                                          <span className="text-sm font-medium text-gray-900">
+                                            {servicePackages[activePackageTab].deliveryTime} Tag(e)
+                                            Lieferzeit
+                                          </span>
+                                        </div>
+                                      )}
 
                                     {/* Revisions - nur für Design/Entwicklung etc. */}
-                                    {servicePackages[activePackageTab].revisions && 
-                                     servicePackages[activePackageTab].revisions > 0 && 
-                                     !['Friseur', 'Kosmetik', 'Massage', 'Fitness', 'Reinigung', 'Mietkoch'].includes(servicePackages[activePackageTab].subcategory || '') && (
-                                      <div className="revisions-wrapper flex items-center gap-2">
-                                        <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-                                          <path d="M4.50001 11.4999C6.40001 13.3999 9.60001 13.3999 11.5 11.4999C12.2 10.7999 12.7 9.7999 12.9 8.7999L14.9 9.0999C14.7 10.5999 14 11.8999 13 12.8999C10.3 15.5999 5.90001 15.5999 3.10001 12.8999L0.900012 15.0999L0.200012 8.6999L6.60001 9.3999L4.50001 11.4999Z"></path>
-                                          <path d="M15.8 7.2999L9.40001 6.5999L11.5 4.4999C9.60001 2.5999 6.40001 2.5999 4.50001 4.4999C3.80001 5.1999 3.30001 6.1999 3.10001 7.1999L1.10001 6.8999C1.30001 5.3999 2.00001 4.0999 3.00001 3.0999C4.40001 1.6999 6.10001 1.0999 7.90001 1.0999C9.70001 1.0999 11.5 1.7999 12.8 3.0999L15 0.899902L15.8 7.2999Z"></path>
-                                        </svg>
-                                        <span className="text-sm font-medium text-gray-900">
-                                          {servicePackages[activePackageTab].revisions} Revisionen
-                                        </span>
-                                      </div>
-                                    )}
+                                    {servicePackages[activePackageTab].revisions &&
+                                      servicePackages[activePackageTab].revisions > 0 &&
+                                      ![
+                                        'Friseur',
+                                        'Kosmetik',
+                                        'Massage',
+                                        'Fitness',
+                                        'Reinigung',
+                                        'Mietkoch',
+                                      ].includes(
+                                        servicePackages[activePackageTab].subcategory || ''
+                                      ) && (
+                                        <div className="revisions-wrapper flex items-center gap-2">
+                                          <svg
+                                            className="w-4 h-4 text-gray-600"
+                                            fill="currentColor"
+                                            viewBox="0 0 16 16"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                          >
+                                            <path d="M4.50001 11.4999C6.40001 13.3999 9.60001 13.3999 11.5 11.4999C12.2 10.7999 12.7 9.7999 12.9 8.7999L14.9 9.0999C14.7 10.5999 14 11.8999 13 12.8999C10.3 15.5999 5.90001 15.5999 3.10001 12.8999L0.900012 15.0999L0.200012 8.6999L6.60001 9.3999L4.50001 11.4999Z"></path>
+                                            <path d="M15.8 7.2999L9.40001 6.5999L11.5 4.4999C9.60001 2.5999 6.40001 2.5999 4.50001 4.4999C3.80001 5.1999 3.30001 6.1999 3.10001 7.1999L1.10001 6.8999C1.30001 5.3999 2.00001 4.0999 3.00001 3.0999C4.40001 1.6999 6.10001 1.0999 7.90001 1.0999C9.70001 1.0999 11.5 1.7999 12.8 3.0999L15 0.899902L15.8 7.2999Z"></path>
+                                          </svg>
+                                          <span className="text-sm font-medium text-gray-900">
+                                            {servicePackages[activePackageTab].revisions} Revisionen
+                                          </span>
+                                        </div>
+                                      )}
                                   </div>
 
                                   {/* Features List */}
                                   <ul className="features space-y-2 mb-4">
-                                    {servicePackages[activePackageTab].features && servicePackages[activePackageTab].features.map((feature: string, idx: number) => (
-                                      <li key={idx} className="flex items-center gap-2">
-                                        <FiCheckCircle className="text-green-500 flex-shrink-0" size={16} />
-                                        <span className="text-sm text-gray-700">{feature}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                    
-                                  {/* Additional Services - Optional Extras */}
-                                  {servicePackages[activePackageTab].additionalServices && servicePackages[activePackageTab].additionalServices.length > 0 && (
-                                    <div className="additional-services mt-4 pt-4 border-t border-gray-200">
-                                      <h5 className="text-sm font-medium text-gray-900 mb-2">
-                                        Zusätzliche Services (optional):
-                                      </h5>
-                                      <ul className="space-y-2">
-                                        {servicePackages[activePackageTab].additionalServices.map((service: any, idx: number) => (
-                                          <li key={idx} className="flex items-center justify-between gap-2 text-sm">
-                                            <div className="flex items-center gap-2">
-                                              <svg className="w-3.5 h-3.5 text-[#14ad9f] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                              </svg>
-                                              <span className="text-gray-700">{service.name}</span>
-                                            </div>
-                                            <span className="text-[#14ad9f] font-medium">+€{service.price}</span>
+                                    {servicePackages[activePackageTab].features &&
+                                      servicePackages[activePackageTab].features.map(
+                                        (feature: string, idx: number) => (
+                                          <li key={idx} className="flex items-center gap-2">
+                                            <FiCheckCircle
+                                              className="text-green-500 flex-shrink-0"
+                                              size={16}
+                                            />
+                                            <span className="text-sm text-gray-700">{feature}</span>
                                           </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
+                                        )
+                                      )}
+                                  </ul>
+
+                                  {/* Additional Services - Optional Extras */}
+                                  {servicePackages[activePackageTab].additionalServices &&
+                                    servicePackages[activePackageTab].additionalServices.length >
+                                      0 && (
+                                      <div className="additional-services mt-4 pt-4 border-t border-gray-200">
+                                        <h5 className="text-sm font-medium text-gray-900 mb-2">
+                                          Zusätzliche Services (optional):
+                                        </h5>
+                                        <ul className="space-y-2">
+                                          {servicePackages[activePackageTab].additionalServices.map(
+                                            (service: any, idx: number) => (
+                                              <li
+                                                key={idx}
+                                                className="flex items-center justify-between gap-2 text-sm"
+                                              >
+                                                <div className="flex items-center gap-2">
+                                                  <svg
+                                                    className="w-3.5 h-3.5 text-[#14ad9f] flex-shrink-0"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                  >
+                                                    <path
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      strokeWidth={2}
+                                                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                                    />
+                                                  </svg>
+                                                  <span className="text-gray-700">
+                                                    {service.name}
+                                                  </span>
+                                                </div>
+                                                <span className="text-[#14ad9f] font-medium">
+                                                  +€{service.price}
+                                                </span>
+                                              </li>
+                                            )
+                                          )}
+                                        </ul>
+                                      </div>
+                                    )}
                                 </article>
 
                                 {/* Footer with Action Button */}
                                 <footer className="tab-footer">
                                   <div className="flex flex-col gap-3">
                                     {/* Contact Button */}
-                                    <button 
+                                    <button
                                       onClick={handleStartChat}
                                       className={`w-full border font-medium py-2 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                                        currentUser 
+                                        currentUser
                                           ? 'border-gray-300 hover:border-[#14ad9f] text-gray-700 hover:text-[#14ad9f]'
                                           : 'border-gray-300 text-gray-500 cursor-pointer hover:border-orange-400 hover:text-orange-600'
                                       }`}
                                       title={!currentUser ? 'Anmeldung erforderlich' : ''}
                                     >
-                                      <span>{currentUser ? 'Kontaktiere mich' : 'Anmelden zum Kontaktieren'}</span>
-                                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 14 9" xmlns="http://www.w3.org/2000/svg">
+                                      <span>
+                                        {currentUser
+                                          ? 'Kontaktiere mich'
+                                          : 'Anmelden zum Kontaktieren'}
+                                      </span>
+                                      <svg
+                                        className="w-3 h-3"
+                                        fill="currentColor"
+                                        viewBox="0 0 14 9"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                      >
                                         <path d="M.19 1.272.81.653a.375.375 0 0 1 .53 0L7 6.3 12.66.653a.375.375 0 0 1 .53 0l.62.62a.375.375 0 0 1 0 .53L7.264 8.346a.375.375 0 0 1-.53 0L.19 1.802a.375.375 0 0 1 0-.53Z"></path>
                                       </svg>
                                     </button>

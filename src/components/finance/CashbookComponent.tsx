@@ -151,7 +151,6 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
       }, 0);
       setCashBalance(balance);
     } catch (error) {
-
       toast.error('Kassenbuch-Einträge konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -207,7 +206,6 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
       setShowAddModal(false);
       toast.success('Kassenbuch-Eintrag wurde hinzugefügt');
     } catch (error) {
-
       toast.error('Eintrag konnte nicht hinzugefügt werden');
     }
   };

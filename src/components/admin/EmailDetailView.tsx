@@ -83,13 +83,11 @@ function decodeUTF8Properly(text: string): string {
 
   // Spezielle Debug-Analyse für problematische Zeichen
   if (text.includes('Match')) {
-
     // Zeichen-Code-Analyse
     const matchIndex = text.indexOf('Match');
     if (matchIndex > 0) {
       const beforeChar = text.charAt(matchIndex - 1);
       const afterChar = text.charAt(matchIndex + 5);
-
     }
   }
 
@@ -100,10 +98,8 @@ function decodeUTF8Properly(text: string): string {
     // Schritt 2: URL-encoded Zeichen dekodieren (z.B. %C3%BC -> ü)
     try {
       decoded = decodeURIComponent(decoded);
-
     } catch {
       // Wenn URL-decoding fehlschlägt, Original verwenden
-
     }
 
     // Schritt 3: Quoted-printable dekodieren (z.B. =FC -> ü)
@@ -191,16 +187,13 @@ function decodeUTF8Properly(text: string): string {
 
     return decoded;
   } catch (error) {
-
     return text;
   }
 }
 
 function getCleanTextContent(email: ReceivedEmail): string {
-
   // Erste Priorität: Bereits bereinigte textContent
   if (email.textContent && email.textContent.trim()) {
-
     const cleaned = decodeUTF8Properly(email.textContent);
     if (cleaned && cleaned.trim().length > 0) {
       // Jeder vorhandene Inhalt ist gültig, auch kurze Nachrichten wie "Test"
@@ -211,7 +204,6 @@ function getCleanTextContent(email: ReceivedEmail): string {
 
   // Zweite Priorität: HTML zu sauberem Text konvertieren
   if (email.htmlContent) {
-
     try {
       const cleanedHtml = decodeUTF8Properly(email.htmlContent);
 
@@ -236,9 +228,7 @@ function getCleanTextContent(email: ReceivedEmail): string {
 
         return finalCleanedText.trim();
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   return 'E-Mail-Inhalt konnte nicht geladen werden.';
@@ -259,7 +249,6 @@ function QuickReplyForm({
 
     // Verhindere mehrfache Ausführung
     if (isSending || !message.trim()) {
-
       return;
     }
 
@@ -292,11 +281,9 @@ function QuickReplyForm({
 
       // E-Mail-Liste aktualisieren
       if (onEmailSent) {
-
         onEmailSent();
       }
     } catch (error) {
-
       alert('Fehler beim Senden der Antwort. Bitte versuchen Sie es erneut.');
     } finally {
       setIsSending(false);
@@ -617,7 +604,6 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
         try {
           // finAPI Tracking-Links und Newsletter-Links sicher öffnen
           if (event.data.isTracking) {
-
           }
 
           // Link in neuem Tab öffnen mit verbesserter Sicherheit
@@ -629,7 +615,6 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
             window.location.href = event.data.url;
           }
         } catch (error) {
-
           // Final fallback: Copy to clipboard
           navigator.clipboard?.writeText(event.data.url).then(() => {
             alert(`Link wurde in die Zwischenablage kopiert: ${event.data.url}`);
@@ -735,7 +720,6 @@ export default function EmailDetailView({
           })) || [],
       };
     } catch (error) {
-
       return null;
     }
   };
@@ -743,7 +727,6 @@ export default function EmailDetailView({
   // Quoted-Printable Dekodierung für E-Mail-Content
   const decodeQuotedPrintable = (str: string): string => {
     try {
-
       let result = str;
 
       // 1. Soft line breaks entfernen (= am Zeilende) - ZUERST!
@@ -784,7 +767,6 @@ export default function EmailDetailView({
 
       return result;
     } catch (error) {
-
       return str;
     }
   };
@@ -792,7 +774,6 @@ export default function EmailDetailView({
   // Perfekte UTF-8 Dekodierung mit Native Browser APIs
   const decodeUTF8Properly = (content: string): string => {
     try {
-
       // 1. Quoted-Printable Dekodierung falls nötig (erweiterte Erkennung)
       let result = content;
       const hasQuotedPrintable =
@@ -805,10 +786,8 @@ export default function EmailDetailView({
         /=[0-9A-F]{2}/.test(content);
 
       if (hasQuotedPrintable) {
-
         result = decodeQuotedPrintable(content);
       } else {
-
       }
 
       // 2. HTML Entities dekodieren (IMMER anwenden)
@@ -891,7 +870,6 @@ export default function EmailDetailView({
 
       for (const [entity, replacement] of Object.entries(htmlEntityFixes)) {
         if (result.includes(entity)) {
-
           result = result.replace(
             new RegExp(entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
             replacement
@@ -905,13 +883,10 @@ export default function EmailDetailView({
         const decoder = new TextDecoder('utf-8', { fatal: false });
         const bytes = encoder.encode(result);
         result = decoder.decode(bytes);
-      } catch (e) {
-
-      }
+      } catch (e) {}
 
       return result;
     } catch (error) {
-
       return content;
     }
   };
@@ -930,14 +905,12 @@ export default function EmailDetailView({
       } else if (email.rawContent) {
         // Erweiterte HTML-Extraktion aus Raw-E-Mail
         try {
-
           // 1. Spezielle finAPI Newsletter HTML-Extraktion
           const htmlSectionMatch = email.rawContent.match(
             /Content-Type:\s*text\/html[^]*?(?=\r?\n---------)/i
           );
 
           if (htmlSectionMatch) {
-
             const htmlSection = htmlSectionMatch[0];
 
             // 2. HTML-Content nach dem ersten Leerblock extrahieren
@@ -948,7 +921,6 @@ export default function EmailDetailView({
 
               // 3. Quoted-printable dekodieren
               if (htmlSection.includes('quoted-printable')) {
-
                 htmlContent = decodeUTF8Properly(htmlContent);
               }
 
@@ -957,7 +929,6 @@ export default function EmailDetailView({
                 htmlContent.trim().length > 0 &&
                 (htmlContent.includes('<') || htmlContent.includes('&lt;'))
               ) {
-
                 const parsed = await processEmailWithModernAPIs(
                   htmlContent,
                   email.subject,
@@ -972,7 +943,6 @@ export default function EmailDetailView({
           // Fallback: Standard HTML-Extraktion
           const htmlMatch = email.rawContent.match(/<html[\s\S]*?<\/html>/i);
           if (htmlMatch) {
-
             const htmlContent = htmlMatch[0];
             const parsed = await processEmailWithModernAPIs(htmlContent, email.subject, email.from);
             setParsedEmail(parsed);
@@ -1016,7 +986,6 @@ export default function EmailDetailView({
             });
           }
         } catch (error) {
-
           // Error-Fallback
           setParsedEmail({
             html: `<div style="color: red; padding: 20px;">Fehler beim Verarbeiten der E-Mail: ${error}</div>`,
@@ -1038,9 +1007,7 @@ export default function EmailDetailView({
   const processedContent = useMemo(() => {
     // Priorität 1: Verwende parsedEmail falls verfügbar - ABER MIT BEREINIGUNG!
     if (parsedEmail) {
-
       if (parsedEmail.text) {
-
         // Detaillierte Euro-Symbol-Analyse
         let euroCount = 0;
         const sampleEuros = [];
@@ -1058,9 +1025,7 @@ export default function EmailDetailView({
             }
           }
         }
-
       } else {
-
       }
 
       // WICHTIG: Auch parsedEmail.text muss bereinigt werden!
@@ -1076,7 +1041,6 @@ export default function EmailDetailView({
 
     // Priorität 2: Direkte htmlContent Verarbeitung mit verbesserter Bereinigung
     if (email.htmlContent) {
-
       const utf8Content = decodeUTF8Properly(email.htmlContent);
 
       const processedHtml = DOMPurify.sanitize(utf8Content, {
@@ -1126,7 +1090,6 @@ export default function EmailDetailView({
 
     // Priorität 3: Direkte textContent verwenden
     if (email.textContent && email.textContent.trim()) {
-
       return {
         text: email.textContent.trim(),
         html: null,
@@ -1135,7 +1098,6 @@ export default function EmailDetailView({
 
     // Priorität 4: Einfache HTML-zu-Text Konvertierung
     if (email.htmlContent && email.htmlContent.trim()) {
-
       try {
         const textFromHtml = convert(email.htmlContent, {
           wordwrap: 80,
@@ -1153,9 +1115,7 @@ export default function EmailDetailView({
             html: email.htmlContent,
           };
         }
-      } catch (error) {
-
-      }
+      } catch (error) {}
     }
 
     // Priorität 5: Fallback - nur wenn wirklich nichts vorhanden ist
@@ -1367,7 +1327,6 @@ export default function EmailDetailView({
 
       {/* E-Mail-Verlauf Accordion - DEBUG: Temporär immer anzeigen */}
       {(() => {
-
         return emails && emails.length >= 1 ? ( // DEBUG: >= 1 statt > 1
           <div>
             <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded-lg">

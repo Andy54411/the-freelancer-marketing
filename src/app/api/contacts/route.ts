@@ -105,7 +105,6 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,
@@ -137,7 +136,6 @@ export async function POST(request: Request) {
       { status: 501 }
     );
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

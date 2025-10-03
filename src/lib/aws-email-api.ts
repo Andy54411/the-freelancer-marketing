@@ -61,19 +61,19 @@ export const callEmailAPI = async (endpoint: string, method: string = 'GET', dat
     options.body = JSON.stringify(data);
   }
 
-   // Debug log
+  // Debug log
 
   const response = await fetch(url, options);
 
-   // Debug log
+  // Debug log
 
   if (!response.ok) {
     const errorText = await response.text();
-     // Debug log
+    // Debug log
     throw new Error(`API Error: ${response.status} - ${response.statusText || errorText}`);
   }
 
   const result = await response.json();
-   // Debug log
+  // Debug log
   return result;
 };

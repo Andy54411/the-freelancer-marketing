@@ -89,10 +89,8 @@ export default function ReceivedQuotesPage() {
           setQuotes(validQuotes);
         }
       } else {
-
       }
     } catch (error) {
-
     } finally {
       setLoading(false);
     }
@@ -148,7 +146,6 @@ export default function ReceivedQuotesPage() {
         minute: '2-digit',
       }).format(dateObj);
     } catch (error) {
-
       return 'Unbekannt';
     }
   };
@@ -167,7 +164,12 @@ export default function ReceivedQuotesPage() {
   };
 
   // Status Badge
-  const getStatusBadge = (status: string, hasResponse: boolean, paymentStatus?: string, contactExchange?: any) => {
+  const getStatusBadge = (
+    status: string,
+    hasResponse: boolean,
+    paymentStatus?: string,
+    contactExchange?: any
+  ) => {
     // Priority 1: Check if contacts have been exchanged (payment completed)
     if (status === 'contacts_exchanged' || contactExchange?.contactsExchanged) {
       return (

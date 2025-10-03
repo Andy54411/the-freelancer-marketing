@@ -26,7 +26,6 @@ export async function POST(request: Request) {
         message: 'Token erfolgreich verifiziert',
       });
     } catch (error) {
-
       return NextResponse.json(
         {
           success: false,
@@ -37,7 +36,6 @@ export async function POST(request: Request) {
       );
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

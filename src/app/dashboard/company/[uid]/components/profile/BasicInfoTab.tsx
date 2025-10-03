@@ -35,7 +35,6 @@ const BasicInfoTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
       setProfile(prev => (prev ? { ...prev, publicDescription: data.description } : null));
       toast.success('Beschreibung erfolgreich generiert!');
     } catch (error) {
-
       toast.error('Fehler bei der Generierung der Beschreibung');
     } finally {
       setIsGeneratingDescription(false);

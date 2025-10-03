@@ -24,11 +24,7 @@ interface DatevAuthComponentProps {
   onAuthError?: (error: string) => void;
 }
 
-function DatevAuthComponent({
-  companyId,
-  onAuthSuccess,
-  onAuthError
-}: DatevAuthComponentProps) {
+function DatevAuthComponent({ companyId, onAuthSuccess, onAuthError }: DatevAuthComponentProps) {
   const [connection, setConnection] = useState<DatevConnection>({ isConnected: false });
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showButtons, setShowButtons] = useState(true);
@@ -55,7 +51,7 @@ function DatevAuthComponent({
           isConnected: true,
           organization: {
             id: userInfo.userInfo?.account_id || 'datev-user',
-            name: userInfo.userInfo?.name || 'DATEV User'
+            name: userInfo.userInfo?.name || 'DATEV User',
           },
           user: {
             name: userInfo.userInfo?.name || 'DATEV User',
@@ -70,17 +66,15 @@ function DatevAuthComponent({
         if (onAuthSuccess) {
           onAuthSuccess({
             id: userInfo.userInfo?.account_id || 'datev-user',
-            name: userInfo.userInfo?.name || 'DATEV User'
+            name: userInfo.userInfo?.name || 'DATEV User',
           });
         }
 
         toast.success('DATEV-Verbindung erfolgreich überprüft');
       } else {
-
         setShowButtons(true);
       }
     } catch (error) {
-
       setShowButtons(true);
     } finally {
       setIsLoading(false);
@@ -109,9 +103,7 @@ function DatevAuthComponent({
       // Redirect to DATEV OAuth
 
       window.location.href = authUrl;
-
     } catch (error) {
-
       if (onAuthError) {
         onAuthError(error instanceof Error ? error.message : 'Authentication failed');
       }
@@ -130,7 +122,6 @@ function DatevAuthComponent({
 
       toast.success('DATEV-Verbindung getrennt');
     } catch (error) {
-
       toast.error('Fehler beim Trennen der DATEV-Verbindung');
     }
   };
@@ -157,9 +148,7 @@ function DatevAuthComponent({
               </p>
             </div>
           ) : (
-            <p className="text-sm text-gray-500 mt-1">
-              Keine DATEV-Verbindung aktiv
-            </p>
+            <p className="text-sm text-gray-500 mt-1">Keine DATEV-Verbindung aktiv</p>
           )}
         </div>
 

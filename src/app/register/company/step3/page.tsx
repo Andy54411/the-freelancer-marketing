@@ -82,7 +82,6 @@ export default function Step3CompanyPage() {
 
   // Initialisierung und Synchronisierung mit dem Context
   useEffect(() => {
-
     // Bestimme das aktive Steuer-Eingabefeld basierend auf den Kontextwerten bei Initialisierung
     if (registration.companyRegister) {
       setActiveTaxInput('hrn');
@@ -113,7 +112,6 @@ export default function Step3CompanyPage() {
         objectUrl = URL.createObjectURL(registration.profilePictureFile);
         setProfilePicturePreview(objectUrl);
       } catch (e) {
-
         setProfilePicturePreview(null);
       }
     } else {
@@ -132,7 +130,6 @@ export default function Step3CompanyPage() {
         objectUrl = URL.createObjectURL(registration.businessLicenseFile);
         setBusinessLicensePreview(objectUrl);
       } catch (e) {
-
         setBusinessLicensePreview(null);
       }
     } else {
@@ -154,7 +151,6 @@ export default function Step3CompanyPage() {
         objectUrl = URL.createObjectURL(registration.masterCraftsmanCertificateFile);
         setMasterCraftsmanCertificatePreview(objectUrl);
       } catch (e) {
-
         setMasterCraftsmanCertificatePreview(null);
       }
     } else {
@@ -209,7 +205,6 @@ export default function Step3CompanyPage() {
             canvas.height = targetDim;
             const ctx = canvas.getContext('2d');
             if (!ctx) {
-
               setIsProcessingImage(false);
               resolve(file);
               return;
@@ -241,7 +236,6 @@ export default function Step3CompanyPage() {
 
                   resolve(processedImageFile);
                 } else {
-
                   resolve(file);
                 }
               },
@@ -250,7 +244,6 @@ export default function Step3CompanyPage() {
             );
           };
           img.onerror = () => {
-
             setIsProcessingImage(false);
             resolve(file);
           };
@@ -262,7 +255,6 @@ export default function Step3CompanyPage() {
           }
         };
         reader.onerror = () => {
-
           setIsProcessingImage(false);
           resolve(null);
         }; // resolve(null) bei Fehler
@@ -323,7 +315,6 @@ export default function Step3CompanyPage() {
           const newPreviewUrl = URL.createObjectURL(fileToSet);
           localPreviewSetter(newPreviewUrl);
         } catch (urlError) {
-
           localPreviewSetter(null);
         }
       }
@@ -332,7 +323,6 @@ export default function Step3CompanyPage() {
       fileSetter(null);
       setIsProcessingImage(false);
     }
-
   };
 
   // Hinzugefügte Funktion für Autofill-Synchronisation

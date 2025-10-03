@@ -24,9 +24,9 @@ export default function QuotesAcceptedPage() {
 
   return (
     <div className="space-y-6">
-      <FilteredQuoteComponent 
-        companyId={uid} 
-        statusFilter="accepted" 
+      <FilteredQuoteComponent
+        companyId={uid}
+        statusFilter="accepted"
         title="Angenommene Angebote"
         description="Alle angenommenen Angebote"
       />

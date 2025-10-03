@@ -5,8 +5,9 @@ export async function POST(request: NextRequest) {
     const { messageId, senderId, text, chatId, chatType, timestamp } = await request.json();
 
     // Simulate sending data to Lambda for analysis
-    const lambdaUrl = 'https://tqhc7vxlga.execute-api.eu-central-1.amazonaws.com/default/taskilo-chat-aggregator';
-    
+    const lambdaUrl =
+      'https://tqhc7vxlga.execute-api.eu-central-1.amazonaws.com/default/taskilo-chat-aggregator';
+
     const lambdaPayload = {
       Records: [
         {
@@ -18,11 +19,11 @@ export async function POST(request: NextRequest) {
               text: { S: text },
               chatId: { S: chatId },
               chatType: { S: chatType },
-              timestamp: { S: timestamp }
-            }
-          }
-        }
-      ]
+              timestamp: { S: timestamp },
+            },
+          },
+        },
+      ],
     };
 
     console.log('Sending test data to Lambda:', JSON.stringify(lambdaPayload, null, 2));
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(lambdaPayload)
+      body: JSON.stringify(lambdaPayload),
     });
 
     const result = await response.text();
@@ -41,14 +42,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Test message sent to Lambda for sensitive data analysis',
-      lambdaResponse: result
+      lambdaResponse: result,
     });
-
   } catch (error) {
     console.error('Error testing sensitive data:', error);
-    return NextResponse.json(
-      { error: 'Failed to test sensitive data analysis' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to test sensitive data analysis' }, { status: 500 });
   }
 }

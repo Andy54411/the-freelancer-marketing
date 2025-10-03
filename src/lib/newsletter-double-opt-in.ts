@@ -16,10 +16,8 @@ export async function sendConfirmationEmail(
   confirmationToken: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-
     // 🚀 RESEND als einzige Methode
     try {
-
       const resendResult = await sendNewsletterConfirmationViaResend(
         email,
         name,
@@ -27,24 +25,20 @@ export async function sendConfirmationEmail(
       );
 
       if (resendResult.success) {
-
         return { success: true };
       } else {
-
         return {
           success: false,
           error: resendResult.error || 'E-Mail-Versand über Resend fehlgeschlagen',
         };
       }
     } catch (resendError) {
-
       return {
         success: false,
         error: resendError instanceof Error ? resendError.message : 'Unbekannter Resend-Fehler',
       };
     }
   } catch (error) {
-
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -122,7 +116,6 @@ export async function createPendingSubscription(
 
     return { success: true, token: confirmationToken };
   } catch (error) {
-
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -223,7 +216,6 @@ export async function confirmNewsletterSubscription(
 
     return { success: true, subscriberId: subscriberRef.id };
   } catch (error) {
-
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -256,7 +248,6 @@ export async function cleanupExpiredPendingConfirmations(): Promise<{ deletedCou
 
     return { deletedCount: expiredQuery.docs.length };
   } catch (error) {
-
     return { deletedCount: 0 };
   }
 }

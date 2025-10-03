@@ -124,7 +124,6 @@ export class AdminWorkspaceService {
 
   async getAllWorkspaces(adminId?: string): Promise<AdminWorkspace[]> {
     try {
-
       // Production Lambda API Call
       const queryParams = adminId ? `?adminId=${adminId}` : '';
       const result = await this.callLambdaAPI(queryParams);
@@ -161,7 +160,6 @@ export class AdminWorkspaceService {
         return mappedWorkspace;
       });
     } catch (error) {
-
       return [];
     }
   }
@@ -249,7 +247,6 @@ export class AdminWorkspaceService {
 
       return transformedWorkspace;
     } catch (error) {
-
       throw error;
     }
   }
@@ -276,7 +273,6 @@ export class AdminWorkspaceService {
         body: JSON.stringify(payload),
       });
     } catch (error) {
-
       throw error;
     }
   }
@@ -287,7 +283,6 @@ export class AdminWorkspaceService {
         method: 'DELETE',
       });
     } catch (error) {
-
       throw error;
     }
   }
@@ -330,7 +325,6 @@ export class AdminWorkspaceService {
         },
       };
     } catch (error) {
-
       return null;
     }
   }
@@ -378,7 +372,6 @@ export class AdminWorkspaceService {
         contentTitleLevel: task.contentTitleLevel,
       }));
     } catch (error) {
-
       return [];
     }
   }
@@ -387,7 +380,6 @@ export class AdminWorkspaceService {
     workspaceId: string,
     taskData: Partial<AdminWorkspaceTask>
   ): Promise<AdminWorkspaceTask> {
-
     try {
       const payload = {
         title: taskData.title,
@@ -452,7 +444,6 @@ export class AdminWorkspaceService {
         contentTitleLevel: task.contentTitleLevel,
       };
     } catch (error) {
-
       throw error;
     }
   }
@@ -482,7 +473,6 @@ export class AdminWorkspaceService {
         body: JSON.stringify(payload),
       });
     } catch (error) {
-
       throw error;
     }
   }
@@ -493,7 +483,6 @@ export class AdminWorkspaceService {
         method: 'DELETE',
       });
     } catch (error) {
-
       throw error;
     }
   }
@@ -510,7 +499,6 @@ export class AdminWorkspaceService {
         avatar: member.avatar,
       }));
     } catch (error) {
-
       return [];
     }
   }
@@ -529,7 +517,6 @@ export class AdminWorkspaceService {
         }),
       });
     } catch (error) {
-
       throw error;
     }
   }
@@ -540,7 +527,6 @@ export class AdminWorkspaceService {
         method: 'DELETE',
       });
     } catch (error) {
-
       throw error;
     }
   }
@@ -551,7 +537,6 @@ export class AdminWorkspaceService {
       const result = await this.callLambdaAPI(`/${workspaceId}/activity`);
       return result.activities || [];
     } catch (error) {
-
       return [];
     }
   }
@@ -562,7 +547,6 @@ export class AdminWorkspaceService {
       const result = await this.callLambdaAPI(`/${workspaceId}/boards`);
       return result.boards || [];
     } catch (error) {
-
       return [];
     }
   }
@@ -578,7 +562,6 @@ export class AdminWorkspaceService {
       });
       return result.board;
     } catch (error) {
-
       throw error;
     }
   }
@@ -624,7 +607,6 @@ export class AdminWorkspaceService {
 
       return result.task;
     } catch (error) {
-
       throw error;
     }
   }
@@ -654,30 +636,24 @@ export class AdminWorkspaceService {
     // Versuche WebSocket-Verbindung
     awsRealtimeService
       .subscribeToWorkspaceEvents(adminId, async event => {
-
         webSocketConnected = true;
 
         // WebSocket funktioniert - deaktiviere Polling
         if (pollingInterval) {
           clearInterval(pollingInterval);
           pollingInterval = null;
-
         }
 
         try {
           const workspaces = await this.getAllWorkspaces(adminId);
           callback(workspaces);
-        } catch (error) {
-
-        }
+        } catch (error) {}
       })
       .then(unsubscribe => {
         unsubscribeWebSocket = unsubscribe;
         webSocketConnected = true;
-
       })
       .catch(error => {
-
         webSocketConnected = false;
       });
 
@@ -686,9 +662,7 @@ export class AdminWorkspaceService {
       try {
         const workspaces = await this.getAllWorkspaces(adminId);
         callback(workspaces);
-      } catch (error) {
-
-      }
+      } catch (error) {}
     });
 
     // Load initial data immediately

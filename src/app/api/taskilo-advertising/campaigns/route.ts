@@ -10,7 +10,6 @@ import { db } from '@/firebase/server';
  */
 export async function GET(request: NextRequest) {
   try {
-
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const includeMetrics = searchParams.get('metrics') !== 'false';
@@ -160,7 +159,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-
     return NextResponse.json(
       {
         error: 'Interner Server-Fehler',
@@ -176,7 +174,6 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-
     const body = await request.json();
     const { companyId, name, type, budget, biddingStrategy, targeting, schedule, creatives } = body;
 
@@ -297,7 +294,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Erstellen der Kampagne',

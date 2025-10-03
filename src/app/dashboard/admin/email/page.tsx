@@ -88,7 +88,6 @@ const cleanTextContent = (content: string): string => {
 
     return textContent.trim();
   } catch (error) {
-
     // Fallback: Einfache Tag-Entfernung falls html-to-text fehlschlägt
     return content.replace(/<[^>]*>/g, '').trim();
   }
@@ -140,7 +139,6 @@ export default function EmailAdminPage() {
 
   // Load real WorkMail data
   useEffect(() => {
-
     loadWorkmailEmails();
     loadEmailTemplates();
   }, []);
@@ -161,15 +159,12 @@ export default function EmailAdminPage() {
       const result = await response.json();
 
       if (result.success && result.data?.emails) {
-
         setReceivedEmails(result.data.emails);
       } else {
-
         // Fallback to demo data if WorkMail fails
         loadDemoEmails();
       }
     } catch (error) {
-
       // Fallback to demo data if WorkMail fails
       loadDemoEmails();
     } finally {
@@ -327,17 +322,13 @@ export default function EmailAdminPage() {
           },
           credentials: 'include',
           body: JSON.stringify({ emailId, messageId: emailToArchive.messageId }),
-        }).catch(err => {
-
-        });
+        }).catch(err => {});
       }
 
       // Schließe Detail-View
       setShowEmailDetail(false);
       setSelectedEmail(null);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleMarkAsRead = async (emailId: string, isRead: boolean) => {
@@ -355,19 +346,16 @@ export default function EmailAdminPage() {
   };
 
   const handleReplyAllToEmail = (email: ReceivedEmail) => {
-
     // Implementierung für "Allen antworten"
     // Hier würde normalerweise ein Reply-All-Dialog geöffnet werden
   };
 
   const handleForwardEmail = (email: ReceivedEmail) => {
-
     // Implementierung für "Weiterleiten"
     // Hier würde normalerweise ein Forward-Dialog geöffnet werden
   };
 
   const handleFavoriteEmail = async (emailId: string) => {
-
     // Implementierung für "Favorit"
     // Hier würde normalerweise der Favorit-Status in der API aktualisiert werden
     setReceivedEmails(prev =>
@@ -413,13 +401,9 @@ export default function EmailAdminPage() {
           },
           credentials: 'include',
           body: JSON.stringify({ emailId, messageId: emailToRestore.messageId }),
-        }).catch(err => {
-
-        });
+        }).catch(err => {});
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleDeleteFromArchive = async (emailId: string) => {
@@ -437,13 +421,9 @@ export default function EmailAdminPage() {
           },
           credentials: 'include',
           body: JSON.stringify({ emailId, messageId: emailToDelete.messageId }),
-        }).catch(err => {
-
-        });
+        }).catch(err => {});
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleArchivedEmailClick = (email: ReceivedEmail) => {
@@ -516,7 +496,6 @@ export default function EmailAdminPage() {
         alert(`E-Mail Fehler: ${result.error}`);
       }
     } catch (error) {
-
       alert('Fehler beim E-Mail-Versand');
     } finally {
       setLoading(false);
@@ -547,7 +526,6 @@ export default function EmailAdminPage() {
       });
       alert('Template erfolgreich gespeichert!');
     } catch (error) {
-
       alert('Fehler beim Speichern des Templates');
     } finally {
       setLoading(false);
@@ -798,7 +776,6 @@ export default function EmailAdminPage() {
                               alert(`E-Mail Test fehlgeschlagen: ${result.error}`);
                             }
                           } catch (error) {
-
                             alert('Fehler beim E-Mail Test');
                           } finally {
                             setLoading(false);
@@ -1111,7 +1088,6 @@ export default function EmailAdminPage() {
                 <SentEmailsView
                   refreshTrigger={sentEmailsRefreshTrigger}
                   onEmailClick={email => {
-
                     setSelectedSentEmail(email);
                     setShowSentEmailDetail(true);
                   }}
@@ -1120,24 +1096,20 @@ export default function EmailAdminPage() {
 
               {/* Sent Email Detail View */}
               {(() => {
-
                 return null;
               })()}
               {activeTab === 'sent' && showSentEmailDetail && selectedSentEmail && (
                 <div>
                   {(() => {
-
                     return null;
                   })()}
                   <SentEmailDetailView
                     email={selectedSentEmail}
                     onBack={() => {
-
                       setShowSentEmailDetail(false);
                       setSelectedSentEmail(null);
                     }}
                     onDelete={() => {
-
                       // Trigger refresh of sent emails after deletion
                       setSentEmailsRefreshTrigger(prev => prev + 1);
                       setShowSentEmailDetail(false);
@@ -1305,7 +1277,6 @@ export default function EmailAdminPage() {
                                   alert(`SSO Fehler: ${result.error}`);
                                 }
                               } catch (error) {
-
                                 alert('Fehler beim SSO-Check');
                               }
                             }}
@@ -1336,7 +1307,6 @@ export default function EmailAdminPage() {
                                   alert(`Fehler: ${result.error}`);
                                 }
                               } catch (error) {
-
                                 alert('Fehler beim Öffnen des WorkMail Interface');
                               }
                             }}

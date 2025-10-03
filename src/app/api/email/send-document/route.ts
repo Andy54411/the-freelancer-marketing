@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     }
 
     const service = ResendEmailService.getInstance();
-    
+
     // HTML-Nachricht zusammenstellen
     let htmlMessage = message.replace(/\n/g, '<br />');
     if (signature && signature.trim()) {

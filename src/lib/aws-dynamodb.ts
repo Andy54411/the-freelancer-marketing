@@ -103,7 +103,6 @@ export class AdminEmailsService {
 
       return { success: true, id, item };
     } catch (error) {
-
       throw error;
     }
   }
@@ -120,7 +119,6 @@ export class AdminEmailsService {
       const result = await docClient.send(command);
       return (result.Items as AdminEmail[]) || [];
     } catch (error) {
-
       throw error;
     }
   }
@@ -140,7 +138,6 @@ export class AdminEmailsService {
       const result = await docClient.send(command);
       return (result.Item as AdminEmail) || null;
     } catch (error) {
-
       throw error;
     }
   }
@@ -164,7 +161,6 @@ export class AdminEmailsService {
       const result = await docClient.send(command);
       return (result.Items as AdminEmail[]) || [];
     } catch (error) {
-
       throw error;
     }
   }
@@ -200,7 +196,6 @@ export class AdminEmailsService {
 
       await docClient.send(command);
     } catch (error) {
-
       throw error;
     }
   }
@@ -244,7 +239,6 @@ export class AdminEmailsService {
 
       return sortedItems as AdminEmail[];
     } catch (error) {
-
       throw error;
     }
   }
@@ -263,7 +257,6 @@ export class AdminEmailsService {
 
       return { success: true };
     } catch (error) {
-
       throw error;
     }
   }
@@ -279,7 +272,6 @@ export class AdminEmailsService {
 
       return { success: true };
     } catch (error) {
-
       throw error;
     }
   }
@@ -301,7 +293,6 @@ export class AdminEmailsService {
 
       return { success: true, stats };
     } catch (error) {
-
       throw error;
     }
   }
@@ -322,7 +313,6 @@ export class DynamoDBService {
       );
       return { success: true, message: 'DynamoDB connection healthy' };
     } catch (error) {
-
       return { success: false, error: error.message };
     }
   }
@@ -334,7 +324,6 @@ export class DynamoDBService {
       );
       return { success: true, tables: TableNames };
     } catch (error) {
-
       throw error;
     }
   }

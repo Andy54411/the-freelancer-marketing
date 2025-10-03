@@ -10,20 +10,16 @@ interface FooterTextProps {
   language?: string;
 }
 
-export const FooterText: React.FC<FooterTextProps> = ({ 
-  data, 
+export const FooterText: React.FC<FooterTextProps> = ({
+  data,
   variant = 'standard',
   documentType,
-  language = 'de'
+  language = 'de',
 }) => {
   if (!data.footerText) return null;
 
   // Verwende das zentrale placeholderSystem für Platzhalter-Ersetzung mit Sprach-Support
-  const processedFooterText = replacePlaceholders(
-    data.footerText, 
-    data, 
-    language
-  );
+  const processedFooterText = replacePlaceholders(data.footerText, data, language);
 
   if (variant === 'elegant') {
     return (
@@ -31,7 +27,7 @@ export const FooterText: React.FC<FooterTextProps> = ({
         <div
           className="text-sm text-gray-700 leading-relaxed"
           dangerouslySetInnerHTML={{
-            __html: processedFooterText
+            __html: processedFooterText,
           }}
         />
       </div>
@@ -44,7 +40,7 @@ export const FooterText: React.FC<FooterTextProps> = ({
         <div
           className="text-xs text-gray-700 leading-normal"
           dangerouslySetInnerHTML={{
-            __html: processedFooterText
+            __html: processedFooterText,
           }}
         />
       </div>
@@ -57,7 +53,7 @@ export const FooterText: React.FC<FooterTextProps> = ({
       <div
         className="text-xs text-gray-700 leading-normal"
         dangerouslySetInnerHTML={{
-          __html: processedFooterText
+          __html: processedFooterText,
         }}
       />
     </div>

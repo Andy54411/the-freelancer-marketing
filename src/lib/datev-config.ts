@@ -51,10 +51,10 @@ export const DATEV_SANDBOX_CONFIG = {
   // Official sandbox endpoints (verified from OIDC discovery)
   endpoints: {
     authorization: 'https://login.datev.de/openidsandbox/authorize',
-    token: 'https://sandbox-api.datev.de/token',  // Verified: Token-Endpoint ist unter sandbox-api.datev.de
+    token: 'https://sandbox-api.datev.de/token', // Verified: Token-Endpoint ist unter sandbox-api.datev.de
     userinfo: 'https://sandbox-api.datev.de/userinfo',
     revocation: 'https://sandbox-api.datev.de/revoke',
-    apiBase: 'https://sandbox-api.datev.de',  // KORRIGIERT: Ohne /platform-sandbox suffix
+    apiBase: 'https://sandbox-api.datev.de', // KORRIGIERT: Ohne /platform-sandbox suffix
   },
 } as const;
 
@@ -261,7 +261,6 @@ export function generateSandboxClientId(clientNumber: string = '1'): string {
   const validClients = DATEV_SANDBOX_CONFIG.clientNumbers;
 
   if (!validClients.includes(clientNumber as any)) {
-
     clientNumber = '1';
   }
 

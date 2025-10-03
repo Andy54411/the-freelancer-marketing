@@ -42,7 +42,6 @@ export async function GET(request: NextRequest) {
 
     // Einzelnes Ticket abrufen
     if (ticketId) {
-
       const ticket = await AWSTicketStorage.getTicket(ticketId);
 
       if (!ticket) {
@@ -83,7 +82,6 @@ export async function GET(request: NextRequest) {
       source: 'aws-dynamodb',
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Laden der Tickets aus AWS',
@@ -153,7 +151,6 @@ export async function POST(request: NextRequest) {
       source: 'aws-dynamodb',
     });
   } catch (error) {
-
     await EnhancedTicketService.logToCloudWatch(
       'ticket-creation-errors',
       {
@@ -196,7 +193,6 @@ export async function PUT(request: NextRequest) {
       source: 'aws-dynamodb',
     });
   } catch (error) {
-
     await EnhancedTicketService.logToCloudWatch(
       'ticket-update-errors',
       {
@@ -232,7 +228,6 @@ export async function DELETE(request: NextRequest) {
     const success = await AWSTicketStorage.deleteTicket(id);
 
     if (success) {
-
       return NextResponse.json({
         success: true,
         message: 'Ticket erfolgreich aus AWS DynamoDB gelöscht',
@@ -245,7 +240,6 @@ export async function DELETE(request: NextRequest) {
       );
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Löschen des Tickets aus AWS',

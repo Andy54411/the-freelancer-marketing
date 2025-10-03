@@ -55,7 +55,6 @@ const OnboardingStep5: React.FC<OnboardingStep5Props> = ({ companyUid }) => {
           setFinalTermsAccepted(stepData[5].finalTermsAccepted);
         }
       } catch (error) {
-
       } finally {
         setLoading(false);
       }
@@ -72,13 +71,11 @@ const OnboardingStep5: React.FC<OnboardingStep5Props> = ({ companyUid }) => {
 
     setSubmitting(true);
     try {
-
       await completeOnboarding();
 
       // Success - redirect to dashboard
       router.push(`/dashboard/company/${companyUid}?onboarding=completed`);
     } catch (error) {
-
       alert('Fehler beim Abschließen des Onboardings. Bitte versuchen Sie es erneut.');
     } finally {
       setSubmitting(false);

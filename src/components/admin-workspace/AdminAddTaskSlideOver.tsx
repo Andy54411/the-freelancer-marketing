@@ -111,7 +111,6 @@ export function AdminAddTaskSlideOver({
 
       onClose();
     } catch (error) {
-
     } finally {
       setLoading(false);
     }

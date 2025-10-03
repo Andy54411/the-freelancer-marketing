@@ -73,9 +73,7 @@ export default function IntegrationsSection1() {
                 </div>
                 <div className="ml-3">
                   <p className="font-semibold text-white drop-shadow-md">Maria Schmidt</p>
-                  <p className="text-sm text-white/80 drop-shadow-md">
-                    Hausbesitzerin aus München
-                  </p>
+                  <p className="text-sm text-white/80 drop-shadow-md">Hausbesitzerin aus München</p>
                 </div>
               </div>
             </div>

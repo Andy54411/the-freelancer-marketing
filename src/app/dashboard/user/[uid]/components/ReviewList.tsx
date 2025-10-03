@@ -70,7 +70,6 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
           setAverage(null);
         }
       } catch (err: unknown) {
-
         let errorMessage = 'Bewertungen konnten nicht geladen werden.';
         if (err instanceof Error) {
           errorMessage = err.message;

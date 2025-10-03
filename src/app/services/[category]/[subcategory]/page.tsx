@@ -104,7 +104,7 @@ export default function SubcategoryPage() {
             limit(50) // Reasonable limit per provider
           );
           const reviewsSnapshot = await getDocs(reviewsQuery);
-          
+
           const providerReviews: any[] = [];
           reviewsSnapshot.forEach(doc => {
             providerReviews.push(doc.data());

@@ -27,7 +27,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = props => {
     showFoldLines: true, // ← Falzmarken standardmäßig aktiviert
     showPageNumbers: true,
     showFooter: true,
-    showWatermark: false
+    showWatermark: false,
   };
 
   const documentSettings = props.documentSettings || defaultDocumentSettings;

@@ -30,12 +30,12 @@ function getTaxRuleLabel(taxRule: string): string {
 }
 
 type TemplateType =
-'professional-business' |
-'corporate-classic' |
-'executive-premium' |
-'minimalist-elegant' |
-'creative-modern' |
-'tech-startup';
+  | 'professional-business'
+  | 'corporate-classic'
+  | 'executive-premium'
+  | 'minimalist-elegant'
+  | 'creative-modern'
+  | 'tech-startup';
 
 interface TemplateItem {
   description: string;
@@ -72,37 +72,27 @@ interface LivePreviewProps {
 export function LivePreview({
   invoiceData,
   companySettings,
-  template = 'professional-business'
+  template = 'professional-business',
 }: LivePreviewProps) {
   // WICHTIG: Template Debug Info
-
-
-
-
-
-
-
 
   console.table({
     selectedTemplate: template,
     hasInvoiceData: !!invoiceData,
     hasCompanySettings: !!companySettings,
     invoiceNumber: invoiceData?.invoiceNumber,
-    companyWebsite: companySettings?.companyWebsite || 'NICHT VORHANDEN'
+    companyWebsite: companySettings?.companyWebsite || 'NICHT VORHANDEN',
   });
   const TemplateMap = {
-    'professional-business': ProfessionalBusinessTemplate
+    'professional-business': ProfessionalBusinessTemplate,
   } as const;
 
   // WICHTIG: Verfügbare Templates Debug Info
 
-
-
-
   console.table(
-    Object.keys(TemplateMap).map((key) => ({
+    Object.keys(TemplateMap).map(key => ({
       templateName: key,
-      isAvailable: true
+      isAvailable: true,
     }))
   );
 
@@ -131,13 +121,14 @@ export function LivePreview({
     companyVatId: companySettings?.vatId || '',
     companyTaxNumber: companySettings?.taxNumber || '',
     items: invoiceData.items || [
-    {
-      id: 'placeholder',
-      description: 'Beispiel Dienstleistung',
-      quantity: 1,
-      unitPrice: 100.0,
-      total: 100.0
-    }],
+      {
+        id: 'placeholder',
+        description: 'Beispiel Dienstleistung',
+        quantity: 1,
+        unitPrice: 100.0,
+        total: 100.0,
+      },
+    ],
 
     amount: invoiceData.amount || 0,
     tax: invoiceData.tax || 0,
@@ -148,20 +139,20 @@ export function LivePreview({
     companyId: 'preview',
     isStorno: false,
     isSmallBusiness:
-    companySettings?.ust === 'kleinunternehmer' || companySettings?.isSmallBusiness || false,
+      companySettings?.ust === 'kleinunternehmer' || companySettings?.isSmallBusiness || false,
     vatRate: 19,
     priceInput: 'netto' as const,
     taxNote:
-    invoiceData.taxNote || (
-    companySettings?.ust === 'kleinunternehmer' ? 'kleinunternehmer' : 'none'),
-    bankDetails: companySettings?.iban ?
-    {
-      iban: companySettings.iban,
-      bic: companySettings.bic,
-      accountHolder: companySettings.accountHolder || '',
-      bankName: companySettings.bankName
-    } :
-    undefined,
+      invoiceData.taxNote ||
+      (companySettings?.ust === 'kleinunternehmer' ? 'kleinunternehmer' : 'none'),
+    bankDetails: companySettings?.iban
+      ? {
+          iban: companySettings.iban,
+          bic: companySettings.bic,
+          accountHolder: companySettings.accountHolder || '',
+          bankName: companySettings.bankName,
+        }
+      : undefined,
     paymentTerms: invoiceData.paymentTerms || '',
     skontoEnabled: invoiceData.skontoEnabled || false,
     skontoDays: invoiceData.skontoEnabled ? invoiceData.skontoDays || 0 : 0,
@@ -169,7 +160,7 @@ export function LivePreview({
     skontoText: invoiceData.skontoEnabled ? invoiceData.skontoText || '' : '',
     notes: invoiceData.notes || '',
     taxRuleType: invoiceData.taxRuleType || TaxRuleType.DE_TAXABLE,
-    taxRuleLabel: getTaxRuleLabel(invoiceData.taxRuleType || TaxRuleType.DE_TAXABLE)
+    taxRuleLabel: getTaxRuleLabel(invoiceData.taxRuleType || TaxRuleType.DE_TAXABLE),
   } as any;
 
   // Wenn das Template nicht in der Map ist, verwende das Professional Business Template als Fallback
@@ -193,9 +184,9 @@ export function LivePreview({
         street: (previewData.customerAddress || '').split('\n')[0] || '',
         zipCode: (previewData.customerAddress || '').split('\n')[1]?.split(' ')[0] || '',
         city:
-        (previewData.customerAddress || '').split('\n')[1]?.split(' ').slice(1).join(' ') || '',
-        country: 'Deutschland'
-      }
+          (previewData.customerAddress || '').split('\n')[1]?.split(' ').slice(1).join(' ') || '',
+        country: 'Deutschland',
+      },
     },
     company: {
       name: previewData.companyName,
@@ -206,23 +197,23 @@ export function LivePreview({
         street: (previewData.companyAddress || '').split('\n')[0] || '',
         zipCode: (previewData.companyAddress || '').split('\n')[1]?.split(' ')[0] || '',
         city:
-        (previewData.companyAddress || '').split('\n')[1]?.split(' ').slice(1).join(' ') || '',
-        country: 'Deutschland'
+          (previewData.companyAddress || '').split('\n')[1]?.split(' ').slice(1).join(' ') || '',
+        country: 'Deutschland',
       },
       taxNumber: previewData.companyTaxNumber || '',
       vatId: previewData.companyVatId || '',
       bankDetails: {
         iban: previewData.bankDetails?.iban || '',
         bic: previewData.bankDetails?.bic || '',
-        accountHolder: previewData.bankDetails?.accountHolder || ''
-      }
+        accountHolder: previewData.bankDetails?.accountHolder || '',
+      },
     },
     items: (previewData.items || []).map((i, idx) => ({
       description: i.description || `Position ${idx + 1}`,
       quantity: (i as any).quantity || 1,
       unit: (i as any).unit || 'Stk.',
       unitPrice: (i as any).unitPrice || (i.total ? i.total : 0),
-      total: i.total || ((i as any).unitPrice || 0) * ((i as any).quantity || 1)
+      total: i.total || ((i as any).unitPrice || 0) * ((i as any).quantity || 1),
     })),
     subtotal: previewData.amount || 0,
     taxRate: previewData.vatRate || 19,
@@ -231,7 +222,7 @@ export function LivePreview({
     paymentTerms: previewData.paymentTerms || '',
     notes: previewData.notes || '',
     status: previewData.status || 'draft',
-    isSmallBusiness: previewData.isSmallBusiness || false
+    isSmallBusiness: previewData.isSmallBusiness || false,
   };
 
   // Hole die Template-Komponente
@@ -239,20 +230,15 @@ export function LivePreview({
 
   // WICHTIG: Template Rendering Debug Info
 
-
-
-
   console.group('Template Details');
-
-
 
   console.table({
     invoiceNumber: previewData.invoiceNumber,
     customerName: previewData.customerName,
     total: previewData.total,
-    templateStatus: Object.prototype.hasOwnProperty.call(TemplateMap, template) ?
-    '✅ GELADEN' :
-    '❌ FEHLT'
+    templateStatus: Object.prototype.hasOwnProperty.call(TemplateMap, template)
+      ? '✅ GELADEN'
+      : '❌ FEHLT',
   });
   console.groupEnd();
 
@@ -264,9 +250,9 @@ export function LivePreview({
           style={{
             scale: 0.22,
             width: '210mm',
-            height: '297mm'
-          }}>
-
+            height: '297mm',
+          }}
+        >
           <SelectedTemplate
             preview={true}
             data={{
@@ -280,8 +266,8 @@ export function LivePreview({
                   street: templateData.customer?.address?.street || '',
                   zipCode: templateData.customer?.address?.zipCode || '',
                   city: templateData.customer?.address?.city || '',
-                  country: templateData.customer?.address?.country || ''
-                }
+                  country: templateData.customer?.address?.country || '',
+                },
               },
               company: templateData.company || {
                 name: '',
@@ -292,17 +278,17 @@ export function LivePreview({
                   street: '',
                   zipCode: '',
                   city: '',
-                  country: ''
+                  country: '',
                 },
                 taxNumber: '',
                 vatId: '',
                 bankDetails: {
                   iban: '',
                   bic: '',
-                  accountHolder: ''
-                }
+                  accountHolder: '',
+                },
               },
-              items: (templateData.items || []).map((item) => {
+              items: (templateData.items || []).map(item => {
                 const templateItem: TemplateItem = {
                   description: item.description || '',
                   quantity: item.quantity || 0,
@@ -310,7 +296,7 @@ export function LivePreview({
                   unitPrice: item.unitPrice || 0,
                   total: item.total || 0,
                   discountPercent: (item as any).discountPercent || 0,
-                  discount: (item as any).discount || 0
+                  discount: (item as any).discount || 0,
                 };
                 return templateItem;
               }),
@@ -321,11 +307,11 @@ export function LivePreview({
               notes: templateData.notes || '',
               paymentTerms: templateData.paymentTerms || '',
               status: templateData.status || 'draft',
-              isSmallBusiness: templateData.isSmallBusiness || false
-            }} />
-
+              isSmallBusiness: templateData.isSmallBusiness || false,
+            }}
+          />
         </div>
       </div>
-    </div>);
-
+    </div>
+  );
 }

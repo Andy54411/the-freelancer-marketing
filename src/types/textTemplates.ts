@@ -2,7 +2,14 @@
 
 // Type-Definitionen
 export type TextTemplateCategory = 'DOCUMENT' | 'EMAIL' | 'LETTER';
-export type ObjectType = 'QUOTE' | 'INVOICE' | 'REMINDER' | 'DELIVERY_NOTE' | 'ORDER_CONFIRMATION' | 'CREDIT_NOTE' | 'CANCELLATION';
+export type ObjectType =
+  | 'QUOTE'
+  | 'INVOICE'
+  | 'REMINDER'
+  | 'DELIVERY_NOTE'
+  | 'ORDER_CONFIRMATION'
+  | 'CREDIT_NOTE'
+  | 'CANCELLATION';
 export type TextTemplateType = 'HEAD' | 'FOOT' | 'BODY' | 'SUBJECT';
 
 export interface TextTemplate {

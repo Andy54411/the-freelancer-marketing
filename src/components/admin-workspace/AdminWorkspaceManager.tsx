@@ -59,7 +59,6 @@ export default function AdminWorkspaceManager() {
           return;
         }
       } catch (error) {
-
         router.push('/admin/login');
         return;
       } finally {
@@ -110,9 +109,7 @@ export default function AdminWorkspaceManager() {
 
       setWorkspaces(prev => [newWorkspace, ...prev]);
       // Modal wurde entfernt, da wir jetzt eine separate Seite verwenden
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleUpdateWorkspace = async (workspaceId: string, updates: Partial<AdminWorkspace>) => {
@@ -121,7 +118,6 @@ export default function AdminWorkspaceManager() {
       await adminWorkspaceService.updateWorkspaceWithRealtime(workspaceId, updates);
       // State will be updated automatically through realtime subscription
     } catch (error) {
-
       // Revert optimistic update on error by reloading
       if (adminId) {
         const workspaceData = await adminWorkspaceService.getWorkspacesByAdmin(adminId);
@@ -134,9 +130,7 @@ export default function AdminWorkspaceManager() {
     try {
       await adminWorkspaceService.deleteWorkspace(workspaceId);
       setWorkspaces(prev => prev.filter(workspace => workspace.id !== workspaceId));
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleWorkspaceClick = (workspace: AdminWorkspace) => {

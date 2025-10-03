@@ -81,7 +81,6 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
       // Add-Mode: Zeige leere Liste
       setDocuments([]);
       setLoading(false);
-
     }
   }, [employeeId, companyId]);
 
@@ -91,9 +90,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
 
       const docs = await PersonalService.getEmployeeDocuments(companyId, employeeId);
       setDocuments(docs);
-
     } catch (error) {
-
       toast.error('Fehler beim Laden der Dokumente');
     } finally {
       setLoading(false);
@@ -116,7 +113,6 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
 
       return downloadURL;
     } catch (error) {
-
       throw error;
     }
   };
@@ -139,12 +135,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
       setUploading(true);
 
       // 1. Datei zu Firebase Storage hochladen
-      const downloadURL = await uploadFileToFirebaseStorage(
-        file,
-        employeeId,
-        category,
-        file.name
-      );
+      const downloadURL = await uploadFileToFirebaseStorage(file, employeeId, category, file.name);
 
       // 2. Dokument-Metadaten in Firestore speichern
       const documentData: Omit<EmployeeDocument, 'id'> = {
@@ -181,9 +172,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
       // 5. Reset form
       setSelectedCategory('');
       event.target.value = '';
-
     } catch (error) {
-
       toast.error('Fehler beim Hochladen des Dokuments');
     } finally {
       setUploading(false);
@@ -194,7 +183,6 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
     if (!document.id) return;
 
     try {
-
       // Dokument aus Firestore löschen
       await PersonalService.deleteEmployeeDocument(companyId, document.id);
 
@@ -204,9 +192,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
           const storage = getStorage(app);
           const fileRef = storageRef(storage, document.storagePath);
           await deleteObject(fileRef);
-
         } catch (storageError) {
-
           // Wir machen weiter, auch wenn Storage-Löschung fehlschlägt
         }
       }
@@ -214,9 +200,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
       // Local state aktualisieren
       setDocuments(prev => prev.filter(doc => doc.id !== document.id));
       toast.success('Dokument erfolgreich gelöscht');
-
     } catch (error) {
-
       toast.error('Fehler beim Löschen des Dokuments');
     }
   };

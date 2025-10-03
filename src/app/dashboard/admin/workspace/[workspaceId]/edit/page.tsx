@@ -61,7 +61,6 @@ export default function EditAdminWorkspacePage() {
           router.push('/admin/login');
         }
       } catch (error) {
-
         router.push('/admin/login');
       } finally {
         setAuthLoading(false);
@@ -97,7 +96,6 @@ export default function EditAdminWorkspacePage() {
           tags: workspaceData.tags || [],
         });
       } catch (error) {
-
         router.push(`/dashboard/admin/workspace`);
       } finally {
         setLoading(false);
@@ -139,7 +137,6 @@ export default function EditAdminWorkspacePage() {
       // Navigate back to workspace overview
       router.push(`/dashboard/admin/workspace`);
     } catch (error) {
-
       // TODO: Show error toast
     } finally {
       setSaving(false);
@@ -160,7 +157,6 @@ export default function EditAdminWorkspacePage() {
       await adminWorkspaceService.deleteWorkspace(workspace.id);
       router.push(`/dashboard/admin/workspace`);
     } catch (error) {
-
       // TODO: Show error toast
     }
   };

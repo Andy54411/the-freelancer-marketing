@@ -48,12 +48,10 @@ export async function registerEmployee(
     const masterInviteCode = process.env.MASTER_INVITE_CODE;
     if (masterInviteCode && inviteCode === masterInviteCode) {
       role = 'master';
-
     } else {
       // 2. Fallback auf den regulären Mitarbeiter-Code
       const employeeInviteCode = process.env.EMPLOYEE_INVITE_CODE;
       if (!employeeInviteCode) {
-
         return { error: 'Fehler bei der Serverkonfiguration.', success: false };
       }
       if (inviteCode !== employeeInviteCode) {
@@ -63,7 +61,6 @@ export async function registerEmployee(
         };
       }
       role = 'support';
-
     }
 
     let userRecord: UserRecord;
@@ -86,11 +83,9 @@ export async function registerEmployee(
           success: false,
         };
       }
-
     } catch (error: unknown) {
       // 3. Wenn der Benutzer nicht gefunden wird, erstellen wir ihn neu.
       if (isFirebaseError(error) && error.code === 'auth/user-not-found') {
-
         userRecord = await auth.createUser({
           email,
           password,
@@ -132,7 +127,6 @@ export async function registerEmployee(
 
     return { error: null, success: true };
   } catch (error: unknown) {
-
     if (isFirebaseError(error)) {
       // Detailliertere Fehlermeldungen basierend auf dem Firebase-Fehlercode
       switch (error.code) {

@@ -1,4 +1,3 @@
-
 /**
  * DATEV Callback Simulator
  * Simuliert einen erfolgreichen OAuth Callback für Testzwecke
@@ -100,7 +99,6 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'simulation_error',

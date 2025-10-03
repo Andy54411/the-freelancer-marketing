@@ -55,7 +55,6 @@ export async function GET(request: NextRequest) {
     // Redirect user to DATEV authorization page
     return NextResponse.redirect(authUrl);
   } catch (error: any) {
-
     return NextResponse.json(
       {
         error: 'oauth_generation_failed',
@@ -86,7 +85,6 @@ export async function POST(request: NextRequest) {
         const decodedToken = await getAuth().verifyIdToken(token);
         firebaseUserId = decodedToken.uid;
       } catch (authError) {
-
         return NextResponse.json({ error: 'Invalid Firebase token' }, { status: 401 });
       }
 
@@ -158,7 +156,6 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error: any) {
-
     return NextResponse.json({ error: error.message || 'Authentication failed' }, { status: 500 });
   }
 }

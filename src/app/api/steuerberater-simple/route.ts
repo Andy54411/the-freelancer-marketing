@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         // Get invitations for this company
         const invitesSnapshot = await database
           .collection('steuerberater_invites')
-          
+
           .orderBy('createdAt', 'desc')
           .get();
 
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
         // Get shared documents for this company
         const docsSnapshot = await database
           .collection('shared_documents')
-          
+
           .orderBy('sharedAt', 'desc')
           .get();
 
@@ -160,7 +160,7 @@ async function handleInvite(database: any, companyId: string, data: any) {
     // Check if invitation already exists
     const existingSnapshot = await database
       .collection('steuerberater_invites')
-      
+
       .where('email', '==', email)
       .get();
 

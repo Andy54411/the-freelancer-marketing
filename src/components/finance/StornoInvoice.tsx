@@ -158,7 +158,7 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
       if (contentType?.includes('application/pdf')) {
         const pdfBlob = await response.blob();
         const pdfUrl = window.URL.createObjectURL(pdfBlob);
-        
+
         // Download auslösen
         const link = document.createElement('a');
         link.href = pdfUrl;
@@ -167,7 +167,7 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
         link.click();
         document.body.removeChild(link);
         window.URL.revokeObjectURL(pdfUrl);
-        
+
         toast.success('Storno-PDF erfolgreich heruntergeladen');
       } else {
         // Fallback: JSON Response mit Print-URL
@@ -182,7 +182,9 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
       }
     } catch (error) {
       console.error('PDF download error:', error);
-      toast.error(`PDF-Download fehlgeschlagen: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+      toast.error(
+        `PDF-Download fehlgeschlagen: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+      );
     }
   };
 
@@ -391,13 +393,16 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
                     <DialogDescription>Vorschau der erstellten Storno-Rechnung</DialogDescription>
                   </DialogHeader>
                   <div className="mt-4">
-                    <InvoiceTemplateRenderer data={stornoInvoice} template="professional-business" />
+                    <InvoiceTemplateRenderer
+                      data={stornoInvoice}
+                      template="professional-business"
+                    />
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setShowStornoPreview(false)}>
                       Schließen
                     </Button>
-                    <Button 
+                    <Button
                       className="bg-[#14ad9f] hover:bg-[#129488]"
                       onClick={handleDownloadStornoPdf}
                     >

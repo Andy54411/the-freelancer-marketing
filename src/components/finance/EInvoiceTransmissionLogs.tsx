@@ -58,7 +58,6 @@ export function EInvoiceTransmissionLogs({ companyId }: EInvoiceTransmissionLogs
       const transmissionLogs = await EInvoiceTransmissionService.getTransmissionLogs(companyId);
       setLogs(transmissionLogs);
     } catch (error) {
-
       toast.error('Übertragungsprotokolle konnten nicht geladen werden');
     } finally {
       setLoading(false);

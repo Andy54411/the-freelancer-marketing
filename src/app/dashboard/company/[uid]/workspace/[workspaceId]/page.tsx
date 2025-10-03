@@ -61,7 +61,6 @@ export default function WorkspaceDetailPage() {
 
         setWorkspace(workspaceData);
       } catch (error) {
-
         router.push(`/dashboard/company/${companyId}/workspace`);
       } finally {
         setLoading(false);
@@ -79,9 +78,7 @@ export default function WorkspaceDetailPage() {
       if (updatedWorkspace) {
         setWorkspace(updatedWorkspace);
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleDeleteWorkspace = async (workspaceId: string) => {
@@ -90,9 +87,7 @@ export default function WorkspaceDetailPage() {
     try {
       await WorkspaceService.deleteWorkspace(workspaceId);
       router.push(`/dashboard/company/${companyId}/workspace`);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const formatDate = (date: Date) => {

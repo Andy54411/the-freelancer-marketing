@@ -9,16 +9,16 @@ export interface A4Dimensions {
 export const A4_DIMENSIONS = {
   // At 96 DPI (standard web)
   WEB: { width: 794, height: 1123, unit: 'px' as const },
-  
+
   // At 72 DPI (PDF standard)
   PDF: { width: 595, height: 842, unit: 'px' as const },
-  
+
   // At 300 DPI (print quality)
   PRINT: { width: 2480, height: 3508, unit: 'px' as const },
-  
+
   // Physical dimensions
   MM: { width: 210, height: 297, unit: 'mm' as const },
-  IN: { width: 8.27, height: 11.69, unit: 'in' as const }
+  IN: { width: 8.27, height: 11.69, unit: 'in' as const },
 };
 
 /**
@@ -30,7 +30,7 @@ export const convertA4Dimensions = (
   toUnit: 'px' | 'mm' | 'in' = 'px'
 ): A4Dimensions => {
   let widthMM: number, heightMM: number;
-  
+
   // Convert source to mm first
   switch (from.unit) {
     case 'mm':
@@ -47,22 +47,22 @@ export const convertA4Dimensions = (
       heightMM = (from.height / 96) * 25.4;
       break;
   }
-  
+
   // Convert mm to target unit
   switch (toUnit) {
     case 'mm':
       return { width: widthMM, height: heightMM, unit: 'mm' };
     case 'in':
-      return { 
-        width: widthMM / 25.4, 
-        height: heightMM / 25.4, 
-        unit: 'in' 
+      return {
+        width: widthMM / 25.4,
+        height: heightMM / 25.4,
+        unit: 'in',
       };
     case 'px':
       return {
         width: Math.round((widthMM / 25.4) * toDPI),
         height: Math.round((heightMM / 25.4) * toDPI),
-        unit: 'px'
+        unit: 'px',
       };
   }
 };
@@ -91,12 +91,12 @@ export const calculatePageBreaks = (
 ): number[] => {
   const usableHeight = pageHeight - marginTop - marginBottom;
   const pageCount = calculatePageCount(contentHeight, pageHeight, marginTop, marginBottom);
-  
+
   const breaks: number[] = [];
   for (let i = 1; i < pageCount; i++) {
     breaks.push(i * usableHeight + marginTop);
   }
-  
+
   return breaks;
 };
 
@@ -112,10 +112,10 @@ export const calculateOptimalZoom = (
 ): number => {
   const widthZoom = containerWidth / a4Dimensions.width;
   const heightZoom = containerHeight / a4Dimensions.height;
-  
+
   // Use the smaller zoom to ensure content fits
   const optimalZoom = Math.min(widthZoom, heightZoom);
-  
+
   // Clamp to min/max bounds
   return Math.max(minZoom, Math.min(maxZoom, optimalZoom));
 };
@@ -129,7 +129,7 @@ export const fitsOnSinglePage = (
   marginTop: number = 0,
   marginBottom: number = 0
 ): boolean => {
-  return contentHeight <= (pageHeight - marginTop - marginBottom);
+  return contentHeight <= pageHeight - marginTop - marginBottom;
 };
 
 /**
@@ -172,7 +172,7 @@ export const getA4PageStyles = (
   boxSizing: 'border-box' as const,
   backgroundColor: 'white',
   boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-  margin: '0 auto'
+  margin: '0 auto',
 });
 
 /**
@@ -210,5 +210,5 @@ export default {
   getPageForPosition,
   getPositionForPage,
   getA4PageStyles,
-  A4_PRINT_STYLES
+  A4_PRINT_STYLES,
 };

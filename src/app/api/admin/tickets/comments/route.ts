@@ -69,7 +69,6 @@ export async function POST(request: NextRequest) {
       source: 'aws-dynamodb',
     });
   } catch (error) {
-
     await EnhancedTicketService.logToCloudWatch(
       'ticket-comments-errors',
       {
@@ -116,7 +115,6 @@ export async function GET(request: NextRequest) {
       source: 'aws-dynamodb',
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Laden der Kommentare',

@@ -6,7 +6,6 @@ import Imap from 'imap';
 
 // Quoted-Printable Decoder für E-Mail-Inhalte
 function decodeQuotedPrintable(encoded: string): string {
-
   if (!encoded || typeof encoded !== 'string') {
     return encoded || '';
   }
@@ -141,7 +140,6 @@ async function verifyAdminAuth(): Promise<any> {
     const { payload } = await jwtVerify(token, JWT_SECRET_BYTES);
     return payload;
   } catch (error) {
-
     return null;
   }
 }
@@ -167,15 +165,12 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
       const emails: any[] = [];
 
       imap.once('ready', () => {
-
         imap.openBox(folder, true, (err: any, box: any) => {
           if (err) {
-
             return reject(err);
           }
 
           if (box.messages.total === 0) {
-
             imap.end();
             return resolve({
               emails: [],
@@ -405,7 +400,6 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                   // Fallback: Wenn KEIN HTML gefunden wurde, textContent setzen
                   if (!email.htmlContent) {
                     email.textContent = decodedContent;
-
                   }
                 } else if (info.which === 'HTML' || info.which.includes('HTML')) {
                   // HTML-Content verarbeiten
@@ -532,12 +526,10 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
           });
 
           fetch.once('error', (err: any) => {
-
             reject(err);
           });
 
           fetch.once('end', () => {
-
             imap.end();
 
             // Sortiere E-Mails nach Datum (neueste zuerst)
@@ -558,24 +550,19 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
       });
 
       imap.once('error', (err: any) => {
-
         reject(err);
       });
 
-      imap.once('end', () => {
-
-      });
+      imap.once('end', () => {});
 
       // Timeout für IMAP-Verbindung
       setTimeout(() => {
-
         imap.end();
         reject(new Error('IMAP connection timeout'));
       }, 15000); // 15 Sekunden Timeout
 
       imap.connect();
     } catch (error) {
-
       reject(error);
     }
   });
@@ -583,7 +570,6 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
 
 async function getWorkmailEmailsViaSSO(adminEmail: string, folder = 'INBOX', limit = 50) {
   try {
-
     // Generate SSO URL for WorkMail access
     const ssoUrl = `${WORKMAIL_CONFIG.webInterface}?organization=${WORKMAIL_CONFIG.organization}&user=${encodeURIComponent(adminEmail)}`;
 
@@ -642,7 +628,6 @@ async function getWorkmailEmailsViaSSO(adminEmail: string, folder = 'INBOX', lim
       workmailWebInterface: WORKMAIL_CONFIG.webInterface,
     };
   } catch (error) {
-
     throw error;
   }
 }
@@ -659,7 +644,6 @@ export async function GET(request: Request) {
     const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
 
     if (!tokenCookie) {
-
       return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
     }
 
@@ -672,7 +656,6 @@ export async function GET(request: Request) {
       // Find admin credentials
       const adminConfig = WORKMAIL_ADMIN_MAPPING[adminEmail];
       if (!adminConfig) {
-
         return NextResponse.json(
           { error: 'Admin not configured for WorkMail access' },
           { status: 403 }
@@ -682,16 +665,12 @@ export async function GET(request: Request) {
       let result;
 
       if (method === 'imap' && adminConfig.password) {
-
         try {
           result = await fetchWorkmailEmailsViaIMAP(adminConfig, folder, limit);
-
         } catch (imapError) {
-
           result = await getWorkmailEmailsViaSSO(adminEmail, folder, limit);
         }
       } else {
-
         result = await getWorkmailEmailsViaSSO(adminEmail, folder, limit);
       }
 
@@ -707,11 +686,9 @@ export async function GET(request: Request) {
         },
       });
     } catch (jwtError) {
-
       return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Internal server error',

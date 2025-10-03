@@ -9,28 +9,23 @@ interface JWTPayload {
 
 export async function POST(request: NextRequest) {
   try {
-
     // JWT-Authentifizierung - Verwende taskilo-admin-token wie WorkMail API
     const cookieStore = await cookies();
     const token = cookieStore.get('taskilo-admin-token')?.value;
 
     if (!token) {
-
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
     let decoded: JWTPayload;
     try {
       decoded = jwt.verify(token, jwtSecret) as JWTPayload;
-
     } catch (error) {
-
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -39,7 +34,6 @@ export async function POST(request: NextRequest) {
     const { emailId } = body;
 
     if (!emailId) {
-
       return NextResponse.json({ error: 'Email ID required' }, { status: 400 });
     }
 
@@ -56,7 +50,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

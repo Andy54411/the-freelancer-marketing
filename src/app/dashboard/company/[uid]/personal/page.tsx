@@ -136,7 +136,6 @@ export default function PersonalOverviewPage() {
     if (retryCount < maxRetries) {
       loadEmployees();
     } else {
-
     }
   }, [companyId, retryCount]);
 
@@ -179,16 +178,13 @@ export default function PersonalOverviewPage() {
 
       // Reset retry count on success
       setRetryCount(0);
-
     } catch (error) {
-
       // Increment retry count and retry after delay if under limit
       if (retryCount < maxRetries - 1) {
         setTimeout(() => {
           setRetryCount(prev => prev + 1);
         }, 5000); // 5 Sekunden Wartezeit
       } else {
-
       }
 
       // Fallback auf Mock-Daten bei Fehler

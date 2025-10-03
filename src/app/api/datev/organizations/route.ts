@@ -78,7 +78,6 @@ export async function GET(request: NextRequest) {
     let tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-
       // Add a small delay and try once more (for post-OAuth scenarios)
 
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -87,7 +86,6 @@ export async function GET(request: NextRequest) {
       const retryTokenCookie = retryCookieStore.get(cookieName);
 
       if (!retryTokenCookie?.value) {
-
         return NextResponse.json(
           {
             error: 'no_tokens',
@@ -105,9 +103,7 @@ export async function GET(request: NextRequest) {
     try {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
-
     } catch (parseError) {
-
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -123,7 +119,6 @@ export async function GET(request: NextRequest) {
     const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
 
     if (now >= expiresAt) {
-
       return NextResponse.json(
         {
           error: 'token_expired',
@@ -168,7 +163,6 @@ export async function GET(request: NextRequest) {
           // Try to parse error for debugging
           try {
             const errorData = JSON.parse(errorText);
-
           } catch (e) {
             // Ignore parse errors
           }
@@ -180,7 +174,6 @@ export async function GET(request: NextRequest) {
           };
         }
       } catch (fetchError) {
-
         lastError = {
           endpoint: endpoint.name,
           error: fetchError instanceof Error ? fetchError.message : 'Unknown fetch error',
@@ -190,7 +183,6 @@ export async function GET(request: NextRequest) {
 
     // If no endpoint worked, try UserInfo fallback
     if (!workingEndpoint || !responseData) {
-
       try {
         // Use EXACT SAME config as working UserInfo Test API
         const { DATEV_SANDBOX_CONFIG } = await import('@/lib/datev-config');
@@ -242,11 +234,8 @@ export async function GET(request: NextRequest) {
           });
         } else {
           const fallbackError = await userInfoResponse.text();
-
         }
-      } catch (fallbackError) {
-
-      }
+      } catch (fallbackError) {}
 
       // Final error if everything fails
 
@@ -292,7 +281,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'internal_server_error',
@@ -329,7 +317,6 @@ export async function POST(request: NextRequest) {
 
     return await GET(getRequest);
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'internal_server_error',

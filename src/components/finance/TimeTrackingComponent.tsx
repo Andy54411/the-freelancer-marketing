@@ -162,11 +162,10 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       setTimeEntries(entries);
       setProjects(projectList);
       setFirebaseProjects(fbProjects);
-      
+
       setRunningEntry(running);
       setStats(statistics);
     } catch (error) {
-
       toast.error('Daten konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -177,16 +176,17 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
   async function loadFirebaseProjects(): Promise<FirebaseProject[]> {
     try {
       const response = await fetch(`/api/company/${companyId}/projects`);
-      
+
       if (!response.ok) {
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      
+
       if (!data.success) {
         throw new Error(data.error || 'API returned error');
-      }      const loadedProjects: FirebaseProject[] = data.projects.map((project: any) => ({
+      }
+      const loadedProjects: FirebaseProject[] = data.projects.map((project: any) => ({
         id: project.id,
         name: project.name || '',
         description: project.description || '',
@@ -217,12 +217,12 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
         );
 
         const projectSnapshot = await getDocs(projectsQuery);
-        
+
         const loadedProjects: FirebaseProject[] = [];
 
         projectSnapshot.forEach(doc => {
           const data = doc.data();
-          
+
           loadedProjects.push({
             id: doc.id,
             name: data.name || '',
@@ -250,7 +250,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
         return [];
       }
     }
-  };
+  }
 
   // Neue Funktion zum Behandeln der Projektauswahl
   const handleProjectSelection = (projectId: string) => {
@@ -305,7 +305,6 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       toast.success('Zeiterfassung gestartet');
       await loadData();
     } catch (error) {
-
       toast.error('Zeiterfassung konnte nicht gestartet werden');
     }
   };
@@ -318,7 +317,6 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       toast.success('Zeiterfassung gestoppt');
       await loadData();
     } catch (error) {
-
       toast.error('Zeiterfassung konnte nicht gestoppt werden');
     }
   };
@@ -331,7 +329,6 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       toast.success('Zeiterfassung pausiert');
       await loadData();
     } catch (error) {
-
       toast.error('Zeiterfassung konnte nicht pausiert werden');
     }
   };
@@ -344,7 +341,6 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       toast.success('Zeiterfassung fortgesetzt');
       await loadData();
     } catch (error) {
-
       toast.error('Zeiterfassung konnte nicht fortgesetzt werden');
     }
   };
@@ -359,7 +355,6 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       toast.success('Zeiteintrag gelöscht');
       await loadData();
     } catch (error) {
-
       toast.error('Zeiteintrag konnte nicht gelöscht werden');
     }
   };
@@ -380,7 +375,6 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       setReport(reportData);
       setShowReport(true);
     } catch (error) {
-
       toast.error('Report konnte nicht generiert werden');
     }
   };
@@ -745,52 +739,50 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
                 )}
               </CardContent>
             </Card>
+          ) : /* Manual Time Entry - nur anzeigen wenn Projekte geladen */
+          loading ? (
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-center space-x-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Lade Projekte...</span>
+                </div>
+              </CardContent>
+            </Card>
           ) : (
-            /* Manual Time Entry - nur anzeigen wenn Projekte geladen */
-            loading ? (
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-center space-x-2">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    <span>Lade Projekte...</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <ManualTimeEntry
-                companyId={companyId}
-                userId={userId}
-                projects={(() => {
-                  // DIREKTE API-ABFRAGE wenn firebaseProjects leer ist
-                  if (firebaseProjects.length === 0) {
-                    // Fallback: Return hardcoded project für Testing mit korrekter Validierung
-                    const fallbackProject = {
-                      id: 'n9LtyFY6jHTjeIWZGTs8',
-                      name: 'Mietkoch',
-                      client: 'Boutique Hotel Die Mittagspitze GmbH****S',
-                      hourlyRate: 35,
-                    };
-                    
-                    // Validierung der Fallback-Daten
-                    if (!fallbackProject.id || fallbackProject.id.trim() === '') {
-                      return [];
-                    }
-                    
-                    return [fallbackProject];
+            <ManualTimeEntry
+              companyId={companyId}
+              userId={userId}
+              projects={(() => {
+                // DIREKTE API-ABFRAGE wenn firebaseProjects leer ist
+                if (firebaseProjects.length === 0) {
+                  // Fallback: Return hardcoded project für Testing mit korrekter Validierung
+                  const fallbackProject = {
+                    id: 'n9LtyFY6jHTjeIWZGTs8',
+                    name: 'Mietkoch',
+                    client: 'Boutique Hotel Die Mittagspitze GmbH****S',
+                    hourlyRate: 35,
+                  };
+
+                  // Validierung der Fallback-Daten
+                  if (!fallbackProject.id || fallbackProject.id.trim() === '') {
+                    return [];
                   }
-                  
-                  const mappedProjects = firebaseProjects.map(project => ({
-                    id: project.id,
-                    name: project.name,
-                    client: project.client,
-                    hourlyRate: project.hourlyRate,
-                  }));
-                  
-                  return mappedProjects;
-                })()}
-                onTimeEntryCreated={loadData}
-              />
-            )
+
+                  return [fallbackProject];
+                }
+
+                const mappedProjects = firebaseProjects.map(project => ({
+                  id: project.id,
+                  name: project.name,
+                  client: project.client,
+                  hourlyRate: project.hourlyRate,
+                }));
+
+                return mappedProjects;
+              })()}
+              onTimeEntryCreated={loadData}
+            />
           )}
         </TabsContent>
 
@@ -915,9 +907,11 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
                   <p className="text-gray-600 mb-4">
                     Erstellen Sie Ihr erstes Projekt um Arbeitszeiten zu organisieren.
                   </p>
-                  <Button 
+                  <Button
                     className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
-                    onClick={() => window.location.href = `/dashboard/company/${companyId}/finance/projects`}
+                    onClick={() =>
+                      (window.location.href = `/dashboard/company/${companyId}/finance/projects`)
+                    }
                   >
                     Erstes Projekt erstellen
                   </Button>
@@ -958,10 +952,10 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            setNewEntryForm(prev => ({ 
-                              ...prev, 
+                            setNewEntryForm(prev => ({
+                              ...prev,
                               projectId: project.id,
-                              projectName: project.name 
+                              projectName: project.name,
                             }));
                             setActiveTab('timer');
                           }}

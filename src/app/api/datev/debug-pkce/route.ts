@@ -14,11 +14,13 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get storage stats',
-      timestamp: new Date().toISOString(),
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get storage stats',
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
   }
 }

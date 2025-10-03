@@ -3,14 +3,14 @@ const { getFirestore, doc, addDoc, collection, serverTimestamp } = require('fire
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCHRbJfWGMLLMz1d9Vms2I93ijlQWqOwAM",
-  authDomain: "the-freelancer-marketing.firebaseapp.com",
-  databaseURL: "https://the-freelancer-marketing-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "the-freelancer-marketing",
-  storageBucket: "the-freelancer-marketing.firebasestorage.app",
-  messagingSenderId: "1033077107103",
-  appId: "1:1033077107103:web:7c7e2cf7f5d1d39a3dd8a9",
-  measurementId: "G-PCMR4GRPJJ"
+  apiKey: 'AIzaSyCHRbJfWGMLLMz1d9Vms2I93ijlQWqOwAM',
+  authDomain: 'the-freelancer-marketing.firebaseapp.com',
+  databaseURL: 'https://the-freelancer-marketing-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'the-freelancer-marketing',
+  storageBucket: 'the-freelancer-marketing.firebasestorage.app',
+  messagingSenderId: '1033077107103',
+  appId: '1:1033077107103:web:7c7e2cf7f5d1d39a3dd8a9',
+  measurementId: 'G-PCMR4GRPJJ',
 };
 
 // Initialize Firebase
@@ -20,9 +20,9 @@ const db = getFirestore(app);
 async function testSensitiveDataChat() {
   try {
     console.log('Testing sensitive data detection in DirectChats...');
-    
+
     const chatId = 'LLc8PX1VYHfpoFknk8o51LAOfSA2_t0VQOV5RfTMIIgo6UDhy5b3z0BL2';
-    
+
     // Test message with email
     const testMessage1 = {
       senderId: 't0VQOV5RfTMIIgo6UDhy5b3z0BL2',
@@ -34,21 +34,21 @@ async function testSensitiveDataChat() {
       timestamp: serverTimestamp(),
       createdAt: serverTimestamp(),
       metadata: {},
-      isRead: false
+      isRead: false,
     };
 
     // Test message with phone number
     const testMessage2 = {
       senderId: 'LLc8PX1VYHfpoFknk8o51LAOfSA2',
       senderName: 'Mietkoch Andy',
-      senderType: 'company', 
+      senderType: 'company',
       text: 'Hier ist meine Telefonnummer für Notfälle: +49 176 98765432',
       type: 'text',
       content: 'Hier ist meine Telefonnummer für Notfälle: +49 176 98765432',
       timestamp: serverTimestamp(),
       createdAt: serverTimestamp(),
       metadata: {},
-      isRead: false
+      isRead: false,
     };
 
     // Test message with address
@@ -62,7 +62,7 @@ async function testSensitiveDataChat() {
       timestamp: serverTimestamp(),
       createdAt: serverTimestamp(),
       metadata: {},
-      isRead: false
+      isRead: false,
     };
 
     console.log('Adding test message with email...');
@@ -85,7 +85,6 @@ async function testSensitiveDataChat() {
 
     console.log('\n🎉 All test messages added successfully!');
     console.log('⚠️  Check the Lambda logs and Admin Dashboard for sensitive data alerts.');
-    
   } catch (error) {
     console.error('Error testing sensitive data:', error);
   }

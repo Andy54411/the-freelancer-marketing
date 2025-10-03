@@ -18,9 +18,12 @@ export async function POST(request: NextRequest) {
 
     // Validierung
     if (!type || !ticket) {
-      return NextResponse.json({
-        error: 'Type und Ticket sind erforderlich'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Type und Ticket sind erforderlich',
+        },
+        { status: 400 }
+      );
     }
 
     let emailData;
@@ -61,9 +64,12 @@ export async function POST(request: NextRequest) {
         if (assignedTo) recipients.push(assignedTo);
         break;
       default:
-        return NextResponse.json({
-          error: 'Unbekannter E-Mail-Typ'
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            error: 'Unbekannter E-Mail-Typ',
+          },
+          { status: 400 }
+        );
     }
 
     // E-Mail senden
@@ -72,15 +78,14 @@ export async function POST(request: NextRequest) {
       to: recipients,
       subject: emailData.subject,
       html: emailData.html,
-      replyTo: 'support@taskilo.de'
+      replyTo: 'support@taskilo.de',
     });
 
     if (emailResponse.error) {
-
       return NextResponse.json(
         {
           error: 'E-Mail konnte nicht gesendet werden',
-          details: emailResponse.error.message
+          details: emailResponse.error.message,
         },
         { status: 500 }
       );
@@ -90,15 +95,13 @@ export async function POST(request: NextRequest) {
       success: true,
       message: `${type} E-Mail erfolgreich gesendet`,
       emailId: emailResponse.data?.id,
-      recipients: recipients
+      recipients: recipients,
     });
-
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Interner Serverfehler',
-        details: error instanceof Error ? error.message : 'Unbekannter Fehler'
+        details: error instanceof Error ? error.message : 'Unbekannter Fehler',
       },
       { status: 500 }
     );
@@ -111,7 +114,7 @@ function generateTicketCreatedEmail(ticket: Ticket) {
     low: '🟢',
     medium: '🟡',
     high: '🟠',
-    urgent: '🔴'
+    urgent: '🔴',
   };
 
   const categoryEmoji = {
@@ -123,7 +126,7 @@ function generateTicketCreatedEmail(ticket: Ticket) {
     account: '👤',
     technical: '⚙️',
     feedback: '💬',
-    other: '📋'
+    other: '📋',
   };
 
   return {
@@ -167,12 +170,16 @@ function generateTicketCreatedEmail(ticket: Ticket) {
             <p style="line-height: 1.6; white-space: pre-wrap;">${ticket.description}</p>
           </div>
 
-          ${ticket.tags && ticket.tags.length > 0 ? `
+          ${
+            ticket.tags && ticket.tags.length > 0
+              ? `
             <div style="margin: 20px 0;">
               <strong>Tags:</strong>
               ${ticket.tags.map(tag => `<span style="background: #14ad9f; color: white; padding: 4px 8px; border-radius: 4px; margin-right: 8px; font-size: 12px;">${tag}</span>`).join('')}
             </div>
-          ` : ''}
+          `
+              : ''
+          }
 
           <div style="text-align: center; margin-top: 30px;">
             <a href="https://taskilo.de/dashboard/admin/tickets"
@@ -187,7 +194,7 @@ function generateTicketCreatedEmail(ticket: Ticket) {
           <p>Zeitstempel: ${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}</p>
         </div>
       </div>
-    `
+    `,
   };
 }
 
@@ -214,7 +221,7 @@ function generateTicketUpdatedEmail(ticket: Ticket) {
           </div>
         </div>
       </div>
-    `
+    `,
   };
 }
 
@@ -246,7 +253,7 @@ function generateTicketCommentedEmail(ticket: Ticket, comment: TicketComment) {
           </div>
         </div>
       </div>
-    `
+    `,
   };
 }
 
@@ -272,7 +279,7 @@ function generateTicketResolvedEmail(ticket: Ticket) {
           </div>
         </div>
       </div>
-    `
+    `,
   };
 }
 
@@ -298,7 +305,7 @@ function generateTicketReopenedEmail(ticket: Ticket) {
           </div>
         </div>
       </div>
-    `
+    `,
   };
 }
 
@@ -334,6 +341,6 @@ function generateTicketAssignedEmail(ticket: Ticket, assignedTo: string, assigne
           </div>
         </div>
       </div>
-    `
+    `,
   };
 }

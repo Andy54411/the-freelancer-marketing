@@ -69,7 +69,6 @@ export default function VacationSettingsTab({
   const handleSaveSettings = async () => {
     // In Add-Mode (kein employee.id): Nur lokalen State updaten
     if (!employee.id) {
-
       // Update das Employee-Objekt lokal
       const updatedVacation = {
         ...employee.vacation,
@@ -119,9 +118,7 @@ export default function VacationSettingsTab({
 
       setHasChanges(false);
       toast.success('Urlaubseinstellungen erfolgreich in der Datenbank gespeichert');
-
     } catch (error) {
-
       toast.error('Fehler beim Speichern der Urlaubseinstellungen');
     } finally {
       setIsLoading(false);

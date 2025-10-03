@@ -34,7 +34,6 @@ export async function GET(request: NextRequest) {
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-
       return NextResponse.json(
         {
           error: 'no_tokens',
@@ -50,7 +49,6 @@ export async function GET(request: NextRequest) {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
     } catch (error) {
-
       return NextResponse.json({ error: 'Invalid token data' }, { status: 401 });
     }
 
@@ -71,13 +69,16 @@ export async function GET(request: NextRequest) {
     const responseText = await response.text();
 
     if (!response.ok) {
-      return NextResponse.json({
-        error: 'api_request_failed',
-        status: response.status,
-        statusText: response.statusText,
-        body: responseText,
-        apiUrl,
-      }, { status: response.status });
+      return NextResponse.json(
+        {
+          error: 'api_request_failed',
+          status: response.status,
+          statusText: response.statusText,
+          body: responseText,
+          apiUrl,
+        },
+        { status: response.status }
+      );
     }
 
     // Try to parse JSON response
@@ -94,11 +95,12 @@ export async function GET(request: NextRequest) {
       apiUrl,
       tokenEnvironment: tokenData.environment,
     });
-
   } catch (error) {
-
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }

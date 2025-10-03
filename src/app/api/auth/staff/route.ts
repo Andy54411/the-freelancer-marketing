@@ -169,7 +169,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'Ungültige Aktion' }, { status: 400 });
   } catch (error) {
-
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }
@@ -210,7 +209,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }

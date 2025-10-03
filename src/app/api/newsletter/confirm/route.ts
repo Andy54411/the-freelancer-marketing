@@ -24,7 +24,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(successUrl);
   } catch (error) {
-
     return NextResponse.json({ error: 'Interner Serverfehler' }, { status: 500 });
   }
 }
@@ -51,7 +50,6 @@ export async function POST(request: NextRequest) {
       subscriberId: result.subscriberId,
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Interner Serverfehler' }, { status: 500 });
   }
 }

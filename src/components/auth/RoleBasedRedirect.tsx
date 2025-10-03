@@ -23,7 +23,6 @@ export function RoleBasedRedirect() {
 
     // Rolle "firma" sollte immer auf company-Dashboard sein
     if (user.role === 'firma' && !isOnCompanyRoute) {
-
       // Nur wenn der User auf /dashboard ist, leite direkt weiter
       if (pathname === '/dashboard') {
         router.replace(`/dashboard/company/${user.uid}`);
@@ -49,7 +48,6 @@ export function RoleBasedRedirect() {
 
     // Rolle "kunde" sollte auf user-Dashboard sein
     if (user.role === 'kunde' && !isOnUserRoute) {
-
       // Nur wenn der User auf /dashboard ist, leite direkt weiter
       if (pathname === '/dashboard') {
         router.replace(`/dashboard/user/${user.uid}`);
@@ -75,7 +73,6 @@ export function RoleBasedRedirect() {
 
     // Master/Support sollten auf admin-Dashboard sein
     if ((user.role === 'master' || user.role === 'support') && !isOnAdminRoute) {
-
       router.replace('/dashboard/admin');
       return;
     }

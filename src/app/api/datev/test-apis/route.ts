@@ -42,7 +42,6 @@ export async function GET(request: NextRequest) {
 
     // Test UserInfo API (always included)
     if (testType === 'all' || testType === 'userinfo') {
-
       const userInfoResult = await client.getUserInfo();
       testResults.tests.userinfo = {
         endpoint: '/userinfo',
@@ -53,7 +52,6 @@ export async function GET(request: NextRequest) {
 
     // Test Cashregister Import API
     if (testType === 'all' || testType === 'cashregister') {
-
       // Test getting formats
       const formatsResult = await client.getCashRegisterFormats();
       testResults.tests.cashregister_formats = {
@@ -82,7 +80,6 @@ export async function GET(request: NextRequest) {
 
     // Test Master Data: Master Clients API
     if (testType === 'all' || testType === 'master-clients') {
-
       // Get master clients
       const clientsResult = await client.getMasterClients({ limit: 10 });
       testResults.tests.master_clients_list = {
@@ -122,7 +119,6 @@ export async function GET(request: NextRequest) {
 
     // Test Accounting: EXTF Files API
     if (testType === 'all' || testType === 'extf-files') {
-
       const extfResult = await client.getExtfFiles({ limit: 10 });
       testResults.tests.extf_files = {
         endpoint: '/accounting/extf-files',
@@ -133,7 +129,6 @@ export async function GET(request: NextRequest) {
 
     // Test Accounting: DXSO Jobs API
     if (testType === 'all' || testType === 'dxso-jobs') {
-
       const jobsResult = await client.getDxsoJobs({ limit: 10 });
       testResults.tests.dxso_jobs_list = {
         endpoint: '/accounting/dxso-jobs',
@@ -167,7 +162,6 @@ export async function GET(request: NextRequest) {
 
     // Test Accounting: Documents API
     if (testType === 'all' || testType === 'documents') {
-
       const documentsResult = await client.getDocuments({ limit: 10 });
       testResults.tests.documents = {
         endpoint: '/accounting/documents',
@@ -191,7 +185,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(testResults);
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'test_error',
@@ -266,7 +259,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'test_error',

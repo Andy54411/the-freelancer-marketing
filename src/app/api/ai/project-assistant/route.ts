@@ -2,13 +2,7 @@
 // pages/api/ai/project-assistant.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  collection,
-  addDoc,
-  query,
-  where,
-  getDocs,
-} from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 
 interface ProjectAssistantRequest {
@@ -456,7 +450,6 @@ Gibt es spezielle Fragen zu einem Projekt?`,
       });
       return orderRef.id;
     } catch (error) {
-
       return 'temp-' + Date.now();
     }
   }
@@ -513,7 +506,6 @@ Gibt es spezielle Fragen zu einem Projekt?`,
         providerName: 'ProService München',
       }));
     } catch (error) {
-
       return [];
     }
   }
@@ -524,9 +516,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
         ...request,
         timestamp: new Date(),
       });
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 }
 
@@ -543,7 +533,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }

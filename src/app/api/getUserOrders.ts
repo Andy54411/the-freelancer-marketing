@@ -9,8 +9,9 @@ export const getUserOrders = async (
   lastOrderId?: string
 ) => {
   // Use local API route in development, Cloud Function in production
-  const isLocalDevelopment = process.env.NODE_ENV === 'development' ||
-                           typeof window !== 'undefined' && window.location.hostname === 'localhost';
+  const isLocalDevelopment =
+    process.env.NODE_ENV === 'development' ||
+    (typeof window !== 'undefined' && window.location.hostname === 'localhost');
 
   const apiUrl = isLocalDevelopment
     ? '/api/getUserOrdersHTTP'

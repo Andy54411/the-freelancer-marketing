@@ -67,7 +67,6 @@ export async function POST(request: NextRequest) {
       sender: workmailCredentials.email,
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

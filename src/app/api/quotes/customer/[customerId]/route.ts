@@ -13,7 +13,6 @@ export async function GET(
     const { customerId } = await params;
 
     if (!customerId) {
-
       return NextResponse.json({ error: 'Customer ID ist erforderlich' }, { status: 400 });
     }
 
@@ -40,7 +39,6 @@ export async function GET(
         quote.status === 'withdrawn' ||
         quote.status === 'cancelled'
       ) {
-
         return false;
       }
 
@@ -54,7 +52,6 @@ export async function GET(
         );
 
         if (activeProposals.length === 0) {
-
           return false;
         }
       }
@@ -77,7 +74,6 @@ export async function GET(
       quotes: finalQuotes,
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Fehler beim Abrufen der Angebote' }, { status: 500 });
   }
 }

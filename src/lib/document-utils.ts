@@ -3,7 +3,10 @@
  * Funktionen zur Bestimmung und Verwaltung von Dokumenttypen
  */
 
-import { useDocumentTranslation, type DocumentTranslations } from '@/hooks/pdf/useDocumentTranslation';
+import {
+  useDocumentTranslation,
+  type DocumentTranslations,
+} from '@/hooks/pdf/useDocumentTranslation';
 
 export type DocumentType = 'invoice' | 'quote' | 'reminder' | 'credit-note' | 'cancellation';
 
@@ -42,7 +45,7 @@ export const DOCUMENT_TYPE_MAPPINGS: Record<DocumentType, DocumentTypeMapping> =
   quote: {
     titleKey: 'quote',
     numberLabelKey: 'quoteNumber',
-    dateLabelKey: 'date', 
+    dateLabelKey: 'date',
     dueDateLabelKey: 'validUntil',
     recipientLabelKey: 'recipient',
     showPaymentTerms: false,
@@ -50,7 +53,7 @@ export const DOCUMENT_TYPE_MAPPINGS: Record<DocumentType, DocumentTypeMapping> =
   },
   reminder: {
     titleKey: 'invoice', // Fallback - kann später erweitert werden
-    numberLabelKey: 'invoiceNumber', 
+    numberLabelKey: 'invoiceNumber',
     dateLabelKey: 'date',
     dueDateLabelKey: 'dueDate',
     recipientLabelKey: 'recipient',
@@ -58,7 +61,7 @@ export const DOCUMENT_TYPE_MAPPINGS: Record<DocumentType, DocumentTypeMapping> =
     showDueDate: true,
   },
   'credit-note': {
-    titleKey: 'invoice', // Fallback 
+    titleKey: 'invoice', // Fallback
     numberLabelKey: 'invoiceNumber',
     dateLabelKey: 'date',
     dueDateLabelKey: 'dueDate',
@@ -74,7 +77,7 @@ export const DOCUMENT_TYPE_MAPPINGS: Record<DocumentType, DocumentTypeMapping> =
     recipientLabelKey: 'recipient',
     showPaymentTerms: false,
     showDueDate: true,
-  }
+  },
 };
 
 // Alte Konfiguration für Kompatibilität (wird nach und nach ersetzt)
@@ -91,7 +94,7 @@ export const DOCUMENT_TYPE_CONFIGS: Record<DocumentType, Omit<DocumentTypeConfig
   quote: {
     title: 'Angebot',
     numberLabel: 'Angebotsnummer',
-    dateLabel: 'Angebotsdatum', 
+    dateLabel: 'Angebotsdatum',
     dueDateLabel: 'Gültig bis',
     recipientLabel: 'Angebotsempfänger',
     showPaymentTerms: false,
@@ -123,15 +126,15 @@ export const DOCUMENT_TYPE_CONFIGS: Record<DocumentType, Omit<DocumentTypeConfig
     recipientLabel: 'Rechnungsempfänger',
     showPaymentTerms: false,
     showDueDate: true,
-  }
+  },
 };
 
 export const DOCUMENT_TYPE_COLORS: Record<DocumentType, string> = {
-  invoice: '#3b82f6',    // Blue
-  quote: '#8b5cf6',      // Purple
-  reminder: '#ef4444',   // Red
+  invoice: '#3b82f6', // Blue
+  quote: '#8b5cf6', // Purple
+  reminder: '#ef4444', // Red
   'credit-note': '#22c55e', // Green
-  cancellation: '#f59e0b'   // Orange
+  cancellation: '#f59e0b', // Orange
 };
 
 /**
@@ -145,38 +148,38 @@ export function detectDocumentType(data: any): DocumentType {
 
   // Prüfe documentLabel für Schlüsselwörter
   const label = (data.documentLabel || '').toLowerCase();
-  
+
   if (label.includes('angebot') || label.includes('quote')) {
     return 'quote';
   }
-  
+
   if (label.includes('mahnung') || label.includes('reminder')) {
     return 'reminder';
   }
-  
+
   if (label.includes('gutschrift') || label.includes('credit')) {
     return 'credit-note';
   }
-  
+
   if (label.includes('storno') || label.includes('cancellation')) {
     return 'cancellation';
   }
 
   // Prüfe Nummern-Präfixe
   const invoiceNumber = (data.invoiceNumber || '').toLowerCase();
-  
+
   if (invoiceNumber.startsWith('ang') || invoiceNumber.startsWith('quo')) {
     return 'quote';
   }
-  
+
   if (invoiceNumber.startsWith('mah') || invoiceNumber.startsWith('rem')) {
     return 'reminder';
   }
-  
+
   if (invoiceNumber.startsWith('gut') || invoiceNumber.startsWith('cre')) {
     return 'credit-note';
   }
-  
+
   if (invoiceNumber.startsWith('sto') || invoiceNumber.startsWith('can')) {
     return 'cancellation';
   }
@@ -188,13 +191,16 @@ export function detectDocumentType(data: any): DocumentType {
 /**
  * Erstellt die komplette Dokumenttyp-Konfiguration mit Farbe
  */
-export function getDocumentTypeConfig(documentType: DocumentType, customColor?: string): DocumentTypeConfig {
+export function getDocumentTypeConfig(
+  documentType: DocumentType,
+  customColor?: string
+): DocumentTypeConfig {
   const baseConfig = DOCUMENT_TYPE_CONFIGS[documentType];
   const color = customColor || DOCUMENT_TYPE_COLORS[documentType];
-  
+
   return {
     ...baseConfig,
-    color
+    color,
   };
 }
 
@@ -203,13 +209,13 @@ export function getDocumentTypeConfig(documentType: DocumentType, customColor?: 
  * Diese Funktion sollte in Templates mit Übersetzungsfunktion verwendet werden
  */
 export function getTranslatedDocumentTypeConfig(
-  documentType: DocumentType, 
-  t: (key: keyof DocumentTranslations) => string, 
+  documentType: DocumentType,
+  t: (key: keyof DocumentTranslations) => string,
   customColor?: string
 ): DocumentTypeConfig {
   const mapping = DOCUMENT_TYPE_MAPPINGS[documentType];
   const color = customColor || DOCUMENT_TYPE_COLORS[documentType];
-  
+
   return {
     title: t(mapping.titleKey),
     numberLabel: t(mapping.numberLabelKey),
@@ -218,6 +224,6 @@ export function getTranslatedDocumentTypeConfig(
     recipientLabel: t(mapping.recipientLabelKey),
     showPaymentTerms: mapping.showPaymentTerms,
     showDueDate: mapping.showDueDate,
-    color
+    color,
   };
 }

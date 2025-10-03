@@ -19,7 +19,6 @@ const lambdaClient = new LambdaClient({
 // GET - Gespeicherte E-Mails aus Cache abrufen
 export async function GET(request: NextRequest) {
   try {
-
     // URL-Parameter
     const { searchParams } = new URL(request.url);
     const folder = searchParams.get('folder') || 'sent';
@@ -30,7 +29,6 @@ export async function GET(request: NextRequest) {
     const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
 
     if (!tokenCookie) {
-
       return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
     }
 
@@ -77,11 +75,9 @@ export async function GET(request: NextRequest) {
         throw new Error(`Lambda error: ${result.body}`);
       }
     } catch (jwtError) {
-
       return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -96,7 +92,6 @@ export async function GET(request: NextRequest) {
 // POST - E-Mails in Cache synchronisieren
 export async function POST(request: NextRequest) {
   try {
-
     const body = await request.json();
     const { emails, folder = 'sent', forceSync = false } = body;
 
@@ -105,7 +100,6 @@ export async function POST(request: NextRequest) {
     const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
 
     if (!tokenCookie) {
-
       return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
     }
 
@@ -151,11 +145,9 @@ export async function POST(request: NextRequest) {
         throw new Error(`Lambda error: ${result.body}`);
       }
     } catch (jwtError) {
-
       return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -170,7 +162,6 @@ export async function POST(request: NextRequest) {
 // DELETE - E-Mails endgültig aus Cache löschen
 export async function DELETE(request: NextRequest) {
   try {
-
     const { searchParams } = new URL(request.url);
     const emailId = searchParams.get('emailId');
     const folder = searchParams.get('folder') || 'sent';
@@ -184,7 +175,6 @@ export async function DELETE(request: NextRequest) {
     const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
 
     if (!tokenCookie) {
-
       return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
     }
 
@@ -222,11 +212,9 @@ export async function DELETE(request: NextRequest) {
         throw new Error(`Lambda error: ${result.body}`);
       }
     } catch (jwtError) {
-
       return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Internal server error',

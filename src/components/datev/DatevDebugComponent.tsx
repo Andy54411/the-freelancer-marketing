@@ -123,7 +123,6 @@ export function DatevDebugComponent() {
         setValidation(validationData);
       }
     } catch (error) {
-
       toast.error('Fehler beim Laden der Debug-Informationen');
     } finally {
       setLoading(false);
@@ -157,7 +156,6 @@ export function DatevDebugComponent() {
         });
       }
     } catch (error) {
-
       setTokenInfo({
         hasToken: false,
       });
@@ -193,7 +191,6 @@ export function DatevDebugComponent() {
         toast.error(`Token ungültig: ${result.error}`);
       }
     } catch (error) {
-
       toast.error('Fehler beim Testen des Tokens');
     } finally {
       setTesting(false);
@@ -206,7 +203,6 @@ export function DatevDebugComponent() {
       loadTokenInfo();
       toast.success('Token gelöscht');
     } catch (error) {
-
       toast.error('Fehler beim Löschen des Tokens');
     }
   };

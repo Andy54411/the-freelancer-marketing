@@ -112,7 +112,6 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
       const invoices = await EInvoiceService.getEInvoicesByCompany(companyId);
       setEInvoices(invoices);
     } catch (error) {
-
       toast.error('E-Rechnungen konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -123,9 +122,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
     try {
       // Implementierung zum Laden der Einstellungen
       // Hier würden die gespeicherten Einstellungen geladen werden
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const loadInvoiceByNumber = async (invoiceNumber: string) => {
@@ -146,16 +143,13 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
       );
 
       if (foundInvoice) {
-
         setSelectedInvoiceData(foundInvoice);
         toast.success(`Rechnung ${invoiceNumber} gefunden`);
       } else {
-
         setSelectedInvoiceData(null);
         toast.error(`Rechnung ${invoiceNumber} nicht gefunden`);
       }
     } catch (error) {
-
       toast.error('Fehler beim Laden der Rechnung');
       setSelectedInvoiceData(null);
     } finally {
@@ -205,7 +199,6 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
             },
           ],
         };
-
       } else if (!finalInvoiceData) {
         // Fallback zu Test-Daten
         finalInvoiceData = {
@@ -220,7 +213,6 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
           vatRate: 19,
           items: [{ description: 'Test Position', quantity: 1, unitPrice: 1000, total: 1000 }],
         };
-
       }
 
       let xmlContent = '';
@@ -272,7 +264,6 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
       setPreviewXML(xmlContent);
       await loadEInvoices();
     } catch (error) {
-
       toast.error('E-Rechnung konnte nicht generiert werden');
     } finally {
       setGenerating(false);
@@ -290,7 +281,6 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
         toast.error(`Validierung fehlgeschlagen: ${validation.errors.join(', ')}`);
       }
     } catch (error) {
-
       toast.error('Validierung fehlgeschlagen');
     } finally {
       setValidating(false);
@@ -335,7 +325,6 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
         toast.error(`Validierung fehlgeschlagen: ${validation.errors.length} Fehler gefunden`);
       }
     } catch (error) {
-
       toast.error('Fehler beim Validieren der Datei');
       setValidationResult({
         isValid: false,
@@ -370,7 +359,6 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
       toast.success('Einstellungen gespeichert');
       setShowSettings(false);
     } catch (error) {
-
       toast.error('Einstellungen konnten nicht gespeichert werden');
     }
   };

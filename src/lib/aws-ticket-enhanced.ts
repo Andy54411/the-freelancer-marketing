@@ -96,7 +96,6 @@ export class EnhancedTicketService {
 
       return true;
     } catch (error) {
-
       await this.logToCloudWatch('ticket-notifications-errors', {
         error: error instanceof Error ? error.message : 'Unknown error',
         ticketId: ticket.id,
@@ -209,7 +208,6 @@ export class EnhancedTicketService {
 
       return result;
     } catch (error) {
-
       // Fallback: Standard-Werte
       return {
         priority: 'medium',
@@ -247,11 +245,8 @@ export class EnhancedTicketService {
               logGroupName,
             })
           );
-
         }
-      } catch (createError) {
-
-      }
+      } catch (createError) {}
 
       // Erstelle Log Stream
       try {
@@ -293,9 +288,7 @@ export class EnhancedTicketService {
         await this.sendCloudWatchMetrics(data);
       }
     } catch (error) {
-
       // Fallback zu Console für lokale Entwicklung
-
     }
   }
 
@@ -304,10 +297,7 @@ export class EnhancedTicketService {
     try {
       // Hier würden CloudWatch Custom Metrics gesendet werden
       // Implementierung hängt von AWS CloudWatch Metrics SDK ab
-
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   // 4. ANALYTICS DASHBOARD DATEN
@@ -336,7 +326,6 @@ export class EnhancedTicketService {
 
       return await response.json();
     } catch (error) {
-
       // Fallback: Leere Analytics
       return {
         totalTickets: 0,
@@ -376,7 +365,6 @@ export class EnhancedTicketService {
         complaintRate: latestStats?.Complaints || 0,
       };
     } catch (error) {
-
       return {
         quotaUsed: 0,
         quotaRemaining: 0,
@@ -401,7 +389,6 @@ export class EnhancedTicketService {
       await snsClient.send(command);
       return true;
     } catch (error) {
-
       return false;
     }
   }

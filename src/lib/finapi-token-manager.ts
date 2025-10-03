@@ -48,7 +48,6 @@ export class FinAPITokenManager {
 
     localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(tokenInfo));
     localStorage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(tokenData.user));
-
   }
 
   /**
@@ -63,14 +62,12 @@ export class FinAPITokenManager {
 
       // Check if token is expired (with 5-minute buffer)
       if (Date.now() >= tokenInfo.expires_at - 300000) {
-
         this.clearUserToken();
         return null;
       }
 
       return tokenInfo;
     } catch (error) {
-
       return null;
     }
   }
@@ -85,7 +82,6 @@ export class FinAPITokenManager {
 
       return JSON.parse(stored);
     } catch (error) {
-
       return null;
     }
   }
@@ -104,7 +100,6 @@ export class FinAPITokenManager {
   static clearUserToken(): void {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
     localStorage.removeItem(USER_DATA_STORAGE_KEY);
-
   }
 
   /**

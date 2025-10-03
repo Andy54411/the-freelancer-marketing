@@ -77,7 +77,6 @@ export class FinanceService {
    */
   static async getFinanceStats(companyId: string): Promise<FinanceStats> {
     try {
-
       // Lade echte Auftragsdaten aus Firebase
       const [orders, invoices, payments, expenses] = await Promise.all([
         this.getCompanyOrders(companyId),
@@ -166,7 +165,6 @@ export class FinanceService {
 
       return stats;
     } catch (error) {
-
       throw error;
     }
   }
@@ -175,7 +173,6 @@ export class FinanceService {
    * Lädt alle Rechnungen für ein Unternehmen
    */
   private static async getInvoices(companyId: string): Promise<InvoiceData[]> {
-
     const invoicesQuery = query(
       collection(db, 'invoices'),
       where('companyId', '==', companyId),
@@ -228,7 +225,6 @@ export class FinanceService {
 
       return payments;
     } catch (error) {
-
       return [];
     }
   }
@@ -264,7 +260,6 @@ export class FinanceService {
 
       return expenses;
     } catch (error) {
-
       return [];
     }
   }
@@ -274,7 +269,6 @@ export class FinanceService {
    */
   private static async getCompanyOrders(companyId: string): Promise<OrderRecord[]> {
     try {
-
       const ordersQuery = query(
         collection(db, 'auftraege'),
         where('selectedAnbieterId', '==', companyId),
@@ -303,7 +297,6 @@ export class FinanceService {
 
       return orders;
     } catch (error) {
-
       return [];
     }
   }
@@ -480,7 +473,6 @@ export class FinanceService {
         createdAt: Timestamp.now(),
       });
     } catch (error) {
-
       throw error;
     }
   }
@@ -497,7 +489,6 @@ export class FinanceService {
         createdAt: Timestamp.now(),
       });
     } catch (error) {
-
       throw error;
     }
   }
@@ -511,7 +502,6 @@ export class FinanceService {
 
       await updateDoc(doc(db, 'payments', id), updates);
     } catch (error) {
-
       throw error;
     }
   }
@@ -525,7 +515,6 @@ export class FinanceService {
 
       await updateDoc(doc(db, 'companies', companyId, 'expenses', id), updates);
     } catch (error) {
-
       throw error;
     }
   }
@@ -539,7 +528,6 @@ export class FinanceService {
 
       await deleteDoc(doc(db, 'payments', id));
     } catch (error) {
-
       throw error;
     }
   }
@@ -553,7 +541,6 @@ export class FinanceService {
 
       await deleteDoc(doc(db, 'companies', companyId, 'expenses', id));
     } catch (error) {
-
       throw error;
     }
   }

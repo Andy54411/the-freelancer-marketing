@@ -41,7 +41,6 @@ export function StaffAuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-
     } finally {
       setLoading(false);
     }
@@ -70,7 +69,6 @@ export function StaffAuthProvider({ children }: { children: React.ReactNode }) {
 
       return false;
     } catch (error) {
-
       return false;
     }
   };
@@ -88,9 +86,7 @@ export function StaffAuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       setUser(null);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const hasPermission = (permission: string): boolean => {

@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
       simulatedEvent: simulatedStripeEvent,
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Test webhook simulation failed',

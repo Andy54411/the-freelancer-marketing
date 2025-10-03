@@ -16,20 +16,18 @@ export class TicketEmailService {
         },
         body: JSON.stringify({
           type: 'created',
-          ticket
-        })
+          ticket,
+        }),
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-
         return false;
       }
 
       return true;
     } catch (error) {
-
       return false;
     }
   }
@@ -46,13 +44,12 @@ export class TicketEmailService {
         },
         body: JSON.stringify({
           type: 'updated',
-          ticket
-        })
+          ticket,
+        }),
       });
 
       return response.ok;
     } catch (error) {
-
       return false;
     }
   }
@@ -70,13 +67,12 @@ export class TicketEmailService {
         body: JSON.stringify({
           type: 'commented',
           ticket,
-          comment
-        })
+          comment,
+        }),
       });
 
       return response.ok;
     } catch (error) {
-
       return false;
     }
   }
@@ -93,13 +89,12 @@ export class TicketEmailService {
         },
         body: JSON.stringify({
           type: 'resolved',
-          ticket
-        })
+          ticket,
+        }),
       });
 
       return response.ok;
     } catch (error) {
-
       return false;
     }
   }
@@ -116,13 +111,12 @@ export class TicketEmailService {
         },
         body: JSON.stringify({
           type: 'reopened',
-          ticket
-        })
+          ticket,
+        }),
       });
 
       return response.ok;
     } catch (error) {
-
       return false;
     }
   }
@@ -145,13 +139,12 @@ export class TicketEmailService {
           type: 'assigned',
           ticket,
           assignedTo,
-          assignedBy
-        })
+          assignedBy,
+        }),
       });
 
       return response.ok;
     } catch (error) {
-
       return false;
     }
   }
@@ -188,11 +181,7 @@ export class TicketEmailService {
     // Zuweisung geändert
     if (oldTicket.assignedTo !== newTicket.assignedTo && newTicket.assignedTo) {
       changes.push(`Zugewiesen: ${oldTicket.assignedTo || 'Niemand'} → ${newTicket.assignedTo}`);
-      await this.sendTicketAssignedEmail(
-        newTicket,
-        newTicket.assignedTo,
-        userEmail || 'System'
-      );
+      await this.sendTicketAssignedEmail(newTicket, newTicket.assignedTo, userEmail || 'System');
     }
 
     // Andere Änderungen
@@ -201,14 +190,15 @@ export class TicketEmailService {
     }
 
     // Allgemeine Update-E-Mail senden wenn andere Änderungen vorliegen
-    if (changes.length > 0 &&
-        newTicket.status === oldTicket.status &&
-        oldTicket.assignedTo === newTicket.assignedTo) {
+    if (
+      changes.length > 0 &&
+      newTicket.status === oldTicket.status &&
+      oldTicket.assignedTo === newTicket.assignedTo
+    ) {
       await this.sendTicketUpdatedEmail(newTicket);
     }
 
     if (changes.length > 0) {
-
     }
   }
 }
@@ -230,5 +220,5 @@ export const defaultEmailPreferences: TicketEmailPreferences = {
   onCommented: true,
   onResolved: true,
   onAssigned: true,
-  userEmail: 'andy.staudinger@taskilo.de'
+  userEmail: 'andy.staudinger@taskilo.de',
 };

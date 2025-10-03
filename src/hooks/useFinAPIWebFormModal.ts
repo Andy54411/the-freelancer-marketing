@@ -20,7 +20,6 @@ export function useFinAPIWebFormModal({ onSuccess, onError }: UseFinAPIWebFormMo
     setBankName(selectedBankName);
 
     try {
-
       const response = await fetch('/api/finapi/connect-bank', {
         method: 'POST',
         headers: {
@@ -40,7 +39,6 @@ export function useFinAPIWebFormModal({ onSuccess, onError }: UseFinAPIWebFormMo
       }
 
       if (result.webForm && result.webForm.url) {
-
         setWebFormUrl(result.webForm.url);
         setIsModalOpen(true);
         setIsConnecting(false);
@@ -48,7 +46,6 @@ export function useFinAPIWebFormModal({ onSuccess, onError }: UseFinAPIWebFormMo
         throw new Error('Keine WebForm URL erhalten');
       }
     } catch (error: any) {
-
       setIsConnecting(false);
 
       if (onError) {
@@ -58,7 +55,6 @@ export function useFinAPIWebFormModal({ onSuccess, onError }: UseFinAPIWebFormMo
   };
 
   const handleSuccess = (bankConnectionId?: string) => {
-
     setIsModalOpen(false);
     setIsConnecting(false);
 
@@ -68,7 +64,6 @@ export function useFinAPIWebFormModal({ onSuccess, onError }: UseFinAPIWebFormMo
   };
 
   const handleError = (error: string) => {
-
     setIsModalOpen(false);
     setIsConnecting(false);
 
@@ -78,7 +73,6 @@ export function useFinAPIWebFormModal({ onSuccess, onError }: UseFinAPIWebFormMo
   };
 
   const handleClose = () => {
-
     setIsModalOpen(false);
     setIsConnecting(false);
   };

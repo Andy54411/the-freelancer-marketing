@@ -57,7 +57,6 @@ export async function POST(request: NextRequest) {
       message: 'Sie wurden erfolgreich vom Newsletter abgemeldet.',
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Interner Server-Fehler beim Abmelden',
@@ -112,7 +111,6 @@ export async function DELETE(request: NextRequest) {
       );
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Interner Server-Fehler bei der Datenlöschung',

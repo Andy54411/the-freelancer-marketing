@@ -24,9 +24,9 @@ export default function QuotesDraftsPage() {
 
   return (
     <div className="space-y-6">
-      <FilteredQuoteComponent 
-        companyId={uid} 
-        statusFilter="draft" 
+      <FilteredQuoteComponent
+        companyId={uid}
+        statusFilter="draft"
         title="Entwürfe"
         description="Alle Angebote im Entwurfsstatus"
       />

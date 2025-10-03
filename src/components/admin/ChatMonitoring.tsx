@@ -11,8 +11,8 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from
-'@/components/ui/select';
+  SelectValue,
+} from '@/components/ui/select';
 import {
   MessageSquare,
   Users,
@@ -27,8 +27,8 @@ import {
   Shield,
   Eye,
   EyeOff,
-  AlertTriangle } from
-'lucide-react';
+  AlertTriangle,
+} from 'lucide-react';
 
 interface ChatData {
   id: string;
@@ -119,10 +119,13 @@ export default function ChatMonitoring() {
     fetchChatStats();
 
     // Refresh data every 5 minutes
-    const interval = setInterval(() => {
-      fetchChatData();
-      fetchChatStats();
-    }, 5 * 60 * 1000);
+    const interval = setInterval(
+      () => {
+        fetchChatData();
+        fetchChatStats();
+      },
+      5 * 60 * 1000
+    );
 
     return () => clearInterval(interval);
   }, [filterType, filterStatus]);
@@ -134,7 +137,7 @@ export default function ChatMonitoring() {
 
       const params = new URLSearchParams({
         action: 'list',
-        limit: '100'
+        limit: '100',
       });
 
       if (filterType !== 'all') {
@@ -144,7 +147,6 @@ export default function ChatMonitoring() {
       if (filterStatus !== 'all') {
         params.append('status', filterStatus);
       }
-
 
       const response = await fetch(`/api/admin/chats?${params.toString()}`);
 
@@ -207,7 +209,7 @@ export default function ChatMonitoring() {
 
       const params = new URLSearchParams({
         action: 'sensitive-data-alerts',
-        limit: '100'
+        limit: '100',
       });
 
       if (chatId) {
@@ -232,10 +234,7 @@ export default function ChatMonitoring() {
 
   const handleChatSelect = async (chat: any) => {
     setSelectedChat(chat);
-    await Promise.all([
-    fetchChatMessages(chat.id, chat.type),
-    fetchSensitiveDataAlerts(chat.id)]
-    );
+    await Promise.all([fetchChatMessages(chat.id, chat.type), fetchSensitiveDataAlerts(chat.id)]);
   };
 
   const handleRefresh = async () => {
@@ -255,7 +254,9 @@ export default function ChatMonitoring() {
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/admin/chats?action=search&q=${encodeURIComponent(searchTerm)}`);
+      const response = await fetch(
+        `/api/admin/chats?action=search&q=${encodeURIComponent(searchTerm)}`
+      );
 
       if (!response.ok) {
         throw new Error(`Search failed: ${response.statusText}`);
@@ -275,7 +276,7 @@ export default function ChatMonitoring() {
     try {
       setRefreshing(true);
       const response = await fetch('/api/admin/chats?action=aggregate', {
-        method: 'POST'
+        method: 'POST',
       });
 
       if (!response.ok) {
@@ -292,7 +293,7 @@ export default function ChatMonitoring() {
     }
   };
 
-  const filteredChats = chatData.filter((chat) => {
+  const filteredChats = chatData.filter(chat => {
     if (searchTerm) return true; // Search results are already filtered
 
     const matchesType = filterType === 'all' || chat.type === filterType;
@@ -303,20 +304,29 @@ export default function ChatMonitoring() {
 
   const getStatusColor = (status?: string) => {
     switch (status?.toLowerCase()) {
-      case 'open':return 'bg-green-100 text-green-800';
-      case 'in_progress':return 'bg-yellow-100 text-yellow-800';
-      case 'resolved':return 'bg-blue-100 text-blue-800';
-      case 'closed':return 'bg-gray-100 text-gray-800';
-      default:return 'bg-gray-100 text-gray-800';
+      case 'open':
+        return 'bg-green-100 text-green-800';
+      case 'in_progress':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'resolved':
+        return 'bg-blue-100 text-blue-800';
+      case 'closed':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getPriorityColor = (priority?: string) => {
     switch (priority?.toLowerCase()) {
-      case 'high':return 'bg-red-100 text-red-800';
-      case 'medium':return 'bg-yellow-100 text-yellow-800';
-      case 'low':return 'bg-green-100 text-green-800';
-      default:return 'bg-gray-100 text-gray-800';
+      case 'high':
+        return 'bg-red-100 text-red-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'low':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -356,8 +366,8 @@ export default function ChatMonitoring() {
             </Button>
           </CardContent>
         </Card>
-      </div>);
-
+      </div>
+    );
   }
 
   return (
@@ -365,9 +375,7 @@ export default function ChatMonitoring() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Chat-Monitoring</h1>
-          <p className="text-muted-foreground">
-            Überwachung und Verwaltung aller Chat-Aktivitäten
-          </p>
+          <p className="text-muted-foreground">Überwachung und Verwaltung aller Chat-Aktivitäten</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={triggerAggregation} variant="outline" disabled={refreshing}>
@@ -417,7 +425,8 @@ export default function ChatMonitoring() {
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalSupportChats || 0}</div>
             <p className="text-xs text-muted-foreground">
-              {stats?.supportMetrics?.open || 0} offen, {stats?.supportMetrics?.highPriority || 0} hoch
+              {stats?.supportMetrics?.open || 0} offen, {stats?.supportMetrics?.highPriority || 0}{' '}
+              hoch
             </p>
           </CardContent>
         </Card>
@@ -447,13 +456,13 @@ export default function ChatMonitoring() {
                 <Input
                   placeholder="Nach Chats suchen..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-10"
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />
-
+                  onKeyPress={e => e.key === 'Enter' && handleSearch()}
+                />
               </div>
             </div>
-            
+
             <Select value={filterType} onValueChange={setFilterType}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Chat-Typ" />
@@ -484,15 +493,14 @@ export default function ChatMonitoring() {
               Suchen
             </Button>
           </div>
-          
+
           <div className="flex items-center gap-2 mt-4">
             <span className="text-sm text-muted-foreground">Gefunden:</span>
-            {chatData.length > 0 &&
-            <Badge variant="secondary">{chatData.length} Chats</Badge>
-            }
+            {chatData.length > 0 && <Badge variant="secondary">{chatData.length} Chats</Badge>}
             {/* Debug Info */}
             <div className="ml-4 text-xs text-gray-500">
-              Filter: {filterType} | Status: {filterStatus} | Geladen: {chatData.length} | Gefiltert: {filteredChats.length}
+              Filter: {filterType} | Status: {filterStatus} | Geladen: {chatData.length} |
+              Gefiltert: {filteredChats.length}
             </div>
           </div>
         </CardContent>
@@ -506,58 +514,59 @@ export default function ChatMonitoring() {
             <CardTitle>Chat-Übersicht</CardTitle>
             <CardDescription>
               {filteredChats.length} Chats {searchTerm && `für "${searchTerm}"`}
-              {stats?.lastUpdated &&
-              <span className="ml-2 text-xs">
+              {stats?.lastUpdated && (
+                <span className="ml-2 text-xs">
                   • Letzte Aktualisierung: {new Date(stats.lastUpdated).toLocaleString()}
                 </span>
-              }
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ?
-            <div className="flex items-center justify-center py-8">
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
                 <RefreshCw className="h-6 w-6 animate-spin mr-2" />
                 Lade Chat-Daten...
-              </div> :
-            filteredChats.length === 0 ?
-            <div className="text-center py-8 text-muted-foreground">
-                Keine Chats gefunden
-              </div> :
-
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-                {filteredChats.map((chat) =>
-              <div
-                key={chat.id}
-                className={`border rounded-lg p-4 transition-colors cursor-pointer ${
-                selectedChat?.id === chat.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'}`
-                }
-                onClick={() => handleChatSelect(chat)}>
-
+              </div>
+            ) : filteredChats.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">Keine Chats gefunden</div>
+            ) : (
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {filteredChats.map(chat => (
+                  <div
+                    key={chat.id}
+                    className={`border rounded-lg p-4 transition-colors cursor-pointer ${
+                      selectedChat?.id === chat.id
+                        ? 'bg-blue-50 border-blue-200'
+                        : 'hover:bg-gray-50'
+                    }`}
+                    onClick={() => handleChatSelect(chat)}
+                  >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-medium">{chat.title}</h3>
                           <Badge variant="outline" className="text-xs">
-                            {chat.type === 'chat' ? 'Chat' :
-                        chat.type === 'directChat' ? 'Direkt' : 'Support'}
+                            {chat.type === 'chat'
+                              ? 'Chat'
+                              : chat.type === 'directChat'
+                                ? 'Direkt'
+                                : 'Support'}
                           </Badge>
-                          {chat.status &&
-                      <Badge className={`text-xs ${getStatusColor(chat.status)}`}>
+                          {chat.status && (
+                            <Badge className={`text-xs ${getStatusColor(chat.status)}`}>
                               {chat.status}
                             </Badge>
-                      }
-                          {chat.priority &&
-                      <Badge className={`text-xs ${getPriorityColor(chat.priority)}`}>
+                          )}
+                          {chat.priority && (
+                            <Badge className={`text-xs ${getPriorityColor(chat.priority)}`}>
                               {chat.priority}
                             </Badge>
-                      }
-                          {chat.isActive &&
-                      <Badge className="text-xs bg-green-100 text-green-800">
-                              Aktiv
-                            </Badge>
-                      }
+                          )}
+                          {chat.isActive && (
+                            <Badge className="text-xs bg-green-100 text-green-800">Aktiv</Badge>
+                          )}
                         </div>
-                        
+
                         <div className="text-sm text-muted-foreground space-y-1">
                           <div className="flex items-center gap-4">
                             <span className="flex items-center gap-1">
@@ -573,49 +582,46 @@ export default function ChatMonitoring() {
                               {formatTimeAgo(chat.lastActivity)}
                             </span>
                           </div>
-                          
-                          {chat.participants.length > 0 &&
-                      <div>
+
+                          {chat.participants.length > 0 && (
+                            <div>
                               Teilnehmer: {chat.participants.slice(0, 3).join(', ')}
-                              {chat.participants.length > 3 && ` +${chat.participants.length - 3} weitere`}
+                              {chat.participants.length > 3 &&
+                                ` +${chat.participants.length - 3} weitere`}
                             </div>
-                      }
-                          
-                          {chat.userEmail &&
-                      <div>Email: {chat.userEmail}</div>
-                      }
-                          
-                          {chat.orderId &&
-                      <div>Auftrag: {chat.orderId}</div>
-                      }
-                          
+                          )}
+
+                          {chat.userEmail && <div>Email: {chat.userEmail}</div>}
+
+                          {chat.orderId && <div>Auftrag: {chat.orderId}</div>}
+
                           {/* Sensible Daten Warnung */}
-                          {chat.hasSensitiveData &&
-                      <div className="flex items-center gap-1 text-orange-600">
+                          {chat.hasSensitiveData && (
+                            <div className="flex items-center gap-1 text-orange-600">
                               <Shield className="h-3 w-3" />
                               {chat.sensitiveDataCount} sensible Daten erkannt
-                              {(chat.maxSeverity || 0) >= 3 &&
-                        <AlertTriangle className="h-3 w-3 text-red-600" />
-                        }
+                              {(chat.maxSeverity || 0) >= 3 && (
+                                <AlertTriangle className="h-3 w-3 text-red-600" />
+                              )}
                             </div>
-                      }
+                          )}
                         </div>
                       </div>
-                      
+
                       <div className="text-right text-xs text-muted-foreground">
                         <div>ID: {chat.id.slice(0, 8)}</div>
-                        {chat.createdAt &&
-                    <div>Erstellt: {new Date(chat.createdAt).toLocaleDateString()}</div>
-                    }
+                        {chat.createdAt && (
+                          <div>Erstellt: {new Date(chat.createdAt).toLocaleDateString()}</div>
+                        )}
                       </div>
                     </div>
                   </div>
-              )}
+                ))}
               </div>
-            }
+            )}
           </CardContent>
         </Card>
-        
+
         {/* Message Detail Panel */}
         <Card>
           <CardHeader>
@@ -624,142 +630,154 @@ export default function ChatMonitoring() {
               Chat-Nachrichten
             </CardTitle>
             <CardDescription>
-              {selectedChat ? `Nachrichten für ${selectedChat.title}` : 'Wählen Sie einen Chat aus, um Nachrichten anzuzeigen'}
+              {selectedChat
+                ? `Nachrichten für ${selectedChat.title}`
+                : 'Wählen Sie einen Chat aus, um Nachrichten anzuzeigen'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {!selectedChat ?
-            <div className="text-center py-8 text-muted-foreground">
+            {!selectedChat ? (
+              <div className="text-center py-8 text-muted-foreground">
                 <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Bitte wählen Sie einen Chat aus der Liste aus</p>
-              </div> :
-            messagesLoading ?
-            <div className="flex items-center justify-center py-8">
+              </div>
+            ) : messagesLoading ? (
+              <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin mr-2" />
                 Lade Nachrichten...
-              </div> :
-            chatMessages.length === 0 ?
-            <div className="text-center py-8 text-muted-foreground">
+              </div>
+            ) : chatMessages.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
                 Keine Nachrichten gefunden
-              </div> :
-
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-                {chatMessages.map((message, index) =>
-              <div
-                key={index}
-                className="border-l-4 border-blue-200 pl-4 py-2 bg-gray-50 rounded-r">
-
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {chatMessages.map((message, index) => (
+                  <div
+                    key={index}
+                    className="border-l-4 border-blue-200 pl-4 py-2 bg-gray-50 rounded-r"
+                  >
                     <div className="flex justify-between items-start mb-1">
                       <span className="font-medium text-sm">
                         {message.senderId || 'Unbekannter Absender'}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {message.timestamp ? new Date(message.timestamp).toLocaleString('de-DE') : 'Unbekannte Zeit'}
+                        {message.timestamp
+                          ? new Date(message.timestamp).toLocaleString('de-DE')
+                          : 'Unbekannte Zeit'}
                       </span>
                     </div>
                     <div className="text-sm">
-                      {showSensitiveData ?
-                  message.text || message.content || 'Keine Nachricht' :
-                  (message.text || message.content || 'Keine Nachricht').replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '***@***.***').
-                  replace(/(?:\+49|0)[0-9\s\-\(\)]{7,16}[0-9]/g, '***-***-***').
-                  replace(/DE[0-9]{2}\s?[0-9]{4}\s?[0-9]{4}\s?[0-9]{4}\s?[0-9]{4}\s?[0-9]{2}/gi, 'DE** **** **** ****')
-                  }
+                      {showSensitiveData
+                        ? message.text || message.content || 'Keine Nachricht'
+                        : (message.text || message.content || 'Keine Nachricht')
+                            .replace(
+                              /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+                              '***@***.***'
+                            )
+                            .replace(/(?:\+49|0)[0-9\s\-\(\)]{7,16}[0-9]/g, '***-***-***')
+                            .replace(
+                              /DE[0-9]{2}\s?[0-9]{4}\s?[0-9]{4}\s?[0-9]{4}\s?[0-9]{4}\s?[0-9]{2}/gi,
+                              'DE** **** **** ****'
+                            )}
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                      {message.type &&
-                  <Badge variant="outline" className="text-xs">
+                      {message.type && (
+                        <Badge variant="outline" className="text-xs">
                           {message.type}
                         </Badge>
-                  }
-                      {message.metadata?.hasSensitiveData &&
-                  <Badge className="text-xs bg-orange-100 text-orange-800">
+                      )}
+                      {message.metadata?.hasSensitiveData && (
+                        <Badge className="text-xs bg-orange-100 text-orange-800">
                           <Shield className="h-3 w-3 mr-1" />
                           {message.metadata.sensitiveDataCount} sensible Daten
                         </Badge>
-                  }
+                      )}
                     </div>
                   </div>
-              )}
+                ))}
               </div>
-            }
+            )}
           </CardContent>
         </Card>
-        
+
         {/* Sensible Daten Alerts Panel */}
-        {selectedChat &&
-        <Card>
+        {selectedChat && (
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
                 Sensible Daten Warnungen
                 <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSensitiveData(!showSensitiveData)}
-                className="ml-auto">
-
-                  {showSensitiveData ?
-                <>
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSensitiveData(!showSensitiveData)}
+                  className="ml-auto"
+                >
+                  {showSensitiveData ? (
+                    <>
                       <EyeOff className="h-4 w-4 mr-2" />
                       Verbergen
-                    </> :
-
-                <>
+                    </>
+                  ) : (
+                    <>
                       <Eye className="h-4 w-4 mr-2" />
                       Anzeigen
                     </>
-                }
+                  )}
                 </Button>
               </CardTitle>
-              <CardDescription>
-                Erkannte sensible Daten in diesem Chat
-              </CardDescription>
+              <CardDescription>Erkannte sensible Daten in diesem Chat</CardDescription>
             </CardHeader>
             <CardContent>
-              {alertsLoading ?
-            <div className="flex items-center justify-center py-8">
+              {alertsLoading ? (
+                <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin mr-2" />
                   Lade Warnungen...
-                </div> :
-            sensitiveDataAlerts.length === 0 ?
-            <div className="text-center py-8 text-muted-foreground">
+                </div>
+              ) : sensitiveDataAlerts.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
                   <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Keine sensiblen Daten gefunden</p>
-                </div> :
-
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {sensitiveDataAlerts.map((alert, index) =>
-              <div
-                key={index}
-                className={`border rounded-lg p-4 ${
-                alert.severity === 'high' ? 'border-red-200 bg-red-50' :
-                alert.severity === 'medium' ? 'border-yellow-200 bg-yellow-50' :
-                'border-blue-200 bg-blue-50'}`
-                }>
-
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {sensitiveDataAlerts.map((alert, index) => (
+                    <div
+                      key={index}
+                      className={`border rounded-lg p-4 ${
+                        alert.severity === 'high'
+                          ? 'border-red-200 bg-red-50'
+                          : alert.severity === 'medium'
+                            ? 'border-yellow-200 bg-yellow-50'
+                            : 'border-blue-200 bg-blue-50'
+                      }`}
+                    >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
-                          <Badge className={`text-xs ${
-                    alert.severity === 'high' ? 'bg-red-100 text-red-800' :
-                    alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-blue-100 text-blue-800'}`
-                    }>
+                          <Badge
+                            className={`text-xs ${
+                              alert.severity === 'high'
+                                ? 'bg-red-100 text-red-800'
+                                : alert.severity === 'medium'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
                             {alert.description}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
                             {alert.severity.toUpperCase()}
                           </Badge>
-                          {alert.reviewed &&
-                    <Badge className="text-xs bg-green-100 text-green-800">
-                              Überprüft
-                            </Badge>
-                    }
+                          {alert.reviewed && (
+                            <Badge className="text-xs bg-green-100 text-green-800">Überprüft</Badge>
+                          )}
                         </div>
                         <span className="text-xs text-muted-foreground">
                           {new Date(alert.timestamp).toLocaleString('de-DE')}
                         </span>
                       </div>
-                      
+
                       <div className="text-sm space-y-2">
                         <div>
                           <span className="font-medium">Erkannte Daten: </span>
@@ -767,26 +785,28 @@ export default function ChatMonitoring() {
                             {showSensitiveData ? alert.detectedData : '***VERBORGEN***'}
                           </code>
                         </div>
-                        
+
                         <div>
                           <span className="font-medium">Kontext: </span>
                           <span className="text-gray-600">
-                            {showSensitiveData ? alert.context : alert.context.replace(alert.detectedData, '***')}
+                            {showSensitiveData
+                              ? alert.context
+                              : alert.context.replace(alert.detectedData, '***')}
                           </span>
                         </div>
-                        
+
                         <div className="text-xs text-muted-foreground">
                           Nachricht ID: {alert.messageId} | Sender: {alert.senderId}
                         </div>
                       </div>
                     </div>
-              )}
+                  ))}
                 </div>
-            }
+              )}
             </CardContent>
           </Card>
-        }
+        )}
       </div>
-    </div>);
-
+    </div>
+  );
 }

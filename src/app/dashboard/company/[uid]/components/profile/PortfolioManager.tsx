@@ -45,9 +45,7 @@ const PortfolioManager: React.FC<ProfileTabProps> = ({ profile, setProfile }) =>
           try {
             const imageRef = ref(storage, imageUrl);
             await deleteObject(imageRef);
-          } catch (error) {
-
-          }
+          } catch (error) {}
         })
       );
     }
@@ -93,7 +91,6 @@ const PortfolioManager: React.FC<ProfileTabProps> = ({ profile, setProfile }) =>
         images: [...(profile.portfolio?.find(p => p.id === itemId)?.images || []), downloadURL],
       });
     } catch (error) {
-
       alert('Fehler beim Upload des Bildes. Bitte versuchen Sie es erneut.');
     } finally {
       setIsUploading(false);
@@ -113,9 +110,7 @@ const PortfolioManager: React.FC<ProfileTabProps> = ({ profile, setProfile }) =>
           images: item.images.filter(img => img !== imageUrl),
         });
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   return (

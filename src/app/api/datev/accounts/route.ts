@@ -10,7 +10,6 @@ import { db } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
   try {
-
     // Extract company ID from URL or headers
     const url = new URL(request.url);
     const companyId = url.searchParams.get('companyId') || request.headers.get('x-company-id');
@@ -20,7 +19,6 @@ export async function GET(request: NextRequest) {
 
     // If no cookie-based token, try to get from Firestore
     if (!authHeader && companyId) {
-
       try {
         const tokenDoc = await db
           .collection('users')
@@ -36,18 +34,13 @@ export async function GET(request: NextRequest) {
           // Check if token is still valid (with 5-minute buffer)
           if (expiresAt && expiresAt.getTime() > Date.now() + 300000 && tokenData) {
             authHeader = `${tokenData.token_type || 'Bearer'} ${tokenData.access_token}`;
-
           } else {
-
           }
         }
-      } catch (firestoreError) {
-
-      }
+      } catch (firestoreError) {}
     }
 
     if (!authHeader) {
-
       return Response.json(
         {
           error: 'DATEV authentication required - please re-authenticate',
@@ -113,7 +106,6 @@ export async function GET(request: NextRequest) {
     const data = JSON.parse(responseText);
     return Response.json(data);
   } catch (error) {
-
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

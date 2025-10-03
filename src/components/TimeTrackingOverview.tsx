@@ -60,7 +60,6 @@ export default function TimeTrackingOverview({
       // Temporär deaktiviert für Build-Erfolg
       setOrders([]);
     } catch (error) {
-
     } finally {
       setLoading(false);
     }
@@ -103,7 +102,6 @@ export default function TimeTrackingOverview({
         onRequestsUpdated();
       }
     } catch (error) {
-
     } finally {
       setProcessing(false);
     }

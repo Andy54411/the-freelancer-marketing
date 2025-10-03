@@ -95,7 +95,6 @@ export default function AdminTicketDetail({
         toast.error('Fehler beim Laden des Tickets');
       }
     } catch (error) {
-
       toast.error('Fehler beim Laden des Tickets');
     }
   };
@@ -115,7 +114,6 @@ export default function AdminTicketDetail({
         toast.error('Fehler beim Laden der Antworten');
       }
     } catch (error) {
-
       toast.error('Fehler beim Laden der Antworten');
     } finally {
       setLoading(false);
@@ -174,7 +172,6 @@ export default function AdminTicketDetail({
         toast.error(errorData.error || 'Fehler beim Senden der Antwort');
       }
     } catch (error) {
-
       toast.error('Fehler beim Senden der Antwort');
     } finally {
       setSending(false);
@@ -208,7 +205,6 @@ export default function AdminTicketDetail({
         toast.error('Fehler beim Aktualisieren des Status');
       }
     } catch (error) {
-
       toast.error('Fehler beim Aktualisieren des Status');
     }
   };
@@ -242,7 +238,6 @@ export default function AdminTicketDetail({
         toast.error('Fehler beim Zuweisen des Tickets');
       }
     } catch (error) {
-
       toast.error('Fehler beim Zuweisen des Tickets');
     } finally {
       setShowAssignDialog(false);

@@ -53,7 +53,6 @@ export default function PaymentsPage() {
 
         setPayments(loadedPayments);
       } catch (error) {
-
         toast.error('Fehler beim Laden der Zahlungen');
       } finally {
         setLoading(false);

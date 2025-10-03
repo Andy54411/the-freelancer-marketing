@@ -71,7 +71,6 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
           // Load manager data if exists from registration
           if (userData.managerData) {
-
             setManagerData(userData.managerData);
           } else if (userData.actualRepresentativeTitle) {
             // If we have representative title but no manager data, pre-fill with user info
@@ -95,11 +94,9 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
         // Load step data if exists (onboarding data overrides registration where present)
         if (stepData[1]) {
-
           setFormData(prev => ({ ...prev, ...stepData[1] }));
         }
       } catch (error) {
-
       } finally {
         setLoading(false);
       }

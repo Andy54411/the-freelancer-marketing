@@ -19,7 +19,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Pencil, Trash2, MoreHorizontal, Plus } from 'lucide-react';
-import { BookingAccountService, BookingAccount, BookingAccountData } from '@/services/bookingAccountService';
+import {
+  BookingAccountService,
+  BookingAccount,
+  BookingAccountData,
+} from '@/services/bookingAccountService';
 import { toast } from 'sonner';
 import BookingAccountModal from './BookingAccountModal';
 
@@ -37,12 +41,12 @@ export default function BookingAccountsTab({ companyUid }: BookingAccountsTabPro
   useEffect(() => {
     const loadBookingAccounts = async () => {
       if (!companyUid) return;
-      
+
       try {
         setLoading(true);
         const bookingAccounts = await BookingAccountService.getBookingAccounts(companyUid);
         setAccounts(bookingAccounts);
-        
+
         // DEAKTIVIERT: Keine automatische Erstellung von Standard-Konten mehr
         // if (bookingAccounts.length === 0) {
         //   console.log('Erstelle Standard-Buchungskonten für Company:', companyUid);
@@ -81,34 +85,30 @@ export default function BookingAccountsTab({ companyUid }: BookingAccountsTabPro
       if (editingAccount) {
         // Bearbeiten
         await BookingAccountService.updateBookingAccount(
-          companyUid, 
-          editingAccount.id, 
+          companyUid,
+          editingAccount.id,
           accountData
         );
-        
+
         // Lokalen State aktualisieren
-        setAccounts(prev => 
-          prev.map(acc => 
-            acc.id === editingAccount.id 
-              ? { ...acc, ...accountData }
-              : acc
-          )
+        setAccounts(prev =>
+          prev.map(acc => (acc.id === editingAccount.id ? { ...acc, ...accountData } : acc))
         );
-        
+
         toast.success('Buchungskonto wurde aktualisiert');
       } else {
         // Neu erstellen
         const newAccount = await BookingAccountService.createBookingAccount(
-          companyUid, 
+          companyUid,
           accountData
         );
-        
+
         // Lokalen State aktualisieren
         setAccounts(prev => [...prev, newAccount]);
-        
+
         toast.success('Buchungskonto wurde erstellt');
       }
-      
+
       handleModalClose();
     } catch (error) {
       console.error('Fehler beim Speichern:', error);
@@ -117,16 +117,20 @@ export default function BookingAccountsTab({ companyUid }: BookingAccountsTabPro
   };
 
   const handleDelete = async (account: BookingAccount) => {
-    if (!confirm(`Möchten Sie das Buchungskonto "${account.number} - ${account.name}" wirklich löschen?`)) {
+    if (
+      !confirm(
+        `Möchten Sie das Buchungskonto "${account.number} - ${account.name}" wirklich löschen?`
+      )
+    ) {
       return;
     }
 
     try {
       await BookingAccountService.deleteBookingAccount(companyUid, account.id);
-      
+
       // Lokalen State aktualisieren
       setAccounts(prev => prev.filter(acc => acc.id !== account.id));
-      
+
       toast.success('Buchungskonto wurde gelöscht');
     } catch (error) {
       console.error('Fehler beim Löschen:', error);
@@ -135,10 +139,14 @@ export default function BookingAccountsTab({ companyUid }: BookingAccountsTabPro
   };
 
   const handleDeleteAll = async () => {
-    if (!window.confirm('Möchtest du wirklich ALLE Buchungskonten löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+    if (
+      !window.confirm(
+        'Möchtest du wirklich ALLE Buchungskonten löschen? Diese Aktion kann nicht rückgängig gemacht werden.'
+      )
+    ) {
       return;
     }
-    
+
     try {
       await BookingAccountService.deleteAllBookingAccounts(companyUid);
       setAccounts([]);
@@ -180,17 +188,10 @@ export default function BookingAccountsTab({ companyUid }: BookingAccountsTabPro
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle>Buchungskonten</CardTitle>
           <div className="flex gap-2">
-            <Button 
-              onClick={handleDeleteAll}
-              variant="destructive"
-              size="sm"
-            >
+            <Button onClick={handleDeleteAll} variant="destructive" size="sm">
               Alle löschen
             </Button>
-            <Button 
-              onClick={handleAdd}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-            >
+            <Button onClick={handleAdd} className="bg-[#14ad9f] hover:bg-[#129488] text-white">
               <Plus className="h-4 w-4 mr-2" />
               Buchungskonto hinzufügen
             </Button>
@@ -213,23 +214,27 @@ export default function BookingAccountsTab({ companyUid }: BookingAccountsTabPro
                   <TableCell className="font-mono">{account.number}</TableCell>
                   <TableCell>{account.name}</TableCell>
                   <TableCell>
-                    <Badge 
+                    <Badge
                       className={`${
-                        account.type === 'ASSET' ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' :
-                        account.type === 'LIABILITY' ? 'bg-orange-500 hover:bg-orange-600 text-white' :
-                        account.type === 'INCOME' ? 'bg-green-500 hover:bg-green-600 text-white' :
-                        account.type === 'EXPENSE' ? 'bg-red-500 hover:bg-red-600 text-white' :
-                        'bg-gray-500 hover:bg-gray-600 text-white'
+                        account.type === 'ASSET'
+                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                          : account.type === 'LIABILITY'
+                            ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                            : account.type === 'INCOME'
+                              ? 'bg-green-500 hover:bg-green-600 text-white'
+                              : account.type === 'EXPENSE'
+                                ? 'bg-red-500 hover:bg-red-600 text-white'
+                                : 'bg-gray-500 hover:bg-gray-600 text-white'
                       }`}
                     >
                       {getAccountTypeLabel(account.type)}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge 
+                    <Badge
                       className={`${
-                        account.automaticBooking 
-                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' 
+                        account.automaticBooking
+                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
                           : 'bg-gray-500 hover:bg-gray-600 text-white'
                       }`}
                     >
@@ -248,7 +253,7 @@ export default function BookingAccountsTab({ companyUid }: BookingAccountsTabPro
                           <Pencil className="h-4 w-4 mr-2" />
                           Bearbeiten
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => handleDelete(account)}
                           className="text-red-600"
                         >
@@ -271,7 +276,7 @@ export default function BookingAccountsTab({ companyUid }: BookingAccountsTabPro
           </Table>
         </CardContent>
       </Card>
-      
+
       <BookingAccountModal
         isOpen={isModalOpen}
         onClose={handleModalClose}

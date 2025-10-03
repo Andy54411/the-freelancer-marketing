@@ -109,7 +109,6 @@ export function AdminQuickNoteDialog({
         onNoteAdded();
       }
     } catch (error) {
-
     } finally {
       setLoading(false);
     }

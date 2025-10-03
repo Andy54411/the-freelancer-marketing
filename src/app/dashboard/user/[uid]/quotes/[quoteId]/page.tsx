@@ -114,7 +114,6 @@ export default function CustomerQuoteDetailPage() {
         setError(result.error || 'Angebotsanfrage nicht gefunden');
       }
     } catch (err) {
-
       setError('Fehler beim Laden der Angebotsanfrage');
     } finally {
       setLoading(false);
@@ -157,7 +156,6 @@ export default function CustomerQuoteDetailPage() {
         );
       }
     } catch (err) {
-
       setError(`Fehler beim ${action === 'accept' ? 'Annehmen' : 'Ablehnen'} des Angebots`);
     } finally {
       setLoadingState(false);
@@ -612,10 +610,9 @@ export default function CustomerQuoteDetailPage() {
                   </label>
                   <p className="mt-1 text-sm text-gray-900 flex items-center">
                     <FiClock className="mr-2 h-4 w-4 text-gray-400" />
-                    {quote.response.respondedAt 
+                    {quote.response.respondedAt
                       ? new Date(quote.response.respondedAt).toLocaleString('de-DE')
-                      : 'Unbekannt'
-                    }
+                      : 'Unbekannt'}
                   </p>
                 </div>
               )}

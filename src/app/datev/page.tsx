@@ -73,12 +73,7 @@ export default function DatevPage() {
         </TabsList>
 
         <TabsContent value="connection" className="space-y-6">
-          <DatevAuthComponent
-            companyId={companyId}
-            onAuthSuccess={org => {
-
-            }}
-          />
+          <DatevAuthComponent companyId={companyId} onAuthSuccess={org => {}} />
         </TabsContent>
 
         <TabsContent value="dashboard" className="space-y-6">

@@ -24,9 +24,9 @@ export default function QuotesSentPage() {
 
   return (
     <div className="space-y-6">
-      <FilteredQuoteComponent 
-        companyId={uid} 
-        statusFilter="sent" 
+      <FilteredQuoteComponent
+        companyId={uid}
+        statusFilter="sent"
         title="Versendete Angebote"
         description="Alle versendeten Angebote"
       />

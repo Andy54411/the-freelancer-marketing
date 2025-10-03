@@ -304,7 +304,6 @@ function TaskCard({ task, credentialType, onSelect, isSelected }: TaskCardProps)
     const success = await cancelTask();
     if (success) {
       // Task was cancelled successfully
-
     }
   };
 

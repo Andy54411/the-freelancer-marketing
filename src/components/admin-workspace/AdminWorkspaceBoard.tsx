@@ -60,9 +60,7 @@ export function AdminWorkspaceBoard({
         // Update selectedWorkspace with tasks
         const updatedWorkspace = { ...selectedWorkspace, tasks };
         setSelectedWorkspace(updatedWorkspace);
-      } catch (error) {
-
-      }
+      } catch (error) {}
     };
 
     loadWorkspaceTasks();
@@ -119,7 +117,6 @@ export function AdminWorkspaceBoard({
 
   // Initialize columns with tasks properly distributed
   const getColumnsWithTasks = () => {
-
     // FORCE using default columns with workspace tasks for now
     // TODO: Fix backend to properly populate boardColumns.tasks
     const workspaceTasks = (selectedWorkspace?.tasks || []).filter(task => !task.archived);
@@ -296,7 +293,6 @@ export function AdminWorkspaceBoard({
 
   const handleTaskCreated = async (taskData: Partial<AdminWorkspaceTask>) => {
     if (!selectedWorkspace || !selectedColumnId) {
-
       return;
     }
 
@@ -342,7 +338,6 @@ export function AdminWorkspaceBoard({
           tasks: updatedTasks,
         });
       } catch (error) {
-
         // Fallback to local update if backend call fails
         const updatedColumns = columns.map(col => {
           if (col.id === selectedColumnId) {
@@ -361,9 +356,7 @@ export function AdminWorkspaceBoard({
           tasks: updatedTasks,
         });
       }
-
     } catch (error) {
-
       alert('Fehler beim Erstellen der Aufgabe: ' + (error as Error).message);
     }
   };
@@ -534,7 +527,6 @@ export function AdminWorkspaceBoard({
         setSelectedTask(null);
       }
     } catch (error) {
-
       alert('Fehler beim Archivieren der Aufgabe. Bitte versuche es erneut.');
     }
   };
@@ -612,7 +604,6 @@ export function AdminWorkspaceBoard({
         archivedTasks: updatedArchivedTasks,
       });
     } catch (error) {
-
       alert('Fehler beim Wiederherstellen der Aufgabe. Bitte versuche es erneut.');
     }
   };
@@ -667,7 +658,6 @@ export function AdminWorkspaceBoard({
         setSelectedTask(null);
       }
     } catch (error) {
-
       alert('Fehler beim Löschen der Aufgabe. Bitte versuche es erneut.');
     }
   };

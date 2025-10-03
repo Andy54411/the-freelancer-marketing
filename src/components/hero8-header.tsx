@@ -43,7 +43,6 @@ export const HeroHeader = () => {
   useEffect(() => {
     const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, async user => {
-
       if (user) {
         setUser({
           uid: user.uid,
@@ -61,18 +60,14 @@ export const HeroHeader = () => {
             const userData = userDoc.data();
 
             if (userData.profilePictureFirebaseUrl) {
-
               setProfilePictureUrl(userData.profilePictureFirebaseUrl);
             } else {
-
               setProfilePictureUrl(null);
             }
           } else {
-
             setProfilePictureUrl(null);
           }
         } catch (error) {
-
           setProfilePictureUrl(null);
         }
       } else {
@@ -104,9 +99,7 @@ export const HeroHeader = () => {
       const auth = getAuth(app);
       await signOut(auth);
       window.location.href = '/';
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   return (

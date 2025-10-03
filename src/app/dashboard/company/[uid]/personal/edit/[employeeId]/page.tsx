@@ -34,20 +34,16 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
   const [activeTab, setActiveTab] = useState('basic');
 
   useEffect(() => {
-
     if (authLoading) {
-
       return; // Warte auf Auth-Status
     }
 
     if (!user) {
-
       router.push('/login');
       return;
     }
 
     if (resolvedParams.employeeId) {
-
       loadEmployee();
     }
   }, [user, authLoading, resolvedParams.employeeId, router]);
@@ -61,15 +57,12 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
       const employeeData = employees.find(emp => emp.id === resolvedParams.employeeId);
 
       if (employeeData) {
-
         setEmployee(employeeData);
         setFormData(employeeData);
       } else {
-
         toast.error('Mitarbeiter nicht gefunden');
       }
     } catch (error) {
-
       toast.error('Fehler beim Laden der Mitarbeiterdaten');
     } finally {
       setLoading(false);
@@ -90,7 +83,6 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
       setIsEditing(false);
       toast.success('Mitarbeiterdaten erfolgreich aktualisiert');
     } catch (error) {
-
       toast.error('Fehler beim Speichern der Mitarbeiterdaten');
     }
   };

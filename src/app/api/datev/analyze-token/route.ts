@@ -69,26 +69,27 @@ export async function GET(request: NextRequest) {
           scope: tokenData.scope,
           token_type: tokenData.token_type,
           expires_in: tokenData.expires_in,
-          connected_at: new Date(tokenData.connected_at).toISOString()
+          connected_at: new Date(tokenData.connected_at).toISOString(),
         },
         accessToken: {
           isJWT: !!accessTokenDecoded,
           decoded: accessTokenDecoded,
-          firstChars: tokenData.access_token.substring(0, 20) + '...'
+          firstChars: tokenData.access_token.substring(0, 20) + '...',
         },
         idToken: {
           isJWT: !!idTokenDecoded,
           decoded: idTokenDecoded,
-          firstChars: tokenData.id_token ? tokenData.id_token.substring(0, 20) + '...' : null
-        }
-      }
+          firstChars: tokenData.id_token ? tokenData.id_token.substring(0, 20) + '...' : null,
+        },
+      },
     });
-
   } catch (error) {
-
-    return NextResponse.json({
-      error: 'analysis_failed',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'analysis_failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
 }

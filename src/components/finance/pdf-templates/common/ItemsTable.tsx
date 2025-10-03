@@ -37,14 +37,20 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
             <thead style={PDF_PAGE_STYLES.tableHeader}>
               <tr style={{ backgroundColor: color }}>
                 <th className="text-white py-4 px-3 text-left font-light">{t('position')}</th>
-                {showArticleNumber && <th className="text-white py-4 px-3 text-left font-light">{t('articleNumber')}</th>}
+                {showArticleNumber && (
+                  <th className="text-white py-4 px-3 text-left font-light">
+                    {t('articleNumber')}
+                  </th>
+                )}
                 <th className="text-white py-4 px-3 text-left font-light">{t('description')}</th>
                 <th className="text-white py-4 px-3 text-right font-light">{t('quantity')}</th>
                 <th className="text-white py-4 px-3 text-right font-light">{t('unitPrice')}</th>
                 {hasAnyDiscount && (
                   <th className="text-white py-4 px-3 text-right font-light">{t('discount')}</th>
                 )}
-                {showVATPerPosition && <th className="text-white py-4 px-3 text-right font-light">{t('vatRate')}</th>}
+                {showVATPerPosition && (
+                  <th className="text-white py-4 px-3 text-right font-light">{t('vatRate')}</th>
+                )}
                 <th className="text-white py-4 px-3 text-right font-light">{t('amount')}</th>
               </tr>
             </thead>
@@ -108,13 +114,33 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
           <thead style={PDF_PAGE_STYLES.tableHeader}>
             <tr className="bg-gray-900 text-white">
               <th className="py-3 px-2 text-left font-mono text-xs">ID</th>
-              {showArticleNumber && <th className="py-3 px-2 text-left font-mono text-xs">{t('articleNumber').toUpperCase()}</th>}
-              <th className="py-3 px-2 text-left font-mono text-xs">{t('description').toUpperCase()}</th>
-              <th className="py-3 px-2 text-right font-mono text-xs">{t('quantity').toUpperCase()}</th>
-              <th className="py-3 px-2 text-right font-mono text-xs">{t('unitPrice').toUpperCase()}</th>
-              {hasAnyDiscount && <th className="py-3 px-2 text-right font-mono text-xs">{t('discount').toUpperCase()}</th>}
-              {showVATPerPosition && <th className="py-3 px-2 text-right font-mono text-xs">{t('vatRate').toUpperCase()}</th>}
-              <th className="py-3 px-2 text-right font-mono text-xs">{t('amount').toUpperCase()}</th>
+              {showArticleNumber && (
+                <th className="py-3 px-2 text-left font-mono text-xs">
+                  {t('articleNumber').toUpperCase()}
+                </th>
+              )}
+              <th className="py-3 px-2 text-left font-mono text-xs">
+                {t('description').toUpperCase()}
+              </th>
+              <th className="py-3 px-2 text-right font-mono text-xs">
+                {t('quantity').toUpperCase()}
+              </th>
+              <th className="py-3 px-2 text-right font-mono text-xs">
+                {t('unitPrice').toUpperCase()}
+              </th>
+              {hasAnyDiscount && (
+                <th className="py-3 px-2 text-right font-mono text-xs">
+                  {t('discount').toUpperCase()}
+                </th>
+              )}
+              {showVATPerPosition && (
+                <th className="py-3 px-2 text-right font-mono text-xs">
+                  {t('vatRate').toUpperCase()}
+                </th>
+              )}
+              <th className="py-3 px-2 text-right font-mono text-xs">
+                {t('amount').toUpperCase()}
+              </th>
             </tr>
           </thead>
           <tbody>

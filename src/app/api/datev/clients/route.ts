@@ -24,9 +24,11 @@ export async function POST(request: NextRequest) {
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-
       return NextResponse.json(
-        { error: 'no_tokens', message: 'Keine DATEV-Token gefunden. Bitte authentifizieren Sie sich zuerst.' },
+        {
+          error: 'no_tokens',
+          message: 'Keine DATEV-Token gefunden. Bitte authentifizieren Sie sich zuerst.',
+        },
         { status: 401 }
       );
     }
@@ -37,7 +39,6 @@ export async function POST(request: NextRequest) {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
     } catch (parseError) {
-
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -46,12 +47,14 @@ export async function POST(request: NextRequest) {
 
     // Check if tokens are expired
     const now = Date.now();
-    const expiresAt = tokenData.connected_at + (tokenData.expires_in * 1000);
+    const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
 
     if (now >= expiresAt) {
-
       return NextResponse.json(
-        { error: 'token_expired', message: 'Token abgelaufen. Bitte authentifizieren Sie sich erneut.' },
+        {
+          error: 'token_expired',
+          message: 'Token abgelaufen. Bitte authentifizieren Sie sich erneut.',
+        },
         { status: 401 }
       );
     }
@@ -62,8 +65,8 @@ export async function POST(request: NextRequest) {
     const response = await fetch(`${config.apiBaseUrl}/master-data/v3/clients`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${tokenData.access_token}`,
-        'Accept': 'application/json',
+        Authorization: `Bearer ${tokenData.access_token}`,
+        Accept: 'application/json',
         'Content-Type': 'application/json',
       },
     });
@@ -75,7 +78,7 @@ export async function POST(request: NextRequest) {
         {
           error: 'api_error',
           message: `DATEV API-Fehler: ${response.status} ${response.statusText}`,
-          details: errorText
+          details: errorText,
         },
         { status: response.status }
       );
@@ -88,14 +91,12 @@ export async function POST(request: NextRequest) {
       data: clientsData,
       timestamp: Date.now(),
     });
-
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'internal_server_error',
         message: 'Unerwarteter Serverfehler',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

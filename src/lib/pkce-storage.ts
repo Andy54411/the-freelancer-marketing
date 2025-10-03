@@ -30,9 +30,7 @@ function loadPKCEStore(): Map<string, PKCEData> {
       const parsed = JSON.parse(data);
       return new Map(Object.entries(parsed));
     }
-  } catch (error) {
-
-  }
+  } catch (error) {}
   return new Map();
 }
 
@@ -41,9 +39,7 @@ function savePKCEStore(store: Map<string, PKCEData>): void {
   try {
     const data = Object.fromEntries(store);
     writeFileSync(STORAGE_FILE, JSON.stringify(data, null, 2), 'utf8');
-  } catch (error) {
-
-  }
+  } catch (error) {}
 }
 
 // Initialize store from file
@@ -64,7 +60,6 @@ export function storePKCEData(state: string, data: PKCEData): void {
 
   // Save to file for persistence
   savePKCEStore(pkceStore);
-
 }
 
 /**
@@ -76,7 +71,6 @@ export function retrievePKCEData(state: string): PKCEData | null {
   const data = freshStore.get(state);
 
   if (!data) {
-
     return null;
   }
 
@@ -85,7 +79,6 @@ export function retrievePKCEData(state: string): PKCEData | null {
   const maxAge = 10 * 60 * 1000; // 10 minutes
 
   if (now - data.timestamp > maxAge) {
-
     freshStore.delete(state);
     savePKCEStore(freshStore);
     return null;
@@ -115,7 +108,6 @@ function cleanExpiredEntries(): void {
 
   if (cleaned > 0) {
     savePKCEStore(pkceStore);
-
   }
 }
 

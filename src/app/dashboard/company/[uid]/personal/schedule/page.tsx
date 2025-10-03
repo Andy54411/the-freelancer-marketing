@@ -177,11 +177,9 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
     const employeesUnsubscribe = PersonalService.subscribeToEmployees(
       resolvedParams.uid,
       employeeList => {
-
         setEmployees(employeeList);
       },
       error => {
-
         toast.error('Fehler beim Laden der Mitarbeiter');
       }
     );
@@ -190,12 +188,10 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
     const shiftsUnsubscribe = PersonalService.subscribeToShifts(
       resolvedParams.uid,
       shiftList => {
-
         setShifts(shiftList);
         setLoading(false);
       },
       error => {
-
         toast.error('Fehler beim Laden der Schichten');
         setLoading(false);
       }
@@ -221,7 +217,6 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
   const loadData = async () => {
     // Diese Methode wird nur noch für manuelle Refreshes verwendet
     // Hauptdatenladung erfolgt über Realtime-Subscriptions
-
   };
 
   const handleCreateShift = async () => {
@@ -261,7 +256,6 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
         status: 'PLANNED',
       });
     } catch (error) {
-
       toast.error('Fehler beim Erstellen der Schicht');
     }
   };
@@ -291,7 +285,6 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
 
       // Daten werden automatisch über Realtime-Subscription aktualisiert
     } catch (error) {
-
       toast.error('Fehler beim Erstellen der Schicht');
     }
   };
@@ -320,7 +313,6 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
 
       // Daten werden automatisch über Realtime-Subscription aktualisiert
     } catch (error) {
-
       toast.error('Fehler beim Verschieben der Schicht');
     }
   };

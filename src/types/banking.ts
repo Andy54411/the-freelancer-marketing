@@ -197,7 +197,13 @@ export interface FinAPIBankConnection {
 }
 
 export interface FinAPIUpdateResult {
-  result: 'SUCCESSFUL' | 'BANK_SERVER_REJECTION' | 'INTERNAL_SERVER_ERROR' | 'INCORRECT_CREDENTIALS' | 'UNSUPPORTED_ORDER' | 'USER_ACTION_REQUIRED';
+  result:
+    | 'SUCCESSFUL'
+    | 'BANK_SERVER_REJECTION'
+    | 'INTERNAL_SERVER_ERROR'
+    | 'INCORRECT_CREDENTIALS'
+    | 'UNSUPPORTED_ORDER'
+    | 'USER_ACTION_REQUIRED';
   errorMessage?: string;
   errorType?: string;
   timestamp: string;

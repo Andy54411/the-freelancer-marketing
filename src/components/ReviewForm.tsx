@@ -107,7 +107,6 @@ export default function ReviewForm({
       setSuccess(true);
       setKommentar('');
     } catch (err: unknown) {
-
       let errorMessage = 'Bewertung konnte nicht gesendet werden.';
       if (err && typeof err === 'object' && 'code' in err && 'message' in err) {
         const errorObj = err as { code: string; message: string };
@@ -192,10 +191,11 @@ export default function ReviewForm({
         <button
           onClick={handleSubmit}
           disabled={loading || !hasProfilePicture}
-          className={`px-6 py-2 rounded-md transition ${hasProfilePicture
+          className={`px-6 py-2 rounded-md transition ${
+            hasProfilePicture
               ? 'bg-[#14ad9f] text-white hover:bg-teal-700'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
+          }`}
         >
           {loading ? 'Wird gesendet...' : 'Bewertung senden'}
         </button>

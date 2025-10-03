@@ -79,13 +79,11 @@ async function sendNewsletterConfirmation(
     });
 
     if (error) {
-
       return { success: false, error: error.message };
     }
 
     return { success: true, messageId: data?.id };
   } catch (error) {
-
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -113,7 +111,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (result.success) {
-
       return NextResponse.json({
         success: true,
         message: 'Newsletter-Anmeldung erfolgreich! Bestätigungs-E-Mail wurde gesendet.',
@@ -121,7 +118,6 @@ export async function POST(request: NextRequest) {
         service: 'Resend',
       });
     } else {
-
       return NextResponse.json(
         {
           success: false,
@@ -131,7 +127,6 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,
@@ -155,7 +150,6 @@ export async function GET(_request: NextRequest) {
       },
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }

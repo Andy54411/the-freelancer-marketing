@@ -71,9 +71,7 @@ export function DatevOverview({ companyId }: DatevOverviewProps) {
 
       // Calculate overview statistics (using placeholder data temporarily)
       const transactions: any[] = []; // Empty array until backend route exists
-      const revenue = transactions
-        .filter(t => t.amount > 0)
-        .reduce((sum, t) => sum + t.amount, 0);
+      const revenue = transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
 
       const expenses = transactions
         .filter(t => t.amount < 0)
@@ -90,7 +88,6 @@ export function DatevOverview({ companyId }: DatevOverviewProps) {
         accountBalance,
       });
     } catch (error) {
-
       toast.error('Fehler beim Laden der Übersichtsdaten');
     } finally {
       setLoading(false);

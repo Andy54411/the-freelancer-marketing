@@ -12,9 +12,7 @@ interface OnboardingWelcomeProps {
 }
 
 function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeProps) {
-  const {
-    onboardingStatus
-  } = useOnboarding();
+  const { onboardingStatus } = useOnboarding();
 
   // Prüfe Onboarding Status beim Laden
   useEffect(() => {
@@ -27,33 +25,33 @@ function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeP
   const features = [
     {
       icon: <Users className="h-6 w-6 text-[#14ad9f]" />,
-      title: "Professionelle Unternehmensprofile",
-      description: "Erstellen Sie ein umfassendes Firmenprofil mit allen wichtigen Informationen"
+      title: 'Professionelle Unternehmensprofile',
+      description: 'Erstellen Sie ein umfassendes Firmenprofil mit allen wichtigen Informationen',
     },
     {
       icon: <Shield className="h-6 w-6 text-[#14ad9f]" />,
-      title: "Sichere Zahlungsabwicklung",
-      description: "Integrierte Stripe-Zahlungen für sicheren Geldtransfer und Rechnungsstellung"
+      title: 'Sichere Zahlungsabwicklung',
+      description: 'Integrierte Stripe-Zahlungen für sicheren Geldtransfer und Rechnungsstellung',
     },
     {
       icon: <TrendingUp className="h-6 w-6 text-[#14ad9f]" />,
-      title: "Erweiterte Geschäftsfunktionen",
-      description: "Buchhaltung, Steuereinstellungen und professionelle Rechnungsstellung"
+      title: 'Erweiterte Geschäftsfunktionen',
+      description: 'Buchhaltung, Steuereinstellungen und professionelle Rechnungsstellung',
     },
     {
       icon: <Zap className="h-6 w-6 text-[#14ad9f]" />,
-      title: "Schnelle Marktpräsenz",
-      description: "Sofortiger Zugang zu Kunden und optimierte Sichtbarkeit auf der Plattform"
-    }
+      title: 'Schnelle Marktpräsenz',
+      description: 'Sofortiger Zugang zu Kunden und optimierte Sichtbarkeit auf der Plattform',
+    },
   ];
 
   const benefits = [
-    "Professionelle Geschäftsführung mit integrierten Tools",
-    "Automatisierte Rechnungsstellung und Buchhaltung",
-    "Erweiterte Marketing- und Sichtbarkeitsoptionen",
-    "Priorisierter Kundensupport und Account-Management",
-    "Stripe Connect für sichere B2B-Zahlungen",
-    "Compliance-Tools für Steuer und Recht"
+    'Professionelle Geschäftsführung mit integrierten Tools',
+    'Automatisierte Rechnungsstellung und Buchhaltung',
+    'Erweiterte Marketing- und Sichtbarkeitsoptionen',
+    'Priorisierter Kundensupport und Account-Management',
+    'Stripe Connect für sichere B2B-Zahlungen',
+    'Compliance-Tools für Steuer und Recht',
   ];
 
   return (
@@ -61,12 +59,11 @@ function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeP
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Willkommen bei Taskilo Business
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Willkommen bei Taskilo Business</h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Verwandeln Sie Ihr Unternehmen in eine professionelle Dienstleistungsmarke.
-            Unser 5-Schritte-Onboarding führt Sie durch alle wichtigen Einstellungen für einen erfolgreichen Start.
+            Verwandeln Sie Ihr Unternehmen in eine professionelle Dienstleistungsmarke. Unser
+            5-Schritte-Onboarding führt Sie durch alle wichtigen Einstellungen für einen
+            erfolgreichen Start.
           </p>
         </div>
 
@@ -75,15 +72,11 @@ function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeP
           {features.map((feature, index) => (
             <Card key={index} className="text-center hover:shadow-lg transition-shadow">
               <CardHeader className="pb-4">
-                <div className="flex justify-center mb-3">
-                  {feature.icon}
-                </div>
+                <div className="flex justify-center mb-3">{feature.icon}</div>
                 <CardTitle className="text-lg">{feature.title}</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-sm">
-                  {feature.description}
-                </CardDescription>
+                <CardDescription className="text-sm">{feature.description}</CardDescription>
               </CardContent>
             </Card>
           ))}
@@ -142,8 +135,8 @@ function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeP
             <div className="bg-white rounded-lg p-8 shadow-sm border">
               <h3 className="text-2xl font-bold mb-4">Bereit für den nächsten Schritt?</h3>
               <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                Das Onboarding dauert etwa 45 Minuten und kann jederzeit unterbrochen und später fortgesetzt werden.
-                Ihre Daten werden automatisch gespeichert.
+                Das Onboarding dauert etwa 45 Minuten und kann jederzeit unterbrochen und später
+                fortgesetzt werden. Ihre Daten werden automatisch gespeichert.
               </p>
               <Button
                 size="lg"
@@ -160,11 +153,10 @@ function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeP
             <div className="mt-8 text-center">
               <Card className="border-[#14ad9f] border-2">
                 <CardHeader>
-                  <CardTitle className="text-[#14ad9f]">
-                    Onboarding fortsetzen
-                  </CardTitle>
+                  <CardTitle className="text-[#14ad9f]">Onboarding fortsetzen</CardTitle>
                   <CardDescription>
-                    Sie haben bereits mit dem Onboarding begonnen. Setzen Sie dort fort, wo Sie aufgehört haben.
+                    Sie haben bereits mit dem Onboarding begonnen. Setzen Sie dort fort, wo Sie
+                    aufgehört haben.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

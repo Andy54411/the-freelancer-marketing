@@ -58,7 +58,6 @@ function PaymentContent() {
       // Nach erfolgreicher Zahlung zur Bestätigungsseite weiterleiten
       router.push('/payment/success');
     } catch (error) {
-
       alert('Fehler bei der Zahlung. Bitte versuchen Sie es erneut.');
     } finally {
       setIsProcessing(false);

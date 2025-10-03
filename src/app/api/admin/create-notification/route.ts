@@ -40,7 +40,6 @@ export async function POST(request: NextRequest) {
       notificationId: docRef.id,
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

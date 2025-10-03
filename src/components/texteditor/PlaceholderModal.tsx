@@ -93,10 +93,16 @@ export default function PlaceholderModal({
     },
     {
       id: 'document',
-      label: objectType === 'INVOICE' ? 'Rechnung' : 
-             objectType === 'REMINDER' ? 'Mahnung' : 
-             objectType === 'CREDIT_NOTE' ? 'Gutschrift' :
-             objectType === 'CANCELLATION' ? 'Storno' : 'Angebot',
+      label:
+        objectType === 'INVOICE'
+          ? 'Rechnung'
+          : objectType === 'REMINDER'
+            ? 'Mahnung'
+            : objectType === 'CREDIT_NOTE'
+              ? 'Gutschrift'
+              : objectType === 'CANCELLATION'
+                ? 'Storno'
+                : 'Angebot',
       placeholders:
         objectType === 'INVOICE'
           ? [

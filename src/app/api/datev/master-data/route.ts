@@ -16,31 +16,33 @@ const DATEV_ENDPOINTS_TO_TRY = [
     name: 'Master Clients API',
     transform: (data: any) => ({
       clients: Array.isArray(data) ? data : [data],
-      source: 'master-data-v3'
-    })
+      source: 'master-data-v3',
+    }),
   },
   {
     path: '/platform/v1/clients',
     name: 'Platform Clients API',
     transform: (data: any) => ({
       clients: Array.isArray(data) ? data : [data],
-      source: 'platform-v1'
-    })
+      source: 'platform-v1',
+    }),
   },
   {
     path: '/userinfo',
     name: 'User Info API (Organization Data)',
     transform: (data: any) => ({
-      clients: [{
-        id: data.account_id,
-        name: data.name,
-        email: data.email,
-        family_name: data.family_name,
-        type: 'user_account'
-      }],
-      source: 'userinfo'
-    })
-  }
+      clients: [
+        {
+          id: data.account_id,
+          name: data.name,
+          email: data.email,
+          family_name: data.family_name,
+          type: 'user_account',
+        },
+      ],
+      source: 'userinfo',
+    }),
+  },
 ];
 
 export async function GET(request: NextRequest) {
@@ -61,7 +63,6 @@ export async function GET(request: NextRequest) {
     let tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-
       // Add a small delay and try once more (for post-OAuth scenarios)
 
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -70,7 +71,6 @@ export async function GET(request: NextRequest) {
       const retryTokenCookie = retryCookieStore.get(cookieName);
 
       if (!retryTokenCookie?.value) {
-
         return NextResponse.json(
           {
             error: 'no_tokens',
@@ -88,9 +88,7 @@ export async function GET(request: NextRequest) {
     try {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
-
     } catch (parseError) {
-
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -102,7 +100,6 @@ export async function GET(request: NextRequest) {
     const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
 
     if (now >= expiresAt) {
-
       return NextResponse.json(
         {
           error: 'token_expired',
@@ -147,31 +144,30 @@ export async function GET(request: NextRequest) {
           lastError = {
             endpoint: endpoint.name,
             status: response.status,
-            error: errorText
+            error: errorText,
           };
         }
       } catch (fetchError) {
-
         lastError = {
           endpoint: endpoint.name,
-          error: fetchError instanceof Error ? fetchError.message : 'Unknown fetch error'
+          error: fetchError instanceof Error ? fetchError.message : 'Unknown fetch error',
         };
       }
     }
 
     // If no endpoint worked, return error
     if (!workingEndpoint || !responseData) {
-
       return NextResponse.json(
         {
           error: 'all_endpoints_failed',
-          message: 'Keine DATEV API-Endpoints sind verfügbar. Möglicherweise fehlen API-Berechtigungen.',
+          message:
+            'Keine DATEV API-Endpoints sind verfügbar. Möglicherweise fehlen API-Berechtigungen.',
           details: {
             lastError,
             triedEndpoints: DATEV_ENDPOINTS_TO_TRY.map(e => e.name),
             tokenValid: true,
-            apiBaseUrl: apiBaseUrl
-          }
+            apiBaseUrl: apiBaseUrl,
+          },
         },
         { status: 503 }
       );
@@ -187,7 +183,7 @@ export async function GET(request: NextRequest) {
         endpoint: workingEndpoint.name,
         path: workingEndpoint.path,
         apiUrl: `${apiBaseUrl}${workingEndpoint.path}`,
-        clientCount: responseData.clients.length
+        clientCount: responseData.clients.length,
       },
       timestamp: Date.now(),
       environment: {
@@ -196,9 +192,7 @@ export async function GET(request: NextRequest) {
         match: tokenData.environment === process.env.NODE_ENV,
       },
     });
-
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'internal_server_error',
@@ -235,7 +229,6 @@ export async function POST(request: NextRequest) {
 
     return await GET(getRequest);
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'internal_server_error',

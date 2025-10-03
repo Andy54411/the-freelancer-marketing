@@ -47,7 +47,6 @@ export class DatevTokenManager {
     user: DatevUserData;
   }): void {
     if (!isClient) {
-
       return;
     }
 
@@ -66,7 +65,6 @@ export class DatevTokenManager {
 
     localStorage.setItem(DATEV_TOKEN_STORAGE_KEY, JSON.stringify(tokenInfo));
     localStorage.setItem(DATEV_USER_DATA_STORAGE_KEY, JSON.stringify(tokenData.user));
-
   }
 
   /**
@@ -74,7 +72,6 @@ export class DatevTokenManager {
    */
   static getUserToken(): DatevUserToken | null {
     if (!isClient) {
-
       return null;
     }
 
@@ -86,14 +83,12 @@ export class DatevTokenManager {
 
       // Check if token is expired (with 5-minute buffer)
       if (Date.now() >= tokenInfo.expires_at - 300000) {
-
         this.clearUserToken();
         return null;
       }
 
       return tokenInfo;
     } catch (error) {
-
       return null;
     }
   }
@@ -122,13 +117,11 @@ export class DatevTokenManager {
 
       // Check if token is expired (with 5-minute buffer)
       if (Date.now() >= tokenInfo.expires_at - 300000) {
-
         return null;
       }
 
       return tokenInfo;
     } catch (error) {
-
       return null;
     }
   }
@@ -138,7 +131,6 @@ export class DatevTokenManager {
    */
   static getUserData(): DatevUserData | null {
     if (!isClient) {
-
       return null;
     }
 
@@ -148,7 +140,6 @@ export class DatevTokenManager {
 
       return JSON.parse(stored);
     } catch (error) {
-
       return null;
     }
   }
@@ -166,13 +157,11 @@ export class DatevTokenManager {
    */
   static clearUserToken(): void {
     if (!isClient) {
-
       return;
     }
 
     localStorage.removeItem(DATEV_TOKEN_STORAGE_KEY);
     localStorage.removeItem(DATEV_USER_DATA_STORAGE_KEY);
-
   }
 
   /**
@@ -209,7 +198,6 @@ export class DatevTokenManager {
   static async refreshTokenIfNeeded(): Promise<boolean> {
     const token = this.getUserToken();
     if (!token) {
-
       return false;
     }
 
@@ -221,7 +209,6 @@ export class DatevTokenManager {
 
     // If no refresh token available, clear everything and require re-auth
     if (!token.refresh_token) {
-
       this.clearUserToken();
       return false;
     }
@@ -248,14 +235,12 @@ export class DatevTokenManager {
 
       // Validate response data
       if (!data.access_token) {
-
         this.clearUserToken();
         return false;
       }
 
       const userData = this.getUserData();
       if (!userData) {
-
         this.clearUserToken();
         return false;
       }
@@ -272,7 +257,6 @@ export class DatevTokenManager {
 
       return true;
     } catch (error) {
-
       this.clearUserToken();
       return false;
     }
@@ -294,14 +278,12 @@ export class DatevTokenManager {
       });
 
       if (!response.ok) {
-
         this.clearUserToken();
         return false;
       }
 
       return true;
     } catch (error) {
-
       this.clearUserToken();
       return false;
     }
@@ -324,13 +306,11 @@ export class DatevTokenManager {
       });
 
       if (response.status === 401) {
-
         return false;
       }
 
       return response.ok;
     } catch (error) {
-
       return false;
     }
   }

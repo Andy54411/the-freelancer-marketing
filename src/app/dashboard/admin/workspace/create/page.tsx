@@ -121,7 +121,6 @@ export default function CreateAdminWorkspacePage() {
           router.push('/admin/login');
         }
       } catch (error) {
-
         router.push('/admin/login');
       } finally {
         setAuthLoading(false);
@@ -169,7 +168,6 @@ export default function CreateAdminWorkspacePage() {
 
     // Use the admin user's email/ID
     if (!adminUser?.id && !adminUser?.email) {
-
       toast.error('Sie müssen als Admin angemeldet sein');
       return;
     }
@@ -212,14 +210,11 @@ export default function CreateAdminWorkspacePage() {
 
       // Navigate to workspace detail page if we have the workspace ID
       if (result?.id) {
-
         router.push(`/dashboard/admin/workspace/${result.id}`);
       } else {
-
         router.push(`/dashboard/admin/workspace`);
       }
     } catch (error) {
-
       toast.error(`Fehler beim Erstellen des Workspace: ${error.message}`);
     } finally {
       setLoading(false);

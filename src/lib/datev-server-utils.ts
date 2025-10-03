@@ -43,7 +43,6 @@ export async function getDatevTokenFromCookies(
   const tokenCookie = cookieStore.get(cookieName);
 
   if (!tokenCookie?.value) {
-
     return null;
   }
 
@@ -63,14 +62,12 @@ export async function getDatevTokenFromCookies(
 
     // Check if token is expired (with 5-minute buffer)
     if (Date.now() >= tokenData.expires_at - 300000) {
-
       // Hier könnte man eine Token-Refresh-Logik einbauen, wenn ein Refresh-Token vorhanden ist.
       return null;
     }
 
     return tokenData;
   } catch (error) {
-
     return null;
   }
 }
@@ -112,7 +109,6 @@ export async function setDatevTokenCookies(
     maxAge: tokenData.expires_in || 3600,
     path: '/',
   });
-
 }
 
 /**
@@ -180,7 +176,6 @@ export async function saveTokensToFirestore(
     },
     { merge: true }
   );
-
 }
 
 /**
@@ -214,7 +209,6 @@ export async function refreshDatevAccessToken(refreshToken: string) {
   const tokenData = await response.json();
 
   if (!response.ok) {
-
     throw new Error(
       `Failed to refresh DATEV token: ${tokenData.error_description || 'Unknown error'}`
     );

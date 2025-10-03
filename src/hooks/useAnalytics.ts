@@ -13,7 +13,7 @@ export const useAnalytics = () => {
       gtag.event(action, {
         event_category: category,
         event_label: label,
-        value: value
+        value: value,
       });
     },
     []

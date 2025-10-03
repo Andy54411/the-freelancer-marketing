@@ -12,8 +12,8 @@ import {
   doc,
   getDoc,
   updateDoc,
-  increment } from
-'firebase/firestore';
+  increment,
+} from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import {
   Star,
@@ -23,8 +23,8 @@ import {
   VerifiedIcon,
   RotateCcw,
   ChevronDown,
-  Languages } from
-'lucide-react';
+  Languages,
+} from 'lucide-react';
 
 interface Review {
   id: string;
@@ -40,7 +40,7 @@ interface Review {
   isReturningCustomer?: boolean;
   helpfulVotes?: number;
   unhelpfulVotes?: number;
-  userVotes?: {[ip: string]: 'helpful' | 'unhelpful';};
+  userVotes?: { [ip: string]: 'helpful' | 'unhelpful' };
   providerResponse?: {
     comment?: string;
     message?: string;
@@ -57,7 +57,7 @@ interface ProviderReviewsProps {
 export default function ProviderReviews({
   providerId,
   reviewCount = 0,
-  averageRating = 0
+  averageRating = 0,
 }: ProviderReviewsProps) {
   // console.log('🔍 [ProviderReviews] Component gestartet mit Props:', {
   //   providerId,
@@ -125,7 +125,7 @@ export default function ProviderReviews({
 
         const reviewsSnapshot = await getDocs(reviewsQuery);
 
-        const reviewsData = reviewsSnapshot.docs.map((doc) => {
+        const reviewsData = reviewsSnapshot.docs.map(doc => {
           const data = doc.data();
           return {
             id: doc.id,
@@ -142,7 +142,7 @@ export default function ProviderReviews({
             helpfulVotes: data.helpfulVotes || undefined,
             unhelpfulVotes: data.unhelpfulVotes || undefined,
             userVotes: data.userVotes || {},
-            providerResponse: data.providerResponse
+            providerResponse: data.providerResponse,
           };
         }) as Review[];
 
@@ -165,7 +165,7 @@ export default function ProviderReviews({
           setReviews(reviewsData);
           // console.log('🔍 [ProviderReviews] Reviews initial gesetzt:', reviewsData.length);
         } else {
-          setReviews((prev) => {
+          setReviews(prev => {
             const newReviews = [...prev, ...reviewsData];
 
             return newReviews;
@@ -226,7 +226,7 @@ export default function ProviderReviews({
 
         // Update Votes
         const updateData: any = {
-          [`userVotes.${userIP}`]: voteType
+          [`userVotes.${userIP}`]: voteType,
         };
 
         if (voteType === 'helpful') {
@@ -238,22 +238,22 @@ export default function ProviderReviews({
         await updateDoc(reviewRef, updateData);
 
         // Update lokalen State
-        setReviews((prev) =>
-        prev.map((review) => {
-          if (review.id === reviewId) {
-            return {
-              ...review,
-              helpfulVotes:
-              voteType === 'helpful' ? (review.helpfulVotes || 0) + 1 : review.helpfulVotes,
-              unhelpfulVotes:
-              voteType === 'unhelpful' ?
-              (review.unhelpfulVotes || 0) + 1 :
-              review.unhelpfulVotes,
-              userVotes: { ...review.userVotes, [userIP]: voteType }
-            };
-          }
-          return review;
-        })
+        setReviews(prev =>
+          prev.map(review => {
+            if (review.id === reviewId) {
+              return {
+                ...review,
+                helpfulVotes:
+                  voteType === 'helpful' ? (review.helpfulVotes || 0) + 1 : review.helpfulVotes,
+                unhelpfulVotes:
+                  voteType === 'unhelpful'
+                    ? (review.unhelpfulVotes || 0) + 1
+                    : review.unhelpfulVotes,
+                userVotes: { ...review.userVotes, [userIP]: voteType },
+              };
+            }
+            return review;
+          })
         );
       }
     } catch (error) {
@@ -262,7 +262,7 @@ export default function ProviderReviews({
   };
 
   const toggleExpandReview = (reviewId: string) => {
-    setExpandedReviews((prev) => {
+    setExpandedReviews(prev => {
       const newSet = new Set(prev);
       if (newSet.has(reviewId)) {
         newSet.delete(reviewId);
@@ -298,16 +298,16 @@ export default function ProviderReviews({
 
     return (
       <div className="flex">
-        {[...Array(5)].map((_, i) =>
-        <Star
-          key={i}
-          className={`${sizeClass} ${
-          i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`
-          } />
-
-        )}
-      </div>);
-
+        {[...Array(5)].map((_, i) => (
+          <Star
+            key={i}
+            className={`${sizeClass} ${
+              i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+            }`}
+          />
+        ))}
+      </div>
+    );
   };
 
   const getAvatarInitial = (name: string) => {
@@ -317,14 +317,15 @@ export default function ProviderReviews({
 
   const getAvatarColor = (name: string) => {
     const colors = [
-    'bg-blue-500',
-    'bg-purple-500',
-    'bg-green-500',
-    'bg-red-500',
-    'bg-yellow-500',
-    'bg-indigo-500',
-    'bg-pink-500',
-    'bg-teal-500'];
+      'bg-blue-500',
+      'bg-purple-500',
+      'bg-green-500',
+      'bg-red-500',
+      'bg-yellow-500',
+      'bg-indigo-500',
+      'bg-pink-500',
+      'bg-teal-500',
+    ];
 
     if (!name || typeof name !== 'string') return colors[0];
     const index = name.charCodeAt(0) % colors.length;
@@ -335,36 +336,36 @@ export default function ProviderReviews({
     // Wenn bereits übersetzt, zeige Original
     if (isResponse) {
       if (translatedResponses.has(reviewId)) {
-        setTranslatedResponses((prev) => {
+        setTranslatedResponses(prev => {
           const newMap = new Map(prev);
           newMap.delete(reviewId);
           return newMap;
         });
         return;
       }
-      setTranslatingResponses((prev) => new Set([...prev, reviewId]));
+      setTranslatingResponses(prev => new Set([...prev, reviewId]));
     } else {
       if (translatedReviews.has(reviewId)) {
-        setTranslatedReviews((prev) => {
+        setTranslatedReviews(prev => {
           const newMap = new Map(prev);
           newMap.delete(reviewId);
           return newMap;
         });
         return;
       }
-      setTranslatingReviews((prev) => new Set([...prev, reviewId]));
+      setTranslatingReviews(prev => new Set([...prev, reviewId]));
     }
 
     try {
       const response = await fetch('/api/translate', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           text: text,
-          targetLang: 'de'
-        })
+          targetLang: 'de',
+        }),
       });
 
       if (!response.ok) {
@@ -374,21 +375,21 @@ export default function ProviderReviews({
       const data = await response.json();
 
       if (isResponse) {
-        setTranslatedResponses((prev) => new Map([...prev, [reviewId, data.translatedText]]));
+        setTranslatedResponses(prev => new Map([...prev, [reviewId, data.translatedText]]));
       } else {
-        setTranslatedReviews((prev) => new Map([...prev, [reviewId, data.translatedText]]));
+        setTranslatedReviews(prev => new Map([...prev, [reviewId, data.translatedText]]));
       }
     } catch (error) {
       console.error('Übersetzung fehlgeschlagen:', error);
     } finally {
       if (isResponse) {
-        setTranslatingResponses((prev) => {
+        setTranslatingResponses(prev => {
           const newSet = new Set(prev);
           newSet.delete(reviewId);
           return newSet;
         });
       } else {
-        setTranslatingReviews((prev) => {
+        setTranslatingReviews(prev => {
           const newSet = new Set(prev);
           newSet.delete(reviewId);
           return newSet;
@@ -404,11 +405,11 @@ export default function ProviderReviews({
           Bewertungen ({reviews.length})
         </h2>
         <div className="space-y-6">
-          {[...Array(3)].map((_, i) =>
-          <div
-            key={i}
-            className="animate-pulse border-b border-gray-200 dark:border-gray-700 pb-6">
-
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="animate-pulse border-b border-gray-200 dark:border-gray-700 pb-6"
+            >
               <div className="flex items-start space-x-4">
                 <div className="w-12 h-12 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
                 <div className="flex-1 space-y-2">
@@ -418,10 +419,10 @@ export default function ProviderReviews({
                 </div>
               </div>
             </div>
-          )}
+          ))}
         </div>
-      </div>);
-
+      </div>
+    );
   }
 
   return (
@@ -431,8 +432,8 @@ export default function ProviderReviews({
       </h2>
 
       {/* Rating Summary */}
-      {averageRating > 0 &&
-      <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+      {averageRating > 0 && (
+        <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
           <div className="flex items-center gap-4">
             <div className="text-center">
               <div className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -445,31 +446,31 @@ export default function ProviderReviews({
             </div>
           </div>
         </div>
-      }
+      )}
 
       {/* Debug removed */}
 
-      {reviews.length > 0 ?
-      <div className="space-y-6">
-          {reviews.map((review) => {
-          const isExpanded = expandedReviews.has(review.id);
-          const reviewComment = review.comment || '';
-          const shouldTruncate = reviewComment.length > 200;
-          const displayComment =
-          isExpanded || !shouldTruncate ? reviewComment : truncateText(reviewComment);
+      {reviews.length > 0 ? (
+        <div className="space-y-6">
+          {reviews.map(review => {
+            const isExpanded = expandedReviews.has(review.id);
+            const reviewComment = review.comment || '';
+            const shouldTruncate = reviewComment.length > 200;
+            const displayComment =
+              isExpanded || !shouldTruncate ? reviewComment : truncateText(reviewComment);
 
-          return (
-            <div
-              key={review.id}
-              className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-b-0">
-
+            return (
+              <div
+                key={review.id}
+                className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-b-0"
+              >
                 <div className="flex flex-col space-y-4">
                   {/* User Header */}
                   <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0">
                       <div
-                      className={`w-12 h-12 ${getAvatarColor(review.reviewerName || 'Anonymous')} rounded-full flex items-center justify-center text-white font-semibold`}>
-
+                        className={`w-12 h-12 ${getAvatarColor(review.reviewerName || 'Anonymous')} rounded-full flex items-center justify-center text-white font-semibold`}
+                      >
                         {getAvatarInitial(review.reviewerName || 'Anonymous')}
                       </div>
                     </div>
@@ -478,30 +479,30 @@ export default function ProviderReviews({
                         <p className="text-lg font-semibold text-gray-900 dark:text-white">
                           {review.reviewerName || 'Anonymer Nutzer'}
                         </p>
-                        {review.isVerified &&
-                      <div className="flex items-center space-x-1 text-sm">
+                        {review.isVerified && (
+                          <div className="flex items-center space-x-1 text-sm">
                             <VerifiedIcon className="w-4 h-4 text-green-500" />
                             <span className="text-green-600 dark:text-green-400 font-medium">
                               Verifiziert
                             </span>
                           </div>
-                      }
-                        {review.isReturningCustomer &&
-                      <div className="flex items-center space-x-1 text-sm">
+                        )}
+                        {review.isReturningCustomer && (
+                          <div className="flex items-center space-x-1 text-sm">
                             <RotateCcw className="w-4 h-4 text-blue-500" />
                             <span className="text-[#14ad9f] dark:text-[#14ad9f] font-medium">
                               Wiederkehrender Kunde
                             </span>
                           </div>
-                      }
+                        )}
                       </div>
-                      {review.reviewerCountry &&
-                    <div className="flex items-center space-x-2 mt-1">
+                      {review.reviewerCountry && (
+                        <div className="flex items-center space-x-2 mt-1">
                           <span className="text-sm text-gray-500 dark:text-gray-400">
                             {review.reviewerCountry}
                           </span>
                         </div>
-                    }
+                      )}
                     </div>
                   </div>
 
@@ -519,137 +520,137 @@ export default function ProviderReviews({
                   </div>
 
                   {/* Project Title */}
-                  {review.projectTitle &&
-                <div>
+                  {review.projectTitle && (
+                    <div>
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Projekt: {review.projectTitle}
                       </p>
                     </div>
-                }
+                  )}
 
                   {/* Review Text */}
-                  {(reviewComment || translatedReviews.has(review.id)) &&
-                <div className="prose max-w-none">
+                  {(reviewComment || translatedReviews.has(review.id)) && (
+                    <div className="prose max-w-none">
                       <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        {translatedReviews.has(review.id) ?
-                    translatedReviews.get(review.id) :
-                    displayComment}
-                        {shouldTruncate &&
-                    <button
-                      onClick={() => toggleExpandReview(review.id)}
-                      className="text-[#14ad9f] dark:text-[#14ad9f] hover:underline ml-1">
-
+                        {translatedReviews.has(review.id)
+                          ? translatedReviews.get(review.id)
+                          : displayComment}
+                        {shouldTruncate && (
+                          <button
+                            onClick={() => toggleExpandReview(review.id)}
+                            className="text-[#14ad9f] dark:text-[#14ad9f] hover:underline ml-1"
+                          >
                             {isExpanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
                           </button>
-                    }
+                        )}
                       </p>
 
                       {/* Translation Button */}
-                      {reviewComment &&
-                  <div className="mt-2 flex items-center gap-2">
+                      {reviewComment && (
+                        <div className="mt-2 flex items-center gap-2">
                           <button
-                      onClick={() => translateText(reviewComment, review.id)}
-                      disabled={translatingReviews.has(review.id)}
-                      className="inline-flex items-center gap-1 text-xs text-[#14ad9f] hover:text-teal-600 font-medium disabled:opacity-50">
-
-                            {translatingReviews.has(review.id) ?
-                      <>
+                            onClick={() => translateText(reviewComment, review.id)}
+                            disabled={translatingReviews.has(review.id)}
+                            className="inline-flex items-center gap-1 text-xs text-[#14ad9f] hover:text-teal-600 font-medium disabled:opacity-50"
+                          >
+                            {translatingReviews.has(review.id) ? (
+                              <>
                                 <div className="animate-spin rounded-full h-3 w-3 border-b border-[#14ad9f]"></div>
                                 Übersetze...
-                              </> :
-
-                      <>
-                                <Languages className="w-3 h-3" />
-                                {translatedReviews.has(review.id) ?
-                        'Original anzeigen' :
-                        'Übersetzen'}
                               </>
-                      }
+                            ) : (
+                              <>
+                                <Languages className="w-3 h-3" />
+                                {translatedReviews.has(review.id)
+                                  ? 'Original anzeigen'
+                                  : 'Übersetzen'}
+                              </>
+                            )}
                           </button>
                         </div>
-                  }
+                      )}
                     </div>
-                }
+                  )}
 
                   {/* Project Details */}
-                  {(review.projectPrice || review.projectDuration) &&
-                <div className="flex items-center justify-between text-sm bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                  {(review.projectPrice || review.projectDuration) && (
+                    <div className="flex items-center justify-between text-sm bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                       <div className="flex items-center space-x-4">
-                        {review.projectPrice &&
-                    <div>
+                        {review.projectPrice && (
+                          <div>
                             <p className="font-semibold text-gray-900 dark:text-white">
                               {review.projectPrice}
                             </p>
                             <p className="text-gray-500 dark:text-gray-400">Preis</p>
                           </div>
-                    }
-                        {review.projectPrice && review.projectDuration &&
-                    <div className="w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
-                    }
-                        {review.projectDuration &&
-                    <div>
+                        )}
+                        {review.projectPrice && review.projectDuration && (
+                          <div className="w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
+                        )}
+                        {review.projectDuration && (
+                          <div>
                             <p className="font-semibold text-gray-900 dark:text-white">
                               {review.projectDuration}
                             </p>
                             <p className="text-gray-500 dark:text-gray-400">Dauer</p>
                           </div>
-                    }
+                        )}
                       </div>
                     </div>
-                }
+                  )}
 
                   {/* Provider Response */}
-                  {review.providerResponse &&
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 ml-8">
+                  {review.providerResponse && (
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 ml-8">
                       <div className="flex items-start space-x-3">
-                        {providerProfilePicture ?
-                    <img
-                      src={providerProfilePicture}
-                      alt="Anbieter Profilbild"
-                      className="w-8 h-8 rounded-full object-cover" /> :
-
-
-                    <div className="w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                        {providerProfilePicture ? (
+                          <img
+                            src={providerProfilePicture}
+                            alt="Anbieter Profilbild"
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center text-white text-sm font-semibold">
                             A
                           </div>
-                    }
+                        )}
                         <div className="flex-1">
                           <p className="font-medium text-gray-900 dark:text-white mb-1">
                             Antwort des Anbieters
                           </p>
                           <p className="text-gray-700 dark:text-gray-300 text-sm">
-                            {translatedResponses.has(review.id) ?
-                        translatedResponses.get(review.id) :
-                        review.providerResponse.comment || review.providerResponse.message}
+                            {translatedResponses.has(review.id)
+                              ? translatedResponses.get(review.id)
+                              : review.providerResponse.comment || review.providerResponse.message}
                           </p>
 
                           {/* Translation Button for Response */}
                           <div className="mt-2 flex items-center gap-2">
                             <button
-                          onClick={() =>
-                          translateText(
-                            review.providerResponse!.comment ||
-                            review.providerResponse!.message!,
-                            review.id,
-                            true
-                          )
-                          }
-                          disabled={translatingResponses.has(review.id)}
-                          className="inline-flex items-center gap-1 text-xs text-[#14ad9f] hover:text-teal-600 font-medium disabled:opacity-50">
-
-                              {translatingResponses.has(review.id) ?
-                          <>
+                              onClick={() =>
+                                translateText(
+                                  review.providerResponse!.comment ||
+                                    review.providerResponse!.message!,
+                                  review.id,
+                                  true
+                                )
+                              }
+                              disabled={translatingResponses.has(review.id)}
+                              className="inline-flex items-center gap-1 text-xs text-[#14ad9f] hover:text-teal-600 font-medium disabled:opacity-50"
+                            >
+                              {translatingResponses.has(review.id) ? (
+                                <>
                                   <div className="animate-spin rounded-full h-3 w-3 border-b border-[#14ad9f]"></div>
                                   Übersetze...
-                                </> :
-
-                          <>
-                                  <Languages className="w-3 h-3" />
-                                  {translatedResponses.has(review.id) ?
-                            'Original anzeigen' :
-                            'Übersetzen'}
                                 </>
-                          }
+                              ) : (
+                                <>
+                                  <Languages className="w-3 h-3" />
+                                  {translatedResponses.has(review.id)
+                                    ? 'Original anzeigen'
+                                    : 'Übersetzen'}
+                                </>
+                              )}
                             </button>
                           </div>
 
@@ -659,80 +660,80 @@ export default function ProviderReviews({
                         </div>
                       </div>
                     </div>
-                }
+                  )}
 
                   {/* Helpful Buttons */}
                   <div className="flex items-center space-x-4 text-sm">
                     <span className="text-gray-600 dark:text-gray-400">Hilfreich?</span>
                     <button
-                    onClick={() => voteReview(review.id, 'helpful')}
-                    disabled={!!review.userVotes?.[userIP]}
-                    className={`flex items-center space-x-1 transition-colors ${
-                    review.userVotes?.[userIP] === 'helpful' ?
-                    'text-[#14ad9f]' :
-                    review.userVotes?.[userIP] ?
-                    'text-gray-400 cursor-not-allowed' :
-                    'text-gray-600 dark:text-gray-400 hover:text-[#14ad9f]'}`
-                    }>
-
+                      onClick={() => voteReview(review.id, 'helpful')}
+                      disabled={!!review.userVotes?.[userIP]}
+                      className={`flex items-center space-x-1 transition-colors ${
+                        review.userVotes?.[userIP] === 'helpful'
+                          ? 'text-[#14ad9f]'
+                          : review.userVotes?.[userIP]
+                            ? 'text-gray-400 cursor-not-allowed'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-[#14ad9f]'
+                      }`}
+                    >
                       <ThumbsUp className="w-4 h-4" />
                       <span>Ja</span>
-                      {review.helpfulVotes && review.helpfulVotes > 0 &&
-                    <span className="text-xs">({review.helpfulVotes})</span>
-                    }
+                      {review.helpfulVotes && review.helpfulVotes > 0 && (
+                        <span className="text-xs">({review.helpfulVotes})</span>
+                      )}
                     </button>
                     <button
-                    onClick={() => voteReview(review.id, 'unhelpful')}
-                    disabled={!!review.userVotes?.[userIP]}
-                    className={`flex items-center space-x-1 transition-colors ${
-                    review.userVotes?.[userIP] === 'unhelpful' ?
-                    'text-red-500' :
-                    review.userVotes?.[userIP] ?
-                    'text-gray-400 cursor-not-allowed' :
-                    'text-gray-600 dark:text-gray-400 hover:text-red-500'}`
-                    }>
-
+                      onClick={() => voteReview(review.id, 'unhelpful')}
+                      disabled={!!review.userVotes?.[userIP]}
+                      className={`flex items-center space-x-1 transition-colors ${
+                        review.userVotes?.[userIP] === 'unhelpful'
+                          ? 'text-red-500'
+                          : review.userVotes?.[userIP]
+                            ? 'text-gray-400 cursor-not-allowed'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-red-500'
+                      }`}
+                    >
                       <ThumbsDown className="w-4 h-4" />
                       <span>Nein</span>
-                      {review.unhelpfulVotes && review.unhelpfulVotes > 0 &&
-                    <span className="text-xs">({review.unhelpfulVotes})</span>
-                    }
+                      {review.unhelpfulVotes && review.unhelpfulVotes > 0 && (
+                        <span className="text-xs">({review.unhelpfulVotes})</span>
+                      )}
                     </button>
                   </div>
                 </div>
-              </div>);
-
-        })}
+              </div>
+            );
+          })}
 
           {/* Load More Button */}
-          {hasMore &&
-        <div className="text-center mt-6">
+          {hasMore && (
+            <div className="text-center mt-6">
               <button
-            onClick={() => loadReviews(false)}
-            disabled={loadingMore}
-            className="bg-[#14ad9f] hover:bg-teal-600 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 mx-auto">
-
-                {loadingMore ?
-            <>
+                onClick={() => loadReviews(false)}
+                disabled={loadingMore}
+                className="bg-[#14ad9f] hover:bg-teal-600 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 mx-auto"
+              >
+                {loadingMore ? (
+                  <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     Lädt...
-                  </> :
-
-            <>
+                  </>
+                ) : (
+                  <>
                     <ChevronDown className="w-4 h-4" />
                     Weitere Bewertungen laden
                   </>
-            }
+                )}
               </button>
             </div>
-        }
-        </div> :
-
-      <div className="text-center py-8">
+          )}
+        </div>
+      ) : (
+        <div className="text-center py-8">
           <Award className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-500 dark:text-gray-400">Noch keine Bewertungen vorhanden</p>
         </div>
-      }
-    </div>);
-
+      )}
+    </div>
+  );
 }

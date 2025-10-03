@@ -3,7 +3,11 @@
 declare global {
   interface Window {
     dataLayer: any[];
-    gtag: (command: "config" | "event" | "consent" | "js", targetId: string | Date, config?: any) => void;
+    gtag: (
+      command: 'config' | 'event' | 'consent' | 'js',
+      targetId: string | Date,
+      config?: any
+    ) => void;
   }
 }
 

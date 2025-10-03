@@ -185,7 +185,6 @@ export class AdvertisingFirebaseService {
       timestamp: Timestamp.now(),
       date: new Date().toISOString().split('T')[0],
     });
-
   }
 
   async getAnalyticsHistory(
@@ -272,7 +271,6 @@ export class AdvertisingFirebaseService {
     // In production: Batch delete für bessere Performance
     const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
     await Promise.all(deletePromises);
-
   }
 
   /**

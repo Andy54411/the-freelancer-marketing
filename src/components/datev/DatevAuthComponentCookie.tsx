@@ -53,7 +53,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   useEffect(() => {
     // Early return if companyId is invalid
     if (!companyId || companyId.trim() === '' || companyId === 'unknown') {
-
       setConnection({
         isConnected: false,
         features: {
@@ -82,7 +81,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         // Fetch and store organization data in cookie
         fetchAndStoreOrganizationData();
       } else {
-
       }
 
       // Clean URL parameters
@@ -105,7 +103,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
 
   const fetchAndStoreOrganizationData = async () => {
     try {
-
       // Small delay to ensure cookies are set after redirect
       await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -165,7 +162,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
                 errorData.error_description.includes('Token malformed') ||
                 errorData.error_description.includes('invalid_token'))))
         ) {
-
           // Clear invalid tokens from all storage locations - HTTP-only cookies cleared server-side
           // Clear from localStorage if present
           if (typeof window !== 'undefined') {
@@ -196,21 +192,17 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
             },
           });
         } else {
-
           toast.error('Fehler beim Laden der DATEV-Organisationsdaten');
         }
       }
     } catch (error) {
-
       toast.error('Netzwerkfehler beim Laden der DATEV-Daten');
     }
   };
 
   const loadConnectionStatus = async () => {
     try {
-
       if (!companyId || companyId.trim() === '' || companyId === 'unknown') {
-
         setConnection({
           isConnected: false,
           features: {
@@ -241,22 +233,24 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         // Check if we got userinfo data back (indicates connection is working)
         const isConnected = !!(result.success && result.userInfo);
 
-        const organizationData = isConnected ? {
-          id: result.userInfo?.account_id || result.userInfo?.sub || 'unknown',
-          name: result.userInfo?.name || result.userInfo?.preferred_username || 'DATEV User',
-          email: result.userInfo?.email,
-          accountId: result.userInfo?.account_id,
-          environment: result.tokenEnvironment || 'sandbox',
-          // Required fields for DatevOrganization interface
-          type: 'client' as const,
-          address: {
-            street: 'N/A',
-            city: 'N/A',
-            zipCode: 'N/A',
-            country: 'DE',
-          },
-          status: 'active' as const,
-        } : undefined;
+        const organizationData = isConnected
+          ? {
+              id: result.userInfo?.account_id || result.userInfo?.sub || 'unknown',
+              name: result.userInfo?.name || result.userInfo?.preferred_username || 'DATEV User',
+              email: result.userInfo?.email,
+              accountId: result.userInfo?.account_id,
+              environment: result.tokenEnvironment || 'sandbox',
+              // Required fields for DatevOrganization interface
+              type: 'client' as const,
+              address: {
+                street: 'N/A',
+                city: 'N/A',
+                zipCode: 'N/A',
+                country: 'DE',
+              },
+              status: 'active' as const,
+            }
+          : undefined;
 
         setConnection({
           isConnected: isConnected,
@@ -287,7 +281,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
                 errorData.error_description.includes('Token malformed') ||
                 errorData.error_description.includes('invalid_token'))))
         ) {
-
           // Clear from localStorage if present (but HTTP-only cookies are cleared server-side)
           if (typeof window !== 'undefined') {
             localStorage.removeItem(`datev_connection_${companyId}`);
@@ -306,7 +299,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         });
       }
     } catch (error) {
-
       setConnection({
         isConnected: false,
         features: {
@@ -324,7 +316,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   const handleConnect = async () => {
     // Validate companyId before connecting
     if (!companyId || companyId.trim() === '' || companyId === 'unknown') {
-
       toast.error('Ungültige Firmen-ID - kann keine DATEV-Verbindung herstellen');
       return;
     }
@@ -336,7 +327,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
       const authUrl = `/api/datev/auth-cookie?company_id=${encodeURIComponent(companyId)}`;
       window.location.href = authUrl;
     } catch (error) {
-
       toast.error('Fehler beim Verbinden mit DATEV');
       setConnecting(false);
     }
@@ -344,7 +334,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
 
   const handleDisconnect = async () => {
     try {
-
       // Clear stored tokens from localStorage (HTTP-only cookies are server-managed)
       if (typeof window !== 'undefined') {
         localStorage.removeItem(`datev_connection_${companyId}`);
@@ -360,9 +349,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           },
           body: JSON.stringify({ companyId: companyId }),
         });
-      } catch (e) {
-
-      }
+      } catch (e) {}
 
       // Update UI
       setConnection({
@@ -376,9 +363,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
       });
 
       toast.success('DATEV-Verbindung getrennt');
-
     } catch (error) {
-
       toast.error('Fehler beim Trennen der DATEV-Verbindung');
     }
   };
@@ -396,7 +381,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         toast.error('Verbindung nicht aktiv. Bitte erneut verbinden.');
       }
     } catch (error) {
-
       toast.error('Fehler beim Aktualisieren der Verbindung');
     } finally {
       setLoading(false);

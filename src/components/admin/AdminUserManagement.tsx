@@ -88,7 +88,6 @@ export default function AdminUserManagement() {
         toast.error(errorData.error || 'Fehler beim Laden der Admin-Benutzer');
       }
     } catch (error) {
-
       toast.error('Fehler beim Laden der Admin-Benutzer');
     } finally {
       setLoading(false);
@@ -128,7 +127,6 @@ export default function AdminUserManagement() {
         toast.error(errorData.error || 'Fehler beim Erstellen des Admin-Benutzers');
       }
     } catch (error) {
-
       toast.error('Fehler beim Erstellen des Admin-Benutzers');
     }
   };
@@ -143,7 +141,6 @@ export default function AdminUserManagement() {
 
       toast.success(`Benutzer ${user.isActive ? 'deaktiviert' : 'aktiviert'}`);
     } catch (error) {
-
       toast.error('Fehler beim Ändern des Benutzerstatus');
     }
   };
@@ -167,7 +164,6 @@ export default function AdminUserManagement() {
 
       toast.success(`Admin-Benutzer ${user.name} gelöscht`);
     } catch (error) {
-
       toast.error('Fehler beim Löschen des Benutzers');
     }
   };

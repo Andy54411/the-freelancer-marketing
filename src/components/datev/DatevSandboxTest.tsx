@@ -85,7 +85,6 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
         toast.error('DATEV Sandbox-Test fehlgeschlagen');
       }
     } catch (error) {
-
       toast.error('Verbindungstest fehlgeschlagen');
       setDebugInfo({ success: false });
     } finally {
@@ -116,7 +115,6 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
       // Vollständige Seitenweiterleitung
       window.location.href = result.authUrl;
     } catch (error) {
-
       toast.error(
         'Fehler beim Starten des DATEV OAuth-Flows: ' +
           (error instanceof Error ? error.message : 'Unbekannter Fehler')
@@ -136,7 +134,6 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
       const data = await response.json();
 
       if (data.success && data.debug?.authUrl?.fullUrl) {
-
         // Moderne Clipboard API mit Fallback
         try {
           await navigator.clipboard.writeText(data.debug.authUrl.fullUrl);
@@ -154,7 +151,6 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
             document.execCommand('copy');
             toast.success('OAuth URL in die Zwischenablage kopiert (Fallback)');
           } catch (fallbackError) {
-
             toast.info('OAuth URL wurde in der Konsole ausgegeben');
           }
 
@@ -164,9 +160,10 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
         throw new Error('Ungültige API-Response: Fehlende OAuth URL');
       }
     } catch (error) {
-
-      toast.error('Fehler beim Generieren der Debug-URL: ' +
-        (error instanceof Error ? error.message : 'Unbekannter Fehler'));
+      toast.error(
+        'Fehler beim Generieren der Debug-URL: ' +
+          (error instanceof Error ? error.message : 'Unbekannter Fehler')
+      );
     }
   };
 
@@ -313,7 +310,9 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="font-medium min-w-[120px]">Client Numbers:</span>
-                  <code className="bg-white px-2 py-0.5 rounded text-xs font-mono">1-6 (Client 1 hat volle Berechtungen)</code>
+                  <code className="bg-white px-2 py-0.5 rounded text-xs font-mono">
+                    1-6 (Client 1 hat volle Berechtungen)
+                  </code>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="font-medium min-w-[120px]">Requirement:</span>
@@ -354,10 +353,7 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
             </Button>
           </div>
 
-          <p
-            id="oauth-flow-description"
-            className="text-xs text-gray-500 text-center"
-          >
+          <p id="oauth-flow-description" className="text-xs text-gray-500 text-center">
             Sie werden sicher zu DATEV Sandbox weitergeleitet, um die Verbindung zu autorisieren.
           </p>
         </CardContent>

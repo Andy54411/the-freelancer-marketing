@@ -11,7 +11,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  */
 export async function POST(request: NextRequest) {
   try {
-
     const body = await request.json();
     const { providerStripeAccountId, amount, orderId, reason } = body;
 
@@ -33,7 +32,6 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-
       // Erstelle Transfer vom Platform Account zum Provider Account
       const transfer = await stripe.transfers.create({
         amount: amount,
@@ -44,7 +42,7 @@ export async function POST(request: NextRequest) {
           type: 'emergency_transfer',
           reason: reason || 'Manual emergency transfer for stuck payments',
           transferDate: new Date().toISOString(),
-          emergencyFix: 'true'
+          emergencyFix: 'true',
         },
         description: `Emergency Transfer für Auftrag ${orderId} - ${reason || 'Manueller Transfer'} (€${(amount / 100).toFixed(2)})`,
       });
@@ -60,26 +58,22 @@ export async function POST(request: NextRequest) {
         reason,
         created: transfer.created,
         description: transfer.description,
-        metadata: transfer.metadata
+        metadata: transfer.metadata,
       };
 
       return NextResponse.json(response);
-
     } catch (stripeError: any) {
-
       return NextResponse.json(
         {
           error: 'Stripe Transfer fehlgeschlagen',
           details: stripeError.message,
           code: stripeError.code,
-          type: stripeError.type
+          type: stripeError.type,
         },
         { status: 400 }
       );
     }
-
   } catch (error: any) {
-
     return NextResponse.json(
       { error: 'Unerwarteter Fehler bei Emergency Transfer.' },
       { status: 500 }

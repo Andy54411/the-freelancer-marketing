@@ -66,7 +66,6 @@ export default function ReviewReplyForm({
         setError(result.data.message || 'Fehler beim Senden der Antwort.');
       }
     } catch (err: any) {
-
       setError('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später noch einmal.');
     } finally {
       setIsSubmitting(false);

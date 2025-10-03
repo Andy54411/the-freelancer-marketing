@@ -132,7 +132,6 @@ export function DatevExport({ companyId }: DatevExportProps) {
         },
       ]);
     } catch (error) {
-
       toast.error('Fehler beim Laden der Export-Daten');
     } finally {
       setLoading(false);
@@ -218,7 +217,6 @@ export function DatevExport({ companyId }: DatevExportProps) {
       setSelectedInvoices([]);
       toast.info(`Export von ${selectedInvoices.length} Rechnung(en) gestartet`);
     } catch (error) {
-
       toast.error('Fehler beim Starten des Exports');
     }
   };

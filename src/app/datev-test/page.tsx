@@ -33,7 +33,6 @@ export default function DatevTestPage() {
       }
     } catch (err) {
       setError('Netzwerk-Fehler beim Verbinden zur API');
-
     } finally {
       setLoading(false);
     }

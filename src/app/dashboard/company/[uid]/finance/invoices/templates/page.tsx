@@ -22,7 +22,8 @@ export default function InvoiceTemplatesPage() {
   const params = useParams();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
-  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>('professional-business');
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<InvoiceTemplate>('professional-business');
   const [previewTemplate, setPreviewTemplate] = useState<InvoiceTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -303,7 +304,8 @@ export default function InvoiceTemplatesPage() {
                       <span className="font-medium">
                         {template.id === 'professional-business' &&
                           'GoBD-konform mit Auto-Mehrseitigkeit'}
-                        {template.id === 'corporate-classic' && 'Professionell mit Corporate Design'}
+                        {template.id === 'corporate-classic' &&
+                          'Professionell mit Corporate Design'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-gray-600">

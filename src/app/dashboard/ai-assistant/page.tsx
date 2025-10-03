@@ -240,14 +240,7 @@ export default function AIAssistantPage() {
       </div>
 
       {/* Projekt-Assistent */}
-      {user?.uid && (
-        <TaskiloProjectAssistant
-          userId={user.uid}
-          onOrderCreate={orderData => {
-
-          }}
-        />
-      )}
+      {user?.uid && <TaskiloProjectAssistant userId={user.uid} onOrderCreate={orderData => {}} />}
     </div>
   );
 }

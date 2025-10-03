@@ -69,7 +69,6 @@ export default function AdminWorkspaceDetailPage() {
           router.push('/admin/login');
         }
       } catch (error) {
-
         router.push('/admin/login');
       } finally {
         setAuthLoading(false);
@@ -106,9 +105,7 @@ export default function AdminWorkspaceDetailPage() {
       // Use realtime update method
       await adminWorkspaceService.updateWorkspaceWithRealtime(workspaceId, updates);
       // State will be updated automatically through realtime subscription
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleDeleteWorkspace = async (workspaceId: string) => {
@@ -117,9 +114,7 @@ export default function AdminWorkspaceDetailPage() {
     try {
       await adminWorkspaceService.deleteWorkspace(workspaceId);
       router.push(`/dashboard/admin/workspace`);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const formatDate = (date: Date) => {

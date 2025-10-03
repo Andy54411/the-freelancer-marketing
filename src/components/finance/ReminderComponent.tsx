@@ -144,7 +144,6 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
 
       setReminders(mockReminders);
     } catch (error) {
-
       toast.error('Mahnungen konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -229,7 +228,6 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
 
       toast.success('Mahnung wurde erstellt');
     } catch (error) {
-
       toast.error('Mahnung konnte nicht erstellt werden');
     }
   };
@@ -369,7 +367,9 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
                   </p>
                   {!searchTerm && (
                     <Button
-                      onClick={() => router.push(`/dashboard/company/${companyId}/finance/reminders/create`)}
+                      onClick={() =>
+                        router.push(`/dashboard/company/${companyId}/finance/reminders/create`)
+                      }
                       className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
                     >
                       Erste Mahnung erstellen

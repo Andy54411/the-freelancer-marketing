@@ -60,7 +60,7 @@ interface PlaceholderData {
   companyFax?: string;
   companyRegister?: string;
 
-  // Erweiterte Kunden-Daten  
+  // Erweiterte Kunden-Daten
   customerCompany?: string;
 
   // Erweiterte Beträge und Finanzen
@@ -82,19 +82,16 @@ interface PlaceholderData {
   currentMonth?: string;
 }
 
-export function replacePlaceholders(text: string, data: PlaceholderData, language: string = 'de'): string {
+export function replacePlaceholders(
+  text: string,
+  data: PlaceholderData,
+  language: string = 'de'
+): string {
   if (!text) return '';
 
   let result = text;
 
   // � DEBUG: Kritische Eingabe-Daten loggen
-
-
-
-
-
-
-
 
   // Firmen-Platzhalter
   if (data.companyName) result = result.replace(/\[%FIRMENNAME%\]/g, data.companyName);
@@ -108,7 +105,7 @@ export function replacePlaceholders(text: string, data: PlaceholderData, languag
   if (data.companyTaxNumber) result = result.replace(/\[%STEUERNUMMER%\]/g, data.companyTaxNumber);
   if (data.companyVatId) result = result.replace(/\[%USTIDNR%\]/g, data.companyVatId);
   if (data.companyRegistrationNumber)
-  result = result.replace(/\[%HANDELSREGISTERNUMMER%\]/g, data.companyRegistrationNumber);
+    result = result.replace(/\[%HANDELSREGISTERNUMMER%\]/g, data.companyRegistrationNumber);
 
   // Kunden-Platzhalter
   if (data.customerName) {
@@ -117,35 +114,46 @@ export function replacePlaceholders(text: string, data: PlaceholderData, languag
 
     // Mehrsprachige Anrede generieren
     const salutations = {
-      'de': {
+      de: {
         formal: 'Sehr geehrte Damen und Herren',
         female: 'Sehr geehrte Frau',
         male: 'Sehr geehrter Herr',
-        general: 'Sehr geehrte Damen und Herren'
+        general: 'Sehr geehrte Damen und Herren',
       },
-      'en': {
+      en: {
         formal: 'Dear Sir or Madam',
         female: 'Dear Ms.',
         male: 'Dear Mr.',
-        general: 'Dear Sir or Madam'
+        general: 'Dear Sir or Madam',
       },
-      'fr': {
+      fr: {
         formal: 'Mesdames et Messieurs',
         female: 'Chère Madame',
         male: 'Cher Monsieur',
-        general: 'Mesdames et Messieurs'
-      }
+        general: 'Mesdames et Messieurs',
+      },
     };
 
     const langSalutations = salutations[language as keyof typeof salutations] || salutations['de'];
 
     let anrede;
-    if (data.customerName.includes('GmbH') || data.customerName.includes('AG') || data.customerName.includes('UG') ||
-    data.customerName.includes('Ltd') || data.customerName.includes('Inc')) {
+    if (
+      data.customerName.includes('GmbH') ||
+      data.customerName.includes('AG') ||
+      data.customerName.includes('UG') ||
+      data.customerName.includes('Ltd') ||
+      data.customerName.includes('Inc')
+    ) {
       anrede = langSalutations.formal;
-    } else if (data.customerName.toLowerCase().includes('frau') || data.customerName.toLowerCase().includes('ms.')) {
+    } else if (
+      data.customerName.toLowerCase().includes('frau') ||
+      data.customerName.toLowerCase().includes('ms.')
+    ) {
       anrede = `${langSalutations.female} ${data.customerName}`;
-    } else if (data.customerName.toLowerCase().includes('herr') || data.customerName.toLowerCase().includes('mr.')) {
+    } else if (
+      data.customerName.toLowerCase().includes('herr') ||
+      data.customerName.toLowerCase().includes('mr.')
+    ) {
       anrede = `${langSalutations.male} ${data.customerName}`;
     } else {
       anrede = langSalutations.general;
@@ -186,34 +194,38 @@ export function replacePlaceholders(text: string, data: PlaceholderData, languag
   const step3BankDetails = step3.bankDetails || {};
 
   // Alle möglichen IBAN Quellen
-  const iban = bankDetails.iban ||
-  step4.iban ||
-  step3BankDetails.iban ||
-  data.companyIban ||
-  (data as any).iban ||
-  '';
+  const iban =
+    bankDetails.iban ||
+    step4.iban ||
+    step3BankDetails.iban ||
+    data.companyIban ||
+    (data as any).iban ||
+    '';
 
-  // Alle möglichen BIC Quellen  
-  const bic = bankDetails.bic ||
-  step4.bic ||
-  step3BankDetails.bic ||
-  data.companyBic ||
-  (data as any).bic ||
-  '';
+  // Alle möglichen BIC Quellen
+  const bic =
+    bankDetails.bic ||
+    step4.bic ||
+    step3BankDetails.bic ||
+    data.companyBic ||
+    (data as any).bic ||
+    '';
 
   // Alle möglichen Bankname Quellen
-  const bankName = bankDetails.bankName ||
-  step4.bankName ||
-  step3BankDetails.bankName ||
-  (data as any).bankName ||
-  '';
+  const bankName =
+    bankDetails.bankName ||
+    step4.bankName ||
+    step3BankDetails.bankName ||
+    (data as any).bankName ||
+    '';
 
   // Alle möglichen Kontoinhaber Quellen
-  const accountHolder = bankDetails.accountHolder ||
-  step4.accountHolder ||
-  step3BankDetails.accountHolder ||
-  (data as any).accountHolder ||
-  companyName;
+  const accountHolder =
+    bankDetails.accountHolder ||
+    step4.accountHolder ||
+    step3BankDetails.accountHolder ||
+    (data as any).accountHolder ||
+    companyName;
 
   result = result.replace(/\[%IBAN%\]/g, iban);
   result = result.replace(/\[%BIC%\]/g, bic);
@@ -231,36 +243,23 @@ export function replacePlaceholders(text: string, data: PlaceholderData, languag
   // Datumsfelder - IMMER ersetzen und Datumsvalidierung
   let documentDateFormatted = '';
 
-
-
-
-
   if (data.documentDate) {
     try {
       let date: Date;
 
       // Erkenne deutsches Datumsformat DD.MM.YYYY oder DD/MM/YYYY
-      if (typeof data.documentDate === 'string' && data.documentDate.match(/^\d{2}[.\/]\d{2}[.\/]\d{4}$/)) {
+      if (
+        typeof data.documentDate === 'string' &&
+        data.documentDate.match(/^\d{2}[.\/]\d{2}[.\/]\d{4}$/)
+      ) {
         const parts = data.documentDate.split(/[.\/]/);
         const day = parseInt(parts[0], 10);
         const month = parseInt(parts[1], 10) - 1; // Monate sind 0-basiert in JS
         const year = parseInt(parts[2], 10);
         date = new Date(year, month, day);
-
-
-
-
-
-
-
       } else {
         // Fallback für andere Formate
         date = new Date(data.documentDate);
-
-
-
-
-
       }
 
       if (!isNaN(date.getTime())) {
@@ -274,8 +273,6 @@ export function replacePlaceholders(text: string, data: PlaceholderData, languag
       documentDateFormatted = String(data.documentDate); // Fallback: ursprünglichen String verwenden
     }
   }
-
-
 
   result = result.replace(/\[%DOKUMENTDATUM%\]/g, documentDateFormatted);
   result = result.replace(/\[%DATUM%\]/g, documentDateFormatted);
@@ -381,7 +378,10 @@ export function replacePlaceholders(text: string, data: PlaceholderData, languag
   // Zahlungskonditionen
   if (data.paymentTerms) {
     result = result.replace(/\[%ZAHLUNGSKONDITIONEN%\]/g, data.paymentTerms);
-    result = result.replace(/\[%ZAHLUNGSBEDINGUNGEN%\]/g, `Zahlbar innerhalb ${data.paymentTerms} Tagen`);
+    result = result.replace(
+      /\[%ZAHLUNGSBEDINGUNGEN%\]/g,
+      `Zahlbar innerhalb ${data.paymentTerms} Tagen`
+    );
   }
 
   // Zahlungsziel berechnen (paymentTerms Tage ab Rechnungsdatum oder heute)
@@ -399,10 +399,11 @@ export function replacePlaceholders(text: string, data: PlaceholderData, languag
   if (data.skontoText) result = result.replace(/\[%SKONTO%\]/g, data.skontoText);
 
   // Kontaktperson und Ansprechpartner
-  const kontaktperson = (data as any).internalContactPerson ||
-  (data as any).contactPersonName ||
-  (data as any).companyName ||
-  '';
+  const kontaktperson =
+    (data as any).internalContactPerson ||
+    (data as any).contactPersonName ||
+    (data as any).companyName ||
+    '';
   result = result.replace(/\[%KONTAKTPERSON%\]/g, kontaktperson);
   result = result.replace(/\[%ANSPRECHPARTNER%\]/g, kontaktperson);
   result = result.replace(/\[%BEARBEITER%\]/g, kontaktperson);
@@ -416,7 +417,8 @@ export function replacePlaceholders(text: string, data: PlaceholderData, languag
   if (data.userPhone) result = result.replace(/\[%USER_TELEFON%\]/g, data.userPhone);
 
   // Kombinierte User-Platzhalter
-  const fullName = data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : kontaktperson;
+  const fullName =
+    data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : kontaktperson;
   result = result.replace(/\[%VOLLERNAME%\]/g, fullName);
   result = result.replace(/\[%NAME%\]/g, fullName);
 
@@ -429,7 +431,8 @@ export function replacePlaceholders(text: string, data: PlaceholderData, languag
   if (data.customerCompany) result = result.replace(/\[%KUNDENFIRMA%\]/g, data.customerCompany);
 
   // Beträge und Finanzen
-  if (data.discountAmount !== undefined) result = result.replace(/\[%RABATT%\]/g, formatCurrency(data.discountAmount));
+  if (data.discountAmount !== undefined)
+    result = result.replace(/\[%RABATT%\]/g, formatCurrency(data.discountAmount));
   if (data.orderNumber) result = result.replace(/\[%BESTELLNUMMER%\]/g, data.orderNumber);
   if (data.currency) result = result.replace(/\[%WAEHRUNG%\]/g, data.currency);
 
@@ -442,7 +445,7 @@ export function replacePlaceholders(text: string, data: PlaceholderData, languag
   // Projekt
   if (data.projectTitle) result = result.replace(/\[%PROJEKTTITEL%\]/g, data.projectTitle);
   if (data.projectDescription)
-  result = result.replace(/\[%PROJEKTBESCHREIBUNG%\]/g, data.projectDescription);
+    result = result.replace(/\[%PROJEKTBESCHREIBUNG%\]/g, data.projectDescription);
 
   // Erweiterte Datums-Platzhalter
   const now = new Date();
@@ -467,8 +470,34 @@ export function replacePlaceholders(text: string, data: PlaceholderData, languag
   result = result.replace(/\[%FOLGEJAHR\.KURZ%\]/g, (currentYear + 1).toString().slice(-2));
 
   // Monat-Platzhalter
-  const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
-  const monthNamesShort = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+  const monthNames = [
+    'Januar',
+    'Februar',
+    'März',
+    'April',
+    'Mai',
+    'Juni',
+    'Juli',
+    'August',
+    'September',
+    'Oktober',
+    'November',
+    'Dezember',
+  ];
+  const monthNamesShort = [
+    'Jan',
+    'Feb',
+    'Mär',
+    'Apr',
+    'Mai',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Dez',
+  ];
 
   result = result.replace(/\[%MONAT%\]/g, monthNames[currentMonth - 1]);
   result = result.replace(/\[%AKTUELLER_MONAT%\]/g, monthNames[currentMonth - 1]);
@@ -487,7 +516,15 @@ export function replacePlaceholders(text: string, data: PlaceholderData, languag
   // Tag-Platzhalter
   result = result.replace(/\[%TAG%\]/g, currentDay.toString().padStart(2, '0'));
 
-  const dayNames = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+  const dayNames = [
+    'Sonntag',
+    'Montag',
+    'Dienstag',
+    'Mittwoch',
+    'Donnerstag',
+    'Freitag',
+    'Samstag',
+  ];
   result = result.replace(/\[%WOCHENTAG%\]/g, dayNames[now.getDay()]);
 
   const yesterday = new Date(now);
@@ -497,8 +534,14 @@ export function replacePlaceholders(text: string, data: PlaceholderData, languag
 
   // Quartal-Platzhalter
   result = result.replace(/\[%QUARTAL%\]/g, currentQuarter.toString());
-  result = result.replace(/\[%VORQUARTAL%\]/g, (currentQuarter === 1 ? 4 : currentQuarter - 1).toString());
-  result = result.replace(/\[%FOLGEQUARTAL%\]/g, (currentQuarter === 4 ? 1 : currentQuarter + 1).toString());
+  result = result.replace(
+    /\[%VORQUARTAL%\]/g,
+    (currentQuarter === 1 ? 4 : currentQuarter - 1).toString()
+  );
+  result = result.replace(
+    /\[%FOLGEQUARTAL%\]/g,
+    (currentQuarter === 4 ? 1 : currentQuarter + 1).toString()
+  );
 
   // Kalenderwoche
   const getWeekNumber = (date: Date) => {
@@ -516,45 +559,60 @@ export function replacePlaceholders(text: string, data: PlaceholderData, languag
 
   // Mehrsprachige Standard-Texte für alle Dokumenttypen
   const standardTexts = {
-    'de': {
+    de: {
       // Angebote (Quotes)
-      quoteIntro: 'vielen Dank für Ihre Anfrage! Hiermit unterbreiten wir Ihnen gerne unser Angebot für die folgenden Leistungen:',
-      quoteClosing: 'Dieses Angebot ist gültig bis [%GUELTIG_BIS%]. Bei Annahme unseres Angebots erstellen wir Ihnen gerne eine entsprechende Rechnung. Für Rückfragen stehen wir Ihnen jederzeit zur Verfügung.',
+      quoteIntro:
+        'vielen Dank für Ihre Anfrage! Hiermit unterbreiten wir Ihnen gerne unser Angebot für die folgenden Leistungen:',
+      quoteClosing:
+        'Dieses Angebot ist gültig bis [%GUELTIG_BIS%]. Bei Annahme unseres Angebots erstellen wir Ihnen gerne eine entsprechende Rechnung. Für Rückfragen stehen wir Ihnen jederzeit zur Verfügung.',
       // Rechnungen (Invoices)
-      invoiceIntro: 'vielen Dank für Ihren Auftrag und das damit verbundene Vertrauen! Hiermit stelle ich Ihnen die folgenden Leistungen in Rechnung:',
-      invoiceClosing: 'Bitte überweisen Sie den Rechnungsbetrag unter Angabe der Rechnungsnummer auf das unten angegebene Konto. Der Rechnungsbetrag ist bis zum [%ZAHLUNGSZIEL%] fällig.',
+      invoiceIntro:
+        'vielen Dank für Ihren Auftrag und das damit verbundene Vertrauen! Hiermit stelle ich Ihnen die folgenden Leistungen in Rechnung:',
+      invoiceClosing:
+        'Bitte überweisen Sie den Rechnungsbetrag unter Angabe der Rechnungsnummer auf das unten angegebene Konto. Der Rechnungsbetrag ist bis zum [%ZAHLUNGSZIEL%] fällig.',
       // Mahnungen (Reminders)
       reminderIntro: 'wir stellen fest, dass die nachstehende Rechnung noch nicht beglichen wurde:',
-      reminderClosing: 'Wir bitten um umgehende Begleichung des offenen Betrages. Sollten Sie bereits gezahlt haben, betrachten Sie diese Mahnung als gegenstandslos.',
+      reminderClosing:
+        'Wir bitten um umgehende Begleichung des offenen Betrages. Sollten Sie bereits gezahlt haben, betrachten Sie diese Mahnung als gegenstandslos.',
       // Allgemeine Grußformeln
-      bestRegards: 'Mit freundlichen Grüßen'
+      bestRegards: 'Mit freundlichen Grüßen',
     },
-    'en': {
+    en: {
       // Angebote (Quotes)
-      quoteIntro: 'thank you for your inquiry! We are pleased to submit our quote for the following services:',
-      quoteClosing: 'This quote is valid until [%GUELTIG_BIS%]. Upon acceptance of our quote, we will be happy to issue you a corresponding invoice. Please feel free to contact us if you have any questions.',
+      quoteIntro:
+        'thank you for your inquiry! We are pleased to submit our quote for the following services:',
+      quoteClosing:
+        'This quote is valid until [%GUELTIG_BIS%]. Upon acceptance of our quote, we will be happy to issue you a corresponding invoice. Please feel free to contact us if you have any questions.',
       // Rechnungen (Invoices)
-      invoiceIntro: 'thank you for your order and the trust you have placed in us! I hereby invoice you for the following services:',
-      invoiceClosing: 'Please transfer the invoice amount to the account specified below, quoting the invoice number. The invoice amount is due by [%ZAHLUNGSZIEL%].',
+      invoiceIntro:
+        'thank you for your order and the trust you have placed in us! I hereby invoice you for the following services:',
+      invoiceClosing:
+        'Please transfer the invoice amount to the account specified below, quoting the invoice number. The invoice amount is due by [%ZAHLUNGSZIEL%].',
       // Mahnungen (Reminders)
       reminderIntro: 'we note that the following invoice has not yet been settled:',
-      reminderClosing: 'We ask for prompt settlement of the outstanding amount. If you have already paid, please disregard this reminder.',
+      reminderClosing:
+        'We ask for prompt settlement of the outstanding amount. If you have already paid, please disregard this reminder.',
       // Allgemeine Grußformeln
-      bestRegards: 'Best regards'
+      bestRegards: 'Best regards',
     },
-    'fr': {
+    fr: {
       // Angebote (Quotes)
-      quoteIntro: 'merci pour votre demande! Nous avons le plaisir de vous soumettre notre devis pour les services suivants:',
-      quoteClosing: 'Ce devis est valable jusqu\'au [%GUELTIG_BIS%]. En cas d\'acceptation de notre devis, nous vous établirons volontiers une facture correspondante. Nous restons à votre disposition pour toute question.',
+      quoteIntro:
+        'merci pour votre demande! Nous avons le plaisir de vous soumettre notre devis pour les services suivants:',
+      quoteClosing:
+        "Ce devis est valable jusqu'au [%GUELTIG_BIS%]. En cas d'acceptation de notre devis, nous vous établirons volontiers une facture correspondante. Nous restons à votre disposition pour toute question.",
       // Rechnungen (Invoices)
-      invoiceIntro: 'merci pour votre commande et la confiance que vous nous accordez! Je vous facture par la présente les services suivants:',
-      invoiceClosing: 'Veuillez virer le montant de la facture sur le compte indiqué ci-dessous en mentionnant le numéro de facture. Le montant de la facture est dû au [%ZAHLUNGSZIEL%].',
+      invoiceIntro:
+        'merci pour votre commande et la confiance que vous nous accordez! Je vous facture par la présente les services suivants:',
+      invoiceClosing:
+        'Veuillez virer le montant de la facture sur le compte indiqué ci-dessous en mentionnant le numéro de facture. Le montant de la facture est dû au [%ZAHLUNGSZIEL%].',
       // Mahnungen (Reminders)
-      reminderIntro: 'nous constatons que la facture suivante n\'a pas encore été réglée:',
-      reminderClosing: 'Nous vous demandons de régler rapidement le montant en souffrance. Si vous avez déjà payé, veuillez considérer ce rappel comme sans objet.',
+      reminderIntro: "nous constatons que la facture suivante n'a pas encore été réglée:",
+      reminderClosing:
+        'Nous vous demandons de régler rapidement le montant en souffrance. Si vous avez déjà payé, veuillez considérer ce rappel comme sans objet.',
       // Allgemeine Grußformeln
-      bestRegards: 'Meilleures salutations'
-    }
+      bestRegards: 'Meilleures salutations',
+    },
   };
 
   const langTexts = standardTexts[language as keyof typeof standardTexts] || standardTexts['de'];

@@ -7,8 +7,8 @@ import React, {
   SetStateAction,
   useState,
   useEffect,
-  useCallback } from
-'react';
+  useCallback,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import ProgressBar from '@/components/ProgressBar';
 import { FiX, FiCheckCircle, FiAlertCircle, FiLoader } from 'react-icons/fi';
@@ -18,16 +18,16 @@ import {
   createUserWithEmailAndPassword,
   UserCredential,
   User as AuthUser,
-  getIdToken } from
-'firebase/auth'; // FieldValue,
+  getIdToken,
+} from 'firebase/auth'; // FieldValue,
 import {
   doc,
   setDoc,
   serverTimestamp,
   deleteField,
   updateDoc,
-  FieldValue } from
-'firebase/firestore';
+  FieldValue,
+} from 'firebase/firestore';
 import { db, app as firebaseApp } from '../../../../firebase/clients';
 import { functions as firebaseFunctions } from '../../../../firebase/clients';
 import { httpsCallable } from 'firebase/functions';
@@ -101,7 +101,7 @@ interface CreateStripeAccountClientData {
 }
 
 type GetClientIpData = Record<string, never>;
-type GetClientIpResult = {ip: string;};
+type GetClientIpResult = { ip: string };
 type FilePurpose = Stripe.FileCreateParams.Purpose;
 
 const MAX_ID_DOC_SIZE_BYTES = 8 * 1024 * 1024;
@@ -173,15 +173,15 @@ export default function Step5CompanyPage() {
     actualOwnershipPercentage,
     isActualExecutive,
     actualRepresentativeTitle,
-    resetRegistrationData
+    resetRegistrationData,
   } = registration;
 
   useEffect(() => {
     const initPreview = (
-    fileFromContext: File | object | null | undefined,
-    currentLocalPreview: string | null,
-    setLocalPreview: Dispatch<SetStateAction<string | null>>) =>
-    {
+      fileFromContext: File | object | null | undefined,
+      currentLocalPreview: string | null,
+      setLocalPreview: Dispatch<SetStateAction<string | null>>
+    ) => {
       if (fileFromContext instanceof File) {
         if (!currentLocalPreview) {
           try {
@@ -203,7 +203,7 @@ export default function Step5CompanyPage() {
   useEffect(() => {
     const localPreviews = [identityFrontPreview, identityBackPreview];
     return () => {
-      localPreviews.forEach((url) => {
+      localPreviews.forEach(url => {
         if (url) URL.revokeObjectURL(url);
       });
     };
@@ -248,19 +248,19 @@ export default function Step5CompanyPage() {
 
   const convertImageToWebP = useCallback(
     async (file: File, quality: number): Promise<File | null> => {
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         if (
-        !file.type.startsWith('image/') ||
-        file.type === 'image/webp' ||
-        file.type !== 'image/jpeg' && file.type !== 'image/png')
-        {
+          !file.type.startsWith('image/') ||
+          file.type === 'image/webp' ||
+          (file.type !== 'image/jpeg' && file.type !== 'image/png')
+        ) {
           resolve(file);
           return;
         }
         setIsConvertingImage(true);
         setFormError(null);
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = event => {
           const img = new window.Image();
           img.onload = () => {
             const canvas = document.createElement('canvas');
@@ -274,16 +274,16 @@ export default function Step5CompanyPage() {
             }
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             canvas.toBlob(
-              (blob) => {
+              blob => {
                 setIsConvertingImage(false);
                 if (blob) {
                   const nameWithoutExtension =
-                  file.name.lastIndexOf('.') > 0 ?
-                  file.name.substring(0, file.name.lastIndexOf('.')) :
-                  file.name;
+                    file.name.lastIndexOf('.') > 0
+                      ? file.name.substring(0, file.name.lastIndexOf('.'))
+                      : file.name;
                   const webpFile = new File([blob], `${nameWithoutExtension}.webp`, {
                     type: 'image/webp',
-                    lastModified: Date.now()
+                    lastModified: Date.now(),
                   });
                   resolve(webpFile);
                 } else {
@@ -317,19 +317,19 @@ export default function Step5CompanyPage() {
 
   const handleFileChangeAndPreview = useCallback(
     async (
-    e: ChangeEvent<HTMLInputElement>,
-    fileContextSetter: Dispatch<SetStateAction<File | null | undefined>>,
-    localPreviewSetter: Dispatch<SetStateAction<string | null>>,
-    maxSizeBytes?: number,
-    fileTypeForAlert?: string,
-    attemptWebPConversion: boolean = false)
-    : Promise<void> => {
+      e: ChangeEvent<HTMLInputElement>,
+      fileContextSetter: Dispatch<SetStateAction<File | null | undefined>>,
+      localPreviewSetter: Dispatch<SetStateAction<string | null>>,
+      maxSizeBytes?: number,
+      fileTypeForAlert?: string,
+      attemptWebPConversion: boolean = false
+    ): Promise<void> => {
       const inputFile = e.target.files?.[0] || null;
       let processedFile: File | null = inputFile;
 
       setFormError(null);
 
-      localPreviewSetter((prevLocalPreviewUrl) => {
+      localPreviewSetter(prevLocalPreviewUrl => {
         if (prevLocalPreviewUrl) URL.revokeObjectURL(prevLocalPreviewUrl);
         return null;
       });
@@ -337,9 +337,9 @@ export default function Step5CompanyPage() {
       if (inputFile) {
         setIsProcessingImage(true);
         if (
-        attemptWebPConversion && (
-        inputFile.type === 'image/jpeg' || inputFile.type === 'image/png'))
-        {
+          attemptWebPConversion &&
+          (inputFile.type === 'image/jpeg' || inputFile.type === 'image/png')
+        ) {
           const convertedFile = await convertImageToWebP(inputFile, WEBP_QUALITY);
           if (convertedFile) processedFile = convertedFile;
         }
@@ -371,12 +371,12 @@ export default function Step5CompanyPage() {
 
   const uploadFileToStripeAndStorage = useCallback(
     async (
-    file: File | object | null | undefined,
-    purpose: FilePurpose,
-    fileNameForLog: string,
-    userId: string,
-    idToken: string)
-    : Promise<FileUploadResult | null> => {
+      file: File | object | null | undefined,
+      purpose: FilePurpose,
+      fileNameForLog: string,
+      userId: string,
+      idToken: string
+    ): Promise<FileUploadResult | null> => {
       if (!file || !(file instanceof File)) {
         setFormError(`Datei für ${fileNameForLog} fehlt oder ist ungültig.`);
         return null;
@@ -403,9 +403,9 @@ export default function Step5CompanyPage() {
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${idToken}`
+          Authorization: `Bearer ${idToken}`,
         },
-        body: formData
+        body: formData,
       });
 
       if (!response.ok) {
@@ -423,12 +423,12 @@ export default function Step5CompanyPage() {
       }
       const result = await response.json();
       if (result.success && result.stripeFileId)
-      return {
-        stripeFileId: result.stripeFileId,
-        firebaseStorageUrl: result.firebaseStorageUrl,
-        firebaseStoragePath: result.firebaseStoragePath
-      };else
-      throw new Error(result.message || `Upload-Fehler für ${fileNameForLog}.`);
+        return {
+          stripeFileId: result.stripeFileId,
+          firebaseStorageUrl: result.firebaseStorageUrl,
+          firebaseStoragePath: result.firebaseStoragePath,
+        };
+      else throw new Error(result.message || `Upload-Fehler für ${fileNameForLog}.`);
     },
     []
   );
@@ -442,33 +442,33 @@ export default function Step5CompanyPage() {
     if (!legalForm?.trim()) return false;
 
     const hasPersonalAddr =
-    personalStreet?.trim() &&
-    personalPostalCode?.trim() &&
-    personalCity?.trim() &&
-    personalCountry?.trim();
+      personalStreet?.trim() &&
+      personalPostalCode?.trim() &&
+      personalCity?.trim() &&
+      personalCountry?.trim();
     const hasCompanyAddr =
-    companyStreet?.trim() &&
-    companyPostalCode?.trim() &&
-    companyCity?.trim() &&
-    companyCountry?.trim();
+      companyStreet?.trim() &&
+      companyPostalCode?.trim() &&
+      companyCity?.trim() &&
+      companyCountry?.trim();
     const isCapitalCompany =
-    legalForm?.toLowerCase() && (
-    legalForm.toLowerCase().includes('gmbh') ||
-    legalForm.toLowerCase().includes('ug') ||
-    legalForm.toLowerCase().includes('ag'));
+      legalForm?.toLowerCase() &&
+      (legalForm.toLowerCase().includes('gmbh') ||
+        legalForm.toLowerCase().includes('ug') ||
+        legalForm.toLowerCase().includes('ag'));
     const isIndividual =
-    legalForm?.toLowerCase() && (
-    legalForm.toLowerCase().includes('einzelunternehmen') ||
-    legalForm.toLowerCase().includes('freiberufler'));
+      legalForm?.toLowerCase() &&
+      (legalForm.toLowerCase().includes('einzelunternehmen') ||
+        legalForm.toLowerCase().includes('freiberufler'));
 
     if (
-    isCapitalCompany && (
-    !personalStreet?.trim() ||
-    !personalPostalCode?.trim() ||
-    !personalCity?.trim() ||
-    !personalCountry?.trim()))
-
-    return false;
+      isCapitalCompany &&
+      (!personalStreet?.trim() ||
+        !personalPostalCode?.trim() ||
+        !personalCity?.trim() ||
+        !personalCountry?.trim())
+    )
+      return false;
     if (isIndividual && !isCapitalCompany && !hasPersonalAddr && !hasCompanyAddr) return false;
     if (personalCountry && personalCountry.length !== 2) return false;
 
@@ -479,23 +479,23 @@ export default function Step5CompanyPage() {
     }
     if (!taxIdProvided) {
       if (
-      isCapitalCompany ||
-      legalForm?.toLowerCase().includes('gbr') ||
-      legalForm?.toLowerCase().includes('ohg') ||
-      legalForm?.toLowerCase().includes('kg'))
-      {
+        isCapitalCompany ||
+        legalForm?.toLowerCase().includes('gbr') ||
+        legalForm?.toLowerCase().includes('ohg') ||
+        legalForm?.toLowerCase().includes('kg')
+      ) {
         if (taxNumber?.trim() || vatId?.trim()) taxIdProvided = true;
       } else if (isIndividual && !isEK) {
         if (taxNumber?.trim() || vatId?.trim()) taxIdProvided = true;
       } else if (
-      legalForm?.trim() &&
-      !isCapitalCompany &&
-      !isIndividual &&
-      !isEK &&
-      !legalForm.toLowerCase().includes('gbr') &&
-      !legalForm.toLowerCase().includes('ohg') &&
-      !legalForm.toLowerCase().includes('kg'))
-      {
+        legalForm?.trim() &&
+        !isCapitalCompany &&
+        !isIndividual &&
+        !isEK &&
+        !legalForm.toLowerCase().includes('gbr') &&
+        !legalForm.toLowerCase().includes('ohg') &&
+        !legalForm.toLowerCase().includes('kg')
+      ) {
         if (companyRegister?.trim() || taxNumber?.trim() || vatId?.trim()) taxIdProvided = true;
       }
     }
@@ -503,29 +503,29 @@ export default function Step5CompanyPage() {
 
     return !isLoading && !isConvertingImage && !isProcessingImage;
   }, [
-  iban,
-  accountHolder,
-  identityFrontFile,
-  identityBackFile,
-  isLoading,
-  isConvertingImage,
-  profilePictureFile,
-  hourlyRate,
-  businessLicenseFile,
-  legalForm,
-  personalStreet,
-  personalPostalCode,
-  personalCity,
-  personalCountry,
-  companyStreet,
-  companyPostalCode,
-  companyCity,
-  companyCountry,
-  isProcessingImage,
-  companyRegister,
-  taxNumber,
-  vatId]
-  );
+    iban,
+    accountHolder,
+    identityFrontFile,
+    identityBackFile,
+    isLoading,
+    isConvertingImage,
+    profilePictureFile,
+    hourlyRate,
+    businessLicenseFile,
+    legalForm,
+    personalStreet,
+    personalPostalCode,
+    personalCity,
+    personalCountry,
+    companyStreet,
+    companyPostalCode,
+    companyCity,
+    companyCountry,
+    isProcessingImage,
+    companyRegister,
+    taxNumber,
+    vatId,
+  ]);
 
   const handleRegistration = async () => {
     setHasAttemptedSubmit(true);
@@ -541,7 +541,7 @@ export default function Step5CompanyPage() {
       if (!(identityBackFile instanceof File)) missingFieldsList.push('Ausweis Rückseite');
       if (!(profilePictureFile instanceof File)) missingFieldsList.push('Profilbild');
       if (!hourlyRate || parseFloat(hourlyRate) <= 0)
-      missingFieldsList.push('Stundenpreis (muss > 0 sein)');
+        missingFieldsList.push('Stundenpreis (muss > 0 sein)');
       if (!(businessLicenseFile instanceof File)) missingFieldsList.push('Gewerbeschein');
       if (!legalForm?.trim()) missingFieldsList.push('Rechtsform');
       setFormError(
@@ -558,9 +558,9 @@ export default function Step5CompanyPage() {
       // KORREKTUR: Diese Funktion wurde robuster gemacht, um verschiedene Eingabeformate
       // und Ländercodes zu verarbeiten und ein gültiges E.164-Format sicherzustellen.
       const normalizePhoneNumber = (
-      num: string | null | undefined,
-      countryISO: string | null | undefined)
-      : string => {
+        num: string | null | undefined,
+        countryISO: string | null | undefined
+      ): string => {
         if (!num) return '';
 
         // 1. Alle nicht-numerischen Zeichen außer einem führenden '+' entfernen.
@@ -636,10 +636,10 @@ export default function Step5CompanyPage() {
       try {
         const ipResult = await getClientIpFunction({});
         if (
-        ipResult.data?.ip &&
-        ipResult.data.ip !== 'IP_NOT_DETERMINED' &&
-        ipResult.data.ip.length >= 7)
-        {
+          ipResult.data?.ip &&
+          ipResult.data.ip !== 'IP_NOT_DETERMINED' &&
+          ipResult.data.ip.length >= 7
+        ) {
           clientIpAddress = ipResult.data.ip;
         } else {
         }
@@ -714,11 +714,11 @@ export default function Step5CompanyPage() {
       }
 
       if (
-      !profilePicResult?.stripeFileId ||
-      !businessLicResult?.stripeFileId ||
-      !idFrontResult?.stripeFileId ||
-      !idBackResult?.stripeFileId)
-      {
+        !profilePicResult?.stripeFileId ||
+        !businessLicResult?.stripeFileId ||
+        !idFrontResult?.stripeFileId ||
+        !idBackResult?.stripeFileId
+      ) {
         throw new Error('Ein oder mehrere kritische Datei-Uploads sind fehlgeschlagen.');
       }
 
@@ -727,7 +727,7 @@ export default function Step5CompanyPage() {
       const resolvedCompanyStreet = companyStreet || '';
       const resolvedCompanyHouseNumber = companyHouseNumber || '';
       const fullCompanyAddressForFirestore =
-      `${resolvedCompanyStreet}${resolvedCompanyStreet && resolvedCompanyHouseNumber ? ' ' : ''}${resolvedCompanyHouseNumber}`.trim();
+        `${resolvedCompanyStreet}${resolvedCompanyStreet && resolvedCompanyHouseNumber ? ' ' : ''}${resolvedCompanyHouseNumber}`.trim();
       const frontendAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://taskilo.de';
 
       // ========================================
@@ -758,7 +758,7 @@ export default function Step5CompanyPage() {
         personalCountry: personalCountry || null,
         isManagingDirectorOwner: isManagingDirectorOwner ?? true,
         ownershipPercentage:
-        ownershipPercentage !== undefined ? ownershipPercentage : deleteField(),
+          ownershipPercentage !== undefined ? ownershipPercentage : deleteField(),
         isActualDirector: isActualDirector ?? deleteField(),
         isActualOwner: isActualOwner ?? deleteField(),
         actualOwnershipPercentage: actualOwnershipPercentage ?? deleteField(),
@@ -828,23 +828,23 @@ export default function Step5CompanyPage() {
         common: {
           tosAcceptanceIp: clientIpAddress,
           tosAcceptanceUserAgent:
-          typeof navigator !== 'undefined' ? navigator.userAgent : 'UserAgentNotAvailable',
-          registrationCompletedAt: new Date().toISOString()
+            typeof navigator !== 'undefined' ? navigator.userAgent : 'UserAgentNotAvailable',
+          registrationCompletedAt: new Date().toISOString(),
         },
 
         // Timestamps
         profileLastUpdatedAt: serverTimestamp(),
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       };
 
       // Company Register nur für bestimmte Rechtsformen
       if (
-      legalForm?.toLowerCase().includes('gmbh') ||
-      legalForm?.toLowerCase().includes('ug') ||
-      legalForm?.toLowerCase().includes('ag') ||
-      legalForm?.toLowerCase().includes('e.k.'))
-      {
+        legalForm?.toLowerCase().includes('gmbh') ||
+        legalForm?.toLowerCase().includes('ug') ||
+        legalForm?.toLowerCase().includes('ag') ||
+        legalForm?.toLowerCase().includes('e.k.')
+      ) {
         if (companyRegister?.trim()) {
           companyData.companyRegisterPublic = companyRegister;
         }
@@ -853,19 +853,19 @@ export default function Step5CompanyPage() {
       // Null-Werte für undefined bereinigen und erweiterte Datenvalidierung
       const cleanedCompanyData = { ...companyData };
 
-      Object.keys(cleanedCompanyData).forEach((key) => {
+      Object.keys(cleanedCompanyData).forEach(key => {
         const value = cleanedCompanyData[key];
 
         // Entferne undefined Werte, aber behalte wichtige optionale Felder
         if (
-        value === undefined &&
-        key !== 'ownershipPercentage' &&
-        key !== 'isActualDirector' &&
-        key !== 'isActualOwner' &&
-        key !== 'actualOwnershipPercentage' &&
-        key !== 'isActualExecutive' &&
-        key !== 'masterCraftsmanCertificateStripeId')
-        {
+          value === undefined &&
+          key !== 'ownershipPercentage' &&
+          key !== 'isActualDirector' &&
+          key !== 'isActualOwner' &&
+          key !== 'actualOwnershipPercentage' &&
+          key !== 'isActualExecutive' &&
+          key !== 'masterCraftsmanCertificateStripeId'
+        ) {
           cleanedCompanyData[key] = null;
         }
 
@@ -890,7 +890,7 @@ export default function Step5CompanyPage() {
                 tosAcceptanceUserAgent: String(commonObj.tosAcceptanceUserAgent || ''),
                 registrationCompletedAt: String(
                   commonObj.registrationCompletedAt || new Date().toISOString()
-                )
+                ),
               };
               cleanedCompanyData[key] = cleanCommon;
             }
@@ -916,7 +916,7 @@ export default function Step5CompanyPage() {
           companyName: cleanedCompanyData.companyName || 'Unbekannt',
           legalForm: cleanedCompanyData.legalForm || 'Einzelunternehmen',
           createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
+          updatedAt: serverTimestamp(),
         };
 
         await setDoc(doc(db, 'companies', currentAuthUserUID), coreData);
@@ -950,10 +950,10 @@ export default function Step5CompanyPage() {
           radiusKm: cleanedCompanyData.radiusKm || 30,
           // 🔧 FIX: Zusammengesetztes location Feld für Service-Seite
           location:
-          `${cleanedCompanyData.companyCity || ''}${cleanedCompanyData.companyPostalCode ? ', ' + cleanedCompanyData.companyPostalCode : ''}`.trim(),
+            `${cleanedCompanyData.companyCity || ''}${cleanedCompanyData.companyPostalCode ? ', ' + cleanedCompanyData.companyPostalCode : ''}`.trim(),
           status: 'pending_verification',
           profileComplete: false,
-          updatedAt: serverTimestamp()
+          updatedAt: serverTimestamp(),
         };
 
         await updateDoc(doc(db, 'companies', currentAuthUserUID), extendedData);
@@ -965,7 +965,7 @@ export default function Step5CompanyPage() {
             email: email!,
             companyName: 'Temp Company',
             createdAt: new Date().toISOString(),
-            status: 'error_during_creation'
+            status: 'error_during_creation',
           };
 
           await setDoc(doc(db, 'companies', currentAuthUserUID), ultraMinimalData);
@@ -1020,13 +1020,13 @@ export default function Step5CompanyPage() {
         businessLicenseUrl: businessLicResult.firebaseStorageUrl,
         masterCraftsmanCertificateUrl: masterCertResult?.firebaseStorageUrl,
         identityFrontUrl: idFrontResult.firebaseStorageUrl,
-        identityBackUrl: idBackResult.firebaseStorageUrl
+        identityBackUrl: idBackResult.firebaseStorageUrl,
       };
 
       if (
-      dataForStripeCallable.legalForm === 'Einzelunternehmen' ||
-      dataForStripeCallable.legalForm === 'Freiberufler')
-      {
+        dataForStripeCallable.legalForm === 'Einzelunternehmen' ||
+        dataForStripeCallable.legalForm === 'Freiberufler'
+      ) {
         dataForStripeCallable.personalStreet = fullCompanyAddressForFirestore;
         dataForStripeCallable.personalHouseNumber = '';
         dataForStripeCallable.personalPostalCode = dataForStripeCallable.companyPostalCode;
@@ -1036,8 +1036,8 @@ export default function Step5CompanyPage() {
 
       const createStripeAccountCallable = httpsCallable<
         CreateStripeAccountClientData,
-        CreateStripeAccountCallableResult>(
-        firebaseFunctions, 'createStripeAccountIfComplete');
+        CreateStripeAccountCallableResult
+      >(firebaseFunctions, 'createStripeAccountIfComplete');
       const result = await createStripeAccountCallable(dataForStripeCallable);
 
       interface UserStripeUpdateData {
@@ -1058,9 +1058,9 @@ export default function Step5CompanyPage() {
           stripeAccountPayoutsEnabled: result.data.payoutsEnabled ?? false,
           updatedAt: serverTimestamp(),
           'common.createdByCallable': 'true',
-          'common.stripeVerificationStatus': result.data.detailsSubmitted ?
-          'details_submitted' :
-          'pending'
+          'common.stripeVerificationStatus': result.data.detailsSubmitted
+            ? 'details_submitted'
+            : 'pending',
         };
         // Update companies collection (wo alle Firmendaten liegen)
         await updateDoc(doc(db, 'companies', currentAuthUserUID), { ...companyStripeUpdate });
@@ -1078,7 +1078,7 @@ export default function Step5CompanyPage() {
           onboardingCompletionPercentage: 0,
           onboardingCompleted: false,
           profileComplete: false,
-          profileStatus: 'pending_onboarding'
+          profileStatus: 'pending_onboarding',
         });
 
         // ✅ NEU: Standard-Nummerkreise für neue Company erstellen
@@ -1087,7 +1087,6 @@ export default function Step5CompanyPage() {
           // Import der NumberSequenceService erfolgt dynamisch um Import-Probleme zu vermeiden
           const { NumberSequenceService } = await import('@/services/numberSequenceService');
           await NumberSequenceService.createDefaultSequences(currentAuthUserUID);
-
         } catch (numberSequenceError) {
           console.warn('⚠️ Fehler beim Erstellen der Standard-Nummerkreise:', numberSequenceError);
           // Nicht blockierend - Registrierung läuft weiter
@@ -1116,10 +1115,10 @@ export default function Step5CompanyPage() {
       let specificErrorMessage = 'Ein unerwarteter Fehler ist aufgetreten.';
 
       if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
-        const errorObj = error as {code: string;message: string;details?: any;};
+        const errorObj = error as { code: string; message: string; details?: any };
         specificErrorMessage = `Serverfehler (${errorObj.code}): ${errorObj.message} ${errorObj.details ? `(Details: ${JSON.stringify(errorObj.details)})` : ''}`;
       } else if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
-        specificErrorMessage = `Firebase Fehler (${(error as {code: string;}).code}): ${(error as {message: string;}).message}`;
+        specificErrorMessage = `Firebase Fehler (${(error as { code: string }).code}): ${(error as { message: string }).message}`;
       } else if (error instanceof Error) {
         specificErrorMessage = error.message;
       }
@@ -1134,28 +1133,28 @@ export default function Step5CompanyPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 font-sans">
-      {(isLoading || isConvertingImage || isProcessingImage || isRedirecting) &&
-      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-[101]">
+      {(isLoading || isConvertingImage || isProcessingImage || isRedirecting) && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-[101]">
           <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center max-w-sm mx-4">
             <FiLoader className="animate-spin h-8 w-8 mb-4 text-teal-600" />
             <span className="text-lg font-medium text-gray-800 text-center mb-2">
               {currentStepMessage || 'Bitte warten...'}
             </span>
-            {isRedirecting &&
-          <p className="text-sm text-gray-600 text-center">
+            {isRedirecting && (
+              <p className="text-sm text-gray-600 text-center">
                 Sie werden gleich zu Ihrem Dashboard weitergeleitet.
               </p>
-          }
+            )}
           </div>
         </div>
-      }
+      )}
       <div className="w-full max-w-xl lg:max-w-4xl mx-auto mb-6 px-4">
         <div className="flex justify-end mb-4">
           <button
             onClick={() => router.push('/')}
             className="text-[#14ad9f] hover:text-teal-700 text-base sm:text-lg flex items-center transition-colors duration-200"
-            disabled={isLoading || isConvertingImage || isRedirecting}>
-
+            disabled={isLoading || isConvertingImage || isRedirecting}
+          >
             <span className="mr-2">Abbrechen</span> <FiX />
           </button>
         </div>
@@ -1179,175 +1178,175 @@ export default function Step5CompanyPage() {
             deines Ausweisdokuments hoch, um deine Identität zu verifizieren. Diese Informationen
             werden sicher an unseren Zahlungsdienstleister Stripe übermittelt.
           </p>
-          {formError &&
-          <div
-            className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-center mb-4 w-full"
-            role="alert">
-
+          {formError && (
+            <div
+              className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-center mb-4 w-full"
+              role="alert"
+            >
               <FiAlertCircle className="h-6 w-6 text-red-500 mr-3 shrink-0" />
               <div>
                 <p className="font-bold">Fehler bei der Registrierung:</p>
                 <p className="text-sm">{formError}</p>
               </div>
             </div>
-          }
+          )}
 
           <div className="w-full space-y-6 mb-8">
             <div>
               <label
                 htmlFor="accountHolder"
-                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !accountHolder?.trim() ? 'text-red-600' : 'text-gray-700'}`}>
-
+                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !accountHolder?.trim() ? 'text-red-600' : 'text-gray-700'}`}
+              >
                 Name des Kontoinhabers*
               </label>
               <input
                 type="text"
                 id="accountHolder"
                 value={accountHolder || ''}
-                onChange={(e) => setAccountHolder(e.target.value.trim())}
+                onChange={e => setAccountHolder(e.target.value.trim())}
                 className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !accountHolder?.trim() ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="Max Mustermann"
-                disabled={isLoading || isConvertingImage} />
-
+                disabled={isLoading || isConvertingImage}
+              />
             </div>
             <div>
               <label
                 htmlFor="iban"
-                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !iban?.trim() ? 'text-red-600' : 'text-gray-700'}`}>
-
+                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !iban?.trim() ? 'text-red-600' : 'text-gray-700'}`}
+              >
                 IBAN*
               </label>
               <input
                 type="text"
                 id="iban"
                 value={iban || ''}
-                onChange={(e) => setIban(e.target.value.replace(/\s/g, ''))}
+                onChange={e => setIban(e.target.value.replace(/\s/g, ''))}
                 className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !iban?.trim() ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="DE89..."
-                disabled={isLoading || isConvertingImage} />
-
+                disabled={isLoading || isConvertingImage}
+              />
             </div>
             <div>
               <label
                 htmlFor="bic"
-                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !bic?.trim() ? 'text-red-600' : 'text-gray-700'}`}>
-
+                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !bic?.trim() ? 'text-red-600' : 'text-gray-700'}`}
+              >
                 BIC*
               </label>
               <input
                 type="text"
                 id="bic"
                 value={bic || ''}
-                onChange={(e) => setBic(e.target.value.toUpperCase().trim())}
+                onChange={e => setBic(e.target.value.toUpperCase().trim())}
                 className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !bic?.trim() ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="COBADEFFXXX"
-                disabled={isLoading || isConvertingImage} />
-
+                disabled={isLoading || isConvertingImage}
+              />
             </div>
             <div>
               <label
                 htmlFor="bankName"
-                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !bankName?.trim() ? 'text-red-600' : 'text-gray-700'}`}>
-
+                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !bankName?.trim() ? 'text-red-600' : 'text-gray-700'}`}
+              >
                 Bank Name*
               </label>
               <input
                 type="text"
                 id="bankName"
                 value={bankName || ''}
-                onChange={(e) => setBankName(e.target.value.trim())}
+                onChange={e => setBankName(e.target.value.trim())}
                 className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !bankName?.trim() ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="Commerzbank AG"
-                disabled={isLoading || isConvertingImage} />
-
+                disabled={isLoading || isConvertingImage}
+              />
             </div>
             <div className="mt-6">
               <label
-                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !(identityFrontFile instanceof File) ? 'text-red-600' : 'text-gray-700'}`}>
-
+                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !(identityFrontFile instanceof File) ? 'text-red-600' : 'text-gray-700'}`}
+              >
                 Ausweis Vorderseite* (max. {MAX_ID_DOC_SIZE_BYTES / (1024 * 1024)}MB, JPEG/PNG)
               </label>
-              {identityFrontPreview &&
-              <div className="my-2 max-h-32 rounded-lg border border-gray-300 p-1 flex justify-center items-center overflow-hidden">
+              {identityFrontPreview && (
+                <div className="my-2 max-h-32 rounded-lg border border-gray-300 p-1 flex justify-center items-center overflow-hidden">
                   <Image
-                  src={identityFrontPreview}
-                  alt="Vorschau Vorderseite"
-                  width={200}
-                  height={128}
-                  style={{ objectFit: 'contain' }}
-                  className="max-h-full max-w-full" />
-
+                    src={identityFrontPreview}
+                    alt="Vorschau Vorderseite"
+                    width={200}
+                    height={128}
+                    style={{ objectFit: 'contain' }}
+                    className="max-h-full max-w-full"
+                  />
                 </div>
-              }
+              )}
               <input
                 type="file"
                 id="identityFrontInput"
                 accept="image/jpeg, image/png"
-                onChange={(e) =>
-                handleFileChangeAndPreview(
-                  e,
-                  setIdentityFrontFile,
-                  setIdentityFrontPreview,
-                  MAX_ID_DOC_SIZE_BYTES,
-                  'Ausweis Vorderseite',
-                  false
-                )
+                onChange={e =>
+                  handleFileChangeAndPreview(
+                    e,
+                    setIdentityFrontFile,
+                    setIdentityFrontPreview,
+                    MAX_ID_DOC_SIZE_BYTES,
+                    'Ausweis Vorderseite',
+                    false
+                  )
                 }
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100" />
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
+              />
 
-
-              {identityFrontFile &&
-              <p className="mt-1 text-xs text-gray-600">
+              {identityFrontFile && (
+                <p className="mt-1 text-xs text-gray-600">
                   {identityFrontFile.name} ({(identityFrontFile.size / (1024 * 1024)).toFixed(2)}MB)
                 </p>
-              }
-              {hasAttemptedSubmit && !(identityFrontFile instanceof File) &&
-              <p className="mt-1 text-xs text-red-500">Ausweis Vorderseite ist erforderlich.</p>
-              }
+              )}
+              {hasAttemptedSubmit && !(identityFrontFile instanceof File) && (
+                <p className="mt-1 text-xs text-red-500">Ausweis Vorderseite ist erforderlich.</p>
+              )}
             </div>
             <div>
               <label
-                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !(identityBackFile instanceof File) ? 'text-red-600' : 'text-gray-700'}`}>
-
+                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !(identityBackFile instanceof File) ? 'text-red-600' : 'text-gray-700'}`}
+              >
                 Ausweis Rückseite* (max. {MAX_ID_DOC_SIZE_BYTES / (1024 * 1024)}MB, JPEG/PNG)
               </label>
-              {identityBackPreview &&
-              <div className="my-2 max-h-32 rounded-lg border border-gray-300 p-1 flex justify-center items-center overflow-hidden">
+              {identityBackPreview && (
+                <div className="my-2 max-h-32 rounded-lg border border-gray-300 p-1 flex justify-center items-center overflow-hidden">
                   <Image
-                  src={identityBackPreview}
-                  alt="Vorschau Rückseite"
-                  width={200}
-                  height={128}
-                  style={{ objectFit: 'contain' }}
-                  className="max-h-full max-w-full" />
-
+                    src={identityBackPreview}
+                    alt="Vorschau Rückseite"
+                    width={200}
+                    height={128}
+                    style={{ objectFit: 'contain' }}
+                    className="max-h-full max-w-full"
+                  />
                 </div>
-              }
+              )}
               <input
                 type="file"
                 id="identityBackInput"
                 accept="image/jpeg, image/png"
-                onChange={(e) =>
-                handleFileChangeAndPreview(
-                  e,
-                  setIdentityBackFile,
-                  setIdentityBackPreview,
-                  MAX_ID_DOC_SIZE_BYTES,
-                  'Ausweis Rückseite',
-                  false
-                )
+                onChange={e =>
+                  handleFileChangeAndPreview(
+                    e,
+                    setIdentityBackFile,
+                    setIdentityBackPreview,
+                    MAX_ID_DOC_SIZE_BYTES,
+                    'Ausweis Rückseite',
+                    false
+                  )
                 }
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100" />
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
+              />
 
-
-              {identityBackFile &&
-              <p className="mt-1 text-xs text-gray-600">
+              {identityBackFile && (
+                <p className="mt-1 text-xs text-gray-600">
                   {identityBackFile.name} ({(identityBackFile.size / (1024 * 1024)).toFixed(2)}MB)
                 </p>
-              }
-              {hasAttemptedSubmit && !(identityBackFile instanceof File) &&
-              <p className="mt-1 text-xs text-red-500">Ausweis Rückseite ist erforderlich.</p>
-              }
+              )}
+              {hasAttemptedSubmit && !(identityBackFile instanceof File) && (
+                <p className="mt-1 text-xs text-red-500">Ausweis Rückseite ist erforderlich.</p>
+              )}
             </div>
           </div>
 
@@ -1355,31 +1354,31 @@ export default function Step5CompanyPage() {
             type="button"
             onClick={handleRegistration}
             disabled={
-            isLoading ||
-            isConvertingImage ||
-            isProcessingImage ||
-            isRedirecting ||
-            hasAttemptedSubmit && !isFormValid()
+              isLoading ||
+              isConvertingImage ||
+              isProcessingImage ||
+              isRedirecting ||
+              (hasAttemptedSubmit && !isFormValid())
             }
             className={`w-full py-3 px-6 rounded-lg font-semibold text-lg text-white transition-colors duration-150 ease-in-out
               ${
-            !isFormValid() ||
-            isLoading ||
-            isConvertingImage ||
-            isProcessingImage ||
-            isRedirecting ?
-            'bg-gray-400 cursor-not-allowed' :
-            'bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2'}`
-            }>
-
-            {isLoading || isConvertingImage || isProcessingImage || isRedirecting ?
-            <span className="flex items-center justify-center">
+                !isFormValid() ||
+                isLoading ||
+                isConvertingImage ||
+                isProcessingImage ||
+                isRedirecting
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2'
+              }`}
+          >
+            {isLoading || isConvertingImage || isProcessingImage || isRedirecting ? (
+              <span className="flex items-center justify-center">
                 <FiLoader className="animate-spin h-5 w-5 mr-3" />
                 <span>{currentStepMessage || 'Bitte warten...'}</span>
-              </span> :
-
-            'Registrierung abschließen & Zahlungskonto einrichten'
-            }
+              </span>
+            ) : (
+              'Registrierung abschließen & Zahlungskonto einrichten'
+            )}
           </button>
           <p className="text-xs text-gray-500 mt-4 text-center">
             Mit Klick bestätigst du die Richtigkeit deiner Angaben und stimmst unseren AGB &
@@ -1387,6 +1386,6 @@ export default function Step5CompanyPage() {
           </p>
         </div>
       </div>
-    </div>);
-
+    </div>
+  );
 }

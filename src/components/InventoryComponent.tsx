@@ -1,13 +1,22 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { addDoc, serverTimestamp, getDocs, collection, doc, updateDoc, deleteDoc, FieldValue } from 'firebase/firestore';
+import {
+  addDoc,
+  serverTimestamp,
+  getDocs,
+  collection,
+  doc,
+  updateDoc,
+  deleteDoc,
+  FieldValue,
+} from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { toast } from 'sonner';
 import type { InventoryItem, InventoryStats, StockMovement } from '@/services/inventoryService';
 import type { InventoryCategoryExtended } from '@/services/types';
 import { InventoryService } from '@/services/inventoryService';
-import { 
+import {
   AlertCircle,
   AlertTriangle,
   BarChart3,
@@ -25,9 +34,15 @@ import {
   Box as BoxIcon,
   Folder as FolderIcon,
 } from 'lucide-react';
-import { cn } from "@/lib/utils";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from '@/lib/utils';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,7 +75,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
-//
+  //
   InventoryCategory,
 } from '@/services/inventoryService';
 
@@ -121,23 +136,28 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
   const loadData = useCallback(async (): Promise<void> => {
     try {
       if (!companyId) return; // Früher Return wenn keine companyId
-      
+
       setLoading(true);
       // Lade Daten aus beiden Collections parallel
-      const [itemsData, statsData, movementsData, categoriesData, inlineServicesSnap] = await Promise.all([
-        InventoryService.getInventoryItems(companyId),
-        InventoryService.getInventoryStats(companyId),
-        InventoryService.getStockMovements(companyId),
-        InventoryService.getCategories(companyId),
-        getDocs(collection(db, 'companies', companyId, 'inlineInvoiceServices'))
-      ]);
+      const [itemsData, statsData, movementsData, categoriesData, inlineServicesSnap] =
+        await Promise.all([
+          InventoryService.getInventoryItems(companyId),
+          InventoryService.getInventoryStats(companyId),
+          InventoryService.getStockMovements(companyId),
+          InventoryService.getCategories(companyId),
+          getDocs(collection(db, 'companies', companyId, 'inlineInvoiceServices')),
+        ]);
 
       // Konvertiere inline Services zu ServiceItem Format
       const inlineServicesData = inlineServicesSnap.docs.map(doc => {
         const data = doc.data();
-        const price = typeof data.price === 'number' ? data.price : 
-                     typeof data.price === 'string' ? parseFloat(data.price) : 0;
-                     
+        const price =
+          typeof data.price === 'number'
+            ? data.price
+            : typeof data.price === 'string'
+              ? parseFloat(data.price)
+              : 0;
+
         return {
           id: doc.id,
           name: data.name || 'Unbenannte Dienstleistung',
@@ -158,25 +178,23 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
           purchasePrice: price, // Für Dienstleistungen setzen wir den gleichen Preis
           stockValue: price,
           isLowStock: false,
-          isOutOfStock: false
+          isOutOfStock: false,
         } satisfies InventoryItem;
       });
 
       // Kombiniere beide Datensätze - Deduplizierung nach ID
       const combinedItems: InventoryItem[] = [
-        ...itemsData, 
-        ...inlineServicesData.filter(service => 
-          !itemsData.some(item => item.id === service.id)
-        )
+        ...itemsData,
+        ...inlineServicesData.filter(service => !itemsData.some(item => item.id === service.id)),
       ];
-      
+
       // Aktualisiere Stats mit deduplizierten Daten
       const updatedStats = {
         ...statsData,
         totalItems: combinedItems.length,
         totalValue: combinedItems.reduce((sum, item) => sum + (item.sellingPrice || 0), 0),
         serviceItems: inlineServicesData.length,
-        inventoryItems: itemsData.length
+        inventoryItems: itemsData.length,
       };
 
       setItems(combinedItems);
@@ -190,7 +208,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
           companyId,
           itemCount: inlineServicesData.length,
           totalValue: inlineServicesData.reduce((sum, item) => sum + (item.sellingPrice || 0), 0),
-          lastUpdate: getMaxTimestamp(inlineServicesData)
+          lastUpdate: getMaxTimestamp(inlineServicesData),
         } as InventoryCategoryExtended,
         {
           id: 'artikel',
@@ -201,19 +219,21 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
           totalValue: itemsData
             .filter(i => i.category === 'Artikel')
             .reduce((sum, item) => sum + (item.sellingPrice || 0), 0),
-          lastUpdate: getMaxTimestamp(itemsData.filter(i => i.category === 'Artikel'))
+          lastUpdate: getMaxTimestamp(itemsData.filter(i => i.category === 'Artikel')),
         } as InventoryCategoryExtended,
-        ...categoriesData.filter(cat => 
-          cat.name !== 'Dienstleistung' && 
-          cat.name !== 'Artikel'
-        ).map(cat => ({
-          ...cat,
-          itemCount: items.filter(i => i.category === cat.name).length,
-          totalValue: items
-            .filter(i => i.category === cat.name)
-            .reduce((sum, item) => sum + (item.sellingPrice || 0), 0),
-          lastUpdate: getMaxTimestamp(items.filter(i => i.category === cat.name))
-        } as InventoryCategoryExtended))
+        ...categoriesData
+          .filter(cat => cat.name !== 'Dienstleistung' && cat.name !== 'Artikel')
+          .map(
+            cat =>
+              ({
+                ...cat,
+                itemCount: items.filter(i => i.category === cat.name).length,
+                totalValue: items
+                  .filter(i => i.category === cat.name)
+                  .reduce((sum, item) => sum + (item.sellingPrice || 0), 0),
+                lastUpdate: getMaxTimestamp(items.filter(i => i.category === cat.name)),
+              }) as InventoryCategoryExtended
+          ),
       ]);
     } catch (error) {
       console.error('Fehler beim Laden der Daten:', error);
@@ -231,21 +251,21 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
         // Rechnungsdienstleistungen
         const invoiceCol = collection(db, 'companies', companyId, 'invoiceServices');
         const invoiceSnap = await getDocs(invoiceCol);
-        const invoiceServices = invoiceSnap.docs.map(doc => ({ 
-          id: doc.id, 
+        const invoiceServices = invoiceSnap.docs.map(doc => ({
+          id: doc.id,
           ...doc.data(),
-          source: 'invoiceServices'
+          source: 'invoiceServices',
         }));
         setServiceCount(invoiceSnap.size);
         setServices(invoiceServices);
-        
+
         // Inline-Dienstleistungen
         const inlineCol = collection(db, 'companies', companyId, 'inlineInvoiceServices');
         const inlineSnap = await getDocs(inlineCol);
-        const inlineServices = inlineSnap.docs.map(doc => ({ 
-          id: doc.id, 
+        const inlineServices = inlineSnap.docs.map(doc => ({
+          id: doc.id,
           ...doc.data(),
-          source: 'inlineServices'
+          source: 'inlineServices',
         }));
         setInlineServices(inlineServices);
 
@@ -261,7 +281,6 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
     };
     fetchAllServices();
   }, [loadData, companyId]);
-
 
   // State für Inline-Service Dialog und Autocomplete
   const [inlineServiceDialogOpen, setInlineServiceDialogOpen] = useState(false);
@@ -283,7 +302,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
     try {
       // Prüfen ob die Dienstleistung bereits existiert
       const existingService = existingServices.find(
-        (service) => service.name.toLowerCase() === newServiceForm.name.trim().toLowerCase()
+        service => service.name.toLowerCase() === newServiceForm.name.trim().toLowerCase()
       );
 
       if (existingService && !isCreatingNewService) {
@@ -310,7 +329,13 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
 
         if (editingService) {
           // Aktualisieren
-          const docRef = doc(db, 'companies', companyId, 'inlineInvoiceServices', editingService.id);
+          const docRef = doc(
+            db,
+            'companies',
+            companyId,
+            'inlineInvoiceServices',
+            editingService.id
+          );
           await updateDoc(docRef, { ...data });
         } else {
           // Neu erstellen
@@ -337,7 +362,9 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
         setInlineServices(updatedServices);
         // Aktualisiere auch die existingServices Liste
         setExistingServices([...services, ...updatedServices]);
-        toast.success(editingService ? 'Dienstleistung aktualisiert' : 'Dienstleistung gespeichert');
+        toast.success(
+          editingService ? 'Dienstleistung aktualisiert' : 'Dienstleistung gespeichert'
+        );
       }
     } catch (e) {
       console.error('Fehler beim Speichern:', e);
@@ -458,12 +485,8 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
   };
 
   const getMaxTimestamp = (items: any[]) => {
-    const timestamps = items
-      .map(i => i.updatedAt?.seconds || 0)
-      .filter(s => s > 0);
-    return timestamps.length > 0 
-      ? new Date(Math.max(...timestamps) * 1000)
-      : null;
+    const timestamps = items.map(i => i.updatedAt?.seconds || 0).filter(s => s > 0);
+    return timestamps.length > 0 ? new Date(Math.max(...timestamps) * 1000) : null;
   };
 
   const getStockStatus = (item: InventoryItem) => {
@@ -575,7 +598,9 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                   <Textarea
                     id="description"
                     value={newServiceForm.description}
-                    onChange={e => setNewServiceForm(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={e =>
+                      setNewServiceForm(prev => ({ ...prev, description: e.target.value }))
+                    }
                     placeholder="Detaillierte Beschreibung der Dienstleistung..."
                   />
                 </div>
@@ -587,14 +612,16 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                       type="number"
                       step="0.01"
                       value={newServiceForm.price}
-                      onChange={e => setNewServiceForm(prev => ({ ...prev, price: e.target.value }))}
+                      onChange={e =>
+                        setNewServiceForm(prev => ({ ...prev, price: e.target.value }))
+                      }
                       placeholder="0.00"
                     />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="unit">Einheit</Label>
-                    <Select 
-                      value={newServiceForm.unit} 
+                    <Select
+                      value={newServiceForm.unit}
                       onValueChange={value => setNewServiceForm(prev => ({ ...prev, unit: value }))}
                     >
                       <SelectTrigger>
@@ -612,16 +639,19 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                 </div>
               </div>
               <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={() => {
-                  setInlineServiceDialogOpen(false);
-                  setEditingService(null);
-                  setNewServiceForm({
-                    name: '',
-                    description: '',
-                    price: '',
-                    unit: 'Stk',
-                  });
-                }}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setInlineServiceDialogOpen(false);
+                    setEditingService(null);
+                    setNewServiceForm({
+                      name: '',
+                      description: '',
+                      price: '',
+                      unit: 'Stk',
+                    });
+                  }}
+                >
                   Abbrechen
                 </Button>
                 <Button
@@ -633,7 +663,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                       description: newServiceForm.description,
                       price: parseFloat(newServiceForm.price),
                       unit: newServiceForm.unit,
-                      quantity: 1
+                      quantity: 1,
                     };
                     // Service-Daten im localStorage zwischenspeichern
                     localStorage.setItem('newInvoiceService', JSON.stringify(serviceData));
@@ -649,9 +679,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                       Speichern...
                     </>
                   ) : (
-                    <>
-                      {editingService ? 'Aktualisieren' : 'Speichern & zur Rechnung'}
-                    </>
+                    <>{editingService ? 'Aktualisieren' : 'Speichern & zur Rechnung'}</>
                   )}
                 </Button>
                 <Button
@@ -665,9 +693,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                       Speichern...
                     </>
                   ) : (
-                    <>
-                      Nur speichern
-                    </>
+                    <>Nur speichern</>
                   )}
                 </Button>
               </div>
@@ -679,7 +705,8 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
             <div className="flex-1">
               <h3 className="text-lg font-semibold mb-1">Gespeicherte Dienstleistungen</h3>
               <p className="text-sm text-muted-foreground">
-                Verwalten Sie hier Ihre häufig verwendeten Dienstleistungen für Rechnungen und Angebote.
+                Verwalten Sie hier Ihre häufig verwendeten Dienstleistungen für Rechnungen und
+                Angebote.
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -693,8 +720,8 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                       className="min-w-[280px] justify-between"
                     >
                       {selectedService
-                        ? existingServices.find((service) => service.name === selectedService)?.name
-                        : "Dienstleistung auswählen oder neu erstellen..."}
+                        ? existingServices.find(service => service.name === selectedService)?.name
+                        : 'Dienstleistung auswählen oder neu erstellen...'}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -722,7 +749,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                         </div>
                       </CommandEmpty>
                       <CommandGroup>
-                        {existingServices.map((service) => (
+                        {existingServices.map(service => (
                           <CommandItem
                             key={service.id}
                             onSelect={() => {
@@ -737,8 +764,8 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                           >
                             <Check
                               className={cn(
-                                "mr-2 h-4 w-4",
-                                selectedService === service.name ? "opacity-100" : "opacity-0"
+                                'mr-2 h-4 w-4',
+                                selectedService === service.name ? 'opacity-100' : 'opacity-0'
                               )}
                             />
                             {service.name}
@@ -790,7 +817,8 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                         <Package className="h-8 w-8 text-[#14ad9f]" />
                         <div className="text-lg font-medium">Keine Dienstleistungen</div>
                         <div className="text-sm text-muted-foreground">
-                          Fügen Sie Ihre erste Dienstleistung hinzu, um sie in Rechnungen und Angeboten schnell auswählen zu können.
+                          Fügen Sie Ihre erste Dienstleistung hinzu, um sie in Rechnungen und
+                          Angeboten schnell auswählen zu können.
                         </div>
                       </div>
                     </TableCell>
@@ -807,7 +835,10 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                       <TableCell>{service.unit || 'Stk'}</TableCell>
                       <TableCell className="text-right">
                         {service.price
-                          ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(service.price)
+                          ? new Intl.NumberFormat('de-DE', {
+                              style: 'currency',
+                              currency: 'EUR',
+                            }).format(service.price)
                           : '-'}
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
@@ -815,8 +846,8 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button 
-                            className="text-[#14ad9f] hover:text-[#129488] p-1" 
+                          <button
+                            className="text-[#14ad9f] hover:text-[#129488] p-1"
                             title="Bearbeiten"
                             onClick={() => {
                               setEditingService(service);
@@ -831,11 +862,13 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                           >
                             <Edit className="h-4 w-4" />
                           </button>
-                          <button 
-                            className="text-red-500 hover:text-red-600 p-1" 
+                          <button
+                            className="text-red-500 hover:text-red-600 p-1"
                             title="Löschen"
                             onClick={() => {
-                              if (window.confirm('Möchten Sie diese Dienstleistung wirklich löschen?')) {
+                              if (
+                                window.confirm('Möchten Sie diese Dienstleistung wirklich löschen?')
+                              ) {
                                 handleDeleteInlineService(service.id);
                               }
                             }}
@@ -1278,18 +1311,28 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                       Dienstleistungen
                     </div>
                   </TableCell>
-                  <TableCell>{items.filter(i => i.category === 'Dienstleistung').length + serviceCount}</TableCell>
+                  <TableCell>
+                    {items.filter(i => i.category === 'Dienstleistung').length + serviceCount}
+                  </TableCell>
                   <TableCell className="text-right">
-                    {formatCurrency(items
-                      .filter(i => i.category === 'Dienstleistung')
-                      .reduce((sum, item) => sum + (item.sellingPrice || 0), 0))}
+                    {formatCurrency(
+                      items
+                        .filter(i => i.category === 'Dienstleistung')
+                        .reduce((sum, item) => sum + (item.sellingPrice || 0), 0)
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {items.filter(i => i.category === 'Dienstleistung').length > 0 ? 
-                      formatTimestamp(getMaxTimestamp(items.filter(i => i.category === 'Dienstleistung'))) : '-'}
+                    {items.filter(i => i.category === 'Dienstleistung').length > 0
+                      ? formatTimestamp(
+                          getMaxTimestamp(items.filter(i => i.category === 'Dienstleistung'))
+                        )
+                      : '-'}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    <Badge
+                      variant="outline"
+                      className="bg-green-50 text-green-700 border-green-200"
+                    >
                       Aktiv
                     </Badge>
                   </TableCell>
@@ -1303,16 +1346,24 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                   </TableCell>
                   <TableCell>{items.filter(i => i.category === 'Artikel').length}</TableCell>
                   <TableCell className="text-right">
-                    {formatCurrency(items
-                      .filter(i => i.category === 'Artikel')
-                      .reduce((sum, item) => sum + (item.sellingPrice || 0), 0))}
+                    {formatCurrency(
+                      items
+                        .filter(i => i.category === 'Artikel')
+                        .reduce((sum, item) => sum + (item.sellingPrice || 0), 0)
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {items.filter(i => i.category === 'Artikel').length > 0 ?
-                      formatTimestamp(getMaxTimestamp(items.filter(i => i.category === 'Artikel'))) : '-'}
+                    {items.filter(i => i.category === 'Artikel').length > 0
+                      ? formatTimestamp(
+                          getMaxTimestamp(items.filter(i => i.category === 'Artikel'))
+                        )
+                      : '-'}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    <Badge
+                      variant="outline"
+                      className="bg-green-50 text-green-700 border-green-200"
+                    >
                       Aktiv
                     </Badge>
                   </TableCell>
@@ -1320,13 +1371,20 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
 
                 {/* Dynamische Kategorien */}
                 {categories
-                  .filter(category => category.name !== 'Dienstleistung' && category.name !== 'Artikel')
+                  .filter(
+                    category => category.name !== 'Dienstleistung' && category.name !== 'Artikel'
+                  )
                   .map(category => {
                     const categoryItems = items.filter(i => i.category === category.name);
-                    const categoryValue = categoryItems.reduce((sum, item) => sum + (item.sellingPrice || 0), 0);
-                    const lastUpdate = categoryItems.length > 0 ? 
-                      formatTimestamp(getMaxTimestamp(categoryItems)) : '-';
-                    
+                    const categoryValue = categoryItems.reduce(
+                      (sum, item) => sum + (item.sellingPrice || 0),
+                      0
+                    );
+                    const lastUpdate =
+                      categoryItems.length > 0
+                        ? formatTimestamp(getMaxTimestamp(categoryItems))
+                        : '-';
+
                     return (
                       <TableRow key={category.id}>
                         <TableCell className="font-medium">
@@ -1336,16 +1394,21 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                           </div>
                         </TableCell>
                         <TableCell>{category.itemCount}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(categoryValue)}</TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(categoryValue)}
+                        </TableCell>
                         <TableCell className="text-muted-foreground">{lastUpdate}</TableCell>
                         <TableCell className="text-right">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          <Badge
+                            variant="outline"
+                            className="bg-green-50 text-green-700 border-green-200"
+                          >
                             Aktiv
                           </Badge>
                         </TableCell>
                       </TableRow>
                     );
-                })}
+                  })}
 
                 {/* Zusammenfassung */}
                 <TableRow className="bg-muted/50">

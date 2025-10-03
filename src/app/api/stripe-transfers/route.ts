@@ -79,9 +79,7 @@ export async function GET(request: NextRequest) {
                 typeof charge.transfer === 'string' ? charge.transfer : (charge.transfer as any).id;
             }
           }
-        } catch (error) {
-
-        }
+        } catch (error) {}
 
         return {
           id: pi.id,
@@ -126,7 +124,6 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error: any) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Abrufen der Stripe Transfers',

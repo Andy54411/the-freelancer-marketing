@@ -69,7 +69,6 @@ export class AWSS3Service {
         bucket: BUCKET_NAME,
       };
     } catch (error) {
-
       throw new Error(
         `Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -109,7 +108,6 @@ export class AWSS3Service {
         bucket: BUCKET_NAME,
       };
     } catch (error) {
-
       throw new Error(
         `Failed to upload buffer: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -129,7 +127,6 @@ export class AWSS3Service {
       const command = new DeleteObjectCommand(deleteParams);
       await s3Client.send(command);
     } catch (error) {
-
       throw new Error(
         `Failed to delete file: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -151,7 +148,6 @@ export class AWSS3Service {
 
       return url;
     } catch (error) {
-
       throw new Error(
         `Failed to generate signed URL: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -223,7 +219,6 @@ export class AWSS3Service {
         metadata: response.Metadata,
       };
     } catch (error) {
-
       throw new Error(
         `Failed to get file metadata: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -241,7 +236,6 @@ export class AWSS3Service {
 
       return await Promise.all(uploadPromises);
     } catch (error) {
-
       throw new Error(
         `Failed to upload multiple files: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

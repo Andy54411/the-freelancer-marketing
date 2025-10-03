@@ -19,28 +19,20 @@ export class AutoEInvoiceService {
    * Generiert automatisch E-Rechnung nach Invoice-Erstellung
    */
   static async generateEInvoiceForInvoice(
-  invoiceData: any,
-  config: AutoEInvoiceConfig)
-  : Promise<EInvoiceData | null> {
+    invoiceData: any,
+    config: AutoEInvoiceConfig
+  ): Promise<EInvoiceData | null> {
     if (!config.enabled) {
       return null;
     }
 
     try {
-
-
-
-
-
-
       // 1. TSE-Daten generieren falls aktiviert (überspringen wenn bereits vorhanden)
       let tseData: TSEData | undefined;
       if (config.tseEnabled && !invoiceData.tseData) {
         tseData = await this.generateTSEData(config.companyId);
-
       } else if (invoiceData.tseData) {
         tseData = invoiceData.tseData;
-
       }
 
       // 2. XML generieren
@@ -52,18 +44,17 @@ export class AutoEInvoiceService {
             {
               conformanceLevel: 'EN16931' as any,
               guideline: 'urn:cen.eu:en16931:2017#compliant#urn:zugferd.de:2p1:extended',
-              specificationId: 'urn:cen.eu:en16931:2017'
+              specificationId: 'urn:cen.eu:en16931:2017',
             },
             {
               companyName: invoiceData.companyName,
               companyAddress: invoiceData.companyAddress,
               companyVatId: invoiceData.companyVatId,
               email: invoiceData.companyEmail,
-              phoneNumber: invoiceData.companyPhone
+              phoneNumber: invoiceData.companyPhone,
             },
             tseData
           );
-
         } else {
           xmlContent = await EInvoiceService.generateXRechnungXML(
             invoiceData,
@@ -71,17 +62,16 @@ export class AutoEInvoiceService {
               buyerReference: invoiceData.reference || invoiceData.customerOrderNumber || '',
               leitwegId: '', // Aus Company-Einstellungen laden
               specificationId: 'urn:cen.eu:en16931:2017',
-              businessProcessType: 'urn:fdc:peppol.eu:2017:poacc:billing:01:1.0'
+              businessProcessType: 'urn:fdc:peppol.eu:2017:poacc:billing:01:1.0',
             },
             {
               companyName: invoiceData.companyName,
               companyAddress: invoiceData.companyAddress,
               companyVatId: invoiceData.companyVatId,
               email: invoiceData.companyEmail,
-              phoneNumber: invoiceData.companyPhone
+              phoneNumber: invoiceData.companyPhone,
             }
           );
-
         }
       } catch (xmlError) {
         console.error('❌ XML-Generierung fehlgeschlagen:', xmlError);
@@ -102,8 +92,6 @@ export class AutoEInvoiceService {
         return null;
       }
 
-
-
       // 4. E-Invoice speichern
       const eInvoiceData: any = {
         invoiceId: invoiceData.id,
@@ -115,7 +103,7 @@ export class AutoEInvoiceService {
         validationStatus: 'valid',
         validationErrors: [],
         transmissionStatus: config.autoTransmit ? 'pending' : 'draft',
-        recipientType: 'business'
+        recipientType: 'business',
       };
 
       // Nur transmissionMethod hinzufügen, wenn es gesetzt ist
@@ -125,18 +113,15 @@ export class AutoEInvoiceService {
 
       const eInvoiceId = await EInvoiceService.createEInvoice(eInvoiceData);
 
-
-
       // 5. Automatische Übertragung falls aktiviert
       if (config.autoTransmit) {
         await this.transmitEInvoice(eInvoiceId, xmlContent);
-
       }
 
       toast.success(
         `E-Rechnung (${config.defaultFormat.toUpperCase()}) erfolgreich generiert${
-        config.autoTransmit ? ' und übertragen' : ''}`
-
+          config.autoTransmit ? ' und übertragen' : ''
+        }`
       );
 
       // Rückgabe der E-Invoice-Daten mit ID für weitere Verarbeitung
@@ -154,7 +139,7 @@ export class AutoEInvoiceService {
         recipientType: 'business',
         createdAt: new Date(),
         updatedAt: new Date(),
-        ...(config.autoTransmit && { transmissionMethod: 'email' })
+        ...(config.autoTransmit && { transmissionMethod: 'email' }),
       };
     } catch (error) {
       console.error('❌ Automatische E-Invoice-Generierung fehlgeschlagen:', error);
@@ -180,7 +165,7 @@ export class AutoEInvoiceService {
       finishTime: new Date(now.getTime() + 1000).toISOString(),
       signature: this.generateMockSignature(transactionNumber),
       publicKey: this.generateMockPublicKey(),
-      certificateSerial: `CERT-${Date.now()}`
+      certificateSerial: `CERT-${Date.now()}`,
     };
   }
 
@@ -211,10 +196,8 @@ export class AutoEInvoiceService {
     // - Portal-Upload
     // - WebService-Call
 
-
-
     // Simulation einer Übertragung
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
   /**
@@ -247,7 +230,7 @@ export class AutoEInvoiceService {
     return {
       ready: missing.length === 0,
       missing,
-      warnings
+      warnings,
     };
   }
 
@@ -302,7 +285,7 @@ export class AutoEInvoiceService {
         xrechnungReady: settings.defaultFormat === 'xrechnung',
         tseConfigured: Boolean(settings.tse?.enabled),
         peppolEnabled: Boolean(settings.peppol?.enabled),
-        recommendations
+        recommendations,
       };
     } catch (error) {
       console.error('Fehler beim Erstellen des Compliance-Reports:', error);
@@ -312,7 +295,7 @@ export class AutoEInvoiceService {
         xrechnungReady: false,
         tseConfigured: false,
         peppolEnabled: false,
-        recommendations: ['E-Invoice-Einstellungen konfigurieren']
+        recommendations: ['E-Invoice-Einstellungen konfigurieren'],
       };
     }
   }

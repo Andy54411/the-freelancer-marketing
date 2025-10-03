@@ -75,7 +75,6 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
         ],
       });
     } catch (error) {
-
       toast.error('Berichtsdaten konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -91,7 +90,6 @@ export function ReportComponent({ companyId }: ReportComponentProps) {
       // Simulation eines Downloads
       await new Promise(resolve => setTimeout(resolve, 2000));
     } catch (error) {
-
       toast.error('Bericht konnte nicht generiert werden');
     } finally {
       setGenerating(false);

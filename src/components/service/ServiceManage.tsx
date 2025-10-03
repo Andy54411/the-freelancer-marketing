@@ -22,7 +22,7 @@ export const ServiceManage: React.FC<ServiceManageProps> = ({
   isLoading,
   onEditService,
   onDeleteService,
-  onToggleServiceActive
+  onToggleServiceActive,
 }) => {
   const handleDeleteClick = (service: ServiceItem) => {
     if (window.confirm(`Möchten Sie den Service "${service.title}" wirklich löschen?`)) {
@@ -33,7 +33,7 @@ export const ServiceManage: React.FC<ServiceManageProps> = ({
   if (isLoading) {
     return (
       <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3].map(i => (
           <Card key={i} className="animate-pulse">
             <CardContent className="p-6">
               <div className="space-y-3">
@@ -57,7 +57,9 @@ export const ServiceManage: React.FC<ServiceManageProps> = ({
         <CardContent className="p-6">
           <div className="text-center text-gray-500">
             <div className="text-lg font-medium mb-2">Keine Services vorhanden</div>
-            <p className="text-sm">Erstellen Sie Ihren ersten Service über den &quot;Erstellen&quot; Tab.</p>
+            <p className="text-sm">
+              Erstellen Sie Ihren ersten Service über den &quot;Erstellen&quot; Tab.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -66,17 +68,18 @@ export const ServiceManage: React.FC<ServiceManageProps> = ({
 
   return (
     <div className="space-y-4">
-      {services.map((service) => (
-        <Card key={service.id} className={`transition-all ${service.active ? 'border-[#14ad9f]' : 'border-gray-200 opacity-75'}`}>
+      {services.map(service => (
+        <Card
+          key={service.id}
+          className={`transition-all ${service.active ? 'border-[#14ad9f]' : 'border-gray-200 opacity-75'}`}
+        >
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
                 <CardTitle className="text-lg font-semibold text-gray-900">
                   {service.title}
                 </CardTitle>
-                <p className="text-sm text-gray-600 line-clamp-2">
-                  {service.description}
-                </p>
+                <p className="text-sm text-gray-600 line-clamp-2">{service.description}</p>
                 <Badge variant="secondary" className="text-xs">
                   {service.subcategory}
                 </Badge>
@@ -95,7 +98,7 @@ export const ServiceManage: React.FC<ServiceManageProps> = ({
               </div>
             </div>
           </CardHeader>
-          
+
           <CardContent className="pt-0">
             {/* Active Packages */}
             <div className="space-y-3">
@@ -103,10 +106,14 @@ export const ServiceManage: React.FC<ServiceManageProps> = ({
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Aktive Pakete</h4>
                 <div className="flex flex-wrap gap-2">
                   {service.activePackages && service.activePackages.length > 0 ? (
-                    service.activePackages.map((packageType) => {
-                      const packageInfo = service.packages[packageType as keyof typeof service.packages];
+                    service.activePackages.map(packageType => {
+                      const packageInfo =
+                        service.packages[packageType as keyof typeof service.packages];
                       return (
-                        <div key={packageType} className="inline-flex items-center gap-2 bg-[#14ad9f]/10 text-[#14ad9f] px-3 py-1 rounded-full text-sm">
+                        <div
+                          key={packageType}
+                          className="inline-flex items-center gap-2 bg-[#14ad9f]/10 text-[#14ad9f] px-3 py-1 rounded-full text-sm"
+                        >
                           <span className="font-medium">
                             {packageType.charAt(0).toUpperCase() + packageType.slice(1)}
                           </span>
@@ -164,7 +171,11 @@ export const ServiceManage: React.FC<ServiceManageProps> = ({
                 </div>
                 <div>
                   <div className="text-lg font-semibold text-[#14ad9f]">
-                    {service.packages.basic?.price || service.packages.standard?.price || service.packages.premium?.price || 0}€
+                    {service.packages.basic?.price ||
+                      service.packages.standard?.price ||
+                      service.packages.premium?.price ||
+                      0}
+                    €
                   </div>
                   <div className="text-xs text-gray-500">ab</div>
                 </div>

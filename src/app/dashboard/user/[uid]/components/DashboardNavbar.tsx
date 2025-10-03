@@ -43,9 +43,7 @@ export function DashboardNavbar({ currentUid }: { currentUid: string }) {
     try {
       await signOut(auth);
       window.location.href = '/login';
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const dynamicMenuItems = menuItems.map((item: MenuItem) => ({

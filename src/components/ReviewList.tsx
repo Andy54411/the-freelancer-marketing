@@ -105,7 +105,6 @@ export default function ReviewList({ anbieterId }: ReviewListProps) {
           setAverage(null);
         }
       } catch (err: unknown) {
-
         let errorMessage = 'Ein unbekannter Fehler ist beim Laden der Bewertungen aufgetreten.';
         if (err && typeof err === 'object' && 'code' in err && 'message' in err) {
           const errorObj = err as { code: string; message: string };

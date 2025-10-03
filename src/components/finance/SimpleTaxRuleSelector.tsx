@@ -7,7 +7,7 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import { TAX_RULES, getCategoryLabel } from '@/config/taxRules';
 import { TaxRuleCategory } from '@/types/taxRules';
 
@@ -28,13 +28,11 @@ export function SimpleTaxRuleSelector({ value, onChange, className }: SimpleTaxR
           {Object.values(TaxRuleCategory).map(category => (
             <SelectGroup key={category}>
               <SelectLabel>{getCategoryLabel(category)}</SelectLabel>
-              {TAX_RULES
-                .filter(rule => rule.category === category)
-                .map(rule => (
-                  <SelectItem key={rule.id} value={rule.id}>
-                    {rule.name}
-                  </SelectItem>
-                ))}
+              {TAX_RULES.filter(rule => rule.category === category).map(rule => (
+                <SelectItem key={rule.id} value={rule.id}>
+                  {rule.name}
+                </SelectItem>
+              ))}
             </SelectGroup>
           ))}
         </SelectContent>

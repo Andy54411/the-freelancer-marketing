@@ -55,9 +55,7 @@ export class DatevCookieManager {
         `Secure=${window.location.protocol === 'https:'}`;
 
       document.cookie = cookieValue;
-
     } catch (error) {
-
       throw new Error('Failed to save DATEV token data');
     }
   }
@@ -78,7 +76,6 @@ export class DatevCookieManager {
 
           // Verify the token belongs to the correct company
           if (tokenData.company_id === companyId) {
-
             return tokenData;
           }
         }
@@ -86,7 +83,6 @@ export class DatevCookieManager {
 
       return null;
     } catch (error) {
-
       return null;
     }
   }
@@ -118,10 +114,7 @@ export class DatevCookieManager {
 
       // Set cookie with past expiration date to delete it
       document.cookie = `${cookieName}=; Max-Age=0; Path=/; SameSite=Lax`;
-
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   /**
@@ -131,12 +124,10 @@ export class DatevCookieManager {
     const tokenData = this.getTokens(companyId);
 
     if (!tokenData || !tokenData.refresh_token) {
-
       return false;
     }
 
     try {
-
       // Call refresh endpoint
       const response = await fetch('/api/datev/refresh-token', {
         method: 'POST',
@@ -167,7 +158,6 @@ export class DatevCookieManager {
 
       return true;
     } catch (error) {
-
       // Clear invalid tokens
       this.clearTokens(companyId);
       return false;

@@ -136,7 +136,6 @@ export function CreditComponent({ companyId }: CreditComponentProps) {
 
       setCredits(mockCredits);
     } catch (error) {
-
       toast.error('Gutschriften konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -207,7 +206,6 @@ export function CreditComponent({ companyId }: CreditComponentProps) {
 
       toast.success('Gutschrift wurde erstellt');
     } catch (error) {
-
       toast.error('Gutschrift konnte nicht erstellt werden');
     }
   };

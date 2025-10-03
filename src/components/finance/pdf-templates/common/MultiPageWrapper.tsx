@@ -8,12 +8,11 @@ interface PageWithFooterProps {
   pageNumber?: number;
 }
 
-export const PageWithFooter: React.FC<PageWithFooterProps> = ({ 
-  data, 
+export const PageWithFooter: React.FC<PageWithFooterProps> = ({
+  data,
   children,
-  pageNumber = 1
+  pageNumber = 1,
 }) => {
-  
   // Footer-Daten
   const footerData = {
     companyName: (data as any).companyName || '',
@@ -36,8 +35,8 @@ export const PageWithFooter: React.FC<PageWithFooterProps> = ({
     companyPostalCode: (data as any).companyPostalCode || '',
     companyCity: (data as any).companyCity || '',
     step1: (data as any).step1,
-    step2: (data as any).step2,  
-    step4: (data as any).step4
+    step2: (data as any).step2,
+    step4: (data as any).step4,
   };
 
   return (
@@ -46,7 +45,7 @@ export const PageWithFooter: React.FC<PageWithFooterProps> = ({
       <div className="flex-1" style={{ minHeight: '250mm' }}>
         {children}
       </div>
-      
+
       {/* Footer am Ende jeder Seite */}
       <div className="mt-auto bg-gray-50 border-t border-gray-200 p-2">
         <InvoiceFooter data={footerData} />

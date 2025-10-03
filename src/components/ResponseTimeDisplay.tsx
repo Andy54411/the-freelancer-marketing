@@ -30,7 +30,6 @@ export default function ResponseTimeDisplay({
       const responseStats = await ResponseTimeTracker.getProviderResponseTimeStats(providerId);
       setStats(responseStats);
     } catch (error) {
-
     } finally {
       setLoading(false);
     }

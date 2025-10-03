@@ -23,7 +23,6 @@ export async function POST(request: NextRequest) {
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-
       return NextResponse.json({
         isConnected: false,
         connectedAt: null,
@@ -43,9 +42,7 @@ export async function POST(request: NextRequest) {
     try {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
-
     } catch (parseError) {
-
       return NextResponse.json({
         isConnected: false,
         connectedAt: null,
@@ -78,7 +75,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-
     return NextResponse.json({
       isConnected: false,
       connectedAt: null,

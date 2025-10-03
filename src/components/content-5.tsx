@@ -48,9 +48,7 @@ export default function ContentSection() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-white drop-shadow-lg">{feature.title}</h3>
-                    <p className="text-sm text-white/90 drop-shadow-md">
-                      {feature.description}
-                    </p>
+                    <p className="text-sm text-white/90 drop-shadow-md">{feature.description}</p>
                   </div>
                 </div>
               ))}

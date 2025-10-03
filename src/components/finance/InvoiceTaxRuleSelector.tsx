@@ -7,12 +7,12 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Info } from 'lucide-react';
 import { TAX_RULES, getCategoryLabel } from '@/config/taxRules';
 import { TaxRuleCategory, TaxRuleType } from '@/types/taxRules';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface InvoiceTaxRuleSelectorProps {
   value: TaxRuleType;
@@ -20,7 +20,11 @@ interface InvoiceTaxRuleSelectorProps {
   className?: string;
 }
 
-export function InvoiceTaxRuleSelector({ value, onChange, className }: InvoiceTaxRuleSelectorProps) {
+export function InvoiceTaxRuleSelector({
+  value,
+  onChange,
+  className,
+}: InvoiceTaxRuleSelectorProps) {
   const categories = Object.values(TaxRuleCategory);
   const selectedRule = TAX_RULES.find(rule => rule.id === value);
 
@@ -32,7 +36,7 @@ export function InvoiceTaxRuleSelector({ value, onChange, className }: InvoiceTa
           <Select value={value} onValueChange={onChange}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Steuerregel auswählen">
-                {selectedRule?.name || "Steuerregel auswählen"}
+                {selectedRule?.name || 'Steuerregel auswählen'}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -48,9 +52,7 @@ export function InvoiceTaxRuleSelector({ value, onChange, className }: InvoiceTa
                         <div className="flex items-start gap-2">
                           <div className="flex-1">
                             <div className="font-medium">{rule.name}</div>
-                            <div className="text-sm text-gray-500">
-                              {rule.description}
-                            </div>
+                            <div className="text-sm text-gray-500">{rule.description}</div>
                             {rule.taxRate > 0 && (
                               <div className="text-sm text-gray-500">
                                 Steuersatz: {rule.taxRate}%

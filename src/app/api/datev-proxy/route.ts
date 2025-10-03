@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(callbackUrl.toString());
   } catch (error) {
-
     const fallbackUrl = new URL('/dashboard', request.url);
     fallbackUrl.searchParams.set('error', 'proxy_error');
     fallbackUrl.searchParams.set('message', 'Failed to proxy DATEV callback');

@@ -20,7 +20,8 @@ export const SERVICE_UPDATES: ServiceUpdate[] = [
     oldPattern: "collection(db, 'customers')",
     newPattern: "collection(db, 'companies', companyId, 'customers')",
     status: 'completed',
-    notes: 'Alle Methoden aktualisiert: getCustomers, getCustomer, addCustomer, updateCustomer, deleteCustomer, subscribeToCustomers'
+    notes:
+      'Alle Methoden aktualisiert: getCustomers, getCustomer, addCustomer, updateCustomer, deleteCustomer, subscribeToCustomers',
   },
 
   // INVENTORY SERVICE
@@ -30,7 +31,7 @@ export const SERVICE_UPDATES: ServiceUpdate[] = [
     oldPattern: "collection(db, 'inventory')",
     newPattern: "collection(db, 'companies', companyId, 'inventory')",
     status: 'in-progress',
-    notes: 'Teilweise aktualisiert - weitere Methoden benötigen Update'
+    notes: 'Teilweise aktualisiert - weitere Methoden benötigen Update',
   },
 
   // STOCK MOVEMENTS
@@ -40,7 +41,7 @@ export const SERVICE_UPDATES: ServiceUpdate[] = [
     oldPattern: "collection(db, 'stockMovements')",
     newPattern: "collection(db, 'companies', companyId, 'stockMovements')",
     status: 'pending',
-    notes: 'StockMovements Funktionen im InventoryService aktualisieren'
+    notes: 'StockMovements Funktionen im InventoryService aktualisieren',
   },
 
   // TIME TRACKING SERVICE
@@ -50,7 +51,7 @@ export const SERVICE_UPDATES: ServiceUpdate[] = [
     oldPattern: "collection(db, 'timeEntries')",
     newPattern: "collection(db, 'companies', companyId, 'timeEntries')",
     status: 'pending',
-    notes: 'Alle TimeEntry-bezogenen Methoden'
+    notes: 'Alle TimeEntry-bezogenen Methoden',
   },
 
   // QUOTE SERVICE
@@ -60,7 +61,7 @@ export const SERVICE_UPDATES: ServiceUpdate[] = [
     oldPattern: "collection(db, 'quotes')",
     newPattern: "collection(db, 'companies', companyId, 'quotes')",
     status: 'pending',
-    notes: 'Angebots-Verwaltung zu Subcollections'
+    notes: 'Angebots-Verwaltung zu Subcollections',
   },
 
   // FINANCE SERVICE (Expenses)
@@ -70,7 +71,7 @@ export const SERVICE_UPDATES: ServiceUpdate[] = [
     oldPattern: "collection(db, 'expenses')",
     newPattern: "collection(db, 'companies', companyId, 'expenses')",
     status: 'pending',
-    notes: 'Ausgaben-Verwaltung'
+    notes: 'Ausgaben-Verwaltung',
   },
 
   // ORDER TIME TRACKING
@@ -80,8 +81,8 @@ export const SERVICE_UPDATES: ServiceUpdate[] = [
     oldPattern: "collection(db, 'orderTimeTracking')",
     newPattern: "collection(db, 'companies', companyId, 'orderTimeTracking')",
     status: 'pending',
-    notes: 'Auftrags-Zeiterfassung - Service-Datei finden'
-  }
+    notes: 'Auftrags-Zeiterfassung - Service-Datei finden',
+  },
 ];
 
 // COMPONENT UPDATES NEEDED
@@ -92,15 +93,15 @@ export const COMPONENT_UPDATES = [
   'src/components/finance/SupplierManager.tsx',
   'src/components/finance/ProjectsComponent.tsx',
   'src/components/finance/ProjectDetailView.tsx',
-  
+
   // Chart Components
   'src/components/chart-expenses-interactive.tsx',
   'src/components/chart-area-interactive.tsx',
   'src/components/section-cards.tsx',
-  
+
   // Chat Components
   'src/components/chat/QuoteChat.tsx',
-  
+
   // Other Components mit direkten Firestore-Calls
 ];
 
@@ -133,7 +134,7 @@ export const MIGRATION_CHECKLIST = [
   '✅ CustomerService komplett aktualisiert',
   '🔄 InventoryService teilweise aktualisiert',
   '❌ TimeTrackingService aktualisieren',
-  '❌ QuoteService aktualisieren', 
+  '❌ QuoteService aktualisieren',
   '❌ FinanceService (Expenses) aktualisieren',
   '❌ Alle Components mit direkten DB-Calls aktualisieren',
   '❌ Firestore Security Rules aktualisieren',
@@ -141,7 +142,7 @@ export const MIGRATION_CHECKLIST = [
   '❌ Backup erstellen',
   '❌ Echte Migration durchführen',
   '❌ Alle Features testen',
-  '❌ Alte Collections löschen'
+  '❌ Alte Collections löschen',
 ];
 
 export function getNextPendingService(): ServiceUpdate | null {

@@ -105,7 +105,6 @@ export default function PersonalCostsPage() {
       }));
       setDepartmentCosts(departments);
     } catch (error) {
-
     } finally {
       setLoading(false);
     }
@@ -121,9 +120,7 @@ export default function PersonalCostsPage() {
       a.download = `personalkosten-${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   if (loading) {

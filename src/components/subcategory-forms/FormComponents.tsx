@@ -115,7 +115,6 @@ export const FormCheckboxGroup: React.FC<{
 }> = ({ value, onChange, options, maxSelections }) => {
   // Sicherheitsüberprüfung: stelle sicher, dass value ein Array ist
   if (!Array.isArray(value)) {
-
   }
   const safeValue = Array.isArray(value) ? value : [];
 
@@ -195,13 +194,11 @@ export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
 
   const handleNextClick = () => {
     if (!isValid) {
-
       return;
     }
 
     // Speichere die Formulardaten im localStorage über setSubcategoryData
     if (formData && setSubcategoryData) {
-
       setSubcategoryData(formData);
     }
 
@@ -227,7 +224,6 @@ export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
       // Setze die Beschreibung im Registration-Context
       if (description && description.trim()) {
         setDescription(description.trim());
-
       }
     }
 

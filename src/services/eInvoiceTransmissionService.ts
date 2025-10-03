@@ -217,7 +217,6 @@ export class EInvoiceTransmissionService {
         throw transmissionError;
       }
     } catch (error) {
-
       throw new Error(`E-Rechnungs-Versendung fehlgeschlagen: ${(error as Error).message}`);
     }
   }
@@ -319,7 +318,6 @@ export class EInvoiceTransmissionService {
         complianceLevel,
       };
     } catch (error) {
-
       errors.push(`Validierung fehlgeschlagen: ${(error as Error).message}`);
 
       return {
@@ -437,10 +435,7 @@ export class EInvoiceTransmissionService {
       });
 
       // Wiederholung planen (in echter Implementierung mit Queue/Scheduler)
-
-    } catch (updateError) {
-
-    }
+    } catch (updateError) {}
   }
 
   /**
@@ -466,7 +461,6 @@ export class EInvoiceTransmissionService {
         updatedAt: doc.data().updatedAt.toDate(),
       })) as EInvoiceTransmissionLog[];
     } catch (error) {
-
       throw new Error('Übertragungsprotokolle konnten nicht geladen werden');
     }
   }
@@ -492,7 +486,6 @@ export class EInvoiceTransmissionService {
 
       return docRef.id;
     } catch (error) {
-
       throw new Error('Empfänger-Einstellungen konnten nicht gespeichert werden');
     }
   }

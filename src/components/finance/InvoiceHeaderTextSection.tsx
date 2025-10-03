@@ -13,14 +13,14 @@ interface InvoiceHeaderTextSectionProps {
   headTextHtml: string;
   onTitleChange: (value: string) => void;
   onHeadTextChange: (value: string) => void;
-  
+
   // Company ID for Editor
   companyId: string;
   userId: string;
-  
+
   // Document Type
   objectType?: 'INVOICE' | 'QUOTE' | 'REMINDER';
-  
+
   // Error Styling
   getFieldErrorClass?: (fieldName: string) => string;
 }
@@ -56,7 +56,7 @@ export default function InvoiceHeaderTextSection({
                   id="invoice-title"
                   type="text"
                   value={title}
-                  onChange={(e) => onTitleChange(e.target.value)}
+                  onChange={e => onTitleChange(e.target.value)}
                   placeholder="RE-1000"
                   className={`${getFieldErrorClass('title')}`}
                   required
@@ -67,9 +67,7 @@ export default function InvoiceHeaderTextSection({
 
           {/* WYSIWYG Editor Section */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-700">
-              Einleitung / Kopf-Text
-            </Label>
+            <Label className="text-sm font-medium text-gray-700">Einleitung / Kopf-Text</Label>
             <div className="sev-wysiwyg-wrapper">
               <HeaderTextEditor
                 value={headTextHtml}
@@ -80,7 +78,6 @@ export default function InvoiceHeaderTextSection({
                 textType="HEAD"
               />
             </div>
-
           </div>
         </fieldset>
       </CardContent>

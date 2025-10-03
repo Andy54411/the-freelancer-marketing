@@ -21,11 +21,11 @@ interface ManualAddonManagerProps {
   onRemoveAddon: (index: number) => void;
 }
 
-export default function ManualAddonManager({ 
-  addons, 
-  onAddAddon, 
-  onUpdateAddon, 
-  onRemoveAddon 
+export default function ManualAddonManager({
+  addons,
+  onAddAddon,
+  onUpdateAddon,
+  onRemoveAddon,
 }: ManualAddonManagerProps) {
   return (
     <Card>
@@ -60,7 +60,7 @@ export default function ManualAddonManager({
                     <Label className="text-sm font-medium">Name *</Label>
                     <Input
                       value={addon.name}
-                      onChange={(e) => onUpdateAddon(index, 'name', e.target.value)}
+                      onChange={e => onUpdateAddon(index, 'name', e.target.value)}
                       placeholder="z.B. Express-Service"
                       className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                     />
@@ -71,7 +71,7 @@ export default function ManualAddonManager({
                     <Label className="text-sm font-medium">Beschreibung *</Label>
                     <Textarea
                       value={addon.description}
-                      onChange={(e) => onUpdateAddon(index, 'description', e.target.value)}
+                      onChange={e => onUpdateAddon(index, 'description', e.target.value)}
                       placeholder="Beschreiben Sie das Add-on..."
                       rows={2}
                       className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
@@ -85,7 +85,7 @@ export default function ManualAddonManager({
                       <Input
                         type="number"
                         value={addon.price}
-                        onChange={(e) => onUpdateAddon(index, 'price', Number(e.target.value))}
+                        onChange={e => onUpdateAddon(index, 'price', Number(e.target.value))}
                         placeholder="0"
                         className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                       />

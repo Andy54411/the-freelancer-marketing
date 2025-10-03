@@ -170,7 +170,6 @@ export class MultiPlatformAdvertisingService {
               companyId,
               platform
             );
-
           } else {
             // Lade frische Daten von API
             const apiResult = await this.getCampaignsByPlatform(companyId, platform);
@@ -183,13 +182,11 @@ export class MultiPlatformAdvertisingService {
                 platform,
                 platformCampaigns
               );
-
             }
           }
 
           allCampaigns.push(...platformCampaigns);
         } catch (error) {
-
           // Fallback zu cached Daten auch bei Fehlern
           try {
             const fallbackCampaigns = await advertisingFirebaseService.getCachedCampaigns(
@@ -198,11 +195,8 @@ export class MultiPlatformAdvertisingService {
             );
             if (fallbackCampaigns.length > 0) {
               allCampaigns.push(...fallbackCampaigns);
-
             }
-          } catch (cacheError) {
-
-          }
+          } catch (cacheError) {}
         }
       }
 
@@ -304,7 +298,6 @@ export class MultiPlatformAdvertisingService {
             });
           }
         } catch (error) {
-
           // Continue mit anderen Plattformen
         }
       }

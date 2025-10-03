@@ -69,10 +69,8 @@ export function UserProfileSettingsForm({
             jobCity: '',
             jobCountry: '',
           });
-
         }
       } catch (error) {
-
         setErrorMessage('Fehler beim Laden deines Profils. Bitte versuche es später erneut.');
       } finally {
         setIsLoading(false);
@@ -81,7 +79,6 @@ export function UserProfileSettingsForm({
 
     const unsubscribeAuth = onAuthStateChanged(auth, user => {
       if (!user) {
-
         setIsLoading(false);
 
         return;
@@ -91,7 +88,6 @@ export function UserProfileSettingsForm({
       if (user.uid === targetUid) {
         loadUserData(user, targetUid);
       } else {
-
         setIsLoading(false);
       }
     });
@@ -128,7 +124,6 @@ export function UserProfileSettingsForm({
 
       if (onSaveSuccess) onSaveSuccess();
     } catch (error) {
-
       setSaveStatus('error');
       const msg = 'Fehler beim Speichern deines Profils. Bitte versuche es erneut.';
       setErrorMessage(msg);

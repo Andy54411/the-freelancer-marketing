@@ -78,7 +78,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'test_flow_error',

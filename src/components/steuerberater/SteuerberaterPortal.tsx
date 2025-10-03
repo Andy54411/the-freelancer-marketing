@@ -179,13 +179,10 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
       setCollaborationLogs([]);
 
       // DATEV is optional - don't block the portal
-
     } catch (error) {
-
       toast.error('Fehler beim Laden der Portal-Daten');
     } finally {
       setLoading(false);
-
     }
   };
 
@@ -234,7 +231,6 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
         toast.error(result.message || 'Fehler beim Senden der Einladung');
       }
     } catch (error) {
-
       toast.error('Fehler beim Senden der Einladung');
     }
   };
@@ -274,7 +270,6 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
         toast.error(result.message || 'Fehler beim Erstellen des Berichts');
       }
     } catch (error) {
-
       toast.error('Fehler beim Erstellen des Berichts');
     }
   };
@@ -302,7 +297,6 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
   };
 
   if (loading) {
-
     return (
       <Card>
         <CardContent className="p-6">

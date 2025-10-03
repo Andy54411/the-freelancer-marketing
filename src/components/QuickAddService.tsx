@@ -29,7 +29,7 @@ export function QuickAddService({ companyId, onServiceAdded }: QuickAddServicePr
       toast.error('Bitte geben Sie einen Namen für die Dienstleistung ein');
       return;
     }
-    
+
     setSaving(true);
     try {
       // 1. In inlineInvoiceServices speichern
@@ -41,10 +41,10 @@ export function QuickAddService({ companyId, onServiceAdded }: QuickAddServicePr
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
-      
+
       const ref = collection(db, 'companies', companyId, 'inlineInvoiceServices');
       const result = await addDoc(ref, serviceData);
-      
+
       // 2. Service-Item erstellen
       const newItem = {
         id: crypto.randomUUID(),
@@ -56,10 +56,10 @@ export function QuickAddService({ companyId, onServiceAdded }: QuickAddServicePr
         category: 'Dienstleistung',
         inventoryItemId: result.id,
       };
-      
+
       // 3. Callback aufrufen
       onServiceAdded(newItem);
-      
+
       // 4. UI zurücksetzen
       setServiceName('');
       setServicePrice('');
@@ -77,7 +77,7 @@ export function QuickAddService({ companyId, onServiceAdded }: QuickAddServicePr
       <Input
         placeholder="Neue Dienstleistung (z.B. Beratung)"
         value={serviceName}
-        onChange={(e) => setServiceName(e.target.value)}
+        onChange={e => setServiceName(e.target.value)}
         className="min-w-[200px]"
       />
       <Input
@@ -85,10 +85,10 @@ export function QuickAddService({ companyId, onServiceAdded }: QuickAddServicePr
         type="number"
         step="0.01"
         value={servicePrice}
-        onChange={(e) => setServicePrice(e.target.value)}
+        onChange={e => setServicePrice(e.target.value)}
         className="w-24"
       />
-      <Button 
+      <Button
         onClick={handleAddService}
         disabled={saving || !serviceName.trim()}
         className="bg-[#14ad9f] hover:bg-[#129488] text-white"

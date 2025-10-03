@@ -20,7 +20,6 @@ interface DatevAuthResult {
  */
 export async function validateDatevToken(userId: string): Promise<DatevAuthResult> {
   try {
-
     // Check if token exists in localStorage (client-side) or database (server-side)
     const token = getStoredDatevToken(userId);
 
@@ -34,7 +33,6 @@ export async function validateDatevToken(userId: string): Promise<DatevAuthResul
 
     // Check if token is expired
     if (token.expiresAt && Date.now() >= token.expiresAt) {
-
       if (token.refreshToken) {
         return await refreshDatevToken(token.refreshToken, userId);
       } else {
@@ -53,7 +51,6 @@ export async function validateDatevToken(userId: string): Promise<DatevAuthResul
       expiresAt: token.expiresAt,
     };
   } catch (error: any) {
-
     return {
       success: false,
       error: error.message || 'Unknown authentication error',
@@ -71,7 +68,6 @@ export async function initiateDatevAuthFlow(
   userId: string,
   redirectUri?: string
 ): Promise<{ authUrl: string; state: string }> {
-
   // Generate secure state parameter
   const state = generateSecureState(userId);
 
@@ -101,7 +97,6 @@ export async function initiateDatevAuthFlow(
  */
 async function refreshDatevToken(refreshToken: string, userId: string): Promise<DatevAuthResult> {
   try {
-
     const config = await getDatevConfig();
 
     const response = await fetch(config.tokenUrl, {
@@ -141,7 +136,6 @@ async function refreshDatevToken(refreshToken: string, userId: string): Promise<
       expiresAt,
     };
   } catch (error: any) {
-
     return {
       success: false,
       requiresAuth: true,

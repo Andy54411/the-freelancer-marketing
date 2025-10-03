@@ -90,25 +90,33 @@ export default function FeaturesSection() {
         <div className="mt-12 sm:mt-16 pt-8 sm:pt-12 border-t border-gray-200 dark:border-gray-700">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 text-center">
             <div>
-              <div className="text-2xl sm:text-3xl font-bold text-white mb-2 drop-shadow-md">10.000+</div>
+              <div className="text-2xl sm:text-3xl font-bold text-white mb-2 drop-shadow-md">
+                10.000+
+              </div>
               <div className="text-xs sm:text-sm text-white/90 drop-shadow-md">
                 Zufriedene Kunden
               </div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl font-bold text-white mb-2 drop-shadow-md">5.000+</div>
+              <div className="text-2xl sm:text-3xl font-bold text-white mb-2 drop-shadow-md">
+                5.000+
+              </div>
               <div className="text-xs sm:text-sm text-white/90 drop-shadow-md">
                 Geprüfte Anbieter
               </div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl font-bold text-white mb-2 drop-shadow-md">4.8/5</div>
+              <div className="text-2xl sm:text-3xl font-bold text-white mb-2 drop-shadow-md">
+                4.8/5
+              </div>
               <div className="text-xs sm:text-sm text-white/90 drop-shadow-md leading-tight">
                 Ø Bewertung
               </div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl font-bold text-white mb-2 drop-shadow-md">99%</div>
+              <div className="text-2xl sm:text-3xl font-bold text-white mb-2 drop-shadow-md">
+                99%
+              </div>
               <div className="text-xs sm:text-sm text-white/90 drop-shadow-md">
                 Erfolgreiche Projekte
               </div>

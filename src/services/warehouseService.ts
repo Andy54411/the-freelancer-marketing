@@ -115,7 +115,6 @@ export class WarehouseService {
 
       return docRef.id;
     } catch (error) {
-
       throw error;
     }
   }
@@ -139,7 +138,6 @@ export class WarehouseService {
         } as WarehouseItem;
       });
     } catch (error) {
-
       throw error;
     }
   }
@@ -160,7 +158,6 @@ export class WarehouseService {
 
       return null;
     } catch (error) {
-
       throw error;
     }
   }
@@ -187,7 +184,6 @@ export class WarehouseService {
 
       return null;
     } catch (error) {
-
       throw error;
     }
   }
@@ -199,7 +195,6 @@ export class WarehouseService {
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
-
       throw error;
     }
   }
@@ -219,7 +214,6 @@ export class WarehouseService {
 
       return docRef.id;
     } catch (error) {
-
       throw error;
     }
   }
@@ -248,7 +242,6 @@ export class WarehouseService {
         } as StockMovement;
       });
     } catch (error) {
-
       throw error;
     }
   }
@@ -341,7 +334,6 @@ export class WarehouseService {
         return { success: true, errors: [] };
       });
     } catch (error) {
-
       return {
         success: false,
         errors: ['Unerwarteter Fehler beim Aktualisieren des Lagerbestands'],
@@ -376,9 +368,7 @@ export class WarehouseService {
           await this.resolveLowStockAlert(item.id);
         }
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   private static async createLowStockAlert(item: WarehouseItem): Promise<void> {
@@ -403,9 +393,7 @@ export class WarehouseService {
           createdAt: serverTimestamp(),
         });
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   private static async resolveLowStockAlert(itemId: string): Promise<void> {
@@ -423,9 +411,7 @@ export class WarehouseService {
           resolvedAt: serverTimestamp(),
         });
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   static async getLowStockAlerts(): Promise<LowStockAlert[]> {
@@ -445,7 +431,6 @@ export class WarehouseService {
         resolvedAt: doc.data().resolvedAt?.toDate()?.toISOString(),
       })) as LowStockAlert[];
     } catch (error) {
-
       throw error;
     }
   }
@@ -496,7 +481,6 @@ export class WarehouseService {
         topMovingItems,
       };
     } catch (error) {
-
       throw error;
     }
   }

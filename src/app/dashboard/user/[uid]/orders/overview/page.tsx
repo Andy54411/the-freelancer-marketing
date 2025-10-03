@@ -86,7 +86,6 @@ const OrdersOverviewPage = () => {
       setIsLoading(true);
       setError(null);
       try {
-
         // Get ID token for authentication
         const idToken = await authContext.firebaseUser?.getIdToken();
         if (!idToken) {
@@ -107,7 +106,6 @@ const OrdersOverviewPage = () => {
           setOrders([]);
         }
       } catch (err: any) {
-
         let detailedMessage = 'Ein unbekannter Fehler ist aufgetreten.';
         if (err.message?.includes('Token expired')) {
           detailedMessage = 'Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.';

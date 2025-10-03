@@ -24,7 +24,6 @@ export async function POST(request: Request) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-
       return NextResponse.json(
         { error: 'Die Server-Konfiguration ist unvollständig. Der API-Schlüssel fehlt.' },
         { status: 500 }
@@ -116,7 +115,6 @@ Standort: ${city}, ${country}`;
 
     return NextResponse.json({ description: generatedText });
   } catch (error) {
-
     const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     const errorStack = error instanceof Error ? error.stack : undefined;
     const errorName = error instanceof Error ? error.name : 'Error';

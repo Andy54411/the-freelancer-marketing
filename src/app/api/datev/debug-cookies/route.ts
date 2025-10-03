@@ -87,7 +87,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(debugInfo, { status: 200 });
   } catch (error) {
-
     return NextResponse.json({ error: 'debug_failed', message: error.message }, { status: 500 });
   }
 }

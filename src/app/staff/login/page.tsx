@@ -47,9 +47,7 @@ export default function StaffLoginPage() {
           }
         }
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -106,9 +104,7 @@ export default function StaffLoginPage() {
       setUser(null);
       setEmail('');
       setPassword('');
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   if (user) {

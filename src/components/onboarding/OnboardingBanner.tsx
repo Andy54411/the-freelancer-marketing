@@ -27,7 +27,7 @@ const OnboardingBanner: React.FC<OnboardingBannerProps> = ({
   completionPercentage,
   currentStep,
   isLoading,
-  error
+  error,
 }) => {
   // Don't show banner if loading, no onboarding needed, or there's an error
   if (isLoading || !needsOnboarding || error) {
@@ -73,9 +73,7 @@ const OnboardingBanner: React.FC<OnboardingBannerProps> = ({
               <CardTitle className="text-lg text-gray-900">
                 Unternehmensprofil vervollständigen
               </CardTitle>
-              <CardDescription className="mt-1">
-                {getStatusMessage()}
-              </CardDescription>
+              <CardDescription className="mt-1">{getStatusMessage()}</CardDescription>
             </div>
           </div>
           {getStatusBadge()}
@@ -93,7 +91,7 @@ const OnboardingBanner: React.FC<OnboardingBannerProps> = ({
             value={completionPercentage}
             className="h-3"
             style={{
-              background: '#f3f4f6'
+              background: '#f3f4f6',
             }}
           />
         </div>
@@ -101,7 +99,8 @@ const OnboardingBanner: React.FC<OnboardingBannerProps> = ({
         {/* Current Step Info */}
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-600">
-            Nächster Schritt: <span className="font-medium text-gray-900">Schritt {currentStep}</span>
+            Nächster Schritt:{' '}
+            <span className="font-medium text-gray-900">Schritt {currentStep}</span>
           </div>
 
           <div className="flex gap-2">

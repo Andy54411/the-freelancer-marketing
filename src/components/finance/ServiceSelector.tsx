@@ -1,9 +1,5 @@
 import React from 'react';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
   CommandEmpty,
@@ -31,7 +27,12 @@ interface ServiceSelectorProps {
   onAdd: () => void;
 }
 
-export function ServiceSelector({ services, selectedService, onSelect, onAdd }: ServiceSelectorProps) {
+export function ServiceSelector({
+  services,
+  selectedService,
+  onSelect,
+  onAdd,
+}: ServiceSelectorProps) {
   return (
     <div className="flex items-center gap-2 border-l border-gray-200 pl-4 ml-2">
       <Popover>
@@ -42,7 +43,7 @@ export function ServiceSelector({ services, selectedService, onSelect, onAdd }: 
             className="justify-between"
             style={{ minWidth: '240px' }}
           >
-            {selectedService?.name || "Dienstleistung auswählen"}
+            {selectedService?.name || 'Dienstleistung auswählen'}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -51,15 +52,12 @@ export function ServiceSelector({ services, selectedService, onSelect, onAdd }: 
             <CommandInput placeholder="Dienstleistung suchen..." />
             <CommandEmpty>Keine Dienstleistung gefunden.</CommandEmpty>
             <CommandGroup>
-              {services.map((service) => (
-                <CommandItem
-                  key={service.id}
-                  onSelect={() => onSelect(service)}
-                >
+              {services.map(service => (
+                <CommandItem key={service.id} onSelect={() => onSelect(service)}>
                   <Check
                     className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedService?.id === service.id ? "opacity-100" : "opacity-0"
+                      'mr-2 h-4 w-4',
+                      selectedService?.id === service.id ? 'opacity-100' : 'opacity-0'
                     )}
                   />
                   {service.name}
@@ -70,10 +68,7 @@ export function ServiceSelector({ services, selectedService, onSelect, onAdd }: 
         </PopoverContent>
       </Popover>
       {selectedService && (
-        <Button
-          type="button"
-          onClick={onAdd}
-        >
+        <Button type="button" onClick={onAdd}>
           <Plus className="mr-2 h-4 w-4" />
           Hinzufügen
         </Button>

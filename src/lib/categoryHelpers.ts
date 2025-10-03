@@ -5,19 +5,29 @@
 // Kategorien die Revisionen benötigen (Design/Entwicklung/Content-basiert)
 const CATEGORIES_WITH_REVISIONS = [
   // IT & Digital - benötigen definitiv Revisionen
-  'Webentwicklung', 'App-Entwicklung', 'Softwareentwicklung',
-  
+  'Webentwicklung',
+  'App-Entwicklung',
+  'Softwareentwicklung',
+
   // Kreativ & Kunst - benötigen Revisionen für Design-Arbeit
-  'Fotograf', 'Videograf', 'Grafiker', 'Texter', 'Dekoration',
-  
+  'Fotograf',
+  'Videograf',
+  'Grafiker',
+  'Texter',
+  'Dekoration',
+
   // Marketing & Vertrieb - Content braucht oft Revisionen
-  'OnlineMarketing', 'Social Media Marketing', 'ContentMarketing', 'Marketingberater',
-  
+  'OnlineMarketing',
+  'Social Media Marketing',
+  'ContentMarketing',
+  'Marketingberater',
+
   // Event & Veranstaltung - Planung braucht oft Anpassungen
-  'Eventplanung', 'DJService',
-  
+  'Eventplanung',
+  'DJService',
+
   // Büro & Administration - Content-basierte Arbeit
-  'Recherche'
+  'Recherche',
 ];
 
 /**
@@ -25,8 +35,8 @@ const CATEGORIES_WITH_REVISIONS = [
  */
 export function categoryNeedsRevisions(subcategory: string): boolean {
   if (!subcategory) return false;
-  
-  return CATEGORIES_WITH_REVISIONS.some(cat => 
+
+  return CATEGORIES_WITH_REVISIONS.some(cat =>
     subcategory.toLowerCase().includes(cat.toLowerCase())
   );
 }
@@ -38,9 +48,9 @@ export function getDefaultRevisions(packageType: 'basic' | 'standard' | 'premium
   const defaultRevisions = {
     basic: 1,
     standard: 2,
-    premium: 3
+    premium: 3,
   };
-  
+
   return defaultRevisions[packageType];
 }
 

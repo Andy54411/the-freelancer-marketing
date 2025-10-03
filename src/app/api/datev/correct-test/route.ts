@@ -55,7 +55,6 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

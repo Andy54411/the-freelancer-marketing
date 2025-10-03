@@ -52,7 +52,6 @@ export function DatevFlowTest({ companyId }: DatevFlowTestProps) {
         toast.error('Keine DATEV-Tokens gefunden');
       }
     } catch (error) {
-
       toast.error('Fehler beim Überprüfen der Tokens');
     } finally {
       setTesting(false);
@@ -70,7 +69,6 @@ export function DatevFlowTest({ companyId }: DatevFlowTestProps) {
         toast.success('OAuth-URL in Zwischenablage kopiert');
       }
     } catch (error) {
-
       toast.error('Fehler beim Generieren der OAuth-URL');
     }
   };
@@ -86,7 +84,6 @@ export function DatevFlowTest({ companyId }: DatevFlowTestProps) {
       const result = await response.json();
 
       if (result.success) {
-
         window.location.href = result.authUrl;
       } else {
         throw new Error(result.error);

@@ -41,7 +41,6 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (error) {
-
     return NextResponse.json({ success: false, error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }
@@ -90,10 +89,8 @@ export async function POST(request: NextRequest) {
           `Ticket "${title}" erstellt`,
           'System'
         );
-
       }
     } catch (notificationError) {
-
       // Nicht weiterleiten, da Ticket-Erstellung erfolgreich war
     }
 
@@ -102,7 +99,6 @@ export async function POST(request: NextRequest) {
       ticket,
     });
   } catch (error) {
-
     return NextResponse.json(
       { success: false, error: 'Fehler beim Erstellen des Tickets' },
       { status: 500 }

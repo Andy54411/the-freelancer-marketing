@@ -250,15 +250,12 @@ const IncomingOrdersPage = () => {
       // Update local orders state
       setOrders(prevOrders =>
         prevOrders.map(order =>
-          order.id === completionModal.order!.id
-            ? { ...order, status: 'ABGESCHLOSSEN' }
-            : order
+          order.id === completionModal.order!.id ? { ...order, status: 'ABGESCHLOSSEN' } : order
         )
       );
 
       toast.success('Auftrag erfolgreich abgeschlossen! Geld wird zur Auszahlung freigegeben.');
     } catch (error: any) {
-
       toast.error(error.message || 'Fehler beim Abschließen des Auftrags');
       throw error;
     }

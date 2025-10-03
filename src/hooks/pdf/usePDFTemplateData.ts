@@ -20,8 +20,6 @@ export function useCustomerNumber(companyId: string, customerName: string): stri
 
     const loadCustomerNumber = async () => {
       try {
-
-
         // Versuche zuerst die Subcollection Struktur
         let customersQuery = query(
           collection(db, 'companies', companyId, 'customers'),
@@ -31,17 +29,14 @@ export function useCustomerNumber(companyId: string, customerName: string): stri
 
         let querySnapshot = await getDocs(customersQuery);
 
-
         // Falls keine Ergebnisse in Subcollection, versuche die Hauptcollection
         if (querySnapshot.empty) {
-
           customersQuery = query(
             collection(db, 'customers'),
             where('name', '==', customerName),
             limit(1)
           );
           querySnapshot = await getDocs(customersQuery);
-
         }
 
         if (!querySnapshot.empty) {
@@ -51,13 +46,13 @@ export function useCustomerNumber(companyId: string, customerName: string): stri
           setCustomerNumber(customerData.customerNumber || '');
         } else {
           // Fallback: Generiere Kundennummer basierend auf dem Namen
-          const nameWords = customerName.split(' ').filter((word) => word.length > 0);
+          const nameWords = customerName.split(' ').filter(word => word.length > 0);
           let fallbackNumber = '';
 
           if (nameWords.length === 1) {
             fallbackNumber = `${nameWords[0].substring(0, 4).toUpperCase()}-001`;
           } else {
-            const initials = nameWords.map((word) => word.charAt(0).toUpperCase()).join('');
+            const initials = nameWords.map(word => word.charAt(0).toUpperCase()).join('');
             fallbackNumber = `${initials}-001`;
           }
 
@@ -66,8 +61,11 @@ export function useCustomerNumber(companyId: string, customerName: string): stri
       } catch (error) {
         console.error('Error loading customer number:', error);
         // Fallback bei Fehlern
-        const nameWords = customerName.split(' ').filter((word) => word.length > 0);
-        const initials = nameWords.map((word) => word.charAt(0).toUpperCase()).join('').substring(0, 4);
+        const nameWords = customerName.split(' ').filter(word => word.length > 0);
+        const initials = nameWords
+          .map(word => word.charAt(0).toUpperCase())
+          .join('')
+          .substring(0, 4);
         setCustomerNumber(`${initials}-001`);
       }
     };
@@ -191,7 +189,7 @@ export interface ProcessedPDFData {
   internalContactPerson: any;
   contactPersonName: any;
 
-  // Tax settings  
+  // Tax settings
   priceInput: string;
   taxRuleType: string;
 
@@ -204,7 +202,10 @@ function parseAddress(address: string): ParsedAddress {
     return { street: '', city: '', postalCode: '', country: '' };
   }
 
-  const lines = address.split('\n').map((line) => line.trim()).filter((line) => line);
+  const lines = address
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line);
 
   if (lines.length === 0) {
     return { street: '', city: '', postalCode: '', country: '' };
@@ -226,7 +227,7 @@ function parseAddress(address: string): ParsedAddress {
 export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
   const { document: documentData, logoUrl, logoSize, documentSettings, userData } = props;
   const language = documentSettings?.language || (documentData as any).language || 'de';
-  
+
   // 🔥 Kundendaten-Anreicherung mit Firestore
   const companyId = (documentData as any).companyId || '';
   const customerName = documentData.customerName || 'Kunde';
@@ -259,25 +260,37 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
     // Dokument-Label basierend auf Dokumenttyp und Sprache
     const getDocumentLabel = () => {
       const detectedType = detectDocumentType(documentData) || props.documentType;
-      
+
       if (language === 'en') {
         switch (detectedType) {
-          case 'quote': return 'Quote';
-          case 'invoice': return 'Invoice';
-          case 'reminder': return 'Reminder';
-          case 'credit-note': return 'Credit Note';
-          case 'cancellation': return 'Cancellation';
-          default: return 'Document';
+          case 'quote':
+            return 'Quote';
+          case 'invoice':
+            return 'Invoice';
+          case 'reminder':
+            return 'Reminder';
+          case 'credit-note':
+            return 'Credit Note';
+          case 'cancellation':
+            return 'Cancellation';
+          default:
+            return 'Document';
         }
       } else {
         // Deutsch (Standard)
         switch (detectedType) {
-          case 'quote': return 'Angebot';
-          case 'invoice': return 'Rechnung';
-          case 'reminder': return 'Mahnung';
-          case 'credit-note': return 'Gutschrift';
-          case 'cancellation': return 'Stornierung';
-          default: return 'Dokument';
+          case 'quote':
+            return 'Angebot';
+          case 'invoice':
+            return 'Rechnung';
+          case 'reminder':
+            return 'Mahnung';
+          case 'credit-note':
+            return 'Gutschrift';
+          case 'cancellation':
+            return 'Stornierung';
+          default:
+            return 'Dokument';
         }
       }
     };
@@ -285,19 +298,25 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
     const documentLabel = getDocumentLabel();
 
     // Datumsformatierung mit korrigierter formatDate Funktion
-    const formattedInvoiceDate = formatDate(documentData.date || documentData.issueDate || (documentData as any).invoiceDate || '');
-    const formattedDueDate = formatDate(documentData.dueDate || (documentData as any).validUntil || '');
+    const formattedInvoiceDate = formatDate(
+      documentData.date || documentData.issueDate || (documentData as any).invoiceDate || ''
+    );
+    const formattedDueDate = formatDate(
+      documentData.dueDate || (documentData as any).validUntil || ''
+    );
 
-    // Benutzerfreundlichere Bezeichnungen  
+    // Benutzerfreundlichere Bezeichnungen
     const companyName = documentData.companyName || 'Ihr Unternehmen';
     const customerName = documentData.customerName || 'Kunde';
     const invoiceNumber =
-    documentData.invoiceNumber ||
-    documentData.number ||
-    documentData.documentNumber ||
-    (documentData as any).title ||
-    'INV-001';
-    const invoiceDate = formatDate(documentData.date || documentData.issueDate || (documentData as any).invoiceDate || '');
+      documentData.invoiceNumber ||
+      documentData.number ||
+      documentData.documentNumber ||
+      (documentData as any).title ||
+      'INV-001';
+    const invoiceDate = formatDate(
+      documentData.date || documentData.issueDate || (documentData as any).invoiceDate || ''
+    );
     const dueDate = formatDate(documentData.dueDate || (documentData as any).validUntil || '');
     const sequentialNumber = (documentData as any).sequentialNumber || '';
 
@@ -359,7 +378,10 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
       companyWebsite,
       companyTaxNumber,
       companyVatId,
-      companyRegistrationNumber: (documentData as any).companyRegister || (documentData as any).companyRegistrationNumber || '',
+      companyRegistrationNumber:
+        (documentData as any).companyRegister ||
+        (documentData as any).companyRegistrationNumber ||
+        '',
       companyIban: (documentData as any).companyIban || '',
       companyBic: (documentData as any).companyBic || '',
       companyFax: (documentData as any).companyFax || '',
@@ -367,10 +389,11 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
       // Kunden-Informationen (vollständig)
       customerName,
       customerEmail,
-      customerAddress: customerAddress || (// Original falls vorhanden
-      customerAddressParsed.street ? // Ansonsten aus parsed zusammenbauen
-      `${customerAddressParsed.street}\n${customerAddressParsed.postalCode} ${customerAddressParsed.city}\n${customerAddressParsed.country}`.trim() :
-      ''), // Leer lassen wenn keine Daten
+      customerAddress:
+        customerAddress || // Original falls vorhanden
+        (customerAddressParsed.street // Ansonsten aus parsed zusammenbauen
+          ? `${customerAddressParsed.street}\n${customerAddressParsed.postalCode} ${customerAddressParsed.city}\n${customerAddressParsed.country}`.trim()
+          : ''), // Leer lassen wenn keine Daten
       customerStreet: customerAddressParsed.street,
       customerCity: customerAddressParsed.city,
       customerPostalCode: customerAddressParsed.postalCode,
@@ -387,11 +410,26 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
       documentNumber: invoiceNumber,
       invoiceNumber: invoiceNumber, // Für RECHNUNGSNUMMER
       quoteNumber: (documentData as any).quoteNumber || invoiceNumber,
-      documentDate: invoiceDate || formatDate((documentData as any).date || (documentData as any).createdAt || ''), // Für RECHNUNGSDATUM
+      documentDate:
+        invoiceDate ||
+        formatDate((documentData as any).date || (documentData as any).createdAt || ''), // Für RECHNUNGSDATUM
       dueDate: dueDate, // Nur wenn vorhanden
-      validUntil: dueDate || formatDate((documentData as any).validUntil || (documentData as any).expiryDate || ''), // Für GUELTIG_BIS
-      expiryDate: formatDate((documentData as any).expiryDate || '') || dueDate || formatDate((documentData as any).validUntil || ''),
-      serviceDate: formatDate((documentData as any).serviceDate || (documentData as any).performanceDate || (documentData as any).deliveryDate || '') || invoiceDate || '', // Für LEISTUNGSDATUM
+      validUntil:
+        dueDate ||
+        formatDate((documentData as any).validUntil || (documentData as any).expiryDate || ''), // Für GUELTIG_BIS
+      expiryDate:
+        formatDate((documentData as any).expiryDate || '') ||
+        dueDate ||
+        formatDate((documentData as any).validUntil || ''),
+      serviceDate:
+        formatDate(
+          (documentData as any).serviceDate ||
+            (documentData as any).performanceDate ||
+            (documentData as any).deliveryDate ||
+            ''
+        ) ||
+        invoiceDate ||
+        '', // Für LEISTUNGSDATUM
       servicePeriod: (documentData as any).servicePeriod || '',
 
       // Beträge (auch wenn 0, damit Platzhalter ersetzt werden)
@@ -405,12 +443,13 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
       skontoText: (documentData as any).skontoText || '',
 
       // Kontaktperson - Prioritätsbasierte Fallback-Logik
-      internalContactPerson: userData?.firstName && userData?.lastName ?
-        `${userData.firstName} ${userData.lastName}` :
-        (documentData as any).internalContactPerson || 
-        (documentData as any).contactPerson || 
-        '',
-      
+      internalContactPerson:
+        userData?.firstName && userData?.lastName
+          ? `${userData.firstName} ${userData.lastName}`
+          : (documentData as any).internalContactPerson ||
+            (documentData as any).contactPerson ||
+            '',
+
       contactPersonName: (documentData as any).contactPersonName || '',
 
       // User-spezifische Daten
@@ -442,7 +481,8 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
       // Erweiterte Beträge und Finanzen
       discountAmount: (documentData as any).discountAmount || 0,
       discountPercentage: (documentData as any).discountPercentage || 0,
-      orderNumber: (documentData as any).orderNumber || (documentData as any).purchaseOrderNumber || '',
+      orderNumber:
+        (documentData as any).orderNumber || (documentData as any).purchaseOrderNumber || '',
       currency: (documentData as any).currency || 'EUR',
 
       // Steuersatz
@@ -450,7 +490,8 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
 
       // Projekt-Informationen
       projectTitle: (documentData as any).projectTitle || (documentData as any).title || '',
-      projectDescription: (documentData as any).projectDescription || (documentData as any).description || '',
+      projectDescription:
+        (documentData as any).projectDescription || (documentData as any).description || '',
 
       // Bank-Daten aus document übernehmen (für Fallback-Zugriff)
       bankDetails: (documentData as any).bankDetails,
@@ -462,18 +503,12 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
       // Aktuelle Zeit-Informationen (für Datumsplatzhalter)
       currentDate: new Date().toLocaleDateString(language === 'de' ? 'de-DE' : 'en-US'),
       currentYear: new Date().getFullYear().toString(),
-      currentMonth: new Date().toLocaleDateString(language === 'de' ? 'de-DE' : 'en-US', { month: 'long' })
+      currentMonth: new Date().toLocaleDateString(language === 'de' ? 'de-DE' : 'en-US', {
+        month: 'long',
+      }),
     };
 
     // � DEBUG: Platzhalter-Daten für kritische Properties loggen
-
-
-
-
-
-
-
-
 
     // Platzhalter in Texten ersetzen mit Sprach-Support
     const docLanguage = language || 'de'; // Verwende bereits vorhandene language Variable
@@ -552,8 +587,13 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
       currency: (documentData as any).currency || 'EUR',
       createdBy: (documentData as any).createdBy || '',
       deliveryTerms: (documentData as any).deliveryTerms || '',
-      companyLogo: (documentData as any).companyLogo || logoUrl || (documentData as any).profilePictureURL || (documentData as any).profilePictureFirebaseUrl || '',
-      logoSize: logoSize || 80
+      companyLogo:
+        (documentData as any).companyLogo ||
+        logoUrl ||
+        (documentData as any).profilePictureURL ||
+        (documentData as any).profilePictureFirebaseUrl ||
+        '',
+      logoSize: logoSize || 80,
     };
   }, [documentData, logoUrl, logoSize, documentSettings, userData]);
 }

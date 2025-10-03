@@ -134,7 +134,6 @@ export async function POST(request: Request) {
           message: 'Ihre Anfrage wurde an unser Support-Team weitergeleitet.',
         });
       } catch (escalationError) {
-
         // Fallback: Normale Antwort ohne Eskalation
         const cleanedText = text.replace(/\[escalate\]/g, '').trim();
         return NextResponse.json({ text: cleanedText });

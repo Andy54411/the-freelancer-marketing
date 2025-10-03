@@ -57,7 +57,6 @@ export async function GET(_request: NextRequest) {
         : ['SES ist produktionsbereit', 'Sie können an alle gültigen E-Mail-Adressen senden'],
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Prüfen des SES-Status',

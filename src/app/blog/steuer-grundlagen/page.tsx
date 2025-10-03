@@ -1,14 +1,25 @@
 import type { Metadata } from 'next';
-import { ArrowLeft, Calculator, Receipt, FileText, AlertTriangle, Euro, Percent } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calculator,
+  Receipt,
+  FileText,
+  AlertTriangle,
+  Euro,
+  Percent,
+} from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Steuer-Grundlagen für Selbstständige - Taskilo Leitfaden',
-  description: 'Steuerliche Basics für Selbstständige auf Taskilo: Gewerbeanmeldung, Umsatzsteuer, Ausgaben absetzen, Steuererklärung und Profi-Tipps.',
-  keywords: 'Steuern, Selbstständig, Gewerbe, Umsatzsteuer, Taskilo, Steuerberatung, Kleinunternehmer',
+  description:
+    'Steuerliche Basics für Selbstständige auf Taskilo: Gewerbeanmeldung, Umsatzsteuer, Ausgaben absetzen, Steuererklärung und Profi-Tipps.',
+  keywords:
+    'Steuern, Selbstständig, Gewerbe, Umsatzsteuer, Taskilo, Steuerberatung, Kleinunternehmer',
   openGraph: {
     title: 'Steuer-Grundlagen für Selbstständige auf Taskilo',
-    description: 'Kompletter Steuer-Leitfaden für Dienstleister: Von der Gewerbeanmeldung bis zur Steuererklärung.',
+    description:
+      'Kompletter Steuer-Leitfaden für Dienstleister: Von der Gewerbeanmeldung bis zur Steuererklärung.',
     type: 'article',
   },
 };
@@ -49,31 +60,34 @@ export default function SteuerGrundlagenPage() {
               </h1>
             </div>
             <p className="text-xl text-white/95 leading-relaxed drop-shadow-md">
-              Der komplette Leitfaden für Dienstleister auf Taskilo: Von der Gewerbeanmeldung bis zur
-              Steuererklärung - alles was Sie über Steuern als Selbstständiger wissen müssen.
+              Der komplette Leitfaden für Dienstleister auf Taskilo: Von der Gewerbeanmeldung bis
+              zur Steuererklärung - alles was Sie über Steuern als Selbstständiger wissen müssen.
             </p>
           </div>
         </section>
 
         {/* Main Content */}
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">        {/* Wichtiger Hinweis */}
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {' '}
+          {/* Wichtiger Hinweis */}
           <div className="bg-white/95 backdrop-blur-sm border border-[#14ad9f]/30 rounded-xl p-6 mb-12 shadow-xl">
             <div className="flex items-start space-x-3">
               <AlertTriangle className="w-8 h-8 text-[#14ad9f] flex-shrink-0 mt-1" />
               <div>
                 <h2 className="text-xl font-bold text-[#14ad9f] mb-2">⚠️ WICHTIGER HINWEIS</h2>
                 <p className="text-gray-700 text-lg">
-                  Dieser Artikel bietet eine Grundorientierung und ersetzt keine individuelle Steuerberatung.
-                  Steuergesetze ändern sich häufig - konsultieren Sie immer einen Steuerberater für Ihre
-                  spezifische Situation!
+                  Dieser Artikel bietet eine Grundorientierung und ersetzt keine individuelle
+                  Steuerberatung. Steuergesetze ändern sich häufig - konsultieren Sie immer einen
+                  Steuerberater für Ihre spezifische Situation!
                 </p>
               </div>
             </div>
           </div>
-
           {/* Übersicht */}
           <div className="mb-12">
-            <h2 className="text-3xl font-bold text-white mb-8 text-center drop-shadow-lg">Ihre Steuer-Roadmap als Taskilo-Dienstleister</h2>
+            <h2 className="text-3xl font-bold text-white mb-8 text-center drop-shadow-lg">
+              Ihre Steuer-Roadmap als Taskilo-Dienstleister
+            </h2>
 
             <div className="grid md:grid-cols-4 gap-6">
               <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-6 border border-white/30 text-center">
@@ -109,7 +123,6 @@ export default function SteuerGrundlagenPage() {
               </div>
             </div>
           </div>
-
           {/* 1. Gewerbeanmeldung */}
           <div className="mb-12">
             <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
@@ -117,15 +130,21 @@ export default function SteuerGrundlagenPage() {
                 <div className="w-12 h-12 bg-[#14ad9f] rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">1</span>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900">Gewerbeanmeldung: Ihr erster Schritt</h2>
+                <h2 className="text-3xl font-bold text-gray-900">
+                  Gewerbeanmeldung: Ihr erster Schritt
+                </h2>
               </div>
 
               <div className="grid lg:grid-cols-2 gap-8">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">🏢 Wann ist eine Gewerbeanmeldung nötig?</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    🏢 Wann ist eine Gewerbeanmeldung nötig?
+                  </h3>
                   <div className="space-y-4">
                     <div className="bg-[#14ad9f]/10 p-4 rounded-lg border border-[#14ad9f]/30">
-                      <h4 className="font-semibold text-[#14ad9f] mb-2">✅ Gewerbeanmeldung NÖTIG:</h4>
+                      <h4 className="font-semibold text-[#14ad9f] mb-2">
+                        ✅ Gewerbeanmeldung NÖTIG:
+                      </h4>
                       <ul className="text-gray-700 text-sm space-y-1">
                         <li>• Handwerk (Elektriker, Klempner, Maler)</li>
                         <li>• Dienstleistungen (Reinigung, Umzug, Reparaturen)</li>
@@ -136,7 +155,9 @@ export default function SteuerGrundlagenPage() {
                     </div>
 
                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                      <h4 className="font-semibold text-gray-800 mb-2">ℹ️ KEINE Gewerbeanmeldung:</h4>
+                      <h4 className="font-semibold text-gray-800 mb-2">
+                        ℹ️ KEINE Gewerbeanmeldung:
+                      </h4>
                       <ul className="text-gray-700 text-sm space-y-1">
                         <li>• Freie Berufe (Berater, Übersetzer, Künstler)</li>
                         <li>• Vermietung (nur Räume/Gegenstände)</li>
@@ -147,7 +168,9 @@ export default function SteuerGrundlagenPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">📋 Anmeldeprozess Schritt-für-Schritt</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    📋 Anmeldeprozess Schritt-für-Schritt
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
                       <div className="w-6 h-6 bg-[#14ad9f] rounded-full flex items-center justify-center flex-shrink-0 mt-1">
@@ -155,7 +178,9 @@ export default function SteuerGrundlagenPage() {
                       </div>
                       <div>
                         <h4 className="font-semibold text-gray-900">Gewerbeamt kontaktieren</h4>
-                        <p className="text-gray-600 text-sm">Termin vereinbaren oder online anmelden</p>
+                        <p className="text-gray-600 text-sm">
+                          Termin vereinbaren oder online anmelden
+                        </p>
                       </div>
                     </div>
 
@@ -165,7 +190,9 @@ export default function SteuerGrundlagenPage() {
                       </div>
                       <div>
                         <h4 className="font-semibold text-gray-900">Unterlagen zusammenstellen</h4>
-                        <p className="text-gray-600 text-sm">Personalausweis, ggf. Nachweise (Meisterbrief)</p>
+                        <p className="text-gray-600 text-sm">
+                          Personalausweis, ggf. Nachweise (Meisterbrief)
+                        </p>
                       </div>
                     </div>
 
@@ -193,15 +220,14 @@ export default function SteuerGrundlagenPage() {
                   <div className="mt-6 bg-[#14ad9f] bg-opacity-10 p-4 rounded-lg">
                     <h4 className="font-semibold text-[#14ad9f] mb-2">💡 Taskilo-Tipp:</h4>
                     <p className="text-gray-700 text-sm">
-                      Melden Sie Ihr Gewerbe an, bevor Sie auf Taskilo aktiv werden.
-                      Das schützt Sie rechtlich und wirkt professionell auf Kunden.
+                      Melden Sie Ihr Gewerbe an, bevor Sie auf Taskilo aktiv werden. Das schützt Sie
+                      rechtlich und wirkt professionell auf Kunden.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
           {/* 2. Umsatzsteuer */}
           <div className="mb-12">
             <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
@@ -209,12 +235,16 @@ export default function SteuerGrundlagenPage() {
                 <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">2</span>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900">Umsatzsteuer: Kleinunternehmer vs. Regelbesteuerung</h2>
+                <h2 className="text-3xl font-bold text-gray-900">
+                  Umsatzsteuer: Kleinunternehmer vs. Regelbesteuerung
+                </h2>
               </div>
 
               <div className="grid lg:grid-cols-2 gap-8">
                 <div>
-                  <h3 className="text-xl font-semibold text-green-600 mb-4">🟢 Kleinunternehmerregelung</h3>
+                  <h3 className="text-xl font-semibold text-green-600 mb-4">
+                    🟢 Kleinunternehmerregelung
+                  </h3>
                   <div className="bg-green-50 p-6 rounded-lg border border-green-200">
                     <h4 className="font-semibold text-green-800 mb-3">Voraussetzungen:</h4>
                     <ul className="text-green-700 text-sm space-y-1 mb-4">
@@ -268,7 +298,9 @@ export default function SteuerGrundlagenPage() {
               </div>
 
               <div className="mt-8 bg-yellow-50 p-6 rounded-lg border border-yellow-200">
-                <h3 className="text-lg font-semibold text-yellow-800 mb-4">🧮 Entscheidungshilfe: Rechenbeispiel</h3>
+                <h3 className="text-lg font-semibold text-yellow-800 mb-4">
+                  🧮 Entscheidungshilfe: Rechenbeispiel
+                </h3>
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="bg-white p-4 rounded border border-yellow-100">
@@ -295,7 +327,6 @@ export default function SteuerGrundlagenPage() {
               </div>
             </div>
           </div>
-
           {/* 3. Buchhaltung */}
           <div className="mb-12">
             <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
@@ -303,7 +334,9 @@ export default function SteuerGrundlagenPage() {
                 <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">3</span>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900">Buchhaltung: Ordnung ist das halbe Leben</h2>
+                <h2 className="text-3xl font-bold text-gray-900">
+                  Buchhaltung: Ordnung ist das halbe Leben
+                </h2>
               </div>
 
               <div className="space-y-8">
@@ -344,21 +377,33 @@ export default function SteuerGrundlagenPage() {
                   </h3>
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-3">✅ Voll absetzbare Ausgaben:</h4>
+                      <h4 className="font-semibold text-gray-900 mb-3">
+                        ✅ Voll absetzbare Ausgaben:
+                      </h4>
                       <div className="space-y-3">
                         <div className="bg-green-50 p-3 rounded border border-green-200">
-                          <p className="font-semibold text-green-800 text-sm">🚗 Fahrzeug (Dienstfahrten):</p>
-                          <p className="text-green-700 text-xs">0,30€/km oder 1% vom Listenpreis/Monat</p>
+                          <p className="font-semibold text-green-800 text-sm">
+                            🚗 Fahrzeug (Dienstfahrten):
+                          </p>
+                          <p className="text-green-700 text-xs">
+                            0,30€/km oder 1% vom Listenpreis/Monat
+                          </p>
                         </div>
 
                         <div className="bg-green-50 p-3 rounded border border-green-200">
-                          <p className="font-semibold text-green-800 text-sm">🔧 Werkzeug & Material:</p>
-                          <p className="text-green-700 text-xs">Alles was Sie für die Arbeit brauchen</p>
+                          <p className="font-semibold text-green-800 text-sm">
+                            🔧 Werkzeug & Material:
+                          </p>
+                          <p className="text-green-700 text-xs">
+                            Alles was Sie für die Arbeit brauchen
+                          </p>
                         </div>
 
                         <div className="bg-green-50 p-3 rounded border border-green-200">
                           <p className="font-semibold text-green-800 text-sm">💻 Arbeitsmittel:</p>
-                          <p className="text-green-700 text-xs">Handy, Laptop, Software, Büromaterial</p>
+                          <p className="text-green-700 text-xs">
+                            Handy, Laptop, Software, Büromaterial
+                          </p>
                         </div>
 
                         <div className="bg-green-50 p-3 rounded border border-green-200">
@@ -369,26 +414,42 @@ export default function SteuerGrundlagenPage() {
                     </div>
 
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-3">⚖️ Teilweise absetzbare Ausgaben:</h4>
+                      <h4 className="font-semibold text-gray-900 mb-3">
+                        ⚖️ Teilweise absetzbare Ausgaben:
+                      </h4>
                       <div className="space-y-3">
                         <div className="bg-yellow-50 p-3 rounded border border-yellow-200">
                           <p className="font-semibold text-yellow-800 text-sm">🏠 Homeoffice:</p>
-                          <p className="text-yellow-700 text-xs">Anteilig: Miete, Strom, Internet (meist 10-20%)</p>
+                          <p className="text-yellow-700 text-xs">
+                            Anteilig: Miete, Strom, Internet (meist 10-20%)
+                          </p>
                         </div>
 
                         <div className="bg-yellow-50 p-3 rounded border border-yellow-200">
-                          <p className="font-semibold text-yellow-800 text-sm">📱 Handy & Internet:</p>
-                          <p className="text-yellow-700 text-xs">Geschäftlicher Anteil schätzen (meist 50-80%)</p>
+                          <p className="font-semibold text-yellow-800 text-sm">
+                            📱 Handy & Internet:
+                          </p>
+                          <p className="text-yellow-700 text-xs">
+                            Geschäftlicher Anteil schätzen (meist 50-80%)
+                          </p>
                         </div>
 
                         <div className="bg-yellow-50 p-3 rounded border border-yellow-200">
-                          <p className="font-semibold text-yellow-800 text-sm">🍽️ Geschäftsessen:</p>
-                          <p className="text-yellow-700 text-xs">50% absetzbar bei Kunden-/Lieferantenterminen</p>
+                          <p className="font-semibold text-yellow-800 text-sm">
+                            🍽️ Geschäftsessen:
+                          </p>
+                          <p className="text-yellow-700 text-xs">
+                            50% absetzbar bei Kunden-/Lieferantenterminen
+                          </p>
                         </div>
 
                         <div className="bg-yellow-50 p-3 rounded border border-yellow-200">
-                          <p className="font-semibold text-yellow-800 text-sm">👔 Arbeitskleidung:</p>
-                          <p className="text-yellow-700 text-xs">Nur typische Berufskleidung (Handwerker-Kluft)</p>
+                          <p className="font-semibold text-yellow-800 text-sm">
+                            👔 Arbeitskleidung:
+                          </p>
+                          <p className="text-yellow-700 text-xs">
+                            Nur typische Berufskleidung (Handwerker-Kluft)
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -397,7 +458,9 @@ export default function SteuerGrundlagenPage() {
 
                 {/* Belege & Organisation */}
                 <div className="bg-gray-50 p-6 rounded-lg">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">📁 Belege richtig organisieren</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    📁 Belege richtig organisieren
+                  </h3>
                   <div className="grid md:grid-cols-3 gap-6">
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-2">📱 Digital sammeln:</h4>
@@ -434,7 +497,6 @@ export default function SteuerGrundlagenPage() {
               </div>
             </div>
           </div>
-
           {/* 4. Steuererklärung */}
           <div className="mb-12">
             <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
@@ -442,7 +504,9 @@ export default function SteuerGrundlagenPage() {
                 <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">4</span>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900">Steuererklärung: Ihr jährlicher Kassensturz</h2>
+                <h2 className="text-3xl font-bold text-gray-900">
+                  Steuererklärung: Ihr jährlicher Kassensturz
+                </h2>
               </div>
 
               <div className="space-y-8">
@@ -457,7 +521,9 @@ export default function SteuerGrundlagenPage() {
                     </div>
 
                     <div className="bg-white p-4 rounded border border-red-100">
-                      <h4 className="font-semibold text-red-800 mb-2">Umsatzsteuer-Voranmeldung:</h4>
+                      <h4 className="font-semibold text-red-800 mb-2">
+                        Umsatzsteuer-Voranmeldung:
+                      </h4>
                       <p className="text-red-700 text-sm">Bis 10. des Folgemonats</p>
                       <p className="text-red-700 text-sm">(bei Quartalszahlung)</p>
                     </div>
@@ -472,25 +538,43 @@ export default function SteuerGrundlagenPage() {
 
                 {/* Welche Formulare */}
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">📋 Welche Formulare brauchen Sie?</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    📋 Welche Formulare brauchen Sie?
+                  </h3>
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
                       <h4 className="font-semibold text-blue-800 mb-3">🏢 Gewerbetreibende:</h4>
                       <ul className="text-blue-700 text-sm space-y-2">
-                        <li>• <strong>Mantelbogen:</strong> Grunddaten</li>
-                        <li>• <strong>Anlage G:</strong> Einkünfte aus Gewerbebetrieb</li>
-                        <li>• <strong>EÜR (Anlage EÜR):</strong> Einnahme-Überschuss-Rechnung</li>
-                        <li>• <strong>Anlage N:</strong> Falls zusätzlich angestellt</li>
+                        <li>
+                          • <strong>Mantelbogen:</strong> Grunddaten
+                        </li>
+                        <li>
+                          • <strong>Anlage G:</strong> Einkünfte aus Gewerbebetrieb
+                        </li>
+                        <li>
+                          • <strong>EÜR (Anlage EÜR):</strong> Einnahme-Überschuss-Rechnung
+                        </li>
+                        <li>
+                          • <strong>Anlage N:</strong> Falls zusätzlich angestellt
+                        </li>
                       </ul>
                     </div>
 
                     <div className="bg-green-50 p-6 rounded-lg border border-green-200">
                       <h4 className="font-semibold text-green-800 mb-3">💼 Freiberufler:</h4>
                       <ul className="text-green-700 text-sm space-y-2">
-                        <li>• <strong>Mantelbogen:</strong> Grunddaten</li>
-                        <li>• <strong>Anlage S:</strong> Einkünfte aus selbstständiger Arbeit</li>
-                        <li>• <strong>EÜR (Anlage EÜR):</strong> Einnahme-Überschuss-Rechnung</li>
-                        <li>• <strong>Anlage N:</strong> Falls zusätzlich angestellt</li>
+                        <li>
+                          • <strong>Mantelbogen:</strong> Grunddaten
+                        </li>
+                        <li>
+                          • <strong>Anlage S:</strong> Einkünfte aus selbstständiger Arbeit
+                        </li>
+                        <li>
+                          • <strong>EÜR (Anlage EÜR):</strong> Einnahme-Überschuss-Rechnung
+                        </li>
+                        <li>
+                          • <strong>Anlage N:</strong> Falls zusätzlich angestellt
+                        </li>
                       </ul>
                     </div>
                   </div>
@@ -498,7 +582,9 @@ export default function SteuerGrundlagenPage() {
 
                 {/* EÜR Aufbau */}
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">🧮 Einnahme-Überschuss-Rechnung (EÜR)</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    🧮 Einnahme-Überschuss-Rechnung (EÜR)
+                  </h3>
                   <div className="bg-gray-50 p-6 rounded-lg">
                     <div className="grid md:grid-cols-2 gap-8">
                       <div>
@@ -549,11 +635,12 @@ export default function SteuerGrundlagenPage() {
               </div>
             </div>
           </div>
-
           {/* Steuerarten im Überblick */}
           <div className="mb-12">
             <div className="bg-gradient-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white">
-              <h2 className="text-3xl font-bold mb-6">💰 Steuerarten für Selbstständige im Überblick</h2>
+              <h2 className="text-3xl font-bold mb-6">
+                💰 Steuerarten für Selbstständige im Überblick
+              </h2>
 
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="bg-white bg-opacity-20 p-6 rounded-lg">
@@ -562,36 +649,59 @@ export default function SteuerGrundlagenPage() {
                     Einkommensteuer
                   </h3>
                   <div className="space-y-2 text-[#e6fffe]">
-                    <p className="text-sm"><strong>Wer zahlt:</strong> Alle Selbstständigen</p>
-                    <p className="text-sm"><strong>Wie viel:</strong> 14-45% je nach Einkommen</p>
-                    <p className="text-sm"><strong>Freibetrag:</strong> 11.604€ (2025)</p>
-                    <p className="text-sm"><strong>Zahlung:</strong> Nachzahlung + Vorauszahlung</p>
+                    <p className="text-sm">
+                      <strong>Wer zahlt:</strong> Alle Selbstständigen
+                    </p>
+                    <p className="text-sm">
+                      <strong>Wie viel:</strong> 14-45% je nach Einkommen
+                    </p>
+                    <p className="text-sm">
+                      <strong>Freibetrag:</strong> 11.604€ (2025)
+                    </p>
+                    <p className="text-sm">
+                      <strong>Zahlung:</strong> Nachzahlung + Vorauszahlung
+                    </p>
                   </div>
                 </div>
 
                 <div className="bg-white bg-opacity-20 p-6 rounded-lg">
                   <h3 className="text-xl font-semibold mb-4">Gewerbesteuer</h3>
                   <div className="space-y-2 text-[#e6fffe]">
-                    <p className="text-sm"><strong>Wer zahlt:</strong> Gewerbetreibende (nicht Freiberufler)</p>
-                    <p className="text-sm"><strong>Wie viel:</strong> ~14-17% (je nach Gemeinde)</p>
-                    <p className="text-sm"><strong>Freibetrag:</strong> 24.500€ Gewinn</p>
-                    <p className="text-sm"><strong>Zahlung:</strong> Vierteljährlich</p>
+                    <p className="text-sm">
+                      <strong>Wer zahlt:</strong> Gewerbetreibende (nicht Freiberufler)
+                    </p>
+                    <p className="text-sm">
+                      <strong>Wie viel:</strong> ~14-17% (je nach Gemeinde)
+                    </p>
+                    <p className="text-sm">
+                      <strong>Freibetrag:</strong> 24.500€ Gewinn
+                    </p>
+                    <p className="text-sm">
+                      <strong>Zahlung:</strong> Vierteljährlich
+                    </p>
                   </div>
                 </div>
 
                 <div className="bg-white bg-opacity-20 p-6 rounded-lg">
                   <h3 className="text-xl font-semibold mb-4">Umsatzsteuer</h3>
                   <div className="space-y-2 text-[#e6fffe]">
-                    <p className="text-sm"><strong>Wer zahlt:</strong> Regelbesteuerte (nicht Kleinunternehmer)</p>
-                    <p className="text-sm"><strong>Wie viel:</strong> 19% auf Netto-Umsatz</p>
-                    <p className="text-sm"><strong>Abzüglich:</strong> Vorsteuer aus Einkäufen</p>
-                    <p className="text-sm"><strong>Zahlung:</strong> Monatlich/Vierteljährlich</p>
+                    <p className="text-sm">
+                      <strong>Wer zahlt:</strong> Regelbesteuerte (nicht Kleinunternehmer)
+                    </p>
+                    <p className="text-sm">
+                      <strong>Wie viel:</strong> 19% auf Netto-Umsatz
+                    </p>
+                    <p className="text-sm">
+                      <strong>Abzüglich:</strong> Vorsteuer aus Einkäufen
+                    </p>
+                    <p className="text-sm">
+                      <strong>Zahlung:</strong> Monatlich/Vierteljährlich
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
           {/* Software & Tools */}
           <div className="mb-12">
             <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
@@ -602,19 +712,31 @@ export default function SteuerGrundlagenPage() {
 
               <div className="grid lg:grid-cols-2 gap-8">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">💻 Buchhaltungssoftware:</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    💻 Buchhaltungssoftware:
+                  </h3>
                   <div className="space-y-4">
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <h4 className="font-semibold text-blue-800 mb-2">🏆 Empfohlen für Anfänger:</h4>
+                      <h4 className="font-semibold text-blue-800 mb-2">
+                        🏆 Empfohlen für Anfänger:
+                      </h4>
                       <ul className="text-blue-700 text-sm space-y-1">
-                        <li>• <strong>Lexoffice:</strong> Einfach, alle Funktionen (15-25€/Monat)</li>
-                        <li>• <strong>sevdesk:</strong> Sehr nutzerfreundlich (7-47€/Monat)</li>
-                        <li>• <strong>WISO Buchhaltung:</strong> Einmalig kaufen (~100€)</li>
+                        <li>
+                          • <strong>Lexoffice:</strong> Einfach, alle Funktionen (15-25€/Monat)
+                        </li>
+                        <li>
+                          • <strong>sevdesk:</strong> Sehr nutzerfreundlich (7-47€/Monat)
+                        </li>
+                        <li>
+                          • <strong>WISO Buchhaltung:</strong> Einmalig kaufen (~100€)
+                        </li>
                       </ul>
                     </div>
 
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <h4 className="font-semibold text-green-800 mb-2">💡 Kostenlose Alternativen:</h4>
+                      <h4 className="font-semibold text-green-800 mb-2">
+                        💡 Kostenlose Alternativen:
+                      </h4>
                       <ul className="text-green-700 text-sm space-y-1">
                         <li>• Excel/Google Sheets (Vorlagen nutzen)</li>
                         <li>• OpenOffice Calc</li>
@@ -625,14 +747,24 @@ export default function SteuerGrundlagenPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">🏛️ Steuererklärung online:</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    🏛️ Steuererklärung online:
+                  </h3>
                   <div className="space-y-4">
                     <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                      <h4 className="font-semibold text-purple-800 mb-2">🎯 Empfohlene Anbieter:</h4>
+                      <h4 className="font-semibold text-purple-800 mb-2">
+                        🎯 Empfohlene Anbieter:
+                      </h4>
                       <ul className="text-purple-700 text-sm space-y-1">
-                        <li>• <strong>WISO Steuer:</strong> Sehr umfangreich (30-40€)</li>
-                        <li>• <strong>SteuerGo:</strong> Einfach für Selbstständige (25-35€)</li>
-                        <li>• <strong>Elster:</strong> Kostenlos vom Finanzamt</li>
+                        <li>
+                          • <strong>WISO Steuer:</strong> Sehr umfangreich (30-40€)
+                        </li>
+                        <li>
+                          • <strong>SteuerGo:</strong> Einfach für Selbstständige (25-35€)
+                        </li>
+                        <li>
+                          • <strong>Elster:</strong> Kostenlos vom Finanzamt
+                        </li>
                       </ul>
                     </div>
 
@@ -649,7 +781,9 @@ export default function SteuerGrundlagenPage() {
               </div>
 
               <div className="mt-8 bg-[#14ad9f] bg-opacity-10 p-6 rounded-lg">
-                <h3 className="text-lg font-semibold text-[#14ad9f] mb-4">🔗 Taskilo-Integration</h3>
+                <h3 className="text-lg font-semibold text-[#14ad9f] mb-4">
+                  🔗 Taskilo-Integration
+                </h3>
                 <p className="text-gray-700 mb-3">
                   Ihr Taskilo-Dashboard bietet bereits wichtige Steuer-Features:
                 </p>
@@ -668,15 +802,18 @@ export default function SteuerGrundlagenPage() {
               </div>
             </div>
           </div>
-
           {/* Steuerberater oder selbst machen */}
           <div className="mb-12">
             <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">🤝 Steuerberater oder selbst machen?</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                🤝 Steuerberater oder selbst machen?
+              </h2>
 
               <div className="grid lg:grid-cols-2 gap-8">
                 <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-                  <h3 className="text-xl font-semibold text-green-800 mb-4">💚 Selbst machen, wenn:</h3>
+                  <h3 className="text-xl font-semibold text-green-800 mb-4">
+                    💚 Selbst machen, wenn:
+                  </h3>
                   <ul className="text-green-700 space-y-2">
                     <li>• Einfache Tätigkeitsstruktur</li>
                     <li>• Umsatz unter 50.000€/Jahr</li>
@@ -693,7 +830,9 @@ export default function SteuerGrundlagenPage() {
                 </div>
 
                 <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                  <h3 className="text-xl font-semibold text-blue-800 mb-4">💙 Steuerberater, wenn:</h3>
+                  <h3 className="text-xl font-semibold text-blue-800 mb-4">
+                    💙 Steuerberater, wenn:
+                  </h3>
                   <ul className="text-blue-700 space-y-2">
                     <li>• Komplexe Geschäftstätigkeit</li>
                     <li>• Umsatz über 100.000€/Jahr</li>
@@ -713,45 +852,54 @@ export default function SteuerGrundlagenPage() {
               <div className="mt-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                 <h4 className="font-semibold text-yellow-800 mb-2">⚖️ Kompromiss: Hybridlösung</h4>
                 <p className="text-yellow-700 text-sm">
-                  Buchhaltung selbst machen, Steuererklärung vom Berater prüfen lassen.
-                  Kostet ~500-1.000€ und gibt Sicherheit bei Optimierungen.
+                  Buchhaltung selbst machen, Steuererklärung vom Berater prüfen lassen. Kostet
+                  ~500-1.000€ und gibt Sicherheit bei Optimierungen.
                 </p>
               </div>
             </div>
           </div>
-
           {/* Häufige Fragen */}
           <div className="mb-12">
             <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">❓ Häufige Steuer-Fragen auf Taskilo</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                ❓ Häufige Steuer-Fragen auf Taskilo
+              </h2>
 
               <div className="space-y-6">
                 <div className="border-b border-gray-200 pb-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">Kann ich die Taskilo-Gebühren absetzen?</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    Kann ich die Taskilo-Gebühren absetzen?
+                  </h3>
                   <p className="text-gray-700 text-sm">
-                    Ja! Taskilo-Servicegebühren sind Betriebsausgaben und voll absetzbar.
-                    Sie finden alle Belege in Ihrem Dashboard unter "Abrechnungen".
+                    Ja! Taskilo-Servicegebühren sind Betriebsausgaben und voll absetzbar. Sie finden
+                    alle Belege in Ihrem Dashboard unter "Abrechnungen".
                   </p>
                 </div>
 
                 <div className="border-b border-gray-200 pb-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">Wie versteuere ich Trinkgelder?</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    Wie versteuere ich Trinkgelder?
+                  </h3>
                   <p className="text-gray-700 text-sm">
-                    Trinkgelder sind steuerpflichtige Einnahmen und müssen in der EÜR erfasst werden.
-                    Dokumentieren Sie diese sorgfältig (Datum, Betrag, Auftraggeber).
+                    Trinkgelder sind steuerpflichtige Einnahmen und müssen in der EÜR erfasst
+                    werden. Dokumentieren Sie diese sorgfältig (Datum, Betrag, Auftraggeber).
                   </p>
                 </div>
 
                 <div className="border-b border-gray-200 pb-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">Kann ich mein Auto komplett absetzen?</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    Kann ich mein Auto komplett absetzen?
+                  </h3>
                   <p className="text-gray-700 text-sm">
-                    Nur den betrieblich genutzten Anteil. Bei 100% betrieblicher Nutzung: Ja.
-                    Bei gemischter Nutzung: Fahrtenbuch führen oder 1%-Regelung anwenden.
+                    Nur den betrieblich genutzten Anteil. Bei 100% betrieblicher Nutzung: Ja. Bei
+                    gemischter Nutzung: Fahrtenbuch führen oder 1%-Regelung anwenden.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Was passiert bei einer Betriebsprüfung?</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    Was passiert bei einer Betriebsprüfung?
+                  </h3>
                   <p className="text-gray-700 text-sm">
                     Das Finanzamt prüft Ihre Unterlagen. Mit ordentlicher Buchhaltung kein Problem.
                     Wichtig: Alle Belege 10 Jahre aufbewahren und sauber dokumentieren.
@@ -760,7 +908,6 @@ export default function SteuerGrundlagenPage() {
               </div>
             </div>
           </div>
-
           {/* Call to Action */}
           <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -784,7 +931,6 @@ export default function SteuerGrundlagenPage() {
               </Link>
             </div>
           </div>
-
         </main>
 
         {/* Footer */}
@@ -792,8 +938,13 @@ export default function SteuerGrundlagenPage() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p className="text-gray-300">
               © 2025 Taskilo. Alle Rechte vorbehalten. |
-              <Link href="/datenschutz" className="hover:text-[#14ad9f] ml-2">Datenschutz</Link> |
-              <Link href="/agb" className="hover:text-[#14ad9f] ml-2">AGB</Link>
+              <Link href="/datenschutz" className="hover:text-[#14ad9f] ml-2">
+                Datenschutz
+              </Link>{' '}
+              |
+              <Link href="/agb" className="hover:text-[#14ad9f] ml-2">
+                AGB
+              </Link>
             </p>
           </div>
         </footer>

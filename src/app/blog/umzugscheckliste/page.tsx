@@ -4,11 +4,13 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Checkliste für den Umzug - Stressfrei umziehen mit Taskilo',
-  description: 'Komplette Umzugscheckliste: Von 8 Wochen vor dem Umzug bis zum ersten Tag im neuen Zuhause. Tipps, Termine und professionelle Umzugshilfe.',
+  description:
+    'Komplette Umzugscheckliste: Von 8 Wochen vor dem Umzug bis zum ersten Tag im neuen Zuhause. Tipps, Termine und professionelle Umzugshilfe.',
   keywords: 'Umzug, Checkliste, Umzugsplanung, Umzugshelfer, Taskilo, Umzugstipps',
   openGraph: {
     title: 'Checkliste für den Umzug - Stressfrei umziehen',
-    description: 'Komplette Umzugscheckliste mit Timeline und professionellen Tipps für einen stressfreien Umzug.',
+    description:
+      'Komplette Umzugscheckliste mit Timeline und professionellen Tipps für einen stressfreien Umzug.',
     type: 'article',
   },
 };
@@ -49,20 +51,21 @@ export default function UmzugschecklistePage() {
               </h1>
             </div>
             <p className="text-xl text-white/95 leading-relaxed drop-shadow-md">
-              Von der ersten Planung bis zum ersten Tag im neuen Zuhause - Ihre komplette Anleitung für einen stressfreien Umzug.
+              Von der ersten Planung bis zum ersten Tag im neuen Zuhause - Ihre komplette Anleitung
+              für einen stressfreien Umzug.
             </p>
           </div>
         </section>
 
         {/* Main Content */}
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-
           {/* Introduction */}
           <div className="prose prose-lg max-w-none mb-12">
             <p className="text-xl text-gray-700 leading-relaxed">
-              Ein Umzug kann überwältigend sein, aber mit der richtigen Planung wird er zum stressfreien Neuanfang.
-              Diese detaillierte Checkliste führt Sie chronologisch durch alle wichtigen Schritte - von der ersten
-              Planung bis zur Eingewöhnung im neuen Zuhause.
+              Ein Umzug kann überwältigend sein, aber mit der richtigen Planung wird er zum
+              stressfreien Neuanfang. Diese detaillierte Checkliste führt Sie chronologisch durch
+              alle wichtigen Schritte - von der ersten Planung bis zur Eingewöhnung im neuen
+              Zuhause.
             </p>
           </div>
 
@@ -113,7 +116,9 @@ export default function UmzugschecklistePage() {
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">🏠 Wohnungssuche & Grundplanung</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    🏠 Wohnungssuche & Grundplanung
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
                       <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
@@ -129,13 +134,18 @@ export default function UmzugschecklistePage() {
                     </div>
                     <div className="flex items-start space-x-3">
                       <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
-                      <span>Budget für den Umzug kalkulieren (inkl. Umzugsunternehmen, Renovierung, Kautionen)</span>
+                      <span>
+                        Budget für den Umzug kalkulieren (inkl. Umzugsunternehmen, Renovierung,
+                        Kautionen)
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">📦 Umzugsservice planen</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    📦 Umzugsservice planen
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
                       <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
@@ -159,8 +169,9 @@ export default function UmzugschecklistePage() {
                 <div className="bg-[#14ad9f] bg-opacity-10 p-4 rounded-lg">
                   <h4 className="font-semibold text-[#14ad9f] mb-2">💡 Taskilo-Tipp:</h4>
                   <p className="text-gray-700">
-                    Über Taskilo finden Sie qualifizierte Umzugshelfer in Ihrer Nähe. Von der kompletten Umzugsabwicklung
-                    bis hin zu einzelnen Helfern für den Transport - flexibel buchbar und zu fairen Preisen.
+                    Über Taskilo finden Sie qualifizierte Umzugshelfer in Ihrer Nähe. Von der
+                    kompletten Umzugsabwicklung bis hin zu einzelnen Helfern für den Transport -
+                    flexibel buchbar und zu fairen Preisen.
                   </p>
                 </div>
               </div>
@@ -179,7 +190,9 @@ export default function UmzugschecklistePage() {
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">📋 Behördliche Anmeldungen</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    📋 Behördliche Anmeldungen
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
                       <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
@@ -201,7 +214,9 @@ export default function UmzugschecklistePage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">🔌 Versorgungsverträge</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    🔌 Versorgungsverträge
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
                       <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
@@ -223,7 +238,9 @@ export default function UmzugschecklistePage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">🏫 Weitere wichtige Stellen</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    🏫 Weitere wichtige Stellen
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
                       <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
@@ -239,7 +256,9 @@ export default function UmzugschecklistePage() {
                     </div>
                     <div className="flex items-start space-x-3">
                       <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
-                      <span>Abos und Mitgliedschaften (Fitnessstudio, Zeitungen, etc.) ummelden</span>
+                      <span>
+                        Abos und Mitgliedschaften (Fitnessstudio, Zeitungen, etc.) ummelden
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -259,7 +278,9 @@ export default function UmzugschecklistePage() {
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">📦 Packen & Vorbereitung</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    📦 Packen & Vorbereitung
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
                       <CheckCircle className="w-5 h-5 text-orange-500 mt-1 flex-shrink-0" />
@@ -281,7 +302,9 @@ export default function UmzugschecklistePage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">🧹 Alte Wohnung vorbereiten</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    🧹 Alte Wohnung vorbereiten
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
                       <CheckCircle className="w-5 h-5 text-orange-500 mt-1 flex-shrink-0" />
@@ -305,9 +328,9 @@ export default function UmzugschecklistePage() {
                 <div className="bg-orange-50 p-4 rounded-lg">
                   <h4 className="font-semibold text-orange-600 mb-2">⚠️ Wichtiger Hinweis:</h4>
                   <p className="text-gray-700">
-                    Beauftragen Sie Renovierungsarbeiten rechtzeitig über Taskilo. Maler, Elektriker und
-                    Handwerker sind oft wochenlang ausgebucht. Buchen Sie diese Services bereits bei der
-                    8-Wochen-Planung!
+                    Beauftragen Sie Renovierungsarbeiten rechtzeitig über Taskilo. Maler, Elektriker
+                    und Handwerker sind oft wochenlang ausgebucht. Buchen Sie diese Services bereits
+                    bei der 8-Wochen-Planung!
                   </p>
                 </div>
               </div>
@@ -348,7 +371,9 @@ export default function UmzugschecklistePage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">🚚 Während des Umzugs</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    🚚 Während des Umzugs
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
                       <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
@@ -397,7 +422,9 @@ export default function UmzugschecklistePage() {
           {/* Nach dem Umzug */}
           <div className="mb-12">
             <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/30">
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">📅 Nach dem Umzug (erste 2 Wochen)</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                📅 Nach dem Umzug (erste 2 Wochen)
+              </h2>
 
               <div className="space-y-6">
                 <div>
@@ -405,7 +432,9 @@ export default function UmzugschecklistePage() {
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
                       <Clock className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
-                      <span><strong>Binnen 14 Tagen:</strong> Anmeldung beim Einwohnermeldeamt</span>
+                      <span>
+                        <strong>Binnen 14 Tagen:</strong> Anmeldung beim Einwohnermeldeamt
+                      </span>
                     </div>
                     <div className="flex items-start space-x-3">
                       <Clock className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
@@ -506,7 +535,6 @@ export default function UmzugschecklistePage() {
               </Link>
             </div>
           </div>
-
         </main>
 
         {/* Footer */}
@@ -514,8 +542,13 @@ export default function UmzugschecklistePage() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p className="text-gray-300">
               © 2025 Taskilo. Alle Rechte vorbehalten. |
-              <Link href="/datenschutz" className="hover:text-[#14ad9f] ml-2">Datenschutz</Link> |
-              <Link href="/agb" className="hover:text-[#14ad9f] ml-2">AGB</Link>
+              <Link href="/datenschutz" className="hover:text-[#14ad9f] ml-2">
+                Datenschutz
+              </Link>{' '}
+              |
+              <Link href="/agb" className="hover:text-[#14ad9f] ml-2">
+                AGB
+              </Link>
             </p>
           </div>
         </footer>

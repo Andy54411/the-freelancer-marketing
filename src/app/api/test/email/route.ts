@@ -7,7 +7,6 @@ import { emailService } from '@/lib/resend-email-service';
  */
 export async function GET(request: NextRequest) {
   try {
-
     // Test-Daten
     const testData = {
       customerEmail: 'info@the-freelancer-marketing.com',
@@ -34,7 +33,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

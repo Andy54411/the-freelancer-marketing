@@ -223,14 +223,11 @@ export function MonthlyScheduleView({
                           </div>
                           <div className="text-gray-600 truncate">
                             {shift.status === 'ABSENT' || shift.status === 'SICK'
-                              ? (shift.department || 'Abwesend')
-                              : `${shift.startTime} - ${shift.endTime}`
-                            }
+                              ? shift.department || 'Abwesend'
+                              : `${shift.startTime} - ${shift.endTime}`}
                           </div>
                           {shift.notes && (
-                            <div className="text-gray-500 truncate text-xs">
-                              {shift.notes}
-                            </div>
+                            <div className="text-gray-500 truncate text-xs">{shift.notes}</div>
                           )}
                         </div>
                       );

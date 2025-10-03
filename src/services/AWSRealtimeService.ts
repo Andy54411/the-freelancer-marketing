@@ -43,10 +43,7 @@ class AWSRealtimeService {
       }
 
       const result = await response.json();
-
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   // WebSocket Connection Management (Client-Side)
@@ -88,7 +85,6 @@ class AWSRealtimeService {
 
     const wsUrl = process.env.NEXT_PUBLIC_AWS_WEBSOCKET_URL;
     if (!wsUrl) {
-
       return () => {};
     }
 
@@ -96,33 +92,24 @@ class AWSRealtimeService {
       const fullUrl = `${wsUrl}?adminId=${encodeURIComponent(adminId)}`;
       const ws = new WebSocket(fullUrl);
 
-      ws.onopen = () => {
-
-      };
+      ws.onopen = () => {};
 
       ws.onmessage = event => {
         try {
           const data = JSON.parse(event.data);
           callback(data);
-        } catch (error) {
-
-        }
+        } catch (error) {}
       };
 
-      ws.onerror = error => {
+      ws.onerror = error => {};
 
-      };
-
-      ws.onclose = () => {
-
-      };
+      ws.onclose = () => {};
 
       // Return unsubscribe function
       return () => {
         ws.close();
       };
     } catch (error) {
-
       return () => {};
     }
   }
@@ -136,15 +123,12 @@ class AWSRealtimeService {
   ): Promise<void> {
     try {
       await this.publishWorkspaceUpdate(workspaceId, adminId, eventType, data);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   // Initialize WebSocket (for compatibility)
   async initializeWebSocket(): Promise<void> {
     // WebSocket initialization is handled in subscribeToWorkspaceEvents
-
   }
 }
 

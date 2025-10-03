@@ -150,7 +150,6 @@ export async function GET(request: NextRequest) {
         );
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,
@@ -215,7 +214,6 @@ export async function POST(request: NextRequest) {
       endpoint,
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

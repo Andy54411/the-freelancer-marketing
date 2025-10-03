@@ -108,7 +108,6 @@ export function DatevDocumentSync({ companyId }: DatevDocumentSyncProps) {
         },
       ]);
     } catch (error) {
-
       toast.error('Fehler beim Laden der Dokument-Daten');
     } finally {
       setLoading(false);

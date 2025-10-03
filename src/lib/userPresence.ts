@@ -44,7 +44,6 @@ export class UserPresenceService {
     this.setupVisibilityChangeHandler();
 
     this.isInitialized = true;
-
   }
 
   // Startet den Timer für regelmäßige Aktivitätsupdates
@@ -88,14 +87,11 @@ export class UserPresenceService {
             status: 'online',
           });
         }
-      } catch (error) {
-
-      }
+      } catch (error) {}
     };
 
     // TEMPORÄR DEAKTIVIERT: Vereinfachte beforeunload-Behandlung ohne API-Call
     const handleBeforeUnload = () => {
-
       /*
       if (this.userId) {
         try {
@@ -138,9 +134,7 @@ export class UserPresenceService {
           lastSeen: serverTimestamp(),
           status: 'offline',
         });
-
       } else {
-
       }
     } catch (error) {
       // Ignoriere Permission-Fehler beim Cleanup nach Logout
@@ -150,15 +144,12 @@ export class UserPresenceService {
         'code' in error &&
         error.code === 'PERMISSION_DENIED'
       ) {
-
       } else {
-
       }
     }
 
     this.isInitialized = false;
     this.userId = null;
-
   }
 
   // Holt den aktuellen Status eines Benutzers

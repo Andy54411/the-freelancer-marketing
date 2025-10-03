@@ -75,9 +75,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
           setChat(doc.data());
         }
       },
-      error => {
-
-      }
+      error => {}
     );
 
     // Richte den Listener für Nachrichten ein.
@@ -97,7 +95,6 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
         setLoading(false); // Set loading to false after first successful fetch
       },
       error => {
-
         setChatError('Nachrichten konnten nicht geladen werden.');
         setLoading(false);
       }
@@ -108,7 +105,6 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
       try {
         const docSnap = await getDoc(chatDocRef);
         if (!docSnap.exists()) {
-
           // KORREKTUR: Dokumentenstruktur an die 'supportChats'-Regeln anpassen.
           await setDoc(chatDocRef, {
             userId: currentUser.uid, // Wichtig für die Sicherheitsregeln
@@ -144,13 +140,11 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
           // KORREKTUR: Setze den Status bei JEDEM Öffnen des Chats auf 'bot',
           // um sicherzustellen, dass jede neue Konversation mit dem Bot beginnt.
           if (chatData.status !== 'bot') {
-
             await updateDoc(chatDocRef, { status: 'bot' });
           }
         }
         setIsChatReady(true); // Chat ist jetzt initialisiert und bereit zum Senden.
       } catch (error) {
-
         setChatError('Chat konnte nicht initialisiert werden.');
         setIsChatReady(false);
       }
@@ -301,7 +295,6 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
               }
             }
           } catch (geminiError) {
-
             // Fallback: Setze Status auf "human" für manuelle Bearbeitung
             await updateDoc(chatDocRef, {
               status: 'human',
@@ -311,7 +304,6 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
           }
         }
       } catch (error) {
-
         setChatError('Nachricht konnte nicht gesendet werden.');
       } finally {
         setIsSending(false);

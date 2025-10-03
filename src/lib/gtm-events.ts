@@ -46,7 +46,7 @@ export const trackPageView = (page?: string) => {
     event: 'page_view',
     page_location: window.location.href,
     page_title: document.title,
-    page_path: page || window.location.pathname
+    page_path: page || window.location.pathname,
   });
 };
 
@@ -58,7 +58,7 @@ export const trackFormSubmit = (formName: string, formId?: string, formAction?: 
     event: 'form_submit',
     form_name: formName,
     form_id: formId,
-    form_action: formAction
+    form_action: formAction,
   });
 };
 
@@ -70,7 +70,7 @@ export const trackButtonClick = (buttonText: string, buttonId?: string, buttonCl
     event: 'button_click',
     button_text: buttonText,
     button_id: buttonId,
-    button_class: buttonClass
+    button_class: buttonClass,
   });
 };
 
@@ -88,7 +88,7 @@ export const trackCookieConsent = (
     consent_type: consentType,
     analytics_consent: analyticsConsent,
     marketing_consent: marketingConsent,
-    functional_consent: functionalConsent
+    functional_consent: functionalConsent,
   });
 };
 
@@ -106,39 +106,31 @@ export const trackPurchase = (
     transaction_id: transactionId,
     value: value,
     currency: currency,
-    items: items
+    items: items,
   });
 };
 
 /**
  * Add to Cart Event
  */
-export const trackAddToCart = (
-  value: number,
-  currency: string = 'EUR',
-  items: GTMItem[]
-) => {
+export const trackAddToCart = (value: number, currency: string = 'EUR', items: GTMItem[]) => {
   sendGTMEvent({
     event: 'add_to_cart',
     currency: currency,
     value: value,
-    items: items
+    items: items,
   });
 };
 
 /**
  * Begin Checkout Event
  */
-export const trackBeginCheckout = (
-  value: number,
-  currency: string = 'EUR',
-  items: GTMItem[]
-) => {
+export const trackBeginCheckout = (value: number, currency: string = 'EUR', items: GTMItem[]) => {
   sendGTMEvent({
     event: 'begin_checkout',
     currency: currency,
     value: value,
-    items: items
+    items: items,
   });
 };
 
@@ -157,7 +149,7 @@ export const trackCustomEvent = (
     event_category: eventCategory,
     event_action: eventAction,
     event_label: eventLabel,
-    value: value
+    value: value,
   });
 };
 
@@ -173,8 +165,8 @@ export const trackUserProperties = (userProperties: GTMUserProperties) => {
     user_properties: {
       customer_type: userProperties.customer_type,
       signup_date: userProperties.signup_date,
-      region: userProperties.region
-    }
+      region: userProperties.region,
+    },
   });
 };
 
@@ -196,7 +188,7 @@ export const trackServiceBooking = (
     service_category: serviceCategory,
     service_price: servicePrice,
     provider_id: providerId,
-    provider_name: providerName
+    provider_name: providerName,
   });
 };
 
@@ -212,7 +204,7 @@ export const trackProviderRegistration = (
     event: 'provider_registration',
     provider_id: providerId,
     provider_category: providerCategory,
-    provider_region: providerRegion
+    provider_region: providerRegion,
   });
 };
 
@@ -230,7 +222,7 @@ export const trackSearch = (
     search_term: searchTerm,
     search_category: searchCategory,
     search_location: searchLocation,
-    results_count: resultsCount
+    results_count: resultsCount,
   });
 };
 
@@ -246,7 +238,7 @@ export const trackChatInteraction = (
     event: 'chat_interaction',
     chat_type: chatType,
     message_type: messageType,
-    chat_category: chatCategory
+    chat_category: chatCategory,
   });
 };
 
@@ -262,52 +254,41 @@ export const trackVideoPlay = (
     event: 'video_play',
     video_title: videoTitle,
     video_duration: videoDuration,
-    video_category: videoCategory
+    video_category: videoCategory,
   });
 };
 
 /**
  * File Download Event
  */
-export const trackFileDownload = (
-  fileName: string,
-  fileType: string,
-  fileSize?: number
-) => {
+export const trackFileDownload = (fileName: string, fileType: string, fileSize?: number) => {
   sendGTMEvent({
     event: 'file_download',
     file_name: fileName,
     file_type: fileType,
-    file_size: fileSize
+    file_size: fileSize,
   });
 };
 
 /**
  * Newsletter Signup Event
  */
-export const trackNewsletterSignup = (
-  email: string,
-  source?: string
-) => {
+export const trackNewsletterSignup = (email: string, source?: string) => {
   sendGTMEvent({
     event: 'newsletter_signup',
     email: email,
-    source: source
+    source: source,
   });
 };
 
 /**
  * Social Share Event
  */
-export const trackSocialShare = (
-  platform: string,
-  contentType: string,
-  contentId?: string
-) => {
+export const trackSocialShare = (platform: string, contentType: string, contentId?: string) => {
   sendGTMEvent({
     event: 'social_share',
     platform: platform,
     content_type: contentType,
-    content_id: contentId
+    content_id: contentId,
   });
 };

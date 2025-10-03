@@ -17,7 +17,7 @@ import {
   CalendarDays,
   AlertCircle,
   CheckCircle,
-  ArrowRight
+  ArrowRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PersonalService, TimeTracking, Shift } from '@/services/personalService';
@@ -70,7 +70,6 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
       const entries = await PersonalService.getEmployeeTimeTracking(companyId, employeeId);
       setTimeEntries(entries);
     } catch (error) {
-
       toast.error('Fehler beim Laden der Zeiteinträge');
     } finally {
       setLoading(false);
@@ -101,9 +100,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
           description: `${todayShift.position} - ${todayShift.department}`,
         }));
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const calculateHours = (startTime: string, endTime: string) => {
@@ -172,7 +169,6 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
 
       toast.success('Zeiteintrag erfolgreich hinzugefügt');
     } catch (error) {
-
       toast.error('Fehler beim Hinzufügen des Zeiteintrags');
     } finally {
       setLoading(false);
@@ -185,7 +181,6 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
       setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
       toast.success('Zeiteintrag gelöscht');
     } catch (error) {
-
       toast.error('Fehler beim Löschen des Zeiteintrags');
     }
   };
@@ -222,8 +217,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
   const workHours = monthlyEntries
     .filter(e => e.status === 'COMPLETED')
     .reduce((sum, entry) => sum + (entry.totalHours || 0), 0);
-  const overtimeHours = monthlyEntries
-    .reduce((sum, entry) => sum + (entry.overtimeHours || 0), 0);
+  const overtimeHours = monthlyEntries.reduce((sum, entry) => sum + (entry.overtimeHours || 0), 0);
   const vacationDays = 0; // TODO: Aus separater Vacation-Tabelle berechnen
 
   const useShiftTime = () => {
@@ -250,7 +244,8 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
                 <div>
                   <h4 className="font-medium text-gray-900">Heutige Schicht</h4>
                   <p className="text-sm text-gray-600">
-                    {formatTime(todaysShift.startTime)} - {formatTime(todaysShift.endTime)} • {todaysShift.position} ({todaysShift.department})
+                    {formatTime(todaysShift.startTime)} - {formatTime(todaysShift.endTime)} •{' '}
+                    {todaysShift.position} ({todaysShift.department})
                   </p>
                 </div>
               </div>
@@ -280,20 +275,31 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
           <CardContent>
             <div className="space-y-2">
               {shifts.slice(0, 5).map(shift => (
-                <div key={shift.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div
+                  key={shift.id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
                   <div>
-                    <p className="font-medium">{new Date(shift.date).toLocaleDateString('de-DE')}</p>
+                    <p className="font-medium">
+                      {new Date(shift.date).toLocaleDateString('de-DE')}
+                    </p>
                     <p className="text-sm text-gray-600">
                       {formatTime(shift.startTime)} - {formatTime(shift.endTime)} • {shift.position}
                     </p>
                   </div>
                   <Badge
                     variant={shift.status === 'CONFIRMED' ? 'default' : 'secondary'}
-                    className={shift.status === 'CONFIRMED' ? 'bg-[#14ad9f] hover:bg-[#129488]' : ''}
+                    className={
+                      shift.status === 'CONFIRMED' ? 'bg-[#14ad9f] hover:bg-[#129488]' : ''
+                    }
                   >
-                    {shift.status === 'PLANNED' ? 'Geplant' :
-                     shift.status === 'CONFIRMED' ? 'Bestätigt' :
-                     shift.status === 'ABSENT' ? 'Abwesend' : 'Krank'}
+                    {shift.status === 'PLANNED'
+                      ? 'Geplant'
+                      : shift.status === 'CONFIRMED'
+                        ? 'Bestätigt'
+                        : shift.status === 'ABSENT'
+                          ? 'Abwesend'
+                          : 'Krank'}
                   </Badge>
                 </div>
               ))}
@@ -430,9 +436,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-muted-foreground text-center py-8">
-              Lade Zeiteinträge...
-            </p>
+            <p className="text-muted-foreground text-center py-8">Lade Zeiteinträge...</p>
           ) : timeEntries.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">
               Noch keine Zeiteinträge vorhanden
@@ -447,7 +451,9 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                       {getTypeIcon(entry.status)}
-                      <Badge className={getTypeColor(entry.status)}>{getTypeLabel(entry.status)}</Badge>
+                      <Badge className={getTypeColor(entry.status)}>
+                        {getTypeLabel(entry.status)}
+                      </Badge>
                     </div>
                     <div>
                       <p className="font-medium">
@@ -461,7 +467,9 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
                         )}
                         <span>{(entry.totalHours || 0).toFixed(1)}h</span>
                         {entry.overtimeHours && entry.overtimeHours > 0 && (
-                          <span className="text-purple-600">+{entry.overtimeHours.toFixed(1)}h Überstunden</span>
+                          <span className="text-purple-600">
+                            +{entry.overtimeHours.toFixed(1)}h Überstunden
+                          </span>
                         )}
                         {entry.notes && <span>• {entry.notes}</span>}
                       </div>
@@ -471,7 +479,11 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
                     <Badge variant={entry.approvedBy ? 'default' : 'secondary'}>
                       {entry.approvedBy ? 'Genehmigt' : 'Ausstehend'}
                     </Badge>
-                    <Button variant="outline" size="sm" onClick={() => setEditingEntry(entry.id || '')}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingEntry(entry.id || '')}
+                    >
                       <Edit2 className="h-4 w-4" />
                     </Button>
                     <Button

@@ -39,7 +39,6 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'internal_server_error',

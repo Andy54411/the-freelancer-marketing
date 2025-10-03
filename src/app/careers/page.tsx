@@ -60,7 +60,9 @@ export default function CareersPage() {
 
             {/* Current Openings */}
             <section>
-              <h2 className="text-2xl font-bold text-white mb-8 drop-shadow-md">Aktuelle Stellenangebote</h2>
+              <h2 className="text-2xl font-bold text-white mb-8 drop-shadow-md">
+                Aktuelle Stellenangebote
+              </h2>
               <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
                 <p className="text-gray-600 text-center">
                   Derzeit haben wir keine offenen Stellen. Folge uns auf unseren sozialen Medien
@@ -71,12 +73,16 @@ export default function CareersPage() {
 
             {/* Contact */}
             <section>
-              <h2 className="text-2xl font-bold text-white mb-8 drop-shadow-md">Interesse geweckt?</h2>
+              <h2 className="text-2xl font-bold text-white mb-8 drop-shadow-md">
+                Interesse geweckt?
+              </h2>
               <div className="bg-white/95 backdrop-blur-sm rounded-lg p-8 text-center shadow-xl">
                 <div className="w-16 h-16 bg-gradient-to-br from-[#14ad9f] to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FiMail className="text-white text-2xl" />
                 </div>
-                <h3 className="text-xl font-semibold mb-4 text-gray-900">Sende uns deine Bewerbung</h3>
+                <h3 className="text-xl font-semibold mb-4 text-gray-900">
+                  Sende uns deine Bewerbung
+                </h3>
                 <p className="mb-6 text-gray-600">
                   Auch wenn aktuell keine passende Stelle ausgeschrieben ist, freuen wir uns über
                   Initiativbewerbungen von motivierten Talenten.

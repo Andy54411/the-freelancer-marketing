@@ -148,7 +148,6 @@ export const useTaskiloContacts = () => {
       const data = await response.json();
       return data.success ? data.validation : null;
     } catch (err) {
-
       return null;
     }
   }, []);
@@ -174,7 +173,6 @@ export const useTaskiloContacts = () => {
       const data = await response.json();
       return data.success ? data.suggestions : [];
     } catch (err) {
-
       return [];
     }
   }, []);

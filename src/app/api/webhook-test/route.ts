@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-
     const body = await req.text();
 
     return NextResponse.json({
@@ -13,7 +12,6 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-
     return NextResponse.json(
       {
         error: 'Webhook test fehlgeschlagen',

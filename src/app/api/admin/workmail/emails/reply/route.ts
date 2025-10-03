@@ -39,11 +39,9 @@ async function saveToSentFolder(
     const imap = new Imap(imapConfig);
 
     imap.once('ready', () => {
-
       // Erst alle verfügbaren Ordner auflisten für Debugging
       imap.getBoxes((listErr: any, boxes: any) => {
         if (!listErr && boxes) {
-
         }
       });
 
@@ -53,7 +51,6 @@ async function saveToSentFolder(
       let folderIndex = 0;
       const tryFolder = () => {
         if (folderIndex >= sentFolders.length) {
-
           imap.end();
           return reject(new Error('No sent folder accessible'));
         }
@@ -61,7 +58,6 @@ async function saveToSentFolder(
 
         imap.openBox(currentFolder, false, (err: any) => {
           if (err) {
-
             folderIndex++;
             tryFolder();
             return;
@@ -76,18 +72,13 @@ async function saveToSentFolder(
             emailContent,
             { mailbox: currentFolder, flags: flags, date: date },
             (appendErr: any) => {
-
               if (appendErr) {
-
                 // Versuche nächsten Folder
                 folderIndex++;
                 imap.closeBox((closeErr: any) => {
-                  if (closeErr)
-
-                  tryFolder();
+                  if (closeErr) tryFolder();
                 });
               } else {
-
                 imap.end();
                 resolve();
               }
@@ -100,7 +91,6 @@ async function saveToSentFolder(
     });
 
     imap.once('error', (err: any) => {
-
       reject(err);
     });
 
@@ -110,28 +100,23 @@ async function saveToSentFolder(
 
 export async function POST(request: NextRequest) {
   try {
-
     // JWT-Authentifizierung - Verwende taskilo-admin-token wie WorkMail API
     const cookieStore = await cookies();
     const token = cookieStore.get('taskilo-admin-token')?.value;
 
     if (!token) {
-
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
     let decoded: JWTPayload;
     try {
       decoded = jwt.verify(token, jwtSecret) as JWTPayload;
-
     } catch (error) {
-
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -140,7 +125,6 @@ export async function POST(request: NextRequest) {
     const { to, subject, message, inReplyTo } = body;
 
     if (!to || !subject || !message) {
-
       return NextResponse.json(
         {
           error: 'Missing required fields: to, subject, message',
@@ -196,14 +180,11 @@ export async function POST(request: NextRequest) {
 
       // E-Mail im Sent-Ordner speichern
       try {
-
         // Raw E-Mail Content für IMAP Append erstellen
         const rawEmailContent = `From: ${emailOptions.from}\r\nTo: ${emailOptions.to}\r\nSubject: ${emailOptions.subject}\r\nDate: ${new Date().toUTCString()}\r\nMessage-ID: ${result.messageId}\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${emailOptions.html}`;
 
         await saveToSentFolder(smtpUser, smtpPassword, rawEmailContent);
-
       } catch (sentFolderError) {
-
         // E-Mail wurde erfolgreich gesendet, Sent-Folder-Fehler ist nicht kritisch
       }
       const emailData = {
@@ -235,7 +216,6 @@ export async function POST(request: NextRequest) {
         },
       });
     } catch (emailError) {
-
       // Fallback zu Simulation, falls SMTP fehlschlägt
 
       const emailData = {
@@ -263,7 +243,6 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

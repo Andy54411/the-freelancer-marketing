@@ -6,10 +6,10 @@ import { PDFTemplateProps } from '@/hooks/pdf/usePDFTemplateData';
 export type { InvoiceData } from '@/types/invoiceTypes';
 
 // Wrapper-Komponente für Kompatibilität
-const PDFTemplateWrapper: React.FC<{ data: any; companySettings?: any; customizations?: any }> = ({ 
-  data, 
-  companySettings, 
-  customizations 
+const PDFTemplateWrapper: React.FC<{ data: any; companySettings?: any; customizations?: any }> = ({
+  data,
+  companySettings,
+  customizations,
 }) => {
   // Konvertiere die Props zum PDFTemplateProps-Format
   const pdfProps: PDFTemplateProps = {
@@ -18,16 +18,16 @@ const PDFTemplateWrapper: React.FC<{ data: any; companySettings?: any; customiza
     color: customizations?.color || '#14ad9f',
     logoUrl: companySettings?.logoUrl || null,
     logoSize: customizations?.logoSize || 50,
-    documentType: data.documentType || 'invoice'
+    documentType: data.documentType || 'invoice',
   };
-  
+
   return <PDFTemplate {...pdfProps} />;
 };
 
 // PDF-Template-Typen basierend auf den neuen PDF-Templates
-export type InvoiceTemplate = 
+export type InvoiceTemplate =
   | 'TEMPLATE_STANDARD'
-  | 'TEMPLATE_NEUTRAL' 
+  | 'TEMPLATE_NEUTRAL'
   | 'TEMPLATE_ELEGANT'
   | 'TEMPLATE_TECHNICAL'
   | 'TEMPLATE_GEOMETRIC'
@@ -85,7 +85,7 @@ export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplate = 'TEMPLATE_STANDARD';
 export const DOCUMENT_TYPE_TEMPLATES = {
   invoice: 'TEMPLATE_STANDARD',
   reminder: 'TEMPLATE_STANDARD',
-  quote: 'TEMPLATE_STANDARD', 
+  quote: 'TEMPLATE_STANDARD',
   delivery: 'TEMPLATE_STANDARD',
 } as const;
 

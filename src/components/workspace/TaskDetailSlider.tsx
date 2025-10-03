@@ -57,10 +57,18 @@ import { WorkspaceService } from '@/services/WorkspaceService';
 import type { Workspace, WorkspaceTask, WorkspaceMember } from '@/services/WorkspaceService';
 import dynamic from 'next/dynamic';
 
-const RichTextEditor = dynamic(() => import('@/components/workspace/RichTextEditor').then(mod => ({ default: mod.RichTextEditor })), {
-  ssr: false,
-  loading: () => <div className="h-[300px] border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-gray-500">Laden...</div>
-});
+const RichTextEditor = dynamic(
+  () =>
+    import('@/components/workspace/RichTextEditor').then(mod => ({ default: mod.RichTextEditor })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-gray-500">
+        Laden...
+      </div>
+    ),
+  }
+);
 
 interface TaskComment {
   id: string;
@@ -264,7 +272,6 @@ export default function TaskDetailSlider({
       await onTaskUpdated(task.id, updates);
       setIsEditing(false);
     } catch (error) {
-
       setErrors({ general: 'Fehler beim Speichern der Aufgabe' });
     } finally {
       setLoading(false);
@@ -378,7 +385,6 @@ export default function TaskDetailSlider({
         };
         setActivities(prev => [activity, ...prev]);
       } catch (error) {
-
         setUploadProgress(prev => {
           const newProgress = { ...prev };
           delete newProgress[fileId];
@@ -421,7 +427,6 @@ export default function TaskDetailSlider({
       };
       setActivities(prev => [activity, ...prev]);
     } catch (error) {
-
       setErrors(prev => ({ ...prev, delete: `Fehler beim Löschen von ${attachment.name}` }));
     }
   };
@@ -863,9 +868,7 @@ export default function TaskDetailSlider({
                   <div className="h-full p-4 overflow-y-auto">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Content Creator
-                        </h3>
+                        <h3 className="text-lg font-semibold text-gray-900">Content Creator</h3>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-xs">
                             Blog Post
@@ -880,8 +883,8 @@ export default function TaskDetailSlider({
                       </div>
 
                       <div className="text-sm text-gray-600 mb-4">
-                        Erstelle professionellen Content mit unserem Rich-Text-Editor.
-                        Perfekt für Blog-Posts, Social Media Content, Dokumentation und mehr.
+                        Erstelle professionellen Content mit unserem Rich-Text-Editor. Perfekt für
+                        Blog-Posts, Social Media Content, Dokumentation und mehr.
                       </div>
 
                       <div className="border-2 border-dashed border-gray-200 rounded-lg p-1">
@@ -904,9 +907,7 @@ export default function TaskDetailSlider({
 
                       {/* Content Templates */}
                       <div className="mt-6">
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">
-                          Content-Vorlagen
-                        </h4>
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">Content-Vorlagen</h4>
                         <div className="grid grid-cols-2 gap-3">
                           <Button
                             variant="outline"
@@ -1055,13 +1056,24 @@ Was sollen deine Follower tun?</p>
                             <div>
                               <span className="text-gray-500">Wörter:</span>
                               <span className="ml-1 font-medium">
-                                {contentValue.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length}
+                                {
+                                  contentValue
+                                    .replace(/<[^>]*>/g, '')
+                                    .split(/\s+/)
+                                    .filter(word => word.length > 0).length
+                                }
                               </span>
                             </div>
                             <div>
                               <span className="text-gray-500">Lesezeit:</span>
                               <span className="ml-1 font-medium">
-                                {Math.ceil(contentValue.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length / 200)} Min
+                                {Math.ceil(
+                                  contentValue
+                                    .replace(/<[^>]*>/g, '')
+                                    .split(/\s+/)
+                                    .filter(word => word.length > 0).length / 200
+                                )}{' '}
+                                Min
                               </span>
                             </div>
                           </div>

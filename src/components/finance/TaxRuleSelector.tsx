@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, Info } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { TaxRuleType } from '@/types/taxRules';
 
 interface TaxRuleSelectorProps {
@@ -190,8 +190,8 @@ export function TaxRuleSelector({ value, onChange, className }: TaxRuleSelectorP
         </div>
 
         <div className="text-xs text-gray-500">
-          Hinweis: Je nach Regelung setzen wir den USt.-Satz automatisch (DE steuerpflichtig
-          → 19%, andere Regeln → 0%).
+          Hinweis: Je nach Regelung setzen wir den USt.-Satz automatisch (DE steuerpflichtig → 19%,
+          andere Regeln → 0%).
         </div>
       </div>
     </div>

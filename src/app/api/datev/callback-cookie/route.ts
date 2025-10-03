@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
 
     // Check for OAuth errors
     if (error) {
-
       return NextResponse.redirect(
         `${redirectUrl}?error=${error}&message=${encodeURIComponent(error_description || 'Unknown error')}`
       );
@@ -30,7 +29,6 @@ export async function GET(request: NextRequest) {
 
     // Validate required parameters
     if (!code || !state) {
-
       return NextResponse.redirect(
         `${redirectUrl}?error=missing_parameters&message=${encodeURIComponent('Missing required OAuth parameters')}`
       );
@@ -49,7 +47,6 @@ export async function GET(request: NextRequest) {
         throw new Error('Invalid state data');
       }
     } catch (parseError) {
-
       return NextResponse.redirect(
         `${redirectUrl}?error=invalid_state&message=${encodeURIComponent('Invalid state parameter')}`
       );
@@ -106,13 +103,11 @@ export async function GET(request: NextRequest) {
 
       return response;
     } catch (tokenError) {
-
       return NextResponse.redirect(
         `${redirectUrl}?error=token_exchange_failed&message=${encodeURIComponent('Failed to exchange authorization code for tokens')}`
       );
     }
   } catch (error) {
-
     const fallbackUrl =
       process.env.NODE_ENV === 'development'
         ? 'http://localhost:3000/dashboard/company/unknown/datev/setup'
@@ -162,7 +157,6 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string) {
 
   // If PKCE-only fails with invalid_client, try with client_secret
   if (!response.ok && response.status === 401) {
-
     const tokenRequestDataWithSecret = new URLSearchParams({
       grant_type: 'authorization_code',
       code: code,

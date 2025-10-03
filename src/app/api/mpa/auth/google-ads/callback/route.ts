@@ -12,7 +12,6 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error');
 
     if (error) {
-
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state}/taskilo-advertising?error=oauth_failed&platform=google-ads`
       );
@@ -80,7 +79,6 @@ export async function GET(request: NextRequest) {
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${companyId}/taskilo-advertising?success=connected&platform=google-ads`
     );
   } catch (error: any) {
-
     const companyId = new URL(request.url).searchParams.get('state');
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${companyId}/taskilo-advertising?error=connection_failed&platform=google-ads&message=${encodeURIComponent(error.message)}`

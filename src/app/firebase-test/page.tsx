@@ -47,7 +47,6 @@ export default function FirebaseTestPage() {
       setAuthTest(`✅ Login successful: ${result.user.uid}`);
     } catch (error: any) {
       setAuthTest(`❌ Login failed: ${error.code} - ${error.message}`);
-
     }
   };
 

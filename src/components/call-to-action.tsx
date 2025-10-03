@@ -35,7 +35,9 @@ export default function CallToAction() {
           </div>
 
           <div className="mt-6 sm:mt-8 text-teal-100">
-            <p className="text-xs sm:text-sm">✓ Kostenlose Registrierung ✓ Geprüfte Anbieter ✓ Sichere Abwicklung</p>
+            <p className="text-xs sm:text-sm">
+              ✓ Kostenlose Registrierung ✓ Geprüfte Anbieter ✓ Sichere Abwicklung
+            </p>
           </div>
         </div>
       </div>

@@ -8,91 +8,91 @@ export const PDF_PAGE_STYLES = {
   // Verhindert Seitenumbrüche innerhalb von Elementen
   keepTogether: {
     pageBreakInside: 'avoid',
-    breakInside: 'avoid'
+    breakInside: 'avoid',
   },
-  
+
   // Erzwingt Seitenumbruch vor Element
   breakBefore: {
     pageBreakBefore: 'always',
-    breakBefore: 'page'
+    breakBefore: 'page',
   },
-  
-  // Erzwingt Seitenumbruch nach Element  
+
+  // Erzwingt Seitenumbruch nach Element
   breakAfter: {
     pageBreakAfter: 'always',
-    breakAfter: 'page'
+    breakAfter: 'page',
   },
-  
+
   // Verhindert Seitenumbruch vor Element
   avoidBreakBefore: {
     pageBreakBefore: 'avoid',
-    breakBefore: 'avoid'
+    breakBefore: 'avoid',
   },
-  
+
   // Verhindert Seitenumbruch nach Element
   avoidBreakAfter: {
-    pageBreakAfter: 'avoid', 
-    breakAfter: 'avoid'
+    pageBreakAfter: 'avoid',
+    breakAfter: 'avoid',
   },
-  
+
   // Container für Items-Tabelle
   itemsTable: {
     pageBreakInside: 'auto',
-    breakInside: 'auto'
+    breakInside: 'auto',
   },
-  
+
   // Tabellen-Header - soll mit ersten Zeilen zusammenbleiben
   tableHeader: {
     pageBreakInside: 'avoid',
     breakInside: 'avoid',
     pageBreakAfter: 'avoid',
-    breakAfter: 'avoid'
+    breakAfter: 'avoid',
   },
-  
+
   // Einzelne Tabellenzeilen
   tableRow: {
     pageBreakInside: 'avoid',
-    breakInside: 'avoid'
+    breakInside: 'avoid',
   },
-  
+
   // Tabellen-Gruppe (Header + mindestens 2-3 Zeilen zusammen)
   tableGroup: {
     pageBreakInside: 'avoid',
-    breakInside: 'avoid'
+    breakInside: 'avoid',
   },
-  
+
   // Footer auf jeder Seite - einfacher Ansatz
   pageFooter: {
     pageBreakInside: 'avoid',
-    breakInside: 'avoid'
+    breakInside: 'avoid',
   },
-  
+
   // Seiteninhalt mit Platz für Footer
   pageContent: {
-    paddingBottom: '100px' // Platz für Footer
+    paddingBottom: '100px', // Platz für Footer
   },
-  
-  // Header-Bereich (Logo, Adressen)  
+
+  // Header-Bereich (Logo, Adressen)
   headerSection: {
     pageBreakInside: 'avoid',
     breakInside: 'avoid',
     pageBreakAfter: 'avoid',
-    breakAfter: 'avoid'
+    breakAfter: 'avoid',
   },
-  
+
   // Footer-Bereich
   footerSection: {
     pageBreakInside: 'avoid',
     breakInside: 'avoid',
     pageBreakBefore: 'avoid',
-    breakBefore: 'avoid'
+    breakBefore: 'avoid',
   },
-  
+
   // Totals-Bereich
   totalsSection: {
     pageBreakInside: 'avoid',
-    breakInside: 'avoid'
-  }
+    breakInside: 'avoid',
+  },
 } as const;
 
 // CSS Klassen für Tailwind-kompatible Verwendung
