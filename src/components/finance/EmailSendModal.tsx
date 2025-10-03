@@ -14,8 +14,8 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue } from
+'@/components/ui/select';
 import { X, Send, FileText, Plus, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { InvoiceData } from '@/types/invoiceTypes';
@@ -59,7 +59,7 @@ export function EmailSendModal({
   pageMode = 'single',
   getRenderedHtml,
   isTemplateReady,
-  onSend,
+  onSend
 }: EmailSendModalProps) {
   const [sending, setSending] = useState(false);
 
@@ -84,7 +84,7 @@ export function EmailSendModal({
   const documentLabels = {
     invoice: 'Rechnung',
     quote: 'Angebot',
-    reminder: 'Erinnerung',
+    reminder: 'Erinnerung'
   };
 
   const documentLabel = documentLabels[documentType];
@@ -124,19 +124,19 @@ Mit freundlichen Grüßen`);
 
     switch (type) {
       case 'to':
-        if (!recipients.find(r => r.email === email.trim())) {
+        if (!recipients.find((r) => r.email === email.trim())) {
           setRecipients([...recipients, newRecipient]);
         }
         setCurrentRecipient('');
         break;
       case 'cc':
-        if (!ccRecipients.find(r => r.email === email.trim())) {
+        if (!ccRecipients.find((r) => r.email === email.trim())) {
           setCcRecipients([...ccRecipients, newRecipient]);
         }
         setCurrentCC('');
         break;
       case 'bcc':
-        if (!bccRecipients.find(r => r.email === email.trim())) {
+        if (!bccRecipients.find((r) => r.email === email.trim())) {
           setBccRecipients([...bccRecipients, newRecipient]);
         }
         setCurrentBCC('');
@@ -179,8 +179,8 @@ Mit freundlichen Grüßen`);
   // ✅ Generate PDF using the rendered HTML from SendDocumentModal
   const generatePdfBase64 = async (): Promise<string | null> => {
     try {
-      console.log('EmailSendModal - Generating PDF with template:', selectedTemplate);
-      console.log('EmailSendModal - Template ready status:', isTemplateReady);
+
+
 
       // ✅ Prüfung ob Template bereit ist
       if (!isTemplateReady) {
@@ -200,42 +200,42 @@ Mit freundlichen Grüßen`);
         );
       }
 
-      console.log('Template ready! HTML content length:', htmlContent.length);
 
-      console.log('EmailSendModal - Got HTML content, sending to API');
+
+
 
       // 🤖 SMART API SELECTION: Auto-detect based on items count
       const itemsCount = document?.items?.length || 0;
       const shouldUseSingle = itemsCount < 3; // 1-2 items = single, 3+ items = multi
-      const smartApiEndpoint = shouldUseSingle
-        ? '/api/generate-pdf-single'
-        : '/api/generate-pdf-multi';
+      const smartApiEndpoint = shouldUseSingle ?
+      '/api/generate-pdf-single' :
+      '/api/generate-pdf-multi';
 
       // Use smart detection OR manual pageMode (if user explicitly set it)
       const finalApiEndpoint =
-        pageMode === 'single'
-          ? '/api/generate-pdf-single'
-          : pageMode === 'multi'
-            ? '/api/generate-pdf-multi'
-            : smartApiEndpoint;
+      pageMode === 'single' ?
+      '/api/generate-pdf-single' :
+      pageMode === 'multi' ?
+      '/api/generate-pdf-multi' :
+      smartApiEndpoint;
 
-      console.log('🤖 SMART API SELECTION:', {
-        itemsCount,
-        shouldUseSingle,
-        pageMode,
-        smartApiEndpoint,
-        finalApiEndpoint,
-      });
+
+
+
+
+
+
+
 
       const response = await fetch(finalApiEndpoint, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           htmlContent: htmlContent,
-          template: selectedTemplate,
-        }),
+          template: selectedTemplate
+        })
       });
 
       if (!response.ok) {
@@ -257,10 +257,10 @@ Mit freundlichen Grüßen`);
         throw new Error('PDF generation returned empty result');
       }
 
-      console.log(
-        'EmailSendModal - PDF generated successfully, base64 length:',
-        result.pdfBase64.length
-      );
+
+
+
+
       return result.pdfBase64;
     } catch (error) {
       console.error('PDF generation failed:', error);
@@ -291,40 +291,40 @@ Mit freundlichen Grüßen`);
       toast.message('E-Mail wird versendet...');
 
       // Get company slug for email sender
-      const companySlug = (document.companyName || 'taskilo')
-        .normalize('NFKD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '');
+      const companySlug = (document.companyName || 'taskilo').
+      normalize('NFKD').
+      replace(/[\u0300-\u036f]/g, '').
+      toLowerCase().
+      replace(/[^a-z0-9]+/g, '');
 
       // Send email via API
       const response = await fetch('/api/email/send-document', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          to: recipients.map(r => r.email),
-          cc: ccRecipients.length > 0 ? ccRecipients.map(r => r.email) : undefined,
-          bcc: bccRecipients.length > 0 ? bccRecipients.map(r => r.email) : undefined,
+          to: recipients.map((r) => r.email),
+          cc: ccRecipients.length > 0 ? ccRecipients.map((r) => r.email) : undefined,
+          bcc: bccRecipients.length > 0 ? bccRecipients.map((r) => r.email) : undefined,
           subject: subject.trim(),
           message: message.trim(),
           signature: signature.trim() || undefined,
           sendCopy,
           attachments: [
-            {
-              filename: `${documentNumber}.pdf`,
-              contentBase64: pdfBase64,
-            },
-          ],
+          {
+            filename: `${documentNumber}.pdf`,
+            contentBase64: pdfBase64
+          }],
+
           companySlug,
           documentType,
           meta: {
             companyId,
             documentId: document.id,
-            source: 'email-send-modal',
-          },
-        }),
+            source: 'email-send-modal'
+          }
+        })
       });
 
       const result = await response.json();
@@ -370,120 +370,120 @@ Mit freundlichen Grüßen`);
                   Empfänger <span className="text-red-500">*</span>
                 </Label>
                 <div className="flex gap-2 text-sm">
-                  {!showCC && (
-                    <button
-                      type="button"
-                      onClick={() => setShowCC(true)}
-                      className="text-blue-600 hover:text-blue-800"
-                    >
+                  {!showCC &&
+                  <button
+                    type="button"
+                    onClick={() => setShowCC(true)}
+                    className="text-blue-600 hover:text-blue-800">
+
                       CC
                     </button>
-                  )}
-                  {!showBCC && (
-                    <button
-                      type="button"
-                      onClick={() => setShowBCC(true)}
-                      className="text-blue-600 hover:text-blue-800"
-                    >
+                  }
+                  {!showBCC &&
+                  <button
+                    type="button"
+                    onClick={() => setShowBCC(true)}
+                    className="text-blue-600 hover:text-blue-800">
+
                       BCC
                     </button>
-                  )}
+                  }
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2 p-3 border rounded-md min-h-[50px] focus-within:ring-2 focus-within:ring-blue-500">
-                {recipients.map((recipient, index) => (
-                  <Badge
-                    key={index}
-                    variant="secondary"
-                    className="flex items-center gap-1 px-2 py-1"
-                  >
+                {recipients.map((recipient, index) =>
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className="flex items-center gap-1 px-2 py-1">
+
                     {recipient.email}
                     <button
-                      type="button"
-                      onClick={() => removeRecipient(index, 'to')}
-                      className="ml-1 hover:text-red-600"
-                    >
+                    type="button"
+                    onClick={() => removeRecipient(index, 'to')}
+                    className="ml-1 hover:text-red-600">
+
                       <X className="h-3 w-3" />
                     </button>
                   </Badge>
-                ))}
+                )}
                 <Input
                   value={currentRecipient}
-                  onChange={e => setCurrentRecipient(e.target.value)}
-                  onKeyDown={e => handleRecipientKeyPress(e, 'to')}
+                  onChange={(e) => setCurrentRecipient(e.target.value)}
+                  onKeyDown={(e) => handleRecipientKeyPress(e, 'to')}
                   onBlur={() => handleRecipientBlur('to')}
                   placeholder="empfaenger@beispiel.de"
-                  className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0"
-                />
+                  className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0" />
+
               </div>
             </div>
 
             {/* CC Field */}
-            {showCC && (
-              <div className="space-y-2">
+            {showCC &&
+            <div className="space-y-2">
                 <Label className="text-sm font-medium">CC</Label>
                 <div className="flex flex-wrap items-center gap-2 p-3 border rounded-md min-h-[50px] focus-within:ring-2 focus-within:ring-blue-500">
-                  {ccRecipients.map((recipient, index) => (
-                    <Badge
-                      key={index}
-                      variant="secondary"
-                      className="flex items-center gap-1 px-2 py-1"
-                    >
+                  {ccRecipients.map((recipient, index) =>
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className="flex items-center gap-1 px-2 py-1">
+
                       {recipient.email}
                       <button
-                        type="button"
-                        onClick={() => removeRecipient(index, 'cc')}
-                        className="ml-1 hover:text-red-600"
-                      >
+                    type="button"
+                    onClick={() => removeRecipient(index, 'cc')}
+                    className="ml-1 hover:text-red-600">
+
                         <X className="h-3 w-3" />
                       </button>
                     </Badge>
-                  ))}
+                )}
                   <Input
-                    value={currentCC}
-                    onChange={e => setCurrentCC(e.target.value)}
-                    onKeyDown={e => handleRecipientKeyPress(e, 'cc')}
-                    onBlur={() => handleRecipientBlur('cc')}
-                    placeholder="cc@beispiel.de"
-                    className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0"
-                  />
+                  value={currentCC}
+                  onChange={(e) => setCurrentCC(e.target.value)}
+                  onKeyDown={(e) => handleRecipientKeyPress(e, 'cc')}
+                  onBlur={() => handleRecipientBlur('cc')}
+                  placeholder="cc@beispiel.de"
+                  className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0" />
+
                 </div>
               </div>
-            )}
+            }
 
             {/* BCC Field */}
-            {showBCC && (
-              <div className="space-y-2">
+            {showBCC &&
+            <div className="space-y-2">
                 <Label className="text-sm font-medium">BCC</Label>
                 <div className="flex flex-wrap items-center gap-2 p-3 border rounded-md min-h-[50px] focus-within:ring-2 focus-within:ring-blue-500">
-                  {bccRecipients.map((recipient, index) => (
-                    <Badge
-                      key={index}
-                      variant="secondary"
-                      className="flex items-center gap-1 px-2 py-1"
-                    >
+                  {bccRecipients.map((recipient, index) =>
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className="flex items-center gap-1 px-2 py-1">
+
                       {recipient.email}
                       <button
-                        type="button"
-                        onClick={() => removeRecipient(index, 'bcc')}
-                        className="ml-1 hover:text-red-600"
-                      >
+                    type="button"
+                    onClick={() => removeRecipient(index, 'bcc')}
+                    className="ml-1 hover:text-red-600">
+
                         <X className="h-3 w-3" />
                       </button>
                     </Badge>
-                  ))}
+                )}
                   <Input
-                    value={currentBCC}
-                    onChange={e => setCurrentBCC(e.target.value)}
-                    onKeyDown={e => handleRecipientKeyPress(e, 'bcc')}
-                    onBlur={() => handleRecipientBlur('bcc')}
-                    placeholder="bcc@beispiel.de"
-                    className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0"
-                  />
+                  value={currentBCC}
+                  onChange={(e) => setCurrentBCC(e.target.value)}
+                  onKeyDown={(e) => handleRecipientKeyPress(e, 'bcc')}
+                  onBlur={() => handleRecipientBlur('bcc')}
+                  placeholder="bcc@beispiel.de"
+                  className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0" />
+
                 </div>
               </div>
-            )}
+            }
           </div>
 
           {/* Subject */}
@@ -494,10 +494,10 @@ Mit freundlichen Grüßen`);
             <Input
               id="subject"
               value={subject}
-              onChange={e => setSubject(e.target.value)}
+              onChange={(e) => setSubject(e.target.value)}
               placeholder="Betreff eingeben"
-              required
-            />
+              required />
+
           </div>
 
           {/* Message */}
@@ -508,11 +508,11 @@ Mit freundlichen Grüßen`);
             <Textarea
               id="message"
               value={message}
-              onChange={e => setMessage(e.target.value)}
+              onChange={(e) => setMessage(e.target.value)}
               placeholder="Nachricht eingeben"
               rows={8}
-              className="min-h-[200px]"
-            />
+              className="min-h-[200px]" />
+
           </div>
 
           {/* Template wird aus SendDocumentModal übernommen - keine Auswahl nötig */}
@@ -525,10 +525,10 @@ Mit freundlichen Grüßen`);
             <Textarea
               id="signature"
               value={signature}
-              onChange={e => setSignature(e.target.value)}
+              onChange={(e) => setSignature(e.target.value)}
               placeholder="Signatur eingeben"
-              rows={4}
-            />
+              rows={4} />
+
           </div>
 
           {/* Attachments */}
@@ -541,8 +541,8 @@ Mit freundlichen Grüßen`);
               </div>
               <button
                 type="button"
-                className="mt-2 text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
-              >
+                className="mt-2 text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
+
                 <Plus className="h-3 w-3" />
                 Anhang hinzufügen
               </button>
@@ -556,8 +556,8 @@ Mit freundlichen Grüßen`);
             <Checkbox
               id="send-copy"
               checked={sendCopy}
-              onCheckedChange={checked => setSendCopy(checked === true)}
-            />
+              onCheckedChange={(checked) => setSendCopy(checked === true)} />
+
             <Label htmlFor="send-copy" className="text-sm">
               Kopie an mich selbst
             </Label>
@@ -570,20 +570,20 @@ Mit freundlichen Grüßen`);
             <Button
               onClick={handleSend}
               disabled={sending || recipients.length === 0 || !subject.trim()}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {sending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4 mr-2" />
-              )}
+              className="bg-blue-600 hover:bg-blue-700">
+
+              {sending ?
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
+
+              <Send className="w-4 h-4 mr-2" />
+              }
               E-Mail versenden
             </Button>
           </div>
         </div>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>);
+
 }
 
 export default EmailSendModal;

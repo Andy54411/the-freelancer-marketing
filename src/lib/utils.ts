@@ -17,13 +17,23 @@ export function formatCurrency(amount: number, currency = 'EUR'): string {
 
 /**
  * Format date to German locale
+ * Korrigiert für YYYY-MM-DD HTML Input Format
  */
 export function formatDate(dateString: string | undefined | null): string {
   if (!dateString) {
     return new Date().toLocaleDateString('de-DE');
   }
 
-  const date = new Date(dateString);
+  let date: Date;
+  
+  // Wenn String im Format YYYY-MM-DD (HTML date input), dann korrekt parsen
+  if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    const [year, month, day] = dateString.split('-');
+    date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  } else {
+    date = new Date(dateString);
+  }
+  
   if (isNaN(date.getTime())) {
     return new Date().toLocaleDateString('de-DE');
   }

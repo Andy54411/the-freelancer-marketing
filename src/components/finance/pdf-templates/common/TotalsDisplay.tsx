@@ -1,12 +1,14 @@
 import React from 'react';
 import { formatCurrency } from '@/lib/utils';
 import { ProcessedPDFData } from '@/hooks/pdf/usePDFTemplateData';
+import { useDocumentTranslation } from '@/hooks/pdf/useDocumentTranslation';
 
 interface TotalsDisplayProps {
   data: ProcessedPDFData;
   color?: string;
   className?: string;
   variant?: 'standard' | 'elegant' | 'technical' | 'compact';
+  language?: string;
 }
 
 export const TotalsDisplay: React.FC<TotalsDisplayProps> = ({
@@ -14,7 +16,9 @@ export const TotalsDisplay: React.FC<TotalsDisplayProps> = ({
   color = '#14ad9f',
   className = '',
   variant = 'standard',
+  language = 'de',
 }) => {
+  const { t } = useDocumentTranslation(language);
   const getSkontoDate = () => {
     const skontoDate = new Date();
     skontoDate.setDate(skontoDate.getDate() + data.skontoDays);
@@ -74,7 +78,7 @@ export const TotalsDisplay: React.FC<TotalsDisplayProps> = ({
         <div className="bg-gray-50 p-6 rounded border" style={{ borderColor: color }}>
           <div className="space-y-3">
             <div className="flex justify-between py-1 text-sm">
-              <span>Zwischensumme:</span>
+              <span>{t('subtotal')}:</span>
               <span>{formatCurrency(data.subtotal)}</span>
             </div>
             {taxLines.map((tax, index) => (
@@ -85,7 +89,7 @@ export const TotalsDisplay: React.FC<TotalsDisplayProps> = ({
             ))}
             <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-3" />
             <div className="flex justify-between py-2 font-bold text-lg" style={{ color }}>
-              <span>Gesamtbetrag:</span>
+              <span>{t('totalAmount')}:</span>
               <span>{formatCurrency(data.total)}</span>
             </div>
             {data.skontoEnabled && data.skontoDays && data.skontoPercentage && (
@@ -114,7 +118,7 @@ export const TotalsDisplay: React.FC<TotalsDisplayProps> = ({
         <div className="bg-gradient-to-br from-gray-50 to-white p-3 rounded border border-gray-200 shadow-sm">
           <div className="space-y-2">
             <div className="flex justify-between py-0.5 text-xs">
-              <span>Zwischensumme:</span>
+              <span>{t('subtotal')}:</span>
               <span>{formatCurrency(data.subtotal)}</span>
             </div>
             {taxLines.map((tax, index) => (
@@ -125,7 +129,7 @@ export const TotalsDisplay: React.FC<TotalsDisplayProps> = ({
             ))}
             <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-2" />
             <div className="flex justify-between py-1 font-bold text-sm" style={{ color }}>
-              <span>Gesamtbetrag:</span>
+              <span>{t('totalAmount')}:</span>
               <span>{formatCurrency(data.total)}</span>
             </div>
             {data.skontoEnabled && data.skontoDays && data.skontoPercentage && (
@@ -152,7 +156,7 @@ export const TotalsDisplay: React.FC<TotalsDisplayProps> = ({
   return (
     <div className={`w-64 flex-shrink-0 ${className}`}>
       <div className="flex justify-between py-2">
-        <span>Zwischensumme:</span>
+        <span>{t('subtotal')}:</span>
         <span>{formatCurrency(data.subtotal)}</span>
       </div>
       {taxLines.map((tax, index) => (
@@ -162,7 +166,7 @@ export const TotalsDisplay: React.FC<TotalsDisplayProps> = ({
         </div>
       ))}
       <div className="flex justify-between py-2 font-bold text-lg border-t">
-        <span>Gesamtbetrag:</span>
+        <span>{t('totalAmount')}:</span>
         <span>{formatCurrency(data.total)}</span>
       </div>
       {data.skontoEnabled && data.skontoDays && data.skontoPercentage && (

@@ -17,8 +17,8 @@ export const useServicePackages = (userId: string) => {
       const servicePackagesRef = collection(db, 'companies', userId, 'servicePackages');
       const q = query(servicePackagesRef, where('packageType', '==', packageType));
       const querySnapshot = await getDocs(q);
-      
-      console.log(`🔍 Checking if ${packageType} package exists:`, !querySnapshot.empty);
+
+
       return !querySnapshot.empty;
     } catch (error) {
       console.error('Error checking package type existence:', error);
@@ -34,28 +34,28 @@ export const useServicePackages = (userId: string) => {
     if (!userId) {
       throw new Error('User ID is required');
     }
-    
+
     try {
       setIsLoading(true);
-      console.log('🔄 Loading service packages for serviceId:', serviceId);
-      
+
+
       // Load service packages from Firebase
       const servicePackagesRef = collection(db, 'companies', userId, 'servicePackages');
       const q = query(servicePackagesRef, where('serviceId', '==', serviceId));
-      console.log('🔍 Querying servicePackages with serviceId:', serviceId);
-      console.log('🔍 User UID:', userId);
-      
+
+
+
       const querySnapshot = await getDocs(q);
-      console.log('📊 Query snapshot empty?', querySnapshot.empty);
-      console.log('📊 Query snapshot size:', querySnapshot.size);
-      
+
+
+
       if (!querySnapshot.empty) {
         const packages: ServicePackage[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          console.log('📦 Raw document data:', doc.id, data);
-          packages.push({ 
-            id: doc.id, 
+
+          packages.push({
+            id: doc.id,
             ...data,
             // Ensure required fields have defaults
             name: data.name || '',
@@ -74,19 +74,19 @@ export const useServicePackages = (userId: string) => {
             subcategory: data.subcategory
           } as ServicePackage);
         });
-        
-        console.log('📦 Processed packages:', packages);
-        
+
+
+
         // Extract addons from the first package (they should be the same across packages)
-        const addons = packages.length > 0 && packages[0].additionalServices 
-          ? packages[0].additionalServices 
-          : [];
-        
-        console.log('✅ Loaded packages and addons:', { packages, addons });
-        
+        const addons = packages.length > 0 && packages[0].additionalServices ?
+        packages[0].additionalServices :
+        [];
+
+
+
         return { packages, addons };
       } else {
-        console.log('No service packages found for serviceId:', serviceId);
+
         return { packages: [], addons: [] };
       }
     } catch (error) {
@@ -100,19 +100,19 @@ export const useServicePackages = (userId: string) => {
 
   // Save service packages
   const saveServicePackages = async (
-    serviceId: string,
-    serviceTitle: string,
-    serviceCategory: string,
-    activePackageData: PackageDataState, // Nur aktive Pakete
-    addons: AddonItem[]
-  ) => {
+  serviceId: string,
+  serviceTitle: string,
+  serviceCategory: string,
+  activePackageData: PackageDataState,
+  addons: AddonItem[]) =>
+  {
     if (!userId) {
       throw new Error('User ID is required');
     }
 
     try {
       setIsLoading(true);
-      
+
       // Check if any of the package types already exist
       const packageTypes = Object.keys(activePackageData) as ('basic' | 'standard' | 'premium')[];
       for (const packageType of packageTypes) {
@@ -122,39 +122,39 @@ export const useServicePackages = (userId: string) => {
           return;
         }
       }
-      
+
       const servicePackagesRef = collection(db, 'companies', userId, 'servicePackages');
-      
-      console.log('🔄 Speichere nur aktive Pakete:', Object.keys(activePackageData));
-      
+
+
+
       // Save each ACTIVE package tier only
       const packagePromises = Object.entries(activePackageData).map(([tier, data]) => {
         // Definiere Kategorien, die Revisionen benötigen basierend auf echten categoriesData
         const categoriesWithRevisions = [
-          // IT & Digital - benötigen definitiv Revisionen
-          'Webentwicklung', 'App-Entwicklung', 'Softwareentwicklung',
-          
-          // Kreativ & Kunst - benötigen Revisionen für Design-Arbeit
-          'Fotograf', 'Videograf', 'Grafiker', 'Texter', 'Dekoration',
-          
-          // Marketing & Vertrieb - Content braucht oft Revisionen
-          'OnlineMarketing', 'Social Media Marketing', 'ContentMarketing', 'Marketingberater',
-          
-          // Event & Veranstaltung - Planung braucht oft Anpassungen
-          'Eventplanung', 'DJService',
-          
-          // Büro & Administration - Content-basierte Arbeit
-          'Recherche'
-        ];
-        
-        const needsRevisions = categoriesWithRevisions.some(cat => 
-          serviceCategory.toLowerCase().includes(cat.toLowerCase())
+        // IT & Digital - benötigen definitiv Revisionen
+        'Webentwicklung', 'App-Entwicklung', 'Softwareentwicklung',
+
+        // Kreativ & Kunst - benötigen Revisionen für Design-Arbeit
+        'Fotograf', 'Videograf', 'Grafiker', 'Texter', 'Dekoration',
+
+        // Marketing & Vertrieb - Content braucht oft Revisionen
+        'OnlineMarketing', 'Social Media Marketing', 'ContentMarketing', 'Marketingberater',
+
+        // Event & Veranstaltung - Planung braucht oft Anpassungen
+        'Eventplanung', 'DJService',
+
+        // Büro & Administration - Content-basierte Arbeit
+        'Recherche'];
+
+
+        const needsRevisions = categoriesWithRevisions.some((cat) =>
+        serviceCategory.toLowerCase().includes(cat.toLowerCase())
         );
-        
+
         // Berechne Gesamtpreis: Package + alle Add-ons
         const addonsTotal = addons.reduce((sum, addon) => sum + (addon.price || 0), 0);
         const totalPrice = (data.price || 0) + addonsTotal;
-        
+
         const packageToSave = {
           serviceId: serviceId,
           packageType: tier,
@@ -163,7 +163,7 @@ export const useServicePackages = (userId: string) => {
           description: data.description,
           price: data.price,
           addonsTotal: addonsTotal, // Gesamtsumme aller Add-ons
-          totalPrice: totalPrice,   // Gesamtpreis (Package + Add-ons)
+          totalPrice: totalPrice, // Gesamtpreis (Package + Add-ons)
           deliveryTime: data.deliveryTime,
           deliveryUnit: data.deliveryUnit,
           duration: data.duration,
@@ -177,16 +177,16 @@ export const useServicePackages = (userId: string) => {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         };
-        
-        console.log('💾 Speichere Paket:', tier, packageToSave);
-        console.log('🎯 Kategorie benötigt Revisionen:', needsRevisions, 'für', serviceCategory);
+
+
+
         return addDoc(servicePackagesRef, packageToSave);
       });
-      
+
       await Promise.all(packagePromises);
-      console.log(`✅ ${Object.keys(activePackageData).length} Service packages saved successfully`);
+
       toast.success('Service-Pakete erfolgreich gespeichert!');
-      
+
     } catch (error) {
       console.error('Error saving service packages:', error);
       toast.error('Fehler beim Speichern der Service-Pakete');

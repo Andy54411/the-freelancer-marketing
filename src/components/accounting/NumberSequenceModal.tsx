@@ -7,8 +7,8 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  DialogTitle } from
+'@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,8 +17,8 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  TooltipTrigger } from
+'@/components/ui/tooltip';
 import { NumberSequence } from './NumberSequencesTab';
 
 interface NumberSequenceModalProps {
@@ -32,10 +32,10 @@ export default function NumberSequenceModal({
   isOpen,
   onClose,
   onSave,
-  sequence,
+  sequence
 }: NumberSequenceModalProps) {
-  console.log('NumberSequenceModal rendered with:', { isOpen, sequence });
-  
+
+
   const [format, setFormat] = useState('');
   const [nextNumber, setNextNumber] = useState(1000);
   const [preview, setPreview] = useState('');
@@ -71,7 +71,7 @@ export default function NumberSequenceModal({
     formattedPreview = formattedPreview.replace(/%M/g, (now.getMonth() + 1).toString());
     formattedPreview = formattedPreview.replace(/%DD/g, now.getDate().toString().padStart(2, '0'));
     formattedPreview = formattedPreview.replace(/%D/g, now.getDate().toString());
-    
+
     // %NUMBER ersetzen
     formattedPreview = formattedPreview.replace(/%NUMBER/g, currentNumber.toString());
 
@@ -100,7 +100,7 @@ export default function NumberSequenceModal({
       ...sequence,
       format,
       nextNumber,
-      nextFormatted: preview,
+      nextFormatted: preview
     };
 
     onSave(updatedSequence);
@@ -148,11 +148,11 @@ export default function NumberSequenceModal({
                 value={format}
                 onChange={(e) => handleFormatChange(e.target.value)}
                 placeholder="z.B. RE-%NUMBER"
-                className={`text-sm ${formatError ? 'border-red-500' : ''}`}
-              />
-              {formatError && (
-                <p className="text-xs text-red-500">{formatError}</p>
-              )}
+                className={`text-sm ${formatError ? 'border-red-500' : ''}`} />
+
+              {formatError &&
+              <p className="text-xs text-red-500">{formatError}</p>
+              }
             </div>
 
             {/* Nächste Zahl */}
@@ -164,8 +164,8 @@ export default function NumberSequenceModal({
                 value={nextNumber}
                 onChange={(e) => handleNextNumberChange(parseInt(e.target.value) || 1000)}
                 min="1"
-                className="text-sm"
-              />
+                className="text-sm" />
+
             </div>
 
             {/* Vorschau */}
@@ -187,8 +187,8 @@ export default function NumberSequenceModal({
                 id="preview"
                 value={preview}
                 disabled
-                className="bg-muted text-sm"
-              />
+                className="bg-muted text-sm" />
+
             </div>
           </div>
 
@@ -253,15 +253,15 @@ export default function NumberSequenceModal({
           <Button variant="outline" onClick={handleCancel}>
             Abbrechen
           </Button>
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={!!formatError}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-          >
+            className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+
             Speichern
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>);
+
 }

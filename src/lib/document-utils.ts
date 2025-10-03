@@ -3,6 +3,8 @@
  * Funktionen zur Bestimmung und Verwaltung von Dokumenttypen
  */
 
+import { useDocumentTranslation, type DocumentTranslations } from '@/hooks/pdf/useDocumentTranslation';
+
 export type DocumentType = 'invoice' | 'quote' | 'reminder' | 'credit-note' | 'cancellation';
 
 export interface DocumentTypeConfig {
@@ -16,6 +18,66 @@ export interface DocumentTypeConfig {
   showDueDate: boolean;
 }
 
+export interface DocumentTypeMapping {
+  titleKey: keyof DocumentTranslations;
+  numberLabelKey: keyof DocumentTranslations;
+  dateLabelKey: keyof DocumentTranslations;
+  dueDateLabelKey: keyof DocumentTranslations;
+  recipientLabelKey: keyof DocumentTranslations;
+  showPaymentTerms: boolean;
+  showDueDate: boolean;
+}
+
+// Neue dynamische Übersetzungs-Mappings
+export const DOCUMENT_TYPE_MAPPINGS: Record<DocumentType, DocumentTypeMapping> = {
+  invoice: {
+    titleKey: 'invoice',
+    numberLabelKey: 'invoiceNumber',
+    dateLabelKey: 'date',
+    dueDateLabelKey: 'dueDate',
+    recipientLabelKey: 'recipient',
+    showPaymentTerms: true,
+    showDueDate: true,
+  },
+  quote: {
+    titleKey: 'quote',
+    numberLabelKey: 'quoteNumber',
+    dateLabelKey: 'date', 
+    dueDateLabelKey: 'validUntil',
+    recipientLabelKey: 'recipient',
+    showPaymentTerms: false,
+    showDueDate: true,
+  },
+  reminder: {
+    titleKey: 'invoice', // Fallback - kann später erweitert werden
+    numberLabelKey: 'invoiceNumber', 
+    dateLabelKey: 'date',
+    dueDateLabelKey: 'dueDate',
+    recipientLabelKey: 'recipient',
+    showPaymentTerms: true,
+    showDueDate: true,
+  },
+  'credit-note': {
+    titleKey: 'invoice', // Fallback 
+    numberLabelKey: 'invoiceNumber',
+    dateLabelKey: 'date',
+    dueDateLabelKey: 'dueDate',
+    recipientLabelKey: 'recipient',
+    showPaymentTerms: false,
+    showDueDate: false,
+  },
+  cancellation: {
+    titleKey: 'invoice', // Fallback
+    numberLabelKey: 'invoiceNumber',
+    dateLabelKey: 'date',
+    dueDateLabelKey: 'dueDate',
+    recipientLabelKey: 'recipient',
+    showPaymentTerms: false,
+    showDueDate: true,
+  }
+};
+
+// Alte Konfiguration für Kompatibilität (wird nach und nach ersetzt)
 export const DOCUMENT_TYPE_CONFIGS: Record<DocumentType, Omit<DocumentTypeConfig, 'color'>> = {
   invoice: {
     title: 'Rechnung',
@@ -132,6 +194,30 @@ export function getDocumentTypeConfig(documentType: DocumentType, customColor?: 
   
   return {
     ...baseConfig,
+    color
+  };
+}
+
+/**
+ * Erstellt übersetzungsbasierte Dokumenttyp-Konfiguration
+ * Diese Funktion sollte in Templates mit Übersetzungsfunktion verwendet werden
+ */
+export function getTranslatedDocumentTypeConfig(
+  documentType: DocumentType, 
+  t: (key: keyof DocumentTranslations) => string, 
+  customColor?: string
+): DocumentTypeConfig {
+  const mapping = DOCUMENT_TYPE_MAPPINGS[documentType];
+  const color = customColor || DOCUMENT_TYPE_COLORS[documentType];
+  
+  return {
+    title: t(mapping.titleKey),
+    numberLabel: t(mapping.numberLabelKey),
+    dateLabel: t(mapping.dateLabelKey),
+    dueDateLabel: t(mapping.dueDateLabelKey),
+    recipientLabel: t(mapping.recipientLabelKey),
+    showPaymentTerms: mapping.showPaymentTerms,
+    showDueDate: mapping.showDueDate,
     color
   };
 }

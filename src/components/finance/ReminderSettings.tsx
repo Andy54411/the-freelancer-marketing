@@ -21,32 +21,32 @@ export function ReminderSettings({ uid }: ReminderSettingsProps) {
   const [reminderFees, setReminderFees] = useState({
     level1: { fee: 5.0, days: 7, title: '1. Mahnung' },
     level2: { fee: 10.0, days: 14, title: '2. Mahnung' },
-    level3: { fee: 15.0, days: 21, title: '3. Mahnung / Inkasso-Androhung' },
+    level3: { fee: 15.0, days: 21, title: '3. Mahnung / Inkasso-Androhung' }
   });
 
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    console.log('Settings changed:', settings);
+
     // Always set reminderFees from settings or defaults
     setReminderFees(settings?.reminderFees || {
       level1: { fee: 5.0, days: 7, title: '1. Mahnung' },
       level2: { fee: 10.0, days: 14, title: '2. Mahnung' },
-      level3: { fee: 15.0, days: 21, title: '3. Mahnung / Inkasso-Androhung' },
+      level3: { fee: 15.0, days: 21, title: '3. Mahnung / Inkasso-Androhung' }
     });
   }, [settings]);
 
   const updateReminderFee = (level: 'level1' | 'level2' | 'level3', field: 'fee' | 'days' | 'title', value: string | number) => {
-    console.log('Updating reminder fee:', level, field, value);
-    setReminderFees(prev => {
+
+    setReminderFees((prev) => {
       const newFees = {
         ...prev,
         [level]: {
           ...prev[level],
-          [field]: value,
-        },
+          [field]: value
+        }
       };
-      console.log('New reminder fees:', newFees);
+
       return newFees;
     });
   };
@@ -57,7 +57,7 @@ export function ReminderSettings({ uid }: ReminderSettingsProps) {
     try {
       setSaving(true);
       await updateDoc(doc(db, 'companies', uid), {
-        reminderFees: reminderFees,
+        reminderFees: reminderFees
       });
       toast.success('Mahngebühren erfolgreich gespeichert');
     } catch (error) {
@@ -72,8 +72,8 @@ export function ReminderSettings({ uid }: ReminderSettingsProps) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-[#14ad9f]" />
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -111,11 +111,11 @@ export function ReminderSettings({ uid }: ReminderSettingsProps) {
                     step="0.01"
                     defaultValue={reminderFees.level1.fee.toString()}
                     onChange={(e) => {
-                      console.log('Input changed:', e.target.value);
+
                       updateReminderFee('level1', 'fee', parseFloat(e.target.value) || 0);
                     }}
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
+                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]" />
+
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">Zahlungsfrist (Tage)</Label>
@@ -123,16 +123,16 @@ export function ReminderSettings({ uid }: ReminderSettingsProps) {
                     type="number"
                     defaultValue={reminderFees.level1.days.toString()}
                     onChange={(e) => updateReminderFee('level1', 'days', parseInt(e.target.value) || 0)}
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
+                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]" />
+
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">Titel</Label>
                   <Input
                     defaultValue={reminderFees.level1.title}
                     onChange={(e) => updateReminderFee('level1', 'title', e.target.value)}
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
+                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]" />
+
                 </div>
               </div>
             </div>
@@ -153,8 +153,8 @@ export function ReminderSettings({ uid }: ReminderSettingsProps) {
                     step="0.01"
                     defaultValue={reminderFees.level2.fee.toString()}
                     onChange={(e) => updateReminderFee('level2', 'fee', parseFloat(e.target.value) || 0)}
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
+                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]" />
+
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">Zahlungsfrist (Tage)</Label>
@@ -162,16 +162,16 @@ export function ReminderSettings({ uid }: ReminderSettingsProps) {
                     type="number"
                     defaultValue={reminderFees.level2.days.toString()}
                     onChange={(e) => updateReminderFee('level2', 'days', parseInt(e.target.value) || 0)}
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
+                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]" />
+
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">Titel</Label>
                   <Input
                     defaultValue={reminderFees.level2.title}
                     onChange={(e) => updateReminderFee('level2', 'title', e.target.value)}
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
+                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]" />
+
                 </div>
               </div>
             </div>
@@ -192,8 +192,8 @@ export function ReminderSettings({ uid }: ReminderSettingsProps) {
                     step="0.01"
                     defaultValue={reminderFees.level3.fee.toString()}
                     onChange={(e) => updateReminderFee('level3', 'fee', parseFloat(e.target.value) || 0)}
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
+                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]" />
+
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">Zahlungsfrist (Tage)</Label>
@@ -201,16 +201,16 @@ export function ReminderSettings({ uid }: ReminderSettingsProps) {
                     type="number"
                     defaultValue={reminderFees.level3.days.toString()}
                     onChange={(e) => updateReminderFee('level3', 'days', parseInt(e.target.value) || 0)}
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
+                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]" />
+
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">Titel</Label>
                   <Input
                     defaultValue={reminderFees.level3.title}
                     onChange={(e) => updateReminderFee('level3', 'title', e.target.value)}
-                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]"
-                  />
+                    className="border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]" />
+
                 </div>
               </div>
             </div>
@@ -220,14 +220,14 @@ export function ReminderSettings({ uid }: ReminderSettingsProps) {
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white px-6 py-2"
-            >
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white px-6 py-2">
+
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Einstellungen speichern
             </Button>
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>);
+
 }

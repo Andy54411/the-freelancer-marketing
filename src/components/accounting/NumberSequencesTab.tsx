@@ -9,8 +9,8 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  TableRow } from
+'@/components/ui/table';
 import { Pencil, Trash2 } from 'lucide-react';
 import NumberSequenceModal from './NumberSequenceModal';
 
@@ -35,16 +35,16 @@ export default function NumberSequencesTab({
   sequences,
   onEdit,
   onDelete,
-  onUpdate,
+  onUpdate
 }: NumberSequencesTabProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSequence, setSelectedSequence] = useState<NumberSequence | null>(null);
 
   const handleEdit = (sequence: NumberSequence) => {
-    console.log('handleEdit called with sequence:', sequence);
+
     setSelectedSequence(sequence);
     setIsModalOpen(true);
-    console.log('Modal should be open now, isModalOpen:', true);
+
   };
 
   const handleModalClose = () => {
@@ -72,8 +72,8 @@ export default function NumberSequencesTab({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sequences.map(sequence => (
-              <TableRow key={sequence.id}>
+            {sequences.map((sequence) =>
+            <TableRow key={sequence.id}>
                 <TableCell className="font-mono">{sequence.format}</TableCell>
                 <TableCell>{sequence.type}</TableCell>
                 <TableCell>{sequence.nextNumber}</TableCell>
@@ -81,31 +81,31 @@ export default function NumberSequencesTab({
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={!sequence.canEdit}
-                      title={
-                        sequence.canEdit
-                          ? 'Nummernkreis bearbeiten'
-                          : 'Nummernkreis kann nicht bearbeitet werden'
-                      }
-                      onClick={() => handleEdit(sequence)}
-                    >
+                    variant="ghost"
+                    size="sm"
+                    disabled={!sequence.canEdit}
+                    title={
+                    sequence.canEdit ?
+                    'Nummernkreis bearbeiten' :
+                    'Nummernkreis kann nicht bearbeitet werden'
+                    }
+                    onClick={() => handleEdit(sequence)}>
+
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={!sequence.canDelete}
-                      title="Nummernkreis kann nicht gelöscht werden"
-                      onClick={() => onDelete(sequence)}
-                    >
+                    variant="ghost"
+                    size="sm"
+                    disabled={!sequence.canDelete}
+                    title="Nummernkreis kann nicht gelöscht werden"
+                    onClick={() => onDelete(sequence)}>
+
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </CardContent>
@@ -115,8 +115,8 @@ export default function NumberSequencesTab({
         isOpen={isModalOpen}
         onClose={handleModalClose}
         onSave={handleModalSave}
-        sequence={selectedSequence}
-      />
-    </Card>
-  );
+        sequence={selectedSequence} />
+
+    </Card>);
+
 }

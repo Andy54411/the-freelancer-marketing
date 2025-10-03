@@ -22,8 +22,8 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-} from 'recharts';
+  ResponsiveContainer } from
+'recharts';
 import {
   Brain,
   CloudLightning,
@@ -37,8 +37,8 @@ import {
   BarChart3,
   Activity,
   Database,
-  Gauge,
-} from 'lucide-react';
+  Gauge } from
+'lucide-react';
 import { EnhancedTicketService } from '@/lib/aws-ticket-enhanced';
 
 interface AWSMetrics {
@@ -116,7 +116,7 @@ export default function EnhancedTicketAnalytics() {
     try {
       // Demo: Automatische Klassifizierung für alle offenen Tickets
       const response = await fetch('/api/admin/tickets', {
-        method: 'GET',
+        method: 'GET'
       });
 
       if (response.ok) {
@@ -142,8 +142,8 @@ export default function EnhancedTicketAnalytics() {
               category: classification.category,
               autoClassified: true,
               aiConfidence: classification.confidence,
-              sentiment: classification.sentiment,
-            }),
+              sentiment: classification.sentiment
+            })
           });
         }
 
@@ -162,12 +162,12 @@ export default function EnhancedTicketAnalytics() {
         body: JSON.stringify({
           type: 'resend_test',
           recipient: 'andy.staudinger@taskilo.de',
-          provider: 'resend',
-        }),
+          provider: 'resend'
+        })
       });
 
       if (response.ok) {
-        console.log('Test-E-Mail über Resend erfolgreich gesendet');
+
       }
     } catch (error) {
       console.error('Fehler beim Senden der Test-E-Mail:', error);
@@ -180,15 +180,15 @@ export default function EnhancedTicketAnalytics() {
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   const priorityColors = {
     low: '#28a745',
     medium: '#ffc107',
     high: '#fd7e14',
-    urgent: '#dc3545',
+    urgent: '#dc3545'
   };
 
   const categoryColors = {
@@ -197,14 +197,14 @@ export default function EnhancedTicketAnalytics() {
     support: '#17a2b8',
     feature: '#6f42c1',
     bug: '#dc3545',
-    other: '#6c757d',
+    other: '#6c757d'
   };
 
   const sentimentColors = {
     POSITIVE: '#28a745',
     NEUTRAL: '#ffc107',
     NEGATIVE: '#dc3545',
-    MIXED: '#17a2b8',
+    MIXED: '#17a2b8'
   };
 
   return (
@@ -217,14 +217,14 @@ export default function EnhancedTicketAnalytics() {
         </div>
 
         <div className="flex items-center gap-3">
-          {refreshing && (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#14ad9f]"></div>
-          )}
+          {refreshing &&
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#14ad9f]"></div>
+          }
 
           <Button
             onClick={triggerAIClassification}
-            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
-          >
+            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white">
+
             <Brain className="w-4 h-4 mr-2" />
             AI Klassifizierung
           </Button>
@@ -232,8 +232,8 @@ export default function EnhancedTicketAnalytics() {
           <Button
             onClick={sendTestNotification}
             variant="outline"
-            className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
-          >
+            className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white">
+
             <Mail className="w-4 h-4 mr-2" />
             Test Resend E-Mail
           </Button>
@@ -367,7 +367,7 @@ export default function EnhancedTicketAnalytics() {
                           ([key, value]) => ({
                             name: key.toUpperCase(),
                             value,
-                            fill: priorityColors[key as keyof typeof priorityColors] || '#6c757d',
+                            fill: priorityColors[key as keyof typeof priorityColors] || '#6c757d'
                           })
                         )}
                         cx="50%"
@@ -375,8 +375,8 @@ export default function EnhancedTicketAnalytics() {
                         innerRadius={40}
                         outerRadius={80}
                         dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      ></Pie>
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                      </Pie>
                       <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
@@ -400,10 +400,10 @@ export default function EnhancedTicketAnalytics() {
                         ([key, value]) => ({
                           name: key,
                           value,
-                          fill: categoryColors[key as keyof typeof categoryColors] || '#6c757d',
+                          fill: categoryColors[key as keyof typeof categoryColors] || '#6c757d'
                         })
-                      )}
-                    >
+                      )}>
+
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
                       <YAxis />
@@ -436,7 +436,7 @@ export default function EnhancedTicketAnalytics() {
                           ([key, value]) => ({
                             name: key,
                             value,
-                            fill: sentimentColors[key as keyof typeof sentimentColors] || '#6c757d',
+                            fill: sentimentColors[key as keyof typeof sentimentColors] || '#6c757d'
                           })
                         )}
                         cx="50%"
@@ -444,8 +444,8 @@ export default function EnhancedTicketAnalytics() {
                         innerRadius={50}
                         outerRadius={90}
                         dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      ></Pie>
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                      </Pie>
                       <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
@@ -467,8 +467,8 @@ export default function EnhancedTicketAnalytics() {
                   <div className="flex items-center gap-2">
                     <Progress
                       value={analytics?.awsMetrics?.aiClassification?.accuracyRate || 0}
-                      className="w-20 h-2"
-                    />
+                      className="w-20 h-2" />
+
                     <span className="text-sm font-medium">
                       {analytics?.awsMetrics?.aiClassification?.accuracyRate?.toFixed(1) || 0}%
                     </span>
@@ -519,11 +519,11 @@ export default function EnhancedTicketAnalytics() {
                     data={Object.entries(analytics?.timeline?.daily || {}).map(([date, count]) => ({
                       date: new Date(date).toLocaleDateString('de-DE', {
                         month: 'short',
-                        day: 'numeric',
+                        day: 'numeric'
                       }),
-                      tickets: count,
-                    }))}
-                  >
+                      tickets: count
+                    }))}>
+
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
                     <YAxis />
@@ -533,8 +533,8 @@ export default function EnhancedTicketAnalytics() {
                       dataKey="tickets"
                       stroke="#14ad9f"
                       fill="#14ad9f"
-                      fillOpacity={0.3}
-                    />
+                      fillOpacity={0.3} />
+
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -608,11 +608,11 @@ export default function EnhancedTicketAnalytics() {
                     <span className="text-sm">Error Rate</span>
                     <Badge
                       variant={
-                        (analytics?.awsMetrics?.cloudWatchInsights?.errorRate || 0) > 5
-                          ? 'destructive'
-                          : 'secondary'
-                      }
-                    >
+                      (analytics?.awsMetrics?.cloudWatchInsights?.errorRate || 0) > 5 ?
+                      'destructive' :
+                      'secondary'
+                      }>
+
                       {analytics?.awsMetrics?.cloudWatchInsights?.errorRate || 0}%
                     </Badge>
                   </div>
@@ -640,6 +640,6 @@ export default function EnhancedTicketAnalytics() {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </div>);
+
 }

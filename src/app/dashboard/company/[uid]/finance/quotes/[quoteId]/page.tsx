@@ -25,8 +25,8 @@ import {
   Loader2,
   Check,
   X,
-  MoreVertical,
-} from 'lucide-react';
+  MoreVertical } from
+'lucide-react';
 import { toast } from 'sonner';
 import { QuoteService, Quote as QuoteType } from '@/services/quoteService';
 import {
@@ -34,8 +34,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+  DropdownMenuSeparator } from
+'@/components/ui/dropdown-menu';
 
 export default function QuoteDetailPage() {
   const params = useParams();
@@ -132,7 +132,7 @@ export default function QuoteDetailPage() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
-      currency: 'EUR',
+      currency: 'EUR'
     }).format(amount);
   };
 
@@ -142,7 +142,7 @@ export default function QuoteDetailPage() {
       sent: { label: 'Versendet', className: 'bg-blue-100 text-blue-800' },
       accepted: { label: 'Angenommen', className: 'bg-green-100 text-green-800' },
       rejected: { label: 'Abgelehnt', className: 'bg-red-100 text-red-800' },
-      expired: { label: 'Abgelaufen', className: 'bg-orange-100 text-orange-800' },
+      expired: { label: 'Abgelaufen', className: 'bg-orange-100 text-orange-800' }
     };
 
     const config = statusConfig[status];
@@ -153,8 +153,8 @@ export default function QuoteDetailPage() {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-[#14ad9f]" />
-      </div>
-    );
+      </div>);
+
   }
 
   // Autorisierung prüfen (nach Hooks platzieren, um React Hooks-Regeln einzuhalten)
@@ -165,8 +165,8 @@ export default function QuoteDetailPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
           <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   if (!quote) {
@@ -176,8 +176,8 @@ export default function QuoteDetailPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Angebot nicht gefunden</h2>
           <p className="text-gray-600">Das angeforderte Angebot existiert nicht.</p>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -189,8 +189,8 @@ export default function QuoteDetailPage() {
             variant="outline"
             size="sm"
             onClick={() => router.push(`/dashboard/company/${uid}/finance/quotes`)}
-            className="flex items-center"
-          >
+            className="flex items-center">
+
             <ArrowLeft className="h-4 w-4 mr-2" />
             Zurück zu Angeboten
           </Button>
@@ -208,11 +208,11 @@ export default function QuoteDetailPage() {
             variant="outline"
             size="sm"
             onClick={() => {
-              // Removed: Print URL - now using PDF-only system
-              console.log('PDF print would happen here via PDF-only system');
-              // window.open(`/print/quote/${uid}/${quote.id}?auto=1`, '_blank', 'noopener')
-            }}
-          >
+
+
+
+            }}>
+
             <Printer className="h-4 w-4 mr-2" />
             Drucken
           </Button>
@@ -220,85 +220,85 @@ export default function QuoteDetailPage() {
             variant="outline"
             size="sm"
             onClick={() => {
-              // Removed: Print URL - now using PDF-only system
-              console.log('PDF download would happen here');
-              // window.open(`/print/quote/${uid}/${quote.id}`, '_blank', 'noopener')
-            }}
-          >
+
+
+
+            }}>
+
             <Download className="h-4 w-4 mr-2" />
             PDF Download
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/dashboard/company/${uid}/finance/quotes/${quote.id}/edit`)}
-          >
+            onClick={() => router.push(`/dashboard/company/${uid}/finance/quotes/${quote.id}/edit`)}>
+
             <Edit className="h-4 w-4 mr-2" />
             Bearbeiten
           </Button>
-          {quote.status === 'draft' && (
-            <Button
-              size="sm"
-              onClick={handleSend}
-              disabled={actionLoading}
-              className="bg-[#14ad9f] hover:bg-[#0f9d84]"
-            >
-              {actionLoading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4 mr-2" />
-              )}
+          {quote.status === 'draft' &&
+          <Button
+            size="sm"
+            onClick={handleSend}
+            disabled={actionLoading}
+            className="bg-[#14ad9f] hover:bg-[#0f9d84]">
+
+              {actionLoading ?
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" /> :
+
+            <Send className="h-4 w-4 mr-2" />
+            }
               Versenden
             </Button>
-          )}
-          {(quote.status === 'draft' || quote.status === 'sent') && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleCancel}
-              disabled={actionLoading}
-              className="text-zinc-700 border-zinc-300 hover:bg-zinc-50"
-            >
-              {actionLoading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <X className="h-4 w-4 mr-2" />
-              )}
+          }
+          {(quote.status === 'draft' || quote.status === 'sent') &&
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={actionLoading}
+            className="text-zinc-700 border-zinc-300 hover:bg-zinc-50">
+
+              {actionLoading ?
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" /> :
+
+            <X className="h-4 w-4 mr-2" />
+            }
               Stornieren
             </Button>
-          )}
-          {quote.status === 'sent' && (
-            <>
+          }
+          {quote.status === 'sent' &&
+          <>
               <Button
-                size="sm"
-                variant="outline"
-                onClick={handleAccept}
-                disabled={actionLoading}
-                className="text-green-600 border-green-200 hover:bg-green-50"
-              >
-                {actionLoading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Check className="h-4 w-4 mr-2" />
-                )}
+              size="sm"
+              variant="outline"
+              onClick={handleAccept}
+              disabled={actionLoading}
+              className="text-green-600 border-green-200 hover:bg-green-50">
+
+                {actionLoading ?
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" /> :
+
+              <Check className="h-4 w-4 mr-2" />
+              }
                 Annehmen
               </Button>
               <Button
-                size="sm"
-                variant="outline"
-                onClick={handleReject}
-                disabled={actionLoading}
-                className="text-red-600 border-red-200 hover:bg-red-50"
-              >
-                {actionLoading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <X className="h-4 w-4 mr-2" />
-                )}
+              size="sm"
+              variant="outline"
+              onClick={handleReject}
+              disabled={actionLoading}
+              className="text-red-600 border-red-200 hover:bg-red-50">
+
+                {actionLoading ?
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" /> :
+
+              <X className="h-4 w-4 mr-2" />
+              }
                 Ablehnen
               </Button>
             </>
-          )}
+          }
         </div>
       </div>
 
@@ -322,21 +322,21 @@ export default function QuoteDetailPage() {
                 <Mail className="h-4 w-4 text-gray-500" />
                 <span>{quote.customerEmail}</span>
               </div>
-              {quote.customerPhone && (
-                <div className="flex items-center space-x-2">
+              {quote.customerPhone &&
+              <div className="flex items-center space-x-2">
                   <Phone className="h-4 w-4 text-gray-500" />
                   <span>{quote.customerPhone}</span>
                 </div>
-              )}
-              {quote.customerAddress && (
-                <div className="flex items-center space-x-2">
+              }
+              {quote.customerAddress &&
+              <div className="flex items-center space-x-2">
                   <MapPin className="h-4 w-4 text-gray-500" />
                   <span>
                     {quote.customerAddress.street}, {quote.customerAddress.postalCode}{' '}
                     {quote.customerAddress.city}
                   </span>
                 </div>
-              )}
+              }
             </CardContent>
           </Card>
 
@@ -361,18 +361,18 @@ export default function QuoteDetailPage() {
                   <span>{new Date(quote.validUntil).toLocaleDateString('de-DE')}</span>
                 </div>
               </div>
-              {quote.title && (
-                <div>
+              {quote.title &&
+              <div>
                   <span className="text-sm text-gray-600">Titel:</span>
                   <p className="font-medium">{quote.title}</p>
                 </div>
-              )}
-              {quote.description && (
-                <div>
+              }
+              {quote.description &&
+              <div>
                   <span className="text-sm text-gray-600">Beschreibung:</span>
                   <p className="mt-1">{quote.description}</p>
                 </div>
-              )}
+              }
             </CardContent>
           </Card>
 
@@ -386,8 +386,8 @@ export default function QuoteDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {quote.items.map((item, index) => (
-                  <div key={item.id} className="border rounded-lg p-4">
+                {quote.items.map((item, index) =>
+                <div key={item.id} className="border rounded-lg p-4">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div className="md:col-span-2">
                         <span className="text-sm text-gray-600">Beschreibung:</span>
@@ -407,7 +407,7 @@ export default function QuoteDetailPage() {
                       <span className="font-medium">{formatCurrency(item.total)}</span>
                     </div>
                   </div>
-                ))}
+                )}
 
                 <Separator />
 
@@ -432,8 +432,8 @@ export default function QuoteDetailPage() {
           </Card>
 
           {/* Notizen */}
-          {quote.notes && (
-            <Card>
+          {quote.notes &&
+          <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Notizen</CardTitle>
               </CardHeader>
@@ -441,11 +441,11 @@ export default function QuoteDetailPage() {
                 <p>{quote.notes}</p>
               </CardContent>
             </Card>
-          )}
+          }
 
           {/* Fuß-Text */}
-          {quote.footerText && (
-            <Card>
+          {quote.footerText &&
+          <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Fuß-Text</CardTitle>
               </CardHeader>
@@ -454,7 +454,7 @@ export default function QuoteDetailPage() {
                 <SafeFooterHtml html={quote.footerText} />
               </CardContent>
             </Card>
-          )}
+          }
         </div>
 
         {/* Sidebar */}
@@ -482,48 +482,48 @@ export default function QuoteDetailPage() {
                 <p className="text-xl font-bold text-[#14ad9f]">{formatCurrency(quote.total)}</p>
               </div>
 
-              {quote.sentAt && (
-                <div>
+              {quote.sentAt &&
+              <div>
                   <span className="text-sm text-gray-600">Versendet am:</span>
                   <p>{new Date(quote.sentAt).toLocaleDateString('de-DE')}</p>
                 </div>
-              )}
+              }
 
-              {quote.acceptedAt && (
-                <div>
+              {quote.acceptedAt &&
+              <div>
                   <span className="text-sm text-gray-600">Angenommen am:</span>
                   <p>{new Date(quote.acceptedAt).toLocaleDateString('de-DE')}</p>
                 </div>
-              )}
+              }
 
-              {quote.rejectedAt && (
-                <div>
+              {quote.rejectedAt &&
+              <div>
                   <span className="text-sm text-gray-600">Abgelehnt am:</span>
                   <p>{new Date(quote.rejectedAt).toLocaleDateString('de-DE')}</p>
-                  {quote.rejectionReason && (
-                    <p className="text-sm text-gray-500 mt-1">Grund: {quote.rejectionReason}</p>
-                  )}
+                  {quote.rejectionReason &&
+                <p className="text-sm text-gray-500 mt-1">Grund: {quote.rejectionReason}</p>
+                }
                 </div>
-              )}
+              }
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 // Hilfskomponente für sichere Footer-HTML-Ausgabe mit Platzhalterersetzung
 import DOMPurify from 'dompurify';
-function SafeFooterHtml({ html }: { html: string }) {
+function SafeFooterHtml({ html }: {html: string;}) {
   // Einfache Erkennung, ob bereits HTML-Tags enthalten sind
   const looksLikeHtml = /<([a-z][\w-]*)(?:\s[^>]*)?>/i.test(html);
   // Platzhalter-Substitution (nur KONTAKTPERSON aktuell)
   // Hinweis: In der Detailansicht kennen wir die Kontaktperson hier nicht direkt;
   // wir lassen den Platzhalter sichtbar oder ersetzen ihn leer.
   const substituted = html.replaceAll('[%KONTAKTPERSON%]', '');
-  const safe = looksLikeHtml
-    ? DOMPurify.sanitize(substituted, { USE_PROFILES: { html: true } })
-    : DOMPurify.sanitize(substituted).replaceAll('\n', '<br />');
+  const safe = looksLikeHtml ?
+  DOMPurify.sanitize(substituted, { USE_PROFILES: { html: true } }) :
+  DOMPurify.sanitize(substituted).replaceAll('\n', '<br />');
   return <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: safe }} />;
 }

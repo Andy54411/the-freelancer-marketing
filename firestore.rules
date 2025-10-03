@@ -1581,12 +1581,12 @@ service cloud.firestore {
     match /companies/{companyId}/customers/{customerId} {
       // Lesen: Nur eigene Firma oder Support Staff
       allow read: if request.auth != null && 
-                     (request.auth.uid == companyId && isCompany()) ||
+                     (request.auth.uid == companyId) ||
                      isSupportStaff();
       
       // Listen-Abfragen: Nur eigene Firma
       allow list: if request.auth != null && 
-                    (request.auth.uid == companyId && isCompany()) ||
+                    (request.auth.uid == companyId) ||
                     isSupportStaff();
       
       // Erstellen: Nur eigene Firma

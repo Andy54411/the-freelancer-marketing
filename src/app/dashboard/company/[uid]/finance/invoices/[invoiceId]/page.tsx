@@ -12,8 +12,8 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  DropdownMenuTrigger } from
+'@/components/ui/dropdown-menu';
 import { ArrowLeft, Download, Edit, Send, X, FileText, ZoomIn, ZoomOut, MoreHorizontal, Mail, CheckCircle, Clipboard, Calendar, Minus, Sparkles } from 'lucide-react';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
@@ -49,7 +49,7 @@ export default function InvoiceDetailPage() {
   const [scale, setScale] = useState(1.0);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
-  const [availablePdfs, setAvailablePdfs] = useState<{name: string, url: string}[]>([]);
+  const [availablePdfs, setAvailablePdfs] = useState<{name: string;url: string;}[]>([]);
   const [showPdfSelector, setShowPdfSelector] = useState(false);
   const [useIframeViewer, setUseIframeViewer] = useState(false);
   const [shouldUsePdfJs, setShouldUsePdfJs] = useState(true);
@@ -70,20 +70,20 @@ export default function InvoiceDetailPage() {
 
   const generateAndStorePdf = async () => {
     if (!user || !invoice) return null;
-    
+
     try {
-      console.log('Generating PDF and storing in Firebase Storage...');
-      
+
+
       // PDF über die Firestore API generieren und speichern
       const response = await fetch('/api/generate-invoice-pdf-from-firestore', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           companyId: uid,
-          invoiceId: invoiceId,
-        }),
+          invoiceId: invoiceId
+        })
       });
 
       if (!response.ok) {
@@ -97,8 +97,8 @@ export default function InvoiceDetailPage() {
       }
 
       const result = await response.json();
-      console.log('PDF generated and stored:', result);
-      
+
+
       return result.pdfUrl; // Signed URL zurückgeben
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -108,10 +108,10 @@ export default function InvoiceDetailPage() {
 
   const refreshPdfUrl = async (storagePath: string) => {
     try {
-      console.log('Refreshing PDF URL for path:', storagePath);
+
       const pdfRef = ref(storage, storagePath);
       const freshUrl = await getDownloadURL(pdfRef);
-      console.log('Fresh PDF URL obtained:', freshUrl);
+
       return freshUrl;
     } catch (error) {
       console.error('Error refreshing PDF URL:', error);
@@ -119,36 +119,36 @@ export default function InvoiceDetailPage() {
     }
   };
 
-    // Funktion zur URL-Validierung - vereinfacht für bessere Kompatibilität
+  // Funktion zur URL-Validierung - vereinfacht für bessere Kompatibilität
   const validatePdfUrl = async (url: string): Promise<boolean> => {
     try {
-      console.log('Validating PDF URL:', url);
-      
+
+
       // Für Firebase Storage URLs, versuche einen einfacheren Ansatz
       if (url.includes('firebasestorage.googleapis.com') || url.includes('storage.googleapis.com')) {
         // Bei Firebase Storage URLs, überspringe die HEAD-Validierung in der Entwicklung
         // da diese oft CORS-Probleme verursacht, aber versuche trotzdem zu laden
-        console.log('Firebase Storage URL detected - skipping HEAD validation');
+
         return true; // Optimistisch zurückgeben, PDF.js wird den eigentlichen Test machen
       }
-      
+
       const response = await fetch(url, { method: 'HEAD' });
-      console.log('PDF URL validation response:', response.status, response.statusText);
-      
+
+
       if (!response.ok) {
-        console.log('PDF URL validation failed:', response.status, response.statusText);
+
         return false;
       }
-      
+
       const contentType = response.headers.get('content-type');
-      console.log('Content-Type:', contentType);
-      
+
+
       if (contentType && !contentType.includes('application/pdf')) {
-        console.log('Invalid content type:', contentType);
+
         return false;
       }
-      
-      console.log('PDF URL validation successful');
+
+
       return true;
     } catch (error) {
       console.error('Error validating PDF URL:', error);
@@ -158,22 +158,22 @@ export default function InvoiceDetailPage() {
 
   const loadPdfFromStorage = async () => {
     if (!user || !invoice) return;
-    
+
     setPdfLoading(true);
     setPdfError(null);
-    
+
     try {
       // Erst prüfen, ob bereits eine PDF existiert
       const pdfRef = ref(storage, `invoices/${uid}/${invoiceId}/invoice.pdf`);
       const pdfDownloadUrl = await getDownloadURL(pdfRef);
-      
-      console.log('PDF URL loaded:', pdfDownloadUrl);
+
+
       setPdfUrl(pdfDownloadUrl);
       setPdfLoading(false);
-      
+
       // Präventive Prüfung für primäre PDF
       if (pdfDownloadUrl.includes('firebasestorage.googleapis.com') || pdfDownloadUrl.includes('storage.googleapis.com')) {
-        console.log('Firebase Storage primary URL - using iframe viewer');
+
         setUseIframeViewer(true);
         setShouldUsePdfJs(false);
       } else {
@@ -192,13 +192,13 @@ export default function InvoiceDetailPage() {
       // Prüfe verschiedene mögliche PDF Pfade mit dynamischen Namen
       const invoicesRef = ref(storage, `invoices/${uid}`);
       const listResult = await listAll(invoicesRef);
-      
+
       if (listResult.items.length > 0) {
-        console.log('Found PDFs in storage:', listResult.items.map(item => item.name));
+
       }
-      
+
       // Sammle alle verfügbaren PDFs für die Auswahl
-      const pdfList: {name: string, url: string}[] = [];
+      const pdfList: {name: string;url: string;}[] = [];
       for (const item of listResult.items) {
         try {
           const url = await getDownloadURL(item);
@@ -206,45 +206,45 @@ export default function InvoiceDetailPage() {
         } catch (error: any) {
           // Stummes Logging für erwartete Storage-Fehler
           if (error?.code !== 'storage/object-not-found') {
-            console.log('Could not get URL for:', item.name);
+
           }
         }
       }
       setAvailablePdfs(pdfList);
-      
+
       // Erstelle eine Liste von möglichen Suchbegriffen
       const searchTerms = [
-        invoiceId,
-        invoice.documentNumber,
-        invoice.invoiceNumber,
-        invoice.number,
-        invoice.sequentialNumber?.toString(),
-      ].filter(Boolean);
-      
-      console.log('Searching for PDFs with terms:', searchTerms);
-      
+      invoiceId,
+      invoice.documentNumber,
+      invoice.invoiceNumber,
+      invoice.number,
+      invoice.sequentialNumber?.toString()].
+      filter(Boolean);
+
+
+
       // Suche nach PDF-Dateien für diese Invoice
       for (const item of listResult.items) {
         const fileName = item.name.toLowerCase();
-        
+
         // Prüfe alle Suchbegriffe
-        const matchFound = searchTerms.some(term => 
-          fileName.includes(term?.toString().toLowerCase() || '')
+        const matchFound = searchTerms.some((term) =>
+        fileName.includes(term?.toString().toLowerCase() || '')
         );
-        
+
         if (matchFound || fileName.includes('invoice')) {
           try {
             const pdfUrl = await getDownloadURL(item);
-            console.log('Found matching PDF:', item.name);
-            
+
+
             // Bei Firebase Storage URLs, prüfe präventiv ob PDF.js funktionieren wird
-            console.log('Using PDF:', item.name);
+
             setPdfUrl(pdfUrl);
             setPdfLoading(false);
-            
+
             // Präventive Prüfung: Verwende iframe für Firebase Storage URLs um Fetch-Fehler zu vermeiden
             if (pdfUrl.includes('firebasestorage.googleapis.com') || pdfUrl.includes('storage.googleapis.com')) {
-              console.log('Firebase Storage URL detected - using iframe viewer to prevent fetch errors');
+
               setUseIframeViewer(true);
               setShouldUsePdfJs(false);
             } else {
@@ -255,30 +255,30 @@ export default function InvoiceDetailPage() {
           } catch (error: any) {
             // Stummes Logging für erwartete Storage-Fehler
             if (error?.code !== 'storage/object-not-found') {
-              console.log('Could not get download URL for:', item.name, error);
+
             }
           }
         }
       }
-      
+
       // Fallback: Nimm die neueste PDF-Datei
       if (listResult.items.length > 0) {
         // Sortiere nach Name (neuere haben oft längere Namen oder höhere Zahlen)
         const sortedItems = listResult.items.sort((a, b) => b.name.localeCompare(a.name));
         const latestPdf = sortedItems[0];
-        
+
         try {
           const pdfUrl = await getDownloadURL(latestPdf);
-          console.log('Using latest PDF as fallback:', latestPdf.name);
-          
+
+
           // Lade Fallback-PDF direkt
-          console.log('Using latest PDF as fallback:', latestPdf.name);
+
           setPdfUrl(pdfUrl);
           setPdfLoading(false);
-          
+
           // Präventive Prüfung für Fallback-PDF
           if (pdfUrl.includes('firebasestorage.googleapis.com') || pdfUrl.includes('storage.googleapis.com')) {
-            console.log('Firebase Storage fallback URL - using iframe viewer');
+
             setUseIframeViewer(true);
             setShouldUsePdfJs(false);
           } else {
@@ -289,19 +289,19 @@ export default function InvoiceDetailPage() {
         } catch (error: any) {
           // Stummes Logging für erwartete Storage-Fehler
           if (error?.code !== 'storage/object-not-found') {
-            console.log('Could not get download URL for latest PDF:', latestPdf.name, error);
+
           }
         }
       }
     } catch (error: any) {
       // Stummes Logging für erwartete Storage-Fehler
       if (error?.code !== 'storage/object-not-found') {
-        console.log('Could not list storage files:', error);
+
       }
     }
 
     // Wenn keine PDF gefunden wurde, automatisch generieren
-    console.log('No existing PDF found, generating new one...');
+
     try {
       const generatedPdfUrl = await generateAndStorePdf();
       if (generatedPdfUrl) {
@@ -321,19 +321,19 @@ export default function InvoiceDetailPage() {
   const loadInvoice = async () => {
     try {
       setLoading(true);
-      console.log('Loading invoice:', { uid, invoiceId });
-      
+
+
       const invoiceData = await FirestoreInvoiceService.getInvoiceById(uid, invoiceId);
-      console.log('Invoice data loaded:', invoiceData);
+
 
       if (!invoiceData) {
-        console.log('No invoice data found');
+
         setError('Rechnung nicht gefunden');
         return;
       }
 
       if (invoiceData.companyId !== uid) {
-        console.log('Company ID mismatch:', { invoiceCompanyId: invoiceData.companyId, expectedUid: uid });
+
         setError('Keine Berechtigung für diese Rechnung');
         return;
       }
@@ -354,7 +354,7 @@ export default function InvoiceDetailPage() {
       return {
         subtotal: invoice.amount || 0,
         taxAmount: invoice.tax || 0,
-        total: invoice.total || invoice.amount || 0,
+        total: invoice.total || invoice.amount || 0
       };
     }
 
@@ -363,7 +363,7 @@ export default function InvoiceDetailPage() {
 
     // Berechne Steuer
     const vatRate = invoice.vatRate || 19;
-    const taxAmount = invoice.isSmallBusiness ? 0 : (subtotal * vatRate) / 100;
+    const taxAmount = invoice.isSmallBusiness ? 0 : subtotal * vatRate / 100;
 
     // Gesamtsumme
     const total = subtotal + taxAmount;
@@ -371,18 +371,18 @@ export default function InvoiceDetailPage() {
     return {
       subtotal: subtotal,
       taxAmount: taxAmount,
-      total: total,
+      total: total
     };
   };
 
-  const invoiceTotals = invoice
-    ? calculateInvoiceTotals(invoice)
-    : { subtotal: 0, taxAmount: 0, total: 0 };
+  const invoiceTotals = invoice ?
+  calculateInvoiceTotals(invoice) :
+  { subtotal: 0, taxAmount: 0, total: 0 };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
-      currency: 'EUR',
+      currency: 'EUR'
     }).format(amount);
   };
 
@@ -391,57 +391,57 @@ export default function InvoiceDetailPage() {
       draft: {
         label: 'Entwurf',
         variant: 'secondary' as const,
-        color: 'bg-gray-100 text-gray-800',
+        color: 'bg-gray-100 text-gray-800'
       },
       finalized: {
         label: 'Rechnung',
         variant: 'default' as const,
-        color: 'bg-[#14ad9f] text-white',
+        color: 'bg-[#14ad9f] text-white'
       },
       sent: { label: 'Gesendet', variant: 'default' as const, color: 'bg-blue-100 text-blue-800' },
       paid: { label: 'Bezahlt', variant: 'default' as const, color: 'bg-green-100 text-green-800' },
       overdue: {
         label: 'Überfällig',
         variant: 'destructive' as const,
-        color: 'bg-red-100 text-red-800',
+        color: 'bg-red-100 text-red-800'
       },
       cancelled: {
         label: 'Storniert',
         variant: 'secondary' as const,
-        color: 'bg-gray-100 text-gray-800',
-      },
+        color: 'bg-gray-100 text-gray-800'
+      }
     };
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
     return (
       <Badge variant={config.variant} className={config.color}>
         {config.label}
-      </Badge>
-    );
+      </Badge>);
+
   };
 
-  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+  const onDocumentLoadSuccess = ({ numPages }: {numPages: number;}) => {
     setNumPages(numPages);
     setPageNumber(1);
   };
 
   const onDocumentLoadError = (error: any) => {
     // Stille Behandlung für erwartete Fetch-Fehler
-    const isFetchError = error?.message?.includes('Failed to fetch') || 
-                        error?.details?.includes('Failed to fetch') ||
-                        error?.name === 'UnknownErrorException';
-    
+    const isFetchError = error?.message?.includes('Failed to fetch') ||
+    error?.details?.includes('Failed to fetch') ||
+    error?.name === 'UnknownErrorException';
+
     if (isFetchError) {
       // Stumm zum iframe-Fallback wechseln, ohne Console-Fehler
-      console.log('PDF.js loading failed, switching to iframe viewer');
+
       setUseIframeViewer(true);
       setPdfError(null);
       return;
     }
-    
+
     // Nur echte, unerwartete Fehler loggen
     console.error('Unexpected PDF load error:', error);
     console.error('PDF URL was:', pdfUrl);
-    
+
     if (error?.message?.includes('CORS')) {
       setPdfError('CORS-Fehler beim PDF-Laden. PDF-Zugriff ist möglicherweise blockiert.');
       setUseIframeViewer(false);
@@ -449,23 +449,23 @@ export default function InvoiceDetailPage() {
       setPdfError(`Fehler beim Laden des PDFs: ${error?.message || 'Unbekannter Fehler'}. Bitte versuchen Sie es erneut.`);
       setUseIframeViewer(false);
     }
-    
+
     // PDF URL nur bei echten Fehlern zurücksetzen
     setPdfUrl(null);
-  };  const goToPrevPage = () => {
-    setPageNumber(prev => Math.max(prev - 1, 1));
+  };const goToPrevPage = () => {
+    setPageNumber((prev) => Math.max(prev - 1, 1));
   };
 
   const goToNextPage = () => {
-    setPageNumber(prev => Math.min(prev + 1, numPages || 1));
+    setPageNumber((prev) => Math.min(prev + 1, numPages || 1));
   };
 
   const handleZoomIn = () => {
-    setScale(prev => Math.min(prev + 0.25, 3.0));
+    setScale((prev) => Math.min(prev + 0.25, 3.0));
   };
 
   const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.25, 0.5));
+    setScale((prev) => Math.max(prev - 0.25, 0.5));
   };
 
   const loadPdfForViewing = () => {
@@ -485,13 +485,13 @@ export default function InvoiceDetailPage() {
 
       const newTags = [...currentTags, tagName.trim()];
       const invoiceRef = doc(db, 'companies', uid, 'invoices', invoiceId);
-      
+
       await updateDoc(invoiceRef, {
         tags: newTags,
-        updatedAt: new Date(),
+        updatedAt: new Date()
       });
 
-      setInvoice(prev => prev ? { ...prev, tags: newTags } : null);
+      setInvoice((prev) => prev ? { ...prev, tags: newTags } : null);
       setNewTag('');
       toast.success('Tag hinzugefügt');
     } catch (error) {
@@ -507,15 +507,15 @@ export default function InvoiceDetailPage() {
 
     try {
       const currentTags = invoice.tags || [];
-      const newTags = currentTags.filter(tag => tag !== tagToRemove);
+      const newTags = currentTags.filter((tag) => tag !== tagToRemove);
       const invoiceRef = doc(db, 'companies', uid, 'invoices', invoiceId);
-      
+
       await updateDoc(invoiceRef, {
         tags: newTags,
-        updatedAt: new Date(),
+        updatedAt: new Date()
       });
 
-      setInvoice(prev => prev ? { ...prev, tags: newTags } : null);
+      setInvoice((prev) => prev ? { ...prev, tags: newTags } : null);
       toast.success('Tag entfernt');
     } catch (error) {
       console.error('Error removing tag:', error);
@@ -558,20 +558,20 @@ export default function InvoiceDetailPage() {
         ...(sequentialNumber && { sequentialNumber }),
         finalizedAt: new Date(),
 
-        updatedAt: new Date(),
+        updatedAt: new Date()
       });
 
-      setInvoice(prev =>
-        prev
-          ? {
-              ...prev,
-              status: 'finalized',
-              invoiceNumber,
-              number: invoiceNumber,
+      setInvoice((prev) =>
+      prev ?
+      {
+        ...prev,
+        status: 'finalized',
+        invoiceNumber,
+        number: invoiceNumber,
 
-              ...(sequentialNumber && { sequentialNumber }),
-            }
-          : null
+        ...(sequentialNumber && { sequentialNumber })
+      } :
+      null
       );
 
       toast.success(`Rechnung ${invoiceNumber} wurde finalisiert!`);
@@ -591,12 +591,12 @@ export default function InvoiceDetailPage() {
       await updateDoc(invoiceRef, {
         status: 'paid',
         paidDate: new Date(),
-        updatedAt: new Date(),
+        updatedAt: new Date()
       });
 
       // Update local state
-      setInvoice(prev => prev ? { ...prev, status: 'paid', paidDate: new Date() } : null);
-      
+      setInvoice((prev) => prev ? { ...prev, status: 'paid', paidDate: new Date() } : null);
+
       toast.success('Rechnung als bezahlt markiert');
     } catch (error) {
       console.error('Error marking invoice as paid:', error);
@@ -623,11 +623,11 @@ export default function InvoiceDetailPage() {
       const response = await fetch('/api/generate-invoice-pdf', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          invoiceData: invoice,
-        }),
+          invoiceData: invoice
+        })
       });
 
       if (!response.ok) {
@@ -644,7 +644,7 @@ export default function InvoiceDetailPage() {
 
         // Open PDF in new tab instead of downloading
         window.open(pdfUrl, '_blank');
-        
+
         // Clean up after a short delay
         setTimeout(() => {
           window.URL.revokeObjectURL(pdfUrl);
@@ -681,11 +681,11 @@ export default function InvoiceDetailPage() {
       const response = await fetch('/api/generate-invoice-pdf', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          invoiceData: invoice,
-        }),
+          invoiceData: invoice
+        })
       });
 
       if (!response.ok) {
@@ -739,9 +739,9 @@ export default function InvoiceDetailPage() {
             toast.info('Popup wurde blockiert. Navigieren Sie zur Print-Seite für PDF-Download.', {
               action: {
                 label: 'Print-Seite öffnen',
-                onClick: () => window.open(responseData.printUrl, '_blank'),
+                onClick: () => window.open(responseData.printUrl, '_blank')
               },
-              duration: 8000,
+              duration: 8000
             });
           }
           return;
@@ -755,9 +755,9 @@ export default function InvoiceDetailPage() {
       toast.error('PDF-Service nicht verfügbar. Verwende Browser-Druck als Fallback.', {
         action: {
           label: 'Jetzt drucken',
-          onClick: () => window.print(),
+          onClick: () => window.print()
         },
-        duration: 8000,
+        duration: 8000
       });
     } finally {
       setDownloadingPdf(false);
@@ -772,8 +772,8 @@ export default function InvoiceDetailPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
           <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   if (loading) {
@@ -785,8 +785,8 @@ export default function InvoiceDetailPage() {
             <p className="mt-2 text-gray-600">Rechnung wird geladen...</p>
           </div>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   if (error || !invoice) {
@@ -795,8 +795,8 @@ export default function InvoiceDetailPage() {
         <Button
           variant="ghost"
           onClick={handleBackToInvoices}
-          className="mb-4 text-gray-600 hover:text-gray-900"
-        >
+          className="mb-4 text-gray-600 hover:text-gray-900">
+
           <ArrowLeft className="h-4 w-4 mr-2" />
           Zurück zu Rechnungen
         </Button>
@@ -810,8 +810,8 @@ export default function InvoiceDetailPage() {
             </Button>
           </div>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -825,8 +825,8 @@ export default function InvoiceDetailPage() {
                 <Button
                   variant="ghost"
                   onClick={handleBackToInvoices}
-                  className="p-2"
-                >
+                  className="p-2">
+
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <h2 className="text-xl font-semibold text-gray-900">
@@ -835,11 +835,11 @@ export default function InvoiceDetailPage() {
               </div>
 
               <div className="flex items-center space-x-3">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="border-gray-300"
-                  onClick={() => router.push(`/dashboard/company/${uid}/finance/invoices/create`)}
-                >
+                  onClick={() => router.push(`/dashboard/company/${uid}/finance/invoices/create`)}>
+
                   Neue Rechnung
                 </Button>
 
@@ -847,20 +847,20 @@ export default function InvoiceDetailPage() {
                   variant="outline"
                   onClick={handleDownloadPdf}
                   disabled={downloadingPdf}
-                  className="border-gray-300"
-                >
+                  className="border-gray-300">
+
                   {downloadingPdf ? 'Herunterladen...' : 'Herunterladen'}
                 </Button>
 
-                {invoice.status !== 'paid' && (
-                  <Button
-                    onClick={handleMarkAsPaid}
-                    disabled={updating}
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                  >
+                {invoice.status !== 'paid' &&
+                <Button
+                  onClick={handleMarkAsPaid}
+                  disabled={updating}
+                  className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+
                     {updating ? 'Markiere...' : 'Als bezahlt markieren'}
                   </Button>
-                )}
+                }
 
                 {/* Weitere Funktionen Dropdown */}
                 <DropdownMenu>
@@ -871,10 +871,10 @@ export default function InvoiceDetailPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-64">
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={handleEditInvoice}
-                      className="cursor-pointer hover:bg-gray-50 font-medium"
-                    >
+                      className="cursor-pointer hover:bg-gray-50 font-medium">
+
                       <Edit className="h-4 w-4 mr-2" />
                       Dokument bearbeiten
                     </DropdownMenuItem>
@@ -887,27 +887,27 @@ export default function InvoiceDetailPage() {
                       </div>
                     </div>
 
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => setSendDialogOpen(true)}
-                      className="cursor-pointer hover:bg-gray-50"
-                    >
+                      className="cursor-pointer hover:bg-gray-50">
+
                       <Mail className="h-4 w-4 mr-3" />
                       Dokument versenden
                     </DropdownMenuItem>
                     
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => toast.info('Aufgaben-Feature wird bald hinzugefügt!')}
-                      className="cursor-pointer hover:bg-gray-50"
-                    >
+                      className="cursor-pointer hover:bg-gray-50">
+
                       <CheckCircle className="h-4 w-4 mr-3" />
                       Aufgabe erstellen
                     </DropdownMenuItem>
                     
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={async () => {
                         try {
                           toast.info('Lieferschein wird erstellt...', { duration: 2000 });
-                          
+
                           // Erstelle Lieferschein basierend auf Rechnung
                           const deliveryNoteData = {
                             invoiceId: invoice.id,
@@ -920,51 +920,51 @@ export default function InvoiceDetailPage() {
                             createdAt: new Date(),
                             status: 'draft'
                           };
-                          
+
                           // Hier würde normalerweise ein API-Call zur Lieferschein-Erstellung stattfinden
                           // Für jetzt navigieren wir zur Delivery Notes Seite
                           const params = new URLSearchParams({
                             'from-invoice': invoiceId,
                             'invoice-number': invoice.invoiceNumber || invoice.number || '',
-                            'customer-name': invoice.customerName || '',
+                            'customer-name': invoice.customerName || ''
                           });
-                          
+
                           router.push(`/dashboard/company/${uid}/finance/delivery-notes?${params.toString()}`);
-                          
+
                         } catch (error) {
                           console.error('Error creating delivery note:', error);
                           toast.error('Fehler beim Erstellen des Lieferscheins');
                         }
                       }}
-                      className="cursor-pointer hover:bg-gray-50"
-                    >
+                      className="cursor-pointer hover:bg-gray-50">
+
                       <Clipboard className="h-4 w-4 mr-3" />
                       Lieferschein erzeugen
                     </DropdownMenuItem>
                     
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => {
                         router.push(`/dashboard/company/${uid}/finance/invoices/create?template=${invoiceId}`);
                       }}
-                      className="cursor-pointer hover:bg-gray-50"
-                    >
+                      className="cursor-pointer hover:bg-gray-50">
+
                       <FileText className="h-4 w-4 mr-3" />
                       Rechnung als Vorlage verwenden
                     </DropdownMenuItem>
                     
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={async () => {
                         try {
                           // Prüfe ob Rechnung überfällig ist
                           const dueDate = new Date(invoice.dueDate);
                           const today = new Date();
                           const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-                          
+
                           if (invoice.status === 'paid') {
                             toast.info('Diese Rechnung ist bereits bezahlt.');
                             return;
                           }
-                          
+
                           if (daysOverdue < 0) {
                             // Zahlungserinnerung
                             const confirmed = confirm(
@@ -972,31 +972,31 @@ export default function InvoiceDetailPage() {
                               'Möchten Sie trotzdem eine freundliche Zahlungserinnerung senden?'
                             );
                             if (!confirmed) return;
-                            
+
                             toast.info('Zahlungserinnerung wird erstellt...', { duration: 2000 });
-                            
+
                             // Für jetzt: Einfache Toast-Nachricht mit geplanter Funktionalität
                             setTimeout(() => {
                               toast.success('Zahlungserinnerung wurde zur Versendung vorbereitet!', {
                                 description: 'Diese Funktion wird in Kürze vollständig implementiert.',
-                                duration: 4000,
+                                duration: 4000
                               });
                             }, 500);
-                            
+
                           } else {
                             // Mahnung
                             let mahnungType = '1. Mahnung';
                             if (daysOverdue > 30) mahnungType = '2. Mahnung';
                             if (daysOverdue > 60) mahnungType = '3. Mahnung';
-                            
+
                             const confirmed = confirm(
                               `Diese Rechnung ist ${daysOverdue} Tage überfällig. ` +
                               `Möchten Sie eine ${mahnungType} erstellen?`
                             );
                             if (!confirmed) return;
-                            
+
                             toast.info(`${mahnungType} wird erstellt...`, { duration: 2000 });
-                            
+
                             // Navigation zur existierenden Reminders-Seite
                             setTimeout(() => {
                               const params = new URLSearchParams({
@@ -1009,26 +1009,26 @@ export default function InvoiceDetailPage() {
                               router.push(`/dashboard/company/${uid}/finance/reminders?${params.toString()}`);
                             }, 500);
                           }
-                          
+
                         } catch (error) {
                           console.error('Error creating reminder/mahnung:', error);
                           toast.error('Fehler beim Erstellen der Mahnung');
                         }
                       }}
-                      className="cursor-pointer hover:bg-gray-50"
-                    >
+                      className="cursor-pointer hover:bg-gray-50">
+
                       <Calendar className="h-4 w-4 mr-3" />
                       Mahnung / Zahlungserinnerung
                     </DropdownMenuItem>
                     
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => {
                         if (confirm('Sind Sie sicher, dass Sie diese Rechnung stornieren möchten?')) {
                           toast.info('Storno-Feature wird bald implementiert!');
                         }
                       }}
-                      className="cursor-pointer hover:bg-red-50 text-red-600 hover:text-red-700"
-                    >
+                      className="cursor-pointer hover:bg-red-50 text-red-600 hover:text-red-700">
+
                       <Minus className="h-4 w-4 mr-3" />
                       Rechnung stornieren
                     </DropdownMenuItem>
@@ -1070,35 +1070,35 @@ export default function InvoiceDetailPage() {
               <div className="details p-4">
                 <div className="space-y-4">
                   {/* Fälligkeit */}
-                  {invoice.dueDate && (
-                    <div className="detail flex justify-between items-start py-2">
+                  {invoice.dueDate &&
+                  <div className="detail flex justify-between items-start py-2">
                       <div className="left">
                         <p className="label text-sm text-gray-600">Fälligkeit</p>
                       </div>
                       <div className="right text-right">
                         <p className="text-sm font-medium text-gray-900">
                           {(() => {
-                            const dueDate = new Date(invoice.dueDate);
-                            const today = new Date();
-                            const diffTime = dueDate.getTime() - today.getTime();
-                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                            
-                            if (diffDays > 0) {
-                              return `In ${diffDays} Tagen`;
-                            } else if (diffDays === 0) {
-                              return 'Heute';
-                            } else {
-                              return `${Math.abs(diffDays)} Tage überfällig`;
-                            }
-                          })()}
+                          const dueDate = new Date(invoice.dueDate);
+                          const today = new Date();
+                          const diffTime = dueDate.getTime() - today.getTime();
+                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                          if (diffDays > 0) {
+                            return `In ${diffDays} Tagen`;
+                          } else if (diffDays === 0) {
+                            return 'Heute';
+                          } else {
+                            return `${Math.abs(diffDays)} Tage überfällig`;
+                          }
+                        })()}
                         </p>
                       </div>
                     </div>
-                  )}
+                  }
 
                   {/* Zahlungsziel */}
-                  {invoice.dueDate && (
-                    <div className="detail flex justify-between items-start py-2">
+                  {invoice.dueDate &&
+                  <div className="detail flex justify-between items-start py-2">
                       <div className="left">
                         <p className="label text-sm text-gray-600">Zahlungsziel</p>
                       </div>
@@ -1108,17 +1108,17 @@ export default function InvoiceDetailPage() {
                           <br />
                           <span className="text-xs text-gray-500">
                             ({(() => {
-                              const createdDate = new Date(invoice.createdAt || invoice.date);
-                              const dueDate = new Date(invoice.dueDate);
-                              const diffTime = dueDate.getTime() - createdDate.getTime();
-                              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                              return `${diffDays} Tage`;
-                            })()})
+                            const createdDate = new Date(invoice.createdAt || invoice.date);
+                            const dueDate = new Date(invoice.dueDate);
+                            const diffTime = dueDate.getTime() - createdDate.getTime();
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            return `${diffDays} Tage`;
+                          })()})
                           </span>
                         </p>
                       </div>
                     </div>
-                  )}
+                  }
 
                   {/* Tags */}
                   <div className="detail flex justify-between items-center py-2">
@@ -1128,27 +1128,27 @@ export default function InvoiceDetailPage() {
                     <div className="right flex-1 max-w-[180px]">
                       <div className="flex flex-wrap gap-1 justify-end items-center">
                         {/* Existing Tags */}
-                        {invoice.tags && invoice.tags.length > 0 && (
-                          <>
-                            {invoice.tags.map((tag: string, index: number) => (
-                              <span key={index} className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded hover:bg-gray-200 transition-colors">
+                        {invoice.tags && invoice.tags.length > 0 &&
+                        <>
+                            {invoice.tags.map((tag: string, index: number) =>
+                          <span key={index} className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded hover:bg-gray-200 transition-colors">
                                 {tag}
-                                <button 
-                                  onClick={() => removeTag(tag)}
-                                  className="text-gray-400 hover:text-red-500 text-xs font-bold transition-colors"
-                                  title="Tag entfernen"
-                                >
+                                <button
+                              onClick={() => removeTag(tag)}
+                              className="text-gray-400 hover:text-red-500 text-xs font-bold transition-colors"
+                              title="Tag entfernen">
+
                                   ×
                                 </button>
                               </span>
-                            ))}
+                          )}
                           </>
-                        )}
+                        }
                         
                         {/* Add Tag Input */}
                         <div className="inline-flex">
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             value={newTag}
                             onChange={(e) => setNewTag(e.target.value)}
                             onKeyPress={handleTagKeyPress}
@@ -1166,8 +1166,8 @@ export default function InvoiceDetailPage() {
                                 e.target.style.textAlign = 'right';
                                 e.target.placeholder = invoice.tags && invoice.tags.length > 0 ? "+" : "Tags hinzufügen";
                               }
-                            }}
-                          />
+                            }} />
+
                         </div>
                       </div>
                     </div>
@@ -1206,8 +1206,8 @@ export default function InvoiceDetailPage() {
                   </div>
 
                   {/* Customer */}
-                  {invoice.customerName && (
-                    <div className="detail flex justify-between items-start py-2">
+                  {invoice.customerName &&
+                  <div className="detail flex justify-between items-start py-2">
                       <div className="left">
                         <p className="label text-sm text-gray-600">Kunde</p>
                       </div>
@@ -1215,7 +1215,7 @@ export default function InvoiceDetailPage() {
                         <p className="text-sm font-medium text-gray-900">{invoice.customerName}</p>
                       </div>
                     </div>
-                  )}
+                  }
 
                   {/* DATEV Export History */}
                   <div className="detail flex justify-between items-start py-2">
@@ -1239,185 +1239,185 @@ export default function InvoiceDetailPage() {
           <div className="pdf col-span-2">
             <div className="bg-white border border-gray-200 rounded-lg">
               {/* PDF Toolbar - nur für PDF.js anzeigen */}
-              {!useIframeViewer && (
-                <div className="border-b border-gray-200 p-4">
+              {!useIframeViewer &&
+              <div className="border-b border-gray-200 p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={goToPrevPage}
-                          disabled={pageNumber <= 1}
-                        >
+                        <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={goToPrevPage}
+                        disabled={pageNumber <= 1}>
+
                           ←
                         </Button>
                         <span className="text-sm text-gray-600">
                           Seite {pageNumber} von {numPages || 1}
                         </span>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={goToNextPage}
-                          disabled={pageNumber >= (numPages || 1)}
-                        >
+                        <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={goToNextPage}
+                        disabled={pageNumber >= (numPages || 1)}>
+
                           →
                         </Button>
                       </div>
                     </div>
                   
                   <div className="flex items-center space-x-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={handleZoomOut}
-                      disabled={scale <= 0.5}
-                    >
+                      disabled={scale <= 0.5}>
+
                       <ZoomOut className="h-4 w-4" />
                     </Button>
                     <span className="text-sm text-gray-600 min-w-[60px] text-center">
                       {Math.round(scale * 100)}%
                     </span>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={handleZoomIn}
-                      disabled={scale >= 3.0}
-                    >
+                      disabled={scale >= 3.0}>
+
                       <ZoomIn className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleDownloadPdf}
-                      disabled={downloadingPdf}
-                    >
+                      disabled={downloadingPdf}>
+
                       <Download className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
                 </div>
-              )}
+              }
               
               {/* PDF Content */}
               <div className="p-4">
                 <div className="flex justify-center">
-                  {pdfLoading ? (
-                    <div className="flex items-center justify-center h-96">
+                  {pdfLoading ?
+                  <div className="flex items-center justify-center h-96">
                       <div className="text-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f] mx-auto mb-2"></div>
                         <p className="text-gray-500">PDF wird geladen...</p>
                       </div>
-                    </div>
-                  ) : pdfError ? (
-                    <div className="flex items-center justify-center h-96">
+                    </div> :
+                  pdfError ?
+                  <div className="flex items-center justify-center h-96">
                       <div className="text-center">
                         <FileText className="h-12 w-12 text-red-400 mx-auto mb-2" />
                         <p className="text-red-500 mb-4">{pdfError}</p>
                         <div className="space-x-2 flex flex-wrap gap-2">
                           <Button
-                            onClick={loadPdfForViewing}
-                            variant="outline"
-                            className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
-                          >
+                          onClick={loadPdfForViewing}
+                          variant="outline"
+                          className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white">
+
                             <FileText className="h-4 w-4 mr-2" />
                             Erneut versuchen
                           </Button>
-                          {availablePdfs.length > 0 && (
-                            <Button
-                              onClick={() => setShowPdfSelector(true)}
-                              variant="outline"
-                              className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
-                            >
+                          {availablePdfs.length > 0 &&
+                        <Button
+                          onClick={() => setShowPdfSelector(true)}
+                          variant="outline"
+                          className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white">
+
                               <FileText className="h-4 w-4 mr-2" />
                               PDF auswählen ({availablePdfs.length})
                             </Button>
-                          )}
+                        }
                           <Button
-                            onClick={async () => {
-                              setPdfLoading(true);
-                              setPdfError(null);
-                              const pdfUrl = await generateAndStorePdf();
-                              if (pdfUrl) {
-                                setPdfUrl(pdfUrl);
-                                toast.success('PDF wurde erfolgreich generiert!');
-                              } else {
-                                setPdfError('PDF konnte nicht generiert werden.');
-                              }
-                              setPdfLoading(false);
-                            }}
-                            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                            disabled={pdfLoading}
-                          >
+                          onClick={async () => {
+                            setPdfLoading(true);
+                            setPdfError(null);
+                            const pdfUrl = await generateAndStorePdf();
+                            if (pdfUrl) {
+                              setPdfUrl(pdfUrl);
+                              toast.success('PDF wurde erfolgreich generiert!');
+                            } else {
+                              setPdfError('PDF konnte nicht generiert werden.');
+                            }
+                            setPdfLoading(false);
+                          }}
+                          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                          disabled={pdfLoading}>
+
                             <Download className="h-4 w-4 mr-2" />
                             {pdfLoading ? 'Generiere...' : 'PDF generieren'}
                           </Button>
                         </div>
                         
                         {/* PDF Selector Modal */}
-                        {showPdfSelector && availablePdfs.length > 0 && (
-                          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        {showPdfSelector && availablePdfs.length > 0 &&
+                      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                             <div className="bg-white rounded-lg p-6 w-96 max-h-96 overflow-y-auto">
                               <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-lg font-semibold">PDF auswählen</h3>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setShowPdfSelector(false)}
-                                >
+                                <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowPdfSelector(false)}>
+
                                   <X className="h-4 w-4" />
                                 </Button>
                               </div>
                               <div className="space-y-2">
-                                {availablePdfs.map((pdf, index) => (
-                                  <div key={index} className="flex items-center justify-between p-2 border rounded">
+                                {availablePdfs.map((pdf, index) =>
+                            <div key={index} className="flex items-center justify-between p-2 border rounded">
                                     <span className="text-sm truncate flex-1 mr-2">{pdf.name}</span>
                                     <Button
-                                      size="sm"
-                                      onClick={() => {
-                                        setPdfUrl(pdf.url);
-                                        setPdfError(null);
-                                        setShowPdfSelector(false);
-                                        toast.success(`PDF "${pdf.name}" geladen!`);
-                                      }}
-                                      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                                    >
+                                size="sm"
+                                onClick={() => {
+                                  setPdfUrl(pdf.url);
+                                  setPdfError(null);
+                                  setShowPdfSelector(false);
+                                  toast.success(`PDF "${pdf.name}" geladen!`);
+                                }}
+                                className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+
                                       Laden
                                     </Button>
                                   </div>
-                                ))}
+                            )}
                               </div>
                             </div>
                           </div>
-                        )}
+                      }
                       </div>
-                    </div>
-                  ) : pdfUrl ? (
-                    <>
-                      {useIframeViewer ? (
-                        // Iframe Fallback für PDF-Anzeige
-                        <div className="w-full bg-gray-50 rounded-lg overflow-hidden border border-gray-300 shadow-lg">
+                    </div> :
+                  pdfUrl ?
+                  <>
+                      {useIframeViewer ?
+                    // Iframe Fallback für PDF-Anzeige
+                    <div className="w-full bg-gray-50 rounded-lg overflow-hidden border border-gray-300 shadow-lg">
                           <div className="bg-[#14ad9f] text-white p-3 text-sm font-medium flex items-center justify-between">
                             <span>PDF Viewer</span>
                             <div className="flex items-center space-x-2">
                               <Button
-                                size="sm"
-                                className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
-                                onClick={() => {
-                                  setShouldUsePdfJs(true);
-                                  setUseIframeViewer(false);
-                                  setNumPages(null);
-                                  setPageNumber(1);
-                                  setPdfError(null); // Clear any errors when switching back
-                                }}
-                              >
+                            size="sm"
+                            className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
+                            onClick={() => {
+                              setShouldUsePdfJs(true);
+                              setUseIframeViewer(false);
+                              setNumPages(null);
+                              setPageNumber(1);
+                              setPdfError(null); // Clear any errors when switching back
+                            }}>
+
                                 Erweiterte Ansicht
                               </Button>
                               <Button
-                                size="sm"
-                                className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
-                                onClick={() => window.open(pdfUrl, '_blank')}
-                              >
+                            size="sm"
+                            className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
+                            onClick={() => window.open(pdfUrl, '_blank')}>
+
                                 <Download className="h-4 w-4 mr-1" />
                                 Öffnen
                               </Button>
@@ -1425,62 +1425,62 @@ export default function InvoiceDetailPage() {
                           </div>
                           <div className="overflow-hidden">
                             <iframe
-                              src={pdfUrl}
-                              className="w-full h-[800px] border-0"
-                              style={{ transform: 'scale(0.8)', transformOrigin: 'top left', width: '125%' }}
-                              title="PDF Viewer"
-                            />
+                          src={pdfUrl}
+                          className="w-full h-[800px] border-0"
+                          style={{ transform: 'scale(0.8)', transformOrigin: 'top left', width: '125%' }}
+                          title="PDF Viewer" />
+
                           </div>
-                        </div>
-                      ) : shouldUsePdfJs ? (
-                        // Standard PDF.js Viewer - nur verwenden wenn sicher
-                        <div className="border border-gray-300 shadow-lg">
+                        </div> :
+                    shouldUsePdfJs ?
+                    // Standard PDF.js Viewer - nur verwenden wenn sicher
+                    <div className="border border-gray-300 shadow-lg">
                           <Document
-                          file={pdfUrl}
-                          onLoadSuccess={onDocumentLoadSuccess}
-                          onLoadError={onDocumentLoadError}
-                          loading={
-                            <div className="flex items-center justify-center h-96">
+                        file={pdfUrl}
+                        onLoadSuccess={onDocumentLoadSuccess}
+                        onLoadError={onDocumentLoadError}
+                        loading={
+                        <div className="flex items-center justify-center h-96">
                               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
                             </div>
-                          }
-                          options={{
-                            cMapUrl: '/pdf-worker/',
-                            cMapPacked: true,
-                          }}
-                        >
-                          <Page 
-                            pageNumber={pageNumber} 
-                            scale={scale}
-                            renderTextLayer={true}
-                            renderAnnotationLayer={true}
-                          />
+                        }
+                        options={{
+                          cMapUrl: '/pdf-worker/',
+                          cMapPacked: true
+                        }}>
+
+                          <Page
+                          pageNumber={pageNumber}
+                          scale={scale}
+                          renderTextLayer={true}
+                          renderAnnotationLayer={true} />
+
                         </Document>
-                        </div>
-                      ) : (
-                        // Iframe als sicherer Fallback für problematische URLs
-                        <div className="w-full bg-gray-50 rounded-lg overflow-hidden border border-gray-300 shadow-lg">
+                        </div> :
+
+                    // Iframe als sicherer Fallback für problematische URLs
+                    <div className="w-full bg-gray-50 rounded-lg overflow-hidden border border-gray-300 shadow-lg">
                           <div className="bg-[#14ad9f] text-white p-3 text-sm font-medium flex items-center justify-between">
                             <span>PDF Viewer</span>
                             <div className="flex items-center space-x-2">
                               <Button
-                                size="sm"
-                                className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
-                                onClick={() => {
-                                  setShouldUsePdfJs(true);
-                                  setUseIframeViewer(false);
-                                  setNumPages(null);
-                                  setPageNumber(1);
-                                  setPdfError(null);
-                                }}
-                              >
+                            size="sm"
+                            className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
+                            onClick={() => {
+                              setShouldUsePdfJs(true);
+                              setUseIframeViewer(false);
+                              setNumPages(null);
+                              setPageNumber(1);
+                              setPdfError(null);
+                            }}>
+
                                 Erweiterte Ansicht
                               </Button>
                               <Button
-                                size="sm"
-                                className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
-                                onClick={() => window.open(pdfUrl, '_blank')}
-                              >
+                            size="sm"
+                            className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
+                            onClick={() => window.open(pdfUrl, '_blank')}>
+
                                 <Download className="h-4 w-4 mr-1" />
                                 Öffnen
                               </Button>
@@ -1488,29 +1488,29 @@ export default function InvoiceDetailPage() {
                           </div>
                           <div className="overflow-hidden">
                             <iframe
-                              src={pdfUrl}
-                              className="w-full h-[800px] border-0"
-                              style={{ transform: 'scale(0.8)', transformOrigin: 'top left', width: '125%' }}
-                              title="PDF Viewer"
-                            />
+                          src={pdfUrl}
+                          className="w-full h-[800px] border-0"
+                          style={{ transform: 'scale(0.8)', transformOrigin: 'top left', width: '125%' }}
+                          title="PDF Viewer" />
+
                           </div>
                         </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="flex items-center justify-center h-96">
+                    }
+                    </> :
+
+                  <div className="flex items-center justify-center h-96">
                       <div className="text-center">
                         <FileText className="h-12 w-12 text-gray-400 mx-auto mb-2" />
                         <p className="text-gray-500 mb-4">Keine PDF verfügbar</p>
                         <Button
-                          onClick={loadPdfForViewing}
-                          className="bg-[#14ad9f] hover:bg-[#129488]"
-                        >
+                        onClick={loadPdfForViewing}
+                        className="bg-[#14ad9f] hover:bg-[#129488]">
+
                           PDF generieren
                         </Button>
                       </div>
                     </div>
-                  )}
+                  }
                 </div>
               </div>
             </div>
@@ -1518,15 +1518,15 @@ export default function InvoiceDetailPage() {
         </div>
 
         {/* Send Invoice Dialog */}
-        {invoice && (
-          <SendInvoiceDialog
-            isOpen={sendDialogOpen}
-            onClose={() => setSendDialogOpen(false)}
-            invoice={invoice!}
-            companyName={invoice.companyName || 'Ihr Unternehmen'}
-          />
-        )}
+        {invoice &&
+        <SendInvoiceDialog
+          isOpen={sendDialogOpen}
+          onClose={() => setSendDialogOpen(false)}
+          invoice={invoice!}
+          companyName={invoice.companyName || 'Ihr Unternehmen'} />
+
+        }
       </div>
-    </div>
-  );
+    </div>);
+
 }

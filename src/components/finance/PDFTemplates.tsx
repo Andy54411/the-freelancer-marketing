@@ -15,6 +15,23 @@ import {
 const PDFTemplate: React.FC<PDFTemplateProps> = props => {
   const data = usePDFTemplateData(props);
 
+  // 🔥 Default DocumentSettings wenn keine übergeben werden
+  const defaultDocumentSettings = {
+    language: 'de',
+    showQRCode: false,
+    showEPCQRCode: false,
+    showCustomerNumber: true,
+    showContactPerson: true,
+    showVATPerPosition: false,
+    showArticleNumber: false,
+    showFoldLines: true, // ← Falzmarken standardmäßig aktiviert
+    showPageNumbers: true,
+    showFooter: true,
+    showWatermark: false
+  };
+
+  const documentSettings = props.documentSettings || defaultDocumentSettings;
+
   // Template renderer based on selected template
   const renderTemplate = () => {
     const pageMode = props.pageMode || 'multi'; // Default: mehrseitig
@@ -28,6 +45,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = props => {
             logoSize={props.logoSize || 50}
             pageMode={pageMode}
             documentType={props.documentType}
+            documentSettings={documentSettings}
           />
         );
       case 'TEMPLATE_NEUTRAL':
@@ -37,7 +55,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = props => {
             color={props.color}
             logoSize={props.logoSize || 50}
             pageMode={pageMode}
-            documentType={props.documentType}
+            documentSettings={documentSettings}
           />
         );
       case 'TEMPLATE_ELEGANT':
@@ -48,6 +66,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = props => {
             logoSize={props.logoSize || 50}
             pageMode={pageMode}
             documentType={props.documentType}
+            documentSettings={documentSettings}
           />
         );
       case 'TEMPLATE_TECHNICAL':
@@ -58,6 +77,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = props => {
             logoSize={props.logoSize || 50}
             pageMode={pageMode}
             documentType={props.documentType}
+            documentSettings={documentSettings}
           />
         );
       case 'TEMPLATE_GEOMETRIC':
@@ -68,6 +88,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = props => {
             logoSize={props.logoSize || 50}
             pageMode={pageMode}
             documentType={props.documentType}
+            documentSettings={documentSettings}
           />
         );
       case 'TEMPLATE_DYNAMIC':
@@ -78,6 +99,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = props => {
             logoSize={props.logoSize || 50}
             pageMode={pageMode}
             documentType={props.documentType}
+            documentSettings={documentSettings}
           />
         );
       default:
@@ -87,6 +109,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = props => {
             color={props.color}
             logoSize={props.logoSize || 50}
             pageMode={pageMode}
+            documentSettings={documentSettings}
           />
         );
     }

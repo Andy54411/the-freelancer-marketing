@@ -6,13 +6,13 @@
 
 import React from 'react';
 import PDFTemplate from '@/components/finance/PDFTemplates';
-import { 
-  StandardTemplate, 
-  TotalsDisplay, 
+import {
+  StandardTemplate,
+  TotalsDisplay,
   usePDFTemplateData,
   type PDFTemplateProps,
-  type ProcessedPDFData
-} from '@/components/finance/pdf-templates';
+  type ProcessedPDFData } from
+'@/components/finance/pdf-templates';
 
 // === GRUNDLEGENDE VERWENDUNG ===
 
@@ -22,13 +22,13 @@ const BasicUsageExample: React.FC = () => {
     companyName: 'Meine Firma GmbH',
     customerName: 'Max Mustermann',
     items: [
-      {
-        description: 'Beratungsleistung',
-        quantity: 5,
-        unitPrice: 100,
-        total: 500
-      }
-    ],
+    {
+      description: 'Beratungsleistung',
+      quantity: 5,
+      unitPrice: 100,
+      total: 500
+    }]
+
     // ... weitere Felder
   };
 
@@ -39,14 +39,14 @@ const BasicUsageExample: React.FC = () => {
       color="#14ad9f"
       logoUrl="https://example.com/logo.png"
       logoSize={60}
-      documentType="invoice"
-    />
-  );
+      documentType="invoice" />);
+
+
 };
 
 // === ERWEITERTE VERWENDUNG MIT HOOK ===
 
-const AdvancedUsageExample: React.FC<{ document: any }> = ({ document }) => {
+const AdvancedUsageExample: React.FC<{document: any;}> = ({ document }) => {
   // Verwende den Hook direkt für Custom Logic
   const data = usePDFTemplateData({
     document,
@@ -57,19 +57,19 @@ const AdvancedUsageExample: React.FC<{ document: any }> = ({ document }) => {
   });
 
   // Zugriff auf alle berechneten Werte
-  console.log('Gesamtbetrag:', data.total);
-  console.log('Steuerbetrag:', data.taxAmount);
-  console.log('Kundendaten:', data.customerAddressParsed);
+
+
+
 
   return (
     <div className="custom-pdf-wrapper">
-      <StandardTemplate 
-        data={data} 
-        color="#14ad9f" 
-        logoSize={50} 
-      />
-    </div>
-  );
+      <StandardTemplate
+        data={data}
+        color="#14ad9f"
+        logoSize={50} />
+
+    </div>);
+
 };
 
 // === EIGENE TEMPLATE-KOMPONENTE ERSTELLEN ===
@@ -88,13 +88,13 @@ const MyCustomTemplate: React.FC<CustomTemplateProps> = ({ data, color, logoSize
         <h1 className="text-3xl font-bold" style={{ color }}>
           {data.documentLabel} - {data.invoiceNumber}
         </h1>
-        {data.companyLogo && (
-          <img 
-            src={data.companyLogo} 
-            alt="Logo" 
-            style={{ height: `${logoSize}px` }}
-          />
-        )}
+        {data.companyLogo &&
+        <img
+          src={data.companyLogo}
+          alt="Logo"
+          style={{ height: `${logoSize}px` }} />
+
+        }
       </header>
 
       {/* Verwende Common Components */}
@@ -115,13 +115,13 @@ const MyCustomTemplate: React.FC<CustomTemplateProps> = ({ data, color, logoSize
       </div>
 
       {/* Wiederverwendbare Totals-Komponente */}
-      <TotalsDisplay 
-        data={data} 
-        color={color} 
-        variant="elegant" 
-      />
-    </div>
-  );
+      <TotalsDisplay
+        data={data}
+        color={color}
+        variant="elegant" />
+
+    </div>);
+
 };
 
 // === TEMPLATE IN MAIN CONTAINER REGISTRIEREN ===
@@ -206,5 +206,4 @@ export {
   BasicUsageExample,
   AdvancedUsageExample,
   MyCustomTemplate,
-  createMockInvoiceData
-};
+  createMockInvoiceData };

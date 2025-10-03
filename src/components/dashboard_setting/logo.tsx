@@ -7,8 +7,8 @@ import {
   listAll,
   deleteObject,
   uploadBytesResumable,
-  getDownloadURL,
-} from 'firebase/storage';
+  getDownloadURL } from
+'firebase/storage';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/clients';
 import { FiUpload, FiTrash2, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
@@ -41,23 +41,23 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
   // Update fileUrl when formData changes
   useEffect(() => {
     const profileUrl = formData?.step3?.profilePictureURL || null;
-    console.log('LogoForm - profileUrl from formData:', profileUrl);
+
     setFileUrl(profileUrl);
   }, [formData?.step3?.profilePictureURL]);
 
   // Update bannerUrl when formData changes
   useEffect(() => {
     const bannerImageUrl =
-      formData?.step3?.profileBannerImage || formData?.profileBannerImage || null;
-    console.log(
-      'LogoForm - bannerUrl from formData.step3.profileBannerImage:',
-      formData?.step3?.profileBannerImage
-    );
-    console.log(
-      'LogoForm - bannerUrl from formData.profileBannerImage:',
-      formData?.profileBannerImage
-    );
-    console.log('LogoForm - final bannerUrl:', bannerImageUrl);
+    formData?.step3?.profileBannerImage || formData?.profileBannerImage || null;
+
+
+
+
+
+
+
+
+
     setBannerUrl(bannerImageUrl);
   }, [formData?.step3?.profileBannerImage, formData?.profileBannerImage]);
 
@@ -112,7 +112,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
 
     try {
       const list = await listAll(folderRef);
-      await Promise.all(list.items.map(item => deleteObject(item)));
+      await Promise.all(list.items.map((item) => deleteObject(item)));
 
       const fileRef = ref(storageInstance, `profilePictures/${uid}/profilePicture.jpg`);
       await uploadBytesResumable(fileRef, file);
@@ -130,13 +130,13 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
         await updateDoc(doc(db, 'companies', uid), {
           profilePictureURL: url,
           profilePictureFirebaseUrl: url,
-          'step3.profilePictureURL': url,
+          'step3.profilePictureURL': url
         });
       } else {
         // Für normale Kunden: Schreibe in users collection (ohne step3 da das Firmendaten sind)
         await updateDoc(doc(db, 'users', uid), {
           profilePictureURL: url,
-          profilePictureFirebaseUrl: url,
+          profilePictureFirebaseUrl: url
         });
       }
 
@@ -193,7 +193,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
         // Für Firmen: Schreibe Banner in companies collection
         await updateDoc(doc(db, 'companies', uid), {
           profileBannerImage: url,
-          'step3.profileBannerImage': url,
+          'step3.profileBannerImage': url
         });
       } else {
         setUploadError('Banner-Upload ist nur für Firmen verfügbar');
@@ -225,10 +225,10 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
 
     // Validierung der Dateitypen
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-    const invalidFiles = Array.from(files).filter(file => !allowedTypes.includes(file.type));
+    const invalidFiles = Array.from(files).filter((file) => !allowedTypes.includes(file.type));
 
     if (invalidFiles.length > 0) {
-      const invalidFileNames = invalidFiles.map(file => file.name).join(', ');
+      const invalidFileNames = invalidFiles.map((file) => file.name).join(', ');
       setUploadError(
         `Nicht unterstützte Dateitypen: ${invalidFileNames}. Nur JPEG, PNG, WebP und GIF sind erlaubt.`
       );
@@ -246,18 +246,18 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
       }
 
       setUploading(true);
-      const uploads = Array.from(files).map(file => {
+      const uploads = Array.from(files).map((file) => {
         const fileRef = ref(storageInstance, `projectImages/${uid}/${file.name}`);
         const uploadTask = uploadBytesResumable(fileRef, file);
 
         return new Promise<string>((resolve, reject) => {
           uploadTask.on(
             'state_changed',
-            snapshot => {
-              const percent = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            (snapshot) => {
+              const percent = snapshot.bytesTransferred / snapshot.totalBytes * 100;
               setProgress(Math.round(percent));
             },
-            error => reject(error),
+            (error) => reject(error),
             async () => {
               const url = await getDownloadURL(uploadTask.snapshot.ref); // Dies sollte die korrekte Firebase Storage URL sein
               // DEBUGGING: console.log für einzelne Projektbild-URL
@@ -281,7 +281,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
       if (userType === 'firma') {
         // Für Firmen: Schreibe in companies collection
         await updateDoc(doc(db, 'companies', uid), {
-          projectImages: newProjectImagesUrls,
+          projectImages: newProjectImagesUrls
         });
       } else {
       }
@@ -312,7 +312,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
       const fileRef = ref(storageInstance, decodedPath);
       await deleteObject(fileRef);
 
-      const updatedProjectImages = projectImages.filter(item => item !== url);
+      const updatedProjectImages = projectImages.filter((item) => item !== url);
 
       // DEBUGGING: console.log für aktualisierte Projektbild-URLs nach dem Löschen
 
@@ -324,7 +324,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
       if (userType === 'firma') {
         // Für Firmen: Schreibe in companies collection
         await updateDoc(doc(db, 'companies', uid), {
-          projectImages: updatedProjectImages,
+          projectImages: updatedProjectImages
         });
       } else {
       }
@@ -342,22 +342,22 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 space-y-6">
-      {uploadError && (
-        <p className="text-red-500 flex items-center gap-2">
+      {uploadError &&
+      <p className="text-red-500 flex items-center gap-2">
           <FiAlertCircle /> {uploadError}
         </p>
-      )}
-      {uploadSuccess && (
-        <p className="text-green-500 flex items-center gap-2">
+      }
+      {uploadSuccess &&
+      <p className="text-green-500 flex items-center gap-2">
           <FiCheckCircle /> Aktionen erfolgreich ausgeführt!
         </p>
-      )}
+      }
 
       <div>
         <Label
           htmlFor="logo-upload"
-          className="block mb-2 font-medium text-gray-900 dark:text-gray-200"
-        >
+          className="block mb-2 font-medium text-gray-900 dark:text-gray-200">
+
           Firmenlogo (max. 1 Logo)
         </Label>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -368,22 +368,22 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
           type="file"
           accept="image/*"
           onChange={handleLogoUpload}
-          className="w-full p-2 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-        />
+          className="w-full p-2 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
 
-        {fileUrl && (
-          <div className="mt-4">
+
+        {fileUrl &&
+        <div className="mt-4">
             <img src={fileUrl} alt="Logo Preview" className="max-w-xs max-h-32 object-contain" />
           </div>
-        )}
+        }
       </div>
 
       {/* Banner-Upload Sektion */}
       <div>
         <Label
           htmlFor="banner-upload"
-          className="block mb-2 font-medium text-gray-900 dark:text-gray-200"
-        >
+          className="block mb-2 font-medium text-gray-900 dark:text-gray-200">
+
           Banner-Bild (max. 1 Banner)
         </Label>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -396,26 +396,26 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
           accept="image/*"
           onChange={handleBannerUpload}
           disabled={uploadingBanner}
-          className="w-full p-2 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-        />
+          className="w-full p-2 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" />
 
-        {uploadingBanner && (
-          <div className="mt-2 text-[#14ad9f] text-sm flex items-center gap-2">
+
+        {uploadingBanner &&
+        <div className="mt-2 text-[#14ad9f] text-sm flex items-center gap-2">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#14ad9f]"></div>
             Banner wird hochgeladen...
           </div>
-        )}
-        {bannerUrl && !uploadingBanner && (
-          <div className="mt-4">
+        }
+        {bannerUrl && !uploadingBanner &&
+        <div className="mt-4">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Banner-Vorschau:</p>
             <div className="relative w-full h-48 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
               <img src={bannerUrl} alt="Banner Preview" className="w-full h-full object-cover" />
             </div>
           </div>
-        )}
+        }
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default LogoForm;

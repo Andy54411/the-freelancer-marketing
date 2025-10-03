@@ -11,32 +11,32 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue } from
+'@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
-} from '@/components/ui/dialog';
-import { 
-  FileText, 
-  Send, 
-  CheckCircle, 
-  AlertTriangle, 
+  DialogTrigger } from
+'@/components/ui/dialog';
+import {
+  FileText,
+  Send,
+  CheckCircle,
+  AlertTriangle,
   Download,
   Settings,
   Zap,
   Shield,
   Globe,
-  Clock
-} from 'lucide-react';
+  Clock } from
+'lucide-react';
 import { toast } from 'sonner';
 import { EInvoiceService, EInvoiceData, EInvoiceSettings, TSEData } from '@/services/eInvoiceService';
 
@@ -83,21 +83,21 @@ export function EInvoiceIntegration({
         const settingsData = await EInvoiceService.getEInvoiceSettings(companyId);
         setSettings(settingsData);
       } catch (error) {
-        console.log('E-Invoice Settings nicht gefunden, verwende Defaults');
+
         setSettings({
           companyId,
           defaultFormat: 'zugferd',
           defaultStandard: 'EN16931',
           enableAutoGeneration: false,
           peppol: {
-            enabled: false,
+            enabled: false
           },
           validation: {
             strictMode: true,
-            autoCorrection: false,
+            autoCorrection: false
           },
           createdAt: new Date(),
-          updatedAt: new Date(),
+          updatedAt: new Date()
         });
       }
     };
@@ -121,25 +121,25 @@ export function EInvoiceIntegration({
         {
           conformanceLevel: settings.defaultStandard as any,
           guideline: 'urn:cen.eu:en16931:2017#compliant#urn:zugferd.de:2p1:extended',
-          specificationId: 'urn:cen.eu:en16931:2017',
+          specificationId: 'urn:cen.eu:en16931:2017'
         },
         {
           companyName: invoiceData.companyName,
           companyAddress: invoiceData.companyAddress,
           companyVatId: invoiceData.companyVatId,
           email: invoiceData.companyEmail,
-          phoneNumber: invoiceData.companyPhone,
+          phoneNumber: invoiceData.companyPhone
         },
         tseData || undefined
       );
 
       setXmlPreview(xmlContent);
-      setEInvoiceStatus(prev => ({ 
-        ...prev, 
+      setEInvoiceStatus((prev) => ({
+        ...prev,
         xmlGenerated: true,
-        tseSigned: !!tseData 
+        tseSigned: !!tseData
       }));
-      
+
       toast.success('ZUGFeRD XML erfolgreich generiert');
     } catch (error) {
       console.error('Fehler bei XML-Generierung:', error);
@@ -164,23 +164,23 @@ export function EInvoiceIntegration({
           buyerReference: invoiceData.reference || invoiceData.customerOrderNumber || '',
           leitwegId: settings.xrechnung?.leitwegId || '',
           specificationId: 'urn:cen.eu:en16931:2017',
-          businessProcessType: 'urn:fdc:peppol.eu:2017:poacc:billing:01:1.0',
+          businessProcessType: 'urn:fdc:peppol.eu:2017:poacc:billing:01:1.0'
         },
         {
           companyName: invoiceData.companyName,
           companyAddress: invoiceData.companyAddress,
           companyVatId: invoiceData.companyVatId,
           email: invoiceData.companyEmail,
-          phoneNumber: invoiceData.companyPhone,
+          phoneNumber: invoiceData.companyPhone
         }
       );
 
       setXmlPreview(xmlContent);
-      setEInvoiceStatus(prev => ({ 
-        ...prev, 
-        xmlGenerated: true 
+      setEInvoiceStatus((prev) => ({
+        ...prev,
+        xmlGenerated: true
       }));
-      
+
       toast.success('XRechnung XML erfolgreich generiert');
     } catch (error) {
       console.error('Fehler bei XRechnung-Generierung:', error);
@@ -199,11 +199,11 @@ export function EInvoiceIntegration({
 
     setValidating(true);
     try {
-        const validationResult = await EInvoiceService.validateEInvoice(
+      const validationResult = await EInvoiceService.validateEInvoice(
         xmlPreview,
         settings?.defaultFormat || 'zugferd'
-      );      if (validationResult.isValid) {
-        setEInvoiceStatus(prev => ({ ...prev, validationPassed: true }));
+      );if (validationResult.isValid) {
+        setEInvoiceStatus((prev) => ({ ...prev, validationPassed: true }));
         toast.success('XML-Validierung erfolgreich');
       } else {
         toast.error(`Validierung fehlgeschlagen: ${validationResult.errors.join(', ')}`);
@@ -234,9 +234,9 @@ export function EInvoiceIntegration({
         'zugferd-data.xml'
       );
 
-      setEInvoiceStatus(prev => ({ ...prev, pdfA3Generated: true }));
+      setEInvoiceStatus((prev) => ({ ...prev, pdfA3Generated: true }));
       toast.success('PDF/A-3 mit eingebetteter XML erstellt');
-      
+
       return pdfA3Buffer;
     } catch (error) {
       console.error('Fehler bei PDF/A-3 Erstellung:', error);
@@ -256,10 +256,10 @@ export function EInvoiceIntegration({
     try {
       // Hier würde die tatsächliche Übertragung stattfinden
       // Je nach Konfiguration: PEPPOL, E-Mail, Portal, etc.
-      
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulation
-      
-      setEInvoiceStatus(prev => ({ ...prev, transmissionReady: true }));
+
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulation
+
+      setEInvoiceStatus((prev) => ({ ...prev, transmissionReady: true }));
       toast.success('E-Rechnung erfolgreich übertragen');
     } catch (error) {
       console.error('Fehler bei Übertragung:', error);
@@ -271,7 +271,7 @@ export function EInvoiceIntegration({
 
   // TSE-Daten aktualisieren
   const updateTSEData = (newTseData: Partial<TSEData>) => {
-    setTseData(prev => prev ? { ...prev, ...newTseData } : null);
+    setTseData((prev) => prev ? { ...prev, ...newTseData } : null);
   };
 
   if (!settings) {
@@ -293,47 +293,47 @@ export function EInvoiceIntegration({
         {/* Status Overview */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="flex items-center gap-2">
-            {eInvoiceStatus.xmlGenerated ? (
-              <CheckCircle className="h-4 w-4 text-green-500" />
-            ) : (
-              <Clock className="h-4 w-4 text-gray-400" />
-            )}
+            {eInvoiceStatus.xmlGenerated ?
+            <CheckCircle className="h-4 w-4 text-green-500" /> :
+
+            <Clock className="h-4 w-4 text-gray-400" />
+            }
             <span className="text-sm">XML generiert</span>
           </div>
           
           <div className="flex items-center gap-2">
-            {eInvoiceStatus.tseSigned ? (
-              <Shield className="h-4 w-4 text-green-500" />
-            ) : (
-              <Shield className="h-4 w-4 text-gray-400" />
-            )}
+            {eInvoiceStatus.tseSigned ?
+            <Shield className="h-4 w-4 text-green-500" /> :
+
+            <Shield className="h-4 w-4 text-gray-400" />
+            }
             <span className="text-sm">TSE signiert</span>
           </div>
           
           <div className="flex items-center gap-2">
-            {eInvoiceStatus.validationPassed ? (
-              <CheckCircle className="h-4 w-4 text-green-500" />
-            ) : (
-              <AlertTriangle className="h-4 w-4 text-gray-400" />
-            )}
+            {eInvoiceStatus.validationPassed ?
+            <CheckCircle className="h-4 w-4 text-green-500" /> :
+
+            <AlertTriangle className="h-4 w-4 text-gray-400" />
+            }
             <span className="text-sm">Validiert</span>
           </div>
           
           <div className="flex items-center gap-2">
-            {eInvoiceStatus.pdfA3Generated ? (
-              <CheckCircle className="h-4 w-4 text-green-500" />
-            ) : (
-              <Clock className="h-4 w-4 text-gray-400" />
-            )}
+            {eInvoiceStatus.pdfA3Generated ?
+            <CheckCircle className="h-4 w-4 text-green-500" /> :
+
+            <Clock className="h-4 w-4 text-gray-400" />
+            }
             <span className="text-sm">PDF/A-3</span>
           </div>
           
           <div className="flex items-center gap-2">
-            {eInvoiceStatus.transmissionReady ? (
-              <Send className="h-4 w-4 text-green-500" />
-            ) : (
-              <Globe className="h-4 w-4 text-gray-400" />
-            )}
+            {eInvoiceStatus.transmissionReady ?
+            <Send className="h-4 w-4 text-green-500" /> :
+
+            <Globe className="h-4 w-4 text-gray-400" />
+            }
             <span className="text-sm">Übertragbar</span>
           </div>
         </div>
@@ -350,8 +350,8 @@ export function EInvoiceIntegration({
                 const newSettings = { ...settings, defaultFormat: value };
                 setSettings(newSettings);
                 onSettingsChanged?.(newSettings);
-              }}
-            >
+              }}>
+
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -370,8 +370,8 @@ export function EInvoiceIntegration({
                 const newSettings = { ...settings, defaultStandard: value };
                 setSettings(newSettings);
                 onSettingsChanged?.(newSettings);
-              }}
-            >
+              }}>
+
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -392,45 +392,45 @@ export function EInvoiceIntegration({
           <Button
             onClick={settings.defaultFormat === 'zugferd' ? generateZUGFeRDXML : generateXRechnungXML}
             disabled={generating || !invoiceData}
-            className="bg-[#14ad9f] hover:bg-[#129488]"
-          >
-            {generating ? (
-              <>
+            className="bg-[#14ad9f] hover:bg-[#129488]">
+
+            {generating ?
+            <>
                 <Zap className="h-4 w-4 mr-2 animate-spin" />
                 Generiere...
-              </>
-            ) : (
-              <>
+              </> :
+
+            <>
                 <FileText className="h-4 w-4 mr-2" />
                 {settings.defaultFormat.toUpperCase()} generieren
               </>
-            )}
+            }
           </Button>
 
           <Button
             variant="outline"
             onClick={validateXML}
-            disabled={validating || !xmlPreview}
-          >
-            {validating ? (
-              <>
+            disabled={validating || !xmlPreview}>
+
+            {validating ?
+            <>
                 <CheckCircle className="h-4 w-4 mr-2 animate-spin" />
                 Validiere...
-              </>
-            ) : (
-              <>
+              </> :
+
+            <>
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Validieren
               </>
-            )}
+            }
           </Button>
 
           <Dialog open={showXmlPreview} onOpenChange={setShowXmlPreview}>
             <DialogTrigger asChild>
               <Button
                 variant="outline"
-                disabled={!xmlPreview}
-              >
+                disabled={!xmlPreview}>
+
                 <FileText className="h-4 w-4 mr-2" />
                 XML ansehen
               </Button>
@@ -448,25 +448,25 @@ export function EInvoiceIntegration({
           <Button
             variant="outline"
             onClick={transmitEInvoice}
-            disabled={transmitting || !eInvoiceStatus.validationPassed}
-          >
-            {transmitting ? (
-              <>
+            disabled={transmitting || !eInvoiceStatus.validationPassed}>
+
+            {transmitting ?
+            <>
                 <Send className="h-4 w-4 mr-2 animate-spin" />
                 Übertrage...
-              </>
-            ) : (
-              <>
+              </> :
+
+            <>
                 <Send className="h-4 w-4 mr-2" />
                 Übertragen
               </>
-            )}
+            }
           </Button>
         </div>
 
         {/* TSE Integration */}
-        {tseData && (
-          <div className="bg-blue-50 p-4 rounded-lg">
+        {tseData &&
+        <div className="bg-blue-50 p-4 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">TSE-Daten integriert</h4>
             <div className="grid grid-cols-2 gap-2 text-sm text-blue-800">
               <div>Seriennummer: {tseData.serialNumber}</div>
@@ -475,7 +475,7 @@ export function EInvoiceIntegration({
               <div>Zertifikat: {tseData.certificateSerial}</div>
             </div>
           </div>
-        )}
+        }
 
         {/* Automatic Generation Toggle */}
         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -491,10 +491,10 @@ export function EInvoiceIntegration({
               const newSettings = { ...settings, enableAutoGeneration: checked };
               setSettings(newSettings);
               onSettingsChanged?.(newSettings);
-            }}
-          />
+            }} />
+
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>);
+
 }

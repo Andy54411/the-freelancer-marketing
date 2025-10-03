@@ -10,8 +10,8 @@ import {
   orderBy,
   serverTimestamp,
   DocumentData,
-  QuerySnapshot,
-} from 'firebase/firestore';
+  QuerySnapshot } from
+'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { TextTemplate, DEFAULT_TEXT_TEMPLATES } from '@/types/textTemplates';
 
@@ -22,13 +22,13 @@ export class TextTemplateService {
    * Erstellt eine neue Textvorlage
    */
   static async createTextTemplate(
-    templateData: Omit<TextTemplate, 'id' | 'createdAt' | 'updatedAt'>
-  ): Promise<TextTemplate> {
+  templateData: Omit<TextTemplate, 'id' | 'createdAt' | 'updatedAt'>)
+  : Promise<TextTemplate> {
     try {
       const docRef = await addDoc(collection(db, this.COLLECTION_NAME), {
         ...templateData,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
 
       // Wenn als Standard festgelegt, andere Templates desselben Typs auf nicht-Standard setzen
@@ -46,7 +46,7 @@ export class TextTemplateService {
         id: docRef.id,
         ...templateData,
         createdAt: new Date(),
-        updatedAt: new Date(),
+        updatedAt: new Date()
       };
     } catch (error) {
       console.error('Fehler beim Erstellen der Textvorlage:', error);
@@ -58,24 +58,24 @@ export class TextTemplateService {
    * Aktualisiert eine bestehende Textvorlage
    */
   static async updateTextTemplate(
-    templateId: string,
-    templateData: Partial<Omit<TextTemplate, 'id' | 'createdAt' | 'updatedAt'>>
-  ): Promise<void> {
+  templateId: string,
+  templateData: Partial<Omit<TextTemplate, 'id' | 'createdAt' | 'updatedAt'>>)
+  : Promise<void> {
     try {
       const templateRef = doc(db, this.COLLECTION_NAME, templateId);
 
       await updateDoc(templateRef, {
         ...templateData,
-        updatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
 
       // Wenn als Standard festgelegt, andere Templates desselben Typs auf nicht-Standard setzen
       if (
-        templateData.isDefault &&
-        templateData.companyId &&
-        templateData.objectType &&
-        templateData.textType
-      ) {
+      templateData.isDefault &&
+      templateData.companyId &&
+      templateData.objectType &&
+      templateData.textType)
+      {
         await this.updateOtherDefaultTemplates(
           templateData.companyId,
           templateData.objectType,
@@ -125,10 +125,10 @@ export class TextTemplateService {
    * Lädt Textvorlagen nach Typ gefiltert
    */
   static async getTextTemplatesByType(
-    companyId: string,
-    objectType: TextTemplate['objectType'],
-    textType?: TextTemplate['textType']
-  ): Promise<TextTemplate[]> {
+  companyId: string,
+  objectType: TextTemplate['objectType'],
+  textType?: TextTemplate['textType'])
+  : Promise<TextTemplate[]> {
     try {
       let q = query(
         collection(db, this.COLLECTION_NAME),
@@ -159,10 +159,10 @@ export class TextTemplateService {
    * Lädt die Standard-Textvorlage für einen bestimmten Typ
    */
   static async getDefaultTextTemplate(
-    companyId: string,
-    objectType: TextTemplate['objectType'],
-    textType: TextTemplate['textType']
-  ): Promise<TextTemplate | null> {
+  companyId: string,
+  objectType: TextTemplate['objectType'],
+  textType: TextTemplate['textType'])
+  : Promise<TextTemplate | null> {
     try {
       const q = query(
         collection(db, this.COLLECTION_NAME),
@@ -187,12 +187,12 @@ export class TextTemplateService {
    */
   static async createDefaultTemplates(companyId: string, userId: string): Promise<void> {
     try {
-      const promises = DEFAULT_TEXT_TEMPLATES.map(template =>
-        this.createTextTemplate({
-          ...template,
-          companyId,
-          createdBy: userId,
-        })
+      const promises = DEFAULT_TEXT_TEMPLATES.map((template) =>
+      this.createTextTemplate({
+        ...template,
+        companyId,
+        createdBy: userId
+      })
       );
 
       await Promise.all(promises);
@@ -205,17 +205,17 @@ export class TextTemplateService {
   /**
    * Ersetzt Platzhalter in einem Text mit echten Werten
    */
-  static replacePlaceholders(text: string, data: any, companySettings?: any): string {
+  static replacePlaceholders(text: string, data: any, companySettings?: any, language: string = 'de'): string {
     let result = text;
 
     // Formatierungsfunktionen
     const formatCurrency = (value?: number) =>
-      typeof value === 'number'
-        ? new Intl.NumberFormat('de-DE', {
-            style: 'currency',
-            currency: data.currency || 'EUR',
-          }).format(value)
-        : '';
+    typeof value === 'number' ?
+    new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: data.currency || 'EUR'
+    }).format(value) :
+    '';
 
     const formatDate = (date?: Date | string) => {
       if (!date) return '';
@@ -224,13 +224,31 @@ export class TextTemplateService {
     };
 
     const getFullSalutation = () => {
-      if (data.customerName) {
-        if (data.customerName.includes('GmbH') || data.customerName.includes('AG')) {
-          return 'Sehr geehrte Damen und Herren';
+      const salutations = {
+        'de': {
+          formal: 'Sehr geehrte Damen und Herren',
+          personal: (name: string) => `Sehr geehrte/r ${name}`
+        },
+        'en': {
+          formal: 'Dear Sir or Madam',
+          personal: (name: string) => `Dear ${name}`
+        },
+        'fr': {
+          formal: 'Mesdames et Messieurs',
+          personal: (name: string) => `Cher/Chère ${name}`
         }
-        return `Sehr geehrte/r ${data.customerName}`;
+      };
+
+      const langSalutations = salutations[language as keyof typeof salutations] || salutations['de'];
+
+      if (data.customerName) {
+        if (data.customerName.includes('GmbH') || data.customerName.includes('AG') ||
+        data.customerName.includes('Ltd') || data.customerName.includes('Inc')) {
+          return langSalutations.formal;
+        }
+        return langSalutations.personal(data.customerName);
       }
-      return 'Sehr geehrte Damen und Herren';
+      return langSalutations.formal;
     };
 
     // Platzhalter-Mapping
@@ -266,7 +284,7 @@ export class TextTemplateService {
       // Datum
       '[%DATUM%]': formatDate(new Date()),
       '[%ANGEBOTSDATUM%]': formatDate(data.createdAt),
-      '[%GUELTIG_BIS%]': formatDate(data.validUntil),
+      '[%GUELTIG_BIS%]': formatDate(data.validUntil)
     };
 
     // Alle Platzhalter ersetzen
@@ -284,11 +302,11 @@ export class TextTemplateService {
    * Setzt andere Standard-Templates auf nicht-Standard
    */
   private static async updateOtherDefaultTemplates(
-    companyId: string,
-    objectType: TextTemplate['objectType'],
-    textType: TextTemplate['textType'],
-    excludeTemplateId: string
-  ): Promise<void> {
+  companyId: string,
+  objectType: TextTemplate['objectType'],
+  textType: TextTemplate['textType'],
+  excludeTemplateId: string)
+  : Promise<void> {
     try {
       const q = query(
         collection(db, this.COLLECTION_NAME),
@@ -300,14 +318,14 @@ export class TextTemplateService {
 
       const querySnapshot = await getDocs(q);
 
-      const updatePromises = querySnapshot.docs
-        .filter(doc => doc.id !== excludeTemplateId)
-        .map(doc =>
-          updateDoc(doc.ref, {
-            isDefault: false,
-            updatedAt: serverTimestamp(),
-          })
-        );
+      const updatePromises = querySnapshot.docs.
+      filter((doc) => doc.id !== excludeTemplateId).
+      map((doc) =>
+      updateDoc(doc.ref, {
+        isDefault: false,
+        updatedAt: serverTimestamp()
+      })
+      );
 
       await Promise.all(updatePromises);
     } catch (error) {
@@ -319,9 +337,9 @@ export class TextTemplateService {
    * Konvertiert QuerySnapshot zu TextTemplate Array
    */
   private static mapQuerySnapshotToTemplates(
-    querySnapshot: QuerySnapshot<DocumentData>
-  ): TextTemplate[] {
-    return querySnapshot.docs.map(doc => {
+  querySnapshot: QuerySnapshot<DocumentData>)
+  : TextTemplate[] {
+    return querySnapshot.docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -335,7 +353,7 @@ export class TextTemplateService {
         companyId: data.companyId,
         createdBy: data.createdBy,
         createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date()
       } as TextTemplate;
     });
   }
@@ -353,18 +371,18 @@ export class TextTemplateService {
       }
 
       // Standard-Templates importieren
-      const importPromises = DEFAULT_TEXT_TEMPLATES.map(template =>
-        this.createTextTemplate({
-          ...template,
-          companyId,
-          createdBy: userId,
-        })
+      const importPromises = DEFAULT_TEXT_TEMPLATES.map((template) =>
+      this.createTextTemplate({
+        ...template,
+        companyId,
+        createdBy: userId
+      })
       );
 
       await Promise.all(importPromises);
-      console.log(
-        `${DEFAULT_TEXT_TEMPLATES.length} Standard-Textvorlagen für Unternehmen ${companyId} erstellt`
-      );
+
+
+
     } catch (error) {
       console.error('Fehler beim Erstellen der Standard-Templates:', error);
       // Fehler nicht weiterwerfen, da dies optional ist

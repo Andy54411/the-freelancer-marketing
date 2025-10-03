@@ -34,16 +34,16 @@ import {
   Link as LinkIcon,
   Minus,
   Type,
-  Plus,
-} from 'lucide-react';
+  Plus } from
+'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuLabel,
-} from '@/components/ui/dropdown-menu';
+  DropdownMenuLabel } from
+'@/components/ui/dropdown-menu';
 import { TextTemplateService } from '@/services/TextTemplateService';
 import { TextTemplate } from '@/types/textTemplates';
 import PlaceholderModal from '@/components/texteditor/PlaceholderModal';
@@ -69,7 +69,7 @@ export default function HeaderTextEditor({
   userId,
   objectType,
   textType = 'HEAD', // Default auf HEAD für Header-Text
-  onTemplateSelect,
+  onTemplateSelect
 }: HeaderTextEditorProps) {
   const [mounted, setMounted] = useState(false);
   const [textTemplates, setTextTemplates] = useState<TextTemplate[]>([]);
@@ -83,7 +83,7 @@ export default function HeaderTextEditor({
   const loadTextTemplates = async () => {
     if (!companyId) return;
     try {
-      console.log('Loading header templates for:', { companyId, objectType, textType }); // Debug
+      // Debug
 
       // Erst Standard-Templates erstellen falls keine vorhanden
       await TextTemplateService.createDefaultTemplatesIfNeeded(companyId, companyId);
@@ -108,120 +108,120 @@ export default function HeaderTextEditor({
       if (templates.length === 0) {
         const allTemplates = await TextTemplateService.getTextTemplates(companyId);
         templates = allTemplates.filter(
-          t =>
-            (!objectType || t.objectType === objectType) && (!textType || t.textType === textType)
+          (t) =>
+          (!objectType || t.objectType === objectType) && (!textType || t.textType === textType)
         );
       }
 
       setTextTemplates(templates);
-      
+
       // Templates sind geladen - der separate useEffect wird die Auto-Ladung handhaben
-      
-      console.log('Final loaded header templates:', templates.length, templates); // Debug
+
+      // Debug
     } catch (error) {
       console.error('Fehler beim Laden der Kopftext-Vorlagen:', error);
     }
   };
 
   useEffect(() => {
-    console.log('HeaderTextEditor mounted with:', { companyId, objectType, textType, mounted }); // Debug
+    // Debug
     if (mounted) {
       loadTextTemplates();
     }
   }, [companyId, objectType, textType, mounted]);
-  
+
   // 🆕 Auto-Template-Ladung beim objectType-Wechsel
   useEffect(() => {
     if (mounted && textTemplates.length > 0 && objectType) {
-      console.log('🔍 Auto-template check for objectType:', objectType);
-      console.log('🔍 Current value:', value?.substring(0, 100));
-      console.log('🔍 Available templates:', textTemplates.map(t => ({ 
-        name: t.name, 
-        objectType: t.objectType, 
-        textType: t.textType, 
-        isDefault: t.isDefault 
-      })));
-      
+
+
+
+
+
+
+
+
+
       // Suche nach HEAD-Template für den objectType (bevorzuge Standard-Template)
-      let headTemplate = textTemplates.find(t => 
-        t.objectType === objectType && 
-        t.textType === 'HEAD' && 
-        t.isDefault
+      let headTemplate = textTemplates.find((t) =>
+      t.objectType === objectType &&
+      t.textType === 'HEAD' &&
+      t.isDefault
       );
-      
+
       // Falls kein Standard-Template, nimm das erste verfügbare HEAD-Template
       if (!headTemplate) {
-        headTemplate = textTemplates.find(t => 
-          t.objectType === objectType && 
-          t.textType === 'HEAD'
+        headTemplate = textTemplates.find((t) =>
+        t.objectType === objectType &&
+        t.textType === 'HEAD'
         );
       }
-      
+
       if (headTemplate) {
         const currentValue = value || '';
-        
+
         // Prüfe ob automatische Template-Ladung erforderlich ist
-        const isEmptyOrWrongType = 
-          currentValue.trim() === '' || 
-          currentValue === '<p></p>' ||
-          // REMINDER sollte nicht Invoice-Texte haben
-          (objectType === 'REMINDER' && (
-            currentValue.includes('Hiermit stelle ich Ihnen die folgenden Leistungen in Rechnung') || 
-            currentValue.includes('vielen Dank für Ihren Auftrag') ||
-            currentValue.includes('Rechnungsstellung')
-          )) ||
-          // INVOICE sollte nicht Reminder-Texte haben  
-          (objectType === 'INVOICE' && (
-            currentValue.includes('sicherlich haben Sie unsere Rechnung in Ihrem Postfach übersehen') ||
-            currentValue.includes('ausstehenden Forderungen')
-          )) ||
-          // Andere Dokumenttypen
-          (objectType === 'CREDIT_NOTE' && currentValue.includes('Hiermit stelle ich Ihnen die folgenden Leistungen in Rechnung')) ||
-          (objectType === 'CANCELLATION' && currentValue.includes('Hiermit stelle ich Ihnen die folgenden Leistungen in Rechnung'));
-        
+        const isEmptyOrWrongType =
+        currentValue.trim() === '' ||
+        currentValue === '<p></p>' ||
+        // REMINDER sollte nicht Invoice-Texte haben
+        objectType === 'REMINDER' && (
+        currentValue.includes('Hiermit stelle ich Ihnen die folgenden Leistungen in Rechnung') ||
+        currentValue.includes('vielen Dank für Ihren Auftrag') ||
+        currentValue.includes('Rechnungsstellung')) ||
+
+        // INVOICE sollte nicht Reminder-Texte haben  
+        objectType === 'INVOICE' && (
+        currentValue.includes('sicherlich haben Sie unsere Rechnung in Ihrem Postfach übersehen') ||
+        currentValue.includes('ausstehenden Forderungen')) ||
+
+        // Andere Dokumenttypen
+        objectType === 'CREDIT_NOTE' && currentValue.includes('Hiermit stelle ich Ihnen die folgenden Leistungen in Rechnung') ||
+        objectType === 'CANCELLATION' && currentValue.includes('Hiermit stelle ich Ihnen die folgenden Leistungen in Rechnung');
+
         if (isEmptyOrWrongType && headTemplate.text && headTemplate.text !== currentValue) {
-          console.log('🎯 Auto-loading HEAD template for', objectType, ':', headTemplate.name);
-          console.log('📝 Template text:', headTemplate.text?.substring(0, 100) + '...');
+
+
           onChange(headTemplate.text);
           setSelectedTemplate(headTemplate);
         } else {
-          console.log('✅ Current text is appropriate for', objectType);
+
         }
       } else {
-        console.log('⚠️ No HEAD template found for objectType:', objectType);
-        console.log('Available templates for debugging:', textTemplates);
+
+
       }
     }
   }, [objectType, textTemplates, mounted, value]); // value hinzugefügt für bessere Reaktivität
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      Underline,
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-      TextStyle,
-      Color,
-      Link.configure({
-        openOnClick: false,
-      }),
-      Table.configure({
-        resizable: true,
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-    ],
+    StarterKit,
+    Underline,
+    TextAlign.configure({
+      types: ['heading', 'paragraph']
+    }),
+    TextStyle,
+    Color,
+    Link.configure({
+      openOnClick: false
+    }),
+    Table.configure({
+      resizable: true
+    }),
+    TableRow,
+    TableHeader,
+    TableCell],
+
     content: value || '',
     editorProps: {
       attributes: {
         class:
-          'prose prose-sm max-w-none min-h-[140px] p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] bg-white',
-      },
+        'prose prose-sm max-w-none min-h-[140px] p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] bg-white'
+      }
     },
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
-    immediatelyRender: false,
+    immediatelyRender: false
   });
 
   useEffect(() => {
@@ -238,8 +238,8 @@ export default function HeaderTextEditor({
         <div className="min-h-[140px] p-3 border rounded-md text-sm text-gray-400">
           Kopftext-Editor wird geladen…
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   const insertPlaceholder = (token: string) => {
@@ -262,16 +262,16 @@ export default function HeaderTextEditor({
 
   const handleSaveTemplate = async (templateData: Omit<TextTemplate, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!companyId || !userId) return;
-    
+
     try {
       // Ensure companyId and createdBy are in the template data
       const fullTemplateData: Omit<TextTemplate, 'id' | 'createdAt' | 'updatedAt'> = {
         ...templateData,
         companyId,
         textType: 'HEAD', // Immer HEAD für HeaderTextEditor - überschreibt ggf. das templateData.textType
-        createdBy: userId,
+        createdBy: userId
       };
-      
+
       await TextTemplateService.createTextTemplate(fullTemplateData);
       setTemplateModalOpen(false);
       // Template-Liste neu laden
@@ -319,11 +319,11 @@ export default function HeaderTextEditor({
               <span>Standard (12)</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            {[10, 11, 13, 14, 16, 18].map(size => (
-              <DropdownMenuItem key={size} onClick={() => editor.chain().focus().run()}>
+            {[10, 11, 13, 14, 16, 18].map((size) =>
+            <DropdownMenuItem key={size} onClick={() => editor.chain().focus().run()}>
                 <span>{size}</span>
               </DropdownMenuItem>
-            ))}
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -336,8 +336,8 @@ export default function HeaderTextEditor({
           size="sm"
           className={`h-8 px-2 ${editor.isActive('bold') ? 'bg-[#14ad9f] text-white' : 'hover:bg-[#14ad9f]/10'}`}
           onClick={() => editor.chain().focus().toggleBold().run()}
-          title="Fett (Cmd + B)"
-        >
+          title="Fett (Cmd + B)">
+
           <Bold className="h-4 w-4" />
         </Button>
         <Button
@@ -346,8 +346,8 @@ export default function HeaderTextEditor({
           size="sm"
           className={`h-8 px-2 ${editor.isActive('italic') ? 'bg-[#14ad9f] text-white' : 'hover:bg-[#14ad9f]/10'}`}
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          title="Kursiv (Cmd + I)"
-        >
+          title="Kursiv (Cmd + I)">
+
           <Italic className="h-4 w-4" />
         </Button>
         <Button
@@ -356,8 +356,8 @@ export default function HeaderTextEditor({
           size="sm"
           className={`h-8 px-2 ${editor.isActive('underline') ? 'bg-[#14ad9f] text-white' : 'hover:bg-[#14ad9f]/10'}`}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
-          title="Unterstreichen (Cmd + U)"
-        >
+          title="Unterstreichen (Cmd + U)">
+
           <UnderlineIcon className="h-4 w-4" />
         </Button>
 
@@ -370,8 +370,8 @@ export default function HeaderTextEditor({
           size="sm"
           className={`h-8 px-2 ${editor.isActive('strike') ? 'bg-[#14ad9f] text-white' : 'hover:bg-[#14ad9f]/10'}`}
           onClick={() => editor.chain().focus().toggleStrike().run()}
-          title="Durchgestrichen"
-        >
+          title="Durchgestrichen">
+
           <Strikethrough className="h-4 w-4" />
         </Button>
 
@@ -385,32 +385,32 @@ export default function HeaderTextEditor({
           <DropdownMenuContent>
             <div className="grid grid-cols-4 gap-1 p-2">
               {[
-                '#000000',
-                '#ff0000',
-                '#00ff00',
-                '#0000ff',
-                '#ffff00',
-                '#ff00ff',
-                '#00ffff',
-                '#808080',
-                '#800000',
-                '#008000',
-                '#000080',
-                '#808000',
-                '#800080',
-                '#008080',
-                '#c0c0c0',
-                '#ffffff',
-              ].map(color => (
-                <button
-                  key={color}
-                  type="button"
-                  className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
-                  style={{ backgroundColor: color }}
-                  onClick={() => editor.chain().focus().setColor(color).run()}
-                  title={color}
-                />
-              ))}
+              '#000000',
+              '#ff0000',
+              '#00ff00',
+              '#0000ff',
+              '#ffff00',
+              '#ff00ff',
+              '#00ffff',
+              '#808080',
+              '#800000',
+              '#008000',
+              '#000080',
+              '#808000',
+              '#800080',
+              '#008080',
+              '#c0c0c0',
+              '#ffffff'].
+              map((color) =>
+              <button
+                key={color}
+                type="button"
+                className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
+                style={{ backgroundColor: color }}
+                onClick={() => editor.chain().focus().setColor(color).run()}
+                title={color} />
+
+              )}
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -424,8 +424,8 @@ export default function HeaderTextEditor({
           size="sm"
           className={`h-8 px-2 ${editor.isActive({ textAlign: 'left' }) ? 'bg-[#14ad9f] text-white' : 'hover:bg-[#14ad9f]/10'}`}
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
-          title="Linksbündig"
-        >
+          title="Linksbündig">
+
           <AlignLeft className="h-4 w-4" />
         </Button>
         <Button
@@ -434,8 +434,8 @@ export default function HeaderTextEditor({
           size="sm"
           className={`h-8 px-2 ${editor.isActive({ textAlign: 'center' }) ? 'bg-[#14ad9f] text-white' : 'hover:bg-[#14ad9f]/10'}`}
           onClick={() => editor.chain().focus().setTextAlign('center').run()}
-          title="Zentriert"
-        >
+          title="Zentriert">
+
           <AlignCenter className="h-4 w-4" />
         </Button>
         <Button
@@ -444,8 +444,8 @@ export default function HeaderTextEditor({
           size="sm"
           className={`h-8 px-2 ${editor.isActive({ textAlign: 'right' }) ? 'bg-[#14ad9f] text-white' : 'hover:bg-[#14ad9f]/10'}`}
           onClick={() => editor.chain().focus().setTextAlign('right').run()}
-          title="Rechtsbündig"
-        >
+          title="Rechtsbündig">
+
           <AlignRight className="h-4 w-4" />
         </Button>
 
@@ -458,8 +458,8 @@ export default function HeaderTextEditor({
           size="sm"
           className={`h-8 px-2 ${editor.isActive('bulletList') ? 'bg-[#14ad9f] text-white' : 'hover:bg-[#14ad9f]/10'}`}
           onClick={() => editor.chain().focus().toggleBulletList().run()}
-          title="Aufzählung"
-        >
+          title="Aufzählung">
+
           <List className="h-4 w-4" />
         </Button>
         <Button
@@ -468,8 +468,8 @@ export default function HeaderTextEditor({
           size="sm"
           className={`h-8 px-2 ${editor.isActive('orderedList') ? 'bg-[#14ad9f] text-white' : 'hover:bg-[#14ad9f]/10'}`}
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          title="Nummerierte Liste"
-        >
+          title="Nummerierte Liste">
+
           <ListOrdered className="h-4 w-4" />
         </Button>
 
@@ -480,8 +480,8 @@ export default function HeaderTextEditor({
           size="sm"
           className="h-8 px-2"
           onClick={() => editor.chain().focus().liftListItem('listItem').run()}
-          title="Einzug verringern"
-        >
+          title="Einzug verringern">
+
           <Outdent className="h-4 w-4" />
         </Button>
         <Button
@@ -490,8 +490,8 @@ export default function HeaderTextEditor({
           size="sm"
           className="h-8 px-2"
           onClick={() => editor.chain().focus().sinkListItem('listItem').run()}
-          title="Einzug vergrößern"
-        >
+          title="Einzug vergrößern">
+
           <Indent className="h-4 w-4" />
         </Button>
 
@@ -505,8 +505,8 @@ export default function HeaderTextEditor({
               variant="ghost"
               size="sm"
               className={`h-8 px-3 ${selectedTemplate ? 'bg-[#14ad9f] text-white selected' : 'hover:bg-[#14ad9f]/10'}`}
-              title="Kopftext-Vorlage"
-            >
+              title="Kopftext-Vorlage">
+
               <span className="select-none">Kopftext-Vorlage</span>
               <span className="caret ml-1" style={{ fontSize: '9pt' }}>
                 ▼
@@ -516,32 +516,32 @@ export default function HeaderTextEditor({
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Kopftext-Vorlagen</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {companyId && objectType && textTemplates.length > 0 ? (
-              <>
-                {textTemplates.map(template => (
-                  <DropdownMenuItem
-                    key={template.id}
-                    onClick={() => insertTemplate(template)}
-                    className="flex items-center justify-between"
-                  >
+            {companyId && objectType && textTemplates.length > 0 ?
+            <>
+                {textTemplates.map((template) =>
+              <DropdownMenuItem
+                key={template.id}
+                onClick={() => insertTemplate(template)}
+                className="flex items-center justify-between">
+
                     <span>{template.name}</span>
                     {template.isDefault && <span className="text-xs text-[#14ad9f]">Standard</span>}
                   </DropdownMenuItem>
-                ))}
+              )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="text-[#14ad9f]"
-                  onClick={() => setTemplateModalOpen(true)}
-                >
+                className="text-[#14ad9f]"
+                onClick={() => setTemplateModalOpen(true)}>
+
                   <Plus className="mr-2 h-4 w-4" />
                   Kopftext-Vorlage erstellen
                 </DropdownMenuItem>
-              </>
-            ) : (
-              <DropdownMenuItem disabled className="text-gray-500">
+              </> :
+
+            <DropdownMenuItem disabled className="text-gray-500">
                 Keine Kopftext-Vorlagen verfügbar
               </DropdownMenuItem>
-            )}
+            }
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -552,8 +552,8 @@ export default function HeaderTextEditor({
           size="sm"
           className="h-8 px-3"
           onClick={() => setPlaceholderModalOpen(true)}
-          title="Platzhalter"
-        >
+          title="Platzhalter">
+
           <span className="select-none">Platzhalter</span>
           <span className="caret ml-1" style={{ fontSize: '9pt' }}>
             ▼
@@ -564,8 +564,8 @@ export default function HeaderTextEditor({
       <div className="border border-t-0 rounded-b-md">
         <EditorContent
           editor={editor}
-          className="prose max-w-none p-4 min-h-[120px] focus-within:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[120px] [&_.ProseMirror]:p-0"
-        />
+          className="prose max-w-none p-4 min-h-[120px] focus-within:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[120px] [&_.ProseMirror]:p-0" />
+
       </div>
 
       {/* Platzhalter Modal */}
@@ -573,19 +573,19 @@ export default function HeaderTextEditor({
         isOpen={placeholderModalOpen}
         onClose={() => setPlaceholderModalOpen(false)}
         onInsert={insertPlaceholders}
-        objectType={objectType}
-      />
+        objectType={objectType} />
+
 
       {/* Kopftext-Vorlage Erstellen Modal */}
-      {companyId && userId && (
-        <TextTemplateModal
-          isOpen={templateModalOpen}
-          onClose={() => setTemplateModalOpen(false)}
-          onSave={handleSaveTemplate}
-          companyId={companyId}
-          userId={userId}
-        />
-      )}
-    </div>
-  );
+      {companyId && userId &&
+      <TextTemplateModal
+        isOpen={templateModalOpen}
+        onClose={() => setTemplateModalOpen(false)}
+        onSave={handleSaveTemplate}
+        companyId={companyId}
+        userId={userId} />
+
+      }
+    </div>);
+
 }

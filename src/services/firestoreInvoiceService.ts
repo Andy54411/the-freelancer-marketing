@@ -12,8 +12,8 @@ import {
   orderBy,
   getDocs,
   runTransaction,
-  Timestamp,
-} from 'firebase/firestore';
+  Timestamp } from
+'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { InvoiceData, InvoiceNumbering, GermanInvoiceService } from '@/types/invoiceTypes';
 import { NumberSequenceService } from './numberSequenceService';
@@ -33,7 +33,7 @@ export class FirestoreInvoiceService {
 
       return {
         sequentialNumber: result.number,
-        formattedNumber: result.formattedNumber,
+        formattedNumber: result.formattedNumber
       };
     } catch (error) {
       console.error('Fehler beim Generieren der Rechnungsnummer:', error);
@@ -55,7 +55,7 @@ export class FirestoreInvoiceService {
     const numberingDocId = `${companyId}_${currentYear}`;
 
     try {
-      return await runTransaction(db, async transaction => {
+      return await runTransaction(db, async (transaction) => {
         const numberingRef = doc(db, 'invoice_numbering', numberingDocId);
         const numberingDoc = await transaction.get(numberingRef);
 
@@ -72,14 +72,14 @@ export class FirestoreInvoiceService {
           year: currentYear,
           lastNumber: nextNumber,
           nextNumber: nextNumber + 1,
-          updatedAt: new Date(),
+          updatedAt: new Date()
         };
 
         transaction.set(numberingRef, newNumberingData);
 
         return {
           sequentialNumber: nextNumber,
-          formattedNumber: GermanInvoiceService.formatInvoiceNumber(nextNumber, currentYear),
+          formattedNumber: GermanInvoiceService.formatInvoiceNumber(nextNumber, currentYear)
         };
       });
     } catch (error) {
@@ -90,7 +90,7 @@ export class FirestoreInvoiceService {
 
       return {
         sequentialNumber: fallbackNumber,
-        formattedNumber: GermanInvoiceService.formatInvoiceNumber(fallbackNumber, currentYear),
+        formattedNumber: GermanInvoiceService.formatInvoiceNumber(fallbackNumber, currentYear)
       };
     }
   }
@@ -100,12 +100,12 @@ export class FirestoreInvoiceService {
    */
   static async saveInvoice(invoice: InvoiceData): Promise<string> {
     try {
-      console.log('🚨 SAVING TO SUBCOLLECTION: companies/' + invoice.companyId + '/invoices');
+
 
       const invoiceData = {
         ...invoice,
         createdAt: Timestamp.fromDate(invoice.createdAt),
-        updatedAt: Timestamp.fromDate(new Date()),
+        updatedAt: Timestamp.fromDate(new Date())
       };
 
       // CRITICAL: Save to subcollection companies/{companyId}/invoices
@@ -114,7 +114,7 @@ export class FirestoreInvoiceService {
         invoiceData
       );
 
-      console.log('✅ INVOICE SAVED TO SUBCOLLECTION WITH ID:', docRef.id);
+
       return docRef.id;
     } catch (error) {
       console.error('❌ CRITICAL ERROR saving to subcollection:', error);
@@ -127,7 +127,7 @@ export class FirestoreInvoiceService {
    */
   static async getInvoicesByCompany(companyId: string): Promise<InvoiceData[]> {
     try {
-      console.log('🔍 LOADING FROM SUBCOLLECTION: companies/' + companyId + '/invoices');
+
 
       const q = query(
         collection(db, 'companies', companyId, 'invoices'),
@@ -137,19 +137,19 @@ export class FirestoreInvoiceService {
       const querySnapshot = await getDocs(q);
       const invoices: InvoiceData[] = [];
 
-      querySnapshot.forEach(doc => {
+      querySnapshot.forEach((doc) => {
         const data = doc.data();
         const invoice = {
           ...data,
           id: doc.id,
           createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
-          stornoDate: data.stornoDate?.toDate ? data.stornoDate.toDate() : data.stornoDate,
+          stornoDate: data.stornoDate?.toDate ? data.stornoDate.toDate() : data.stornoDate
         };
 
         invoices.push(invoice as any);
       });
 
-      console.log('✅ LOADED', invoices.length, 'INVOICES FROM SUBCOLLECTION');
+
       return invoices;
     } catch (error) {
       console.error('❌ ERROR loading from subcollection:', error);
@@ -183,16 +183,16 @@ export class FirestoreInvoiceService {
           date: data.date?.toDate ? data.date.toDate().toISOString() : data.date,
           issueDate: data.issueDate,
           dueDate: data.dueDate?.toDate ? data.dueDate.toDate().toISOString() : data.dueDate,
-          createdAt: data.createdAt?.toDate
-            ? data.createdAt.toDate()
-            : data.createdAt instanceof Date
-              ? data.createdAt
-              : new Date(),
-          stornoDate: data.stornoDate?.toDate
-            ? data.stornoDate.toDate()
-            : data.stornoDate instanceof Date
-              ? data.stornoDate
-              : undefined,
+          createdAt: data.createdAt?.toDate ?
+          data.createdAt.toDate() :
+          data.createdAt instanceof Date ?
+          data.createdAt :
+          new Date(),
+          stornoDate: data.stornoDate?.toDate ?
+          data.stornoDate.toDate() :
+          data.stornoDate instanceof Date ?
+          data.stornoDate :
+          undefined,
           description: data.description,
           customerEmail: data.customerEmail,
           companyName: data.companyName,
@@ -234,7 +234,7 @@ export class FirestoreInvoiceService {
           currency: data.currency,
           // E-Invoice Daten
           eInvoiceData: data.eInvoiceData,
-          eInvoice: data.eInvoice,
+          eInvoice: data.eInvoice
         } as InvoiceData;
         return invoice;
       }
@@ -249,10 +249,10 @@ export class FirestoreInvoiceService {
    * Aktualisiert den Status einer Rechnung
    */
   static async updateInvoiceStatus(
-    companyId: string,
-    invoiceId: string,
-    status: InvoiceData['status']
-  ): Promise<void> {
+  companyId: string,
+  invoiceId: string,
+  status: InvoiceData['status'])
+  : Promise<void> {
     try {
       const docRef = doc(db, 'companies', companyId, 'invoices', invoiceId);
       await updateDoc(docRef, { status });
@@ -266,12 +266,12 @@ export class FirestoreInvoiceService {
    */
   static async updateInvoice(invoiceId: string, invoice: Partial<InvoiceData>): Promise<void> {
     try {
-      console.log('🚨 UPDATING INVOICE IN SUBCOLLECTION:', invoiceId);
+
 
       // Update the invoice data with timestamp
       const invoiceData = {
         ...invoice,
-        updatedAt: Timestamp.fromDate(new Date()),
+        updatedAt: Timestamp.fromDate(new Date())
       };
 
       // Remove undefined values and convert Date objects
@@ -295,7 +295,7 @@ export class FirestoreInvoiceService {
       const docRef = doc(db, 'companies', invoice.companyId, 'invoices', invoiceId);
       await updateDoc(docRef, cleanInvoiceData);
 
-      console.log('✅ INVOICE UPDATED IN SUBCOLLECTION:', invoiceId);
+
     } catch (error) {
       console.error('❌ CRITICAL ERROR updating invoice in subcollection:', error);
       throw error;
@@ -307,18 +307,18 @@ export class FirestoreInvoiceService {
    * TODO: Diese Methode muss aktualisiert werden, um companyId als Parameter zu akzeptieren
    */
   static async createAndSaveStornoInvoice(
-    companyId: string,
-    originalInvoiceId: string,
-    stornoReason: string,
-    stornoBy: string
-  ): Promise<InvoiceData> {
+  companyId: string,
+  originalInvoiceId: string,
+  stornoReason: string,
+  stornoBy: string)
+  : Promise<InvoiceData> {
     try {
-      console.log('🔄 Starting storno creation:', {
-        companyId,
-        originalInvoiceId,
-        stornoReason,
-        stornoBy,
-      });
+
+
+
+
+
+
 
       // Lade die ursprüngliche Rechnung
       const originalInvoice = await this.getInvoiceById(companyId, originalInvoiceId);
@@ -327,12 +327,12 @@ export class FirestoreInvoiceService {
         throw new Error('Ursprüngliche Rechnung nicht gefunden');
       }
 
-      console.log('✅ Original invoice loaded:', {
-        id: originalInvoice.id,
-        status: originalInvoice.status,
-        isStorno: originalInvoice.isStorno,
-        invoiceNumber: originalInvoice.invoiceNumber,
-      });
+
+
+
+
+
+
 
       // Prüfe, ob die Rechnung storniert werden kann
       if (originalInvoice.isStorno) {
@@ -347,30 +347,30 @@ export class FirestoreInvoiceService {
       // Das schließt 'draft', 'sent', 'paid', 'overdue' ein
 
       // Generiere neue Rechnungsnummer für Storno
-      console.log('🔢 Generating new invoice number for storno...');
+
       const { sequentialNumber, formattedNumber } = await this.getNextInvoiceNumber(
         originalInvoice.companyId
       );
-      console.log('✅ New invoice number generated:', { sequentialNumber, formattedNumber });
+
 
       // Erstelle Storno-Rechnung
-      console.log('📝 Creating storno invoice with GermanInvoiceService...');
+
       const stornoInvoice = GermanInvoiceService.createStornoInvoice(
         originalInvoice,
         stornoReason,
         stornoBy,
         sequentialNumber
       );
-      console.log('✅ Storno invoice created:', {
-        id: stornoInvoice.id,
-        invoiceNumber: stornoInvoice.invoiceNumber,
-        status: stornoInvoice.status,
-        total: stornoInvoice.total,
-        isStorno: stornoInvoice.isStorno,
-      });
+
+
+
+
+
+
+
 
       // Speichere Storno-Rechnung in Transaction
-      return await runTransaction(db, async transaction => {
+      return await runTransaction(db, async (transaction) => {
         // Speichere die Storno-Rechnung in der Subcollection
         // Erstelle eine komplett saubere Datenstruktur ohne undefined Werte
         // Alle Felder werden explizit definiert, um undefined zu vermeiden
@@ -422,28 +422,28 @@ export class FirestoreInvoiceService {
           tax: typeof stornoInvoice.tax === 'number' ? stornoInvoice.tax : 0,
           total: typeof stornoInvoice.total === 'number' ? stornoInvoice.total : 0,
           subtotal:
-            typeof (stornoInvoice as any).subtotal === 'number'
-              ? (stornoInvoice as any).subtotal
-              : 0,
+          typeof (stornoInvoice as any).subtotal === 'number' ?
+          (stornoInvoice as any).subtotal :
+          0,
           currency: (stornoInvoice as any).currency || 'EUR',
 
           // Items Array (gesichert mit Validierung)
-          items: Array.isArray(stornoInvoice.items)
-            ? stornoInvoice.items.map((item: any) => ({
-                id: item.id || '',
-                description: item.description || '',
-                quantity: typeof item.quantity === 'number' ? item.quantity : 0,
-                unitPrice: typeof item.unitPrice === 'number' ? item.unitPrice : 0,
-                total: typeof item.total === 'number' ? item.total : 0,
-                unit: item.unit || 'Stk.',
-                taxRate:
-                  typeof item.taxRate === 'number' ? item.taxRate : stornoInvoice.vatRate || 19,
-                discount: typeof item.discount === 'number' ? item.discount : 0,
-                discountPercent:
-                  typeof item.discountPercent === 'number' ? item.discountPercent : 0,
-                category: item.category || '',
-              }))
-            : [],
+          items: Array.isArray(stornoInvoice.items) ?
+          stornoInvoice.items.map((item: any) => ({
+            id: item.id || '',
+            description: item.description || '',
+            quantity: typeof item.quantity === 'number' ? item.quantity : 0,
+            unitPrice: typeof item.unitPrice === 'number' ? item.unitPrice : 0,
+            total: typeof item.total === 'number' ? item.total : 0,
+            unit: item.unit || 'Stk.',
+            taxRate:
+            typeof item.taxRate === 'number' ? item.taxRate : stornoInvoice.vatRate || 19,
+            discount: typeof item.discount === 'number' ? item.discount : 0,
+            discountPercent:
+            typeof item.discountPercent === 'number' ? item.discountPercent : 0,
+            category: item.category || ''
+          })) :
+          [],
 
           // Zahlungs- und Lieferbedingungen
           paymentTerms: stornoInvoice.paymentTerms || '',
@@ -460,19 +460,19 @@ export class FirestoreInvoiceService {
           contactPersonName: stornoInvoice.contactPersonName || '',
 
           // Bankdaten (sicher kopiert)
-          bankDetails: stornoInvoice.bankDetails
-            ? {
-                iban: stornoInvoice.bankDetails.iban || '',
-                bic: stornoInvoice.bankDetails.bic || '',
-                accountHolder: stornoInvoice.bankDetails.accountHolder || '',
-                bankName: stornoInvoice.bankDetails.bankName || '',
-              }
-            : {
-                iban: '',
-                bic: '',
-                accountHolder: '',
-                bankName: '',
-              },
+          bankDetails: stornoInvoice.bankDetails ?
+          {
+            iban: stornoInvoice.bankDetails.iban || '',
+            bic: stornoInvoice.bankDetails.bic || '',
+            accountHolder: stornoInvoice.bankDetails.accountHolder || '',
+            bankName: stornoInvoice.bankDetails.bankName || ''
+          } :
+          {
+            iban: '',
+            bic: '',
+            accountHolder: '',
+            bankName: ''
+          },
 
           // Storno-spezifische Felder
           status: 'storno',
@@ -484,16 +484,16 @@ export class FirestoreInvoiceService {
           // Metadaten
           companyId: companyId || '',
           year:
-            typeof stornoInvoice.year === 'number' ? stornoInvoice.year : new Date().getFullYear(),
+          typeof stornoInvoice.year === 'number' ? stornoInvoice.year : new Date().getFullYear(),
 
           // Firestore Timestamps
-          createdAt: stornoInvoice.createdAt
-            ? Timestamp.fromDate(new Date(stornoInvoice.createdAt))
-            : Timestamp.now(),
-          stornoDate: stornoInvoice.stornoDate
-            ? Timestamp.fromDate(new Date(stornoInvoice.stornoDate))
-            : Timestamp.now(),
-          updatedAt: Timestamp.now(),
+          createdAt: stornoInvoice.createdAt ?
+          Timestamp.fromDate(new Date(stornoInvoice.createdAt)) :
+          Timestamp.now(),
+          stornoDate: stornoInvoice.stornoDate ?
+          Timestamp.fromDate(new Date(stornoInvoice.stornoDate)) :
+          Timestamp.now(),
+          updatedAt: Timestamp.now()
         };
 
         // Rekursive Funktion zum Entfernen aller undefined Werte
@@ -501,12 +501,12 @@ export class FirestoreInvoiceService {
           if (obj === null || obj === undefined) return null;
 
           if (Array.isArray(obj)) {
-            return obj.map(item => removeUndefinedRecursive(item));
+            return obj.map((item) => removeUndefinedRecursive(item));
           }
 
           if (typeof obj === 'object') {
             const cleaned: any = {};
-            Object.keys(obj).forEach(key => {
+            Object.keys(obj).forEach((key) => {
               const value = obj[key];
               if (value !== undefined) {
                 cleaned[key] = removeUndefinedRecursive(value);
@@ -524,44 +524,44 @@ export class FirestoreInvoiceService {
         const cleanedStornoData = removeUndefinedRecursive(stornoData);
 
         // Debug-Log für problematische Felder
-        console.log('🔍 Storno data validation check:', {
-          originalKeys: Object.keys(stornoData).length,
-          cleanedKeys: Object.keys(cleanedStornoData).length,
-          hasUndefinedValues: JSON.stringify(cleanedStornoData).includes('undefined'),
-          sampleFields: {
-            id: typeof cleanedStornoData.id,
-            invoiceNumber: typeof cleanedStornoData.invoiceNumber,
-            items: Array.isArray(cleanedStornoData.items)
-              ? `array[${cleanedStornoData.items.length}]`
-              : typeof cleanedStornoData.items,
-            bankDetails: typeof cleanedStornoData.bankDetails,
-          },
-        });
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         const stornoDocRef = doc(collection(db, 'companies', companyId, 'invoices'));
-        console.log('💾 Saving storno invoice to Firestore...', { path: stornoDocRef.path });
+
         transaction.set(stornoDocRef, cleanedStornoData);
 
         // Markiere die ursprüngliche Rechnung als storniert
         const originalDocRef = doc(db, 'companies', companyId, 'invoices', originalInvoiceId);
-        console.log('🔄 Updating original invoice status to cancelled...', {
-          path: originalDocRef.path,
-        });
+
+
+
         transaction.update(originalDocRef, {
           status: 'cancelled',
-          updatedAt: Timestamp.now(),
+          updatedAt: Timestamp.now()
         });
 
         const result = {
           ...stornoInvoice,
-          id: stornoDocRef.id,
+          id: stornoDocRef.id
         };
 
-        console.log('✅ Transaction completed successfully. Storno invoice created:', {
-          stornoId: stornoDocRef.id,
-          originalId: originalInvoiceId,
-          stornoNumber: result.invoiceNumber,
-        });
+
+
+
+
+
 
         return result;
       });
@@ -574,15 +574,15 @@ export class FirestoreInvoiceService {
    * Sucht Rechnungen nach verschiedenen Kriterien
    */
   static async searchInvoices(
-    companyId: string,
-    searchParams: {
-      status?: InvoiceData['status'];
-      customerName?: string;
-      dateFrom?: Date;
-      dateTo?: Date;
-      isStorno?: boolean;
-    }
-  ): Promise<InvoiceData[]> {
+  companyId: string,
+  searchParams: {
+    status?: InvoiceData['status'];
+    customerName?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+    isStorno?: boolean;
+  })
+  : Promise<InvoiceData[]> {
     try {
       let q = query(collection(db, 'invoices'), where('companyId', '==', companyId));
 
@@ -607,13 +607,13 @@ export class FirestoreInvoiceService {
       const querySnapshot = await getDocs(q);
       const invoices: InvoiceData[] = [];
 
-      querySnapshot.forEach(doc => {
+      querySnapshot.forEach((doc) => {
         const data = doc.data();
         const invoice: InvoiceData = {
           ...data,
           id: doc.id,
           createdAt: data.createdAt.toDate(),
-          stornoDate: data.stornoDate ? data.stornoDate.toDate() : undefined,
+          stornoDate: data.stornoDate ? data.stornoDate.toDate() : undefined
         } as InvoiceData;
 
         // Filtere nach Kundenname (client-seitig, da Firestore case-sensitive ist)
@@ -678,10 +678,10 @@ export class FirestoreInvoiceService {
         overdueInvoices: 0,
         stornoInvoices: 0,
         totalRevenue: 0,
-        pendingRevenue: 0,
+        pendingRevenue: 0
       };
 
-      invoices.forEach(invoice => {
+      invoices.forEach((invoice) => {
         // Status-Zählung
         switch (invoice.status) {
           case 'draft':

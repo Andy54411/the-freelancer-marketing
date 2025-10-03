@@ -44,23 +44,23 @@ export default function SettingsPage() {
         vatId: rawData.vatId ?? rawData.step3?.vatId ?? '',
         taxNumber: rawData.taxNumber ?? rawData.step3?.taxNumber ?? '',
         districtCourt:
-          rawData.districtCourt ||
-          rawData.step3?.districtCourt ||
-          rawData.step2?.districtCourt ||
-          '',
+        rawData.districtCourt ||
+        rawData.step3?.districtCourt ||
+        rawData.step2?.districtCourt ||
+        '',
         companyRegister:
-          rawData.companyRegister ||
-          rawData.step3?.companyRegister ||
-          rawData.step2?.companyRegister ||
-          rawData.registrationNumber ||
-          '',
+        rawData.companyRegister ||
+        rawData.step3?.companyRegister ||
+        rawData.step2?.companyRegister ||
+        rawData.registrationNumber ||
+        '',
         ust: rawData.step3?.ust || rawData.ust,
         profitMethod: rawData.step3?.profitMethod || rawData.profitMethod,
         priceInput: rawData.step3?.priceInput || rawData.priceInput,
         taxMethod: rawData.step3?.taxMethod || rawData.taxMethod,
         accountingSystem:
-          rawData.step3?.accountingSystem ||
-          (rawData.accountingSystem === 'skr03' ? 'skro3' : rawData.accountingSystem),
+        rawData.step3?.accountingSystem || (
+        rawData.accountingSystem === 'skr03' ? 'skro3' : rawData.accountingSystem),
         defaultTaxRate: rawData.defaultTaxRate || rawData.step3?.defaultTaxRate || '19',
         profilePictureURL: rawData.profilePictureURL || rawData.step3?.profilePictureURL,
         profileBannerImage: rawData.profileBannerImage || rawData.step3?.profileBannerImage,
@@ -68,19 +68,19 @@ export default function SettingsPage() {
           bankName: rawData.bankName || '',
           iban: rawData.iban || '',
           bic: rawData.bic || '',
-          accountHolder: rawData.accountHolder || '',
-        },
+          accountHolder: rawData.accountHolder || ''
+        }
       },
       step4: rawData.step4,
       step5: rawData.step5,
       portfolioItems: rawData.portfolioItems || [],
       faqs: rawData.faqs || [],
       paymentTermsSettings: rawData.paymentTermsSettings || {
-        defaultPaymentTerms: rawData.defaultPaymentTerms,
+        defaultPaymentTerms: rawData.defaultPaymentTerms
       },
       logoUrl: rawData.logoUrl,
       documentTemplates: rawData.documentTemplates,
-      stornoSettings: rawData.stornoSettings,
+      stornoSettings: rawData.stornoSettings
     };
 
     return transformed;
@@ -107,22 +107,22 @@ export default function SettingsPage() {
         const companyDoc = await getDoc(doc(db, 'companies', uid));
         if (companyDoc.exists()) {
           const companyData = companyDoc.data() as RawFirestoreUserData;
-          console.log('Raw company data:', companyData);
-          console.log('step3:', companyData.step3);
-          console.log('profileBannerImage in raw data:', companyData.profileBannerImage);
-          console.log('profileBannerImage in step3:', companyData.step3?.profileBannerImage);
-          console.log('accountingSystem in step3:', companyData.step3?.accountingSystem);
+
+
+
+
+
           const transformedData = transformToUserDataForSettings(companyData);
-          console.log('Transformed step3:', transformedData.step3);
-          console.log('Transformed profileBannerImage:', transformedData.profileBannerImage);
-          console.log(
-            'Transformed step3.profileBannerImage:',
-            transformedData.step3?.profileBannerImage
-          );
-          console.log('Final accountingSystem:', transformedData.step3?.accountingSystem);
+
+
+
+
+
+
+
           setForm(transformedData);
         } else {
-          console.log('Company doc not found, trying users collection');
+
           // Fallback: User-Daten
           const userDoc = await getDoc(doc(db, 'users', uid));
           if (userDoc.exists()) {
@@ -134,7 +134,7 @@ export default function SettingsPage() {
             await updateDoc(doc(db, 'companies', uid), {
               ...userData,
               uid: uid,
-              lastUpdated: serverTimestamp(),
+              lastUpdated: serverTimestamp()
             });
           } else {
             // Erstelle Basis-Daten
@@ -147,7 +147,7 @@ export default function SettingsPage() {
               step2: { companyAddress: {} },
               step3: { bankDetails: {} },
               portfolioItems: [],
-              faqs: [],
+              faqs: []
             };
             setForm(baseData);
 
@@ -156,7 +156,7 @@ export default function SettingsPage() {
               uid: uid,
               email: user.email || '',
               displayName: user.email || '',
-              lastUpdated: serverTimestamp(),
+              lastUpdated: serverTimestamp()
             });
           }
         }
@@ -172,7 +172,7 @@ export default function SettingsPage() {
           step2: { companyAddress: {} },
           step3: { bankDetails: {} },
           portfolioItems: [],
-          faqs: [],
+          faqs: []
         };
         setForm(fallbackData);
       } finally {
@@ -218,7 +218,7 @@ export default function SettingsPage() {
         }
 
         if (Array.isArray(obj)) {
-          return obj.map(item => cleanData(item));
+          return obj.map((item) => cleanData(item));
         }
 
         if (typeof obj === 'object') {
@@ -235,13 +235,13 @@ export default function SettingsPage() {
       };
 
       const cleanedForm = cleanData(form);
-      console.log('Form before save:', form);
-      console.log('Cleaned form:', cleanedForm);
-      console.log('accountingSystem in cleaned form:', cleanedForm.step3?.accountingSystem);
+
+
+
 
       await updateDoc(docRef, {
         ...cleanedForm,
-        lastUpdated: serverTimestamp(),
+        lastUpdated: serverTimestamp()
       });
       toast.success('Einstellungen erfolgreich gespeichert!');
     } catch (error) {
@@ -259,16 +259,16 @@ export default function SettingsPage() {
         <div className="text-center">
           <span className="text-lg font-semibold text-gray-700">Lade Einstellungen...</span>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   if (!form) {
     return (
       <div className="flex flex-col justify-center items-center min-h-[300px] space-y-4">
         <span className="text-lg font-semibold text-gray-700">Keine Daten gefunden</span>
-      </div>
-    );
+      </div>);
+
   }
 
   // Funktion zum Rendern der richtigen Komponente basierend auf view
@@ -281,9 +281,9 @@ export default function SettingsPage() {
             handleChange={handleChange}
             onOpenManagingDirectorPersonalModal={() => {
               setIsManagingDirectorModalOpen(true);
-            }}
-          />
-        );
+            }} />);
+
+
       case 'bank':
         return <BankForm formData={form} handleChange={handleChange} />;
       case 'accounting':
@@ -307,14 +307,14 @@ export default function SettingsPage() {
                 Verwalten Sie Ihre Auszahlungen und sehen Sie den verfügbaren Saldo ein.
               </p>
               <button
-                onClick={() => (window.location.href = `/dashboard/company/${uid}/payouts`)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
-              >
+                onClick={() => window.location.href = `/dashboard/company/${uid}/payouts`}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]">
+
                 Zur Auszahlungsübersicht
               </button>
             </div>
-          </div>
-        );
+          </div>);
+
       default:
         return (
           <GeneralForm
@@ -322,9 +322,9 @@ export default function SettingsPage() {
             handleChange={handleChange}
             onOpenManagingDirectorPersonalModal={() => {
               setIsManagingDirectorModalOpen(true);
-            }}
-          />
-        );
+            }} />);
+
+
     }
   };
 
@@ -334,34 +334,34 @@ export default function SettingsPage() {
       case 'general':
         return {
           title: 'Allgemeine Einstellungen',
-          description: 'Verwalten Sie Ihre allgemeinen Firmendaten und Kontaktinformationen',
+          description: 'Verwalten Sie Ihre allgemeinen Firmendaten und Kontaktinformationen'
         };
       case 'bank':
         return {
           title: 'Bankverbindung',
-          description: 'Verwalten Sie Ihre Bankdaten für Zahlungen und Auszahlungen',
+          description: 'Verwalten Sie Ihre Bankdaten für Zahlungen und Auszahlungen'
         };
       case 'accounting':
         return {
           title: 'Buchhaltung & Steuer',
-          description: 'Konfigurieren Sie Ihre Steuer- und Buchhaltungseinstellungen',
+          description: 'Konfigurieren Sie Ihre Steuer- und Buchhaltungseinstellungen'
         };
       case 'logo':
         return {
           title: 'Logo & Dokumente',
-          description: 'Verwalten Sie Ihr Firmenlogo und Dokumentvorlagen',
+          description: 'Verwalten Sie Ihr Firmenlogo und Dokumentvorlagen'
         };
       case 'portfolio':
         return { title: 'Portfolio', description: 'Präsentieren Sie Ihre Arbeiten und Projekte' };
       case 'services':
         return {
           title: 'Dienstleistungen',
-          description: 'Verwalten Sie Ihre angebotenen Services und Preise',
+          description: 'Verwalten Sie Ihre angebotenen Services und Preise'
         };
       case 'faqs':
         return {
           title: 'FAQs',
-          description: 'Verwalten Sie häufig gestellte Fragen zu Ihren Services',
+          description: 'Verwalten Sie häufig gestellte Fragen zu Ihren Services'
         };
       default:
         return { title: 'Einstellungen', description: 'Verwalten Sie Ihre Einstellungen' };
@@ -372,8 +372,8 @@ export default function SettingsPage() {
 
   return (
     <>
-      {view === 'services' ? (
-        <div className="min-h-screen bg-gray-50">
+      {view === 'services' ?
+      <div className="min-h-screen bg-gray-50">
           <div className="p-6 sm:p-8">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
@@ -382,9 +382,9 @@ export default function SettingsPage() {
 
             {renderSettingsComponent()}
           </div>
-        </div>
-      ) : (
-        <div className="max-w-4xl mx-auto p-6 sm:p-8">
+        </div> :
+
+      <div className="max-w-4xl mx-auto p-6 sm:p-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
             <p className="text-gray-600">{description}</p>
@@ -395,37 +395,37 @@ export default function SettingsPage() {
 
             <div className="mt-8 pt-6 border-t">
               <button
-                onClick={saveForm}
-                disabled={saving}
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? (
-                  <>
+              onClick={saveForm}
+              disabled={saving}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed">
+
+                {saving ?
+              <>
                     <FiLoader className="animate-spin -ml-1 mr-3 h-5 w-5" />
                     Speichern...
-                  </>
-                ) : (
-                  <>
+                  </> :
+
+              <>
                     <FiSave className="-ml-1 mr-3 h-5 w-5" />
                     Speichern
                   </>
-                )}
+              }
               </button>
             </div>
           </div>
         </div>
-      )}
+      }
 
       {/* Managing Director Modal */}
-      {form && (
-        <ManagingDirectorModal
-          isOpen={isManagingDirectorModalOpen}
-          onClose={() => setIsManagingDirectorModalOpen(false)}
-          formData={form}
-          handleChange={handleChange}
-          onSave={saveForm}
-        />
-      )}
-    </>
-  );
+      {form &&
+      <ManagingDirectorModal
+        isOpen={isManagingDirectorModalOpen}
+        onClose={() => setIsManagingDirectorModalOpen(false)}
+        formData={form}
+        handleChange={handleChange}
+        onSave={saveForm} />
+
+      }
+    </>);
+
 }

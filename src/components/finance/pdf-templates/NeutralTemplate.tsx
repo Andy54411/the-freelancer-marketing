@@ -1,12 +1,15 @@
 import React from 'react';
 import { formatDate } from '@/lib/utils';
-import { ProcessedPDFData } from '@/hooks/pdf/usePDFTemplateData';
+import { ProcessedPDFData, DocumentSettings } from '@/hooks/pdf/usePDFTemplateData';
 import { TaxRulesInfo } from './common/TaxRulesInfo';
 import { TotalsDisplay } from './common/TotalsDisplay';
 import { ItemsTable } from './common/ItemsTable';
 import { FooterText } from './common/FooterText';
 import { SimpleFooter } from './common/SimpleFooter';
-import { DocumentType, detectDocumentType, getDocumentTypeConfig } from '@/lib/document-utils';
+import type { DocumentType } from '@/lib/document-utils';
+import { detectDocumentType, getTranslatedDocumentTypeConfig } from '@/lib/document-utils';
+import { useDocumentTranslation } from '@/hooks/pdf/useDocumentTranslation';
+import { replacePlaceholders } from '@/utils/placeholderSystem';
 
 interface NeutralTemplateProps {
   data: ProcessedPDFData;
@@ -14,6 +17,7 @@ interface NeutralTemplateProps {
   logoSize: number;
   pageMode?: 'single' | 'multi';
   documentType?: DocumentType;
+  documentSettings?: DocumentSettings;
 }
 
 export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
@@ -21,14 +25,39 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
   color,
   logoSize,
   pageMode = 'multi',
-  documentType = 'invoice',
+  documentType,
+  documentSettings
 }) => {
-  // DEBUG: Log pageMode to see what we actually receive
-  console.log('🎯 NeutralTemplate received pageMode:', pageMode);
-  
-  // 📋 DYNAMISCHE DOKUMENTTYP-KONFIGURATION mit centraler document-utils
-  const detectedType = detectDocumentType(data) || documentType || 'invoice';
-  const config = getDocumentTypeConfig(detectedType, color);
+  // 🌍 ÜBERSETZUNGSSYSTEM
+  const { t } = useDocumentTranslation(documentSettings?.language || 'de');
+
+  // 📋 KUNDENNUMMER - Bereits aus LivePreviewModal angereichert
+  const companyId = (data as any).companyId || '';
+  const displayCustomerNumber = data.customerNumber;
+
+  // � DYNAMISCHE DOKUMENTTYP-KONFIGURATION mit centraler document-utils
+  // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
+  const detectedType = documentType || detectDocumentType(data) || 'invoice';
+  const config = getTranslatedDocumentTypeConfig(detectedType, t, color);
+
+  // �🔍 DEBUG: Wichtige Werte loggen (nur in Development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 NeutralTemplate DEBUG:');
+    console.log('- companyId:', companyId);
+    console.log('- customerName:', data.customerName);
+    console.log('- documentSettings?.language:', documentSettings?.language);
+    console.log('- detectedType:', detectedType);
+    console.log('- config.title:', config.title);
+    console.log('- config.numberLabel:', config.numberLabel);
+    console.log('- data.customerNumber:', data.customerNumber);
+    console.log('- displayCustomerNumber:', displayCustomerNumber);
+    console.log('- data.contactPersonName:', data.contactPersonName);
+    console.log('- documentSettings.showCustomerNumber:', documentSettings?.showCustomerNumber);
+    console.log('- documentSettings.showContactPerson:', documentSettings?.showContactPerson);
+    console.log('- Full data object keys:', Object.keys(data));
+  }
+
+
   // Footer-Daten - ECHTE Daten verwenden, KEINE Fallbacks!
   const footerData = {
     companyName: (data as any).companyName,
@@ -52,7 +81,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
     companyCity: (data as any).companyCity,
     step1: (data as any).step1,
     step2: (data as any).step2,
-    step4: (data as any).step4,
+    step4: (data as any).step4
   };
 
   return (
@@ -60,221 +89,368 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
       className={`bg-white w-full max-w-[210mm] mx-auto ${pageMode === 'single' ? 'text-[10px] leading-tight' : 'text-xs'}`}
       style={{
         fontFamily: 'Arial, sans-serif',
-        ...(pageMode === 'single' && { maxHeight: '297mm', overflow: 'hidden' }),
-      }}
-    >
-      <style
+        ...(pageMode === 'single' && { maxHeight: '297mm', overflow: 'hidden' })
+      }}>
+
+            <style
         dangerouslySetInnerHTML={{
           __html: `
-          @page { size: A4; margin: 0; }
-          .pdf-page {
-            width: 210mm;
+          @media print {
+            .page-break { page-break-before: always; }
+            body { margin: 0; padding: 0; }
           }
-        `,
-        }}
-      />
+          ${documentSettings?.showFoldLines ? `
+          .pdf-page::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 105mm;
+            width: 5mm;
+            height: 1px;
+            background-color: #ccc;
+            z-index: 100;
+          }
+          .pdf-page::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 210mm;
+            width: 5mm;
+            height: 1px;
+            background-color: #ccc;
+            z-index: 100;
+          }
+          .pdf-page .fold-mark-hole {
+            position: absolute;
+            left: 0;
+            top: 148.5mm;
+            width: 3mm;
+            height: 3mm;
+            border: 1px solid #ccc;
+            border-radius: 50%;
+            z-index: 100;
+          }
+          ` : ''}
+        `
+        }} />
+
 
       {/* ========= SEITE 1 ========= */}
-      <div className="flex flex-col" style={{ minHeight: '297mm' }}>
+      <div className="pdf-page flex flex-col relative" style={{ minHeight: '297mm' }}>
+        {/* Wasserzeichen */}
+        {documentSettings?.showWatermark &&
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+            <div className="text-6xl font-bold text-gray-100 transform rotate-45 select-none">
+              {data.documentLabel}
+            </div>
+          </div>
+        }
+        {/* Seitenzahl */}
+        {documentSettings?.showPageNumbers &&
+        <div className="absolute bottom-4 right-6 text-xs text-gray-500 z-10">
+            Seite 1
+          </div>
+        }
         {/* Simple Header - Seite 1 */}
         <div className="p-6 pb-4">
           <div
             className="border-b-2 pb-6 mb-8"
-            style={{ minHeight: data.companyLogo ? '120px' : '80px', borderColor: config.color }}
-          >
+            style={{ minHeight: data.companyLogo ? '120px' : '80px', borderColor: config.color }}>
+
             <div className="flex justify-between items-start">
               {/* Firmenlogo links */}
               <div className="flex-shrink-0">
-                {data.companyLogo && (
-                  <img
-                    src={data.companyLogo}
-                    alt={data.companyName}
-                    className="h-16 w-auto object-contain"
-                    style={{ maxHeight: `${logoSize}px` }}
-                  />
-                )}
+                {data.companyLogo &&
+                <img
+                  src={data.companyLogo}
+                  alt={data.companyName}
+                  className="h-16 w-auto object-contain"
+                  style={{ maxHeight: `${logoSize}px` }} />
+
+                }
                 <h1 className="text-2xl font-medium mb-2 mt-4">{config.title}</h1>
                 <p className="text-gray-700">{config.numberLabel}: {data.invoiceNumber}</p>
               </div>
 
-              {/* Firmendaten rechts */}
-              <div className="text-right text-xs text-gray-700 leading-relaxed">
-                <div className="font-bold text-lg text-gray-900">{data.companyName}</div>
-                {data.companyAddressParsed.street && <div>{data.companyAddressParsed.street}</div>}
-                {(data.companyAddressParsed.postalCode || data.companyAddressParsed.city) && (
-                  <div>
-                    {data.companyAddressParsed.postalCode} {data.companyAddressParsed.city}
+              {/* Rechter Bereich mit QR-Code und Firmendaten */}
+              <div className="flex flex-col items-end space-y-2">
+                {/* QR-Code klein oben rechts */}
+                {documentSettings?.showQRCode &&
+                <div className="flex-shrink-0">
+                    {documentSettings?.qrCodeUrl ?
+                  <img
+                    src={documentSettings.qrCodeUrl}
+                    alt="QR Code"
+                    className="w-16 h-16 border border-gray-300" /> :
+
+
+                  <div className="w-16 h-16 bg-gray-200 border border-gray-300 flex items-center justify-center text-xs text-gray-500">
+                        QR
+                      </div>
+                  }
                   </div>
-                )}
-                {data.companyAddressParsed.country && (
+                }
+                
+                {/* Firmendaten */}
+                <div className="text-right text-xs text-gray-700 leading-relaxed">
+                  <div className="font-bold text-lg text-gray-900">{data.companyName}</div>
+                  {data.companyAddressParsed.street && <div>{data.companyAddressParsed.street}</div>}
+                  {(data.companyAddressParsed.postalCode || data.companyAddressParsed.city) &&
+                  <div>
+                      {data.companyAddressParsed.postalCode} {data.companyAddressParsed.city}
+                    </div>
+                  }
+                  {data.companyAddressParsed.country &&
                   <div>{data.companyAddressParsed.country}</div>
-                )}
-                {data.companyPhone && <div>Tel.: {data.companyPhone}</div>}
-                {data.companyEmail && <div>E-Mail: {data.companyEmail}</div>}
-                {data.companyWebsite && <div>Web: {data.companyWebsite}</div>}
+                  }
+                  {data.companyPhone && <div>Tel.: {data.companyPhone}</div>}
+                  {data.companyEmail && <div>E-Mail: {data.companyEmail}</div>}
+                  {data.companyWebsite && <div>Web: {data.companyWebsite}</div>}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Customer and Document Info */}
           <div className="grid grid-cols-2 gap-8 mb-8">
+            {data.customerName &&
             <div>
-              <div className="font-semibold mb-2">{config.recipientLabel}:</div>
-              <div className="space-y-1">
-                <div className="font-medium">{data.customerName}</div>
-                {data.customerAddressParsed.street && (
-                  <div>{data.customerAddressParsed.street}</div>
-                )}
-                {(data.customerAddressParsed.postalCode || data.customerAddressParsed.city) && (
-                  <div>
-                    {data.customerAddressParsed.postalCode} {data.customerAddressParsed.city}
-                  </div>
-                )}
-                {data.customerAddressParsed.country && (
-                  <div>{data.customerAddressParsed.country}</div>
-                )}
-                {data.customerVatId && <div>USt-IdNr.: {data.customerVatId}</div>}
+                <div className="font-semibold mb-2">{config.recipientLabel}:</div>
+                <div className="space-y-1">
+                  <div className="font-medium">{data.customerName}</div>
+                  {data.customerAddressParsed.street &&
+                <div>{data.customerAddressParsed.street}</div>
+                }
+                  {(data.customerAddressParsed.postalCode || data.customerAddressParsed.city) &&
+                <div>
+                      {data.customerAddressParsed.postalCode} {data.customerAddressParsed.city}
+                    </div>
+                }
+                  {data.customerAddressParsed.country &&
+                <div>{data.customerAddressParsed.country}</div>
+                }
+                  {data.customerVatId && <div>USt-IdNr.: {data.customerVatId}</div>}
+
+
+
+                  {/* Kundennummer basierend auf documentSettings */}
+                  {documentSettings?.showCustomerNumber && displayCustomerNumber &&
+                <div>Kundennr.: {displayCustomerNumber}</div>
+                }
+                  {/* Kontaktperson basierend auf documentSettings */}
+                  {documentSettings?.showContactPerson && data.contactPersonName &&
+                <div>Kontakt: {data.contactPersonName}</div>
+                }
+                </div>
               </div>
-            </div>
+            }
 
             <div>
               <div className="font-semibold mb-2">Dokumentdetails:</div>
               <div className="space-y-1">
-                <div>{config.numberLabel}: {data.invoiceNumber}</div>
-                <div>{config.dateLabel}: {formatDate(data.invoiceDate)}</div>
-                {config.showDueDate && (
-                  <div>{config.dueDateLabel}: {formatDate(data.dueDate)}</div>
-                )}
-                {config.showPaymentTerms && (
-                  <div>Zahlungsziel: {data.paymentTerms}</div>
-                )}
+                <div>{config.numberLabel}: {
+                  detectedType === 'quote' ?
+                  data.quoteNumber || data.documentNumber || data.title || data.invoiceNumber || 'AN-000' :
+                  data.invoiceNumber || data.documentNumber || data.title || 'RE-000'
+                  }</div>
+                <div>{config.dateLabel}: {formatDate(
+                    detectedType === 'quote' ?
+                    data.quoteDate || data.date || data.invoiceDate || new Date().toISOString().split('T')[0] :
+                    data.invoiceDate || data.date || new Date().toISOString().split('T')[0]
+                  )}</div>
+                {config.showDueDate &&
+                <div>{config.dueDateLabel}: {(() => {
+                    const fallbackDate = formatDate(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+                    const targetDate = detectedType === 'quote' ?
+                      (data.validUntil || data.dueDate || fallbackDate) :
+                      (data.dueDate || data.validUntil || fallbackDate);
+                    // Wenn es wie YYYY-MM-DD aussieht, nochmals formatieren, ansonsten direkt verwenden
+                    return targetDate.match(/^\d{4}-\d{2}-\d{2}$/) ? formatDate(targetDate) : targetDate;
+                  })()}</div>
+                }
+                {config.showPaymentTerms &&
+                <div>Zahlungsziel: {data.paymentTerms}</div>
+                }
               </div>
             </div>
           </div>
 
           {/* Header Text (Kopftext) */}
-          {data.headerText && (
-            <div
-              className="mb-6 p-4 bg-gray-50 rounded-lg border-l-4"
-              style={{ borderColor: config.color }}
-            >
+          {data.headerText &&
+          <div
+            className="mb-6 p-4 bg-gray-50 rounded-lg border-l-4"
+            style={{ borderColor: config.color }}>
+
               <div
-                className="text-sm text-gray-700 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: data.headerText }}
-              />
+              className="text-sm text-gray-700 leading-relaxed"
+              dangerouslySetInnerHTML={{
+                __html: replacePlaceholders(
+                  data.headerText,
+                  data,
+                  documentSettings?.language || 'de'
+                )
+              }} />
+
             </div>
-          )}
+          }
 
           <div className="border-t-2 mb-4" style={{ borderColor: color }}></div>
         </div>
 
         {/* Items Table Seite 1 */}
         <div className="px-6 flex-1">
-          <ItemsTable data={data} color={config.color} variant="neutral" />
+          <ItemsTable
+            data={data}
+            color={config.color}
+            variant="neutral"
+            showArticleNumber={documentSettings?.showArticleNumber}
+            showVATPerPosition={documentSettings?.showVATPerPosition}
+            language={documentSettings?.language || 'de'} />
+
 
           {/* Totals und Footer NUR bei einseitigem Modus */}
-          {pageMode === 'single' && (
-            <>
+          {pageMode === 'single' &&
+          <>
               {/* Totals */}
               <div className="flex justify-between items-start gap-8 mb-8 mt-8">
                 <div className="flex-1 space-y-4">
-                  <TaxRulesInfo data={data} color={color} />
+                  <TaxRulesInfo data={data} color={color} language={documentSettings?.language || 'de'} />
                 </div>
-                <TotalsDisplay data={data} color={color} variant="standard" />
+                <TotalsDisplay data={data} color={color} variant="standard" language={documentSettings?.language || 'de'} />
               </div>
 
               {/* FooterText */}
-              <FooterText data={data} variant="standard" documentType={detectedType} />
+              <FooterText data={data} language={data.language || "de"} variant="standard" documentType={detectedType} />
+              
+              {/* EPC-QR-Code */}
+              {documentSettings?.epcQrCodeUrl &&
+            <div className="mt-2">
+                  <img
+                src={documentSettings.epcQrCodeUrl}
+                alt="EPC-QR-Code"
+                className="w-12 h-12" />
+
+                </div>
+            }
             </>
-          )}
+          }
         </div>
 
+
+
         {/* FOOTER auf Seite 1 - IMMER bei Single, AUCH bei Multi */}
+        {documentSettings?.showFooter !== false &&
         <div className="bg-white p-2 mt-1">
-          <SimpleFooter data={data} color={color} />
-        </div>
+            <SimpleFooter data={data} color={color} />
+          </div>
+        }
       </div>
 
       {/* ========= AUTOMATISCHE EIN-/MEHRSEITIG LOGIK ========= */}
       {/* Zweite Seite IMMER bei mehrseitigem Modus */}
-      {pageMode !== 'single' && (
-        <>
+      {pageMode !== 'single' &&
+      <>
           {/* ========= SEITENUMBRUCH ========= */}
           <div style={{ pageBreakBefore: 'always', height: '0' }}></div>
 
           {/* ========= SEITE 2 (nur bei > 3 Items) ========= */}
           <div
-            className="flex flex-col bg-white"
-            style={{
-              minHeight: '297mm',
-              height: '297mm',
-              pageBreakAfter: 'avoid',
-              breakAfter: 'avoid',
-            }}
-          >
+          className="pdf-page flex flex-col bg-white"
+          style={{
+            minHeight: '297mm',
+            height: '297mm',
+            pageBreakAfter: 'avoid',
+            breakAfter: 'avoid'
+          }}>
+
+            {/* Seitenzahl Seite 2 */}
+            {documentSettings?.showPageNumbers &&
+          <div className="absolute bottom-4 right-6 text-xs text-gray-500 z-10">
+                Seite 2
+              </div>
+          }
             {/* Header Seite 2 */}
             <div className="p-6 pb-4">
               <div
-                className="border-b-2 pb-6 mb-8"
-                style={{ minHeight: data.companyLogo ? '120px' : '80px', borderColor: color }}
-              >
+              className="border-b-2 pb-6 mb-8"
+              style={{ minHeight: data.companyLogo ? '120px' : '80px', borderColor: color }}>
+
                 <div className="flex justify-between items-start">
                   <div className="flex-shrink-0">
-                    {data.companyLogo && (
-                      <img
-                        src={data.companyLogo}
-                        alt={data.companyName}
-                        className="h-16 w-auto object-contain"
-                        style={{ maxHeight: `${logoSize}px` }}
-                      />
-                    )}
+                    {data.companyLogo &&
+                  <img
+                    src={data.companyLogo}
+                    alt={data.companyName}
+                    className="h-16 w-auto object-contain"
+                    style={{ maxHeight: `${logoSize}px` }} />
+
+                  }
                     <h1 className="text-2xl font-medium mb-2 mt-4">{data.documentLabel}</h1>
                     <p className="text-gray-700">Nr. {data.invoiceNumber}</p>
                   </div>
 
                   <div className="text-right text-xs text-gray-700 leading-relaxed">
                     <div className="font-bold text-lg text-gray-900">{data.companyName}</div>
-                    {data.companyAddressParsed.street && (
-                      <div>{data.companyAddressParsed.street}</div>
-                    )}
-                    {(data.companyAddressParsed.postalCode || data.companyAddressParsed.city) && (
-                      <div>
+                    {data.companyAddressParsed.street &&
+                  <div>{data.companyAddressParsed.street}</div>
+                  }
+                    {(data.companyAddressParsed.postalCode || data.companyAddressParsed.city) &&
+                  <div>
                         {data.companyAddressParsed.postalCode} {data.companyAddressParsed.city}
                       </div>
-                    )}
-                    {data.companyAddressParsed.country && (
-                      <div>{data.companyAddressParsed.country}</div>
-                    )}
+                  }
+                    {data.companyAddressParsed.country &&
+                  <div>{data.companyAddressParsed.country}</div>
+                  }
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-8 mb-8">
-                <div>
-                  <div className="font-semibold mb-2">Rechnungsempfänger:</div>
-                  <div className="space-y-1">
-                    <div className="font-medium">{data.customerName}</div>
-                    {data.customerAddressParsed.street && (
-                      <div>{data.customerAddressParsed.street}</div>
-                    )}
-                    {(data.customerAddressParsed.postalCode || data.customerAddressParsed.city) && (
-                      <div>
-                        {data.customerAddressParsed.postalCode} {data.customerAddressParsed.city}
-                      </div>
-                    )}
-                    {data.customerAddressParsed.country && (
-                      <div>{data.customerAddressParsed.country}</div>
-                    )}
-                    {data.customerVatId && <div>USt-IdNr.: {data.customerVatId}</div>}
+                {data.customerName &&
+              <div>
+                    <div className="font-semibold mb-2">Rechnungsempfänger:</div>
+                    <div className="space-y-1">
+                      <div className="font-medium">{data.customerName}</div>
+                      {data.customerAddressParsed.street &&
+                  <div>{data.customerAddressParsed.street}</div>
+                  }
+                      {(data.customerAddressParsed.postalCode || data.customerAddressParsed.city) &&
+                  <div>
+                          {data.customerAddressParsed.postalCode} {data.customerAddressParsed.city}
+                        </div>
+                  }
+                      {data.customerAddressParsed.country &&
+                  <div>{data.customerAddressParsed.country}</div>
+                  }
+                      {data.customerVatId && <div>USt-IdNr.: {data.customerVatId}</div>}
+                    </div>
                   </div>
-                </div>
+              }
 
                 <div>
-                  <div className="font-semibold mb-2">Rechnungsdetails:</div>
+                  <div className="font-semibold mb-2">{config.title}details:</div>
                   <div className="space-y-1">
-                    <div>Nr. {data.invoiceNumber}</div>
-                    <div>Rechnungsdatum: {formatDate(data.invoiceDate)}</div>
-                    <div>Fälligkeitsdatum: {formatDate(data.dueDate)}</div>
+                    <div>Nr. {
+                    detectedType === 'quote' ?
+                    data.quoteNumber || data.documentNumber || data.title || data.invoiceNumber || 'AN-000' :
+                    data.invoiceNumber || data.documentNumber || data.title || 'RE-000'
+                    }</div>
+                    <div>{config.dateLabel}: {formatDate(
+                      detectedType === 'quote' ?
+                      data.quoteDate || data.date || data.invoiceDate || new Date().toISOString().split('T')[0] :
+                      data.invoiceDate || data.date || new Date().toISOString().split('T')[0]
+                    )}</div>
+                    {config.showDueDate &&
+                  <div>{config.dueDateLabel}: {(() => {
+                      const fallbackDate = formatDate(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+                      const targetDate = detectedType === 'quote' ?
+                        (data.validUntil || data.dueDate || fallbackDate) :
+                        (data.dueDate || data.validUntil || fallbackDate);
+                      // Wenn es wie YYYY-MM-DD aussieht, nochmals formatieren, ansonsten direkt verwenden
+                      return targetDate.match(/^\d{4}-\d{2}-\d{2}$/) ? formatDate(targetDate) : targetDate;
+                    })()}</div>
+                  }
                   </div>
                 </div>
               </div>
@@ -294,24 +470,39 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
               {/* Totals */}
               <div className="flex justify-between items-start gap-8 mb-8">
                 <div className="flex-1 space-y-4">
-                  <TaxRulesInfo data={data} color={color} />
+                  <TaxRulesInfo data={data} color={color} language={documentSettings?.language || 'de'} />
                 </div>
-                <TotalsDisplay data={data} color={color} variant="standard" />
+                <TotalsDisplay data={data} color={color} variant="standard" language={documentSettings?.language || 'de'} />
               </div>
 
-              <FooterText data={data} variant="standard" documentType={detectedType} />
+              <FooterText data={data} language={data.language || "de"} variant="standard" documentType={detectedType} />
+              
+              {/* EPC-QR-Code */}
+              {documentSettings?.epcQrCodeUrl &&
+            <div className="mt-2">
+                  <img
+                src={documentSettings.epcQrCodeUrl}
+                alt="EPC-QR-Code"
+                className="w-12 h-12" />
+
+                </div>
+            }
             </div>
 
             {/* SPACER um Seite zu füllen */}
             <div className="flex-1 bg-white"></div>
 
             {/* === FOOTER AM ENDE DER LETZTEN SEITE === */}
-            <div className="bg-white p-2">
-              <SimpleFooter data={data} color={color} />
-            </div>
+            {documentSettings?.showFooter !== false &&
+          <div className="bg-white p-2">
+                <SimpleFooter data={data} color={color} />
+              </div>
+          }
           </div>
         </>
-      )}
-    </div>
-  );
+      }
+
+
+    </div>);
+
 };

@@ -2,18 +2,26 @@ import React from 'react';
 import { formatCurrency } from '@/lib/utils';
 import { ProcessedPDFData } from '@/hooks/pdf/usePDFTemplateData';
 import { PDF_PAGE_STYLES } from '@/utils/pdf-page-styles';
+import { useDocumentTranslation } from '@/hooks/pdf/useDocumentTranslation';
 
 interface ItemsTableProps {
   data: ProcessedPDFData;
   color?: string;
   variant?: 'standard' | 'elegant' | 'technical' | 'neutral' | 'dynamic';
+  showArticleNumber?: boolean;
+  showVATPerPosition?: boolean;
+  language?: string;
 }
 
 export const ItemsTable: React.FC<ItemsTableProps> = ({
   data,
   color = '#14ad9f',
   variant = 'standard',
+  showArticleNumber = false,
+  showVATPerPosition = false,
+  language = 'de',
 }) => {
+  const { t } = useDocumentTranslation(language);
   if (!data.realItems || data.realItems.length === 0) {
     return <div className="text-center py-8 text-gray-500">Keine Positionen vorhanden</div>;
   }
@@ -28,14 +36,16 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
           <table className="w-full bg-white relative">
             <thead style={PDF_PAGE_STYLES.tableHeader}>
               <tr style={{ backgroundColor: color }}>
-                <th className="text-white py-4 px-3 text-left font-light">Pos.</th>
-                <th className="text-white py-4 px-3 text-left font-light">Beschreibung</th>
-                <th className="text-white py-4 px-3 text-right font-light">Menge</th>
-                <th className="text-white py-4 px-3 text-right font-light">Einzelpreis</th>
+                <th className="text-white py-4 px-3 text-left font-light">{t('position')}</th>
+                {showArticleNumber && <th className="text-white py-4 px-3 text-left font-light">{t('articleNumber')}</th>}
+                <th className="text-white py-4 px-3 text-left font-light">{t('description')}</th>
+                <th className="text-white py-4 px-3 text-right font-light">{t('quantity')}</th>
+                <th className="text-white py-4 px-3 text-right font-light">{t('unitPrice')}</th>
                 {hasAnyDiscount && (
-                  <th className="text-white py-4 px-3 text-right font-light">Rabatt</th>
+                  <th className="text-white py-4 px-3 text-right font-light">{t('discount')}</th>
                 )}
-                <th className="text-white py-4 px-3 text-right font-light">Betrag</th>
+                {showVATPerPosition && <th className="text-white py-4 px-3 text-right font-light">{t('vatRate')}</th>}
+                <th className="text-white py-4 px-3 text-right font-light">{t('amount')}</th>
               </tr>
             </thead>
             <tbody>
@@ -53,6 +63,11 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                     style={PDF_PAGE_STYLES.tableRow}
                   >
                     <td className="py-4 px-3 text-sm">{index + 1}</td>
+                    {showArticleNumber && (
+                      <td className="py-4 px-3 text-sm text-gray-600">
+                        {(item as any).articleNumber || `ART-${String(index + 1).padStart(3, '0')}`}
+                      </td>
+                    )}
                     <td className="py-4 px-3 text-sm">
                       <div className="font-medium">{item.description}</div>
                       {(item as any).unit && (
@@ -66,6 +81,11 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                     {hasAnyDiscount && (
                       <td className="py-4 px-3 text-sm text-right text-red-600">
                         {discountPercent > 0 ? `-${discountPercent}%` : ''}
+                      </td>
+                    )}
+                    {showVATPerPosition && (
+                      <td className="py-4 px-3 text-sm text-right">
+                        {(item as any).vatRate || (data as any).taxRate || '19'}%
                       </td>
                     )}
                     <td className="py-4 px-3 text-sm text-right font-medium">
@@ -88,11 +108,13 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
           <thead style={PDF_PAGE_STYLES.tableHeader}>
             <tr className="bg-gray-900 text-white">
               <th className="py-3 px-2 text-left font-mono text-xs">ID</th>
-              <th className="py-3 px-2 text-left font-mono text-xs">DESCRIPTION</th>
-              <th className="py-3 px-2 text-right font-mono text-xs">QTY</th>
-              <th className="py-3 px-2 text-right font-mono text-xs">PRICE</th>
-              {hasAnyDiscount && <th className="py-3 px-2 text-right font-mono text-xs">DISC</th>}
-              <th className="py-3 px-2 text-right font-mono text-xs">AMOUNT</th>
+              {showArticleNumber && <th className="py-3 px-2 text-left font-mono text-xs">{t('articleNumber').toUpperCase()}</th>}
+              <th className="py-3 px-2 text-left font-mono text-xs">{t('description').toUpperCase()}</th>
+              <th className="py-3 px-2 text-right font-mono text-xs">{t('quantity').toUpperCase()}</th>
+              <th className="py-3 px-2 text-right font-mono text-xs">{t('unitPrice').toUpperCase()}</th>
+              {hasAnyDiscount && <th className="py-3 px-2 text-right font-mono text-xs">{t('discount').toUpperCase()}</th>}
+              {showVATPerPosition && <th className="py-3 px-2 text-right font-mono text-xs">{t('vatRate').toUpperCase()}</th>}
+              <th className="py-3 px-2 text-right font-mono text-xs">{t('amount').toUpperCase()}</th>
             </tr>
           </thead>
           <tbody>
@@ -111,6 +133,11 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   <td className="py-2 px-2 text-xs font-mono">
                     {String(index + 1).padStart(3, '0')}
                   </td>
+                  {showArticleNumber && (
+                    <td className="py-2 px-2 text-xs font-mono text-gray-600">
+                      {(item as any).articleNumber || `ART${String(index + 1).padStart(3, '0')}`}
+                    </td>
+                  )}
                   <td className="py-2 px-2 text-xs font-mono">
                     <div>{item.description}</div>
                     {(item as any).unit && (
@@ -124,6 +151,11 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   {hasAnyDiscount && (
                     <td className="py-2 px-2 text-xs text-right font-mono text-red-600">
                       {discountPercent > 0 ? `-${discountPercent}%` : 'N/A'}
+                    </td>
+                  )}
+                  {showVATPerPosition && (
+                    <td className="py-2 px-2 text-xs text-right font-mono">
+                      {(item as any).vatRate || (data as any).taxRate || '19'}%
                     </td>
                   )}
                   <td className="py-2 px-2 text-xs text-right font-mono font-bold">
@@ -144,11 +176,13 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
       <table className="w-full border-collapse">
         <thead style={PDF_PAGE_STYLES.tableHeader}>
           <tr style={{ backgroundColor: color ? `${color}15` : '#F4F2E5' }}>
-            <th className="border p-3 text-left">Beschreibung</th>
-            <th className="border p-3 text-center">Menge</th>
-            <th className="border p-3 text-right">Einzelpreis</th>
-            {hasAnyDiscount && <th className="border p-3 text-right">Rabatt %</th>}
-            <th className="border p-3 text-right">Gesamtpreis</th>
+            {showArticleNumber && <th className="border p-3 text-left">{t('articleNumber')}</th>}
+            <th className="border p-3 text-left">{t('description')}</th>
+            <th className="border p-3 text-center">{t('quantity')}</th>
+            <th className="border p-3 text-right">{t('unitPrice')}</th>
+            {hasAnyDiscount && <th className="border p-3 text-right">{t('discount')} %</th>}
+            {showVATPerPosition && <th className="border p-3 text-right">{t('vatRate')}</th>}
+            <th className="border p-3 text-right">{t('total')}</th>
           </tr>
         </thead>
         <tbody>
@@ -163,9 +197,14 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
 
             return (
               <tr key={index} style={PDF_PAGE_STYLES.tableRow}>
+                {showArticleNumber && (
+                  <td className="border p-3 text-sm text-gray-600">
+                    {(item as any).articleNumber || `ART-${String(index + 1).padStart(3, '0')}`}
+                  </td>
+                )}
                 <td className="border p-3">{item.description}</td>
                 <td className="border p-3 text-center">
-                  {item.quantity} {(item as any).unit || 'Stk'}
+                  {item.quantity} {(item as any).unit || t('piece')}
                 </td>
                 <td className="border p-3 text-right">{formatCurrency(item.unitPrice)}</td>
                 {hasAnyDiscount && (
@@ -175,6 +214,11 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                     ) : (
                       '-'
                     )}
+                  </td>
+                )}
+                {showVATPerPosition && (
+                  <td className="border p-3 text-right text-sm">
+                    {(item as any).vatRate || (data as any).taxRate || '19'}%
                   </td>
                 )}
                 <td className="border p-3 text-right">
