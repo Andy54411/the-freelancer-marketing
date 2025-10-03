@@ -126,3 +126,6 @@ export const storage = (() => {
     return null;
   }
 })();
+
+// Export admin for compatibility
+export { admin };
