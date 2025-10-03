@@ -77,7 +77,18 @@ export function InvoiceListView({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [sortField, setSortField] = useState<'dueDate' | 'number' | 'date' | 'amount'>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const router = useRouter();
+
+  const handleSort = (field: 'dueDate' | 'number' | 'date' | 'amount') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
 
   const isOverdue = (invoice: InvoiceData) => {
     if (invoice.status === 'paid') return false;
@@ -266,6 +277,28 @@ export function InvoiceListView({
     if (endDate && new Date(invoice.createdAt) > new Date(endDate)) return false;
 
     return true;
+  }).sort((a, b) => {
+    // Sort filtered invoices
+    let comparison = 0;
+    
+    switch (sortField) {
+      case 'dueDate':
+        comparison = new Date(a.dueDate || 0).getTime() - new Date(b.dueDate || 0).getTime();
+        break;
+      case 'number':
+        comparison = (a.invoiceNumber || a.number || '').localeCompare(b.invoiceNumber || b.number || '');
+        break;
+      case 'date':
+        const dateA = a.date || a.issueDate || a.createdAt;
+        const dateB = b.date || b.issueDate || b.createdAt;
+        comparison = new Date(dateA || 0).getTime() - new Date(dateB || 0).getTime();
+        break;
+      case 'amount':
+        comparison = (a.amount || 0) - (b.amount || 0);
+        break;
+    }
+    
+    return sortDirection === 'asc' ? comparison : -comparison;
   });
 
   const tabs = [
@@ -369,7 +402,7 @@ export function InvoiceListView({
                       <SelectValue placeholder="Alle Kontakte" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Alle Kontakte</SelectItem>
+                      <SelectItem value="all">Alle Kontakte</SelectItem>
                       {/* Would need to populate with actual contacts */}
                     </SelectContent>
                   </Select>
@@ -414,7 +447,7 @@ export function InvoiceListView({
                       <SelectValue placeholder="Alle" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Alle</SelectItem>
+                      <SelectItem value="all">Alle</SelectItem>
                       <SelectItem value="sepa">SEPA Überweisung</SelectItem>
                       <SelectItem value="cash">Bargeld</SelectItem>
                       <SelectItem value="card">Kreditkarte</SelectItem>
@@ -454,11 +487,31 @@ export function InvoiceListView({
               <TableHeader>
                 <TableRow>
                   <TableHead>Status</TableHead>
-                  <TableHead>Fälligkeit</TableHead>
-                  <TableHead>Rechnungsnr.</TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('dueDate')}
+                  >
+                    Fälligkeit {sortField === 'dueDate' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('number')}
+                  >
+                    Rechnungsnr. {sortField === 'number' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </TableHead>
                   <TableHead>Kunde</TableHead>
-                  <TableHead>Datum</TableHead>
-                  <TableHead className="text-right">Betrag (netto)</TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('date')}
+                  >
+                    Datum {sortField === 'date' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </TableHead>
+                  <TableHead 
+                    className="text-right cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('amount')}
+                  >
+                    Betrag (netto) {sortField === 'amount' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </TableHead>
                   <TableHead className="text-right">Offen (brutto)</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -480,19 +533,25 @@ export function InvoiceListView({
                         </span>
                       </TableCell>
                       <TableCell>
-                        {invoice.status === 'draft'
-                          ? 'Entwurf'
-                          : invoice.number ||
-                            invoice.invoiceNumber ||
-                            (invoice.sequentialNumber && invoice.sequentialNumber > 0
-                              ? `R-${new Date().getFullYear()}-${String(invoice.sequentialNumber).padStart(3, '0')}`
-                              : `R-${invoice.id.substring(0, 8)}`)}
+                        {invoice.number ||
+                          invoice.invoiceNumber ||
+                          (invoice.sequentialNumber && invoice.sequentialNumber > 0
+                            ? `R-${new Date().getFullYear()}-${String(invoice.sequentialNumber).padStart(3, '0')}`
+                            : invoice.status === 'draft'
+                            ? 'Entwurf'
+                            : `R-${invoice.id.substring(0, 8)}`)}
                       </TableCell>
                       <TableCell>{invoice.customerName}</TableCell>
                       <TableCell>
-                        {new Date(invoice.createdAt).toLocaleDateString('de-DE')}
+                        {invoice.date 
+                          ? new Date(invoice.date).toLocaleDateString('de-DE')
+                          : invoice.issueDate
+                          ? new Date(invoice.issueDate).toLocaleDateString('de-DE')
+                          : invoice.createdAt
+                          ? new Date(invoice.createdAt).toLocaleDateString('de-DE')
+                          : '-'}
                       </TableCell>
-                      <TableCell className="text-right">{formatCurrency(invoice.total)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(invoice.amount || 0)}</TableCell>
                       <TableCell className="text-right">
                         {invoice.status === 'paid' ? '0,00 €' : formatCurrency(invoice.total)}
                       </TableCell>

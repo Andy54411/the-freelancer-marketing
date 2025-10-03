@@ -215,7 +215,7 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
           </div>
 
           {/* Header Text (Kopftext) */}
-          {data.headerText && (
+          {data.processedHeaderText && (
             <div
               className="mb-6 p-4 bg-gray-50 rounded-lg border-l-4"
               style={{ borderColor: color }}
@@ -223,11 +223,19 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
               <div
                 className="text-sm text-gray-700 leading-relaxed"
                 dangerouslySetInnerHTML={{
-                  __html: replacePlaceholders(
-                    data.headerText,
-                    data,
-                    documentSettings?.language || 'de'
-                  ),
+                  __html: data.processedHeaderText,
+                }}
+              />
+            </div>
+          )}
+
+          {/* Head Text / Einleitung (processedHeadTextHtml) */}
+          {data.processedHeadTextHtml && (
+            <div className="mb-4">
+              <div
+                className="text-sm text-gray-700 leading-relaxed"
+                dangerouslySetInnerHTML={{
+                  __html: data.processedHeadTextHtml,
                 }}
               />
             </div>

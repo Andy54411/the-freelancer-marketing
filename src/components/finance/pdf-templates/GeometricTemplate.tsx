@@ -8,6 +8,7 @@ import { FooterText } from './common/FooterText';
 import { SimpleFooter } from './common/SimpleFooter';
 import type { DocumentType } from '@/lib/document-utils';
 import { getDocumentTypeConfig, detectDocumentType } from '@/lib/document-utils';
+import { useDocumentTranslation } from '@/hooks/pdf/useDocumentTranslation';
 import { replacePlaceholders } from '@/utils/placeholderSystem';
 
 interface GeometricTemplateProps {
@@ -31,11 +32,17 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
   // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
   const detectedType = documentType || detectDocumentType(data) || 'invoice';
   const config = getDocumentTypeConfig(detectedType, color);
+  
+  // Übersetzungsfunktion
+  const { t } = useDocumentTranslation(documentSettings?.language || 'de');
 
   return (
     <div
-      className="bg-white w-full max-w-[210mm] mx-auto text-xs"
-      style={{ fontFamily: 'Arial, sans-serif' }}
+      className={`bg-white w-full max-w-[210mm] mx-auto ${pageMode === 'single' ? 'text-[10px] leading-tight' : 'text-xs'}`}
+      style={{
+        fontFamily: 'Arial, sans-serif',
+        ...(pageMode === 'single' && { maxHeight: '297mm', overflow: 'hidden' }),
+      }}
     >
       <style
         dangerouslySetInnerHTML={{
@@ -84,8 +91,8 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
         }}
       />
 
-      {/* ========= SEITE 1 ========= */}
-      <div className="pdf-page flex flex-col">
+            {/* ========= SEITE 1 ========= */}
+      <div className="pdf-page flex flex-col relative" style={{ minHeight: '297mm' }}>
         {/* Header Seite 1 */}
         <div className="p-6 pb-4">
           <div
@@ -120,7 +127,7 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
           <div className="grid grid-cols-2 gap-8 mb-8">
             <div>
               <div className="font-semibold mb-3" style={{ color }}>
-                Rechnungsempfänger
+                {t('recipient')}
               </div>
               <div className="space-y-2">
                 <div className="font-medium text-lg">{data.customerName}</div>
@@ -136,20 +143,20 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
                   <div>{data.customerAddressParsed.country}</div>
                 )}
                 {data.customerVatId && (
-                  <div className="mt-2 text-sm">USt-IdNr.: {data.customerVatId}</div>
+                  <div className="mt-2 text-sm">{t('vatId')}: {data.customerVatId}</div>
                 )}
               </div>
             </div>
 
             <div>
               <div className="font-semibold mb-3" style={{ color }}>
-                Rechnungsdetails
+                {t('documentDetails')}
               </div>
               <div className="space-y-2">
-                <div>Rechnungsnr.: {data.invoiceNumber}</div>
-                <div>Datum: {formatDate(data.invoiceDate)}</div>
-                <div>Fälligkeitsdatum: {formatDate(data.dueDate)}</div>
-                <div>Zahlungsziel: {data.paymentTerms}</div>
+                <div>{config.numberLabel}: {data.invoiceNumber}</div>
+                <div>{t('date')}: {formatDate(data.invoiceDate)}</div>
+                <div>{t('dueDate')}: {formatDate(data.dueDate)}</div>
+                <div>{t('paymentTerms')}: {data.paymentTerms}</div>
               </div>
 
               {/* QR-Code unter Dokumentdetails */}
@@ -172,7 +179,7 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
           </div>
 
           {/* Header Text (Kopftext) */}
-          {data.headerText && (
+          {data.processedHeaderText && (
             <div
               className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-white border-l-4 rounded-r"
               style={{ borderColor: color }}
@@ -183,11 +190,19 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
               <div
                 className="text-sm text-gray-700 leading-relaxed"
                 dangerouslySetInnerHTML={{
-                  __html: replacePlaceholders(
-                    data.headerText,
-                    data,
-                    documentSettings?.language || 'de'
-                  ),
+                  __html: data.processedHeaderText,
+                }}
+              />
+            </div>
+          )}
+
+          {/* Head Text / Einleitung (processedHeadTextHtml) */}
+          {data.processedHeadTextHtml && (
+            <div className="mb-4">
+              <div
+                className="text-sm text-gray-700 leading-relaxed"
+                dangerouslySetInnerHTML={{
+                  __html: data.processedHeadTextHtml,
                 }}
               />
             </div>

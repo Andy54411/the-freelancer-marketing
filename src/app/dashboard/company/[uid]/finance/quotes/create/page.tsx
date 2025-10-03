@@ -86,7 +86,7 @@ import { UserPreferencesService } from '@/lib/userPreferences';
 import { TaxRuleType } from '@/types/taxRules';
 import { getAllCurrencies } from '@/data/currencies';
 import { QuickAddService } from '@/components/QuickAddService';
-import { getCustomers } from '@/utils/api/companyApi';
+import { getCustomers } from '@/utils/api/companyApi'
 import {
   Dialog,
   DialogContent,
@@ -1776,7 +1776,6 @@ export default function CreateQuotePage() {
 
   // Convert current form data for LivePreviewModal (SAME AS SendDocumentModal!)
   const buildInvoiceDataForPreview = (): QuoteType => {
-    // ✅ NUTZT EXAKT DIE GLEICHEN DATEN WIE SendDocumentModal!
     return buildPreviewData() as unknown as QuoteType;
   };
 

@@ -8,6 +8,7 @@ import { FooterText } from './common/FooterText';
 import { SimpleFooter } from './common/SimpleFooter';
 import type { DocumentType } from '@/lib/document-utils';
 import { getDocumentTypeConfig, detectDocumentType } from '@/lib/document-utils';
+import { useDocumentTranslation } from '@/hooks/pdf/useDocumentTranslation';
 import { replacePlaceholders } from '@/utils/placeholderSystem';
 
 interface TechnicalTemplateProps {
@@ -31,6 +32,9 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
   // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
   const detectedType = documentType || detectDocumentType(data) || 'invoice';
   const config = getDocumentTypeConfig(detectedType, color);
+  
+  // Übersetzungsfunktion
+  const { t } = useDocumentTranslation(documentSettings?.language || 'de');
 
   return (
     <div
@@ -161,7 +165,7 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
         </div>
 
         {/* Header Text (Kopftext) */}
-        {data.headerText && (
+        {data.processedHeaderText && (
           <div className="mx-4 mb-2 p-2 bg-gray-50 border" style={{ borderColor: color }}>
             <div className="font-bold mb-1 border-b pb-1" style={{ borderColor: color }}>
               HEADER_TEXT:
@@ -169,11 +173,19 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
             <div
               className="text-sm leading-relaxed"
               dangerouslySetInnerHTML={{
-                __html: replacePlaceholders(
-                  data.headerText,
-                  data,
-                  documentSettings?.language || 'de'
-                ),
+                __html: data.processedHeaderText,
+              }}
+            />
+          </div>
+        )}
+
+        {/* Head Text / Einleitung (processedHeadTextHtml) */}
+        {data.processedHeadTextHtml && (
+          <div className="mx-4 mb-2">
+            <div
+              className="text-sm leading-relaxed"
+              dangerouslySetInnerHTML={{
+                __html: data.processedHeadTextHtml,
               }}
             />
           </div>

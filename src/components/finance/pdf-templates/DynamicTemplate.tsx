@@ -8,6 +8,7 @@ import { FooterText } from './common/FooterText';
 import { SimpleFooter } from './common/SimpleFooter';
 import type { DocumentType } from '@/lib/document-utils';
 import { getDocumentTypeConfig, detectDocumentType } from '@/lib/document-utils';
+import { useDocumentTranslation } from '@/hooks/pdf/useDocumentTranslation';
 
 interface DynamicTemplateProps {
   data: ProcessedPDFData;
@@ -30,11 +31,17 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
   // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
   const detectedType = documentType || detectDocumentType(data) || 'invoice';
   const config = getDocumentTypeConfig(detectedType, color);
+  
+  // Übersetzungsfunktion
+  const { t } = useDocumentTranslation(documentSettings?.language || 'de');
 
   return (
     <div
-      className="bg-white w-full max-w-[210mm] mx-auto text-xs overflow-hidden relative"
-      style={{ fontFamily: 'Arial, sans-serif' }}
+      className={`bg-white w-full max-w-[210mm] mx-auto ${pageMode === 'single' ? 'text-[10px] leading-tight' : 'text-xs'} overflow-hidden relative`}
+      style={{
+        fontFamily: 'Arial, sans-serif',
+        ...(pageMode === 'single' && { maxHeight: '297mm', overflow: 'hidden' }),
+      }}
     >
       <style
         dangerouslySetInnerHTML={{
@@ -79,12 +86,26 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
           `
               : ''
           }
+          /* Dynamic Template Styles */
+          .dynamic-bg {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          }
+          .dynamic-shape {
+            position: absolute;
+            border-radius: 50%;
+            background: ${color};
+            opacity: 0.05;
+            z-index: 0;
+          }
+          .dynamic-accent {
+            background-color: ${color};
+          }
         `,
         }}
       />
 
       {/* ========= SEITE 1 ========= */}
-      <div className="pdf-page flex flex-col dynamic-bg">
+      <div className="pdf-page flex flex-col dynamic-bg" style={{ minHeight: '297mm' }}>
         {/* Dynamic shapes background */}
         <div
           className="dynamic-shape"
@@ -146,7 +167,7 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
               style={{ borderColor: color }}
             >
               <div className="font-semibold mb-3 text-lg" style={{ color }}>
-                Rechnungsempfänger
+                {t('recipient')}
               </div>
               <div className="space-y-2">
                 <div className="font-medium text-lg">{data.customerName}</div>
@@ -162,7 +183,7 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
                   <div>{data.customerAddressParsed.country}</div>
                 )}
                 {data.customerVatId && (
-                  <div className="mt-2 text-sm">USt-IdNr.: {data.customerVatId}</div>
+                  <div className="mt-2 text-sm">{t('vatId')}: {data.customerVatId}</div>
                 )}
               </div>
             </div>
@@ -172,17 +193,17 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
               style={{ borderColor: color }}
             >
               <div className="font-semibold mb-3 text-lg" style={{ color }}>
-                Rechnungsdetails
+                {t('documentDetails')}
               </div>
               <div className="space-y-2">
                 <div>
-                  <span className="font-medium">Datum:</span> {formatDate(data.invoiceDate)}
+                  <span className="font-medium">{t('date')}:</span> {formatDate(data.invoiceDate)}
                 </div>
                 <div>
-                  <span className="font-medium">Fälligkeitsdatum:</span> {formatDate(data.dueDate)}
+                  <span className="font-medium">{t('dueDate')}:</span> {formatDate(data.dueDate)}
                 </div>
                 <div>
-                  <span className="font-medium">Zahlungsziel:</span> {data.paymentTerms}
+                  <span className="font-medium">{t('paymentTerms')}:</span> {data.paymentTerms}
                 </div>
               </div>
 
@@ -204,6 +225,30 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
               )}
             </div>
           </div>
+
+          {/* Header Text (Kopftext) */}
+          {data.processedHeaderText && (
+            <div className="mb-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border-l-4" style={{ borderColor: color }}>
+              <div
+                className="text-sm text-gray-700 leading-relaxed"
+                dangerouslySetInnerHTML={{
+                  __html: data.processedHeaderText,
+                }}
+              />
+            </div>
+          )}
+
+          {/* Head Text / Einleitung (processedHeadTextHtml) */}
+          {data.processedHeadTextHtml && (
+            <div className="mb-4">
+              <div
+                className="text-sm text-gray-700 leading-relaxed"
+                dangerouslySetInnerHTML={{
+                  __html: data.processedHeadTextHtml,
+                }}
+              />
+            </div>
+          )}
 
           <div className="flex items-center justify-center mb-6">
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent" />

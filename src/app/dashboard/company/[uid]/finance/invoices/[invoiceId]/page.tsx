@@ -30,11 +30,14 @@ import {
   Calendar,
   Minus,
   Sparkles,
+  Eye,
 } from 'lucide-react';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import { InvoiceTemplateRenderer } from '@/components/finance/InvoiceTemplates';
 import { SendInvoiceDialog } from '@/components/finance/SendInvoiceDialog';
+import { LivePreviewModal } from '@/components/finance/LivePreviewModal';
+import { InlinePreview } from '@/components/finance/InlinePreview';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, storage } from '@/firebase/clients';
 import { ref, getDownloadURL, listAll } from 'firebase/storage';
@@ -71,6 +74,7 @@ export default function InvoiceDetailPage() {
   const [shouldUsePdfJs, setShouldUsePdfJs] = useState(true);
   const [newTag, setNewTag] = useState('');
   const [isAddingTag, setIsAddingTag] = useState(false);
+  const [showLivePreview, setShowLivePreview] = useState(false);
 
   useEffect(() => {
     if (user && user.uid === uid && invoiceId) {
@@ -84,42 +88,7 @@ export default function InvoiceDetailPage() {
     }
   }, [invoice]);
 
-  const generateAndStorePdf = async () => {
-    if (!user || !invoice) return null;
-
-    try {
-      // PDF über die Firestore API generieren und speichern
-      const response = await fetch('/api/generate-invoice-pdf-from-firestore', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          companyId: uid,
-          invoiceId: invoiceId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unbekannter Fehler' }));
-        console.error('PDF Generation API Error:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData,
-        });
-        throw new Error(
-          `PDF-Generierung fehlgeschlagen: ${errorData.error || response.statusText}`
-        );
-      }
-
-      const result = await response.json();
-
-      return result.pdfUrl; // Signed URL zurückgeben
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      return null;
-    }
-  };
+  // Diese Funktion wird nicht mehr benötigt - PDFs werden beim Erstellen/Versenden in Storage gespeichert
 
   const refreshPdfUrl = async (storagePath: string) => {
     try {
@@ -167,159 +136,33 @@ export default function InvoiceDetailPage() {
   };
 
   const loadPdfFromStorage = async () => {
-    if (!user || !invoice) return;
-
-    setPdfLoading(true);
-    setPdfError(null);
-
-    try {
-      // Erst prüfen, ob bereits eine PDF existiert
-      const pdfRef = ref(storage, `invoices/${uid}/${invoiceId}/invoice.pdf`);
-      const pdfDownloadUrl = await getDownloadURL(pdfRef);
-
-      setPdfUrl(pdfDownloadUrl);
-      setPdfLoading(false);
-
-      // Präventive Prüfung für primäre PDF
-      if (
-        pdfDownloadUrl.includes('firebasestorage.googleapis.com') ||
-        pdfDownloadUrl.includes('storage.googleapis.com')
-      ) {
-        setUseIframeViewer(true);
-        setShouldUsePdfJs(false);
-      } else {
-        setUseIframeViewer(false);
-        setShouldUsePdfJs(true);
-      }
+    if (!invoice) return;
+    
+    // 1. ZUERST: Prüfe ob PDF-URL direkt in der Rechnung gespeichert ist
+    const invoicePdfUrl = (invoice as any).pdfUrl;
+    if (invoicePdfUrl) {
+      console.log('✅ PDF URL found in invoice:', invoicePdfUrl);
+      setPdfUrl(invoicePdfUrl);
+      setUseIframeViewer(true);
+      setShouldUsePdfJs(false);
       return;
-    } catch (error: any) {
-      // Stummes Logging für erwarteten "object-not-found" Fehler
-      if (error?.code !== 'storage/object-not-found') {
-        console.error('Unexpected error loading primary PDF:', error);
-      }
     }
-
+    
+    // 2. FALLBACK: Versuche aus Storage zu laden
+    const path = `invoices/${uid}/${invoiceId}.pdf`;
+    
     try {
-      // Prüfe verschiedene mögliche PDF Pfade mit dynamischen Namen
-      const invoicesRef = ref(storage, `invoices/${uid}`);
-      const listResult = await listAll(invoicesRef);
-
-      if (listResult.items.length > 0) {
-      }
-
-      // Sammle alle verfügbaren PDFs für die Auswahl
-      const pdfList: { name: string; url: string }[] = [];
-      for (const item of listResult.items) {
-        try {
-          const url = await getDownloadURL(item);
-          pdfList.push({ name: item.name, url });
-        } catch (error: any) {
-          // Stummes Logging für erwartete Storage-Fehler
-          if (error?.code !== 'storage/object-not-found') {
-          }
-        }
-      }
-      setAvailablePdfs(pdfList);
-
-      // Erstelle eine Liste von möglichen Suchbegriffen
-      const searchTerms = [
-        invoiceId,
-        invoice.documentNumber,
-        invoice.invoiceNumber,
-        invoice.number,
-        invoice.sequentialNumber?.toString(),
-      ].filter(Boolean);
-
-      // Suche nach PDF-Dateien für diese Invoice
-      for (const item of listResult.items) {
-        const fileName = item.name.toLowerCase();
-
-        // Prüfe alle Suchbegriffe
-        const matchFound = searchTerms.some(term =>
-          fileName.includes(term?.toString().toLowerCase() || '')
-        );
-
-        if (matchFound || fileName.includes('invoice')) {
-          try {
-            const pdfUrl = await getDownloadURL(item);
-
-            // Bei Firebase Storage URLs, prüfe präventiv ob PDF.js funktionieren wird
-
-            setPdfUrl(pdfUrl);
-            setPdfLoading(false);
-
-            // Präventive Prüfung: Verwende iframe für Firebase Storage URLs um Fetch-Fehler zu vermeiden
-            if (
-              pdfUrl.includes('firebasestorage.googleapis.com') ||
-              pdfUrl.includes('storage.googleapis.com')
-            ) {
-              setUseIframeViewer(true);
-              setShouldUsePdfJs(false);
-            } else {
-              setUseIframeViewer(false);
-              setShouldUsePdfJs(true);
-            }
-            return;
-          } catch (error: any) {
-            // Stummes Logging für erwartete Storage-Fehler
-            if (error?.code !== 'storage/object-not-found') {
-            }
-          }
-        }
-      }
-
-      // Fallback: Nimm die neueste PDF-Datei
-      if (listResult.items.length > 0) {
-        // Sortiere nach Name (neuere haben oft längere Namen oder höhere Zahlen)
-        const sortedItems = listResult.items.sort((a, b) => b.name.localeCompare(a.name));
-        const latestPdf = sortedItems[0];
-
-        try {
-          const pdfUrl = await getDownloadURL(latestPdf);
-
-          // Lade Fallback-PDF direkt
-
-          setPdfUrl(pdfUrl);
-          setPdfLoading(false);
-
-          // Präventive Prüfung für Fallback-PDF
-          if (
-            pdfUrl.includes('firebasestorage.googleapis.com') ||
-            pdfUrl.includes('storage.googleapis.com')
-          ) {
-            setUseIframeViewer(true);
-            setShouldUsePdfJs(false);
-          } else {
-            setUseIframeViewer(false);
-            setShouldUsePdfJs(true);
-          }
-          return;
-        } catch (error: any) {
-          // Stummes Logging für erwartete Storage-Fehler
-          if (error?.code !== 'storage/object-not-found') {
-          }
-        }
-      }
+      const pdfRef = ref(storage, path);
+      console.log('🔍 Loading PDF from Storage fallback:', path);
+      const pdfDownloadUrl = await getDownloadURL(pdfRef);
+      
+      setPdfUrl(pdfDownloadUrl);
+      setUseIframeViewer(true);
+      setShouldUsePdfJs(false);
+      console.log('✅ PDF loaded from storage fallback:', pdfDownloadUrl);
     } catch (error: any) {
-      // Stummes Logging für erwartete Storage-Fehler
-      if (error?.code !== 'storage/object-not-found') {
-      }
-    }
-
-    // Wenn keine PDF gefunden wurde, automatisch generieren
-
-    try {
-      const generatedPdfUrl = await generateAndStorePdf();
-      if (generatedPdfUrl) {
-        setPdfUrl(generatedPdfUrl);
-        toast.success('PDF wurde erfolgreich generiert!');
-      } else {
-        setPdfError('PDF konnte nicht generiert werden.');
-      }
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      setPdfError('PDF konnte nicht generiert werden. Versuchen Sie es später erneut.');
-    } finally {
+      console.log('📄 PDF nicht vorhanden - weder in Rechnung noch in Storage');
+      setPdfError('PDF wurde noch nicht generiert. Bitte erstellen Sie die Rechnung erneut.');
       setPdfLoading(false);
     }
   };
@@ -674,101 +517,114 @@ export default function InvoiceDetailPage() {
       // If we get here, something unexpected happened
       throw new Error('Unerwartetes Response-Format vom PDF-Service');
     } catch (error) {
-      console.error('Error viewing PDF:', error);
-      toast.error('Fehler beim Anzeigen der PDF');
+      console.error('❌ Error downloading PDF:', error);
+      toast.error(`Fehler beim Herunterladen der PDF: ${error.message}`);
     } finally {
+      console.log('🏁 PDF download process finished');
       setDownloadingPdf(false);
     }
   };
 
   const handleDownloadPdf = async () => {
-    if (!invoice) return;
+    console.log('🔥 handleDownloadPdf called');
+    if (!invoice) {
+      console.log('❌ No invoice data available');
+      return;
+    }
 
+    console.log('📄 Starting PDF download for invoice:', invoice.id);
     setDownloadingPdf(true);
+    
     try {
-      // Call our modern PDF API endpoint
-      const response = await fetch('/api/generate-invoice-pdf', {
+      // Get HTML content from the REAL InlinePreview component (NO custom templates!)
+      console.log('📡 Getting HTML content from InlinePreview...');
+      
+      // Find the preview element with data-pdf-template attribute
+      const previewElement = document.querySelector('[data-pdf-template]');
+      
+      if (!previewElement) {
+        throw new Error('Preview-Element nicht gefunden. Bitte warten Sie, bis die Vorschau geladen ist.');
+      }
+      
+      const htmlContent = previewElement.innerHTML;
+      console.log('✅ HTML content extracted from InlinePreview:', htmlContent.length, 'characters');
+      
+      if (!htmlContent || htmlContent.trim().length === 0) {
+        throw new Error('Kein HTML-Content in der Preview verfügbar. Bitte laden Sie die Seite neu.');
+      }
+
+      // 🤖 Smart API selection based on items count (same as EmailSendModal)
+      const itemsCount = invoice?.items?.length || 0;
+      const shouldUseSingle = itemsCount < 3; // 1-2 items = single, 3+ items = multi
+      const apiEndpoint = shouldUseSingle ? '/api/generate-pdf-single' : '/api/generate-pdf-multi';
+      
+      console.log(`📡 Using ${apiEndpoint} for ${itemsCount} items`);
+
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          invoiceData: invoice,
+          htmlContent: htmlContent,
+          template: (invoice as any).template || (invoice as any).templateId || 'TEMPLATE_NEUTRAL',
         }),
       });
 
+      console.log('✅ PDF API response status:', response.status);
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        console.error('❌ PDF API failed:', response.status, errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          throw new Error(`PDF-Generation fehlgeschlagen (${response.status}): ${errorText}`);
+        }
         throw new Error(errorData.error || 'PDF-Generation fehlgeschlagen');
       }
 
-      const contentType = response.headers.get('content-type');
+      const result = await response.json();
 
-      // Check if we got a PDF directly (Development with Puppeteer)
-      if (contentType?.includes('application/pdf')) {
-        const pdfBlob = await response.blob();
-        const pdfUrl = window.URL.createObjectURL(pdfBlob);
-
-        const link = document.createElement('a');
-        link.href = pdfUrl;
-        link.download = `Rechnung_${invoice.invoiceNumber || invoice.number || invoice.id.substring(0, 8)}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Clean up URL
-        setTimeout(() => {
-          window.URL.revokeObjectURL(pdfUrl);
-        }, 5000);
-
-        toast.success('PDF erfolgreich heruntergeladen!');
-        return;
+      if (!result.pdfBase64 || result.pdfBase64.trim().length === 0) {
+        console.error('❌ PDF API returned empty base64');
+        throw new Error('PDF-Generation returned empty result');
       }
 
-      // Check if we got JSON response with print URL (Production fallback)
-      if (contentType?.includes('application/json')) {
-        const responseData = await response.json();
-
-        if (responseData.success && responseData.printUrl && responseData.useClientPrint) {
-          // Open our React-based print page in a new window
-          const printWindow = window.open(responseData.printUrl, '_blank', 'width=1200,height=800');
-
-          if (printWindow) {
-            // Wait for the page to load, then trigger print
-            printWindow.addEventListener('load', () => {
-              setTimeout(() => {
-                printWindow.focus();
-                printWindow.print();
-              }, 1000);
-            });
-
-            toast.success('Rechnung wird zum Drucken geöffnet...');
-          } else {
-            // Fallback: User can manually navigate to print page
-            toast.info('Popup wurde blockiert. Navigieren Sie zur Print-Seite für PDF-Download.', {
-              action: {
-                label: 'Print-Seite öffnen',
-                onClick: () => window.open(responseData.printUrl, '_blank'),
-              },
-              duration: 8000,
-            });
-          }
-          return;
-        }
+      console.log('💾 Converting base64 to blob and downloading...');
+      
+      // Convert base64 to blob
+      const byteCharacters = atob(result.pdfBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
+      const byteArray = new Uint8Array(byteNumbers);
+      const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
 
-      // If we get here, something unexpected happened
-      throw new Error('Unerwartetes Response-Format vom PDF-Service');
+      // Create download link
+      const pdfUrl = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.download = `Rechnung_${invoice.invoiceNumber || invoice.number || invoice.id.substring(0, 8)}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up URL
+      setTimeout(() => {
+        window.URL.revokeObjectURL(pdfUrl);
+      }, 5000);
+
+      console.log('✅ PDF download completed successfully');
+      toast.success('PDF erfolgreich heruntergeladen!');
+
     } catch (error) {
-      // Ultimate fallback: browser print
-      toast.error('PDF-Service nicht verfügbar. Verwende Browser-Druck als Fallback.', {
-        action: {
-          label: 'Jetzt drucken',
-          onClick: () => window.print(),
-        },
-        duration: 8000,
-      });
+      console.error('❌ Error downloading PDF:', error);
+      toast.error(`Fehler beim Herunterladen der PDF: ${error.message}`);
     } finally {
+      console.log('🏁 PDF download process finished');
       setDownloadingPdf(false);
     }
   };
@@ -857,7 +713,8 @@ export default function InvoiceDetailPage() {
                   disabled={downloadingPdf}
                   className="border-gray-300"
                 >
-                  {downloadingPdf ? 'Herunterladen...' : 'Herunterladen'}
+                  <Download className="h-4 w-4 mr-2" />
+                  {downloadingPdf ? 'Herunterladen...' : 'PDF Download'}
                 </Button>
 
                 {invoice.status !== 'paid' && (
@@ -1279,124 +1136,56 @@ export default function InvoiceDetailPage() {
             </div>
           </div>
 
-          {/* PDF Viewer Section */}
+          {/* Live Preview Section */}
           <div className="pdf col-span-2">
             <div className="bg-white border border-gray-200 rounded-lg">
-              {/* PDF Toolbar - nur für PDF.js anzeigen */}
-              {!useIframeViewer && (
-                <div className="border-b border-gray-200 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={goToPrevPage}
-                          disabled={pageNumber <= 1}
-                        >
-                          ←
-                        </Button>
-                        <span className="text-sm text-gray-600">
-                          Seite {pageNumber} von {numPages || 1}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={goToNextPage}
-                          disabled={pageNumber >= (numPages || 1)}
-                        >
-                          →
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleZoomOut}
-                        disabled={scale <= 0.5}
-                      >
-                        <ZoomOut className="h-4 w-4" />
-                      </Button>
-                      <span className="text-sm text-gray-600 min-w-[60px] text-center">
-                        {Math.round(scale * 100)}%
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleZoomIn}
-                        disabled={scale >= 3.0}
-                      >
-                        <ZoomIn className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDownloadPdf}
-                        disabled={downloadingPdf}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
+              {/* Live Preview Header */}
+              <div className="border-b border-gray-200 p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Live Vorschau</h3>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      onClick={() => setShowLivePreview(true)}
+                      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Vollbild-Vorschau
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadPdf}
+                      disabled={downloadingPdf}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      PDF Download
+                    </Button>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* PDF Content */}
+              {/* Live Preview Content */}
               <div className="p-4">
                 <div className="flex justify-center">
-                  {pdfLoading ? (
+                  {loading ? (
                     <div className="flex items-center justify-center h-96">
                       <div className="text-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f] mx-auto mb-2"></div>
-                        <p className="text-gray-500">PDF wird geladen...</p>
+                        <p className="text-gray-500">Vorschau wird geladen...</p>
                       </div>
                     </div>
-                  ) : pdfError ? (
+                  ) : error ? (
                     <div className="flex items-center justify-center h-96">
                       <div className="text-center">
                         <FileText className="h-12 w-12 text-red-400 mx-auto mb-2" />
-                        <p className="text-red-500 mb-4">{pdfError}</p>
-                        <div className="space-x-2 flex flex-wrap gap-2">
-                          <Button
-                            onClick={loadPdfForViewing}
-                            variant="outline"
-                            className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            Erneut versuchen
-                          </Button>
-                          {availablePdfs.length > 0 && (
-                            <Button
-                              onClick={() => setShowPdfSelector(true)}
-                              variant="outline"
-                              className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
-                            >
-                              <FileText className="h-4 w-4 mr-2" />
-                              PDF auswählen ({availablePdfs.length})
-                            </Button>
-                          )}
-                          <Button
-                            onClick={async () => {
-                              setPdfLoading(true);
-                              setPdfError(null);
-                              const pdfUrl = await generateAndStorePdf();
-                              if (pdfUrl) {
-                                setPdfUrl(pdfUrl);
-                                toast.success('PDF wurde erfolgreich generiert!');
-                              } else {
-                                setPdfError('PDF konnte nicht generiert werden.');
-                              }
-                              setPdfLoading(false);
-                            }}
-                            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                            disabled={pdfLoading}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            {pdfLoading ? 'Generiere...' : 'PDF generieren'}
-                          </Button>
-                        </div>
+                        <p className="text-red-500 mb-4">Fehler beim Laden der Vorschau</p>
+                        <Button
+                          onClick={() => window.location.reload()}
+                          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          Seite neu laden
+                        </Button>
 
                         {/* PDF Selector Modal */}
                         {showPdfSelector && availablePdfs.length > 0 && (
@@ -1439,130 +1228,23 @@ export default function InvoiceDetailPage() {
                         )}
                       </div>
                     </div>
-                  ) : pdfUrl ? (
-                    <>
-                      {useIframeViewer ? (
-                        // Iframe Fallback für PDF-Anzeige
-                        <div className="w-full bg-gray-50 rounded-lg overflow-hidden border border-gray-300 shadow-lg">
-                          <div className="bg-[#14ad9f] text-white p-3 text-sm font-medium flex items-center justify-between">
-                            <span>PDF Viewer</span>
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                size="sm"
-                                className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
-                                onClick={() => {
-                                  setShouldUsePdfJs(true);
-                                  setUseIframeViewer(false);
-                                  setNumPages(null);
-                                  setPageNumber(1);
-                                  setPdfError(null); // Clear any errors when switching back
-                                }}
-                              >
-                                Erweiterte Ansicht
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
-                                onClick={() => window.open(pdfUrl, '_blank')}
-                              >
-                                <Download className="h-4 w-4 mr-1" />
-                                Öffnen
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="overflow-hidden">
-                            <iframe
-                              src={pdfUrl}
-                              className="w-full h-[800px] border-0"
-                              style={{
-                                transform: 'scale(0.8)',
-                                transformOrigin: 'top left',
-                                width: '125%',
-                              }}
-                              title="PDF Viewer"
-                            />
-                          </div>
-                        </div>
-                      ) : shouldUsePdfJs ? (
-                        // Standard PDF.js Viewer - nur verwenden wenn sicher
-                        <div className="border border-gray-300 shadow-lg">
-                          <Document
-                            file={pdfUrl}
-                            onLoadSuccess={onDocumentLoadSuccess}
-                            onLoadError={onDocumentLoadError}
-                            loading={
-                              <div className="flex items-center justify-center h-96">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
-                              </div>
-                            }
-                            options={{
-                              cMapUrl: '/pdf-worker/',
-                              cMapPacked: true,
-                            }}
-                          >
-                            <Page
-                              pageNumber={pageNumber}
-                              scale={scale}
-                              renderTextLayer={true}
-                              renderAnnotationLayer={true}
-                            />
-                          </Document>
-                        </div>
-                      ) : (
-                        // Iframe als sicherer Fallback für problematische URLs
-                        <div className="w-full bg-gray-50 rounded-lg overflow-hidden border border-gray-300 shadow-lg">
-                          <div className="bg-[#14ad9f] text-white p-3 text-sm font-medium flex items-center justify-between">
-                            <span>PDF Viewer</span>
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                size="sm"
-                                className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
-                                onClick={() => {
-                                  setShouldUsePdfJs(true);
-                                  setUseIframeViewer(false);
-                                  setNumPages(null);
-                                  setPageNumber(1);
-                                  setPdfError(null);
-                                }}
-                              >
-                                Erweiterte Ansicht
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="bg-white/20 text-white border-white/30 hover:bg-white hover:text-[#14ad9f] transition-colors"
-                                onClick={() => window.open(pdfUrl, '_blank')}
-                              >
-                                <Download className="h-4 w-4 mr-1" />
-                                Öffnen
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="overflow-hidden">
-                            <iframe
-                              src={pdfUrl}
-                              className="w-full h-[800px] border-0"
-                              style={{
-                                transform: 'scale(0.8)',
-                                transformOrigin: 'top left',
-                                width: '125%',
-                              }}
-                              title="PDF Viewer"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </>
+                  ) : invoice ? (
+                    // Live Preview der Rechnung mit aktuellen Template-Einstellungen aus Firestore
+                    <div className="w-full h-[800px] border border-gray-300 rounded-lg overflow-hidden shadow-lg bg-white">
+                      <div className="w-full h-full overflow-auto flex justify-center py-4">
+                        <InlinePreview
+                          document={invoice}
+                          documentType="invoice"
+                          companyId={uid}
+                          className="shadow-lg"
+                        />
+                      </div>
+                    </div>
                   ) : (
                     <div className="flex items-center justify-center h-96">
                       <div className="text-center">
                         <FileText className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                        <p className="text-gray-500 mb-4">Keine PDF verfügbar</p>
-                        <Button
-                          onClick={loadPdfForViewing}
-                          className="bg-[#14ad9f] hover:bg-[#129488]"
-                        >
-                          PDF generieren
-                        </Button>
+                        <p className="text-gray-500 mb-4">Keine Rechnungsdaten verfügbar</p>
                       </div>
                     </div>
                   )}
@@ -1579,6 +1261,43 @@ export default function InvoiceDetailPage() {
             onClose={() => setSendDialogOpen(false)}
             invoice={invoice!}
             companyName={invoice.companyName || 'Ihr Unternehmen'}
+          />
+        )}
+
+        {/* Vollbild Live Preview Modal */}
+        {invoice && (
+          <LivePreviewModal
+            isOpen={showLivePreview}
+            onClose={() => setShowLivePreview(false)}
+            document={{
+              ...invoice,
+              // Verwende Template-Einstellungen aus Firestore (falls vorhanden)
+              template: (invoice as any).template || (invoice as any).templateId || 'TEMPLATE_NEUTRAL',
+              color: (invoice as any).color || '#14ad9f',
+              logoUrl: (invoice as any).logoUrl || null,
+              logoSize: (invoice as any).logoSize || 50,
+              pageMode: (invoice as any).pageMode || 'single',
+              documentSettings: (invoice as any).documentSettings || {
+                language: 'de',
+                showQRCode: false,
+                showEPCQRCode: false,
+                showCustomerNumber: false,
+                showContactPerson: false,
+                showVATPerPosition: false,
+                showArticleNumber: false,
+                showFoldLines: true,
+                showPageNumbers: true,
+                showFooter: true,
+                showWatermark: false,
+              }
+            }}
+            documentType="invoice"
+            companyId={uid}
+            onSend={async (method, options) => {
+              // Handle send actions if needed
+              console.log('Send action:', method, options);
+              toast.success(`${method} Aktion ausgeführt`);
+            }}
           />
         )}
       </div>

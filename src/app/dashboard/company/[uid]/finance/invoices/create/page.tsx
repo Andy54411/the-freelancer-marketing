@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Script from 'next/script';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -2351,9 +2352,9 @@ export default function CreateQuotePage() {
           : undefined,
 
         // Template & UI Settings
-        template: typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
-        templateType:
-          typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
+        template: selectedTemplate || 'TEMPLATE_STANDARD',
+        templateId: selectedTemplate || 'TEMPLATE_STANDARD',
+        templateType: selectedTemplate || 'TEMPLATE_STANDARD',
         language: 'de',
 
         // Additional Control Fields
@@ -2482,6 +2483,9 @@ export default function CreateQuotePage() {
         }
       }
 
+      // 🚨 CRITICAL: Update invoiceData with the newly created ID from Firestore
+      invoiceData.id = createdInvoiceId;
+      
       // Open send document modal instead of navigating
       setCreatedDocument(invoiceData);
       setShowSendDocumentModal(true);
@@ -2882,9 +2886,22 @@ export default function CreateQuotePage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 space-y-6">
-      {/* Header - SevDesk Style */}
-      <header className="w-full" style={{ maxWidth: '1440px' }}>
+    <>
+      {/* ✅ Preload html2pdf.js global - wird sofort beim Seitenaufruf geladen */}
+      <Script
+        src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+        strategy="afterInteractive"
+        onLoad={() => {
+          console.log('✅ html2pdf.js global geladen via Next.js Script');
+        }}
+        onError={(e) => {
+          console.error('❌ Fehler beim Laden von html2pdf.js via Next.js Script:', e);
+        }}
+      />
+      
+      <div className="max-w-6xl mx-auto p-4 space-y-6">
+        {/* Header - SevDesk Style */}
+        <header className="w-full" style={{ maxWidth: '1440px' }}>
         <div className="flex items-center justify-between py-4 border-b border-gray-200">
           {/* Left side - Title */}
           <div className="flex items-center">
@@ -5073,21 +5090,20 @@ export default function CreateQuotePage() {
         </SheetContent>
       </Sheet>
 
-      {/* Send Document Modal */}
-      {createdDocument && (
-        <SendDocumentModal
-          isOpen={showSendDocumentModal}
-          onClose={() => {
-            setShowSendDocumentModal(false);
-            setCreatedDocument(null);
-          }}
-          document={createdDocument}
-          documentType="invoice"
-          companyId={uid}
-          onSend={async (method, options) => {
-            try {
-              // First save the invoice
-              await handleSubmit(false); // Save as finalized
+      {/* Send Document Modal - IMMER gerendert für html2pdf.js Preload */}
+      <SendDocumentModal
+        isOpen={showSendDocumentModal && !!createdDocument}
+        onClose={() => {
+          setShowSendDocumentModal(false);
+          setCreatedDocument(null);
+        }}
+        document={createdDocument || {} as any}
+        documentType="invoice"
+        companyId={uid}
+        onSend={async (method, options) => {
+          try {
+            // First save the invoice
+            await handleSubmit(false); // Save as finalized
 
               // Then handle the sending logic
               if (method === 'email') {
@@ -5112,7 +5128,6 @@ export default function CreateQuotePage() {
             }
           }}
         />
-      )}
 
       {/* Live Preview Modal - NUTZT JETZT DIE GLEICHEN DATEN WIE SendDocumentModal! */}
       <LivePreviewModal
@@ -5122,6 +5137,7 @@ export default function CreateQuotePage() {
         documentType="invoice"
         companyId={uid}
       />
-    </div>
+      </div>
+    </>
   );
 }

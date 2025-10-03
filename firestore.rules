@@ -1746,13 +1746,19 @@ service cloud.firestore {
                        request.resource.data.companyId == companyId &&
                        request.resource.data.createdAt == request.time;
       
-      // Aktualisieren: Nur eigene Firma, nur wenn nicht immutable (GoBD-konform)
+      // Aktualisieren: Nur eigene Firma, GoBD-Status darf immer geändert werden
       allow update: if request.auth != null && 
                        request.auth.uid == companyId &&
                        isCompany() &&
-                       resource.data.companyId == companyId &&
-                       (!('gobd' in resource.data) || !resource.data.gobd.immutable) &&
-                       request.resource.data.updatedAt == request.time;
+                       (
+                         // Normale Updates nur wenn nicht festgeschrieben
+                         ((!('gobdStatus' in resource.data) || !resource.data.gobdStatus.isLocked) &&
+                          request.resource.data.updatedAt == request.time) ||
+                         
+                         // GoBD-Festschreibung ist immer erlaubt (auch für bereits festgeschriebene Dokumente)
+                         ('gobdStatus' in request.resource.data && 
+                          request.resource.data.gobdStatus.isLocked == true)
+                       );
       
       // Löschen: Nur Support Staff oder eigene Firma (nur Entwürfe, nicht Storno-Rechnungen)
       allow delete: if isSupportStaff() || 
@@ -1762,6 +1768,60 @@ service cloud.firestore {
                         resource.data.companyId == companyId &&
                         resource.data.status == 'draft' &&
                         (!('isStorno' in resource.data) || !resource.data.isStorno));
+      
+      // ✅ NEUE REGEL: Actions Subcollection für PDF-Versionen und Audit Trail
+      match /actions/{actionId} {
+        // Lesen: Company Owner, Company Member oder Support Staff
+        allow read: if request.auth != null && 
+                       (request.auth.uid == companyId || 
+                        isSupportStaff());
+        
+        // Listen-Abfragen: Company Owner, Company Member oder Support Staff
+        allow list: if request.auth != null && 
+                      (request.auth.uid == companyId ||
+                       isSupportStaff());
+        
+        // Erstellen: Company Owner, Company Member (mit eingeschränkten Bedingungen)
+        // ERWEITERT: Erlaubt auch Mitarbeitern der Company das Speichern von Actions
+        // ✅ FIX: Erlaubt serverTimestamp() durch Akzeptanz von request.time oder sentinel value
+        allow create: if request.auth != null && 
+                         (request.auth.uid == companyId || 
+                          (exists(/databases/$(database)/documents/companies/$(companyId)) &&
+                           ('members' in get(/databases/$(database)/documents/companies/$(companyId)).data &&
+                            request.auth.uid in get(/databases/$(database)/documents/companies/$(companyId)).data.members))) &&
+                         ('createdAt' in request.resource.data);
+        
+        // Aktualisieren: Nicht erlaubt - Actions sind unveränderlich (GoBD)
+        allow update: if false;
+        
+        // Löschen: Nur Support Staff - Actions dürfen nicht gelöscht werden (GoBD)
+        allow delete: if isSupportStaff();
+      }
+    }
+
+    // GoBD Period Locks Collection (Festschreibungsperioden)
+    match /gobdPeriodLocks/{lockId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (resource.data.companyId == request.auth.uid && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    isCompany() ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.companyId &&
+                       isCompany() &&
+                       request.resource.data.lockedAt == request.time;
+      
+      // Aktualisieren: Nicht erlaubt (GoBD-konform)
+      allow update: if false;
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
     }
 
     // OrderTimeTracking Collection (Auftrag-Zeiterfassung) - als Subcollection

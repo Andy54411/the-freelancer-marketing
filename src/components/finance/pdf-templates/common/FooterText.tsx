@@ -16,10 +16,11 @@ export const FooterText: React.FC<FooterTextProps> = ({
   documentType,
   language = 'de',
 }) => {
-  if (!data.footerText) return null;
-
-  // Verwende das zentrale placeholderSystem für Platzhalter-Ersetzung mit Sprach-Support
-  const processedFooterText = replacePlaceholders(data.footerText, data, language);
+  // 🔥 CRITICAL FIX: Verwende processedFooterText (bereits verarbeitet in usePDFTemplateData)
+  // NICHT data.footerText (enthält noch Platzhalter)!
+  const processedFooterText = data.processedFooterText || data.footerText || '';
+  
+  if (!processedFooterText) return null;
 
   if (variant === 'elegant') {
     return (

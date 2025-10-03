@@ -99,6 +99,8 @@ export interface InvoiceTemplateRendererProps {
     showLogo?: boolean;
     [key: string]: any;
   };
+  pageMode?: 'single' | 'multi';
+  documentSettings?: any;
 }
 
 export const InvoiceTemplateRenderer: React.FC<InvoiceTemplateRendererProps> = ({
@@ -108,6 +110,8 @@ export const InvoiceTemplateRenderer: React.FC<InvoiceTemplateRendererProps> = (
   onRender,
   companySettings,
   customizations = { showLogo: true },
+  pageMode = 'multi',
+  documentSettings,
 }) => {
   // PDF-Template verwenden - alle Templates sind jetzt PDF-basiert
   const normalizedData = {
@@ -126,6 +130,8 @@ export const InvoiceTemplateRenderer: React.FC<InvoiceTemplateRendererProps> = (
     logoUrl: customizations?.logoUrl || companySettings?.logoUrl || null,
     logoSize: customizations?.logoSize || 50,
     documentType: (data.documentType || 'invoice') as 'invoice' | 'quote' | 'reminder',
+    pageMode: pageMode, // Single oder Multi Page
+    documentSettings: documentSettings, // Dokumenteinstellungen
   };
 
   // Alle Templates verwenden jetzt PDFTemplate

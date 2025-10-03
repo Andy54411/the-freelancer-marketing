@@ -11,6 +11,7 @@ Taskilo is a service marketplace platform connecting customers with verified ser
 - **Payments**: Stripe integration with complex B2B/B2C flows
 - **Integrations**: AWS SES/Resend emails, Google services, DATEV accounting, FinAPI banking
 - **Deployment**: Vercel (frontend) + Firebase (functions) + AWS Lambda (specialized services)
+- **no fallback and no mock data**
 
 ### Key Data Patterns
 - **Users Collection**: Single document merging registration (35 fields) + onboarding (13 fields) data

@@ -123,7 +123,8 @@ service firebase.storage {
 
     // Invoice PDFs - Firmen können ihre Rechnungs-PDFs verwalten
     // Pfad: invoices/{companyId}/{invoiceId}/{fileName}
-    match /invoices/{companyId}/{invoiceId}/{fileName} {
+    // WICHTIG: Diese Regel deckt auch Unterordner ab (z.B. actions/)
+    match /invoices/{companyId}/{invoiceId}/{allPaths=**} {
       allow read: if request.auth != null && 
                      (isSupportStaff() || 
                       (isCompany() && request.auth.uid == companyId) ||

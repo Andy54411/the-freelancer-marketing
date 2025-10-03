@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 // Entfernt: Tabs Import - verwenden jetzt custom Tab-Leiste
 import { Button } from '@/components/ui/button';
-import { Calculator, Hash, CreditCard, Wallet, ArrowLeftRight, Building2 } from 'lucide-react';
+import { Calculator, Hash, CreditCard, Wallet, ArrowLeftRight, Building2, Shield } from 'lucide-react';
 
 // Import Tab Components
 import NumberSequencesTab, { NumberSequence } from '@/components/accounting/NumberSequencesTab';
@@ -13,6 +13,7 @@ import PaymentMethodsTab, { PaymentMethod } from '@/components/accounting/Paymen
 import PaymentAccountsTab, { PaymentAccount } from '@/components/accounting/PaymentAccountsTab';
 import TransactionMatchingTab from '@/components/accounting/TransactionMatchingTab';
 import CostCentersTab, { CostCenter } from '@/components/accounting/CostCentersTab';
+import { GoBDSystem } from '@/components/finance/gobd';
 
 // Import Services
 import { NumberSequenceService } from '@/services/numberSequenceService';
@@ -162,7 +163,7 @@ export default function AccountingPage() {
       {/* NEUE CUSTOM TAB-LEISTE - Taskilo Design */}
       <div className="space-y-6">
         <div className="bg-gray-100 p-1 rounded-lg">
-          <nav className="grid w-full grid-cols-6 gap-1">
+          <nav className="grid w-full grid-cols-7 gap-1">
             <button
               onClick={() => setActiveTab('sequences')}
               className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
@@ -229,6 +230,17 @@ export default function AccountingPage() {
               <Building2 className="h-4 w-4" />
               Kostenstelle
             </button>
+            <button
+              onClick={() => setActiveTab('gobd')}
+              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                activeTab === 'gobd'
+                  ? 'bg-[#14ad9f] text-white shadow-sm'
+                  : 'bg-transparent text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Shield className="h-4 w-4" />
+              GoBD
+            </button>
           </nav>
         </div>
 
@@ -267,6 +279,9 @@ export default function AccountingPage() {
               onDelete={handleDeleteCostCenter}
               onToggleActive={handleToggleCostCenter}
             />
+          )}
+          {activeTab === 'gobd' && (
+            <GoBDSystem companyId={uid} />
           )}
         </div>
       </div>

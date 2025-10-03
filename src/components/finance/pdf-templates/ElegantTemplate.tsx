@@ -9,6 +9,7 @@ import { SimpleFooter } from './common/SimpleFooter';
 import type { DocumentType } from '@/lib/document-utils';
 import { getDocumentTypeConfig, detectDocumentType } from '@/lib/document-utils';
 import { replacePlaceholders } from '@/utils/placeholderSystem';
+import { useDocumentTranslation } from '@/hooks/pdf/useDocumentTranslation';
 
 interface ElegantTemplateProps {
   data: ProcessedPDFData;
@@ -31,11 +32,17 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
   // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
   const detectedType = documentType || detectDocumentType(data) || 'invoice';
   const config = getDocumentTypeConfig(detectedType, color);
+  
+  // Übersetzungsfunktion
+  const { t } = useDocumentTranslation(documentSettings?.language || 'de');
 
   return (
     <div
-      className="bg-white w-full max-w-[210mm] mx-auto text-xs"
-      style={{ fontFamily: 'Georgia, serif' }}
+      className={`bg-white w-full max-w-[210mm] mx-auto ${pageMode === 'single' ? 'text-[10px] leading-tight' : 'text-xs'}`}
+      style={{
+        fontFamily: 'Georgia, serif',
+        ...(pageMode === 'single' && { maxHeight: '297mm', overflow: 'hidden' }),
+      }}
     >
       <style
         dangerouslySetInnerHTML={{
@@ -85,7 +92,7 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
       />
 
       {/* ========= SEITE 1 ========= */}
-      <div className="pdf-page flex flex-col relative">
+      <div className="pdf-page flex flex-col relative" style={{ minHeight: '297mm' }}>
         {/* Wasserzeichen */}
         {documentSettings?.showWatermark && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
@@ -172,7 +179,7 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
           <div className="grid grid-cols-2 gap-12 mb-8">
             <div>
               <div className="font-light text-lg mb-4" style={{ color }}>
-                Rechnungsempfänger
+                {t('recipient')}
               </div>
               <div className="space-y-2">
                 <div className="font-medium text-lg">{data.customerName}</div>
@@ -188,19 +195,19 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
                   <div>{data.customerAddressParsed.country}</div>
                 )}
                 {data.customerVatId && (
-                  <div className="mt-2 text-sm">USt-IdNr.: {data.customerVatId}</div>
+                  <div className="mt-2 text-sm">{t('vatId')}: {data.customerVatId}</div>
                 )}
               </div>
             </div>
 
             <div>
               <div className="font-light text-lg mb-4" style={{ color }}>
-                Rechnungsdetails
+                {t('documentDetails')}
               </div>
               <div className="space-y-1">
                 <div>Nr. {data.invoiceNumber}</div>
-                <div>Datum: {formatDate(data.invoiceDate)}</div>
-                <div>Fälligkeitsdatum: {formatDate(data.dueDate)}</div>
+                <div>{t('date')}: {formatDate(data.invoiceDate)}</div>
+                <div>{t('dueDate')}: {formatDate(data.dueDate)}</div>
               </div>
 
               {/* QR-Code unter Dokumentdetails */}
@@ -223,7 +230,7 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
           </div>
 
           {/* Header Text (Kopftext) */}
-          {data.headerText && (
+          {data.processedHeaderText && (
             <div
               className="mb-2 p-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border-l-4"
               style={{ borderColor: color }}
@@ -231,11 +238,19 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
               <div
                 className="text-sm text-gray-700 leading-relaxed"
                 dangerouslySetInnerHTML={{
-                  __html: replacePlaceholders(
-                    data.headerText,
-                    data,
-                    documentSettings?.language || 'de'
-                  ),
+                  __html: data.processedHeaderText,
+                }}
+              />
+            </div>
+          )}
+
+          {/* Head Text / Einleitung (processedHeadTextHtml) */}
+          {data.processedHeadTextHtml && (
+            <div className="mb-4">
+              <div
+                className="text-sm text-gray-700 leading-relaxed"
+                dangerouslySetInnerHTML={{
+                  __html: data.processedHeadTextHtml,
                 }}
               />
             </div>

@@ -1,8 +1,21 @@
+
 'use client';
+
+// Typdefinition für window.html2pdf (Workaround für TypeScript)
+declare global {
+  interface Window {
+    html2pdf?: any;
+  }
+}
+import { FinanceService } from '@/services/financeService';
+import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
+import { useAuth } from '@/contexts/AuthContext';
+import { db } from '@/firebase/clients';
+import { doc, updateDoc } from 'firebase/firestore';
 
 import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Dialog, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,8 +47,8 @@ import {
   ChevronRight,
   Upload,
   Minus,
-  Plus,
-} from 'lucide-react';
+  Plus } from
+'lucide-react';
 import { toast } from 'sonner';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -44,6 +57,7 @@ import { EmailSendModal } from './EmailSendModal';
 import { SimplePDFViewer } from './SimplePDFViewer';
 import { A4_DIMENSIONS } from '@/utils/a4-page-utils';
 import { useTemplatePageDetection } from '@/hooks/useTemplatePageDetection';
+import { useGoBDActionWarning } from '@/components/finance/gobd';
 
 interface SendDocumentModalProps {
   isOpen: boolean;
@@ -55,16 +69,16 @@ interface SendDocumentModalProps {
 }
 
 type SendOption =
-  | 'email'
-  | 'mail'
-  | 'print'
-  | 'save'
-  | 'download'
-  | 'logo'
-  | 'color'
-  | 'layout'
-  | 'settings'
-  | 'einvoice';
+'email' |
+'mail' |
+'print' |
+'save' |
+'download' |
+'logo' |
+'color' |
+'layout' |
+'settings' |
+'einvoice';
 
 // Template State Management with useReducer
 interface TemplateState {
@@ -80,15 +94,15 @@ interface TemplateState {
 }
 
 type TemplateAction =
-  | { type: 'SET_LAYOUT'; payload: string }
-  | { type: 'SET_COLOR'; payload: string }
-  | { type: 'SET_LOGO'; payload: { url: string | null; file: File | null } }
-  | { type: 'SET_LOGO_SIZE'; payload: number }
-  | { type: 'SET_PAGE_MODE'; payload: 'single' | 'multi' }
-  | { type: 'SET_ZOOM_LEVEL'; payload: number }
-  | { type: 'SET_ACTIVE_OPTION'; payload: SendOption }
-  | { type: 'TOGGLE_SECTION'; payload: SendOption }
-  | { type: 'RESET' };
+{type: 'SET_LAYOUT';payload: string;} |
+{type: 'SET_COLOR';payload: string;} |
+{type: 'SET_LOGO';payload: {url: string | null;file: File | null;};} |
+{type: 'SET_LOGO_SIZE';payload: number;} |
+{type: 'SET_PAGE_MODE';payload: 'single' | 'multi';} |
+{type: 'SET_ZOOM_LEVEL';payload: number;} |
+{type: 'SET_ACTIVE_OPTION';payload: SendOption;} |
+{type: 'TOGGLE_SECTION';payload: SendOption;} |
+{type: 'RESET';};
 
 const initialTemplateState: TemplateState = {
   layout: 'TEMPLATE_NEUTRAL',
@@ -99,7 +113,7 @@ const initialTemplateState: TemplateState = {
   pageMode: 'single',
   zoomLevel: 4, // 100% zoom
   activeOption: 'download',
-  expandedSections: new Set(['download']),
+  expandedSections: new Set(['download'])
 };
 
 function templateReducer(state: TemplateState, action: TemplateAction): TemplateState {
@@ -139,15 +153,34 @@ export function SendDocumentModal({
   document,
   documentType,
   companyId,
-  onSend,
+  onSend
 }: SendDocumentModalProps) {
   const [sending, setSending] = useState(false);
   const [showCompanySettings, setShowCompanySettings] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
   const templateRef = useRef<HTMLDivElement>(null);
+  const [autoLockConsent, setAutoLockConsent] = useState<boolean | null>(null);
+  const [html2pdfReady, setHtml2pdfReady] = useState(false);
+  
+  // Auth Context für Auto-Lock
+  const { user } = useAuth();
+  
+  // GoBD Action Warning Hook
+  const { showWarning, WarningComponent } = useGoBDActionWarning();  // Document Settings States
+  const [documentSettings, setDocumentSettings] = useState({
+    language: 'de',
+    showQRCode: false,
+    showEPCQRCode: false,
+    showCustomerNumber: false, // ✅ Deaktiviert - User muss selbst aktivieren
+    showContactPerson: false, // ✅ Deaktiviert - User muss selbst aktivieren
+    showVATPerPosition: false,
+    showArticleNumber: false,
+    showFoldLines: true,
+    showPageNumbers: true,
+    showFooter: true,
+    showWatermark: false
+  });
 
-  // Debug Effect um zu sehen wann templateRef gesetzt wird
-  useEffect(() => {});
   const [emailMessage, setEmailMessage] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [sendCopy, setSendCopy] = useState(false);
@@ -169,13 +202,21 @@ export function SendDocumentModal({
   const [pageMode, setPageMode] = useState<'single' | 'multi'>('single');
   const [manualOverride, setManualOverride] = useState(false);
 
+  // 💰 SKONTO-STATES (NUR FÜR DATENBANK-SPEICHERUNG!)
+  const [skontoEnabled, setSkontoEnabled] = useState<boolean>(document?.skontoEnabled);
+  const [skontoDays, setSkontoDays] = useState<number>(document?.skontoDays);
+  const [skontoPercentage, setSkontoPercentage] = useState<number>(document?.skontoPercentage);
+  const [skontoText, setSkontoText] = useState<string>(document?.skontoText);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // E-Invoice specific states
   const [eInvoiceData, setEInvoiceData] = useState<any>(null);
   const [loadingEInvoiceData, setLoadingEInvoiceData] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [epcQrCodeUrl, setEpcQrCodeUrl] = useState<string | null>(null);
   const [realDocumentData, setRealDocumentData] = useState<InvoiceData | null>(null);
+  const [enrichedDocumentData, setEnrichedDocumentData] = useState<InvoiceData | null>(null);
   const [templateReady, setTemplateReady] = useState(true); // Start optimistically as ready
   const [cachedHtml, setCachedHtml] = useState<string | null>(null);
   const [preExtractedHtml, setPreExtractedHtml] = useState<string | null>(null);
@@ -209,6 +250,22 @@ export function SendDocumentModal({
     setPreExtractedHtml(null);
   }, [selectedLayout, selectedColor, logoUrl, logoSize, pageMode]);
 
+  // 💰 KRITISCH: Skonto-States aktualisieren wenn sich Document ändert
+  useEffect(() => {
+    console.log('🔍 SendDocumentModal: Document Skonto-Daten:');
+    console.log('  - skontoEnabled:', document?.skontoEnabled, typeof document?.skontoEnabled);
+    console.log('  - skontoDays:', document?.skontoDays, typeof document?.skontoDays);
+    console.log('  - skontoPercentage:', document?.skontoPercentage, typeof document?.skontoPercentage);
+    console.log('  - skontoText:', document?.skontoText, typeof document?.skontoText);
+    
+    setSkontoEnabled(document?.skontoEnabled);
+    setSkontoDays(document?.skontoDays);
+    setSkontoPercentage(document?.skontoPercentage);
+    setSkontoText(document?.skontoText);
+    
+    console.log('✅ Skonto-States aktualisiert');
+  }, [document?.skontoEnabled, document?.skontoDays, document?.skontoPercentage, document?.skontoText]);
+
   // 🎯 Handle manual pageMode changes
   const handlePageModeChange = (newPageMode: 'single' | 'multi') => {
     setPageMode(newPageMode);
@@ -219,52 +276,67 @@ export function SendDocumentModal({
   const templatePageInfo = useTemplatePageDetection({
     templateId: selectedLayout,
     documentData: { items: (realDocumentData || document)?.items },
-    enableDynamicAnalysis: true,
+    enableDynamicAnalysis: true
   });
 
   // Document type labels
   const documentLabels = {
     invoice: 'Rechnung',
     quote: 'Angebot',
-    reminder: 'Erinnerung',
+    reminder: 'Erinnerung'
   };
 
   // Load real invoice data from database when modal opens
   useEffect(() => {
-    if (!isOpen || !companyId) return;
+    if (!isOpen) return;
 
-    const loadRealInvoiceData = async () => {
+    const loadRealDocumentData = async () => {
+      if (!companyId) return; // Check companyId inside the function
       setLoadingEInvoiceData(true);
+      
+      console.log('📦 SendDocumentModal - Eingehendes Dokument:', {
+        hasId: !!document?.id,
+        hasItems: !!document?.items,
+        itemsCount: document?.items?.length || 0,
+        items: document?.items,
+      });
+      
       try {
         // Wenn document.id vorhanden ist, lade echte Daten aus der Datenbank
         if (document?.id) {
-          // Lade die echte Rechnung aus der Datenbank
-          const { FirestoreInvoiceService } = await import('@/services/firestoreInvoiceService');
-          const realInvoice = await FirestoreInvoiceService.getInvoiceById(companyId, document.id);
+          let realDoc: any = null;
 
-          if (realInvoice) {
-            setRealDocumentData(realInvoice);
+          // Je nach Dokumenttyp den entsprechenden Service verwenden
+          if (documentType === 'quote') {
+            const { QuoteService } = await import('@/services/quoteService');
+            realDoc = await QuoteService.getQuote(companyId, document.id);
+          } else if (documentType === 'invoice') {
+            const { FirestoreInvoiceService } = await import('@/services/firestoreInvoiceService');
+            realDoc = await FirestoreInvoiceService.getInvoiceById(companyId, document.id);
+          }
 
-            // Lade E-Invoice-Daten wenn vorhanden
-            if (realInvoice.eInvoiceData) {
-              setEInvoiceData(realInvoice.eInvoiceData);
+          if (realDoc) {
+            setRealDocumentData(realDoc);
+
+            // Lade E-Invoice-Daten wenn vorhanden (nur für Rechnungen)
+            if (documentType === 'invoice' && (realDoc as any)?.eInvoiceData) {
+              setEInvoiceData((realDoc as any).eInvoiceData);
 
               // Generiere QR-Code für E-Invoice
-              if (realInvoice.eInvoiceData.guid) {
-                await generateQRCode(realInvoice.eInvoiceData.guid, realInvoice);
+              if ((realDoc as any).eInvoiceData.guid) {
+                await generateQRCode((realDoc as any).eInvoiceData.guid, realDoc);
               }
             }
 
             // Set default email
-            if (realInvoice.customerEmail) {
-              setRecipientEmail(realInvoice.customerEmail);
+            if ((realDoc as any)?.customerEmail) {
+              setRecipientEmail((realDoc as any).customerEmail);
             }
           } else {
             setRealDocumentData(document);
           }
         } else {
-          // Für neue Rechnungen (ohne ID): Verwende direkt die übergebenen tempInvoiceData
-
+          // Für neue Dokumente (ohne ID): Verwende direkt die übergebenen Daten
           setRealDocumentData(document);
 
           // Set default email from document
@@ -273,19 +345,241 @@ export function SendDocumentModal({
           }
         }
       } catch (error) {
-        console.error('❌ Error loading real invoice data:', error);
+        console.error('❌ Error loading real document data:', error);
         setRealDocumentData(document); // Fallback to provided document
-        toast.error('Fehler beim Laden der Rechnungsdaten');
+        toast.error(`Fehler beim Laden der ${documentLabels[documentType] || 'Dokument'}-Daten`);
       } finally {
         setLoadingEInvoiceData(false);
       }
     };
 
-    loadRealInvoiceData();
-  }, [isOpen, document?.id, companyId, document]);
+    loadRealDocumentData();
+  }, [isOpen, document?.id, document, documentType]);
 
-  // Generate QR Code for E-Invoice
+  // Load company data and enrich document data
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const enrichDocumentWithCompanyData = async () => {
+      if (!companyId) return;
+      try {
+        // Load company data from Firestore
+        const { doc, getDoc } = await import('firebase/firestore');
+        const { db } = await import('@/firebase/clients');
+
+        const companyRef = doc(db, 'companies', companyId);
+        const companySnap = await getDoc(companyRef);
+
+        if (companySnap.exists()) {
+          const companyData = companySnap.data();
+
+
+
+
+
+          // Lade Auto-Lock-Zustimmung
+          const consent = companyData?.gobdSettings?.autoLockConsent || false;
+          setAutoLockConsent(consent);
+
+
+          // Always enrich document data with fresh company info
+          setRealDocumentData((prevData) => {
+            if (!prevData) {
+
+              return prevData;
+            }
+
+            const enrichedData = {
+              ...prevData,
+              // Always use fresh company data
+              companyName: companyData?.companyName || companyData?.name || prevData.companyName,
+              companyEmail: companyData?.email || prevData.companyEmail || '',
+              companyPhone: companyData?.phoneNumber || companyData?.companyPhoneNumber || prevData.companyPhone || '',
+              companyWebsite: companyData?.website || companyData?.companyWebsite || prevData.companyWebsite || '',
+              companyAddress: (() => {
+                const address = [
+                [companyData?.companyStreet?.replace(/\s+/g, ' ').trim(), companyData?.companyHouseNumber].
+                filter(Boolean).
+                join(' '),
+                [companyData?.companyPostalCode, companyData?.companyCity].filter(Boolean).join(' '),
+                companyData?.companyCountry].
+
+                filter(Boolean).
+                join('\n');
+                return address || prevData.companyAddress || '';
+              })(),
+              companyVatId: companyData?.vatId || prevData.companyVatId || '',
+              companyTaxNumber: companyData?.taxNumber || prevData.companyTaxNumber || '',
+              companyLogo: companyData?.profilePictureURL || companyData?.profilePictureFirebaseUrl || companyData?.companyLogo || prevData.companyLogo || ''
+            };
+
+
+
+            // Set company logo if available and no manual logo is set
+            const logoToUse = companyData?.profilePictureURL || companyData?.profilePictureFirebaseUrl || companyData?.companyLogo;
+            if (logoToUse && !logoUrl) {
+
+              setLogoUrl(logoToUse);
+            }
+
+            // Also set the enriched data in a separate state for immediate use
+            setEnrichedDocumentData(enrichedData);
+
+            return enrichedData;
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error loading company data:', error);
+        // Don't show error to user, just use existing data
+      }
+    };
+
+    // Delay to ensure realDocumentData is set first
+    const timer = setTimeout(() => {
+      enrichDocumentWithCompanyData();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, companyId, document?.id]); // ✅ FIX: realDocumentData removed to prevent infinite loop
+
+  // ✅ Check if html2pdf.js is loaded (loaded via Next.js Script tag on page level)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    console.log('🔍 Prüfe html2pdf.js Status...');
+    
+    // Check immediately
+    // @ts-ignore
+    if (window.html2pdf) {
+      console.log('✅ html2pdf.js bereits verfügbar');
+      setHtml2pdfReady(true);
+      return;
+    }
+    
+    // If not available, wait a bit and check again (Script might still be loading)
+    console.log('⏳ Warte auf html2pdf.js...');
+    const checkInterval = setInterval(() => {
+      // @ts-ignore
+      if (window.html2pdf) {
+        console.log('✅ html2pdf.js jetzt verfügbar');
+        setHtml2pdfReady(true);
+        clearInterval(checkInterval);
+      }
+    }, 100);
+    
+    // Timeout after 5 seconds
+    const timeout = setTimeout(() => {
+      clearInterval(checkInterval);
+      // @ts-ignore
+      if (!window.html2pdf) {
+        console.warn('⚠️ html2pdf.js nicht geladen - aktiviere trotzdem');
+      }
+      setHtml2pdfReady(true); // Enable anyway for fallback
+    }, 5000);
+    
+    return () => {
+      clearInterval(checkInterval);
+      clearTimeout(timeout);
+    };
+  }, []); // ✅ Run once on mount
+
+  // Generate QR Code when showQRCode is enabled
+  useEffect(() => {
+    if (documentSettings.showQRCode && (realDocumentData || document)) {
+      const docData = realDocumentData || document;
+      const guid = (docData as any)?.eInvoiceData?.guid || 'default-guid';
+      generateQRCode(guid, docData);
+    } else {
+      setQrCodeUrl(null); // Clear QR code when disabled
+      setDocumentSettings((prev) => ({
+        ...prev,
+        qrCodeUrl: undefined
+      }));
+    }
+  }, [documentSettings.showQRCode, realDocumentData, document, documentType]);
+
+  // Generate EPC QR Code when showEPCQRCode is enabled
+  useEffect(() => {
+    if (documentSettings.showEPCQRCode && (realDocumentData || document)) {
+      const docData = realDocumentData || document;
+      generateEPCQRCode(docData);
+    } else {
+      setEpcQrCodeUrl(null); // Clear EPC QR code when disabled
+      setDocumentSettings((prev) => ({
+        ...prev,
+        epcQrCodeUrl: undefined
+      }));
+    }
+  }, [documentSettings.showEPCQRCode, realDocumentData, document, companyId]);
+
+  // Generate QR Code for Document (Quote/Invoice)
   const generateQRCode = async (guid: string, invoiceData: InvoiceData) => {
+    try {
+
+      let qrContent: string;
+
+      if (documentType === 'quote') {
+        // QR-Code führt direkt zur Taskilo Hauptseite (erreichbare URL)
+        qrContent = 'https://taskilo.de';
+      } else if (documentType === 'invoice') {
+        // Für Rechnungen: Direkt zur Taskilo Webseite mit Kontaktbereich
+        qrContent = 'https://taskilo.de/kontakt';
+      } else {
+        // Fallback: Zur Taskilo Hauptseite
+        qrContent = 'https://taskilo.de';
+      }
+
+      // QR-Code generieren
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrContent)}`;
+      setQrCodeUrl(qrUrl);
+
+      // QR-Code URL auch in documentSettings setzen
+      setDocumentSettings((prev) => ({
+        ...prev,
+        qrCodeUrl: qrUrl
+      }));
+
+    } catch (error) {
+      console.error('❌ Error generating QR Code:', error);
+    }
+  };
+
+  // Generate EPC QR Code (Girocode) for SEPA transfers
+  const generateEPCQRCode = async (invoiceData: InvoiceData) => {
+    try {
+
+      // EPC QR Code Format nach SEPA Standard
+      const epcData = [
+      'BCD', // Service Tag
+      '002', // Version
+      '1', // Character set (UTF-8)
+      'SCT', // Identification
+      'DETESTEE', // BIC (aus Unternehmensdaten)
+      'Mietkoch Andy', // Empfängername
+      'DE89370400440532013000', // IBAN (aus Unternehmensdaten)
+      `EUR${(invoiceData.total || (invoiceData as any).totalAmount || 0).toFixed(2)}`, // Währung + Betrag
+      '', // Purpose (leer)
+      `RE-${invoiceData.invoiceNumber || invoiceData.number || ''}`, // Verwendungszweck
+      '' // Remittance Information (leer)
+      ].join('\n');
+
+      // EPC QR-Code generieren
+      const epcQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(epcData)}`;
+      setEpcQrCodeUrl(epcQrUrl);
+
+      // EPC QR-Code URL auch in documentSettings setzen
+      setDocumentSettings((prev) => ({
+        ...prev,
+        epcQrCodeUrl: epcQrUrl
+      }));
+
+    } catch (error) {
+      console.error('❌ Error generating EPC QR Code:', error);
+    }
+  };
+
+  // Generate QR Code for E-Invoice (legacy function for E-Invoice specific QR codes)
+  const generateEInvoiceQRCode = async (guid: string, invoiceData: InvoiceData) => {
     try {
       // E-Invoice QR-Code-Inhalt nach GS1 Standard
       const qrContent = JSON.stringify({
@@ -299,13 +593,13 @@ export function SendDocumentModal({
         currency: invoiceData.currency || 'EUR',
         seller: {
           name: invoiceData.companyName,
-          vatId: (invoiceData as any).companyVatId,
+          vatId: (invoiceData as any).companyVatId
         },
         buyer: {
           name: invoiceData.customerName,
-          vatId: (invoiceData as any).customerVatId,
+          vatId: (invoiceData as any).customerVatId
         },
-        downloadUrl: `${window.location.origin}/api/einvoices/${guid}/xml`,
+        downloadUrl: `${window.location.origin}/api/einvoices/${guid}/xml`
       });
 
       // Hier würdest du normalerweise eine QR-Code-Bibliothek verwenden
@@ -320,22 +614,22 @@ export function SendDocumentModal({
   // Layout definitions with SVG previews
   const layouts = {
     standard: [
-      {
-        value: 'TEMPLATE_STANDARD',
-        name: 'Standard',
-        svg: (
-          <svg
-            viewBox="0 0 72 102"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-full"
-          >
+    {
+      value: 'TEMPLATE_STANDARD',
+      name: 'Standard',
+      svg:
+      <svg
+        viewBox="0 0 72 102"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full h-full">
+
             <rect width="100%" height="100%" rx="4" fill="white"></rect>
             <line y1="5" x2="72" y2="5" stroke={selectedColor} strokeWidth="10"></line>
             <path
-              d="M51.2451 29.1655C49.2899 29.1655 47.8906 28.211 47.8906 26.265C47.8906 24.0688 49.605 23.3553 51.6899 23.1885C53.4413 23.0403 54.0807 22.9013 54.0807 22.3175V22.2711C54.0807 21.6873 53.5618 21.2889 52.7185 21.2889C51.8289 21.2889 51.2822 21.7151 51.2173 22.3823H48.252C48.391 20.2603 49.9942 19 52.8297 19C55.6746 19 57.2407 20.251 57.2407 22.4101V28.9987H54.1271V27.6272H54.09C53.5062 28.6836 52.6259 29.1655 51.2451 29.1655ZM52.2181 27.0805C53.2838 27.0805 54.1085 26.4411 54.1085 25.4774V24.5878C53.7657 24.7453 53.1633 24.8658 52.3757 24.9955C51.5231 25.1252 50.9115 25.4774 50.9115 26.1168C50.9115 26.7191 51.4397 27.0805 52.2181 27.0805Z"
-              fill="black"
-            ></path>
+          d="M51.2451 29.1655C49.2899 29.1655 47.8906 28.211 47.8906 26.265C47.8906 24.0688 49.605 23.3553 51.6899 23.1885C53.4413 23.0403 54.0807 22.9013 54.0807 22.3175V22.2711C54.0807 21.6873 53.5618 21.2889 52.7185 21.2889C51.8289 21.2889 51.2822 21.7151 51.2173 22.3823H48.252C48.391 20.2603 49.9942 19 52.8297 19C55.6746 19 57.2407 20.251 57.2407 22.4101V28.9987H54.1271V27.6272H54.09C53.5062 28.6836 52.6259 29.1655 51.2451 29.1655ZM52.2181 27.0805C53.2838 27.0805 54.1085 26.4411 54.1085 25.4774V24.5878C53.7657 24.7453 53.1633 24.8658 52.3757 24.9955C51.5231 25.1252 50.9115 25.4774 50.9115 26.1168C50.9115 26.7191 51.4397 27.0805 52.2181 27.0805Z"
+          fill="black">
+        </path>
             <line x1="48" y1="44.5" x2="60" y2="44.5" stroke="#060314" strokeOpacity="0.46"></line>
             <line x1="48" y1="48.5" x2="64" y2="48.5" stroke="#060314" strokeOpacity="0.46"></line>
             <line x1="48" y1="52.5" x2="56" y2="52.5" stroke="#060314" strokeOpacity="0.46"></line>
@@ -347,59 +641,59 @@ export function SendDocumentModal({
             <line x1="8" y1="57.5" x2="43" y2="57.5" stroke="#F4F2E5" strokeWidth="3"></line>
             <line x1="8" y1="63.5" x2="43" y2="63.5" stroke="#F4F2E5" strokeWidth="3"></line>
           </svg>
-        ),
-      },
-      {
-        value: 'TEMPLATE_NEUTRAL',
-        name: 'Neutral',
-        svg: (
-          <svg
-            viewBox="0 0 72 102"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-full"
-          >
+
+    },
+    {
+      value: 'TEMPLATE_NEUTRAL',
+      name: 'Neutral',
+      svg:
+      <svg
+        viewBox="0 0 72 102"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full h-full">
+
             <rect width="100%" height="100%" rx="4" fill="white"></rect>
             <path
-              d="M51.3906 30.1406C48.0938 30.1406 45.7344 28.5312 45.7344 25.25C45.7344 21.5469 48.625 20.3438 52.1406 20.0625C55.0938 19.8125 56.1719 19.5781 56.1719 18.5938V18.5156C56.1719 17.5312 55.2969 16.8594 53.875 16.8594C52.375 16.8594 51.4531 17.5781 51.3438 18.7031H46.3438C46.5781 15.125 49.2812 13 54.0625 13C58.8594 13 61.5 15.1094 61.5 18.75V29.8594H56.25V27.5469H56.1875C55.2031 29.3281 53.7188 30.1406 51.3906 30.1406ZM53.0312 26.625C54.8281 26.625 56.2188 25.5469 56.2188 23.9219V22.4219C55.6406 22.6875 54.625 22.8906 53.2969 23.1094C51.8594 23.3281 50.8281 23.9219 50.8281 25C50.8281 26.0156 51.7188 26.625 53.0312 26.625Z"
-              fill={selectedColor}
-            ></path>
+          d="M51.3906 30.1406C48.0938 30.1406 45.7344 28.5312 45.7344 25.25C45.7344 21.5469 48.625 20.3438 52.1406 20.0625C55.0938 19.8125 56.1719 19.5781 56.1719 18.5938V18.5156C56.1719 17.5312 55.2969 16.8594 53.875 16.8594C52.375 16.8594 51.4531 17.5781 51.3438 18.7031H46.3438C46.5781 15.125 49.2812 13 54.0625 13C58.8594 13 61.5 15.1094 61.5 18.75V29.8594H56.25V27.5469H56.1875C55.2031 29.3281 53.7188 30.1406 51.3906 30.1406ZM53.0312 26.625C54.8281 26.625 56.2188 25.5469 56.2188 23.9219V22.4219C55.6406 22.6875 54.625 22.8906 53.2969 23.1094C51.8594 23.3281 50.8281 23.9219 50.8281 25C50.8281 26.0156 51.7188 26.625 53.0312 26.625Z"
+          fill={selectedColor}>
+        </path>
             <line
-              x1="12"
-              y1="43.5"
-              x2="61"
-              y2="43.5"
-              stroke="#060314"
-              strokeOpacity="0.28"
-              strokeWidth="3"
-            ></line>
+          x1="12"
+          y1="43.5"
+          x2="61"
+          y2="43.5"
+          stroke="#060314"
+          strokeOpacity="0.28"
+          strokeWidth="3">
+        </line>
             <line
-              x1="12"
-              y1="49.5"
-              x2="61"
-              y2="49.5"
-              stroke="#060314"
-              strokeOpacity="0.28"
-              strokeWidth="3"
-            ></line>
+          x1="12"
+          y1="49.5"
+          x2="61"
+          y2="49.5"
+          stroke="#060314"
+          strokeOpacity="0.28"
+          strokeWidth="3">
+        </line>
             <line
-              x1="12"
-              y1="55.5"
-              x2="61"
-              y2="55.5"
-              stroke="#060314"
-              strokeOpacity="0.28"
-              strokeWidth="3"
-            ></line>
+          x1="12"
+          y1="55.5"
+          x2="61"
+          y2="55.5"
+          stroke="#060314"
+          strokeOpacity="0.28"
+          strokeWidth="3">
+        </line>
             <line
-              x1="12"
-              y1="61.5"
-              x2="61"
-              y2="61.5"
-              stroke="#060314"
-              strokeOpacity="0.28"
-              strokeWidth="3"
-            ></line>
+          x1="12"
+          y1="61.5"
+          x2="61"
+          y2="61.5"
+          stroke="#060314"
+          strokeOpacity="0.28"
+          strokeWidth="3">
+        </line>
             <line x1="12" y1="85.5" x2="24" y2="85.5" stroke={selectedColor}></line>
             <line x1="12" y1="89.5" x2="28" y2="89.5" stroke={selectedColor}></line>
             <line x1="12" y1="93.5" x2="20" y2="93.5" stroke={selectedColor}></line>
@@ -407,23 +701,23 @@ export function SendDocumentModal({
             <line x1="40" y1="89.5" x2="56" y2="89.5" stroke={selectedColor}></line>
             <line x1="40" y1="93.5" x2="48" y2="93.5" stroke={selectedColor}></line>
           </svg>
-        ),
-      },
-      {
-        value: 'TEMPLATE_ELEGANT',
-        name: 'Elegant',
-        svg: (
-          <svg
-            viewBox="0 0 72 102"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-full"
-          >
+
+    },
+    {
+      value: 'TEMPLATE_ELEGANT',
+      name: 'Elegant',
+      svg:
+      <svg
+        viewBox="0 0 72 102"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full h-full">
+
             <rect width="100%" height="100%" rx="4" fill="white"></rect>
             <path
-              d="M53.4263 29.55C52.6723 29.55 51.9833 29.381 51.3593 29.043C50.7353 28.731 50.2413 28.302 49.8773 27.756C49.5133 27.184 49.3313 26.56 49.3313 25.884C49.3313 24.974 49.6173 24.207 50.1893 23.583C50.7873 22.959 51.6453 22.4 52.7633 21.906L56.1173 20.424C56.6373 20.19 56.9623 19.982 57.0923 19.8C57.2223 19.592 57.2873 19.241 57.2873 18.747L57.3263 16.602C57.3523 15.848 57.2353 15.276 56.9753 14.886C56.7153 14.47 56.3123 14.262 55.7663 14.262C55.4543 14.262 55.1293 14.34 54.7913 14.496C54.4533 14.626 54.2063 14.782 54.0503 14.964C53.9723 15.068 53.9203 15.185 53.8943 15.315C53.8683 15.445 53.8553 15.575 53.8553 15.705C53.8553 15.861 53.8683 16.069 53.8943 16.329C53.9203 16.563 53.9333 16.758 53.9333 16.914C53.9333 17.096 53.7123 17.317 53.2703 17.577C52.8283 17.811 52.3213 18.032 51.7493 18.24C51.1773 18.422 50.6833 18.513 50.2673 18.513C50.0593 18.513 49.8773 18.435 49.7213 18.279C49.5913 18.097 49.5263 17.876 49.5263 17.616C49.5263 17.2 49.6693 16.797 49.9553 16.407C50.2413 16.017 50.7223 15.549 51.3983 15.003C52.1003 14.431 52.8673 13.924 53.6993 13.482C54.5313 13.04 55.3503 12.689 56.1563 12.429C56.9623 12.143 57.6513 12 58.2233 12C59.7053 12 60.8883 12.481 61.7723 13.443C62.6563 14.379 63.0723 15.64 63.0203 17.226L62.8253 24.792C62.7993 25.39 62.8903 25.91 63.0983 26.352C63.3323 26.768 63.6183 26.976 63.9563 26.976C64.4243 26.976 64.8403 26.807 65.2043 26.469C65.2823 26.391 65.3603 26.352 65.4383 26.352C65.5683 26.352 65.6723 26.404 65.7503 26.508C65.8543 26.586 65.9063 26.69 65.9063 26.82C65.9063 27.132 65.6463 27.548 65.1263 28.068C64.6323 28.562 64.0993 28.926 63.5273 29.16C62.9553 29.42 62.3573 29.55 61.7333 29.55C60.2253 29.55 58.9643 28.796 57.9503 27.288H57.8723C57.0143 28.094 56.2473 28.666 55.5713 29.004C54.8953 29.368 54.1803 29.55 53.4263 29.55ZM55.8443 26.859C56.0783 26.859 56.2733 26.82 56.4293 26.742C56.5853 26.664 56.7283 26.534 56.8583 26.352C56.9363 26.248 56.9883 26.118 57.0143 25.962C57.0663 25.806 57.0923 25.637 57.0923 25.455L57.2093 22.452C57.2093 22.218 57.1703 22.075 57.0923 22.023C57.0143 21.945 56.9233 21.906 56.8193 21.906C56.7673 21.906 56.7023 21.919 56.6243 21.945C56.5723 21.945 56.5073 21.971 56.4293 22.023C55.8053 22.361 55.3243 22.712 54.9863 23.076C54.6743 23.414 54.5183 24.038 54.5183 24.948C54.5183 25.702 54.6613 26.209 54.9473 26.469C55.2593 26.729 55.5583 26.859 55.8443 26.859Z"
-              fill="#8A6701"
-            ></path>
+          d="M53.4263 29.55C52.6723 29.55 51.9833 29.381 51.3593 29.043C50.7353 28.731 50.2413 28.302 49.8773 27.756C49.5133 27.184 49.3313 26.56 49.3313 25.884C49.3313 24.974 49.6173 24.207 50.1893 23.583C50.7873 22.959 51.6453 22.4 52.7633 21.906L56.1173 20.424C56.6373 20.19 56.9623 19.982 57.0923 19.8C57.2223 19.592 57.2873 19.241 57.2873 18.747L57.3263 16.602C57.3523 15.848 57.2353 15.276 56.9753 14.886C56.7153 14.47 56.3123 14.262 55.7663 14.262C55.4543 14.262 55.1293 14.34 54.7913 14.496C54.4533 14.626 54.2063 14.782 54.0503 14.964C53.9723 15.068 53.9203 15.185 53.8943 15.315C53.8683 15.445 53.8553 15.575 53.8553 15.705C53.8553 15.861 53.8683 16.069 53.8943 16.329C53.9203 16.563 53.9333 16.758 53.9333 16.914C53.9333 17.096 53.7123 17.317 53.2703 17.577C52.8283 17.811 52.3213 18.032 51.7493 18.24C51.1773 18.422 50.6833 18.513 50.2673 18.513C50.0593 18.513 49.8773 18.435 49.7213 18.279C49.5913 18.097 49.5263 17.876 49.5263 17.616C49.5263 17.2 49.6693 16.797 49.9553 16.407C50.2413 16.017 50.7223 15.549 51.3983 15.003C52.1003 14.431 52.8673 13.924 53.6993 13.482C54.5313 13.04 55.3503 12.689 56.1563 12.429C56.9623 12.143 57.6513 12 58.2233 12C59.7053 12 60.8883 12.481 61.7723 13.443C62.6563 14.379 63.0723 15.64 63.0203 17.226L62.8253 24.792C62.7993 25.39 62.8903 25.91 63.0983 26.352C63.3323 26.768 63.6183 26.976 63.9563 26.976C64.4243 26.976 64.8403 26.807 65.2043 26.469C65.2823 26.391 65.3603 26.352 65.4383 26.352C65.5683 26.352 65.6723 26.404 65.7503 26.508C65.8543 26.586 65.9063 26.69 65.9063 26.82C65.9063 27.132 65.6463 27.548 65.1263 28.068C64.6323 28.562 64.0993 28.926 63.5273 29.16C62.9553 29.42 62.3573 29.55 61.7333 29.55C60.2253 29.55 58.9643 28.796 57.9503 27.288H57.8723C57.0143 28.094 56.2473 28.666 55.5713 29.004C54.8953 29.368 54.1803 29.55 53.4263 29.55ZM55.8443 26.859C56.0783 26.859 56.2733 26.82 56.4293 26.742C56.5853 26.664 56.7283 26.534 56.8583 26.352C56.9363 26.248 56.9883 26.118 57.0143 25.962C57.0663 25.806 57.0923 25.637 57.0923 25.455L57.2093 22.452C57.2093 22.218 57.1703 22.075 57.0923 22.023C57.0143 21.945 56.9233 21.906 56.8193 21.906C56.7673 21.906 56.7023 21.919 56.6243 21.945C56.5723 21.945 56.5073 21.971 56.4293 22.023C55.8053 22.361 55.3243 22.712 54.9863 23.076C54.6743 23.414 54.5183 24.038 54.5183 24.948C54.5183 25.702 54.6613 26.209 54.9473 26.469C55.2593 26.729 55.5583 26.859 55.8443 26.859Z"
+          fill="#8A6701">
+        </path>
             <line x1="8" y1="44.5" x2="43" y2="44.5" stroke="#060314" strokeOpacity="0.28"></line>
             <line x1="51" y1="44.5" x2="63" y2="44.5" stroke="#8A6701"></line>
             <line x1="49" y1="48.5" x2="65" y2="48.5" stroke="#8A6701"></line>
@@ -435,23 +729,23 @@ export function SendDocumentModal({
             <line x1="8" y1="56.5" x2="43" y2="56.5" stroke="#060314" strokeOpacity="0.28"></line>
             <line x1="8" y1="62.5" x2="43" y2="62.5" stroke="#060314" strokeOpacity="0.28"></line>
           </svg>
-        ),
-      },
-      {
-        value: 'TEMPLATE_TECHNICAL',
-        name: 'Technisch',
-        svg: (
-          <svg
-            viewBox="0 0 72 102"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-full"
-          >
+
+    },
+    {
+      value: 'TEMPLATE_TECHNICAL',
+      name: 'Technisch',
+      svg:
+      <svg
+        viewBox="0 0 72 102"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full h-full">
+
             <rect width="100%" height="100%" rx="4" fill="white"></rect>
             <path
-              d="M61.3374 27.672H59.2974C57.8334 27.672 56.8734 26.88 56.7294 25.488H56.6094C56.1774 27.096 54.7374 27.96 52.8414 27.96C50.4414 27.96 48.8574 26.592 48.8574 24.264C48.8574 21.672 50.8014 20.448 54.4254 20.448H56.4174V19.824C56.4174 18.36 55.7934 17.592 54.1614 17.592C52.6734 17.592 51.8094 18.24 51.1374 19.152L49.1934 17.424C50.0094 16.032 51.8094 15 54.5694 15C57.9534 15 59.9694 16.56 59.9694 19.68V25.104H61.3374V27.672ZM54.1854 25.632C55.4334 25.632 56.4174 25.008 56.4174 23.856V22.368H54.5214C53.1054 22.368 52.3374 22.872 52.3374 23.832V24.312C52.3374 25.176 53.0574 25.632 54.1854 25.632Z"
-              fill={selectedColor}
-            ></path>
+          d="M61.3374 27.672H59.2974C57.8334 27.672 56.8734 26.88 56.7294 25.488H56.6094C56.1774 27.096 54.7374 27.96 52.8414 27.96C50.4414 27.96 48.8574 26.592 48.8574 24.264C48.8574 21.672 50.8014 20.448 54.4254 20.448H56.4174V19.824C56.4174 18.36 55.7934 17.592 54.1614 17.592C52.6734 17.592 51.8094 18.24 51.1374 19.152L49.1934 17.424C50.0094 16.032 51.8094 15 54.5694 15C57.9534 15 59.9694 16.56 59.9694 19.68V25.104H61.3374V27.672ZM54.1854 25.632C55.4334 25.632 56.4174 25.008 56.4174 23.856V22.368H54.5214C53.1054 22.368 52.3374 22.872 52.3374 23.832V24.312C52.3374 25.176 53.0574 25.632 54.1854 25.632Z"
+          fill={selectedColor}>
+        </path>
             <line x1="12" y1="44.5" x2="61" y2="44.5" stroke="#060314" strokeOpacity="0.28"></line>
             <line x1="12" y1="50.5" x2="61" y2="50.5" stroke="#060314" strokeOpacity="0.28"></line>
             <line x1="12" y1="56.5" x2="61" y2="56.5" stroke="#060314" strokeOpacity="0.28"></line>
@@ -460,23 +754,23 @@ export function SendDocumentModal({
             <line x1="12" y1="89.5" x2="60" y2="89.5" stroke={selectedColor}></line>
             <line x1="12" y1="93.5" x2="41" y2="93.5" stroke={selectedColor}></line>
           </svg>
-        ),
-      },
-      {
-        value: 'TEMPLATE_GEOMETRIC',
-        name: 'Geometrisch',
-        svg: (
-          <svg
-            viewBox="0 0 72 102"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-full"
-          >
+
+    },
+    {
+      value: 'TEMPLATE_GEOMETRIC',
+      name: 'Geometrisch',
+      svg:
+      <svg
+        viewBox="0 0 72 102"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full h-full">
+
             <rect width="100%" height="100%" rx="4" fill="white"></rect>
             <path
-              d="M58.0763 13.32H59.6443V28.04H58.0763V13.32ZM45.4043 20.68C45.4043 19.08 45.7243 17.7147 46.3643 16.584C47.0043 15.432 47.8576 14.5467 48.9243 13.928C50.0123 13.3093 51.207 13 52.5083 13C53.7883 13 54.887 13.3413 55.8043 14.024C56.7216 14.6853 57.4363 15.592 57.9483 16.744C58.4816 17.896 58.7483 19.208 58.7483 20.68C58.7483 22.1307 58.4816 23.4427 57.9483 24.616C57.4363 25.768 56.7216 26.6853 55.8043 27.368C54.887 28.0293 53.7883 28.36 52.5083 28.36C51.207 28.36 50.0123 28.0507 48.9243 27.432C47.8576 26.8133 47.0043 25.928 46.3643 24.776C45.7243 23.624 45.4043 22.2587 45.4043 20.68ZM47.1003 20.68C47.1003 21.96 47.3456 23.0587 47.8363 23.976C48.3483 24.8933 49.031 25.5973 49.8843 26.088C50.759 26.5573 51.7083 26.792 52.7323 26.792C53.6496 26.792 54.503 26.5253 55.2923 25.992C56.103 25.4587 56.7536 24.7333 57.2443 23.816C57.735 22.8987 57.9803 21.8533 57.9803 20.68C57.9803 19.5067 57.735 18.4613 57.2443 17.544C56.7536 16.6267 56.103 15.9013 55.2923 15.368C54.503 14.8347 53.6496 14.568 52.7323 14.568C51.7083 14.568 50.759 14.8133 49.8843 15.304C49.031 15.7733 48.3483 16.4667 47.8363 17.384C47.3456 18.3013 47.1003 19.4 47.1003 20.68Z"
-              fill="#E64111"
-            ></path>
+          d="M58.0763 13.32H59.6443V28.04H58.0763V13.32ZM45.4043 20.68C45.4043 19.08 45.7243 17.7147 46.3643 16.584C47.0043 15.432 47.8576 14.5467 48.9243 13.928C50.0123 13.3093 51.207 13 52.5083 13C53.7883 13 54.887 13.3413 55.8043 14.024C56.7216 14.6853 57.4363 15.592 57.9483 16.744C58.4816 17.896 58.7483 19.208 58.7483 20.68C58.7483 22.1307 58.4816 23.4427 57.9483 24.616C57.4363 25.768 56.7216 26.6853 55.8043 27.368C54.887 28.0293 53.7883 28.36 52.5083 28.36C51.207 28.36 50.0123 28.0507 48.9243 27.432C47.8576 26.8133 47.0043 25.928 46.3643 24.776C45.7243 23.624 45.4043 22.2587 45.4043 20.68ZM47.1003 20.68C47.1003 21.96 47.3456 23.0587 47.8363 23.976C48.3483 24.8933 49.031 25.5973 49.8843 26.088C50.759 26.5573 51.7083 26.792 52.7323 26.792C53.6496 26.792 54.503 26.5253 55.2923 25.992C56.103 25.4587 56.7536 24.7333 57.2443 23.816C57.735 22.8987 57.9803 21.8533 57.9803 20.68C57.9803 19.5067 57.735 18.4613 57.2443 17.544C56.7536 16.6267 56.103 15.9013 55.2923 15.368C54.503 14.8347 53.6496 14.568 52.7323 14.568C51.7083 14.568 50.759 14.8133 49.8843 15.304C49.031 15.7733 48.3483 16.4667 47.8363 17.384C47.3456 18.3013 47.1003 19.4 47.1003 20.68Z"
+          fill="#E64111">
+        </path>
             <line x1="12" y1="44.5" x2="61" y2="44.5" stroke="#060314" strokeOpacity="0.9"></line>
             <line x1="12" y1="50.5" x2="61" y2="50.5" stroke="#060314" strokeOpacity="0.28"></line>
             <line x1="12" y1="56.5" x2="61" y2="56.5" stroke="#060314" strokeOpacity="0.9"></line>
@@ -488,18 +782,18 @@ export function SendDocumentModal({
             <line x1="40" y1="89.5" x2="56" y2="89.5" stroke="#E64111"></line>
             <line x1="40" y1="93.5" x2="48" y2="93.5" stroke="#E64111"></line>
           </svg>
-        ),
-      },
-      {
-        value: 'TEMPLATE_DYNAMIC',
-        name: 'Dynamisch',
-        svg: (
-          <svg
-            viewBox="0 0 72 102"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-full"
-          >
+
+    },
+    {
+      value: 'TEMPLATE_DYNAMIC',
+      name: 'Dynamisch',
+      svg:
+      <svg
+        viewBox="0 0 72 102"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full h-full">
+
             <defs>
               <clipPath id="clip0_663_547">
                 <rect width="100%" height="100%" rx="4" fill="white"></rect>
@@ -509,45 +803,45 @@ export function SendDocumentModal({
               <rect width="100%" height="100%" rx="4" fill="white"></rect>
               <ellipse cx="18" cy="6" rx="54" ry="25" fill="#2BB7C4"></ellipse>
               <path
-                d="M17.6099 22.594C16.6272 22.594 15.7765 22.3373 15.0579 21.824C14.3539 21.296 13.8112 20.592 13.4299 19.712C13.0632 18.832 12.8799 17.8787 12.8799 16.852C12.8799 15.7373 13.0925 14.74 13.5179 13.86C13.9432 12.98 14.5665 12.2833 15.3879 11.77C16.2239 11.2567 17.2212 11 18.3799 11C18.7172 11 19.1352 11.022 19.6339 11.066C20.1472 11.0953 20.5799 11.1393 20.9319 11.198H22.4059V20.328C22.4059 20.5333 22.4499 20.6947 22.5379 20.812C22.6406 20.9147 22.7872 20.966 22.9779 20.966C23.2272 20.966 23.4252 20.8413 23.5719 20.592L24.8039 21.406C24.6132 21.7727 24.3345 22.066 23.9679 22.286C23.6159 22.4913 23.2346 22.594 22.8239 22.594C22.2812 22.594 21.8119 22.44 21.4159 22.132C21.0345 21.8093 20.8292 21.4353 20.7999 21.01V21.032C20.5505 21.516 20.1325 21.8973 19.5459 22.176C18.9592 22.4547 18.3139 22.594 17.6099 22.594ZM17.7419 20.966C18.3285 20.966 18.8492 20.812 19.3039 20.504C19.7585 20.196 20.1032 19.8073 20.3379 19.338C20.4699 19.0887 20.5432 18.876 20.5579 18.7C20.5872 18.524 20.6019 18.326 20.6019 18.106V12.782L19.6779 12.716C18.9445 12.6573 18.4532 12.628 18.2039 12.628C17.0892 12.628 16.2239 13.024 15.6079 13.816C14.9919 14.608 14.6839 15.6127 14.6839 16.83C14.6839 17.9593 14.9552 18.9347 15.4979 19.756C16.0405 20.5627 16.7885 20.966 17.7419 20.966Z"
-                fill="white"
-              ></path>
+            d="M17.6099 22.594C16.6272 22.594 15.7765 22.3373 15.0579 21.824C14.3539 21.296 13.8112 20.592 13.4299 19.712C13.0632 18.832 12.8799 17.8787 12.8799 16.852C12.8799 15.7373 13.0925 14.74 13.5179 13.86C13.9432 12.98 14.5665 12.2833 15.3879 11.77C16.2239 11.2567 17.2212 11 18.3799 11C18.7172 11 19.1352 11.022 19.6339 11.066C20.1472 11.0953 20.5799 11.1393 20.9319 11.198H22.4059V20.328C22.4059 20.5333 22.4499 20.6947 22.5379 20.812C22.6406 20.9147 22.7872 20.966 22.9779 20.966C23.2272 20.966 23.4252 20.8413 23.5719 20.592L24.8039 21.406C24.6132 21.7727 24.3345 22.066 23.9679 22.286C23.6159 22.4913 23.2346 22.594 22.8239 22.594C22.2812 22.594 21.8119 22.44 21.4159 22.132C21.0345 21.8093 20.8292 21.4353 20.7999 21.01V21.032C20.5505 21.516 20.1325 21.8973 19.5459 22.176C18.9592 22.4547 18.3139 22.594 17.6099 22.594ZM17.7419 20.966C18.3285 20.966 18.8492 20.812 19.3039 20.504C19.7585 20.196 20.1032 19.8073 20.3379 19.338C20.4699 19.0887 20.5432 18.876 20.5579 18.7C20.5872 18.524 20.6019 18.326 20.6019 18.106V12.782L19.6779 12.716C18.9445 12.6573 18.4532 12.628 18.2039 12.628C17.0892 12.628 16.2239 13.024 15.6079 13.816C14.9919 14.608 14.6839 15.6127 14.6839 16.83C14.6839 17.9593 14.9552 18.9347 15.4979 19.756C16.0405 20.5627 16.7885 20.966 17.7419 20.966Z"
+            fill="white">
+          </path>
               <line
-                x1="12"
-                y1="43.5"
-                x2="61"
-                y2="43.5"
-                stroke="#060314"
-                strokeOpacity="0.28"
-                strokeWidth="3"
-              ></line>
+            x1="12"
+            y1="43.5"
+            x2="61"
+            y2="43.5"
+            stroke="#060314"
+            strokeOpacity="0.28"
+            strokeWidth="3">
+          </line>
               <line
-                x1="12"
-                y1="49.5"
-                x2="61"
-                y2="49.5"
-                stroke="#060314"
-                strokeOpacity="0.28"
-                strokeWidth="3"
-              ></line>
+            x1="12"
+            y1="49.5"
+            x2="61"
+            y2="49.5"
+            stroke="#060314"
+            strokeOpacity="0.28"
+            strokeWidth="3">
+          </line>
               <line
-                x1="12"
-                y1="55.5"
-                x2="61"
-                y2="55.5"
-                stroke="#060314"
-                strokeOpacity="0.28"
-                strokeWidth="3"
-              ></line>
+            x1="12"
+            y1="55.5"
+            x2="61"
+            y2="55.5"
+            stroke="#060314"
+            strokeOpacity="0.28"
+            strokeWidth="3">
+          </line>
               <line
-                x1="12"
-                y1="61.5"
-                x2="61"
-                y2="61.5"
-                stroke="#060314"
-                strokeOpacity="0.28"
-                strokeWidth="3"
-              ></line>
+            x1="12"
+            y1="61.5"
+            x2="61"
+            y2="61.5"
+            stroke="#060314"
+            strokeOpacity="0.28"
+            strokeWidth="3">
+          </line>
               <line x1="12" y1="85.5" x2="24" y2="85.5" stroke="#2BB7C4"></line>
               <line x1="12" y1="89.5" x2="28" y2="89.5" stroke="#2BB7C4"></line>
               <line x1="12" y1="93.5" x2="20" y2="93.5" stroke="#2BB7C4"></line>
@@ -556,9 +850,9 @@ export function SendDocumentModal({
               <line x1="40" y1="93.5" x2="48" y2="93.5" stroke="#2BB7C4"></line>
             </g>
           </svg>
-        ),
-      },
-    ],
+
+    }]
+
   };
 
   const documentLabel = documentLabels[documentType];
@@ -568,7 +862,7 @@ export function SendDocumentModal({
   const zoomLabels = ['200%', '175%', '150%', '125%', '100%', '75%', '50%'];
 
   const toggleSection = (section: SendOption) => {
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(section)) {
         newSet.delete(section);
@@ -664,7 +958,7 @@ export function SendDocumentModal({
         element.style.removeProperty('transform');
         element.style.removeProperty('transform-origin');
       }
-      element.querySelectorAll('*').forEach(child => {
+      element.querySelectorAll('*').forEach((child) => {
         if ((child as HTMLElement).style) {
           (child as HTMLElement).style.removeProperty('transform');
           (child as HTMLElement).style.removeProperty('transform-origin');
@@ -807,20 +1101,291 @@ ${document.companyName || 'Ihr Unternehmen'}`;
 
     return await extractHtmlWithStyles();
   }, [
-    templateReady,
-    loadingEInvoiceData,
-    realDocumentData,
-    document,
-    cachedHtml,
-    extractHtmlWithStyles,
-  ]);
+  templateReady,
+  loadingEInvoiceData,
+  realDocumentData,
+  document,
+  cachedHtml,
+  extractHtmlWithStyles]
+  );
 
-  const handleSend = async (method: 'email' | 'download' | 'print') => {
+  const handleSend = async (method: 'email' | 'download' | 'print' | 'save' | 'post') => {
     if (sending) return;
+    
+    console.log('🚨 HANDLE SEND START:', method);
+    console.log('🔍 Aktuelle Skonto-States beim Send:');
+    console.log('  - skontoEnabled:', skontoEnabled, typeof skontoEnabled);
+    console.log('  - skontoDays:', skontoDays, typeof skontoDays);
+    console.log('  - skontoPercentage:', skontoPercentage, typeof skontoPercentage);
+    console.log('  - skontoText:', skontoText);
+
+    // GoBD-Warnung nur für Rechnungen zeigen
+    if (documentType === 'invoice') {
+      const actionTypeMap = {
+        'download': 'download',
+        'print': 'print',
+        'email': 'email',
+        'save': 'save',
+        'post': 'post'
+      } as const;
+
+      // Wenn Auto-Lock-Zustimmung bereits gegeben wurde, direkt ausführen
+      if (autoLockConsent === true) {
+
+        await performSend(method);
+        return;
+      }
+
+      // Ansonsten GoBD-Warnung anzeigen
+      showWarning({
+        actionType: actionTypeMap[method],
+        documentType: 'Rechnung',
+        documentNumber: document.documentNumber || 'Unbekannt',
+        companyId: companyId || 'unknown',
+        documentId: document.id,
+        isAlreadyLocked: (document as any).gobdStatus?.isLocked || false,
+        onConfirm: () => performSend(method),
+        onConsentSaved: () => {
+          // Aktualisiere den State, damit beim nächsten Mal nicht mehr gefragt wird
+          setAutoLockConsent(true);
+
+        }
+      });
+      return;
+    }
+
+    // Direkter Versand für andere Dokumenttypen (ohne GoBD-Warnung)
+    await performSend(method);
+  };
+
+  // Separate Funktion für den eigentlichen Versand
+  const performSend = async (method: 'email' | 'download' | 'print' | 'save' | 'post') => {
+    
+    // 💰 KRITISCH: Skonto-Daten bei JEDER ACTION in Datenbank speichern!
+    if (document?.id && companyId) {
+      try {
+        console.log('🔍 SPEICHERN: Aktuelle Skonto-States:', {
+          skontoEnabled,
+          skontoDays,
+          skontoPercentage,
+          skontoText
+        });
+        console.log('🔍 SPEICHERN: Original Document Skonto:', {
+          skontoEnabled: document?.skontoEnabled,
+          skontoDays: document?.skontoDays,
+          skontoPercentage: document?.skontoPercentage,
+          skontoText: document?.skontoText
+        });
+        
+        // Collection basierend auf documentType bestimmen
+        const collectionName = documentType === 'invoice' ? 'invoices' : 
+                              documentType === 'quote' ? 'quotes' : 
+                              'invoices';
+        const docRef = doc(db, 'companies', companyId, collectionName, document.id);
+        
+        const updateData = {
+          skontoEnabled: skontoEnabled,
+          skontoDays: skontoDays,
+          skontoPercentage: skontoPercentage,
+          skontoText: skontoText,
+          updatedAt: new Date(),
+        };
+        
+        console.log('🔍 SPEICHERN: Update Data:', updateData);
+        await updateDoc(docRef, updateData);
+        console.log('✅ Skonto-Daten bei Action gespeichert:', method);
+      } catch (error) {
+        console.error('❌ Fehler beim Speichern der Skonto-Daten:', error);
+        // Weiter machen - Action nicht abbrechen
+      }
+    }
+
+    // 1. Finale PDF-Daten aus Template holen
+    // Annahme: PDFTemplateProps stehen zur Verfügung (siehe PDFTemplates.tsx)
+    // Wir nutzen enrichedDocumentData oder realDocumentData als Basis
+    const pdfTemplateProps = {
+      document: {
+        ...(enrichedDocumentData || realDocumentData || document),
+        // Skonto-Daten für PDF-Generierung hinzufügen
+        skontoEnabled: skontoEnabled,
+        skontoDays: skontoDays,
+        skontoPercentage: skontoPercentage,
+        skontoText: skontoText
+      },
+      template: selectedLayout,
+      color: selectedColor,
+      logoUrl,
+      logoSize,
+      documentType,
+      pageMode,
+      documentSettings
+    };
+    // usePDFTemplateData ist ein Hook, daher nicht direkt hier nutzbar. Wir nehmen die Props als "finalData".
+
+    // 2. PDF als Blob generieren
+    console.log('🔍 PDF-Generierung gestartet...');
+    
+    let pdfBlob: Blob | null = null;
+    
+    // Für "print" verwenden wir die dedizierte Print-Seite direkt (kein PDF-Blob nötig)
+    // Für "print" verwenden wir die dedizierte Print-Seite direkt (kein PDF-Blob nötig)
+    if (method === 'print') {
+      console.log('🖨️ Print-Methode - überspringe PDF-Blob Generierung');
+      // Wir brauchen nur die Dokument-ID - das PDF wird in der Print-Seite generiert
+    } else if (method === 'download' || method === 'email') {
+      // Für Download/Email: Generiere PDF mit html2pdf
+      console.log('📄 templateRef.current:', templateRef.current ? 'vorhanden' : 'FEHLT');
+      console.log('🔧 window.html2pdf:', typeof window !== 'undefined' && window.html2pdf ? 'verfügbar' : 'NICHT verfügbar');
+      console.log('🎯 html2pdfReady state:', html2pdfReady);
+      
+      // ✅ Prüfe ob html2pdf verfügbar ist (sollte durch useEffect vorgeladen sein)
+      if (!html2pdfReady || typeof window === 'undefined' || !window.html2pdf) {
+        console.error('❌ html2pdf.js nicht verfügbar. html2pdfReady:', html2pdfReady);
+        toast.error('PDF-Generator nicht bereit. Bitte warten Sie einen Moment.');
+        return;
+      }
+
+      if (!templateRef.current) {
+        console.error('❌ templateRef.current ist null - kann kein PDF generieren!');
+        toast.error('Keine Vorlage zum Generieren verfügbar');
+        return;
+      }
+
+      // Generiere PDF mit html2pdf
+      console.log('✨ Verwende html2pdf für PDF-Generierung...');
+      try {
+        // Konfiguration für bessere PDF-Qualität
+        const opt = {
+          margin: 10,
+          filename: `${documentLabel}_${document.documentNumber || document.number || 'document'}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        // @ts-ignore
+        pdfBlob = await window.html2pdf().set(opt).from(templateRef.current).outputPdf('blob');
+        console.log('✅ PDF-Blob erfolgreich generiert:', pdfBlob);
+        if (pdfBlob) {
+          console.log('📊 Blob-Größe:', pdfBlob.size, 'bytes');
+          console.log('📋 Blob-Typ:', pdfBlob.type);
+        }
+      } catch (pdfError) {
+        console.error('❌ Fehler bei html2pdf:', pdfError);
+        toast.error('PDF-Generierung fehlgeschlagen');
+        return;
+      }
+    }
 
     try {
       setSending(true);
 
+      // 3. Dokument ZUERST speichern, wenn noch keine ID vorhanden (für neue Dokumente)
+      let invoiceId = realDocumentData?.id || document?.id;
+
+      // WICHTIG: Für Print müssen wir IMMER überprüfen, ob das Dokument in Firestore existiert
+      // weil die ID aus dem Client-State kommen könnte und nicht aus Firestore
+      let needsSaving = false;
+      
+      if (method === 'print' && invoiceId) {
+        // Prüfe ob Dokument in Firestore existiert
+        try {
+          const { db } = await import('@/firebase/clients');
+          const { doc, getDoc } = await import('firebase/firestore');
+          
+          let collectionName = 'invoices';
+          if (documentType === 'quote') collectionName = 'quotes';
+          if (documentType === 'reminder') collectionName = 'reminders';
+          
+          const docRef = doc(db, collectionName, invoiceId);
+          const docSnap = await getDoc(docRef);
+          
+          if (!docSnap.exists()) {
+            console.log('⚠️ Dokument mit ID existiert nicht in Firestore, muss gespeichert werden');
+            needsSaving = true;
+            invoiceId = null; // Setze ID zurück, damit neue ID generiert wird
+          }
+        } catch (e) {
+          console.error('Fehler beim Prüfen des Dokuments:', e);
+          needsSaving = true;
+          invoiceId = null;
+        }
+      }
+
+      // Wenn keine ID vorhanden ist oder needsSaving true ist, MUSS das Dokument erst gespeichert werden
+      // Für Print: Immer speichern wenn Dokument nicht in Firestore existiert
+      const shouldSave = !invoiceId || needsSaving;
+      
+      if (shouldSave && documentType === 'invoice') {
+
+
+        try {
+          // Kombiniere die Daten aus realDocumentData und document
+          const sourceData = realDocumentData || document;
+
+          // Bereite die Invoice-Daten vor und entferne undefined Felder
+          const invoiceToSave: any = {
+            companyId,
+            customerName: sourceData.customerName || '',
+            customerAddress: sourceData.customerAddress || '',
+            customerEmail: sourceData.customerEmail || '',
+            items: sourceData.items || [],
+            total: sourceData.total || 0,
+            status: sourceData.status || 'draft',
+            invoiceNumber: sourceData.invoiceNumber || '',
+            number: sourceData.number || '',
+            date: sourceData.date || new Date().toISOString(),
+            issueDate: sourceData.issueDate || new Date().toISOString(),
+            dueDate: sourceData.dueDate || new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            // Nur definierte Felder hinzufügen
+            ...(sourceData.customerNumber && { customerNumber: sourceData.customerNumber }),
+            ...(sourceData.customerOrderNumber && { customerOrderNumber: sourceData.customerOrderNumber }),
+            ...(sourceData.notes && { notes: sourceData.notes }),
+            ...(sourceData.paymentTerms && { paymentTerms: sourceData.paymentTerms }),
+            ...(sourceData.bankDetails && { bankDetails: sourceData.bankDetails }),
+            ...(sourceData.footerText && { footerText: sourceData.footerText }),
+            ...(sourceData.headTextHtml && { headTextHtml: sourceData.headTextHtml }),
+            ...(sourceData.title && { title: sourceData.title }),
+            ...(sourceData.tax && { tax: sourceData.tax }),
+            ...(sourceData.amount && { amount: sourceData.amount }),
+            ...(sourceData.vatRate !== undefined && { vatRate: sourceData.vatRate }),
+            ...(sourceData.currency && { currency: sourceData.currency }),
+            ...(sourceData.eInvoiceData && { eInvoiceData: sourceData.eInvoiceData })
+          };
+
+          // Speichere direkt in Firestore über den Service
+          invoiceId = await FirestoreInvoiceService.saveInvoice(invoiceToSave as InvoiceData);
+
+          // Update das realDocumentData und document mit der neuen ID
+          if (realDocumentData) {
+            realDocumentData.id = invoiceId;
+          }
+          if (document) {
+            document.id = invoiceId;
+          }
+
+
+          toast.success('Dokument wurde automatisch gespeichert');
+
+        } catch (saveError) {
+          console.error('❌ Fehler beim Speichern des Dokuments:', saveError);
+          toast.error('Fehler beim Speichern des Dokuments');
+          setSending(false);
+          return;
+        }
+      }
+
+
+
+
+
+
+
+      // 4. KEINE Storage-Speicherung mehr - direkt zu Aktionen
+
+      // 5. Spezielle Aktionen ausführen
       if (method === 'email') {
         if (!recipientEmail.trim()) {
           toast.error('Bitte geben Sie eine Empfänger-E-Mail-Adresse ein');
@@ -832,17 +1397,188 @@ ${document.companyName || 'Ihr Unternehmen'}`;
         }
       }
 
-      if (onSend) {
-        await onSend(method, {
-          email: method === 'email' ? recipientEmail : undefined,
-          subject: method === 'email' ? emailSubject : undefined,
-          message: method === 'email' ? emailMessage : undefined,
-          sendCopy: method === 'email' ? sendCopy : undefined,
-        });
+      // Spezialbehandlung für Save-Operation
+      if (method === 'save') {
+        toast.success(`${documentLabel} gespeichert`);
+        onClose();
+        return;
       }
 
-      toast.success(`${documentLabel} erfolgreich versendet`);
-      onClose();
+      // Spezialbehandlung für Post-Operation (noch nicht implementiert)
+      if (method === 'post') {
+        toast.error('Per Post versenden ist noch nicht verfügbar');
+        return;
+      }
+
+      // 6. Führe die eigentliche Aktion aus
+      if (method === 'print') {
+        console.log('🚨 DEBUG: PRINT-METHODE GESTARTET!');
+        console.log('🚨 DEBUG: pdfBlob vor Speicherung:', !!pdfBlob);
+        
+        // 💰 KRITISCH: Skonto-Daten auch bei Print in Datenbank speichern!
+        if (document?.id && companyId) {
+          try {
+            console.log('🔍 PRINT: Aktuelle Skonto-States:', {
+              skontoEnabled,
+              skontoDays,
+              skontoPercentage,
+              skontoText
+            });
+            
+            const collectionName = documentType === 'invoice' ? 'invoices' : 
+                                  documentType === 'quote' ? 'quotes' : 
+                                  'invoices';
+            const docRef = doc(db, 'companies', companyId, collectionName, document.id);
+            
+            const updateData = {
+              skontoEnabled: skontoEnabled,
+              skontoDays: skontoDays,
+              skontoPercentage: skontoPercentage,
+              skontoText: skontoText,
+              updatedAt: new Date(),
+            };
+            
+            console.log('🔍 PRINT: Update Data:', updateData);
+            await updateDoc(docRef, updateData);
+            console.log('✅ PRINT: Skonto-Daten gespeichert');
+          } catch (error) {
+            console.error('❌ PRINT: Fehler beim Speichern der Skonto-Daten:', error);
+          }
+        }
+        
+        // Dokument MUSS in Firestore gespeichert sein
+        // Rufe onSend auf, um das Dokument zu speichern (handleSubmit)
+        if (onSend) {
+          console.log('💾 Speichere Dokument vor dem Drucken...');
+          try {
+            await onSend(method, {});
+            console.log('✅ Dokument gespeichert via onSend');
+            
+            // Hole die neue ID aus dem document Objekt (wurde von handleSubmit aktualisiert)
+            const newId = realDocumentData?.id || document?.id;
+            console.log('🆔 ID nach Speicherung:', newId);
+            
+            if (newId && newId !== invoiceId) {
+              console.log('🔄 ID wurde aktualisiert:', invoiceId, '→', newId);
+              invoiceId = newId;
+            }
+          } catch (saveError) {
+            console.error('❌ Fehler beim Speichern:', saveError);
+            toast.error('Dokument konnte nicht gespeichert werden');
+            setSending(false);
+            return;
+          }
+        }
+        
+        if (!invoiceId) {
+          toast.error('Dokument muss zuerst gespeichert werden');
+          setSending(false);
+          return;
+        }
+
+        // 🔥 CRITICAL: Speichere Template-Einstellungen in Firestore BEVOR Print-Seite geöffnet wird
+        console.log('💾 Speichere Template-Einstellungen...');
+        try {
+          const { doc: firestoreDoc, updateDoc } = await import('firebase/firestore');
+          const { db } = await import('@/firebase/clients');
+          
+          let collectionName = 'invoices';
+          if (documentType === 'quote') collectionName = 'quotes';
+          if (documentType === 'reminder') collectionName = 'reminders';
+          
+          const docRef = firestoreDoc(db, 'companies', companyId, collectionName, invoiceId);
+          
+          // 🚨 Remove undefined values (Firestore doesn't accept them)
+          const cleanDocumentSettings = JSON.parse(
+            JSON.stringify(documentSettings, (key, value) => {
+              return value === undefined ? null : value;
+            })
+          );
+          
+          // 🔥 CRITICAL FIX: Stelle sicher, dass footerText immer Platzhalter enthält (nie gerenderte Werte)
+          // Problem: Footer-Text könnte bereits mit gerenderten Beträgen gespeichert sein
+          let cleanFooterText = document?.footerText || '';
+          if (cleanFooterText && !cleanFooterText.includes('[%GESAMTBETRAG%]')) {
+            // Wenn kein Platzhalter vorhanden, setze Standard-Footer-Text mit Platzhaltern
+            cleanFooterText = 'Wir bitten Sie, den Rechnungsbetrag von [%GESAMTBETRAG%] unter Angabe der Rechnungsnummer [%RECHNUNGSNUMMER%] auf das unten angegebene Konto zu überweisen. Zahlungsziel: [%ZAHLUNGSZIEL%] Rechnungsdatum: [%RECHNUNGSDATUM%] Vielen Dank für Ihr Vertrauen und die angenehme Zusammenarbeit!<br>Mit freundlichen Grüßen<br>[%KONTAKTPERSON%]';
+          }
+          
+          await updateDoc(docRef, {
+            templateId: selectedLayout,
+            template: selectedLayout,
+            templateType: selectedLayout,
+            color: selectedColor,
+            logoUrl: logoUrl || null,
+            logoSize: logoSize,
+            pageMode: pageMode,
+            documentSettings: cleanDocumentSettings,
+            footerText: cleanFooterText, // ← Speichere bereinigten Footer-Text
+            // 🔥 CRITICAL: Speichere Tax Rule für Print-Ansicht
+            taxRule: document?.taxRule || (realDocumentData as any)?.taxRule || null,
+            taxRuleType: document?.taxRuleType || (realDocumentData as any)?.taxRuleType || null,
+            updatedAt: new Date(),
+          });
+          
+          console.log('✅ Template-Einstellungen gespeichert:', {
+            templateId: selectedLayout,
+            color: selectedColor,
+            pageMode: pageMode,
+          });
+        } catch (updateError) {
+          console.error('⚠️ Template-Einstellungen konnten nicht gespeichert werden:', updateError);
+          // Nicht kritisch - drucken trotzdem
+        }
+        
+        // Kein PDF-Storage bei Print - direkt zur Print-Seite
+        console.log('�️ Print ohne Storage-Speicherung');
+
+        console.log('🚨 DEBUG: VOR PRINT-WINDOW - PDF STORAGE STATUS ÜBERPRÜFT');
+        console.log('⏳ Warte 2 Sekunden auf Firestore-Replikation...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        console.log('🚨 DEBUG: JETZT ÖFFNE PRINT-SEITE');
+        console.log('🖨️ Öffne Print-Seite...');
+        console.log('📄 Finale Document ID:', invoiceId);
+        console.log('📋 Document Type:', documentType);
+        console.log('🏢 Company ID:', companyId);
+
+        // Bestimme den Type-Parameter für die Print-Seite
+        let printType = 'invoice';
+        if (documentType === 'quote') printType = 'quote';
+        if (documentType === 'reminder') printType = 'reminder';
+
+        // CRITICAL FIX: Include companyId in URL for efficient Firestore lookup
+        // New URL structure: /print/{type}/{companyId}/{documentId}
+        const printUrl = `/print/${printType}/${companyId}/${invoiceId}`;
+        console.log('🌐 Print URL:', printUrl);
+
+        const printWindow = window.open(printUrl, '_blank');
+        console.log('🪟 Print-Fenster geöffnet:', !!printWindow);
+
+        if (printWindow) {
+          toast.success(`${documentLabel} wird gedruckt`);
+        } else {
+          // Popup wurde blockiert
+          toast.info('Bitte erlauben Sie Pop-ups, um das Dokument zu drucken');
+        }
+
+        onClose();
+        return;
+      }
+
+      // onSend nur für Email aufrufen
+      if (onSend && method === 'email') {
+        await onSend(method, {
+          email: recipientEmail,
+          subject: emailSubject,
+          message: emailMessage,
+          sendCopy: sendCopy
+        });
+
+        toast.success(`${documentLabel} erfolgreich versendet`);
+        onClose();
+        return;
+      }
     } catch (error) {
       console.error('Error sending document:', error);
       toast.error(`Fehler beim Versenden der ${documentLabel.toLowerCase()}`);
@@ -861,20 +1597,23 @@ ${document.companyName || 'Ihr Unternehmen'}`;
           <button
             onClick={onClose}
             className="absolute top-2 right-4 text-white hover:text-white/80 hover:bg-white/10 z-[9999] p-2 rounded transition-colors"
-            style={{ color: '#FFFFFF !important', fontSize: '20px', fontWeight: 'bold' }}
-          >
+            style={{ color: '#FFFFFF !important', fontSize: '20px', fontWeight: 'bold' }}>
+
             ✕
           </button>
           <DialogTitle className="text-xl font-semibold text-white">
             {documentLabel} versenden
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {documentLabel} versenden, drucken oder herunterladen
+          </DialogDescription>
         </DialogHeader>
         <div className="flex h-full min-h-0 flex-1">
           {/* Left side - Send Options */}
           <div className="w-80 flex flex-col border-r bg-white min-h-0">
             {/* Company Settings Warning */}
-            {showCompanySettings && (
-              <div className="p-4 border-b flex-shrink-0">
+            {showCompanySettings &&
+            <div className="p-4 border-b flex-shrink-0">
                 <Alert>
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
@@ -885,18 +1624,18 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                         sind, ergänze noch Angaben zu dir und deinem Unternehmen.
                       </p>
                       <Button
-                        size="sm"
-                        variant="outline"
-                        className="mt-2"
-                        onClick={() => setShowCompanySettings(false)}
-                      >
+                      size="sm"
+                      variant="outline"
+                      className="mt-2"
+                      onClick={() => setShowCompanySettings(false)}>
+
                         Angaben vervollständigen
                       </Button>
                     </div>
                   </AlertDescription>
                 </Alert>
               </div>
-            )}
+            }
 
             {/* Send Options Accordion - SevDesk Style */}
             <div className="flex-1 overflow-y-auto min-h-0">
@@ -910,36 +1649,46 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                 <div className="border-b">
                   <div
                     className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                      isExpanded('download') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
-                    }`}
-                    onClick={() => toggleSection('download')}
-                  >
+                    isExpanded('download') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
+                    }
+                    onClick={() => toggleSection('download')}>
+
                     <div className="flex items-center gap-3">
                       <Download className="h-5 w-5 text-gray-600" />
                       <span className="font-medium">Herunterladen</span>
                     </div>
-                    {isExpanded('download') ? (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    )}
+                    {isExpanded('download') ?
+                    <ChevronDown className="h-4 w-4 text-gray-400" /> :
+
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    }
                   </div>
-                  {isExpanded('download') && (
-                    <div className="px-4 pb-4 bg-gray-50">
+                  {isExpanded('download') &&
+                  <div className="px-4 pb-4 bg-gray-50">
                       <Button
-                        onClick={() => handleSend('download')}
-                        disabled={sending}
-                        className="w-full bg-[#14ad9f] hover:bg-[#129488]"
-                      >
-                        {sending ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      onClick={() => handleSend('download')}
+                      disabled={sending || !html2pdfReady}
+                      className="w-full bg-[#14ad9f] hover:bg-[#129488]">
+
+                        {!html2pdfReady ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Lädt PDF-Generator...
+                          </>
+                        ) : sending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            PDF herunterladen
+                          </>
                         ) : (
-                          <Download className="w-4 h-4 mr-2" />
+                          <>
+                            <Download className="w-4 h-4 mr-2" />
+                            PDF herunterladen
+                          </>
                         )}
-                        PDF herunterladen
                       </Button>
                     </div>
-                  )}
+                  }
                 </div>
 
                 {/* Email Option */}
@@ -956,8 +1705,8 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                         console.error('❌ Failed to pre-extract HTML:', error);
                       }
                       setShowEmailModal(true);
-                    }}
-                  >
+                    }}>
+
                     <div className="flex items-center gap-3">
                       <Mail className="h-5 w-5 text-gray-600" />
                       <span className="font-medium">Als E-Mail versenden</span>
@@ -970,102 +1719,114 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                 <div className="border-b">
                   <div
                     className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                      isExpanded('mail') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
-                    }`}
-                    onClick={() => toggleSection('mail')}
-                  >
+                    isExpanded('mail') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
+                    }
+                    onClick={() => toggleSection('mail')}>
+
                     <div className="flex items-center gap-3">
                       <Mail className="h-5 w-5 text-gray-600" />
                       <span className="font-medium">Per Post verschicken</span>
                     </div>
-                    {isExpanded('mail') ? (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    )}
+                    {isExpanded('mail') ?
+                    <ChevronDown className="h-4 w-4 text-gray-400" /> :
+
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    }
                   </div>
-                  {isExpanded('mail') && (
-                    <div className="px-4 pb-4 bg-gray-50">
+                  {isExpanded('mail') &&
+                  <div className="px-4 pb-4 bg-gray-50">
                       <div className="text-sm text-gray-600 mb-3">
                         Versende deine {documentLabel.toLowerCase()} automatisch per Post.
                       </div>
-                      <Button variant="outline" className="w-full" disabled>
+                      <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => handleSend('post')}
+                      disabled={sending || true} // Deaktiviert bis implementiert
+                    >
                         <Mail className="w-4 h-4 mr-2" />
                         Per Post senden (Beta)
                       </Button>
                     </div>
-                  )}
+                  }
                 </div>
 
                 {/* Print Option */}
                 <div className="border-b">
                   <div
                     className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                      isExpanded('print') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
-                    }`}
-                    onClick={() => toggleSection('print')}
-                  >
+                    isExpanded('print') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
+                    }
+                    onClick={() => toggleSection('print')}>
+
                     <div className="flex items-center gap-3">
                       <Printer className="h-5 w-5 text-gray-600" />
                       <span className="font-medium">Drucken</span>
                     </div>
-                    {isExpanded('print') ? (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    )}
+                    {isExpanded('print') ?
+                    <ChevronDown className="h-4 w-4 text-gray-400" /> :
+
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    }
                   </div>
-                  {isExpanded('print') && (
-                    <div className="px-4 pb-4 bg-gray-50">
+                  {isExpanded('print') &&
+                  <div className="px-4 pb-4 bg-gray-50">
                       <Button
-                        variant="outline"
-                        onClick={() => handleSend('print')}
-                        disabled={sending}
-                        className="w-full"
-                      >
-                        <Printer className="w-4 h-4 mr-2" />
-                        Drucken
+                      variant="outline"
+                      onClick={() => handleSend('print')}
+                      disabled={sending || !html2pdfReady}
+                      className="w-full">
+
+                        {!html2pdfReady ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Lädt PDF-Generator...
+                          </>
+                        ) : (
+                          <>
+                            <Printer className="w-4 h-4 mr-2" />
+                            Drucken
+                          </>
+                        )}
                       </Button>
                     </div>
-                  )}
+                  }
                 </div>
 
                 {/* Save Option */}
                 <div className="border-b">
                   <div
                     className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                      isExpanded('save') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
-                    }`}
-                    onClick={() => toggleSection('save')}
-                  >
+                    isExpanded('save') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
+                    }
+                    onClick={() => toggleSection('save')}>
+
                     <div className="flex items-center gap-3">
                       <CheckCircle className="h-5 w-5 text-gray-600" />
                       <span className="font-medium">Speichern</span>
                     </div>
-                    {isExpanded('save') ? (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    )}
+                    {isExpanded('save') ?
+                    <ChevronDown className="h-4 w-4 text-gray-400" /> :
+
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    }
                   </div>
-                  {isExpanded('save') && (
-                    <div className="px-4 pb-4 bg-gray-50">
+                  {isExpanded('save') &&
+                  <div className="px-4 pb-4 bg-gray-50">
                       <div className="text-sm text-gray-600 mb-3">
                         {documentLabel} als finalisiertes Dokument speichern.
                       </div>
                       <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => {
-                          toast.success(`${documentLabel} gespeichert`);
-                          onClose();
-                        }}
-                      >
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => handleSend('save')}
+                      disabled={sending}>
+
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Speichern
                       </Button>
                     </div>
-                  )}
+                  }
                 </div>
               </div>
 
@@ -1079,58 +1840,58 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                 <div className="border-b">
                   <div
                     className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                      isExpanded('logo') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
-                    }`}
-                    onClick={() => toggleSection('logo')}
-                  >
+                    isExpanded('logo') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
+                    }
+                    onClick={() => toggleSection('logo')}>
+
                     <div className="flex items-center gap-3">
                       <Image className="h-5 w-5 text-gray-600" />
                       <span className="font-medium">Dein Firmenlogo</span>
                     </div>
-                    {isExpanded('logo') ? (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    )}
+                    {isExpanded('logo') ?
+                    <ChevronDown className="h-4 w-4 text-gray-400" /> :
+
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    }
                   </div>
-                  {isExpanded('logo') && (
-                    <div className="px-4 pb-4 bg-gray-50 space-y-4">
+                  {isExpanded('logo') &&
+                  <div className="px-4 pb-4 bg-gray-50 space-y-4">
                       {/* Logo Upload */}
                       <div className="space-y-3">
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#14ad9f] transition-colors">
                           <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept=".jpg,.jpeg,.png"
-                            className="hidden"
-                            onChange={e => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                // Cleanup previous URL
-                                if (logoUrl) {
-                                  URL.revokeObjectURL(logoUrl);
-                                }
-
-                                // Create new URL for preview
-                                const newUrl = URL.createObjectURL(file);
-                                setLogoFile(file);
-                                setLogoUrl(newUrl);
-                                toast.success('Logo erfolgreich hochgeladen');
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".jpg,.jpeg,.png"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              // Cleanup previous URL
+                              if (logoUrl) {
+                                URL.revokeObjectURL(logoUrl);
                               }
-                            }}
-                          />
+
+                              // Create new URL for preview
+                              const newUrl = URL.createObjectURL(file);
+                              setLogoFile(file);
+                              setLogoUrl(newUrl);
+                              toast.success('Logo erfolgreich hochgeladen');
+                            }
+                          }} />
+
 
                           <div className="cursor-pointer">
                             <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                             <Button
-                              type="button"
-                              variant="outline"
-                              className="mb-2"
-                              onClick={e => {
-                                e.preventDefault();
-                                fileInputRef.current?.click();
-                              }}
-                            >
+                            type="button"
+                            variant="outline"
+                            className="mb-2"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              fileInputRef.current?.click();
+                            }}>
+
                               Logo hochladen
                             </Button>
                             <p className="text-sm text-gray-500">oder hier hineinziehen</p>
@@ -1138,24 +1899,24 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                           </div>
                         </div>
 
-                        {logoFile && logoUrl && (
-                          <div className="space-y-2">
+                        {logoFile && logoUrl &&
+                      <div className="space-y-2">
                             <div className="text-sm text-green-600 text-center">
                               ✓ Logo hochgeladen: {logoFile.name}
                             </div>
                             <div className="flex justify-center">
                               <img
-                                src={logoUrl}
-                                alt="Logo Vorschau"
-                                className="max-h-12 max-w-24 object-contain border rounded"
-                                style={{
-                                  transform: `scale(${logoSize / 100})`,
-                                  transformOrigin: 'center',
-                                }}
-                              />
+                            src={logoUrl}
+                            alt="Logo Vorschau"
+                            className="max-h-12 max-w-24 object-contain border rounded"
+                            style={{
+                              transform: `scale(${logoSize / 100})`,
+                              transformOrigin: 'center'
+                            }} />
+
                             </div>
                           </div>
-                        )}
+                      }
                       </div>
 
                       {/* Logo Size Control */}
@@ -1163,82 +1924,82 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                         <Label className="text-sm font-medium">Größe</Label>
                         <div className="flex items-center gap-3">
                           <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setLogoSize(Math.max(25, logoSize - 25))}
-                            disabled={logoSize <= 25}
-                            className="h-8 w-8 p-0"
-                          >
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setLogoSize(Math.max(25, logoSize - 25))}
+                          disabled={logoSize <= 25}
+                          className="h-8 w-8 p-0">
+
                             <Minus className="h-3 w-3" />
                           </Button>
                           <span className="text-sm font-medium min-w-[3rem] text-center">
                             {logoSize}%
                           </span>
                           <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setLogoSize(Math.min(100, logoSize + 25))}
-                            disabled={logoSize >= 100}
-                            className="h-8 w-8 p-0"
-                          >
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setLogoSize(Math.min(100, logoSize + 25))}
+                          disabled={logoSize >= 100}
+                          className="h-8 w-8 p-0">
+
                             <Plus className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
                     </div>
-                  )}
+                  }
                 </div>
 
                 {/* Color Option */}
                 <div className="border-b">
                   <div
                     className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                      isExpanded('color') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
-                    }`}
-                    onClick={() => toggleSection('color')}
-                  >
+                    isExpanded('color') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
+                    }
+                    onClick={() => toggleSection('color')}>
+
                     <div className="flex items-center gap-3">
                       <Palette className="h-5 w-5 text-gray-600" />
                       <span className="font-medium">Farbe</span>
                     </div>
-                    {isExpanded('color') ? (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    )}
+                    {isExpanded('color') ?
+                    <ChevronDown className="h-4 w-4 text-gray-400" /> :
+
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    }
                   </div>
-                  {isExpanded('color') && (
-                    <div className="px-4 pb-4 bg-gray-50">
+                  {isExpanded('color') &&
+                  <div className="px-4 pb-4 bg-gray-50">
                       <div className="color-palette">
                         <div className="grid grid-cols-6 gap-2 mb-3">
                           {[
-                            { name: 'Grau', color: '#313131', label: 'Grey' },
-                            { name: 'Hellgrau', color: '#848484', label: 'Light Grey' },
-                            { name: 'Türkis', color: '#0d8375', label: 'Teal' },
-                            { name: 'Blau', color: '#1d65b3', label: 'Blue' },
-                            { name: 'Lila', color: '#a964d9', label: 'Purple' },
-                            { name: 'Rot', color: '#c31919', label: 'Red' },
-                            { name: 'Orange', color: '#f46e32', label: 'Orange' },
-                            { name: 'Gelb', color: '#ffcf00', label: 'Yellow' },
-                            { name: 'Rosa', color: '#fd88ab', label: 'Pink' },
-                            { name: 'Beige', color: '#c0ab60', label: 'Beige' },
-                            { name: 'Braun', color: '#7e4528', label: 'Brown' },
-                            { name: 'Taskilo Grün', color: '#14ad9f', label: 'Taskilo Green' },
-                          ].map(colorOption => (
-                            <button
-                              key={colorOption.color}
-                              type="button"
-                              aria-label={colorOption.label}
-                              className={`w-8 h-8 rounded border-2 transition-all hover:scale-110 ${
-                                selectedColor === colorOption.color
-                                  ? 'border-gray-800 ring-2 ring-gray-300'
-                                  : 'border-gray-200 hover:border-gray-400'
-                              }`}
-                              style={{ backgroundColor: colorOption.color }}
-                              onClick={() => setSelectedColor(colorOption.color)}
-                              title={colorOption.name}
-                            />
-                          ))}
+                        { name: 'Grau', color: '#313131', label: 'Grey' },
+                        { name: 'Hellgrau', color: '#848484', label: 'Light Grey' },
+                        { name: 'Türkis', color: '#0d8375', label: 'Teal' },
+                        { name: 'Blau', color: '#1d65b3', label: 'Blue' },
+                        { name: 'Lila', color: '#a964d9', label: 'Purple' },
+                        { name: 'Rot', color: '#c31919', label: 'Red' },
+                        { name: 'Orange', color: '#f46e32', label: 'Orange' },
+                        { name: 'Gelb', color: '#ffcf00', label: 'Yellow' },
+                        { name: 'Rosa', color: '#fd88ab', label: 'Pink' },
+                        { name: 'Beige', color: '#c0ab60', label: 'Beige' },
+                        { name: 'Braun', color: '#7e4528', label: 'Brown' },
+                        { name: 'Taskilo Grün', color: '#14ad9f', label: 'Taskilo Green' }].
+                        map((colorOption) =>
+                        <button
+                          key={colorOption.color}
+                          type="button"
+                          aria-label={colorOption.label}
+                          className={`w-8 h-8 rounded border-2 transition-all hover:scale-110 ${
+                          selectedColor === colorOption.color ?
+                          'border-gray-800 ring-2 ring-gray-300' :
+                          'border-gray-200 hover:border-gray-400'}`
+                          }
+                          style={{ backgroundColor: colorOption.color }}
+                          onClick={() => setSelectedColor(colorOption.color)}
+                          title={colorOption.name} />
+
+                        )}
                         </div>
 
                         {/* Custom Color Input */}
@@ -1246,69 +2007,69 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                           <Label className="text-sm font-medium">Benutzerdefinierte Farbe</Label>
                           <div className="flex gap-2">
                             <input
-                              type="color"
-                              value={selectedColor}
-                              onChange={e => setSelectedColor(e.target.value)}
-                              className="w-12 h-8 rounded border border-gray-300 cursor-pointer"
-                              title="Benutzerdefinierte Farbe auswählen"
-                            />
+                            type="color"
+                            value={selectedColor}
+                            onChange={(e) => setSelectedColor(e.target.value)}
+                            className="w-12 h-8 rounded border border-gray-300 cursor-pointer"
+                            title="Benutzerdefinierte Farbe auswählen" />
+
 
                             <Input
-                              type="text"
-                              value={selectedColor}
-                              onChange={e => {
-                                const value = e.target.value;
-                                if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
-                                  setSelectedColor(value);
-                                }
-                              }}
-                              placeholder="#14ad9f"
-                              className="flex-1 text-sm"
-                            />
+                            type="text"
+                            value={selectedColor}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+                                setSelectedColor(value);
+                              }
+                            }}
+                            placeholder="#14ad9f"
+                            className="flex-1 text-sm" />
+
                           </div>
                         </div>
                       </div>
                     </div>
-                  )}
+                  }
                 </div>
 
                 {/* Layout Option */}
                 <div className="border-b">
                   <div
                     className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                      isExpanded('layout') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
-                    }`}
-                    onClick={() => toggleSection('layout')}
-                  >
+                    isExpanded('layout') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
+                    }
+                    onClick={() => toggleSection('layout')}>
+
                     <div className="flex items-center gap-3">
                       <Layout className="h-5 w-5 text-gray-600" />
                       <span className="font-medium">Layout auswählen</span>
                     </div>
-                    {isExpanded('layout') ? (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    )}
+                    {isExpanded('layout') ?
+                    <ChevronDown className="h-4 w-4 text-gray-400" /> :
+
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    }
                   </div>
-                  {isExpanded('layout') && (
-                    <div className="px-4 pb-4 bg-gray-50">
+                  {isExpanded('layout') &&
+                  <div className="px-4 pb-4 bg-gray-50">
                       <div
-                        className="layouts-container"
-                        style={{ '--layout-color': selectedColor } as React.CSSProperties}
-                      >
+                      className="layouts-container"
+                      style={{ '--layout-color': selectedColor } as React.CSSProperties}>
+
                         {/* Standard Layouts */}
                         <div className="layouts layouts--normal layouts--big-thumbnail mb-4">
                           <div className="grid grid-cols-2 gap-2">
-                            {layouts.standard.map(layout => (
-                              <div
-                                key={layout.value}
-                                className={`layout cursor-pointer border rounded-lg p-2 transition-all hover:border-[#14ad9f] ${
-                                  selectedLayout === layout.value
-                                    ? 'border-[#14ad9f] ring-2 ring-[#14ad9f]/20'
-                                    : 'border-gray-200'
-                                }`}
-                                onClick={() => setSelectedLayout(layout.value)}
-                              >
+                            {layouts.standard.map((layout) =>
+                          <div
+                            key={layout.value}
+                            className={`layout cursor-pointer border rounded-lg p-2 transition-all hover:border-[#14ad9f] ${
+                            selectedLayout === layout.value ?
+                            'border-[#14ad9f] ring-2 ring-[#14ad9f]/20' :
+                            'border-gray-200'}`
+                            }
+                            onClick={() => setSelectedLayout(layout.value)}>
+
                                 <div className="w-full h-16 mb-1 flex items-center justify-center">
                                   <div className="w-12 h-14">{layout.svg}</div>
                                 </div>
@@ -1316,23 +2077,23 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                                   {layout.name}
                                 </label>
                               </div>
-                            ))}
+                          )}
                           </div>
                         </div>
                       </div>
                     </div>
-                  )}
+                  }
                 </div>
 
                 {/* E-Invoice Section */}
-                {eInvoiceData && (
-                  <div className="border-b">
+                {eInvoiceData &&
+                <div className="border-b">
                     <div
-                      className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                        isExpanded('einvoice') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
-                      }`}
-                      onClick={() => toggleSection('einvoice')}
-                    >
+                    className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
+                    isExpanded('einvoice') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
+                    }
+                    onClick={() => toggleSection('einvoice')}>
+
                       <div className="flex items-center gap-3">
                         <FileText className="h-5 w-5 text-green-600" />
                         <span className="font-medium">E-Rechnung</span>
@@ -1340,30 +2101,30 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                           {eInvoiceData.validationStatus === 'valid' ? 'Gültig' : 'Fehlerhaft'}
                         </Badge>
                       </div>
-                      {isExpanded('einvoice') ? (
-                        <ChevronDown className="h-4 w-4 text-gray-400" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 text-gray-400" />
-                      )}
+                      {isExpanded('einvoice') ?
+                    <ChevronDown className="h-4 w-4 text-gray-400" /> :
+
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    }
                     </div>
-                    {isExpanded('einvoice') && (
-                      <div className="px-4 pb-4 bg-gray-50">
+                    {isExpanded('einvoice') &&
+                  <div className="px-4 pb-4 bg-gray-50">
                         <div className="space-y-4">
                           {/* E-Invoice Status */}
                           <div className="bg-white rounded-lg p-3 border">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-sm font-medium">Status</span>
                               <Badge
-                                variant={
-                                  eInvoiceData.validationStatus === 'valid'
-                                    ? 'default'
-                                    : 'destructive'
-                                }
-                                className="text-xs"
-                              >
-                                {eInvoiceData.validationStatus === 'valid'
-                                  ? 'Gültig'
-                                  : 'Fehlerhaft'}
+                            variant={
+                            eInvoiceData.validationStatus === 'valid' ?
+                            'default' :
+                            'destructive'
+                            }
+                            className="text-xs">
+
+                                {eInvoiceData.validationStatus === 'valid' ?
+                            'Gültig' :
+                            'Fehlerhaft'}
                               </Badge>
                             </div>
                             <div className="text-xs text-gray-600 space-y-1">
@@ -1374,98 +2135,234 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                           </div>
 
                           {/* QR Code */}
-                          {qrCodeUrl && (
-                            <div className="bg-white rounded-lg p-3 border text-center">
+                          {qrCodeUrl &&
+                      <div className="bg-white rounded-lg p-3 border text-center">
                               <div className="text-sm font-medium mb-2">QR-Code</div>
                               <img
-                                src={qrCodeUrl}
-                                alt="E-Invoice QR Code"
-                                className="mx-auto w-24 h-24 border rounded"
-                              />
+                          src={qrCodeUrl}
+                          alt="E-Invoice QR Code"
+                          className="mx-auto w-24 h-24 border rounded" />
+
 
                               <div className="text-xs text-gray-500 mt-2">
                                 Für E-Invoice-Validierung
                               </div>
                             </div>
-                          )}
+                      }
 
                           {/* Download Actions */}
                           <div className="space-y-2">
                             <Button
-                              variant="outline"
-                              className="w-full text-sm"
-                              onClick={async () => {
-                                try {
-                                  if (eInvoiceData.xmlUrl) {
-                                    window.open(eInvoiceData.xmlUrl, '_blank');
-                                    toast.success('XML-Datei wird heruntergeladen');
-                                  } else {
-                                    toast.error('XML-URL nicht verfügbar');
-                                  }
-                                } catch (error) {
-                                  console.error('XML download error:', error);
-                                  toast.error('Fehler beim XML-Download');
-                                }
-                              }}
-                            >
+                          variant="outline"
+                          className="w-full text-sm"
+                          onClick={async () => {
+                            try {
+                              if (eInvoiceData.xmlUrl) {
+                                window.open(eInvoiceData.xmlUrl, '_blank');
+                                toast.success('XML-Datei wird heruntergeladen');
+                              } else {
+                                toast.error('XML-URL nicht verfügbar');
+                              }
+                            } catch (error) {
+                              console.error('XML download error:', error);
+                              toast.error('Fehler beim XML-Download');
+                            }
+                          }}>
+
                               <Download className="h-4 w-4 mr-2" />
                               XML herunterladen
                             </Button>
 
                             <Button
-                              variant="outline"
-                              className="w-full text-sm"
-                              onClick={() => {
-                                toast.info('ZUGFeRD-PDF wird generiert...');
-                                // Hier würde die ZUGFeRD-PDF-Generierung stattfinden
-                              }}
-                            >
+                          variant="outline"
+                          className="w-full text-sm"
+                          onClick={() => {
+                            toast.info('ZUGFeRD-PDF wird generiert...');
+                            // Hier würde die ZUGFeRD-PDF-Generierung stattfinden
+                          }}>
+
                               <Download className="h-4 w-4 mr-2" />
                               ZUGFeRD-PDF
                             </Button>
                           </div>
                         </div>
                       </div>
-                    )}
+                  }
                   </div>
-                )}
+                }
 
                 {/* More Settings */}
                 <div className="border-b">
                   <div
                     className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 ${
-                      isExpanded('settings') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''
-                    }`}
-                    onClick={() => toggleSection('settings')}
-                  >
+                    isExpanded('settings') ? 'bg-gray-50 border-l-4 border-[#14ad9f]' : ''}`
+                    }
+                    onClick={() => toggleSection('settings')}>
+
                     <div className="flex items-center gap-3">
                       <Settings className="h-5 w-5 text-gray-600" />
                       <span className="font-medium">Weitere Einstellungen</span>
                     </div>
-                    {isExpanded('settings') ? (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    )}
+                    {isExpanded('settings') ?
+                    <ChevronDown className="h-4 w-4 text-gray-400" /> :
+
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    }
                   </div>
-                  {isExpanded('settings') && (
-                    <div className="px-4 pb-4 bg-gray-50">
+                  {isExpanded('settings') &&
+                  <div className="px-4 pb-4 bg-gray-50">
                       <div className="space-y-4">
+                        {/* Sprache */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Sprache</Label>
+                          <select
+                          value={documentSettings.language}
+                          onChange={(e) =>
+                          setDocumentSettings((prev) => ({ ...prev, language: e.target.value }))
+                          }
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]">
+
+                            <option value="de">Deutsch</option>
+                            <option value="en">English</option>
+                            <option value="fr">Français</option>
+                          </select>
+                        </div>
+
+                        {/* QR-Code Optionen */}
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">QR-Code anzeigen</Label>
+                          <Checkbox
+                          checked={documentSettings.showQRCode}
+                          onCheckedChange={(checked) =>
+                          setDocumentSettings((prev) => ({
+                            ...prev,
+                            showQRCode: checked as boolean
+                          }))
+                          } />
+
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">EPC-QR-Code (GiroCode)</Label>
+                          <Checkbox
+                          checked={documentSettings.showEPCQRCode}
+                          onCheckedChange={(checked) =>
+                          setDocumentSettings((prev) => ({
+                            ...prev,
+                            showEPCQRCode: checked as boolean
+                          }))
+                          } />
+
+                        </div>
+
+                        {/* Weitere Display-Optionen */}
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">Kundennummer</Label>
+                          <Checkbox
+                          checked={documentSettings.showCustomerNumber}
+                          onCheckedChange={(checked) =>
+                          setDocumentSettings((prev) => ({
+                            ...prev,
+                            showCustomerNumber: checked as boolean
+                          }))
+                          } />
+
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">Kontaktperson</Label>
+                          <Checkbox
+                          checked={documentSettings.showContactPerson}
+                          onCheckedChange={(checked) =>
+                          setDocumentSettings((prev) => ({
+                            ...prev,
+                            showContactPerson: checked as boolean
+                          }))
+                          } />
+
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">USt. pro Position</Label>
+                          <Checkbox
+                          checked={documentSettings.showVATPerPosition}
+                          onCheckedChange={(checked) =>
+                          setDocumentSettings((prev) => ({
+                            ...prev,
+                            showVATPerPosition: checked as boolean
+                          }))
+                          } />
+
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">Artikelnummer</Label>
+                          <Checkbox
+                          checked={documentSettings.showArticleNumber}
+                          onCheckedChange={(checked) =>
+                          setDocumentSettings((prev) => ({
+                            ...prev,
+                            showArticleNumber: checked as boolean
+                          }))
+                          } />
+
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">Falz- und Lochmarken</Label>
+                          <Checkbox
+                          checked={documentSettings.showFoldLines}
+                          onCheckedChange={(checked) =>
+                          setDocumentSettings((prev) => ({
+                            ...prev,
+                            showFoldLines: checked as boolean
+                          }))
+                          } />
+
+                        </div>
+
+                        {/* Standard-Optionen */}
                         <div className="flex items-center justify-between">
                           <Label className="text-sm font-medium">Seitenzahlen anzeigen</Label>
-                          <Checkbox defaultChecked />
+                          <Checkbox
+                          checked={documentSettings.showPageNumbers}
+                          onCheckedChange={(checked) =>
+                          setDocumentSettings((prev) => ({
+                            ...prev,
+                            showPageNumbers: checked as boolean
+                          }))
+                          } />
+
                         </div>
+
                         <div className="flex items-center justify-between">
                           <Label className="text-sm font-medium">Fußzeile einblenden</Label>
-                          <Checkbox defaultChecked />
+                          <Checkbox
+                          checked={documentSettings.showFooter}
+                          onCheckedChange={(checked) =>
+                          setDocumentSettings((prev) => ({
+                            ...prev,
+                            showFooter: checked as boolean
+                          }))
+                          } />
+
                         </div>
+
                         <div className="flex items-center justify-between">
                           <Label className="text-sm font-medium">Wasserzeichen</Label>
-                          <Checkbox />
+                          <Checkbox
+                          checked={documentSettings.showWatermark}
+                          onCheckedChange={(checked) =>
+                          setDocumentSettings((prev) => ({
+                            ...prev,
+                            showWatermark: checked as boolean
+                          }))
+                          } />
+
                         </div>
                       </div>
                     </div>
-                  )}
+                  }
                 </div>
               </div>
             </div>
@@ -1473,41 +2370,42 @@ ${document.companyName || 'Ihr Unternehmen'}`;
 
           {/* Right side - Document Preview */}
           <div className="flex-1 flex flex-col min-h-0">
-            {loadingEInvoiceData ? (
-              <div className="flex items-center justify-center h-full">
+            {loadingEInvoiceData ?
+            <div className="flex items-center justify-center h-full">
                 <div className="flex items-center gap-3 text-gray-500">
                   <Loader2 className="h-6 w-6 animate-spin" />
-                  <span>Lade Rechnungsdaten aus der Datenbank...</span>
+                  <span>Lade {documentLabels[documentType] || 'Dokument'}-Daten aus der Datenbank...</span>
                 </div>
-              </div>
-            ) : (
-              <SimplePDFViewer
-                zoomLevel={zoomLevels[zoomLevel]}
-                a4Width={A4_DIMENSIONS.WEB.width}
-                a4Height={A4_DIMENSIONS.WEB.height}
-                pageMode={pageMode}
-                onPageModeChange={handlePageModeChange}
-                onZoomChange={newZoom => {
-                  const newIndex = zoomLevels.findIndex(z => z === newZoom);
-                  if (newIndex !== -1) {
-                    setZoomLevel(newIndex);
-                  }
-                }}
-              >
+              </div> :
+
+            <SimplePDFViewer
+              zoomLevel={zoomLevels[zoomLevel]}
+              a4Width={A4_DIMENSIONS.WEB.width}
+              a4Height={A4_DIMENSIONS.WEB.height}
+              pageMode={pageMode}
+              onPageModeChange={handlePageModeChange}
+              onZoomChange={(newZoom) => {
+                const newIndex = zoomLevels.findIndex((z) => z === newZoom);
+                if (newIndex !== -1) {
+                  setZoomLevel(newIndex);
+                }
+              }}>
+
                 <div ref={templateRef} data-pdf-template>
                   <PDFTemplate
-                    key={`${selectedLayout}-${pageMode}`}
-                    document={realDocumentData || document}
-                    template={selectedLayout}
-                    color={selectedColor}
-                    logoUrl={logoUrl}
-                    logoSize={logoSize}
-                    documentType={documentType}
-                    pageMode={pageMode}
-                  />
+                  key={`${selectedLayout}-${pageMode}-${enrichedDocumentData?.companyName || 'no-company'}`}
+                  document={enrichedDocumentData || realDocumentData || document}
+                  template={selectedLayout}
+                  color={selectedColor}
+                  logoUrl={logoUrl}
+                  logoSize={logoSize}
+                  documentType={documentType}
+                  pageMode={pageMode}
+                  documentSettings={documentSettings} />
+
                 </div>
               </SimplePDFViewer>
-            )}
+            }
           </div>
         </div>{' '}
         {/* End of main flex container */}
@@ -1524,12 +2422,15 @@ ${document.companyName || 'Ihr Unternehmen'}`;
         pageMode={pageMode}
         getRenderedHtml={getRenderedHtml}
         isTemplateReady={isTemplateReady()}
-        onSend={async emailData => {
+        onSend={async (emailData) => {
           if (onSend) {
             await onSend('email', emailData);
           }
-        }}
-      />
-    </Dialog>
-  );
+        }} />
+
+      
+      {/* GoBD Action Warning Modal */}
+      {WarningComponent}
+    </Dialog>);
+
 }

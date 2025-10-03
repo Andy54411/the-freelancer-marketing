@@ -76,6 +76,9 @@ export interface DocumentTranslations {
   quoteIntroduction: string;
   quoteClosing: string;
   taxableRevenue: string;
+  
+  // Standard footer text
+  standardFooterText: string;
 }
 
 const translations: Record<string, DocumentTranslations> = {
@@ -156,6 +159,8 @@ const translations: Record<string, DocumentTranslations> = {
       'Dieses Angebot ist gültig bis {date}. Bei Annahme unseres Angebots erstellen wir Ihnen gerne eine entsprechende Rechnung. Für Rückfragen stehen wir Ihnen jederzeit zur Verfügung.',
     taxableRevenue:
       'Steuerpflichtiger Umsatz (Regelsteuersatz 19 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 1 UStG)',
+    standardFooterText:
+      'Wir bitten Sie, den Rechnungsbetrag von [%GESAMTBETRAG%] unter Angabe der Rechnungsnummer [%RECHNUNGSNUMMER%] auf das unten angegebene Konto zu überweisen. Zahlungsziel: [%ZAHLUNGSZIEL%] Rechnungsdatum: [%RECHNUNGSDATUM%] Vielen Dank für Ihr Vertrauen und die angenehme Zusammenarbeit!<br>Mit freundlichen Grüßen<br>[%KONTAKTPERSON%]',
   },
 
   en: {
@@ -235,6 +240,8 @@ const translations: Record<string, DocumentTranslations> = {
       'This quote is valid until {date}. Upon acceptance of our quote, we will be happy to issue you a corresponding invoice. Please feel free to contact us if you have any questions.',
     taxableRevenue:
       'Taxable revenue (standard rate 19%, § 1 para. 1 no. 1 in conjunction with § 12 para. 1 VAT Act)',
+    standardFooterText:
+      'Please transfer the invoice amount of [%GESAMTBETRAG%] to the account below, quoting the invoice number [%RECHNUNGSNUMMER%]. Payment terms: [%ZAHLUNGSZIEL%] Invoice date: [%RECHNUNGSDATUM%] Thank you for your trust and the pleasant cooperation!<br>Best regards<br>[%KONTAKTPERSON%]',
   },
 
   // Weitere Sprachen hier minimiert für bessere Performance
@@ -294,6 +301,8 @@ const translations: Record<string, DocumentTranslations> = {
       "Ce devis est valable jusqu'au {date}. En cas d'acceptation de notre devis, nous vous établirons volontiers une facture correspondante. Nous restons à votre disposition pour toute question.",
     taxableRevenue:
       "Chiffre d'affaires imposable (taux normal 19%, § 1 al. 1 n° 1 en liaison avec § 12 al. 1 TVA)",
+    standardFooterText:
+      'Nous vous prions de virer le montant de la facture de [%GESAMTBETRAG%] sur le compte ci-dessous en indiquant le numéro de facture [%RECHNUNGSNUMMER%]. Délai de paiement : [%ZAHLUNGSZIEL%] Date de facturation : [%RECHNUNGSDATUM%] Merci pour votre confiance et notre agréable collaboration!<br>Meilleures salutations<br>[%KONTAKTPERSON%]',
   },
 };
 
@@ -307,3 +316,61 @@ export const useDocumentTranslation = (language: string = 'de') => {
 
   return { t };
 };
+
+/**
+ * Übersetzt den Footer-Text, wenn er dem deutschen Standard-Footer entspricht
+ * @param footerText Der zu übersetzende Footer-Text
+ * @param language Die Zielsprache (de, en, fr)
+ * @returns Der übersetzte Footer-Text oder der Original-Text, wenn keine Übereinstimmung
+ */
+export function translateStandardFooterText(footerText: string, language: string = 'de'): string {
+  if (!footerText || language === 'de') return footerText;
+  
+  const lang = translations[language] || translations['de'];
+  const germanStandard = translations['de'].standardFooterText;
+  
+  // Entferne HTML-Formatierung für Vergleich
+  const normalizedFooter = footerText.replace(/<br>/g, '\n').trim();
+  const normalizedStandard = germanStandard.replace(/<br>/g, '\n').trim();
+  
+  // Prüfe, ob der Footer-Text dem deutschen Standard ähnelt (mit Platzhaltern)
+  // Ersetze Platzhalter temporär durch Marker für Vergleich
+  const footerForComparison = normalizedFooter
+    .replace(/\[%[^\]]+%\]/g, 'PLACEHOLDER')
+    .replace(/\s+/g, ' ');
+  const standardForComparison = normalizedStandard
+    .replace(/\[%[^\]]+%\]/g, 'PLACEHOLDER')
+    .replace(/\s+/g, ' ');
+  
+  // Wenn ähnlich genug, verwende übersetzten Standard-Text
+  if (footerForComparison === standardForComparison) {
+    return lang.standardFooterText;
+  }
+  
+  // Sonst: Versuche häufige deutsche Phrasen zu ersetzen
+  let translatedFooter = footerText;
+  
+  if (language === 'en') {
+    translatedFooter = translatedFooter
+      .replace(/Wir bitten Sie,/g, 'Please')
+      .replace(/den Rechnungsbetrag von/g, 'transfer the invoice amount of')
+      .replace(/unter Angabe der Rechnungsnummer/g, 'quoting the invoice number')
+      .replace(/auf das unten angegebene Konto zu überweisen/g, 'to the account below')
+      .replace(/Zahlungsziel:/g, 'Payment terms:')
+      .replace(/Rechnungsdatum:/g, 'Invoice date:')
+      .replace(/Vielen Dank für Ihr Vertrauen und die angenehme Zusammenarbeit!/g, 'Thank you for your trust and the pleasant cooperation!')
+      .replace(/Mit freundlichen Grüßen/g, 'Best regards');
+  } else if (language === 'fr') {
+    translatedFooter = translatedFooter
+      .replace(/Wir bitten Sie,/g, 'Nous vous prions')
+      .replace(/den Rechnungsbetrag von/g, 'de virer le montant de la facture de')
+      .replace(/unter Angabe der Rechnungsnummer/g, 'en indiquant le numéro de facture')
+      .replace(/auf das unten angegebene Konto zu überweisen/g, 'sur le compte ci-dessous')
+      .replace(/Zahlungsziel:/g, 'Délai de paiement :')
+      .replace(/Rechnungsdatum:/g, 'Date de facturation :')
+      .replace(/Vielen Dank für Ihr Vertrauen und die angenehme Zusammenarbeit!/g, 'Merci pour votre confiance et notre agréable collaboration!')
+      .replace(/Mit freundlichen Grüßen/g, 'Meilleures salutations');
+  }
+  
+  return translatedFooter;
+}
