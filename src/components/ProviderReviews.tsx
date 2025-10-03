@@ -1,7 +1,19 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, getDocs, limit, orderBy, startAfter, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  limit,
+  orderBy,
+  startAfter,
+  doc,
+  getDoc,
+  updateDoc,
+  increment,
+} from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import {
   Star,
@@ -47,12 +59,12 @@ export default function ProviderReviews({
   reviewCount = 0,
   averageRating = 0,
 }: ProviderReviewsProps) {
-  // console.log('🔍 [ProviderReviews] Component gestartet mit Props:', { 
-  //   providerId, 
-  //   reviewCount, 
-  //   averageRating 
+  // console.log('🔍 [ProviderReviews] Component gestartet mit Props:', {
+  //   providerId,
+  //   reviewCount,
+  //   averageRating
   // });
-  
+
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -81,99 +93,102 @@ export default function ProviderReviews({
     }
   }, [providerId]);
 
-  const loadReviews = useCallback(async (initial = false) => {
-    try {
-      if (initial) {
-        setLoading(true);
-        setReviews([]);
-        setLastVisible(null);
-        setHasMore(true);
-      } else {
-        setLoadingMore(true);
-      }
+  const loadReviews = useCallback(
+    async (initial = false) => {
+      try {
+        if (initial) {
+          setLoading(true);
+          setReviews([]);
+          setLastVisible(null);
+          setHasMore(true);
+        } else {
+          setLoadingMore(true);
+        }
 
-      // Versuche zuerst die neue Subcollection-Struktur
-      // console.log('🔍 [ProviderReviews] Versuche Subcollection:', `companies/${providerId}/reviews`);
-      
-      let reviewsQuery = query(
-        collection(db, `companies/${providerId}/reviews`),
-        orderBy('createdAt', 'desc'),
-        limit(REVIEWS_PER_PAGE)
-      );
+        // Versuche zuerst die neue Subcollection-Struktur
+        // console.log('🔍 [ProviderReviews] Versuche Subcollection:', `companies/${providerId}/reviews`);
 
-      if (!initial && lastVisible) {
-        reviewsQuery = query(
+        let reviewsQuery = query(
           collection(db, `companies/${providerId}/reviews`),
           orderBy('createdAt', 'desc'),
-          startAfter(lastVisible),
           limit(REVIEWS_PER_PAGE)
         );
-      }
 
-      let reviewsSnapshot = await getDocs(reviewsQuery);
-
-      const reviewsData = reviewsSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          rating: data.rating || 0,
-          comment: data.comment || data.reviewText || '',
-          reviewerName: data.reviewerName || 'Anonymer Nutzer',
-          reviewerCountry: data.reviewerCountry,
-          date: data.date,
-          projectTitle: data.projectTitle,
-          projectPrice: data.projectPrice,
-          projectDuration: data.projectDuration,
-          isVerified: data.isVerified || false,
-          isReturningCustomer: data.isReturningCustomer || false,
-          helpfulVotes: data.helpfulVotes || undefined,
-          unhelpfulVotes: data.unhelpfulVotes || undefined,
-          userVotes: data.userVotes || {},
-          providerResponse: data.providerResponse,
-        };
-      }) as Review[];
-
-      // Sortiere lokal nach helpfulVotes (hilfreichste zuerst)
-      reviewsData.sort((a, b) => {
-        const aHelpful = a.helpfulVotes || 0;
-        const bHelpful = b.helpfulVotes || 0;
-        if (aHelpful !== bHelpful) {
-          return bHelpful - aHelpful; // Höchste zuerst
+        if (!initial && lastVisible) {
+          reviewsQuery = query(
+            collection(db, `companies/${providerId}/reviews`),
+            orderBy('createdAt', 'desc'),
+            startAfter(lastVisible),
+            limit(REVIEWS_PER_PAGE)
+          );
         }
-        // Bei gleichen helpfulVotes, sortiere nach Datum (neueste zuerst)
-        const aTime = a.date?.toDate?.()?.getTime() || 0;
-        const bTime = b.date?.toDate?.()?.getTime() || 0;
-        return bTime - aTime;
-      });
 
-      // console.log('🔍 [ProviderReviews] Verarbeitete reviewsData:', reviewsData);
+        const reviewsSnapshot = await getDocs(reviewsQuery);
 
-      if (initial) {
-        setReviews(reviewsData);
-        // console.log('🔍 [ProviderReviews] Reviews initial gesetzt:', reviewsData.length);
-      } else {
-        setReviews(prev => {
-          const newReviews = [...prev, ...reviewsData];
-          console.log('🔍 [ProviderReviews] Reviews erweitert:', newReviews.length);
-          return newReviews;
+        const reviewsData = reviewsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            rating: data.rating || 0,
+            comment: data.comment || data.reviewText || '',
+            reviewerName: data.reviewerName || 'Anonymer Nutzer',
+            reviewerCountry: data.reviewerCountry,
+            date: data.date,
+            projectTitle: data.projectTitle,
+            projectPrice: data.projectPrice,
+            projectDuration: data.projectDuration,
+            isVerified: data.isVerified || false,
+            isReturningCustomer: data.isReturningCustomer || false,
+            helpfulVotes: data.helpfulVotes || undefined,
+            unhelpfulVotes: data.unhelpfulVotes || undefined,
+            userVotes: data.userVotes || {},
+            providerResponse: data.providerResponse,
+          };
+        }) as Review[];
+
+        // Sortiere lokal nach helpfulVotes (hilfreichste zuerst)
+        reviewsData.sort((a, b) => {
+          const aHelpful = a.helpfulVotes || 0;
+          const bHelpful = b.helpfulVotes || 0;
+          if (aHelpful !== bHelpful) {
+            return bHelpful - aHelpful; // Höchste zuerst
+          }
+          // Bei gleichen helpfulVotes, sortiere nach Datum (neueste zuerst)
+          const aTime = a.date?.toDate?.()?.getTime() || 0;
+          const bTime = b.date?.toDate?.()?.getTime() || 0;
+          return bTime - aTime;
         });
-      }
 
-      // Set pagination state
-      if (reviewsSnapshot.docs.length < REVIEWS_PER_PAGE) {
-        setHasMore(false);
-      }
+        // console.log('🔍 [ProviderReviews] Verarbeitete reviewsData:', reviewsData);
 
-      if (reviewsSnapshot.docs.length > 0) {
-        setLastVisible(reviewsSnapshot.docs[reviewsSnapshot.docs.length - 1]);
+        if (initial) {
+          setReviews(reviewsData);
+          // console.log('🔍 [ProviderReviews] Reviews initial gesetzt:', reviewsData.length);
+        } else {
+          setReviews(prev => {
+            const newReviews = [...prev, ...reviewsData];
+            console.log('🔍 [ProviderReviews] Reviews erweitert:', newReviews.length);
+            return newReviews;
+          });
+        }
+
+        // Set pagination state
+        if (reviewsSnapshot.docs.length < REVIEWS_PER_PAGE) {
+          setHasMore(false);
+        }
+
+        if (reviewsSnapshot.docs.length > 0) {
+          setLastVisible(reviewsSnapshot.docs[reviewsSnapshot.docs.length - 1]);
+        }
+      } catch (error) {
+        console.error('❌ [ProviderReviews] Fehler beim Laden der Reviews:', error);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-    } catch (error) {
-      console.error('❌ [ProviderReviews] Fehler beim Laden der Reviews:', error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [providerId]);
+    },
+    [providerId]
+  );
 
   useEffect(() => {
     loadReviews(true);
@@ -199,11 +214,11 @@ export default function ProviderReviews({
     try {
       const reviewRef = doc(db, `companies/${providerId}/reviews`, reviewId);
       const reviewDoc = await getDoc(reviewRef);
-      
+
       if (reviewDoc.exists()) {
         const data = reviewDoc.data();
         const userVotes = data.userVotes || {};
-        
+
         // Prüfe ob User bereits gevotet hat
         if (userVotes[userIP]) {
           return; // User hat bereits gevotet
@@ -211,7 +226,7 @@ export default function ProviderReviews({
 
         // Update Votes
         const updateData: any = {
-          [`userVotes.${userIP}`]: voteType
+          [`userVotes.${userIP}`]: voteType,
         };
 
         if (voteType === 'helpful') {
@@ -223,17 +238,23 @@ export default function ProviderReviews({
         await updateDoc(reviewRef, updateData);
 
         // Update lokalen State
-        setReviews(prev => prev.map(review => {
-          if (review.id === reviewId) {
-            return {
-              ...review,
-              helpfulVotes: voteType === 'helpful' ? (review.helpfulVotes || 0) + 1 : review.helpfulVotes,
-              unhelpfulVotes: voteType === 'unhelpful' ? (review.unhelpfulVotes || 0) + 1 : review.unhelpfulVotes,
-              userVotes: { ...review.userVotes, [userIP]: voteType }
-            };
-          }
-          return review;
-        }));
+        setReviews(prev =>
+          prev.map(review => {
+            if (review.id === reviewId) {
+              return {
+                ...review,
+                helpfulVotes:
+                  voteType === 'helpful' ? (review.helpfulVotes || 0) + 1 : review.helpfulVotes,
+                unhelpfulVotes:
+                  voteType === 'unhelpful'
+                    ? (review.unhelpfulVotes || 0) + 1
+                    : review.unhelpfulVotes,
+                userVotes: { ...review.userVotes, [userIP]: voteType },
+              };
+            }
+            return review;
+          })
+        );
       }
     } catch (error) {
       console.error('Fehler beim Voten:', error);
@@ -599,14 +620,19 @@ export default function ProviderReviews({
                           <p className="text-gray-700 dark:text-gray-300 text-sm">
                             {translatedResponses.has(review.id)
                               ? translatedResponses.get(review.id)
-                              : (review.providerResponse.comment || review.providerResponse.message)}
+                              : review.providerResponse.comment || review.providerResponse.message}
                           </p>
 
                           {/* Translation Button for Response */}
                           <div className="mt-2 flex items-center gap-2">
                             <button
                               onClick={() =>
-                                translateText(review.providerResponse!.comment || review.providerResponse!.message!, review.id, true)
+                                translateText(
+                                  review.providerResponse!.comment ||
+                                    review.providerResponse!.message!,
+                                  review.id,
+                                  true
+                                )
                               }
                               disabled={translatingResponses.has(review.id)}
                               className="inline-flex items-center gap-1 text-xs text-[#14ad9f] hover:text-teal-600 font-medium disabled:opacity-50"
@@ -638,14 +664,14 @@ export default function ProviderReviews({
                   {/* Helpful Buttons */}
                   <div className="flex items-center space-x-4 text-sm">
                     <span className="text-gray-600 dark:text-gray-400">Hilfreich?</span>
-                    <button 
+                    <button
                       onClick={() => voteReview(review.id, 'helpful')}
                       disabled={!!review.userVotes?.[userIP]}
                       className={`flex items-center space-x-1 transition-colors ${
-                        review.userVotes?.[userIP] === 'helpful' 
-                          ? 'text-[#14ad9f]' 
-                          : review.userVotes?.[userIP] 
-                            ? 'text-gray-400 cursor-not-allowed' 
+                        review.userVotes?.[userIP] === 'helpful'
+                          ? 'text-[#14ad9f]'
+                          : review.userVotes?.[userIP]
+                            ? 'text-gray-400 cursor-not-allowed'
                             : 'text-gray-600 dark:text-gray-400 hover:text-[#14ad9f]'
                       }`}
                     >
@@ -655,14 +681,14 @@ export default function ProviderReviews({
                         <span className="text-xs">({review.helpfulVotes})</span>
                       )}
                     </button>
-                    <button 
+                    <button
                       onClick={() => voteReview(review.id, 'unhelpful')}
                       disabled={!!review.userVotes?.[userIP]}
                       className={`flex items-center space-x-1 transition-colors ${
-                        review.userVotes?.[userIP] === 'unhelpful' 
-                          ? 'text-red-500' 
-                          : review.userVotes?.[userIP] 
-                            ? 'text-gray-400 cursor-not-allowed' 
+                        review.userVotes?.[userIP] === 'unhelpful'
+                          ? 'text-red-500'
+                          : review.userVotes?.[userIP]
+                            ? 'text-gray-400 cursor-not-allowed'
                             : 'text-gray-600 dark:text-gray-400 hover:text-red-500'
                       }`}
                     >

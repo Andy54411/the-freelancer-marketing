@@ -3,7 +3,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { DynamoDBClient, ScanCommand } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, QueryCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  DynamoDBDocumentClient,
+  GetCommand,
+  QueryCommand,
+  PutCommand,
+} from '@aws-sdk/lib-dynamodb';
 import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { unmarshall } from '@aws-sdk/util-dynamodb';
 
@@ -47,30 +52,35 @@ export async function GET(request: NextRequest) {
       case 'stats':
         return await getChatStatistics();
       case 'list':
-        return await getChatList({ 
-          type: chatType || undefined, 
-          limit, 
-          status: status || undefined 
+        return await getChatList({
+          type: chatType || undefined,
+          limit,
+          status: status || undefined,
         });
       case 'messages':
         const chatId = searchParams.get('chatId');
         const messageLimit = parseInt(searchParams.get('messageLimit') || '50');
-        
+
         if (!chatId) {
           return NextResponse.json(
             { error: 'chatId parameter is required for messages action' },
             { status: 400 }
           );
         }
-        
+
         const messagesData = await getChatMessages(chatId, chatType || 'all', messageLimit);
         return NextResponse.json(messagesData);
       case 'sensitive-data-alerts':
         return await getSensitiveDataAlerts({
           chatId: searchParams.get('chatId') || undefined,
           severity: searchParams.get('severity') || undefined,
-          reviewed: searchParams.get('reviewed') === 'true' ? true : searchParams.get('reviewed') === 'false' ? false : undefined,
-          limit: parseInt(searchParams.get('limit') || '100')
+          reviewed:
+            searchParams.get('reviewed') === 'true'
+              ? true
+              : searchParams.get('reviewed') === 'false'
+                ? false
+                : undefined,
+          limit: parseInt(searchParams.get('limit') || '100'),
         });
       case 'search':
         const query = searchParams.get('q');
@@ -133,14 +143,10 @@ async function getChatOverview() {
 }
 
 // GET Chat Messages - Neue Route für detaillierte Chat-Nachrichten
-async function getChatMessages(
-  chatId: string,
-  chatType: string = 'all',
-  limit: number = 50
-) {
+async function getChatMessages(chatId: string, chatType: string = 'all', limit: number = 50) {
   try {
     console.log(`Fetching messages for chatId: ${chatId}, type: ${chatType}`);
-    
+
     // First, try to get the chat document directly
     const chatResult = await docClient.send(
       new GetCommand({
@@ -154,7 +160,7 @@ async function getChatMessages(
     // If not found, try scanning with filter
     if (!chatResult.Item) {
       console.log('Chat not found, scanning with filter...');
-      
+
       const scanResult = await docClient.send(
         new ScanCommand({
           TableName: TABLES.CHAT_MESSAGES,
@@ -167,15 +173,15 @@ async function getChatMessages(
       );
 
       console.log('Scan result:', scanResult.Items);
-      
+
       if (scanResult.Items && scanResult.Items.length > 0) {
         const chatData = unmarshall(scanResult.Items[0]);
         console.log('Found chat data:', chatData);
-        
+
         // Extract messages from the chat document
         const messages = Array.isArray(chatData.messages) ? chatData.messages : [];
         console.log('Extracted messages:', messages);
-        
+
         return {
           chatId,
           chatType,
@@ -201,10 +207,10 @@ async function getChatMessages(
       // Chat found directly
       const chatData = chatResult.Item;
       console.log('Found chat data directly:', chatData);
-      
+
       const messages = Array.isArray(chatData.messages) ? chatData.messages : [];
       console.log('Extracted messages:', messages);
-      
+
       return {
         chatId,
         chatType,
@@ -236,7 +242,6 @@ async function getChatMessages(
       messages: [],
       retrievedAt: new Date().toISOString(),
     };
-    
   } catch (error) {
     console.error('Error getting chat messages:', error);
     throw error;
@@ -276,19 +281,17 @@ async function getChatStatistics() {
         supportChat: allChats.filter(c => c.type === 'supportChat').length,
       },
       activityTrends: {
-        today: allChats.filter(c => 
-          new Date(c.lastActivity) >= today
-        ).length,
-        thisWeek: allChats.filter(c => 
-          new Date(c.lastActivity) >= weekAgo
-        ).length,
+        today: allChats.filter(c => new Date(c.lastActivity) >= today).length,
+        thisWeek: allChats.filter(c => new Date(c.lastActivity) >= weekAgo).length,
         total: allChats.length,
       },
       supportMetrics: {
         open: allChats.filter(c => c.type === 'supportChat' && c.status === 'open').length,
-        inProgress: allChats.filter(c => c.type === 'supportChat' && c.status === 'in-progress').length,
+        inProgress: allChats.filter(c => c.type === 'supportChat' && c.status === 'in-progress')
+          .length,
         resolved: allChats.filter(c => c.type === 'supportChat' && c.status === 'resolved').length,
-        highPriority: allChats.filter(c => c.type === 'supportChat' && c.priority === 'high').length,
+        highPriority: allChats.filter(c => c.type === 'supportChat' && c.priority === 'high')
+          .length,
       },
       lastUpdated: new Date().toISOString(),
     };
@@ -303,11 +306,11 @@ async function getChatStatistics() {
 async function getChatList(options: { type?: string; limit: number; status?: string }) {
   try {
     let filterExpression = '';
-    let expressionAttributeValues: any = {};
+    const expressionAttributeValues: any = {};
 
     // Build filter expression
     const filters: string[] = [];
-    
+
     if (options.type) {
       filters.push('#type = :type');
       expressionAttributeValues[':type'] = { S: options.type };
@@ -330,14 +333,14 @@ async function getChatList(options: { type?: string; limit: number; status?: str
     if (filterExpression) {
       scanParams.FilterExpression = filterExpression;
       scanParams.ExpressionAttributeValues = expressionAttributeValues;
-      
+
       if (options.type) {
         scanParams.ExpressionAttributeNames = { '#type': 'type' };
       }
       if (options.status) {
-        scanParams.ExpressionAttributeNames = { 
+        scanParams.ExpressionAttributeNames = {
           ...scanParams.ExpressionAttributeNames,
-          '#status': 'status' 
+          '#status': 'status',
         };
       }
     }
@@ -346,8 +349,8 @@ async function getChatList(options: { type?: string; limit: number; status?: str
     const chats = result.Items?.map(item => unmarshall(item)) || [];
 
     // Sort by last activity
-    chats.sort((a, b) => 
-      new Date(b.lastActivity || 0).getTime() - new Date(a.lastActivity || 0).getTime()
+    chats.sort(
+      (a, b) => new Date(b.lastActivity || 0).getTime() - new Date(a.lastActivity || 0).getTime()
     );
 
     return NextResponse.json({
@@ -386,9 +389,9 @@ async function searchChats(query: string) {
     chats.sort((a, b) => {
       const aExact = a.title?.toLowerCase().includes(query.toLowerCase()) ? 1 : 0;
       const bExact = b.title?.toLowerCase().includes(query.toLowerCase()) ? 1 : 0;
-      
+
       if (aExact !== bExact) return bExact - aExact;
-      
+
       return new Date(b.lastActivity || 0).getTime() - new Date(a.lastActivity || 0).getTime();
     });
 
@@ -408,12 +411,12 @@ export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
-    
+
     // Handle URL parameter actions first
     if (action === 'aggregate') {
       return await triggerChatAggregation();
     }
-    
+
     // If no URL action, try to parse JSON body
     const contentType = request.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
@@ -430,7 +433,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
       }
     }
-    
+
     return NextResponse.json({ error: 'No action specified' }, { status: 400 });
   } catch (error) {
     console.error('Admin Chat POST Error:', error);
@@ -513,31 +516,31 @@ async function triggerChatAggregation() {
   try {
     const payload = {
       source: 'admin-dashboard',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     const command = new InvokeCommand({
       FunctionName: 'taskilo-chat-aggregator',
       InvocationType: 'Event', // Async invocation
-      Payload: JSON.stringify(payload)
+      Payload: JSON.stringify(payload),
     });
 
     console.log('Invoking Lambda function: taskilo-chat-aggregator');
     const result = await lambdaClient.send(command);
-    
+
     console.log('Lambda invocation result:', result);
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    return NextResponse.json({
+      success: true,
       message: 'Chat aggregation triggered successfully',
-      statusCode: result.StatusCode
+      statusCode: result.StatusCode,
     });
   } catch (error) {
     console.error('Lambda invocation error:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to trigger aggregation',
-        details: error.message 
+        details: error.message,
       },
       { status: 500 }
     );
@@ -553,7 +556,7 @@ async function getSensitiveDataAlerts(options: {
 }) {
   try {
     const { chatId, severity, reviewed, limit = 100 } = options;
-    
+
     // Erst ohne Filter scannen, dann in JavaScript filtern
     const scanParams = {
       TableName: TABLES.SENSITIVE_DATA_ALERTS,
@@ -595,9 +598,9 @@ async function getSensitiveDataAlerts(options: {
       },
       recentAlerts: alerts.filter(a => {
         const alertTime = new Date(a.timestamp).getTime();
-        const dayAgo = Date.now() - (24 * 60 * 60 * 1000);
+        const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
         return alertTime > dayAgo;
-      }).length
+      }).length,
     };
 
     // Zähle Typen sicher
@@ -610,15 +613,14 @@ async function getSensitiveDataAlerts(options: {
     return NextResponse.json({
       alerts,
       statistics: alertStats,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
     });
-    
   } catch (error) {
     console.error('Error fetching sensitive data alerts:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to fetch sensitive data alerts',
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );

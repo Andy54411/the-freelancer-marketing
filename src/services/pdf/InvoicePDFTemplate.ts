@@ -9,7 +9,6 @@ import * as QRCode from 'qrcode';
  * MIT LOGO OBEN UND FOOTER UNTEN - komplette professionelle Rechnung
  */
 export class InvoicePDFTemplate {
-
   /**
    * Generiert PDF EXAKT wie die echte HTML-Template Rechnung
    * MIT LOGO UND FOOTER - komplette professionelle Rechnung
@@ -22,7 +21,7 @@ export class InvoicePDFTemplate {
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4'
+        format: 'a4',
       });
 
       // PDF-Content aufbauen - EXAKT wie echte Rechnung MIT LOGO UND FOOTER
@@ -40,9 +39,12 @@ export class InvoicePDFTemplate {
       const pdfOutput = doc.output('arraybuffer');
       const pdfBuffer = Buffer.from(pdfOutput);
 
-      console.log('[PDF-Template] EXACT template PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+      console.log(
+        '[PDF-Template] EXACT template PDF generated successfully, size:',
+        pdfBuffer.length,
+        'bytes'
+      );
       return pdfBuffer;
-
     } catch (error) {
       console.error('[PDF-Template] Error generating PDF:', error);
       throw new Error(`PDF template generation failed: ${error.message}`);
@@ -74,8 +76,8 @@ export class InvoicePDFTemplate {
         margin: 1,
         color: {
           dark: '#000000',
-          light: '#FFFFFF'
-        }
+          light: '#FFFFFF',
+        },
       });
 
       return qrCodeDataURL;
@@ -117,7 +119,7 @@ export class InvoicePDFTemplate {
    * Dokumenttitel erstellen (Rechnung, Angebot, etc.)
    */
   private static buildDocumentTitle(doc: jsPDF, data: any, startY: number): number {
-      const title = InvoicePDFTemplate.getDocumentTitle(data);
+    const title = InvoicePDFTemplate.getDocumentTitle(data);
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.text(title, 20, startY);
@@ -263,7 +265,7 @@ export class InvoicePDFTemplate {
     const lines = doc.splitTextToSize(cleanText, 170);
 
     doc.text(lines, 20, startY);
-    return startY + (lines.length * 5) + 10;
+    return startY + lines.length * 5 + 10;
   }
 
   /**
@@ -275,7 +277,9 @@ export class InvoicePDFTemplate {
     let currentY = startY;
 
     // Tabellen-Header mit grauer Hintergrundfarbe
-    const hasDiscount = data.items.some((item: any) => item.discountPercent > 0 || item.discount > 0);
+    const hasDiscount = data.items.some(
+      (item: any) => item.discountPercent > 0 || item.discount > 0
+    );
 
     // Header-Hintergrund
     doc.setFillColor(240, 240, 240); // Grau wie im HTML
@@ -333,8 +337,12 @@ export class InvoicePDFTemplate {
 
       // Rabatt
       if (hasDiscount) {
-        const discountText = item.discountPercent > 0 ? `${item.discountPercent}%` :
-                           item.discount > 0 ? `${item.discount}%` : '';
+        const discountText =
+          item.discountPercent > 0
+            ? `${item.discountPercent}%`
+            : item.discount > 0
+              ? `${item.discount}%`
+              : '';
         if (discountText) {
           doc.setTextColor(220, 53, 69); // Rot für Rabatt
           doc.text(discountText, rowX + 8, currentY + 2);
@@ -344,11 +352,12 @@ export class InvoicePDFTemplate {
       }
 
       // Gesamtpreis
-      const discount = item.discountPercent > 0
-        ? item.unitPrice * item.quantity * (item.discountPercent / 100)
-        : item.discount > 0
-          ? item.unitPrice * item.quantity * (item.discount / 100)
-          : 0;
+      const discount =
+        item.discountPercent > 0
+          ? item.unitPrice * item.quantity * (item.discountPercent / 100)
+          : item.discount > 0
+            ? item.unitPrice * item.quantity * (item.discount / 100)
+            : 0;
       const total = item.unitPrice * item.quantity - discount;
       doc.setFont('helvetica', 'bold');
       doc.text(this.formatCurrency(total), rowX + 18, currentY + 2, { align: 'right' });
@@ -368,8 +377,12 @@ export class InvoicePDFTemplate {
   /**
    * Summen und Info-Sektion erstellen
    */
-  private static async buildTotalsAndInfoSection(doc: jsPDF, data: any, startY: number): Promise<number> {
-    let currentY = startY;
+  private static async buildTotalsAndInfoSection(
+    doc: jsPDF,
+    data: any,
+    startY: number
+  ): Promise<number> {
+    const currentY = startY;
 
     // Linke Spalte: Steuerregel, Skonto, Zahlungsbedingungen
     let leftY = currentY;
@@ -433,11 +446,18 @@ export class InvoicePDFTemplate {
       doc.setFont('helvetica', 'bold');
       doc.text('Status:', 20, leftY);
       doc.setFont('helvetica', 'normal');
-      const status = data.eInvoiceData?.validationStatus === 'valid' ? '✓' :
-                    data.eInvoiceData?.validationStatus === 'invalid' ? '✗' : '⏳';
-      const statusColor = data.eInvoiceData?.validationStatus === 'valid' ? [34, 197, 94] :  // grün
-                         data.eInvoiceData?.validationStatus === 'invalid' ? [220, 53, 69] : // rot
-                         [251, 191, 36]; // gelb
+      const status =
+        data.eInvoiceData?.validationStatus === 'valid'
+          ? '✓'
+          : data.eInvoiceData?.validationStatus === 'invalid'
+            ? '✗'
+            : '⏳';
+      const statusColor =
+        data.eInvoiceData?.validationStatus === 'valid'
+          ? [34, 197, 94] // grün
+          : data.eInvoiceData?.validationStatus === 'invalid'
+            ? [220, 53, 69] // rot
+            : [251, 191, 36]; // gelb
       doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
       doc.text(status, 45, leftY);
       doc.setTextColor(0, 0, 0);
@@ -531,7 +551,11 @@ export class InvoicePDFTemplate {
       rightY += 4;
 
       doc.setTextColor(220, 53, 69);
-      doc.text(`Skonto ${data.skontoPercentage}% bei Zahlung binnen ${data.skontoDays} Tagen:`, rightX, rightY);
+      doc.text(
+        `Skonto ${data.skontoPercentage}% bei Zahlung binnen ${data.skontoDays} Tagen:`,
+        rightX,
+        rightY
+      );
       const skontoAmount = data.total * (data.skontoPercentage / 100);
       doc.text(`- ${this.formatCurrency(skontoAmount)}`, 190, rightY, { align: 'right' });
       rightY += 5;
@@ -616,8 +640,10 @@ export class InvoicePDFTemplate {
 
     // Adresse
     const street = (data as any).companyStreet || (data as any).company?.address?.street || '';
-    const houseNumber = (data as any).companyHouseNumber || (data as any).company?.address?.houseNumber || '';
-    const postalCode = (data as any).companyPostalCode || (data as any).company?.address?.zipCode || '';
+    const houseNumber =
+      (data as any).companyHouseNumber || (data as any).company?.address?.houseNumber || '';
+    const postalCode =
+      (data as any).companyPostalCode || (data as any).company?.address?.zipCode || '';
     const city = (data as any).companyCity || (data as any).company?.address?.city || '';
 
     if (street || postalCode || city) {
@@ -630,9 +656,12 @@ export class InvoicePDFTemplate {
     }
 
     // Kontaktinformationen
-    const phone = (data as any).companyPhone || (data as any).phoneNumber || (data as any).company?.phone || '';
-    const email = (data as any).companyEmail || (data as any).email || (data as any).company?.email || '';
-    const website = (data as any).companyWebsite || (data as any).website || (data as any).company?.website || '';
+    const phone =
+      (data as any).companyPhone || (data as any).phoneNumber || (data as any).company?.phone || '';
+    const email =
+      (data as any).companyEmail || (data as any).email || (data as any).company?.email || '';
+    const website =
+      (data as any).companyWebsite || (data as any).website || (data as any).company?.website || '';
 
     if (phone.trim()) footerParts.push(`Tel: ${phone.trim()}`);
     if (email.trim()) footerParts.push(`E-Mail: ${email.trim()}`);
@@ -665,8 +694,14 @@ export class InvoicePDFTemplate {
     let directorName = '';
 
     // 1. Prüfe direkte managingDirectors Felder
-    if (!directorName && (data as any).managingDirectors && (data as any).managingDirectors.length > 0) {
-      const mainDirector = (data as any).managingDirectors.find((dir: any) => dir.isMainDirector) || (data as any).managingDirectors[0];
+    if (
+      !directorName &&
+      (data as any).managingDirectors &&
+      (data as any).managingDirectors.length > 0
+    ) {
+      const mainDirector =
+        (data as any).managingDirectors.find((dir: any) => dir.isMainDirector) ||
+        (data as any).managingDirectors[0];
       if (mainDirector && mainDirector.firstName && mainDirector.lastName) {
         directorName = `${mainDirector.firstName} ${mainDirector.lastName}`;
       } else if (mainDirector && mainDirector.name) {
@@ -675,8 +710,14 @@ export class InvoicePDFTemplate {
     }
 
     // 2. Prüfe step1.managingDirectors Array
-    if (!directorName && (data as any).step1?.managingDirectors && (data as any).step1.managingDirectors.length > 0) {
-      const mainDirector = (data as any).step1.managingDirectors.find((dir: any) => dir.isMainDirector) || (data as any).step1.managingDirectors[0];
+    if (
+      !directorName &&
+      (data as any).step1?.managingDirectors &&
+      (data as any).step1.managingDirectors.length > 0
+    ) {
+      const mainDirector =
+        (data as any).step1.managingDirectors.find((dir: any) => dir.isMainDirector) ||
+        (data as any).step1.managingDirectors[0];
       if (mainDirector && mainDirector.firstName && mainDirector.lastName) {
         directorName = `${mainDirector.firstName} ${mainDirector.lastName}`;
       } else if (mainDirector && mainDirector.name) {
@@ -685,7 +726,11 @@ export class InvoicePDFTemplate {
     }
 
     // 3. Prüfe step1.personalData
-    if (!directorName && (data as any).step1?.personalData?.firstName && (data as any).step1?.personalData?.lastName) {
+    if (
+      !directorName &&
+      (data as any).step1?.personalData?.firstName &&
+      (data as any).step1?.personalData?.lastName
+    ) {
       directorName = `${(data as any).step1.personalData.firstName} ${(data as any).step1.personalData.lastName}`;
     }
 
@@ -696,7 +741,11 @@ export class InvoicePDFTemplate {
 
     // Für GmbH, UG, AG, KG ist Geschäftsführer PFLICHT
     const legalFormLower = legalForm.toLowerCase();
-    const requiresDirector = legalFormLower.includes('gmbh') || legalFormLower.includes('ug') || legalFormLower.includes('ag') || legalFormLower.includes('kg');
+    const requiresDirector =
+      legalFormLower.includes('gmbh') ||
+      legalFormLower.includes('ug') ||
+      legalFormLower.includes('ag') ||
+      legalFormLower.includes('kg');
 
     if (directorName.trim()) {
       if (requiresDirector) {
@@ -719,7 +768,7 @@ export class InvoicePDFTemplate {
       const totalHeight = lines.length * lineHeight;
 
       for (let i = 0; i < lines.length; i++) {
-        const y = currentY + 10 + (i * lineHeight);
+        const y = currentY + 10 + i * lineHeight;
         doc.text(lines[i], pageWidth / 2, y, { align: 'center' });
       }
 
@@ -738,13 +787,15 @@ export class InvoicePDFTemplate {
    */
   private static resolveLogoUrl(data: any): string | undefined {
     // Priorität: customizations > companySettings > data
-    return (data as any)?.customizations?.logoUrl ||
-           (data as any)?.companySettings?.logo ||
-           (data as any)?.companySettings?.logoUrl ||
-           data?.company?.logo ||
-           data?.companyLogo ||
-           data?.profilePictureURL ||
-           undefined;
+    return (
+      (data as any)?.customizations?.logoUrl ||
+      (data as any)?.companySettings?.logo ||
+      (data as any)?.companySettings?.logoUrl ||
+      data?.company?.logo ||
+      data?.companyLogo ||
+      data?.profilePictureURL ||
+      undefined
+    );
   }
 
   private static getDocumentTitle(data: any): string {
@@ -756,22 +807,33 @@ export class InvoicePDFTemplate {
     // 2. Basierend auf documentType
     if (data.documentType) {
       switch (data.documentType) {
-        case 'quote': return 'Angebot';
-        case 'invoice': return 'Rechnung';
-        case 'storno': return 'STORNO-RECHNUNG';
-        case 'reminder': return 'Mahnung';
+        case 'quote':
+          return 'Angebot';
+        case 'invoice':
+          return 'Rechnung';
+        case 'storno':
+          return 'STORNO-RECHNUNG';
+        case 'reminder':
+          return 'Mahnung';
         case 'voucher':
-        case 'gutschein': return 'Gutschein';
+        case 'gutschein':
+          return 'Gutschein';
         case 'delivery_note':
-        case 'lieferschein': return 'Lieferschein';
-        case 'proforma': return 'Proforma-Rechnung';
+        case 'lieferschein':
+          return 'Lieferschein';
+        case 'proforma':
+          return 'Proforma-Rechnung';
         case 'credit_note':
-        case 'gutschrift': return 'Gutschrift';
+        case 'gutschrift':
+          return 'Gutschrift';
         case 'order_confirmation':
-        case 'auftragsbestaetigung': return 'Auftragsbestätigung';
+        case 'auftragsbestaetigung':
+          return 'Auftragsbestätigung';
         case 'cost_estimate':
-        case 'kostenvoranschlag': return 'Kostenvoranschlag';
-        default: return 'Dokument';
+        case 'kostenvoranschlag':
+          return 'Kostenvoranschlag';
+        default:
+          return 'Dokument';
       }
     }
 
@@ -798,43 +860,65 @@ export class InvoicePDFTemplate {
 
   private static getDocumentNumberLabel(documentType?: string): string {
     switch (documentType) {
-      case 'quote': return 'Angebotsnummer:';
-      case 'invoice': return 'Rechnungsnummer:';
-      case 'storno': return 'Storno-Nummer:';
-      case 'reminder': return 'Mahnungsnummer:';
+      case 'quote':
+        return 'Angebotsnummer:';
+      case 'invoice':
+        return 'Rechnungsnummer:';
+      case 'storno':
+        return 'Storno-Nummer:';
+      case 'reminder':
+        return 'Mahnungsnummer:';
       case 'voucher':
-      case 'gutschein': return 'Gutscheinnummer:';
+      case 'gutschein':
+        return 'Gutscheinnummer:';
       case 'delivery_note':
-      case 'lieferschein': return 'Lieferscheinnummer:';
-      case 'proforma': return 'Proforma-Nummer:';
+      case 'lieferschein':
+        return 'Lieferscheinnummer:';
+      case 'proforma':
+        return 'Proforma-Nummer:';
       case 'credit_note':
-      case 'gutschrift': return 'Gutschriftsnummer:';
+      case 'gutschrift':
+        return 'Gutschriftsnummer:';
       case 'order_confirmation':
-      case 'auftragsbestaetigung': return 'Auftragsnummer:';
+      case 'auftragsbestaetigung':
+        return 'Auftragsnummer:';
       case 'cost_estimate':
-      case 'kostenvoranschlag': return 'Kostenvoranschlagsnummer:';
-      default: return 'Dokumentennummer:';
+      case 'kostenvoranschlag':
+        return 'Kostenvoranschlagsnummer:';
+      default:
+        return 'Dokumentennummer:';
     }
   }
 
   private static getDocumentDateLabel(documentType?: string): string {
     switch (documentType) {
-      case 'quote': return 'Angebotsdatum:';
-      case 'invoice': return 'Rechnungsdatum:';
-      case 'storno': return 'Storno-Datum:';
-      case 'reminder': return 'Mahnungsdatum:';
+      case 'quote':
+        return 'Angebotsdatum:';
+      case 'invoice':
+        return 'Rechnungsdatum:';
+      case 'storno':
+        return 'Storno-Datum:';
+      case 'reminder':
+        return 'Mahnungsdatum:';
       case 'voucher':
-      case 'gutschein': return 'Gutscheindatum:';
+      case 'gutschein':
+        return 'Gutscheindatum:';
       case 'delivery_note':
-      case 'lieferschein': return 'Lieferscheindatum:';
-      case 'proforma': return 'Proforma-Datum:';
+      case 'lieferschein':
+        return 'Lieferscheindatum:';
+      case 'proforma':
+        return 'Proforma-Datum:';
       case 'credit_note':
-      case 'gutschrift': return 'Gutschriftsdatum:';
+      case 'gutschrift':
+        return 'Gutschriftsdatum:';
       case 'order_confirmation':
-      case 'auftragsbestaetigung': return 'Auftragsdatum:';
+      case 'auftragsbestaetigung':
+        return 'Auftragsdatum:';
       case 'cost_estimate':
-      case 'kostenvoranschlag': return 'Kostenvoranschlagsdatum:';
-      default: return 'Dokumentendatum:';
+      case 'kostenvoranschlag':
+        return 'Kostenvoranschlagsdatum:';
+      default:
+        return 'Dokumentendatum:';
     }
   }
 
@@ -844,10 +928,14 @@ export class InvoicePDFTemplate {
 
   private static getDueDateLabel(documentType?: string): string {
     switch (documentType) {
-      case 'invoice': return 'Fälligkeitsdatum:';
-      case 'reminder': return 'Fälligkeitsdatum:';
-      case 'storno': return 'Fälligkeitsdatum:';
-      default: return 'Fälligkeitsdatum:';
+      case 'invoice':
+        return 'Fälligkeitsdatum:';
+      case 'reminder':
+        return 'Fälligkeitsdatum:';
+      case 'storno':
+        return 'Fälligkeitsdatum:';
+      default:
+        return 'Fälligkeitsdatum:';
     }
   }
 
@@ -862,38 +950,60 @@ export class InvoicePDFTemplate {
 
   private static getTaxRuleText(taxRule: string): string {
     switch (taxRule) {
-      case 'DE_TAXABLE': return 'Steuerpflichtiger Umsatz (Regelsteuersatz 19 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 1 UStG)';
-      case 'DE_TAXABLE_REDUCED': return 'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 12 Abs. 2 UStG)';
-      case 'DE_REDUCED': return 'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 2 UStG)';
+      case 'DE_TAXABLE':
+        return 'Steuerpflichtiger Umsatz (Regelsteuersatz 19 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 1 UStG)';
+      case 'DE_TAXABLE_REDUCED':
+        return 'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 12 Abs. 2 UStG)';
+      case 'DE_REDUCED':
+        return 'Steuerpflichtiger Umsatz (ermäßigter Steuersatz 7 %, § 1 Abs. 1 Nr. 1 i.V.m. § 12 Abs. 2 UStG)';
       case 'DE_EXEMPT':
-      case 'DE_EXEMPT_4_USTG': return 'Steuerfreie Lieferung/Leistung gemäß § 4 UStG';
-      case 'DE_SMALL_BUSINESS': return 'Umsatzsteuerbefreit nach § 19 UStG (Kleinunternehmerregelung)';
+      case 'DE_EXEMPT_4_USTG':
+        return 'Steuerfreie Lieferung/Leistung gemäß § 4 UStG';
+      case 'DE_SMALL_BUSINESS':
+        return 'Umsatzsteuerbefreit nach § 19 UStG (Kleinunternehmerregelung)';
       case 'DE_REVERSE_CHARGE':
-      case 'DE_REVERSE_13B': return 'Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)';
-      case 'EU_REVERSE_18B': return 'Steuerschuldnerschaft des Leistungsempfängers (Art. 196 MwStSystRL, § 18b UStG)';
-      case 'EU_INTRACOMMUNITY_SUPPLY': return 'Innergemeinschaftliche Lieferung, steuerfrei gemäß § 4 Nr. 1b i.V.m. § 6a UStG';
-      case 'EU_OSS': return 'Fernverkauf über das OSS-Verfahren (§ 18j UStG)';
-      case 'NON_EU_EXPORT': return 'Steuerfreie Ausfuhrlieferung (§ 4 Nr. 1a UStG)';
-      case 'NON_EU_OUT_OF_SCOPE': return 'Nicht im Inland steuerbare Leistung (Leistungsort außerhalb Deutschlands, § 3a Abs. 2 UStG)';
-      case 'DE_INTRACOMMUNITY': return 'Innergemeinschaftliche Lieferung (§ 4 Nr. 1b UStG)';
-      case 'DE_EXPORT': return 'Ausfuhrlieferung (§ 4 Nr. 1a UStG)';
-      default: return taxRule;
+      case 'DE_REVERSE_13B':
+        return 'Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)';
+      case 'EU_REVERSE_18B':
+        return 'Steuerschuldnerschaft des Leistungsempfängers (Art. 196 MwStSystRL, § 18b UStG)';
+      case 'EU_INTRACOMMUNITY_SUPPLY':
+        return 'Innergemeinschaftliche Lieferung, steuerfrei gemäß § 4 Nr. 1b i.V.m. § 6a UStG';
+      case 'EU_OSS':
+        return 'Fernverkauf über das OSS-Verfahren (§ 18j UStG)';
+      case 'NON_EU_EXPORT':
+        return 'Steuerfreie Ausfuhrlieferung (§ 4 Nr. 1a UStG)';
+      case 'NON_EU_OUT_OF_SCOPE':
+        return 'Nicht im Inland steuerbare Leistung (Leistungsort außerhalb Deutschlands, § 3a Abs. 2 UStG)';
+      case 'DE_INTRACOMMUNITY':
+        return 'Innergemeinschaftliche Lieferung (§ 4 Nr. 1b UStG)';
+      case 'DE_EXPORT':
+        return 'Ausfuhrlieferung (§ 4 Nr. 1a UStG)';
+      default:
+        return taxRule;
     }
   }
 
   private static getTotalLabel(documentType?: string): string {
     switch (documentType) {
-      case 'quote': return 'Angebotssumme';
-      case 'invoice': return 'Rechnungsbetrag';
-      case 'storno': return 'Stornobetrag';
-      case 'reminder': return 'Mahnungsbetrag';
+      case 'quote':
+        return 'Angebotssumme';
+      case 'invoice':
+        return 'Rechnungsbetrag';
+      case 'storno':
+        return 'Stornobetrag';
+      case 'reminder':
+        return 'Mahnungsbetrag';
       case 'voucher':
-      case 'gutschein': return 'Gutscheinwert';
+      case 'gutschein':
+        return 'Gutscheinwert';
       case 'credit_note':
-      case 'gutschrift': return 'Gutschriftsbetrag';
+      case 'gutschrift':
+        return 'Gutschriftsbetrag';
       case 'cost_estimate':
-      case 'kostenvoranschlag': return 'Geschätzte Kosten';
-      default: return 'Gesamtbetrag';
+      case 'kostenvoranschlag':
+        return 'Geschätzte Kosten';
+      default:
+        return 'Gesamtbetrag';
     }
   }
 }

@@ -51,14 +51,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { db } from '@/firebase/clients';
-import {
-  collection,
-  getDocs,
-  doc,
-  getDoc,
-  addDoc,
-  serverTimestamp,
-} from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { LivePreviewModal } from '@/components/finance/LivePreviewModal';
 import { SendDocumentModal } from '@/components/finance/SendDocumentModal';
@@ -204,13 +197,17 @@ function CustomerAddressDisplay({ invoiceId, companyId }: CustomerAddressDisplay
           const customerId = invoiceData.customerId;
 
           if (customerId) {
-            const customerDoc = await getDoc(doc(db, 'companies', companyId, 'customers', customerId));
+            const customerDoc = await getDoc(
+              doc(db, 'companies', companyId, 'customers', customerId)
+            );
             if (customerDoc.exists()) {
               const customerData = customerDoc.data();
               const addressParts = [
                 customerData.street,
-                customerData.postalCode && customerData.city ? `${customerData.postalCode} ${customerData.city}` : customerData.city,
-                customerData.country || 'Deutschland'
+                customerData.postalCode && customerData.city
+                  ? `${customerData.postalCode} ${customerData.city}`
+                  : customerData.city,
+                customerData.country || 'Deutschland',
               ].filter(Boolean);
 
               const address = addressParts.join('\n');
@@ -239,11 +236,7 @@ function CustomerAddressDisplay({ invoiceId, companyId }: CustomerAddressDisplay
     return <div className="text-gray-500">Adresse wird geladen...</div>;
   }
 
-  return (
-    <div className="whitespace-pre-line">
-      {customerAddress || 'Keine Adresse verfügbar'}
-    </div>
-  );
+  return <div className="whitespace-pre-line">{customerAddress || 'Keine Adresse verfügbar'}</div>;
 }
 
 interface OverdueInvoice {
@@ -313,7 +306,7 @@ export default function CreateReminderPage() {
   const [showAddressAddition, setShowAddressAddition] = useState(false);
   const [deliveryDateType, setDeliveryDateType] = useState<'single' | 'range'>('single');
   const [deliveryDatePopoverOpen, setDeliveryDatePopoverOpen] = useState(false);
-  const [deliveryDateRange, setDeliveryDateRange] = useState<{from?: Date, to?: Date}>({});
+  const [deliveryDateRange, setDeliveryDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [paymentDays, setPaymentDays] = useState(0);
   const [createCustomerOpen, setCreateCustomerOpen] = useState(false);
 
@@ -328,9 +321,10 @@ export default function CreateReminderPage() {
       ...prev,
       customerName: customer.name,
       customerEmail: customer.email,
-      customerAddress: customer.street && customer.city
-        ? `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}`
-        : prev.customerAddress,
+      customerAddress:
+        customer.street && customer.city
+          ? `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}`
+          : prev.customerAddress,
     }));
     setShowCustomerSearchPopup(false);
   };
@@ -529,12 +523,12 @@ export default function CreateReminderPage() {
       console.warn(`Reminder settings missing for level ${formData.reminderLevel}`);
       return; // Don't update if settings are missing
     }
-    
+
     const today = new Date();
     const daysToAdd = reminderConfig.days;
     const newDueDate = new Date(today);
     newDueDate.setDate(today.getDate() + daysToAdd);
-    
+
     setFormData(prev => ({
       ...prev,
       reminderFee: reminderConfig.fee,
@@ -564,16 +558,18 @@ export default function CreateReminderPage() {
     if (selectedInvoice && formData.reminderLevel) {
       const reminderConfig = reminderSettings[formData.reminderLevel];
       if (!reminderConfig) {
-        console.warn(`Cannot create reminder items: missing settings for level ${formData.reminderLevel}`);
+        console.warn(
+          `Cannot create reminder items: missing settings for level ${formData.reminderLevel}`
+        );
         return;
       }
-      
+
       const outstandingAmount = selectedInvoice.outstandingAmount || selectedInvoice.total;
       if (!outstandingAmount) {
         console.warn('Cannot create reminder items: missing outstanding amount');
         return;
       }
-      
+
       const reminderFee = reminderConfig.fee;
 
       const reminderItems: QuoteItem[] = [
@@ -600,7 +596,7 @@ export default function CreateReminderPage() {
           unit: 'Stk',
           category: 'service',
           discountPercent: 0,
-        }
+        },
       ];
 
       setItems(reminderItems);
@@ -609,11 +605,7 @@ export default function CreateReminderPage() {
 
   // Invoice position functions
   const handleDescriptionChange = (index: number, itemId: string, description: string) => {
-    setItems(prev =>
-      prev.map((it, i) =>
-        i === index ? { ...it, description } : it
-      )
-    );
+    setItems(prev => prev.map((it, i) => (i === index ? { ...it, description } : it)));
     // Trigger popover for new descriptions
     if (description.length > 3 && !dismissedCreatePromptIds.has(itemId)) {
       setPopoverOpenIds(prev => new Set(prev).add(itemId));
@@ -637,11 +629,7 @@ export default function CreateReminderPage() {
   };
 
   const handleItemChange = (index: number, field: keyof QuoteItem, value: any) => {
-    setItems(prev =>
-      prev.map((it, i) =>
-        i === index ? { ...it, [field]: value } : it
-      )
-    );
+    setItems(prev => prev.map((it, i) => (i === index ? { ...it, [field]: value } : it)));
   };
 
   const removeItem = (index: number) => {
@@ -715,7 +703,9 @@ export default function CreateReminderPage() {
         if (invoiceData.status !== 'paid' && invoiceData.dueDate) {
           const dueDate = new Date(invoiceData.dueDate);
           const today = new Date();
-          const daysPastDue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+          const daysPastDue = Math.floor(
+            (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+          );
 
           if (daysPastDue > 0) {
             // Get customer data
@@ -724,7 +714,9 @@ export default function CreateReminderPage() {
 
             if (invoiceData.customerId) {
               try {
-                const customerDoc = await getDoc(doc(db, 'companies', uid, 'customers', invoiceData.customerId));
+                const customerDoc = await getDoc(
+                  doc(db, 'companies', uid, 'customers', invoiceData.customerId)
+                );
                 if (customerDoc.exists()) {
                   const customerData = customerDoc.data();
                   customerName = customerData.name;
@@ -766,7 +758,7 @@ export default function CreateReminderPage() {
       const customersSnap = await getDocs(customersRef);
       const customersData = customersSnap.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       }));
       setCustomers(customersData);
     } catch (error) {
@@ -781,12 +773,14 @@ export default function CreateReminderPage() {
       const invoiceDoc = await getDoc(doc(db, 'companies', uid, 'invoices', invoiceId));
       if (invoiceDoc.exists()) {
         const invoiceData = invoiceDoc.data();
-        
+
         // Load customer data from subcollection if customerId exists
         let customerData: any = null;
         if (invoiceData.customerId) {
           try {
-            const customerDoc = await getDoc(doc(db, 'companies', uid, 'customers', invoiceData.customerId));
+            const customerDoc = await getDoc(
+              doc(db, 'companies', uid, 'customers', invoiceData.customerId)
+            );
             if (customerDoc.exists()) {
               customerData = customerDoc.data();
             }
@@ -803,11 +797,17 @@ export default function CreateReminderPage() {
           items: invoiceData.items || [],
           customerName: customerData?.name || customerData?.companyName || invoiceData.customerName,
           customerEmail: customerData?.email || invoiceData.customerEmail,
-          customerAddress: customerData ? [
-            customerData.street || '',
-            customerData.houseNumber ? `${customerData.postalCode || ''} ${customerData.city || ''}`.trim() : customerData.city || '',
-            customerData.country || 'Deutschland'
-          ].filter(Boolean).join('\n') : invoiceData.customerAddress,
+          customerAddress: customerData
+            ? [
+                customerData.street || '',
+                customerData.houseNumber
+                  ? `${customerData.postalCode || ''} ${customerData.city || ''}`.trim()
+                  : customerData.city || '',
+                customerData.country || 'Deutschland',
+              ]
+                .filter(Boolean)
+                .join('\n')
+            : invoiceData.customerAddress,
           customerFirstName: customerData?.firstName || invoiceData.customerFirstName,
           customerLastName: customerData?.lastName || invoiceData.customerLastName,
           customerPhone: customerData?.phone || invoiceData.customerPhone,
@@ -831,9 +831,14 @@ export default function CreateReminderPage() {
           deliveryDate: invoiceData.deliveryDate || invoiceData._originalFormData?.deliveryDate,
           deliveryTerms: invoiceData.deliveryTerms || invoiceData._originalFormData?.deliveryTerms,
           servicePeriod: invoiceData.servicePeriod || invoiceData._originalFormData?.servicePeriod,
-          customerOrderNumber: invoiceData.customerOrderNumber || invoiceData._originalFormData?.customerOrderNumber,
-          validUntil: invoiceData.validUntil || invoiceData.dueDate || invoiceData._originalFormData?.validUntil,
-          deliveryDateType: invoiceData.deliveryDateType || invoiceData._originalFormData?.deliveryDateType,
+          customerOrderNumber:
+            invoiceData.customerOrderNumber || invoiceData._originalFormData?.customerOrderNumber,
+          validUntil:
+            invoiceData.validUntil ||
+            invoiceData.dueDate ||
+            invoiceData._originalFormData?.validUntil,
+          deliveryDateType:
+            invoiceData.deliveryDateType || invoiceData._originalFormData?.deliveryDateType,
           deliveryDateRange: invoiceData.deliveryDateRange,
           reference: invoiceData.reference,
           notes: invoiceData.notes,
@@ -854,7 +859,8 @@ export default function CreateReminderPage() {
           skontoDays: invoiceData.skontoDays,
           skontoPercentage: invoiceData.skontoPercentage,
           skontoText: invoiceData.skontoText,
-          outstandingAmount: invoiceData.outstandingAmount || invoiceData.total || invoiceData.amount,
+          outstandingAmount:
+            invoiceData.outstandingAmount || invoiceData.total || invoiceData.amount,
           daysPastDue: invoiceData.daysPastDue,
           // Add customer data
           customerData: customerData,
@@ -875,7 +881,7 @@ export default function CreateReminderPage() {
         }));
 
         setInvoiceItems(quoteItems);
-        
+
         // Store full invoice data for later use
         setSelectedInvoice(fullInvoiceData);
 
@@ -900,7 +906,7 @@ export default function CreateReminderPage() {
             // headText und footerText werden automatisch durch die Editoren basierend auf objectType="REMINDER" geladen
             headText: prev.headText, // Automatische Template-Ladung durch HeaderTextEditor
             footerText: prev.footerText, // Automatische Template-Ladung durch FooterTextEditor
-            
+
             // 🔥 WICHTIG: Steuerdaten aus der ursprünglichen Rechnung übernehmen - NO FALLBACKS
             taxRule: fullInvoiceData.taxRule,
             taxRuleType: fullInvoiceData.taxRuleType,
@@ -943,54 +949,56 @@ export default function CreateReminderPage() {
     try {
       setSaving(true);
 
-      const reminderData = selectedInvoice ? {
-        // Mahnung basierend auf Rechnung
-        invoiceId: selectedInvoice.id,
-        invoiceNumber: selectedInvoice.invoiceNumber,
-        customerName: selectedInvoice.customerName,
-        customerEmail: selectedInvoice.customerEmail,
-        customerAddress: selectedInvoice.customerAddress,
-        reminderLevel: formData.reminderLevel,
-        reminderFee: formData.reminderFee,
-        customMessage: formData.customMessage,
-        title: formData.title,
-        headText: formData.headText,
-        footerText: formData.footerText,
-        notes: formData.notes,
-        originalAmount: selectedInvoice.originalAmount,
-        outstandingAmount: selectedInvoice.outstandingAmount + formData.reminderFee,
-        dueDate: selectedInvoice.dueDate,
-        daysPastDue: selectedInvoice.daysPastDue,
-        status: 'draft',
-        createdAt: serverTimestamp(),
-        companyId: uid,
-      } : {
-        // Individuelle Mahnung
-        invoiceId: formData.invoiceId || null,
-        invoiceNumber: null,
-        customerName: formData.customerName,
-        customerFirstName: formData.customerFirstName,
-        customerLastName: formData.customerLastName,
-        customerEmail: formData.customerEmail,
-        customerAddress: formData.customerAddress,
-        customerPhone: formData.customerPhone,
-        customerVatId: formData.customerVatId,
-        customerNumber: formData.customerNumber,
-        reminderLevel: formData.reminderLevel,
-        reminderFee: formData.reminderFee,
-        customMessage: formData.customMessage,
-        title: formData.title,
-        headText: formData.headText,
-        footerText: formData.footerText,
-        notes: formData.notes,
-        originalAmount: formData.outstandingAmount || 0,
-        outstandingAmount: (formData.outstandingAmount || 0) + formData.reminderFee,
-        dueDate: formData.validUntil,
-        daysPastDue: 0,
-        status: 'draft',
-        createdAt: serverTimestamp(),
-        companyId: uid,
-      };
+      const reminderData = selectedInvoice
+        ? {
+            // Mahnung basierend auf Rechnung
+            invoiceId: selectedInvoice.id,
+            invoiceNumber: selectedInvoice.invoiceNumber,
+            customerName: selectedInvoice.customerName,
+            customerEmail: selectedInvoice.customerEmail,
+            customerAddress: selectedInvoice.customerAddress,
+            reminderLevel: formData.reminderLevel,
+            reminderFee: formData.reminderFee,
+            customMessage: formData.customMessage,
+            title: formData.title,
+            headText: formData.headText,
+            footerText: formData.footerText,
+            notes: formData.notes,
+            originalAmount: selectedInvoice.originalAmount,
+            outstandingAmount: selectedInvoice.outstandingAmount + formData.reminderFee,
+            dueDate: selectedInvoice.dueDate,
+            daysPastDue: selectedInvoice.daysPastDue,
+            status: 'draft',
+            createdAt: serverTimestamp(),
+            companyId: uid,
+          }
+        : {
+            // Individuelle Mahnung
+            invoiceId: formData.invoiceId || null,
+            invoiceNumber: null,
+            customerName: formData.customerName,
+            customerFirstName: formData.customerFirstName,
+            customerLastName: formData.customerLastName,
+            customerEmail: formData.customerEmail,
+            customerAddress: formData.customerAddress,
+            customerPhone: formData.customerPhone,
+            customerVatId: formData.customerVatId,
+            customerNumber: formData.customerNumber,
+            reminderLevel: formData.reminderLevel,
+            reminderFee: formData.reminderFee,
+            customMessage: formData.customMessage,
+            title: formData.title,
+            headText: formData.headText,
+            footerText: formData.footerText,
+            notes: formData.notes,
+            originalAmount: formData.outstandingAmount || 0,
+            outstandingAmount: (formData.outstandingAmount || 0) + formData.reminderFee,
+            dueDate: formData.validUntil,
+            daysPastDue: 0,
+            status: 'draft',
+            createdAt: serverTimestamp(),
+            companyId: uid,
+          };
 
       const remindersRef = collection(db, 'companies', uid, 'reminders');
       await addDoc(remindersRef, reminderData);
@@ -1068,9 +1076,10 @@ export default function CreateReminderPage() {
 
     // Reminder-spezifische Daten - WITH PROPER ERROR HANDLING
     const reminderConfig = reminderSettings[formData.reminderLevel];
-    const reminderTitle = formData.title || 
-      (reminderConfig && selectedInvoice?.invoiceNumber 
-        ? `${reminderConfig.title} - Rechnung ${selectedInvoice.invoiceNumber}` 
+    const reminderTitle =
+      formData.title ||
+      (reminderConfig && selectedInvoice?.invoiceNumber
+        ? `${reminderConfig.title} - Rechnung ${selectedInvoice.invoiceNumber}`
         : 'Mahnung');
     const outstandingAmount = selectedInvoice?.outstandingAmount || formData.outstandingAmount;
     const totalAmount = outstandingAmount + formData.reminderFee;
@@ -1080,7 +1089,11 @@ export default function CreateReminderPage() {
       documentNumber: reminderTitle,
       documentType: 'reminder',
       date: formatDateDE(today),
-      dueDate: formData.validUntil ? formatDateDE(new Date(formData.validUntil)) : (selectedInvoice?.dueDate ? formatDateDE(new Date(selectedInvoice.dueDate)) : undefined),
+      dueDate: formData.validUntil
+        ? formatDateDE(new Date(formData.validUntil))
+        : selectedInvoice?.dueDate
+          ? formatDateDE(new Date(selectedInvoice.dueDate))
+          : undefined,
       validUntil: formData.validUntil ? formatDateDE(new Date(formData.validUntil)) : undefined,
       title: reminderTitle,
       currency: 'EUR',
@@ -1089,9 +1102,8 @@ export default function CreateReminderPage() {
       customerEmail: selectedInvoice?.customerEmail || formData.customerEmail,
       companyName,
       companyAddress,
-      companyEmail: (company?.email as string),
-      companyPhone:
-        (company?.phoneNumber as string) || (company?.companyPhoneNumber as string),
+      companyEmail: company?.email as string,
+      companyPhone: (company?.phoneNumber as string) || (company?.companyPhoneNumber as string),
       companyWebsite:
         (company?.website as string) ||
         (company?.companyWebsite as string) ||
@@ -1099,8 +1111,8 @@ export default function CreateReminderPage() {
         ((company as any)?.step1?.website as string) ||
         ((company as any)?.step2?.website as string) ||
         undefined,
-      companyLogo: (company?.companyLogo as string),
-      profilePictureURL: (company?.profilePictureURL as string),
+      companyLogo: company?.companyLogo as string,
+      profilePictureURL: company?.profilePictureURL as string,
       companyVatId:
         (company?.vatId as string) ||
         (company as any)?.vatIdForBackend ||
@@ -1123,20 +1135,24 @@ export default function CreateReminderPage() {
       // Reminder-spezifische Items: Ursprüngliche Rechnung + Mahngebühr
       items: [
         // Offener Betrag nur hinzufügen, wenn vorhanden (für individuelle Mahnungen)
-        ...(selectedInvoice || (formData.outstandingAmount || 0) > 0 ? [{
-          id: 'original-invoice',
-          description: selectedInvoice
-            ? `Ursprüngliche Rechnung ${selectedInvoice.invoiceNumber || ''}`
-            : `Offener Betrag${formData.invoiceId ? ` (${formData.invoiceId})` : ''}`,
-          quantity: 1,
-          unitPrice: outstandingAmount,
-          total: outstandingAmount,
-          // 🔥 WICHTIG: Steuersatz aus ursprünglicher Rechnung verwenden - NO FALLBACKS
-          taxRate: selectedInvoice?.vatRate || formData.vatRate,
-          category: 'service',
-          discountPercent: 0,
-          unit: 'Stk',
-        }] : []),
+        ...(selectedInvoice || (formData.outstandingAmount || 0) > 0
+          ? [
+              {
+                id: 'original-invoice',
+                description: selectedInvoice
+                  ? `Ursprüngliche Rechnung ${selectedInvoice.invoiceNumber || ''}`
+                  : `Offener Betrag${formData.invoiceId ? ` (${formData.invoiceId})` : ''}`,
+                quantity: 1,
+                unitPrice: outstandingAmount,
+                total: outstandingAmount,
+                // 🔥 WICHTIG: Steuersatz aus ursprünglicher Rechnung verwenden - NO FALLBACKS
+                taxRate: selectedInvoice?.vatRate || formData.vatRate,
+                category: 'service',
+                discountPercent: 0,
+                unit: 'Stk',
+              },
+            ]
+          : []),
         {
           id: 'reminder-fee',
           description: `${reminderConfig?.title || 'Mahngebühr'} - Mahngebühr`,
@@ -1148,12 +1164,18 @@ export default function CreateReminderPage() {
           category: 'service',
           discountPercent: 0,
           unit: 'Stk',
-        }
+        },
       ],
       // 🔥 Steuerberechnung für Mahnungen - NO HARDCODED VALUES
       subtotal: totalAmount,
-      tax: (selectedInvoice?.vatRate || formData.vatRate) ? (totalAmount * ((selectedInvoice?.vatRate || formData.vatRate) / 100)) : 0,
-      total: (selectedInvoice?.vatRate || formData.vatRate) ? (totalAmount * (1 + (selectedInvoice?.vatRate || formData.vatRate) / 100)) : totalAmount,
+      tax:
+        selectedInvoice?.vatRate || formData.vatRate
+          ? totalAmount * ((selectedInvoice?.vatRate || formData.vatRate) / 100)
+          : 0,
+      total:
+        selectedInvoice?.vatRate || formData.vatRate
+          ? totalAmount * (1 + (selectedInvoice?.vatRate || formData.vatRate) / 100)
+          : totalAmount,
       vatRate: selectedInvoice?.vatRate || formData.vatRate,
       isSmallBusiness: selectedInvoice?.isSmallBusiness || formData.isSmallBusiness,
       // Steuerdaten aus ursprünglicher Rechnung übernehmen - NO FALLBACKS
@@ -1194,7 +1216,9 @@ export default function CreateReminderPage() {
       description: formData.headText || undefined,
       footerText: formData.footerText || undefined,
       contactPersonName: undefined,
-      paymentTerms: formData.validUntil ? `Zahlung fällig bis ${formatDateDE(new Date(formData.validUntil))}` : 'Sofortige Zahlung fällig',
+      paymentTerms: formData.validUntil
+        ? `Zahlung fällig bis ${formatDateDE(new Date(formData.validUntil))}`
+        : 'Sofortige Zahlung fällig',
       deliveryTerms: undefined,
       // Customer-Objekt für Template-Kompatibilität
       customer: {
@@ -1312,15 +1336,16 @@ export default function CreateReminderPage() {
             <div className="flex items-center">
               <Select
                 value={formData.invoiceId}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, invoiceId: value }))}
+                onValueChange={value => setFormData(prev => ({ ...prev, invoiceId: value }))}
               >
                 <SelectTrigger className="w-64">
                   <SelectValue placeholder="Überfällige Rechnung auswählen..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {overdueInvoices.map((invoice) => (
+                  {overdueInvoices.map(invoice => (
                     <SelectItem key={invoice.id} value={invoice.id}>
-                      {invoice.invoiceNumber} - {invoice.customerName} ({invoice.daysPastDue} Tage überfällig)
+                      {invoice.invoiceNumber} - {invoice.customerName} ({invoice.daysPastDue} Tage
+                      überfällig)
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1473,7 +1498,9 @@ export default function CreateReminderPage() {
                       <Input
                         type="text"
                         value={formData.customerName}
-                        onChange={e => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
+                        onChange={e =>
+                          setFormData(prev => ({ ...prev, customerName: e.target.value }))
+                        }
                         readOnly={!!formData.invoiceId}
                         className={`flex-1 ${getFieldErrorClass('customerName')} ${formData.invoiceId ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                         required
@@ -1511,7 +1538,7 @@ export default function CreateReminderPage() {
                               setShowCustomerSearchPopup(false);
                             }}
                           >
-                            + Neuen Kunden "{formData.customerName || ''}" erstellen
+                            + Neuen Kunden &quot;{formData.customerName || ''}&quot; erstellen
                           </div>
                         </div>
                       )}
@@ -1526,7 +1553,9 @@ export default function CreateReminderPage() {
                           <Input
                             type="text"
                             value={formData.customerFirstName || ''}
-                            onChange={e => setFormData(prev => ({ ...prev, customerFirstName: e.target.value }))}
+                            onChange={e =>
+                              setFormData(prev => ({ ...prev, customerFirstName: e.target.value }))
+                            }
                             readOnly={!!formData.invoiceId}
                             className={formData.invoiceId ? 'bg-gray-50 cursor-not-allowed' : ''}
                             placeholder="Vorname"
@@ -1539,7 +1568,9 @@ export default function CreateReminderPage() {
                           <Input
                             type="text"
                             value={formData.customerLastName || ''}
-                            onChange={e => setFormData(prev => ({ ...prev, customerLastName: e.target.value }))}
+                            onChange={e =>
+                              setFormData(prev => ({ ...prev, customerLastName: e.target.value }))
+                            }
                             readOnly={!!formData.invoiceId}
                             className={formData.invoiceId ? 'bg-gray-50 cursor-not-allowed' : ''}
                             placeholder="Nachname"
@@ -1599,7 +1630,7 @@ export default function CreateReminderPage() {
                               setShowCustomerSearchPopup(false);
                             }}
                           >
-                            + Neuen Kunden "{formData.customerName || ''}" erstellen
+                            + Neuen Kunden &quot;{formData.customerName || ''}&quot; erstellen
                           </div>
                         </div>
                       )}
@@ -1724,9 +1755,7 @@ export default function CreateReminderPage() {
 
                   {/* Land */}
                   <Select
-                    value={
-                      formData.customerAddress?.split('\n')[showAddressAddition ? 3 : 2]
-                    }
+                    value={formData.customerAddress?.split('\n')[showAddressAddition ? 3 : 2]}
                     onValueChange={value => {
                       const lines = (formData.customerAddress || '').split('\n');
                       const addressLineIndex = showAddressAddition ? 3 : 2;
@@ -1903,7 +1932,9 @@ export default function CreateReminderPage() {
                     </Label>
                     <Select
                       value={formData.reminderLevel || '1'}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, reminderLevel: value as '1' | '2' | '3' }))}
+                      onValueChange={value =>
+                        setFormData(prev => ({ ...prev, reminderLevel: value as '1' | '2' | '3' }))
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Mahnstufe auswählen..." />
@@ -1925,7 +1956,9 @@ export default function CreateReminderPage() {
                       <Input
                         placeholder="Optional"
                         value={formData.customerOrderNumber}
-                        onChange={e => setFormData(prev => ({ ...prev, customerOrderNumber: e.target.value }))}
+                        onChange={e =>
+                          setFormData(prev => ({ ...prev, customerOrderNumber: e.target.value }))
+                        }
                         readOnly={!!formData.invoiceId}
                         className={formData.invoiceId ? 'bg-gray-50 cursor-not-allowed' : ''}
                       />
@@ -1937,7 +1970,9 @@ export default function CreateReminderPage() {
                         <Input
                           type="date"
                           value={formData.validUntil}
-                          onChange={e => setFormData(prev => ({ ...prev, validUntil: e.target.value }))}
+                          onChange={e =>
+                            setFormData(prev => ({ ...prev, validUntil: e.target.value }))
+                          }
                           className="flex-1"
                         />
                         <span className="text-sm text-gray-500">in</span>
@@ -1961,8 +1996,8 @@ export default function CreateReminderPage() {
       <InvoiceHeaderTextSection
         title={formData.title || ''}
         headTextHtml={formData.headText || ''}
-        onTitleChange={(value) => setFormData(prev => ({ ...prev, title: value }))}
-        onHeadTextChange={(html) => setFormData(prev => ({ ...prev, headText: html }))}
+        onTitleChange={value => setFormData(prev => ({ ...prev, title: value }))}
+        onHeadTextChange={html => setFormData(prev => ({ ...prev, headText: html }))}
         companyId={uid}
         userId={user?.uid || ''}
         objectType="REMINDER"
@@ -2006,12 +2041,19 @@ export default function CreateReminderPage() {
           {formData.invoiceId ? (
             /* Wenn Rechnung ausgewählt: Einfache Steuerleiste */
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              <span className="text-sm text-gray-500">Positionen werden automatisch aus der Rechnung übernommen</span>
+              <span className="text-sm text-gray-500">
+                Positionen werden automatisch aus der Rechnung übernommen
+              </span>
             </div>
           ) : (
             /* Wenn keine Rechnung ausgewählt: Volle Steuerleiste wie bei Invoice */
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              <Button type="button" variant="link" onClick={addItem} className="px-0 text-[#14ad9f]">
+              <Button
+                type="button"
+                variant="link"
+                onClick={addItem}
+                className="px-0 text-[#14ad9f]"
+              >
                 + Position hinzufügen
               </Button>
               <InventorySelector
@@ -2140,7 +2182,9 @@ export default function CreateReminderPage() {
                               <div
                                 className={
                                   savedServices.filter(service =>
-                                    service.name.toLowerCase().includes(newServiceName.toLowerCase())
+                                    service.name
+                                      .toLowerCase()
+                                      .includes(newServiceName.toLowerCase())
                                   ).length > 0
                                     ? 'border-t border-gray-200 mt-2 pt-2'
                                     : ''
@@ -2201,7 +2245,9 @@ export default function CreateReminderPage() {
                       <textarea
                         className="w-full border rounded px-2 py-1"
                         value={serviceDraft.description}
-                        onChange={e => setServiceDraft(d => ({ ...d, description: e.target.value }))}
+                        onChange={e =>
+                          setServiceDraft(d => ({ ...d, description: e.target.value }))
+                        }
                         rows={2}
                       />
                     </div>
@@ -2318,8 +2364,8 @@ export default function CreateReminderPage() {
                           <TooltipContent side="top" align="start" className="max-w-xs text-sm">
                             <p>
                               Hinweis: Die Beschreibung ist für den Kunden sichtbar. Du kannst auch
-                              die SKU oder den exakten Produktnamen eingeben, um Werte automatisch aus
-                              dem Inventar zu übernehmen.
+                              die SKU oder den exakten Produktnamen eingeben, um Werte automatisch
+                              aus dem Inventar zu übernehmen.
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -2447,14 +2493,20 @@ export default function CreateReminderPage() {
                       <Input
                         type="number"
                         value={
-                          Number.isFinite(unitPriceDisplay) ? Number(unitPriceDisplay.toFixed(2)) : 0
+                          Number.isFinite(unitPriceDisplay)
+                            ? Number(unitPriceDisplay.toFixed(2))
+                            : 0
                         }
                         onChange={e =>
                           handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)
                         }
                         min="0"
                         step="0.01"
-                        className={formData.invoiceId ? 'bg-gray-50 cursor-not-allowed w-28 md:w-32 h-8 text-sm px-2' : 'w-28 md:w-32 h-8 text-sm px-2'}
+                        className={
+                          formData.invoiceId
+                            ? 'bg-gray-50 cursor-not-allowed w-28 md:w-32 h-8 text-sm px-2'
+                            : 'w-28 md:w-32 h-8 text-sm px-2'
+                        }
                         readOnly={!!formData.invoiceId}
                       />
                     </div>
@@ -2525,9 +2577,9 @@ export default function CreateReminderPage() {
                       </TooltipTrigger>
                       <TooltipContent side="top" align="start" className="max-w-xs text-sm">
                         <p>
-                          Hinweis: Die Beschreibung ist für den Kunden sichtbar. Du kannst auch
-                          die SKU oder den exakten Produktnamen eingeben, um Werte automatisch aus
-                          dem Inventar zu übernehmen.
+                          Hinweis: Die Beschreibung ist für den Kunden sichtbar. Du kannst auch die
+                          SKU oder den exakten Produktnamen eingeben, um Werte automatisch aus dem
+                          Inventar zu übernehmen.
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -2632,7 +2684,11 @@ export default function CreateReminderPage() {
                     }}
                     min="0"
                     step="0.01"
-                    className={formData.invoiceId ? 'bg-gray-50 cursor-not-allowed w-28 md:w-32 h-8 text-sm px-2' : 'w-28 md:w-32 h-8 text-sm px-2'}
+                    className={
+                      formData.invoiceId
+                        ? 'bg-gray-50 cursor-not-allowed w-28 md:w-32 h-8 text-sm px-2'
+                        : 'w-28 md:w-32 h-8 text-sm px-2'
+                    }
                     readOnly={!!formData.invoiceId}
                   />
                 </div>
@@ -2686,7 +2742,7 @@ export default function CreateReminderPage() {
         <CardContent>
           <FooterTextEditor
             value={formData.footerText || ''}
-            onChange={(html) => setFormData(prev => ({ ...prev, footerText: html }))}
+            onChange={html => setFormData(prev => ({ ...prev, footerText: html }))}
             companyId={uid}
             userId={user?.uid || ''}
             objectType="REMINDER"
@@ -2730,7 +2786,9 @@ export default function CreateReminderPage() {
         companyId={uid}
         onSend={async (method, options) => {
           console.log('Send method:', method, 'Options:', options);
-          toast.success(`Mahnung wird ${method === 'email' ? 'per E-Mail versendet' : method === 'download' ? 'heruntergeladen' : 'gedruckt'}...`);
+          toast.success(
+            `Mahnung wird ${method === 'email' ? 'per E-Mail versendet' : method === 'download' ? 'heruntergeladen' : 'gedruckt'}...`
+          );
           // TODO: Implement actual send functionality
           setSendModalOpen(false);
         }}
