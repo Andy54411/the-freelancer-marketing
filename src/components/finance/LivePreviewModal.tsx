@@ -99,7 +99,7 @@ export function LivePreviewModal({
   useEffect(() => {
     if (document) {
       const docData = document as any;
-      
+
       // Template-Einstellungen aus Firestore übernehmen
       if (docData.template || docData.templateId) {
         setSelectedLayout(docData.template || docData.templateId);
@@ -122,14 +122,14 @@ export function LivePreviewModal({
           ...docData.documentSettings
         });
       }
-      
-      console.log('🎨 Template-Einstellungen aus Dokument geladen:', {
-        template: docData.template || docData.templateId,
-        color: docData.color,
-        logoUrl: docData.logoUrl,
-        pageMode: docData.pageMode,
-        documentSettings: docData.documentSettings
-      });
+
+
+
+
+
+
+
+
     }
   }, [document]);
   const fileInputRef = useRef<HTMLInputElement>(null);

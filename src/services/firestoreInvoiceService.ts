@@ -157,21 +157,21 @@ export class FirestoreInvoiceService {
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        
+
         // Debug: Log first invoice to check data structure
         if (invoices.length === 0) {
-          console.log('🔍 First invoice data from Firestore:', {
-            id: doc.id,
-            amount: data.amount,
-            total: data.total,
-            tax: data.tax,
-            vatRate: data.vatRate,
-            number: data.number || data.invoiceNumber,
-            date: data.date,
-            status: data.status
-          });
+
+
+
+
+
+
+
+
+
+
         }
-        
+
         const invoice = {
           ...data,
           id: doc.id,
@@ -181,7 +181,7 @@ export class FirestoreInvoiceService {
           amount: typeof data.amount === 'number' ? data.amount : 0,
           total: typeof data.total === 'number' ? data.total : 0,
           tax: typeof data.tax === 'number' ? data.tax : 0,
-          vatRate: typeof data.vatRate === 'number' ? data.vatRate : 19,
+          vatRate: typeof data.vatRate === 'number' ? data.vatRate : 19
         };
 
         invoices.push(invoice as any);

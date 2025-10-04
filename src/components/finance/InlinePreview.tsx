@@ -27,35 +27,35 @@ export function InlinePreview({
     const loadAllData = async () => {
       setLoading(true);
       try {
-        console.log('🔍 InlinePreview: Lade Daten für Invoice ID:', document?.id, 'Company ID:', companyId);
-        
+
+
         // 1. Lade Company-Daten aus der Hauptsammlung
         const { doc, getDoc } = await import('firebase/firestore');
         const { db, auth } = await import('@/firebase/clients');
-        
+
         // DEBUGGING: Firebase-Verbindung und Auth-Status prüfen
-        console.log('🔍 Firebase DB App:', db.app.name, 'Project:', db.app.options.projectId);
-        console.log('🔍 Auth Status:', auth.currentUser ? 'AUTHENTICATED' : 'NOT AUTHENTICATED');
-        console.log('🔍 User ID:', auth.currentUser?.uid);
-        
-        console.log('🔍 Lade Company-Daten direkt aus companies/', companyId);
+
+
+
+
+
         const companyDocRef = doc(db, 'companies', companyId);
-        console.log('🔍 Company Doc Path:', companyDocRef.path);
-        
+
+
         const companyDoc = await getDoc(companyDocRef);
-        
-        console.log('🔍 Company Doc exists():', companyDoc.exists());
-        console.log('🔍 Company Doc metadata:', companyDoc.metadata);
-        
+
+
+
+
         if (companyDoc.exists()) {
           const companyData = companyDoc.data() as any;
-          console.log('✅ Company-Daten geladen:', {
-            companyName: companyData?.companyName,
-            hasProfilePicture: !!companyData?.profilePictureURL,
-            hasBankDetails: !!companyData?.bankDetails,
-            priceInput: companyData?.priceInput,
-            dataKeys: Object.keys(companyData || {})
-          });
+
+
+
+
+
+
+
           setCompanyData(companyData);
         } else {
           console.error('❌ COMPANY DOKUMENT NICHT GEFUNDEN!');
@@ -63,19 +63,19 @@ export function InlinePreview({
           console.error('❌ Pfad:', `companies/${companyId}`);
           console.error('❌ Auth User ID:', auth.currentUser?.uid);
           console.error('❌ Stimmt die Company ID mit der User ID überein?', companyId === auth.currentUser?.uid);
-          
+
           // Versuche alle Companies zu listen (nur für Debugging)
           try {
             const { collection, getDocs, query, limit } = await import('firebase/firestore');
             const companiesSnapshot = await getDocs(query(collection(db, 'companies'), limit(5)));
-            console.log('🔍 Verfügbare Companies (erste 5):');
+
             companiesSnapshot.forEach((doc) => {
-              console.log('  - ID:', doc.id, 'Name:', doc.data()?.companyName);
+
             });
           } catch (listError) {
             console.error('❌ Fehler beim Listen der Companies:', listError);
           }
-          
+
           throw new Error(`Company document not found: companies/${companyId}`);
         }
 
@@ -90,7 +90,7 @@ export function InlinePreview({
             const invoiceDoc = await getDoc(doc(db, 'companies', companyId, 'invoices', document.id));
             if (invoiceDoc.exists()) {
               realDocument = { id: invoiceDoc.id, ...invoiceDoc.data() };
-              console.log('✅ Invoice-Daten aus Subcollection geladen:', realDocument);
+
             } else {
               console.warn('⚠️ Invoice nicht in Subcollection gefunden, verwende Service');
               const { FirestoreInvoiceService } = await import('@/services/firestoreInvoiceService');
@@ -99,7 +99,7 @@ export function InlinePreview({
           }
 
           if (realDocument) {
-            console.log('✅ InlinePreview: Invoice-Daten geladen:', realDocument);
+
             setRealDocumentData(realDocument);
           } else {
             console.warn('⚠️ InlinePreview: Keine Invoice-Daten gefunden, verwende Props');
@@ -129,8 +129,8 @@ export function InlinePreview({
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f] mx-auto mb-2"></div>
           <p className="text-gray-500">Vorschau wird geladen...</p>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   // KRITISCH: Zeige Vorschau auch ohne Company-Daten an
@@ -142,8 +142,8 @@ export function InlinePreview({
           <p className="text-xs text-gray-400 mt-2">Invoice ID: {document?.id}</p>
           <p className="text-xs text-gray-400">Company ID: {companyId}</p>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   // KRITISCH: Company-Daten MÜSSEN vorhanden sein
@@ -155,14 +155,14 @@ export function InlinePreview({
           <p className="text-xs text-gray-600 mt-2">Company ID: {companyId}</p>
           <p className="text-xs text-gray-600">Pfad: companies/{companyId}</p>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   // Template-Einstellungen aus Invoice + Company-Daten kombinieren
   const docData = realDocumentData as any;
   const company = companyData as any;
-  
+
   // Angereicherte Dokument-Daten mit Company-Informationen
   const enrichedDocument = {
     ...realDocumentData,
@@ -207,7 +207,7 @@ export function InlinePreview({
     kleinunternehmer: company?.kleinunternehmer || 'nein',
     taxRate: company?.defaultTaxRate || '19'
   };
-  
+
   const templateProps = {
     document: enrichedDocument,
     template: enrichedDocument.template,
@@ -219,31 +219,31 @@ export function InlinePreview({
     documentSettings: enrichedDocument.documentSettings
   };
 
-  console.log('🎨 InlinePreview Template-Props:', templateProps);
-  console.log('📊 Enriched Document Data:', enrichedDocument);
-  console.log('🏢 Company Data Used:', {
-    companyName: company?.companyName,
-    logoUrl: company?.profilePictureURL,
-    bankDetails: company?.bankDetails,
-    taxSettings: {
-      priceInput: company?.priceInput,
-      kleinunternehmer: company?.kleinunternehmer,
-      defaultTaxRate: company?.defaultTaxRate
-    }
-  });
+
+
+
+
+
+
+
+
+
+
+
+
 
   return (
-    <div 
+    <div
       className={className}
       data-pdf-template
       style={{
         width: '210mm',
         minHeight: '297mm',
         transform: 'scale(0.8)',
-        transformOrigin: 'center top',
-      }}
-    >
+        transformOrigin: 'center top'
+      }}>
+
       <PDFTemplate {...templateProps} />
-    </div>
-  );
+    </div>);
+
 }

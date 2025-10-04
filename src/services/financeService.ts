@@ -105,10 +105,10 @@ export class FinanceService {
     const pdfPath = `invoices/${companyId}/${invoiceId}.pdf`;
     const pdfRef = ref(storage, pdfPath);
 
-    console.log('📄 Uploading PDF to:', pdfPath);
+
     await uploadBytes(pdfRef, pdfBlob);
     const pdfUrl = await getDownloadURL(pdfRef);
-    console.log('✅ PDF uploaded successfully:', pdfUrl);
+
 
 
     // 2. Daten bereinigen (Entferne undefined, Funktionen, etc.)
@@ -144,7 +144,7 @@ export class FinanceService {
 
     try {
       const docRef = await addDoc(actionsCol, actionData);
-      console.log('✅ Action saved to subcollection');
+
     } catch (firestoreError) {
       console.error('❌ Firestore subcollection save failed:', firestoreError);
       // Continue - we still want to update the main invoice
@@ -157,7 +157,7 @@ export class FinanceService {
         pdfUrl: pdfUrl,
         lastPdfUpdate: serverTimestamp()
       });
-      console.log('✅ PDF URL saved to main invoice:', pdfUrl);
+
     } catch (updateError) {
       console.error('❌ Failed to update main invoice with PDF URL:', updateError);
     }

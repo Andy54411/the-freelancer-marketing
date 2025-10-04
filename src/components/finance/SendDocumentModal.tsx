@@ -161,12 +161,12 @@ export function SendDocumentModal({
   const templateRef = useRef<HTMLDivElement>(null);
   const [autoLockConsent, setAutoLockConsent] = useState<boolean | null>(null);
   const [html2pdfReady, setHtml2pdfReady] = useState(false);
-  
+
   // Auth Context für Auto-Lock
   const { user } = useAuth();
-  
+
   // GoBD Action Warning Hook
-  const { showWarning, WarningComponent } = useGoBDActionWarning();  // Document Settings States
+  const { showWarning, WarningComponent } = useGoBDActionWarning(); // Document Settings States
   const [documentSettings, setDocumentSettings] = useState({
     language: 'de',
     showQRCode: false,
@@ -252,18 +252,18 @@ export function SendDocumentModal({
 
   // 💰 KRITISCH: Skonto-States aktualisieren wenn sich Document ändert
   useEffect(() => {
-    console.log('🔍 SendDocumentModal: Document Skonto-Daten:');
-    console.log('  - skontoEnabled:', document?.skontoEnabled, typeof document?.skontoEnabled);
-    console.log('  - skontoDays:', document?.skontoDays, typeof document?.skontoDays);
-    console.log('  - skontoPercentage:', document?.skontoPercentage, typeof document?.skontoPercentage);
-    console.log('  - skontoText:', document?.skontoText, typeof document?.skontoText);
-    
+
+
+
+
+
+
     setSkontoEnabled(document?.skontoEnabled);
     setSkontoDays(document?.skontoDays);
     setSkontoPercentage(document?.skontoPercentage);
     setSkontoText(document?.skontoText);
-    
-    console.log('✅ Skonto-States aktualisiert');
+
+
   }, [document?.skontoEnabled, document?.skontoDays, document?.skontoPercentage, document?.skontoText]);
 
   // 🎯 Handle manual pageMode changes
@@ -293,14 +293,14 @@ export function SendDocumentModal({
     const loadRealDocumentData = async () => {
       if (!companyId) return; // Check companyId inside the function
       setLoadingEInvoiceData(true);
-      
-      console.log('📦 SendDocumentModal - Eingehendes Dokument:', {
-        hasId: !!document?.id,
-        hasItems: !!document?.items,
-        itemsCount: document?.items?.length || 0,
-        items: document?.items,
-      });
-      
+
+
+
+
+
+
+
+
       try {
         // Wenn document.id vorhanden ist, lade echte Daten aus der Datenbank
         if (document?.id) {
@@ -445,28 +445,28 @@ export function SendDocumentModal({
   // ✅ Check if html2pdf.js is loaded (loaded via Next.js Script tag on page level)
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
-    console.log('🔍 Prüfe html2pdf.js Status...');
-    
+
+
+
     // Check immediately
     // @ts-ignore
     if (window.html2pdf) {
-      console.log('✅ html2pdf.js bereits verfügbar');
+
       setHtml2pdfReady(true);
       return;
     }
-    
+
     // If not available, wait a bit and check again (Script might still be loading)
-    console.log('⏳ Warte auf html2pdf.js...');
+
     const checkInterval = setInterval(() => {
       // @ts-ignore
       if (window.html2pdf) {
-        console.log('✅ html2pdf.js jetzt verfügbar');
+
         setHtml2pdfReady(true);
         clearInterval(checkInterval);
       }
     }, 100);
-    
+
     // Timeout after 5 seconds
     const timeout = setTimeout(() => {
       clearInterval(checkInterval);
@@ -476,7 +476,7 @@ export function SendDocumentModal({
       }
       setHtml2pdfReady(true); // Enable anyway for fallback
     }, 5000);
-    
+
     return () => {
       clearInterval(checkInterval);
       clearTimeout(timeout);
@@ -1111,13 +1111,13 @@ ${document.companyName || 'Ihr Unternehmen'}`;
 
   const handleSend = async (method: 'email' | 'download' | 'print' | 'save' | 'post') => {
     if (sending) return;
-    
-    console.log('🚨 HANDLE SEND START:', method);
-    console.log('🔍 Aktuelle Skonto-States beim Send:');
-    console.log('  - skontoEnabled:', skontoEnabled, typeof skontoEnabled);
-    console.log('  - skontoDays:', skontoDays, typeof skontoDays);
-    console.log('  - skontoPercentage:', skontoPercentage, typeof skontoPercentage);
-    console.log('  - skontoText:', skontoText);
+
+
+
+
+
+
+
 
     // GoBD-Warnung nur für Rechnungen zeigen
     if (documentType === 'invoice') {
@@ -1160,40 +1160,40 @@ ${document.companyName || 'Ihr Unternehmen'}`;
 
   // Separate Funktion für den eigentlichen Versand
   const performSend = async (method: 'email' | 'download' | 'print' | 'save' | 'post') => {
-    
+
     // 💰 KRITISCH: Skonto-Daten bei JEDER ACTION in Datenbank speichern!
     if (document?.id && companyId) {
       try {
-        console.log('🔍 SPEICHERN: Aktuelle Skonto-States:', {
-          skontoEnabled,
-          skontoDays,
-          skontoPercentage,
-          skontoText
-        });
-        console.log('🔍 SPEICHERN: Original Document Skonto:', {
-          skontoEnabled: document?.skontoEnabled,
-          skontoDays: document?.skontoDays,
-          skontoPercentage: document?.skontoPercentage,
-          skontoText: document?.skontoText
-        });
-        
+
+
+
+
+
+
+
+
+
+
+
+
+
         // Collection basierend auf documentType bestimmen
-        const collectionName = documentType === 'invoice' ? 'invoices' : 
-                              documentType === 'quote' ? 'quotes' : 
-                              'invoices';
+        const collectionName = documentType === 'invoice' ? 'invoices' :
+        documentType === 'quote' ? 'quotes' :
+        'invoices';
         const docRef = doc(db, 'companies', companyId, collectionName, document.id);
-        
+
         const updateData = {
           skontoEnabled: skontoEnabled,
           skontoDays: skontoDays,
           skontoPercentage: skontoPercentage,
           skontoText: skontoText,
-          updatedAt: new Date(),
+          updatedAt: new Date()
         };
-        
-        console.log('🔍 SPEICHERN: Update Data:', updateData);
+
+
         await updateDoc(docRef, updateData);
-        console.log('✅ Skonto-Daten bei Action gespeichert:', method);
+
       } catch (error) {
         console.error('❌ Fehler beim Speichern der Skonto-Daten:', error);
         // Weiter machen - Action nicht abbrechen
@@ -1223,21 +1223,21 @@ ${document.companyName || 'Ihr Unternehmen'}`;
     // usePDFTemplateData ist ein Hook, daher nicht direkt hier nutzbar. Wir nehmen die Props als "finalData".
 
     // 2. PDF als Blob generieren
-    console.log('🔍 PDF-Generierung gestartet...');
-    
+
+
     let pdfBlob: Blob | null = null;
-    
+
     // Für "print" verwenden wir die dedizierte Print-Seite direkt (kein PDF-Blob nötig)
     // Für "print" verwenden wir die dedizierte Print-Seite direkt (kein PDF-Blob nötig)
     if (method === 'print') {
-      console.log('🖨️ Print-Methode - überspringe PDF-Blob Generierung');
-      // Wir brauchen nur die Dokument-ID - das PDF wird in der Print-Seite generiert
+
+
     } else if (method === 'download' || method === 'email') {
       // Für Download/Email: Generiere PDF mit html2pdf
-      console.log('📄 templateRef.current:', templateRef.current ? 'vorhanden' : 'FEHLT');
-      console.log('🔧 window.html2pdf:', typeof window !== 'undefined' && window.html2pdf ? 'verfügbar' : 'NICHT verfügbar');
-      console.log('🎯 html2pdfReady state:', html2pdfReady);
-      
+
+
+
+
       // ✅ Prüfe ob html2pdf verfügbar ist (sollte durch useEffect vorgeladen sein)
       if (!html2pdfReady || typeof window === 'undefined' || !window.html2pdf) {
         console.error('❌ html2pdf.js nicht verfügbar. html2pdfReady:', html2pdfReady);
@@ -1252,7 +1252,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
       }
 
       // Generiere PDF mit html2pdf
-      console.log('✨ Verwende html2pdf für PDF-Generierung...');
+
       try {
         // Konfiguration für bessere PDF-Qualität
         const opt = {
@@ -1262,13 +1262,13 @@ ${document.companyName || 'Ihr Unternehmen'}`;
           html2canvas: { scale: 2, useCORS: true },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
-        
+
         // @ts-ignore
         pdfBlob = await window.html2pdf().set(opt).from(templateRef.current).outputPdf('blob');
-        console.log('✅ PDF-Blob erfolgreich generiert:', pdfBlob);
+
         if (pdfBlob) {
-          console.log('📊 Blob-Größe:', pdfBlob.size, 'bytes');
-          console.log('📋 Blob-Typ:', pdfBlob.type);
+
+
         }
       } catch (pdfError) {
         console.error('❌ Fehler bei html2pdf:', pdfError);
@@ -1286,22 +1286,22 @@ ${document.companyName || 'Ihr Unternehmen'}`;
       // WICHTIG: Für Print müssen wir IMMER überprüfen, ob das Dokument in Firestore existiert
       // weil die ID aus dem Client-State kommen könnte und nicht aus Firestore
       let needsSaving = false;
-      
+
       if (method === 'print' && invoiceId) {
         // Prüfe ob Dokument in Firestore existiert
         try {
           const { db } = await import('@/firebase/clients');
           const { doc, getDoc } = await import('firebase/firestore');
-          
+
           let collectionName = 'invoices';
           if (documentType === 'quote') collectionName = 'quotes';
           if (documentType === 'reminder') collectionName = 'reminders';
-          
+
           const docRef = doc(db, collectionName, invoiceId);
           const docSnap = await getDoc(docRef);
-          
+
           if (!docSnap.exists()) {
-            console.log('⚠️ Dokument mit ID existiert nicht in Firestore, muss gespeichert werden');
+
             needsSaving = true;
             invoiceId = null; // Setze ID zurück, damit neue ID generiert wird
           }
@@ -1315,7 +1315,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
       // Wenn keine ID vorhanden ist oder needsSaving true ist, MUSS das Dokument erst gespeichert werden
       // Für Print: Immer speichern wenn Dokument nicht in Firestore existiert
       const shouldSave = !invoiceId || needsSaving;
-      
+
       if (shouldSave && documentType === 'invoice') {
 
 
@@ -1412,54 +1412,54 @@ ${document.companyName || 'Ihr Unternehmen'}`;
 
       // 6. Führe die eigentliche Aktion aus
       if (method === 'print') {
-        console.log('🚨 DEBUG: PRINT-METHODE GESTARTET!');
-        console.log('🚨 DEBUG: pdfBlob vor Speicherung:', !!pdfBlob);
-        
+
+
+
         // 💰 KRITISCH: Skonto-Daten auch bei Print in Datenbank speichern!
         if (document?.id && companyId) {
           try {
-            console.log('🔍 PRINT: Aktuelle Skonto-States:', {
-              skontoEnabled,
-              skontoDays,
-              skontoPercentage,
-              skontoText
-            });
-            
-            const collectionName = documentType === 'invoice' ? 'invoices' : 
-                                  documentType === 'quote' ? 'quotes' : 
-                                  'invoices';
+
+
+
+
+
+
+
+            const collectionName = documentType === 'invoice' ? 'invoices' :
+            documentType === 'quote' ? 'quotes' :
+            'invoices';
             const docRef = doc(db, 'companies', companyId, collectionName, document.id);
-            
+
             const updateData = {
               skontoEnabled: skontoEnabled,
               skontoDays: skontoDays,
               skontoPercentage: skontoPercentage,
               skontoText: skontoText,
-              updatedAt: new Date(),
+              updatedAt: new Date()
             };
-            
-            console.log('🔍 PRINT: Update Data:', updateData);
+
+
             await updateDoc(docRef, updateData);
-            console.log('✅ PRINT: Skonto-Daten gespeichert');
+
           } catch (error) {
             console.error('❌ PRINT: Fehler beim Speichern der Skonto-Daten:', error);
           }
         }
-        
+
         // Dokument MUSS in Firestore gespeichert sein
         // Rufe onSend auf, um das Dokument zu speichern (handleSubmit)
         if (onSend) {
-          console.log('💾 Speichere Dokument vor dem Drucken...');
+
           try {
             await onSend(method, {});
-            console.log('✅ Dokument gespeichert via onSend');
-            
+
+
             // Hole die neue ID aus dem document Objekt (wurde von handleSubmit aktualisiert)
             const newId = realDocumentData?.id || document?.id;
-            console.log('🆔 ID nach Speicherung:', newId);
-            
+
+
             if (newId && newId !== invoiceId) {
-              console.log('🔄 ID wurde aktualisiert:', invoiceId, '→', newId);
+
               invoiceId = newId;
             }
           } catch (saveError) {
@@ -1469,7 +1469,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
             return;
           }
         }
-        
+
         if (!invoiceId) {
           toast.error('Dokument muss zuerst gespeichert werden');
           setSending(false);
@@ -1477,24 +1477,24 @@ ${document.companyName || 'Ihr Unternehmen'}`;
         }
 
         // 🔥 CRITICAL: Speichere Template-Einstellungen in Firestore BEVOR Print-Seite geöffnet wird
-        console.log('💾 Speichere Template-Einstellungen...');
+
         try {
           const { doc: firestoreDoc, updateDoc } = await import('firebase/firestore');
           const { db } = await import('@/firebase/clients');
-          
+
           let collectionName = 'invoices';
           if (documentType === 'quote') collectionName = 'quotes';
           if (documentType === 'reminder') collectionName = 'reminders';
-          
+
           const docRef = firestoreDoc(db, 'companies', companyId, collectionName, invoiceId);
-          
+
           // 🚨 Remove undefined values (Firestore doesn't accept them)
           const cleanDocumentSettings = JSON.parse(
             JSON.stringify(documentSettings, (key, value) => {
               return value === undefined ? null : value;
             })
           );
-          
+
           // 🔥 CRITICAL FIX: Stelle sicher, dass footerText immer Platzhalter enthält (nie gerenderte Werte)
           // Problem: Footer-Text könnte bereits mit gerenderten Beträgen gespeichert sein
           let cleanFooterText = document?.footerText || '';
@@ -1502,7 +1502,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
             // Wenn kein Platzhalter vorhanden, setze Standard-Footer-Text mit Platzhaltern
             cleanFooterText = 'Wir bitten Sie, den Rechnungsbetrag von [%GESAMTBETRAG%] unter Angabe der Rechnungsnummer [%RECHNUNGSNUMMER%] auf das unten angegebene Konto zu überweisen. Zahlungsziel: [%ZAHLUNGSZIEL%] Rechnungsdatum: [%RECHNUNGSDATUM%] Vielen Dank für Ihr Vertrauen und die angenehme Zusammenarbeit!<br>Mit freundlichen Grüßen<br>[%KONTAKTPERSON%]';
           }
-          
+
           await updateDoc(docRef, {
             templateId: selectedLayout,
             template: selectedLayout,
@@ -1516,31 +1516,31 @@ ${document.companyName || 'Ihr Unternehmen'}`;
             // 🔥 CRITICAL: Speichere Tax Rule für Print-Ansicht
             taxRule: document?.taxRule || (realDocumentData as any)?.taxRule || null,
             taxRuleType: document?.taxRuleType || (realDocumentData as any)?.taxRuleType || null,
-            updatedAt: new Date(),
+            updatedAt: new Date()
           });
-          
-          console.log('✅ Template-Einstellungen gespeichert:', {
-            templateId: selectedLayout,
-            color: selectedColor,
-            pageMode: pageMode,
-          });
+
+
+
+
+
+
         } catch (updateError) {
           console.error('⚠️ Template-Einstellungen konnten nicht gespeichert werden:', updateError);
           // Nicht kritisch - drucken trotzdem
         }
-        
+
         // Kein PDF-Storage bei Print - direkt zur Print-Seite
-        console.log('�️ Print ohne Storage-Speicherung');
 
-        console.log('🚨 DEBUG: VOR PRINT-WINDOW - PDF STORAGE STATUS ÜBERPRÜFT');
-        console.log('⏳ Warte 2 Sekunden auf Firestore-Replikation...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
 
-        console.log('🚨 DEBUG: JETZT ÖFFNE PRINT-SEITE');
-        console.log('🖨️ Öffne Print-Seite...');
-        console.log('📄 Finale Document ID:', invoiceId);
-        console.log('📋 Document Type:', documentType);
-        console.log('🏢 Company ID:', companyId);
+
+
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+
+
+
+
+
 
         // Bestimme den Type-Parameter für die Print-Seite
         let printType = 'invoice';
@@ -1550,10 +1550,10 @@ ${document.companyName || 'Ihr Unternehmen'}`;
         // CRITICAL FIX: Include companyId in URL for efficient Firestore lookup
         // New URL structure: /print/{type}/{companyId}/{documentId}
         const printUrl = `/print/${printType}/${companyId}/${invoiceId}`;
-        console.log('🌐 Print URL:', printUrl);
+
 
         const printWindow = window.open(printUrl, '_blank');
-        console.log('🪟 Print-Fenster geöffnet:', !!printWindow);
+
 
         if (printWindow) {
           toast.success(`${documentLabel} wird gedruckt`);
@@ -1670,22 +1670,22 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                       disabled={sending || !html2pdfReady}
                       className="w-full bg-[#14ad9f] hover:bg-[#129488]">
 
-                        {!html2pdfReady ? (
-                          <>
+                        {!html2pdfReady ?
+                      <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                             Lädt PDF-Generator...
-                          </>
-                        ) : sending ? (
-                          <>
+                          </> :
+                      sending ?
+                      <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                             PDF herunterladen
-                          </>
-                        ) : (
-                          <>
+                          </> :
+
+                      <>
                             <Download className="w-4 h-4 mr-2" />
                             PDF herunterladen
                           </>
-                        )}
+                      }
                       </Button>
                     </div>
                   }
@@ -1777,17 +1777,17 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                       disabled={sending || !html2pdfReady}
                       className="w-full">
 
-                        {!html2pdfReady ? (
-                          <>
+                        {!html2pdfReady ?
+                      <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                             Lädt PDF-Generator...
-                          </>
-                        ) : (
-                          <>
+                          </> :
+
+                      <>
                             <Printer className="w-4 h-4 mr-2" />
                             Drucken
                           </>
-                        )}
+                      }
                       </Button>
                     </div>
                   }
