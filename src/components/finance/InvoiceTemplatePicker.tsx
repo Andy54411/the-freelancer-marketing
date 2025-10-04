@@ -37,7 +37,7 @@ export function InvoiceTemplatePicker({
   const [previewTemplate, setPreviewTemplate] = useState<InvoiceTemplate | null>(null);
   const [saving, setSaving] = useState(false);
   const [selectedTemplate, setSelectedTemplate] =
-    useState<InvoiceTemplate>('professional-business');
+    useState<InvoiceTemplate>('TEMPLATE_NEUTRAL');
   const [loading, setLoading] = useState(true);
 
   // Template aus Datenbank laden
@@ -212,7 +212,7 @@ export function InvoiceTemplatePicker({
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-gray-900">{template.name}</h3>
-                      {template.id === 'professional-business' && (
+                      {template.id === 'TEMPLATE_NEUTRAL' && (
                         <Badge variant="secondary" className="bg-[#14ad9f] text-white">
                           Empfohlen
                         </Badge>

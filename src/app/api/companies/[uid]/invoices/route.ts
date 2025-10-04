@@ -29,8 +29,7 @@ async function getFirebaseDb(companyId: string): Promise<any> {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ uid: string }> },
-  companyId: string
+  { params }: { params: Promise<{ uid: string }> }
 ) {
   try {
     const { uid } = await params;
@@ -40,7 +39,7 @@ export async function GET(
     }
 
     // Get Firebase DB dynamically
-    const db = await getFirebaseDb();
+    const db = await getFirebaseDb(uid);
 
     // Lade Invoices aus Firestore
     const invoicesQuery = await db
@@ -66,7 +65,7 @@ export async function GET(
         taxRate: data.taxRate || '19',
         taxNote: data.taxNote || 'none',
         notes: data.notes || '',
-        template: data.template || 'german-standard',
+        template: data.template || 'TEMPLATE_NEUTRAL',
         pdfUrl: data.pdfUrl || null,
         createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
         updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
@@ -104,7 +103,7 @@ export async function POST(
     }
 
     // Get Firebase DB dynamically
-    const db = await getFirebaseDb();
+    const db = await getFirebaseDb(uid);
 
     // 🧾 KRITISCH: Automatische fortlaufende Rechnungsnummer generieren
     let finalInvoiceNumber = body.invoiceNumber || '';
@@ -184,7 +183,7 @@ export async function POST(
       total,
       taxNote: body.taxNote || 'none',
       notes: body.notes || '',
-      template: body.template || 'german-standard',
+      template: body.template || 'TEMPLATE_NEUTRAL',
       status: body.status || 'draft', // Fixed: Use status from request body
       pdfUrl: null,
       createdAt: new Date(),

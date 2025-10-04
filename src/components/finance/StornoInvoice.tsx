@@ -395,7 +395,7 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
                   <div className="mt-4">
                     <InvoiceTemplateRenderer
                       data={stornoInvoice}
-                      template="professional-business"
+                      template="TEMPLATE_NEUTRAL"
                     />
                   </div>
                   <DialogFooter>

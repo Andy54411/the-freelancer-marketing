@@ -181,7 +181,7 @@ export function InlinePreview({
       accountHolder: company?.accountHolder || '',
       bankName: company?.bankName || ''
     },
-    // Template-Einstellungen: Invoice überschreibt Company-Defaults
+    // Template-Einstellungen: Verwende direkt das aktuelle Template-System
     template: docData?.template || docData?.templateId || company?.preferredInvoiceTemplate || 'TEMPLATE_NEUTRAL',
     color: docData?.color || '#14ad9f',
     logoUrl: docData?.logoUrl || company?.profilePictureURL || company?.profilePictureFirebaseUrl || null,

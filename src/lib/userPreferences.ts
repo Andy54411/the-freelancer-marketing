@@ -6,10 +6,6 @@ import {
   AVAILABLE_TEMPLATES,
   DEFAULT_INVOICE_TEMPLATE,
 } from '@/components/finance/InvoiceTemplates';
-import {
-  DeliveryNoteTemplate,
-  AVAILABLE_DELIVERY_NOTE_TEMPLATES,
-} from '@/components/templates/delivery-note-templates';
 
 export interface UserPreferences {
   // Template-Einstellungen pro Dokumenttyp (basierend auf tatsächlich verfügbaren Templates)
@@ -93,7 +89,7 @@ export class UserPreferencesService {
     } catch (error) {
       // Fallback wenn Fehler auftritt - verwende die ersten verfügbaren Templates aus NEW_TEMPLATES
       return {
-        preferredInvoiceTemplate: 'professional-business', // Erste aus NEW_TEMPLATES.invoice
+        preferredInvoiceTemplate: 'TEMPLATE_NEUTRAL', // Standard Template
         preferredQuoteTemplate: 'professional-business-quote', // Erste aus NEW_TEMPLATES.quote
         preferredReminderTemplate: 'professional-reminder', // Erste aus NEW_TEMPLATES.reminder
         preferredOrderTemplate: 'professional-business-order', // Erste aus NEW_TEMPLATES.order

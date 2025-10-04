@@ -115,7 +115,14 @@ const PDFTemplate: React.FC<PDFTemplateProps> = props => {
     }
   };
 
-  return <div className="w-full h-full bg-white shadow-lg">{renderTemplate()}</div>;
+  return (
+    <div 
+      className="w-full h-full bg-white shadow-lg" 
+      data-pdf-template={props.template}
+    >
+      {renderTemplate()}
+    </div>
+  );
 };
 
 export default PDFTemplate;

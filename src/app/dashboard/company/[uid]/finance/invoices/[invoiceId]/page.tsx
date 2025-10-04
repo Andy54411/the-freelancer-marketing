@@ -56,6 +56,22 @@ export default function InvoiceDetailPage() {
   const uid = typeof params?.uid === 'string' ? params.uid : '';
   const invoiceId = typeof params?.invoiceId === 'string' ? params.invoiceId : '';
 
+  // URL-Parameter für Template-Überschreibung (für PDF-Generierung)
+  const [urlParams, setUrlParams] = useState<URLSearchParams | null>(null);
+  
+  useEffect(() => {
+    // Lade URL-Parameter beim Mount
+    setUrlParams(new URLSearchParams(window.location.search));
+  }, []);
+  
+  // Template-Überschreibung aus URL-Parametern
+  const templateOverride = urlParams?.get('template');
+  const colorOverride = urlParams?.get('color');
+  const logoSizeOverride = urlParams?.get('logoSize');
+  const pageModeOverride = urlParams?.get('pageMode');
+  const isPdfMode = urlParams?.get('pdf') === 'true';
+  const hideUI = urlParams?.get('hideUI') === 'true';
+
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -536,7 +552,7 @@ export default function InvoiceDetailPage() {
     setDownloadingPdf(true);
     
     try {
-      // Get HTML content from the REAL InlinePreview component (NO custom templates!)
+      // Get HTML content from the InlinePreview component
       console.log('📡 Getting HTML content from InlinePreview...');
       
       // Find the preview element with data-pdf-template attribute
@@ -549,46 +565,139 @@ export default function InvoiceDetailPage() {
       const htmlContent = previewElement.innerHTML;
       console.log('✅ HTML content extracted from InlinePreview:', htmlContent.length, 'characters');
       
+      // CRITICAL CHECK: Enthält das HTML ein Template?
+      const hasTemplate = htmlContent.includes('NeutralTemplate') || 
+                         htmlContent.includes('StandardTemplate') || 
+                         htmlContent.includes('ElegantTemplate');
+      
+      console.log('🔍 TEMPLATE CHECK:', {
+        hasTemplate,
+        hasNeutral: htmlContent.includes('NeutralTemplate'),
+        hasStandard: htmlContent.includes('StandardTemplate'),
+        containsRawData: htmlContent.includes('Leistung') && !hasTemplate,
+        htmlLength: htmlContent.length
+      });
+      
+      // SKIP HTML extraction - send data directly to API for server-side rendering
+      if (!hasTemplate) {
+        console.warn('⚠️ NO TEMPLATE IN HTML - Using server-side rendering instead');
+      }
+      
       if (!htmlContent || htmlContent.trim().length === 0) {
         throw new Error('Kein HTML-Content in der Preview verfügbar. Bitte laden Sie die Seite neu.');
       }
 
-      // 🤖 Smart API selection based on items count (same as EmailSendModal)
-      const itemsCount = invoice?.items?.length || 0;
-      const shouldUseSingle = itemsCount < 3; // 1-2 items = single, 3+ items = multi
-      const apiEndpoint = shouldUseSingle ? '/api/generate-pdf-single' : '/api/generate-pdf-multi';
-      
-      console.log(`📡 Using ${apiEndpoint} for ${itemsCount} items`);
+      // ✅ Use existing PDF API with extracted HTML content
+      console.log('📡 Using existing /api/generate-pdf-single with real template HTML');
 
-      const response = await fetch(apiEndpoint, {
+      if (!htmlContent || htmlContent.trim().length === 0) {
+        throw new Error('Kein HTML-Content verfügbar. Bitte laden Sie die Seite neu.');
+      }
+
+      // Extract complete HTML with styles (like SendDocumentModal does)
+      const templateElement = document.querySelector('[data-pdf-template]') as HTMLElement;
+      
+      if (!templateElement) {
+        throw new Error('Template element not found');
+      }
+
+      // Clone the template element
+      const clonedElement = templateElement.cloneNode(true) as HTMLElement;
+
+      // Remove preview-only transform styles
+      const removePreviewStyles = (element: HTMLElement) => {
+        if (element.style) {
+          element.style.removeProperty('transform');
+          element.style.removeProperty('transform-origin');
+        }
+        element.querySelectorAll('*').forEach((child) => {
+          if ((child as HTMLElement).style) {
+            (child as HTMLElement).style.removeProperty('transform');
+            (child as HTMLElement).style.removeProperty('transform-origin');
+          }
+        });
+      };
+      removePreviewStyles(clonedElement);
+
+      // Extract ALL styles from document
+      const allStyles: string[] = [];
+
+      // Get all <style> tags
+      const styleTags = document.querySelectorAll('style');
+      styleTags.forEach((styleElement) => {
+        if (styleElement.textContent) {
+          allStyles.push(styleElement.textContent);
+        }
+      });
+
+      // Get all linked stylesheets
+      const linkTags = document.querySelectorAll('link[rel="stylesheet"]');
+      linkTags.forEach((linkElement) => {
+        try {
+          const link = linkElement as HTMLLinkElement;
+          if (link.sheet && link.sheet.cssRules) {
+            let css = '';
+            for (let i = 0; i < link.sheet.cssRules.length; i++) {
+              css += link.sheet.cssRules[i].cssText + '\n';
+            }
+            allStyles.push(css);
+          }
+        } catch (e) {
+          // Ignore CORS errors for external stylesheets
+        }
+      });
+
+      // Create complete HTML with ALL styles (exactly like SendDocumentModal)
+      const completeHtml = `<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <style>
+    /* ALL APP STYLES */
+    ${allStyles.join('\n\n')}
+    
+    /* PDF SPECIFIC */
+    @page { size: A4; margin: 0; }
+    html, body { 
+      margin: 0 !important; 
+      padding: 0 !important; 
+      width: 210mm; 
+      background: white;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    * { 
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  </style>
+</head>
+<body>
+  ${clonedElement.outerHTML}
+</body>
+</html>`;
+
+      const response = await fetch('/api/generate-pdf-single', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          htmlContent: htmlContent,
-          template: (invoice as any).template || (invoice as any).templateId || 'TEMPLATE_NEUTRAL',
+          htmlContent: completeHtml
         }),
       });
 
       console.log('✅ PDF API response status:', response.status);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ PDF API failed:', response.status, errorText);
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          throw new Error(`PDF-Generation fehlgeschlagen (${response.status}): ${errorText}`);
-        }
+        const errorData = await response.json();
+        console.error('❌ PDF API failed:', response.status, errorData);
         throw new Error(errorData.error || 'PDF-Generation fehlgeschlagen');
       }
 
       const result = await response.json();
 
-      if (!result.pdfBase64 || result.pdfBase64.trim().length === 0) {
-        console.error('❌ PDF API returned empty base64');
+      if (!result.success || !result.pdfBase64 || result.pdfBase64.trim().length === 0) {
+        console.error('❌ PDF API returned empty result');
         throw new Error('PDF-Generation returned empty result');
       }
 
@@ -675,6 +784,27 @@ export default function InvoiceDetailPage() {
             </Button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // Für PDF-Generierung: Nur Template ohne UI rendern
+  if (hideUI && invoice) {
+    return (
+      <div className="min-h-screen bg-white">
+        <InlinePreview
+          document={{
+            ...invoice,
+            // Template-Überschreibung aus URL-Parametern
+            template: templateOverride || (invoice as any).template || 'TEMPLATE_NEUTRAL',
+            color: colorOverride || (invoice as any).color || '#14ad9f',
+            logoSize: logoSizeOverride ? parseInt(logoSizeOverride) : ((invoice as any).logoSize || 50),
+            pageMode: pageModeOverride || (invoice as any).pageMode || 'single',
+          }}
+          documentType="invoice"
+          companyId={uid}
+          className="w-full"
+        />
       </div>
     );
   }
@@ -1230,13 +1360,20 @@ export default function InvoiceDetailPage() {
                     </div>
                   ) : invoice ? (
                     // Live Preview der Rechnung mit aktuellen Template-Einstellungen aus Firestore
-                    <div className="w-full h-[800px] border border-gray-300 rounded-lg overflow-hidden shadow-lg bg-white">
+                    <div className={`w-full h-[800px] border border-gray-300 rounded-lg overflow-hidden shadow-lg bg-white ${hideUI ? 'fixed inset-0 z-50 h-screen border-0' : ''}`}>
                       <div className="w-full h-full overflow-auto flex justify-center py-4">
                         <InlinePreview
-                          document={invoice}
+                          document={{
+                            ...invoice,
+                            // Template-Überschreibung aus URL-Parametern (für PDF-Generierung)
+                            template: templateOverride || (invoice as any).template || 'TEMPLATE_NEUTRAL',
+                            color: colorOverride || (invoice as any).color || '#14ad9f',
+                            logoSize: logoSizeOverride ? parseInt(logoSizeOverride) : ((invoice as any).logoSize || 50),
+                            pageMode: pageModeOverride || (invoice as any).pageMode || 'single',
+                          }}
                           documentType="invoice"
                           companyId={uid}
-                          className="shadow-lg"
+                          className={`shadow-lg ${isPdfMode ? 'w-[210mm] min-h-[297mm]' : ''}`}
                         />
                       </div>
                     </div>

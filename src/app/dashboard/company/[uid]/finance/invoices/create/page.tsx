@@ -1795,7 +1795,7 @@ export default function CreateQuotePage() {
       skontoText: skontoEnabled ? skontoText || '' : '',
       // Template-Informationen
       selectedTemplate:
-        typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
+        typeof selectedTemplate === 'string' ? selectedTemplate : 'TEMPLATE_NEUTRAL',
       // Customer-Spezifische Daten
       customerNumber: (() => {
         const selectedCustomer = customers.find(c => c.name === formData.customerName);

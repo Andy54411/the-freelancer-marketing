@@ -19,8 +19,6 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import Footer from '@/components/footer';
 import Script from 'next/script';
-import CSPDebugger from '@/components/debug/CSPDebugger';
-import CSPMonitor from '@/components/debug/CSPMonitor';
 
 export const metadata: Metadata = {
   title: {
@@ -290,10 +288,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   {/* GoogleAnalytics removed - GTM handles all analytics */}
                   <Analytics />
                   <SpeedInsights />
-                  {/* CSP Debugger for Development */}
-                  {process.env.NODE_ENV === 'development' && <CSPDebugger />}
-                  {/* CSP Monitor für Production und Development */}
-                  <CSPMonitor />
                 </Providers>
               </AlertProvider>
             </AnalyticsProvider>

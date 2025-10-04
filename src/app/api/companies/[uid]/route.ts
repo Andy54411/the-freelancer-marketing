@@ -76,7 +76,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
               profilePictureURL: decodeUrl(companyData.step3.profilePictureURL),
             }
           : null,
-        preferredInvoiceTemplate: companyData.preferredInvoiceTemplate || 'german-standard',
+        preferredInvoiceTemplate: companyData.preferredInvoiceTemplate || 'TEMPLATE_NEUTRAL',
         // Address Daten für Templates
         companyStreet: companyData.companyStreet || '',
         companyHouseNumber: companyData.companyHouseNumber || '',

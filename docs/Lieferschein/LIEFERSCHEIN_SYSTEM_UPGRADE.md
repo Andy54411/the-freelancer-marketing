@@ -57,7 +57,7 @@ useEffect(() => {
 **Code-Struktur:**
 ```typescript
 // Template Loading
-const [userTemplate, setUserTemplate] = useState<string>('german-standard');
+const [userTemplate, setUserTemplate] = useState<string>('TEMPLATE_NEUTRAL');
 
 useEffect(() => {
   loadUserTemplate();
@@ -65,7 +65,7 @@ useEffect(() => {
 
 const loadUserTemplate = async () => {
   const preferences = await getUserPreferences(user.uid);
-  setUserTemplate(preferences.preferredInvoiceTemplate || 'german-standard');
+  setUserTemplate(preferences.preferredInvoiceTemplate || 'TEMPLATE_NEUTRAL');
 };
 ```
 

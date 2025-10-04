@@ -11,21 +11,26 @@ export async function POST(request: NextRequest) {
 
     console.log('🚀 Starting SINGLE PAGE PDF generation...');
 
-    // DEBUG: Check which template is being used
-    if (htmlContent.includes('NeutralTemplate')) {
-      console.log('📄 TEMPLATE: NeutralTemplate detected in HTML');
-    } else if (htmlContent.includes('ClassicTemplate')) {
-      console.log('📄 TEMPLATE: ClassicTemplate detected in HTML');
-    } else if (htmlContent.includes('ModernTemplate')) {
-      console.log('📄 TEMPLATE: ModernTemplate detected in HTML');
-    } else if (htmlContent.includes('MinimalTemplate')) {
-      console.log('📄 TEMPLATE: MinimalTemplate detected in HTML');
+    // DEBUG: Check which template is being used (moderne Template-Namen)
+    if (htmlContent.includes('TEMPLATE_NEUTRAL')) {
+      console.log('📄 TEMPLATE: TEMPLATE_NEUTRAL detected in HTML');
+    } else if (htmlContent.includes('TEMPLATE_STANDARD')) {
+      console.log('📄 TEMPLATE: TEMPLATE_STANDARD detected in HTML');
+    } else if (htmlContent.includes('TEMPLATE_ELEGANT')) {
+      console.log('📄 TEMPLATE: TEMPLATE_ELEGANT detected in HTML');
+    } else if (htmlContent.includes('TEMPLATE_TECHNICAL')) {
+      console.log('📄 TEMPLATE: TEMPLATE_TECHNICAL detected in HTML');
+    } else if (htmlContent.includes('TEMPLATE_GEOMETRIC')) {
+      console.log('📄 TEMPLATE: TEMPLATE_GEOMETRIC detected in HTML');
+    } else if (htmlContent.includes('TEMPLATE_DYNAMIC')) {
+      console.log('📄 TEMPLATE: TEMPLATE_DYNAMIC detected in HTML');
+    } else if (htmlContent.includes('NeutralTemplate')) {
+      console.log('📄 TEMPLATE: Legacy NeutralTemplate detected in HTML');
     } else if (htmlContent.includes('ProfessionalTemplate')) {
-      console.log('📄 TEMPLATE: ProfessionalTemplate detected in HTML');
-    } else if (htmlContent.includes('CreativeTemplate')) {
-      console.log('📄 TEMPLATE: CreativeTemplate detected in HTML');
+      console.log('📄 TEMPLATE: Legacy ProfessionalTemplate detected in HTML');
     } else {
       console.log('❓ TEMPLATE: Unknown template or no template identifier found');
+      console.log('🔍 HTML Preview (first 200 chars):', htmlContent.substring(0, 200));
     }
 
     // 🔍 DEBUG: Check footer styling in HTML

@@ -20,9 +20,6 @@ import type { InvoiceTemplate } from '@/components/finance/InvoiceTemplates';
 type DeliveryNoteTemplate =
   | 'professional-business-delivery'
   | 'executive-premium-delivery'
-  | 'creative-modern-delivery'
-  | 'minimalist-elegant-delivery'
-  | 'corporate-classic-delivery'
   | 'tech-innovation-delivery';
 import { FileText, Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';

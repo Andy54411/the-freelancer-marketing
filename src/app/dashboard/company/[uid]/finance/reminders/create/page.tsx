@@ -1307,7 +1307,7 @@ export default function CreateReminderPage() {
       firstName: (company as any)?.firstName || (company as any)?.step1?.personalData?.firstName,
       lastName: (company as any)?.lastName || (company as any)?.step1?.personalData?.lastName,
       // Template-Informationen
-      selectedTemplate: 'professional-business', // Reminders verwenden das gleiche Template wie Invoices
+      selectedTemplate: 'TEMPLATE_NEUTRAL', // Standard Template für Reminders
     };
 
     return data;

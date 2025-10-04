@@ -2351,9 +2351,9 @@ export default function EditInvoicePage() {
           : undefined,
 
         // Template & UI Settings
-        template: typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
+        template: typeof selectedTemplate === 'string' ? selectedTemplate : 'TEMPLATE_NEUTRAL',
         templateType:
-          typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
+          typeof selectedTemplate === 'string' ? selectedTemplate : 'TEMPLATE_NEUTRAL',
         language: 'de',
 
         // Additional Control Fields

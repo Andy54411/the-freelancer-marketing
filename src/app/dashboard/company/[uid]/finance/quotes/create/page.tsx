@@ -2218,7 +2218,7 @@ export default function CreateQuotePage() {
           : undefined,
 
         // Template & UI Settings
-        template: typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
+        template: typeof selectedTemplate === 'string' ? selectedTemplate : 'TEMPLATE_NEUTRAL',
         templateType:
           typeof selectedTemplate === 'string' ? selectedTemplate : 'professional-business',
         language: 'de',

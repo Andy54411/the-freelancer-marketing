@@ -1013,7 +1013,7 @@ interface ExistingCompanyUser {
   responseTimeGuarantee: number;          // → 24
   selectedCategory: string;               // → "Hotel & Gastronomie"
   selectedSubcategory: string;            // → "Mietkoch"
-  preferredInvoiceTemplate: string;       // → "german-standard"
+  preferredInvoiceTemplate: string;       // → "TEMPLATE_NEUTRAL"
   
   // === BEREITS VORHANDEN - FILE UPLOADS ===
   profilePictureFirebaseUrl: string;      // → Firebase Storage URL

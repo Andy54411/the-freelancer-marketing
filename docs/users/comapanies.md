@@ -767,7 +767,7 @@ portfolioItems
 
 
 preferredInvoiceTemplate
-"german-standard"
+"TEMPLATE_NEUTRAL"
 (String)
 
 

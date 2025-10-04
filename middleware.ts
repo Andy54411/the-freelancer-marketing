@@ -64,6 +64,19 @@ export default async function middleware(request: NextRequest) {
     logMiddleware('Admin Dashboard Zugriff erlaubt', request);
   }
 
+  // ✅ PDF Generation Bypass - Allow server-side PDF generation access
+  const userAgent = request.headers.get('User-Agent') || '';
+  const isPreviewRoute = request.nextUrl.pathname.includes('/preview');
+  const isPdfGenerator = userAgent.includes('Taskilo-PDF-Generator');
+  
+  if (isPreviewRoute && isPdfGenerator) {
+    logMiddleware('✅ PDF Generation Bypass - Server access allowed', request, {
+      userAgent: userAgent.substring(0, 50),
+      path: request.nextUrl.pathname,
+    });
+    return NextResponse.next(); // Allow direct access for PDF generation
+  }
+
   // Skip internationalization for admin routes and API routes
   if (
     request.nextUrl.pathname.startsWith('/dashboard/admin') ||
