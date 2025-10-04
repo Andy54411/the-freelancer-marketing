@@ -31,7 +31,7 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
   // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
   const detectedType = documentType || detectDocumentType(data) || 'invoice';
   const config = getDocumentTypeConfig(detectedType, color);
-  
+
   // Übersetzungsfunktion
   const { t } = useDocumentTranslation(documentSettings?.language || 'de');
 
@@ -183,7 +183,9 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
                   <div>{data.customerAddressParsed.country}</div>
                 )}
                 {data.customerVatId && (
-                  <div className="mt-2 text-sm">{t('vatId')}: {data.customerVatId}</div>
+                  <div className="mt-2 text-sm">
+                    {t('vatId')}: {data.customerVatId}
+                  </div>
                 )}
               </div>
             </div>
@@ -226,9 +228,20 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
             </div>
           </div>
 
+          {/* Betreff - Nur bei Stornorechnungen */}
+          {detectedType === 'cancellation' && data.title && (
+            <div className="mb-6">
+              <div className="font-semibold text-sm text-gray-600 mb-1">Betreff:</div>
+              <div className="font-medium text-base text-gray-900">{data.title}</div>
+            </div>
+          )}
+
           {/* Header Text (Kopftext) */}
           {data.processedHeaderText && (
-            <div className="mb-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border-l-4" style={{ borderColor: color }}>
+            <div
+              className="mb-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border-l-4"
+              style={{ borderColor: color }}
+            >
               <div
                 className="text-sm text-gray-700 leading-relaxed"
                 dangerouslySetInnerHTML={{
@@ -478,6 +491,14 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
 
             {/* Fortsetzung + Totals Seite 2 */}
             <div className="px-6 flex-1 relative z-10">
+              {/* Betreff - Nur bei Stornorechnungen (Seite 2) */}
+              {detectedType === 'cancellation' && data.title && (
+                <div className="mb-6">
+                  <div className="font-semibold text-sm text-gray-600 mb-1">Betreff:</div>
+                  <div className="font-medium text-base text-gray-900">{data.title}</div>
+                </div>
+              )}
+
               <div className="mb-8">
                 <div className="text-sm font-semibold mb-2">Fortsetzung - Seite 2</div>
                 <div className="text-xs text-gray-600 mb-4">

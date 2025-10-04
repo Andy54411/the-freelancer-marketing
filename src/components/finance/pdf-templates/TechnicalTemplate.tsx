@@ -32,7 +32,7 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
   // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
   const detectedType = documentType || detectDocumentType(data) || 'invoice';
   const config = getDocumentTypeConfig(detectedType, color);
-  
+
   // Übersetzungsfunktion
   const { t } = useDocumentTranslation(documentSettings?.language || 'de');
 
@@ -163,6 +163,16 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Betreff - Nur bei Stornorechnungen */}
+        {detectedType === 'cancellation' && data.title && (
+          <div className="mx-4 mb-2 p-2 border" style={{ borderColor: color }}>
+            <div className="font-bold mb-1 border-b pb-1" style={{ borderColor: color }}>
+              SUBJECT:
+            </div>
+            <div className="font-medium text-sm">{data.title}</div>
+          </div>
+        )}
 
         {/* Header Text (Kopftext) */}
         {data.processedHeaderText && (
@@ -368,6 +378,16 @@ export const TechnicalTemplate: React.FC<TechnicalTemplateProps> = ({
 
             {/* Fortsetzung + Totals Seite 2 */}
             <div className="px-6 flex-1">
+              {/* Betreff - Nur bei Stornorechnungen (Seite 2) */}
+              {detectedType === 'cancellation' && data.title && (
+                <div className="border mb-4 p-2" style={{ borderColor: color }}>
+                  <div className="font-bold mb-1 border-b pb-1" style={{ borderColor: color }}>
+                    SUBJECT:
+                  </div>
+                  <div className="font-medium text-sm">{data.title}</div>
+                </div>
+              )}
+
               <div className="border mb-8" style={{ borderColor: color }}>
                 <div className="bg-gray-100 p-2 border-b" style={{ borderColor: color }}>
                   <div className="font-bold">SUMMARY_DATA:</div>

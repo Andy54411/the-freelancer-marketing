@@ -32,7 +32,7 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
   // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
   const detectedType = documentType || detectDocumentType(data) || 'invoice';
   const config = getDocumentTypeConfig(detectedType, color);
-  
+
   // Übersetzungsfunktion
   const { t } = useDocumentTranslation(documentSettings?.language || 'de');
 
@@ -195,7 +195,9 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
                   <div>{data.customerAddressParsed.country}</div>
                 )}
                 {data.customerVatId && (
-                  <div className="mt-2 text-sm">{t('vatId')}: {data.customerVatId}</div>
+                  <div className="mt-2 text-sm">
+                    {t('vatId')}: {data.customerVatId}
+                  </div>
                 )}
               </div>
             </div>
@@ -206,8 +208,12 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
               </div>
               <div className="space-y-1">
                 <div>Nr. {data.invoiceNumber}</div>
-                <div>{t('date')}: {formatDate(data.invoiceDate)}</div>
-                <div>{t('dueDate')}: {formatDate(data.dueDate)}</div>
+                <div>
+                  {t('date')}: {formatDate(data.invoiceDate)}
+                </div>
+                <div>
+                  {t('dueDate')}: {formatDate(data.dueDate)}
+                </div>
               </div>
 
               {/* QR-Code unter Dokumentdetails */}
@@ -228,6 +234,14 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
               )}
             </div>
           </div>
+
+          {/* Betreff - Nur bei Stornorechnungen */}
+          {detectedType === 'cancellation' && data.title && (
+            <div className="mb-6">
+              <div className="font-semibold text-sm text-gray-600 mb-1">Betreff:</div>
+              <div className="font-medium text-base text-gray-900">{data.title}</div>
+            </div>
+          )}
 
           {/* Header Text (Kopftext) */}
           {data.processedHeaderText && (
@@ -455,6 +469,14 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
 
             {/* Fortsetzung + Totals Seite 2 */}
             <div className="px-6 flex-1 flex flex-col">
+              {/* Betreff - Nur bei Stornorechnungen (Seite 2) */}
+              {detectedType === 'cancellation' && data.title && (
+                <div className="mb-6">
+                  <div className="font-semibold text-sm text-gray-600 mb-1">Betreff:</div>
+                  <div className="font-medium text-base text-gray-900">{data.title}</div>
+                </div>
+              )}
+
               <div className="mb-8">
                 <div className="text-sm font-semibold mb-2">Fortsetzung - Seite 2</div>
                 <div className="text-xs text-gray-600 mb-4">

@@ -214,6 +214,14 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
             </div>
           </div>
 
+          {/* Betreff - Nur bei Stornorechnungen */}
+          {detectedType === 'cancellation' && data.title && (
+            <div className="mb-6">
+              <div className="font-semibold text-sm text-gray-600 mb-1">Betreff:</div>
+              <div className="font-medium text-base text-gray-900">{data.title}</div>
+            </div>
+          )}
+
           {/* Header Text (Kopftext) */}
           {data.processedHeaderText && (
             <div
@@ -413,6 +421,14 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
 
             {/* WEITERFÜHRENDE TABELLE + TOTALS + FOOTERTEXT */}
             <div className="px-6 flex-1">
+              {/* Betreff - Nur bei Stornorechnungen (Seite 2) */}
+              {detectedType === 'cancellation' && data.title && (
+                <div className="mb-6">
+                  <div className="font-semibold text-sm text-gray-600 mb-1">Betreff:</div>
+                  <div className="font-medium text-base text-gray-900">{data.title}</div>
+                </div>
+              )}
+
               {/* Fortsetzung Tabelle falls nötig - für Test sichtbarer Inhalt */}
               <div className="mb-8">
                 <div className="text-sm font-semibold mb-2">Fortsetzung - Seite 2</div>

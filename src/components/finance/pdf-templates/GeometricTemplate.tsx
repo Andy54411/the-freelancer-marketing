@@ -32,7 +32,7 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
   // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
   const detectedType = documentType || detectDocumentType(data) || 'invoice';
   const config = getDocumentTypeConfig(detectedType, color);
-  
+
   // Übersetzungsfunktion
   const { t } = useDocumentTranslation(documentSettings?.language || 'de');
 
@@ -91,7 +91,7 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
         }}
       />
 
-            {/* ========= SEITE 1 ========= */}
+      {/* ========= SEITE 1 ========= */}
       <div className="pdf-page flex flex-col relative" style={{ minHeight: '297mm' }}>
         {/* Header Seite 1 */}
         <div className="p-6 pb-4">
@@ -143,7 +143,9 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
                   <div>{data.customerAddressParsed.country}</div>
                 )}
                 {data.customerVatId && (
-                  <div className="mt-2 text-sm">{t('vatId')}: {data.customerVatId}</div>
+                  <div className="mt-2 text-sm">
+                    {t('vatId')}: {data.customerVatId}
+                  </div>
                 )}
               </div>
             </div>
@@ -153,10 +155,18 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
                 {t('documentDetails')}
               </div>
               <div className="space-y-2">
-                <div>{config.numberLabel}: {data.invoiceNumber}</div>
-                <div>{t('date')}: {formatDate(data.invoiceDate)}</div>
-                <div>{t('dueDate')}: {formatDate(data.dueDate)}</div>
-                <div>{t('paymentTerms')}: {data.paymentTerms}</div>
+                <div>
+                  {config.numberLabel}: {data.invoiceNumber}
+                </div>
+                <div>
+                  {t('date')}: {formatDate(data.invoiceDate)}
+                </div>
+                <div>
+                  {t('dueDate')}: {formatDate(data.dueDate)}
+                </div>
+                <div>
+                  {t('paymentTerms')}: {data.paymentTerms}
+                </div>
               </div>
 
               {/* QR-Code unter Dokumentdetails */}
@@ -177,6 +187,14 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
               )}
             </div>
           </div>
+
+          {/* Betreff - Nur bei Stornorechnungen */}
+          {detectedType === 'cancellation' && data.title && (
+            <div className="mb-6">
+              <div className="font-semibold text-sm text-gray-600 mb-1">Betreff:</div>
+              <div className="font-medium text-base text-gray-900">{data.title}</div>
+            </div>
+          )}
 
           {/* Header Text (Kopftext) */}
           {data.processedHeaderText && (
@@ -375,6 +393,14 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
 
             {/* Fortsetzung + Totals Seite 2 */}
             <div className="px-6 flex-1">
+              {/* Betreff - Nur bei Stornorechnungen (Seite 2) */}
+              {detectedType === 'cancellation' && data.title && (
+                <div className="mb-6">
+                  <div className="font-semibold text-sm text-gray-600 mb-1">Betreff:</div>
+                  <div className="font-medium text-base text-gray-900">{data.title}</div>
+                </div>
+              )}
+
               <div className="mb-8">
                 <div className="text-sm font-semibold mb-2">Fortsetzung - Seite 2</div>
                 <div className="text-xs text-gray-600 mb-4">
