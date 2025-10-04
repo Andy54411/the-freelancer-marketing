@@ -129,7 +129,7 @@ export const InvoiceTemplateRenderer: React.FC<InvoiceTemplateRendererProps> = (
     color: customizations?.color || '#14ad9f', // Taskilo-Farbe als Standard
     logoUrl: customizations?.logoUrl || companySettings?.logoUrl || null,
     logoSize: customizations?.logoSize || 50,
-    documentType: (data.documentType || 'invoice') as 'invoice' | 'quote' | 'reminder',
+    documentType: (data.documentType || 'invoice') as 'invoice' | 'quote' | 'reminder' | 'cancellation',
     pageMode: pageMode, // Single oder Multi Page
     documentSettings: documentSettings, // Dokumenteinstellungen
   };

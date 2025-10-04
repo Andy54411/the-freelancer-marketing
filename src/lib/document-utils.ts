@@ -1,6 +1,14 @@
 /**
  * Document Type Utilities
- * Funktionen zur Bestimmung und Verwaltung von Dokumenttypen
+ * Funktionen zur Bestimmung und Verwalt  cancellation: {
+    titleKey: 'cancellation',
+    numberLabelKey: 'invoiceNumber',
+    dateLabelKey: 'date',
+    dueDateLabel: 'dueDate',
+    recipientLabelKey: 'recipient',
+    showPaymentTerms: false,
+    showDueDate: true,
+  },okumenttypen
  */
 
 import {
@@ -70,7 +78,7 @@ export const DOCUMENT_TYPE_MAPPINGS: Record<DocumentType, DocumentTypeMapping> =
     showDueDate: false,
   },
   cancellation: {
-    titleKey: 'invoice', // Fallback
+    titleKey: 'cancellation', // ✅ RICHTIG: 'cancellation' statt 'invoice'
     numberLabelKey: 'invoiceNumber',
     dateLabelKey: 'date',
     dueDateLabelKey: 'dueDate',
@@ -180,7 +188,7 @@ export function detectDocumentType(data: any): DocumentType {
     return 'credit-note';
   }
 
-  if (invoiceNumber.startsWith('sto') || invoiceNumber.startsWith('can')) {
+  if (invoiceNumber.startsWith('sto') || invoiceNumber.startsWith('st-') || invoiceNumber.startsWith('can')) {
     return 'cancellation';
   }
 

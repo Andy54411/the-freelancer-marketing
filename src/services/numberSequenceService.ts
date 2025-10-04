@@ -124,6 +124,41 @@ export class NumberSequenceService {
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
+          // Fallback: Erstelle automatisch einen neuen Nummerkreis für Storno
+          if (type === 'Storno') {
+            try {
+              const newSequenceData = {
+                companyId,
+                type: 'Storno',
+                nextNumber: 2, // Nächste Nummer ist 2, weil wir 1 zurückgeben
+                format: 'ST-{number}',
+                prefix: 'ST-',
+                createdAt: new Date(),
+                updatedAt: new Date()
+              };
+              
+              const newDocRef = doc(collection(db, 'numberSequences'));
+              await setDoc(newDocRef, newSequenceData);
+              
+              console.log('✅ Storno-Nummerkreis erstellt!');
+              
+              return {
+                number: 1,
+                formattedNumber: 'ST-1',
+                format: 'ST-{number}'
+              };
+            } catch (createError) {
+              console.error('❌ Fehler beim Erstellen des Storno-Nummerkreises:', createError);
+              // Fallback auf manuell generierte Nummer
+              const fallbackNum = Date.now() % 1000;
+              return {
+                number: fallbackNum,
+                formattedNumber: `ST-${fallbackNum}`,
+                format: 'ST-{number}'
+              };
+            }
+          }
+          
           throw new Error(`Nummerkreis für Typ '${type}' nicht gefunden`);
         }
 

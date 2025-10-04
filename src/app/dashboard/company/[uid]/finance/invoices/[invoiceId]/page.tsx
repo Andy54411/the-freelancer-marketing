@@ -35,9 +35,10 @@ import {
 import { InvoiceData } from '@/types/invoiceTypes';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import { InvoiceTemplateRenderer } from '@/components/finance/InvoiceTemplates';
-import { SendInvoiceDialog } from '@/components/finance/SendInvoiceDialog';
+import EmailSendModalNormal from '@/components/finance/EmailsendModalnormal';
 import { LivePreviewModal } from '@/components/finance/LivePreviewModal';
 import { InlinePreview } from '@/components/finance/InlinePreview';
+import { CancelInvoiceModal } from '@/components/finance/CancelInvoiceModal';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, storage } from '@/firebase/clients';
 import { ref, getDownloadURL, listAll } from 'firebase/storage';
@@ -58,11 +59,16 @@ export default function InvoiceDetailPage() {
 
   // URL-Parameter für Template-Überschreibung (für PDF-Generierung)
   const [urlParams, setUrlParams] = useState<URLSearchParams | null>(null);
+  
+  // Dokumenttyp-Erkennung: normale Rechnung oder Stornorechnung
+  const [documentType, setDocumentType] = useState<'invoice' | 'storno'>('invoice');
+  const [isStornoDocument, setIsStornoDocument] = useState(false);
 
   useEffect(() => {
     // Lade URL-Parameter beim Mount
-    setUrlParams(new URLSearchParams(window.location.search));
-  }, []);
+    const params = new URLSearchParams(window.location.search);
+    setUrlParams(params);
+  }, [invoiceId]);
 
   // Template-Überschreibung aus URL-Parametern
   const templateOverride = urlParams?.get('template');
@@ -73,6 +79,8 @@ export default function InvoiceDetailPage() {
   const hideUI = urlParams?.get('hideUI') === 'true';
 
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
+  const [stornoInvoice, setStornoInvoice] = useState<InvoiceData | null>(null);
+  const [showingStorno, setShowingStorno] = useState(false);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
@@ -91,6 +99,7 @@ export default function InvoiceDetailPage() {
   const [newTag, setNewTag] = useState('');
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [showLivePreview, setShowLivePreview] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   useEffect(() => {
     if (user && user.uid === uid && invoiceId) {
@@ -187,6 +196,7 @@ export default function InvoiceDetailPage() {
     try {
       setLoading(true);
 
+      // Lade immer zuerst die Original-Rechnung
       const invoiceData = await FirestoreInvoiceService.getInvoiceById(uid, invoiceId);
 
       if (!invoiceData) {
@@ -195,11 +205,28 @@ export default function InvoiceDetailPage() {
       }
 
       if (invoiceData.companyId !== uid) {
-        setError('Keine Berechtigung für diese Rechnung');
+        setError('Keine Berechtigung für dieses Dokument');
         return;
       }
 
       setInvoice(invoiceData);
+
+      // Prüfe ob eine Storno-Rechnung für diese Original-Rechnung existiert
+      try {
+        const stornoData = await checkForStornoInvoice(uid, invoiceId);
+        if (stornoData) {
+          setStornoInvoice(stornoData);
+          // Standardmäßig Storno anzeigen wenn verfügbar
+          setShowingStorno(true);
+        } else {
+          setStornoInvoice(null);
+          setShowingStorno(false);
+        }
+      } catch (stornoError) {
+        setStornoInvoice(null);
+        setShowingStorno(false);
+      }
+
       setError(null); // Clear any previous errors
     } catch (err) {
       console.error('Error loading invoice:', err);
@@ -239,9 +266,27 @@ export default function InvoiceDetailPage() {
     };
   };
 
+  // Hilfsfunktion: Prüfe ob Storno-Rechnung für Original-Rechnung existiert
+  const checkForStornoInvoice = async (companyId: string, originalInvoiceId: string): Promise<InvoiceData | null> => {
+    try {
+      const stornoList = await FirestoreInvoiceService.getStornosByCompany(companyId);
+      const matchingStorno = stornoList.find(storno => 
+        (storno as any).originalInvoiceId === originalInvoiceId
+      );
+      return matchingStorno || null;
+    } catch (error) {
+      console.error('Error checking for storno invoice:', error);
+      return null;
+    }
+  };
+
   const invoiceTotals = invoice ?
   calculateInvoiceTotals(invoice) :
   { subtotal: 0, taxAmount: 0, total: 0 };
+
+  // Aktuelles Dokument zum Anzeigen (Original oder Storno)
+  const currentDocument = showingStorno && stornoInvoice ? stornoInvoice : invoice;
+  const isDisplayingStorno = showingStorno && stornoInvoice;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {
@@ -273,6 +318,11 @@ export default function InvoiceDetailPage() {
         label: 'Storniert',
         variant: 'secondary' as const,
         color: 'bg-gray-100 text-gray-800'
+      },
+      storno: {
+        label: 'Stornorechnung',
+        variant: 'destructive' as const,
+        color: 'bg-red-100 text-red-800'
       }
     };
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
@@ -475,10 +525,122 @@ export default function InvoiceDetailPage() {
   };
 
   const handleBackToInvoices = () => {
-    router.push(`/dashboard/company/${uid}/finance/invoices`);
+    // Dynamische Navigation je nach Dokumenttyp
+    if (isStornoDocument || (invoice && (invoice as any).isStorno)) {
+      // Zurück zur Storno-Übersicht (falls vorhanden) oder zur normalen Rechnungsübersicht
+      router.push(`/dashboard/company/${uid}/finance/invoices?filter=storno`);
+    } else {
+      router.push(`/dashboard/company/${uid}/finance/invoices`);
+    }
+  };
+
+  const handleCancelInvoice = async () => {
+    if (!invoice) return;
+
+    setUpdating(true);
+    try {
+      // 1. Generiere Storno-Nummer (ST-XXXX Format)
+      const stornoResult = await FirestoreInvoiceService.getNextStornoNumber(uid);
+      const stornoNumber = stornoResult.formattedNumber; // z.B. "ST-1001"
+      
+      // 2. Erstelle Storno-Rechnung in separater Collection
+      // Entferne undefined Werte aus der Original-Rechnung
+      const cleanInvoiceData = Object.fromEntries(
+        Object.entries(invoice).filter(([_, value]) => value !== undefined)
+      );
+      
+      const stornoData = {
+        // Basis-Daten der Original-Rechnung kopieren (ohne undefined)
+        ...cleanInvoiceData,
+        
+        // Storno-spezifische Felder (überschreiben original Daten)
+        id: `storno-${Date.now()}`, // Neue ID für Storno
+        stornoNumber: stornoNumber,
+        invoiceNumber: stornoNumber, // Für Display
+        number: stornoNumber,
+        sequentialNumber: stornoResult.sequentialNumber,
+        
+        // Referenz zur Original-Rechnung
+        originalInvoiceId: invoiceId,
+        originalInvoiceNumber: invoice.invoiceNumber || invoice.number,
+        
+        // Storno-Status und Typ
+        status: 'cancelled',
+        documentType: 'cancellation',
+        isStorno: true,
+        
+        // Negative Beträge für Storno
+        amount: -(invoice.amount || 0),
+        total: -(invoice.total || invoice.amount || 0),
+        tax: -(invoice.tax || 0),
+        
+        // Items mit negativen Beträgen
+        items: (invoice.items || []).map(item => ({
+          ...item,
+          quantity: -Math.abs(item.quantity || 0),
+          total: -(item.total || 0)
+        })),
+        
+        // Timestamps
+        createdAt: new Date(),
+        stornoCreatedAt: new Date(),
+        stornoDate: new Date(),
+        updatedAt: new Date(),
+        
+        // Titel für Anzeige
+        title: `Stornorechnung Nr. ${stornoNumber} zur Rechnung Nr. ${invoice.invoiceNumber || invoice.number}`,
+        description: invoice.description || `Stornierung der Rechnung Nr. ${invoice.invoiceNumber || invoice.number}`
+      };
+
+      // 3. Speichere Storno-Rechnung in stornoRechnungen subcollection
+      const stornoRef = doc(db, 'companies', uid, 'stornoRechnungen', stornoData.id);
+      await FirestoreInvoiceService.createDocument(stornoRef, stornoData);
+
+      // 4. Update Original-Rechnung auf cancelled Status
+      const invoiceRef = doc(db, 'companies', uid, 'invoices', invoiceId);
+      await updateDoc(invoiceRef, {
+        status: 'cancelled',
+        cancelledAt: new Date(),
+        updatedAt: new Date(),
+        stornoInvoiceId: stornoData.id,
+        stornoInvoiceNumber: stornoNumber
+      });
+
+      // 5. Update local state
+      setInvoice((prev) => prev ? { 
+        ...prev, 
+        status: 'cancelled', 
+        cancelledAt: new Date(),
+        stornoInvoiceId: stornoData.id,
+        stornoInvoiceNumber: stornoNumber
+      } : null);
+      
+      setShowCancelModal(false);
+      
+      // 6. Setze Storno-Rechnung in lokalen State und wechsle Ansicht
+      setStornoInvoice(stornoData as unknown as InvoiceData);
+      setShowingStorno(true);
+      
+      toast.success(`Stornorechnung ${stornoNumber} wurde erfolgreich erstellt!`);
+      
+    } catch (error) {
+      console.error('Error creating storno invoice:', error);
+      toast.error('Fehler beim Erstellen der Stornorechnung');
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleEditInvoice = () => {
+    // Prüfe GoBD-Status vor Navigation - sowohl gobdStatus.isLocked als auch direktes isLocked
+    const gobdLocked = (invoice as any)?.gobdStatus?.isLocked;
+    const directLocked = (invoice as any)?.isLocked;
+    const isLocked = gobdLocked || directLocked;
+    
+    if (isLocked) {
+      toast.error('Festgeschriebene Rechnungen können nicht mehr bearbeitet werden.');
+      return;
+    }
     router.push(`/dashboard/company/${uid}/finance/invoices/${invoiceId}/edit`);
   };
 
@@ -801,7 +963,7 @@ export default function InvoiceDetailPage() {
             logoSize: logoSizeOverride ? parseInt(logoSizeOverride) : (invoice as any).logoSize || 50,
             pageMode: pageModeOverride || (invoice as any).pageMode || 'single'
           }}
-          documentType="invoice"
+          documentType={isStornoDocument || (invoice as any).isStorno ? "cancellation" : "invoice"}
           companyId={uid}
           className="w-full" />
 
@@ -820,12 +982,57 @@ export default function InvoiceDetailPage() {
                 <Button variant="ghost" onClick={handleBackToInvoices} className="p-2">
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Rechnung Nr.{' '}
-                  {invoice.invoiceNumber ||
-                  invoice.number ||
-                  `#${invoice.sequentialNumber || 'TEMP'}`}
-                </h2>
+                <div className="flex items-center space-x-4">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {isDisplayingStorno ? (
+                      <>
+                        Stornorechnung Nr.{' '}
+                        {(stornoInvoice as any).stornoNumber || 
+                         (stornoInvoice as any).invoiceNumber ||
+                         (stornoInvoice as any).number ||
+                         `#${(stornoInvoice as any).sequentialNumber || 'TEMP'}`}
+                        {(stornoInvoice as any).originalInvoiceNumber && (
+                          <span className="text-sm text-gray-500 ml-2">
+                            (zur Rechnung {(stornoInvoice as any).originalInvoiceNumber})
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        Rechnung Nr.{' '}
+                        {invoice?.invoiceNumber ||
+                         invoice?.number ||
+                         `#${invoice?.sequentialNumber || 'TEMP'}`}
+                      </>
+                    )}
+                  </h2>
+                  
+                  {/* Toggle-Buttons für Original/Storno wenn Storno verfügbar */}
+                  {stornoInvoice && (
+                    <div className="flex bg-gray-100 rounded-lg p-1">
+                      <button
+                        onClick={() => setShowingStorno(false)}
+                        className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                          !showingStorno 
+                            ? 'bg-white text-gray-900 shadow-sm' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Original
+                      </button>
+                      <button
+                        onClick={() => setShowingStorno(true)}
+                        className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                          showingStorno 
+                            ? 'bg-red-100 text-red-900 shadow-sm' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Storno
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center space-x-3">
@@ -866,21 +1073,37 @@ export default function InvoiceDetailPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-64">
-                    <DropdownMenuItem
-                      onClick={handleEditInvoice}
-                      className="cursor-pointer hover:bg-gray-50 font-medium">
-
-                      <Edit className="h-4 w-4 mr-2" />
-                      Dokument bearbeiten
-                    </DropdownMenuItem>
+                    {(() => {
+                      const gobdLocked = (invoice as any)?.gobdStatus?.isLocked;
+                      const directLocked = (invoice as any)?.isLocked;
+                      const isLocked = gobdLocked || directLocked;
+                      const status = invoice.status;
+                      
+                      // Hide edit button completely if status is 'sent' OR if any lock field is true
+                      const shouldHideEditButton = status === 'sent' || isLocked;
+                      
+                      // Only show edit button if document is NOT locked
+                      // Für Stornorechnungen: Keine Bearbeitung möglich
+                      if (isStornoDocument || (invoice as any).isStorno) {
+                        return (
+                          <DropdownMenuItem disabled className="text-gray-400 cursor-not-allowed">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Stornorechnungen können nicht bearbeitet werden
+                          </DropdownMenuItem>
+                        );
+                      }
+                      
+                      return !shouldHideEditButton ? (
+                        <DropdownMenuItem
+                          onClick={handleEditInvoice}
+                          className="font-medium cursor-pointer hover:bg-gray-50">
+                          <Edit className="h-4 w-4 mr-2" />
+                          ✏️ Dokument bearbeiten (Status: {status}, Locked: {String(isLocked)})
+                        </DropdownMenuItem>
+                      ) : null;
+                    })()}
+                    
                     <DropdownMenuSeparator />
-
-                    <div className="px-2 py-1.5">
-                      <div className="flex items-center text-sm font-medium text-gray-900 mb-2">
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Weitere Funktionen
-                      </div>
-                    </div>
 
                     <DropdownMenuItem
                       onClick={() => setSendDialogOpen(true)}
@@ -1025,43 +1248,52 @@ export default function InvoiceDetailPage() {
                       Mahnung / Zahlungserinnerung
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem
-                      onClick={() => {
-                        if (
-                        confirm('Sind Sie sicher, dass Sie diese Rechnung stornieren möchten?'))
-                        {
-                          toast.info('Storno-Feature wird bald implementiert!');
-                        }
-                      }}
-                      className="cursor-pointer hover:bg-red-50 text-red-600 hover:text-red-700">
-
-                      <Minus className="h-4 w-4 mr-3" />
-                      Rechnung stornieren
-                    </DropdownMenuItem>
-
-                    <div className="mt-2 px-2 py-1.5 bg-gradient-to-r from-[#14ad9f] to-[#129488] rounded-md cursor-pointer">
-                      <div className="flex items-center justify-between text-white text-xs">
-                        <span>Verfügbar mit einem Upgrade</span>
-                        <div className="flex items-center">
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none">
-                            <path
-                              d="M10 16L13.6464 12.3536C13.8417 12.1583 13.8417 11.8417 13.6464 11.6464L10 8"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round" />
-
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
+                    {/* Storno-Option nur für normale Rechnungen verfügbar */}
+                    {!isDisplayingStorno && invoice && !stornoInvoice && invoice.status !== 'cancelled' && (
+                      <DropdownMenuItem
+                        onClick={() => setShowCancelModal(true)}
+                        className="cursor-pointer hover:bg-red-50 text-red-600 hover:text-red-700">
+                        <Minus className="h-4 w-4 mr-3" />
+                        Rechnung stornieren
+                      </DropdownMenuItem>
+                    )}
+                    
+                    {/* Info für bereits stornierte Rechnungen */}
+                    {(stornoInvoice || (invoice && invoice.status === 'cancelled')) && (
+                      <DropdownMenuItem disabled className="text-gray-400 cursor-not-allowed">
+                        <Minus className="h-4 w-4 mr-3" />
+                        Rechnung wurde bereits storniert
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </div>
           </div>
         </header>
+
+        {/* GoBD Lock Warning Banner */}
+        {((invoice as any).gobdStatus?.isLocked || (invoice as any).isLocked) && (
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mx-6 mt-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <CheckCircle className="h-5 w-5 text-amber-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-amber-700">
+                  <strong>Rechnung festgeschrieben:</strong> Dieses Dokument wurde{' '}
+                  {(invoice as any).gobdStatus?.lockedAt ? 
+                    `am ${new Date((invoice as any).gobdStatus.lockedAt.seconds * 1000).toLocaleDateString('de-DE')}` :
+                    (invoice as any).lockedAt ? 
+                      `am ${new Date((invoice as any).lockedAt.seconds * 1000).toLocaleDateString('de-DE')}` :
+                      'vor Kurzem'
+                  }{' '}
+                  für die GoBD-konforme Archivierung gesperrt und kann nicht mehr bearbeitet werden.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content - SevDesk Style */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
@@ -1071,7 +1303,9 @@ export default function InvoiceDetailPage() {
               {/* Header */}
               <div className="top border-b border-gray-100 p-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Rechnungsdetails</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {isDisplayingStorno ? 'Stornodetails' : 'Rechnungsdetails'}
+                  </h3>
                   <div className="group">
                     <FileText className="h-5 w-5 text-gray-400" />
                   </div>
@@ -1082,7 +1316,7 @@ export default function InvoiceDetailPage() {
               <div className="details p-4">
                 <div className="space-y-4">
                   {/* Fälligkeit */}
-                  {invoice.dueDate &&
+                  {currentDocument?.dueDate &&
                   <div className="detail flex justify-between items-start py-2">
                       <div className="left">
                         <p className="label text-sm text-gray-600">Fälligkeit</p>
@@ -1090,12 +1324,14 @@ export default function InvoiceDetailPage() {
                       <div className="right text-right">
                         <p className="text-sm font-medium text-gray-900">
                           {(() => {
-                          const dueDate = new Date(invoice.dueDate);
+                          const dueDate = new Date(currentDocument.dueDate);
                           const today = new Date();
                           const diffTime = dueDate.getTime() - today.getTime();
                           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                          if (diffDays > 0) {
+                          if (isDisplayingStorno) {
+                            return 'Storno (keine Fälligkeit)';
+                          } else if (diffDays > 0) {
                             return `In ${diffDays} Tagen`;
                           } else if (diffDays === 0) {
                             return 'Heute';
@@ -1193,10 +1429,48 @@ export default function InvoiceDetailPage() {
                     </div>
                   </div>
 
+                  {/* Originalrechnung (nur bei Storno) */}
+                  {(isStornoDocument || (invoice as any).isStorno) && (invoice as any).originalInvoiceNumber && (
+                    <div className="detail flex justify-between items-start py-2 bg-red-50 px-3 py-2 rounded">
+                      <div className="left">
+                        <p className="label text-sm text-red-700 font-medium">Originalrechnung</p>
+                      </div>
+                      <div className="right">
+                        <p className="text-sm font-bold text-red-900">
+                          Nr. {(invoice as any).originalInvoiceNumber}
+                        </p>
+                        {(invoice as any).originalInvoiceId && (
+                          <button 
+                            onClick={() => router.push(`/dashboard/company/${uid}/finance/invoices/${(invoice as any).originalInvoiceId}`)}
+                            className="text-xs text-red-600 hover:text-red-800 underline mt-1 block"
+                          >
+                            Originalrechnung anzeigen
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Storno-Erstellungsdatum (nur bei Storno) */}
+                  {(isStornoDocument || (invoice as any).isStorno) && (invoice as any).stornoCreatedAt && (
+                    <div className="detail flex justify-between items-start py-2">
+                      <div className="left">
+                        <p className="label text-sm text-gray-600">Storno erstellt am</p>
+                      </div>
+                      <div className="right">
+                        <p className="text-sm font-medium text-gray-900">
+                          {new Date((invoice as any).stornoCreatedAt).toLocaleDateString('de-DE')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Rechnungsdatum */}
                   <div className="detail flex justify-between items-start py-2">
                     <div className="left">
-                      <p className="label text-sm text-gray-600">Rechnungsdatum</p>
+                      <p className="label text-sm text-gray-600">
+                        {isStornoDocument || (invoice as any).isStorno ? 'Ursprüngliches Datum' : 'Rechnungsdatum'}
+                      </p>
                     </div>
                     <div className="right">
                       <p className="text-sm font-medium text-gray-900">
@@ -1230,20 +1504,20 @@ export default function InvoiceDetailPage() {
                       <p className="label text-sm text-gray-600">Gesamtbetrag</p>
                     </div>
                     <div className="right">
-                      <p className="text-sm font-bold text-gray-900">
-                        {(invoice.total || invoice.amount || 0).toFixed(2)} €
+                      <p className={`text-sm font-bold ${isDisplayingStorno ? 'text-red-600' : 'text-gray-900'}`}>
+                        {(currentDocument?.total || currentDocument?.amount || 0).toFixed(2)} €
                       </p>
                     </div>
                   </div>
 
                   {/* Customer */}
-                  {invoice.customerName &&
+                  {currentDocument?.customerName &&
                   <div className="detail flex justify-between items-start py-2">
                       <div className="left">
                         <p className="label text-sm text-gray-600">Kunde</p>
                       </div>
                       <div className="right">
-                        <p className="text-sm font-medium text-gray-900">{invoice.customerName}</p>
+                        <p className="text-sm font-medium text-gray-900">{currentDocument.customerName}</p>
                       </div>
                     </div>
                   }
@@ -1358,20 +1632,20 @@ export default function InvoiceDetailPage() {
                       }
                       </div>
                     </div> :
-                  invoice ?
-                  // Live Preview der Rechnung mit aktuellen Template-Einstellungen aus Firestore
+                  currentDocument ?
+                  // Live Preview der Rechnung/Storno mit aktuellen Template-Einstellungen aus Firestore
                   <div className={`w-full h-[800px] border border-gray-300 rounded-lg overflow-hidden shadow-lg bg-white ${hideUI ? 'fixed inset-0 z-50 h-screen border-0' : ''}`}>
                       <div className="w-full h-full overflow-auto flex justify-center py-4">
                         <InlinePreview
                         document={{
-                          ...invoice,
+                          ...currentDocument,
                           // Template-Überschreibung aus URL-Parametern (für PDF-Generierung)
-                          template: templateOverride || (invoice as any).template || 'TEMPLATE_NEUTRAL',
-                          color: colorOverride || (invoice as any).color || '#14ad9f',
-                          logoSize: logoSizeOverride ? parseInt(logoSizeOverride) : (invoice as any).logoSize || 50,
-                          pageMode: pageModeOverride || (invoice as any).pageMode || 'single'
+                          template: templateOverride || (currentDocument as any).template || 'TEMPLATE_NEUTRAL',
+                          color: colorOverride || (currentDocument as any).color || '#14ad9f',
+                          logoSize: logoSizeOverride ? parseInt(logoSizeOverride) : (currentDocument as any).logoSize || 50,
+                          pageMode: pageModeOverride || (currentDocument as any).pageMode || 'single'
                         }}
-                        documentType="invoice"
+                        documentType={isDisplayingStorno ? "cancellation" : "invoice"}
                         companyId={uid}
                         className={`shadow-lg ${isPdfMode ? 'w-[210mm] min-h-[297mm]' : ''}`} />
 
@@ -1391,30 +1665,62 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
 
-        {/* Send Invoice Dialog */}
+        {/* EmailSendModalNormal - GoBD-free version */}
         {invoice &&
-        <SendInvoiceDialog
+        <EmailSendModalNormal
           isOpen={sendDialogOpen}
           onClose={() => setSendDialogOpen(false)}
-          invoice={invoice!}
-          companyName={invoice.companyName || 'Ihr Unternehmen'} />
+          document={invoice}
+          documentType="invoice"
+          companyId={uid}
+          selectedLayout={(invoice as any).template || (invoice as any).templateId || 'TEMPLATE_NEUTRAL'}
+          selectedColor={(invoice as any).color || '#14ad9f'}
+          logoUrl={(invoice as any).logoUrl || null}
+          logoSize={(invoice as any).logoSize || 50}
+          pageMode={(invoice as any).pageMode || 'single'}
+          documentSettings={(invoice as any).documentSettings || {}}
+          userData={{
+            firstName: user?.firstName,
+            lastName: user?.lastName,
+            email: user?.email || undefined,
+            phone: (user as any)?.phone
+          }}
+          companyData={{
+            name: invoice.companyName || 'Ihr Unternehmen',
+            email: (invoice as any).companyEmail || user?.email || 'noreply@example.com',
+            signature: (invoice as any).companySignature || undefined
+          }}
+          defaultRecipients={[
+            (invoice as any).customerEmail || '',
+          ].filter(Boolean)}
+          onSend={async (method, options) => {
+            toast.success(`${method} Aktion ausgeführt`);
+            
+            // Rechnung nach dem Versand neu laden (um GoBD-Status zu aktualisieren)
+            if (method === 'email') {
+              console.log('🔄 Lade Rechnung nach E-Mail-Versand neu...');
+              setTimeout(() => {
+                loadInvoice(); // Rechnung neu laden um GoBD-Status zu bekommen
+              }, 1000); // Kurze Verzögerung damit GoBD-Service Zeit hat
+            }
+          }} />
 
         }
 
         {/* Vollbild Live Preview Modal */}
-        {invoice &&
+        {(showingStorno ? stornoInvoice : invoice) &&
         <LivePreviewModal
           isOpen={showLivePreview}
           onClose={() => setShowLivePreview(false)}
           document={{
-            ...invoice,
+            ...(showingStorno ? stornoInvoice : invoice),
             // Verwende Template-Einstellungen aus Firestore (falls vorhanden)
-            template: (invoice as any).template || (invoice as any).templateId || 'TEMPLATE_NEUTRAL',
-            color: (invoice as any).color || '#14ad9f',
-            logoUrl: (invoice as any).logoUrl || null,
-            logoSize: (invoice as any).logoSize || 50,
-            pageMode: (invoice as any).pageMode || 'single',
-            documentSettings: (invoice as any).documentSettings || {
+            template: ((showingStorno ? stornoInvoice : invoice) as any).template || ((showingStorno ? stornoInvoice : invoice) as any).templateId || 'TEMPLATE_NEUTRAL',
+            color: ((showingStorno ? stornoInvoice : invoice) as any).color || '#14ad9f',
+            logoUrl: ((showingStorno ? stornoInvoice : invoice) as any).logoUrl || null,
+            logoSize: ((showingStorno ? stornoInvoice : invoice) as any).logoSize || 50,
+            pageMode: ((showingStorno ? stornoInvoice : invoice) as any).pageMode || 'single',
+            documentSettings: ((showingStorno ? stornoInvoice : invoice) as any).documentSettings || {
               language: 'de',
               showQRCode: false,
               showEPCQRCode: false,
@@ -1428,15 +1734,23 @@ export default function InvoiceDetailPage() {
               showWatermark: false
             }
           }}
-          documentType="invoice"
+          documentType={showingStorno ? "cancellation" : "invoice"}
           companyId={uid}
           onSend={async (method, options) => {
             // Handle send actions if needed
-
             toast.success(`${method} Aktion ausgeführt`);
           }} />
 
         }
+
+        {/* Storno Modal */}
+        <CancelInvoiceModal
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          onConfirm={handleCancelInvoice}
+          invoice={invoice}
+          isLoading={updating}
+        />
       </div>
     </div>);
 

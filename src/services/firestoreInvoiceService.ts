@@ -96,6 +96,87 @@ export class FirestoreInvoiceService {
   }
 
   /**
+   * Generiert die nächste fortlaufende Storno-Nummer
+   * Format: ST-XXXX (z.B. ST-1001)
+   */
+  static async getNextStornoNumber(companyId: string): Promise<{
+    sequentialNumber: number;
+    formattedNumber: string;
+  }> {
+    try {
+      // Nutze den NumberSequenceService für die Storno-Nummerierung
+      const result = await NumberSequenceService.getNextNumberForType(companyId, 'Storno');
+
+      return {
+        sequentialNumber: result.number,
+        formattedNumber: result.formattedNumber // Should be "ST-XXXX" format
+      };
+    } catch (error) {
+      console.error('Fehler beim Generieren der Storno-Nummer:', error);
+
+      // Fallback: Generiere Storno-Nummer manuell
+      return await this.getNextStornoNumberFallback(companyId);
+    }
+  }
+
+  /**
+   * Fallback-Methode für Storno-Nummerierung
+   */
+  static async getNextStornoNumberFallback(companyId: string): Promise<{
+    sequentialNumber: number;
+    formattedNumber: string;
+  }> {
+    const currentYear = new Date().getFullYear();
+    
+    try {
+      return await runTransaction(db, async (transaction) => {
+        const stornoNumberingRef = doc(db, 'companies', companyId, 'settings', 'stornoNumbering');
+        const stornoNumberingDoc = await transaction.get(stornoNumberingRef);
+        
+        let nextNumber = 1;
+        
+        if (stornoNumberingDoc.exists()) {
+          const data = stornoNumberingDoc.data();
+          if (data.year === currentYear) {
+            nextNumber = (data.nextNumber || 1);
+          }
+        }
+        
+        const newStornoNumberingData = {
+          companyId,
+          year: currentYear,
+          lastNumber: nextNumber,
+          nextNumber: nextNumber + 1,
+          updatedAt: new Date()
+        };
+        
+        transaction.set(stornoNumberingRef, newStornoNumberingData);
+        
+        return {
+          sequentialNumber: nextNumber,
+          formattedNumber: `ST-${String(nextNumber).padStart(4, '0')}` // ST-1001, ST-1002, etc.
+        };
+      });
+    } catch (error) {
+      console.error('Fallback-Storno-Nummerierung fehlgeschlagen:', error);
+      
+      // Letzter Fallback
+      const fallbackNumber = Date.now() % 1000;
+      return {
+        sequentialNumber: fallbackNumber,
+        formattedNumber: `ST-${String(fallbackNumber).padStart(4, '0')}`
+      };
+    }
+  }
+
+  /**
+   * Erstelle ein neues Dokument in Firestore
+   */
+  static async createDocument(docRef: any, data: any): Promise<void> {
+    await setDoc(docRef, data);
+  }
+
+  /**
    * Speichert eine Rechnung in Firestore - SUBCOLLECTION companies/{companyId}/invoices
    */
   static async saveInvoice(invoice: InvoiceData): Promise<string> {
@@ -271,7 +352,12 @@ export class FirestoreInvoiceService {
           currency: data.currency,
           // E-Invoice Daten
           eInvoiceData: data.eInvoiceData,
-          eInvoice: data.eInvoice
+          eInvoice: data.eInvoice,
+          // 🔥 GoBD LOCK STATUS - KRITISCH FÜR UI!
+          gobdStatus: data.gobdStatus,
+          isLocked: data.isLocked,
+          lockedAt: data.lockedAt?.toDate ? data.lockedAt.toDate() : data.lockedAt,
+          lockedBy: data.lockedBy
         } as InvoiceData;
         return invoice;
       }
@@ -697,6 +783,115 @@ export class FirestoreInvoiceService {
 
       return stats;
     } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Lädt eine einzelne Stornorechnung aus der Subcollection companies/{companyId}/stornoRechnungen
+   */
+  static async getStornoById(companyId: string, stornoId: string): Promise<InvoiceData | null> {
+    try {
+      const docRef = doc(db, 'companies', companyId, 'stornoRechnungen', stornoId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        // Explizite Transformation für Stornorechnung
+        const stornoInvoice = {
+          id: docSnap.id,
+          companyId: data.companyId,
+          customerName: data.customerName,
+          customerAddress: data.customerAddress,
+          items: data.items,
+          total: data.total,
+          status: data.status,
+          invoiceNumber: data.invoiceNumber || data.stornoNumber,
+          number: data.number || data.stornoNumber,
+          stornoNumber: data.stornoNumber,
+          sequentialNumber: data.sequentialNumber,
+          date: data.date?.toDate ? data.date.toDate().toISOString() : data.date,
+          issueDate: data.issueDate,
+          dueDate: data.dueDate?.toDate ? data.dueDate.toDate().toISOString() : data.dueDate,
+          createdAt: data.createdAt?.toDate ?
+          data.createdAt.toDate() :
+          data.createdAt instanceof Date ?
+          data.createdAt :
+          new Date(),
+          stornoCreatedAt: data.stornoCreatedAt?.toDate ?
+          data.stornoCreatedAt.toDate() :
+          data.stornoCreatedAt instanceof Date ?
+          data.stornoCreatedAt :
+          undefined,
+          description: data.description,
+          customerEmail: data.customerEmail,
+          companyName: data.companyName,
+          companyAddress: data.companyAddress,
+          companyEmail: data.companyEmail,
+          companyPhone: data.companyPhone,
+          companyWebsite: data.companyWebsite,
+          amount: data.amount || 0,
+          tax: data.tax || 0,
+          vatRate: data.vatRate || 19,
+          isSmallBusiness: data.isSmallBusiness || false,
+          paymentTerms: data.paymentTerms,
+          tags: data.tags || [],
+          
+          // Storno-spezifische Felder
+          originalInvoiceId: data.originalInvoiceId,
+          originalInvoiceNumber: data.originalInvoiceNumber,
+          documentType: data.documentType || 'storno',
+          isStorno: true,
+          title: data.title
+        };
+
+        return stornoInvoice as unknown as InvoiceData;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error loading storno invoice:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lädt alle Stornorechnungen einer Firma
+   */
+  static async getStornosByCompany(companyId: string): Promise<InvoiceData[]> {
+    try {
+      const q = query(
+        collection(db, 'companies', companyId, 'stornoRechnungen'),
+        orderBy('createdAt', 'desc')
+      );
+
+      const querySnapshot = await getDocs(q);
+      const stornoInvoices: InvoiceData[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+
+        const stornoInvoice = {
+          ...data,
+          id: doc.id,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+          stornoCreatedAt: data.stornoCreatedAt?.toDate ? data.stornoCreatedAt.toDate() : data.stornoCreatedAt,
+          // Ensure numeric fields are numbers
+          amount: typeof data.amount === 'number' ? data.amount : 0,
+          total: typeof data.total === 'number' ? data.total : 0,
+          tax: typeof data.tax === 'number' ? data.tax : 0,
+          vatRate: typeof data.vatRate === 'number' ? data.vatRate : 19,
+          // Storno-spezifische Flags
+          isStorno: true,
+          documentType: 'storno'
+        };
+
+        stornoInvoices.push(stornoInvoice as any);
+      });
+
+      return stornoInvoices;
+    } catch (error) {
+      console.error('Error loading storno invoices:', error);
       throw error;
     }
   }

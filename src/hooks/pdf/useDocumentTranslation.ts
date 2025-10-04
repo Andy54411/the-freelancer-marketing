@@ -9,6 +9,7 @@ export interface DocumentTranslations {
   offer: string;
   deliveryNote: string;
   order: string;
+  cancellation: string;
 
   // Labels
   recipient: string;
@@ -89,6 +90,7 @@ const translations: Record<string, DocumentTranslations> = {
     offer: 'Angebot',
     deliveryNote: 'Lieferschein',
     order: 'Auftrag',
+    cancellation: 'Stornorechnung',
 
     // Labels
     recipient: 'Empfänger',
@@ -170,6 +172,7 @@ const translations: Record<string, DocumentTranslations> = {
     offer: 'Offer',
     deliveryNote: 'Delivery Note',
     order: 'Order',
+    cancellation: 'Cancellation Invoice',
 
     // Labels
     recipient: 'Recipient',
@@ -251,6 +254,7 @@ const translations: Record<string, DocumentTranslations> = {
     offer: 'Offre',
     deliveryNote: 'Bon de livraison',
     order: 'Commande',
+    cancellation: 'Facture d\'annulation',
     recipient: 'Destinataire',
     documentDetails: 'Détails du document',
     invoiceNumber: 'Numéro de facture',

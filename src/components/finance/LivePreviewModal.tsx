@@ -167,7 +167,8 @@ export function LivePreviewModal({
   const documentLabels = {
     invoice: 'Rechnung',
     quote: 'Angebot',
-    reminder: 'Erinnerung'
+    reminder: 'Erinnerung',
+    cancellation: 'Stornorechnung'
   };
 
   // Funktion zum Anreichern der Dokumentdaten mit Kundennummer und Kontaktperson

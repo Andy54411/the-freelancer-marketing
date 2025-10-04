@@ -35,27 +35,10 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
   const companyId = (data as any).companyId || '';
   const displayCustomerNumber = data.customerNumber;
 
-  // � DYNAMISCHE DOKUMENTTYP-KONFIGURATION mit centraler document-utils
+  // 📋 DYNAMISCHE DOKUMENTTYP-KONFIGURATION mit centraler document-utils
   // PRIORITÄT: Explizit übergebener documentType hat höchste Priorität
   const detectedType = documentType || detectDocumentType(data) || 'invoice';
   const config = getTranslatedDocumentTypeConfig(detectedType, t, color);
-
-  // �🔍 DEBUG: Wichtige Werte loggen (nur in Development)
-  if (process.env.NODE_ENV === 'development') {
-
-
-
-
-
-
-
-
-
-
-
-
-
-  }
 
   // Footer-Daten - ECHTE Daten verwenden, KEINE Fallbacks!
   const footerData = {
@@ -217,7 +200,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
           </div>
 
           {/* Customer and Document Info */}
-          <div className="grid grid-cols-2 gap-8 mb-8">
+          <div className="grid grid-cols-2 gap-8 mb-6">
             {data.customerName &&
             <div>
                 <div className="font-semibold mb-2">{config.recipientLabel}:</div>
@@ -294,6 +277,16 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Betreff - Nur bei Stornorechnungen */}
+          {detectedType === 'cancellation' && data.title && (
+            <div className="mb-6">
+              <div className="font-semibold text-sm text-gray-600 mb-1">Betreff:</div>
+              <div className="font-medium text-base text-gray-900">
+                {data.title}
+              </div>
+            </div>
+          )}
 
           {/* Header Text (Kopftext) */}
           {data.processedHeaderText &&
@@ -447,7 +440,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
               <div className="grid grid-cols-2 gap-8 mb-8">
                 {data.customerName &&
               <div>
-                    <div className="font-semibold mb-2">Rechnungsempfänger:</div>
+                    <div className="font-semibold mb-2">{config.recipientLabel}:</div>
                     <div className="space-y-1">
                       <div className="font-medium">{data.customerName}</div>
                       {data.customerAddressParsed.street &&
@@ -514,6 +507,16 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* Betreff - Nur bei Stornorechnungen (Seite 2) */}
+              {detectedType === 'cancellation' && data.title && (
+                <div className="mb-6">
+                  <div className="font-semibold text-sm text-gray-600 mb-1">Betreff:</div>
+                  <div className="font-medium text-base text-gray-900">
+                    {data.title}
+                  </div>
+                </div>
+              )}
 
               <div className="border-t-2 mb-4" style={{ borderColor: color }}></div>
             </div>

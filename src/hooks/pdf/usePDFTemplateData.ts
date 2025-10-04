@@ -170,6 +170,7 @@ export interface ProcessedPDFData {
   invoiceNumber: string;
   invoiceDate: string;
   dueDate: string;
+  title?: string; // Betreff für Stornorechnungen
 
   // Items
   items: any[];
@@ -579,6 +580,9 @@ export function usePDFTemplateData(props: PDFTemplateProps): ProcessedPDFData {
       validUntil: dueDate, // Für Template-Kompatibilität - bereits formatiert
       date: invoiceDate, // Für Template-Kompatibilität - bereits formatiert
       sequentialNumber,
+      title: (documentData as any).title || '', // Betreff für Stornorechnungen
+      originalInvoiceNumber: (documentData as any).originalInvoiceNumber || '', // Original-Rechnungsnummer bei Storno
+      stornoNumber: (documentData as any).stornoNumber || '', // Storno-Nummer
 
       items: realItems,
       description,

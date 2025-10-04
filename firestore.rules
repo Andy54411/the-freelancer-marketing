@@ -9,7 +9,9 @@ service cloud.firestore {
               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.user_type == 'firma') ||
               (exists(/databases/$(database)/documents/companies/$(request.auth.uid)) &&
-               get(/databases/$(database)/documents/companies/$(request.auth.uid)).data.user_type == 'firma'));
+               get(/databases/$(database)/documents/companies/$(request.auth.uid)).data.user_type == 'firma') ||
+              // Fallback: Wenn companies-Dokument existiert, ist es eine Company
+              exists(/databases/$(database)/documents/companies/$(request.auth.uid)));
     }
     
     // NEUE FUNKTION: Prüft Company-Status über Firestore-Dokument
@@ -922,13 +924,15 @@ service cloud.firestore {
                       request.query.where != null &&
                       ['companyId', '==', request.auth.uid] in request.query.where));
       
-      // Erstellen: Nur eigene Firma
+      // Erstellen: Nur eigene Firma (erweitert für automatische Storno-Nummerkreis-Erstellung)
       allow create: if request.auth != null && 
                        request.resource.data.companyId == request.auth.uid &&
-                       isCompany() &&
-                       request.resource.data.keys().hasAll(['type', 'format', 'nextNumber', 'companyId']) &&
-                       request.resource.data.createdAt == request.time &&
-                       request.resource.data.updatedAt == request.time;
+                       (isCompany() || exists(/databases/$(database)/documents/companies/$(request.auth.uid))) &&
+                       request.resource.data.keys().hasAll(['type', 'companyId']) &&
+                       (request.resource.data.createdAt == request.time || 
+                        request.resource.data.createdAt is timestamp) &&
+                       (request.resource.data.updatedAt == request.time ||
+                        request.resource.data.updatedAt is timestamp);
       
       // Aktualisieren: Nur eigene Firma (für Nummernkreis-Updates und Generierung)
       allow update: if request.auth != null && 
@@ -1727,6 +1731,37 @@ service cloud.firestore {
                         isSupportStaff());
     }
 
+    // Company Settings Collection - für Nummerkreise und andere Einstellungen
+    match /companies/{companyId}/settings/{settingId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma oder Support Staff
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma (für Storno-Nummerierung etc.)
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma (für Nummernkreis-Updates)
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+
     // Invoices Collection (Rechnungen) - als Subcollection unter companies
     match /companies/{companyId}/invoices/{invoiceId} {
       // Lesen: Nur eigene Firma oder Support Staff
@@ -1795,6 +1830,72 @@ service cloud.firestore {
         allow update: if false;
         
         // Löschen: Nur Support Staff - Actions dürfen nicht gelöscht werden (GoBD)
+        allow delete: if isSupportStaff();
+      }
+    }
+
+    // Storno-Rechnungen Collection - als Subcollection unter companies
+    match /companies/{companyId}/stornoRechnungen/{stornoId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma oder Support Staff
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma - Storno-Rechnungen dürfen nur durch Original-Rechnungs-Stornierung erstellt werden
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId &&
+                       request.resource.data.createdAt == request.time &&
+                       request.resource.data.isStorno == true &&
+                       request.resource.data.status == 'storno' &&
+                       'originalInvoiceId' in request.resource.data &&
+                       'originalInvoiceNumber' in request.resource.data;
+      
+      // Aktualisieren: Nur eigene Firma, aber Storno-Rechnungen sind weitgehend unveränderlich (GoBD)
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.updatedAt == request.time &&
+                       // Nur bestimmte Felder dürfen geändert werden (keine Beträge oder Kern-Daten)
+                       (!('amount' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                        !('total' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                        !('tax' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                        !('items' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                        !('originalInvoiceId' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                        !('originalInvoiceNumber' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                        !('stornoNumber' in request.resource.data.diff(resource.data).affectedKeys()));
+      
+      // Löschen: Nur Support Staff - Storno-Rechnungen dürfen NICHT gelöscht werden (GoBD)
+      allow delete: if isSupportStaff();
+      
+      // Actions Subcollection für Storno-Rechnungen (PDF-Versionen, etc.)
+      match /actions/{actionId} {
+        // Lesen: Company Owner oder Support Staff
+        allow read: if request.auth != null && 
+                       (request.auth.uid == companyId || 
+                        isSupportStaff());
+        
+        // Listen-Abfragen: Company Owner oder Support Staff
+        allow list: if request.auth != null && 
+                      (request.auth.uid == companyId ||
+                       isSupportStaff());
+        
+        // Erstellen: Company Owner (Storno-Actions sind nur durch System erstellbar)
+        allow create: if request.auth != null && 
+                         request.auth.uid == companyId && 
+                         isCompany() &&
+                         ('createdAt' in request.resource.data);
+        
+        // Aktualisieren: Nicht erlaubt - Actions sind unveränderlich (GoBD)
+        allow update: if false;
+        
+        // Löschen: Nur Support Staff
         allow delete: if isSupportStaff();
       }
     }

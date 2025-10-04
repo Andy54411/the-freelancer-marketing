@@ -5102,25 +5102,28 @@ export default function CreateQuotePage() {
           companyId={uid}
           onSend={async (method, options) => {
             try {
-              // First save the invoice
-              await handleSubmit(false); // Save as finalized
+              // Get the invoice ID from the created document or options
+              const invoiceId = options?.invoiceId || createdDocument?.id;
 
               // Then handle the sending logic
               if (method === 'email') {
                 // TODO: Implement actual email sending
-
                 toast.success('Rechnung wurde gespeichert und E-Mail-Versand wird vorbereitet');
               } else if (method === 'download') {
                 // TODO: Implement PDF download
-
                 toast.success('PDF-Download wird vorbereitet');
               } else if (method === 'print') {
                 // TODO: Implement print functionality
-
                 toast.success('Druckvorbereitung abgeschlossen');
+              } else if (method === 'save') {
+                // Save action - already handled in SendDocumentModal
+                toast.success('Rechnung erfolgreich gespeichert');
+              } else if (method === 'post') {
+                // Post action - already handled in SendDocumentModal
+                toast.success('Per Post versenden wurde bearbeitet');
               }
 
-              // Navigate to invoices list after successful send
+              // Navigate to invoice list after successful action
               router.push(`/dashboard/company/${uid}/finance/invoices`);
             } catch (error) {
               console.error('Error sending document:', error);

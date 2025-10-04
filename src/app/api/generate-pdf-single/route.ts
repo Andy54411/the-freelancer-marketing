@@ -23,36 +23,16 @@ export async function POST(request: NextRequest) {
     } else if (htmlContent.includes('TEMPLATE_GEOMETRIC')) {
       console.log('📄 TEMPLATE: TEMPLATE_GEOMETRIC detected in HTML');
     } else if (htmlContent.includes('TEMPLATE_DYNAMIC')) {
-      console.log('📄 TEMPLATE: TEMPLATE_DYNAMIC detected in HTML');
+      // TEMPLATE_DYNAMIC detected
     } else if (htmlContent.includes('NeutralTemplate')) {
-      console.log('📄 TEMPLATE: Legacy NeutralTemplate detected in HTML');
+      // Legacy NeutralTemplate detected
     } else if (htmlContent.includes('ProfessionalTemplate')) {
-      console.log('📄 TEMPLATE: Legacy ProfessionalTemplate detected in HTML');
-    } else {
-      console.log('❓ TEMPLATE: Unknown template or no template identifier found');
-      console.log('🔍 HTML Preview (first 200 chars):', htmlContent.substring(0, 200));
+      // Legacy ProfessionalTemplate detected
     }
 
-    // 🔍 DEBUG: Check footer styling in HTML
-    const footerMatches = htmlContent.match(/paddingTop.*?2px/g);
-    const inlineStyleMatches = htmlContent.match(/marginTop.*?2px/g);
 
-    console.log('🎯 FOOTER STYLING DEBUG:', {
-      hasPaddingTop2px: !!footerMatches,
-      footerMatches: footerMatches?.slice(0, 3),
-      hasMarginTop2px: !!inlineStyleMatches,
-      inlineStyleMatches: inlineStyleMatches?.slice(0, 3),
-      htmlLength: htmlContent.length,
-    });
 
-    // DEBUG: Check for page-break CSS in received HTML
-    const hasPageBreaks = htmlContent.match(/(page-break-|break-)/g);
-    if (hasPageBreaks) {
-      console.log('⚠️ PAGE BREAKS FOUND in HTML:', hasPageBreaks.length, 'instances');
-      console.log('🔍 Page break examples:', hasPageBreaks.slice(0, 5));
-    } else {
-      console.log('✅ NO PAGE BREAKS found in HTML');
-    }
+
 
     // BRUTAL CSS REMOVAL - remove ALL page breaks
     const cleanHtml = htmlContent

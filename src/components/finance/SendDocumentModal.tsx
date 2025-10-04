@@ -1,12 +1,7 @@
 
 'use client';
 
-// Typdefinition für window.html2pdf (Workaround für TypeScript)
-declare global {
-  interface Window {
-    html2pdf?: any;
-  }
-}
+// PDF-API wird serverseitig verwendet - keine Client-Dependencies nötig
 import { FinanceService } from '@/services/financeService';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -65,7 +60,7 @@ interface SendDocumentModalProps {
   document: InvoiceData | any; // Flexibel für verschiedene Datentypen
   documentType: 'invoice' | 'quote' | 'reminder' | 'credit-note' | 'cancellation';
   companyId: string;
-  onSend?: (method: 'email' | 'download' | 'print', options?: any) => Promise<void>;
+  onSend?: (method: 'email' | 'download' | 'print' | 'save' | 'post', options?: any) => Promise<void>;
 }
 
 type SendOption =
@@ -160,7 +155,7 @@ export function SendDocumentModal({
   const [emailSubject, setEmailSubject] = useState('');
   const templateRef = useRef<HTMLDivElement>(null);
   const [autoLockConsent, setAutoLockConsent] = useState<boolean | null>(null);
-  const [html2pdfReady, setHtml2pdfReady] = useState(false);
+  // PDF-API ist immer bereit - keine Client-Library nötig
 
   // Auth Context für Auto-Lock
   const { user } = useAuth();
@@ -442,46 +437,7 @@ export function SendDocumentModal({
     return () => clearTimeout(timer);
   }, [isOpen, companyId, document?.id]); // ✅ FIX: realDocumentData removed to prevent infinite loop
 
-  // ✅ Check if html2pdf.js is loaded (loaded via Next.js Script tag on page level)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-
-
-    // Check immediately
-    // @ts-ignore
-    if (window.html2pdf) {
-
-      setHtml2pdfReady(true);
-      return;
-    }
-
-    // If not available, wait a bit and check again (Script might still be loading)
-
-    const checkInterval = setInterval(() => {
-      // @ts-ignore
-      if (window.html2pdf) {
-
-        setHtml2pdfReady(true);
-        clearInterval(checkInterval);
-      }
-    }, 100);
-
-    // Timeout after 5 seconds
-    const timeout = setTimeout(() => {
-      clearInterval(checkInterval);
-      // @ts-ignore
-      if (!window.html2pdf) {
-        console.warn('⚠️ html2pdf.js nicht geladen - aktiviere trotzdem');
-      }
-      setHtml2pdfReady(true); // Enable anyway for fallback
-    }, 5000);
-
-    return () => {
-      clearInterval(checkInterval);
-      clearTimeout(timeout);
-    };
-  }, []); // ✅ Run once on mount
+  // PDF-API ist serverseitig verfügbar - keine Client-Library-Checks nötig
 
   // Generate QR Code when showQRCode is enabled
   useEffect(() => {
@@ -1233,17 +1189,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
 
 
     } else if (method === 'download' || method === 'email') {
-      // Für Download/Email: Generiere PDF mit html2pdf
-
-
-
-
-      // ✅ Prüfe ob html2pdf verfügbar ist (sollte durch useEffect vorgeladen sein)
-      if (!html2pdfReady || typeof window === 'undefined' || !window.html2pdf) {
-        console.error('❌ html2pdf.js nicht verfügbar. html2pdfReady:', html2pdfReady);
-        toast.error('PDF-Generator nicht bereit. Bitte warten Sie einen Moment.');
-        return;
-      }
+      // Für Download/Email: Nutze die bestehende PDF-API anstatt html2pdf
 
       if (!templateRef.current) {
         console.error('❌ templateRef.current ist null - kann kein PDF generieren!');
@@ -1251,27 +1197,124 @@ ${document.companyName || 'Ihr Unternehmen'}`;
         return;
       }
 
-      // Generiere PDF mit html2pdf
+      // Sicherstellen, dass wir im Browser sind
+      if (typeof window === 'undefined' || !window.document) {
+        toast.error('PDF-Generierung ist nur im Browser möglich');
+        return;
+      }
 
       try {
-        // Konfiguration für bessere PDF-Qualität
-        const opt = {
-          margin: 10,
-          filename: `${documentLabel}_${document.documentNumber || document.number || 'document'}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        // Extrahiere HTML mit allen Styles (wie bei EmailSendModalNormal)
+        const templateElement = templateRef.current;
+        const clonedElement = templateElement.cloneNode(true) as HTMLElement;
+
+        // Entferne Preview-Transform-Styles
+        const removePreviewStyles = (element: HTMLElement) => {
+          if (element.style) {
+            element.style.removeProperty('transform');
+            element.style.removeProperty('transform-origin');
+          }
+          element.querySelectorAll('*').forEach((child) => {
+            if ((child as HTMLElement).style) {
+              (child as HTMLElement).style.removeProperty('transform');
+              (child as HTMLElement).style.removeProperty('transform-origin');
+            }
+          });
         };
+        removePreviewStyles(clonedElement);
 
-        // @ts-ignore
-        pdfBlob = await window.html2pdf().set(opt).from(templateRef.current).outputPdf('blob');
+        // Extrahiere ALLE Styles vom Dokument
+        const allStyles: string[] = [];
 
-        if (pdfBlob) {
+        // Hole alle <style> Tags
+        const styleTags = window.document.querySelectorAll('style');
+        styleTags.forEach((styleElement) => {
+          if (styleElement.textContent) {
+            allStyles.push(styleElement.textContent);
+          }
+        });
 
+        // Hole alle verlinkten Stylesheets
+        const linkTags = window.document.querySelectorAll('link[rel="stylesheet"]');
+        linkTags.forEach((linkElement) => {
+          try {
+            const link = linkElement as HTMLLinkElement;
+            if (link.sheet && link.sheet.cssRules) {
+              let css = '';
+              for (let i = 0; i < link.sheet.cssRules.length; i++) {
+                css += link.sheet.cssRules[i].cssText + '\n';
+              }
+              allStyles.push(css);
+            }
+          } catch (e) {
+            // Ignoriere CORS-Fehler für externe Stylesheets
+          }
+        });
 
+        // Erstelle komplettes HTML mit ALLEN Styles
+        const completeHtml = `<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <style>
+    /* ALL APP STYLES */
+    ${allStyles.join('\n\n')}
+    
+    /* PDF SPECIFIC */
+    @page { size: A4; margin: 0; }
+    html, body { 
+      margin: 0 !important; 
+      padding: 0 !important; 
+      width: 210mm; 
+      background: white;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    * { 
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  </style>
+</head>
+<body>
+  ${clonedElement.outerHTML}
+</body>
+</html>`;
+
+        // Nutze die bestehende PDF-API
+        const response = await fetch('/api/generate-pdf-single', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            htmlContent: completeHtml
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'PDF-Generation fehlgeschlagen');
         }
+
+        const result = await response.json();
+
+        if (!result.success || !result.pdfBase64) {
+          throw new Error('PDF-Generation returned empty result');
+        }
+
+        // Konvertiere base64 zu Blob
+        const byteCharacters = atob(result.pdfBase64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
+
+        console.log('✅ PDF erfolgreich mit API generiert');
+
       } catch (pdfError) {
-        console.error('❌ Fehler bei html2pdf:', pdfError);
+        console.error('❌ Fehler bei PDF-API:', pdfError);
         toast.error('PDF-Generierung fehlgeschlagen');
         return;
       }
@@ -1397,16 +1440,83 @@ ${document.companyName || 'Ihr Unternehmen'}`;
         }
       }
 
+      // 🔥 CRITICAL: GoBD-System für ALLE Aktionen aktivieren
+      const activateGoBDLock = async () => {
+        if (documentType === 'invoice' && invoiceId && companyId) {
+          try {
+            const { GoBDService } = await import('@/services/gobdService');
+            
+            const userId = user?.uid || 'unknown';
+            const userName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Unbekannt';
+            
+            console.log(`🔒 Aktiviere GoBD Auto-Lock für ${method}:`, invoiceId);
+            await GoBDService.autoLockOnSend(companyId, invoiceId, userId, userName);
+          } catch (gobdError) {
+            console.error('❌ GoBD Auto-Lock fehlgeschlagen:', gobdError);
+            // Nicht kritisch - Aktion wurde trotzdem ausgeführt
+          }
+        }
+      };
+
       // Spezialbehandlung für Save-Operation
       if (method === 'save') {
+        await activateGoBDLock();
+        
+        // 🔥 CRITICAL: Status auf 'finalized' setzen für Save-Aktion
+        if (documentType === 'invoice' && invoiceId && companyId) {
+          try {
+            const collectionName = 'invoices';
+            const docRef = doc(db, 'companies', companyId, collectionName, invoiceId);
+            await updateDoc(docRef, {
+              status: 'finalized',
+              finalizedAt: new Date(),
+              updatedAt: new Date()
+            });
+          } catch (statusError) {
+            console.error('❌ Fehler beim Status-Update:', statusError);
+            // Nicht kritisch - Action trotzdem fortsetzen
+          }
+        }
+        
         toast.success(`${documentLabel} gespeichert`);
+        
+        // 🔥 CRITICAL: onSend aufrufen für Navigation zur Detailseite
+        if (onSend) {
+          await onSend(method, { invoiceId });
+        }
+        
         onClose();
         return;
       }
 
       // Spezialbehandlung für Post-Operation (noch nicht implementiert)
       if (method === 'post') {
+        await activateGoBDLock();
+        
+        // 🔥 CRITICAL: Status auf 'finalized' setzen für Post-Aktion
+        if (documentType === 'invoice' && invoiceId && companyId) {
+          try {
+            const collectionName = 'invoices';
+            const docRef = doc(db, 'companies', companyId, collectionName, invoiceId);
+            await updateDoc(docRef, {
+              status: 'finalized',
+              finalizedAt: new Date(),
+              updatedAt: new Date()
+            });
+            console.log('✅ Status auf "finalized" aktualisiert für Rechnung:', invoiceId);
+          } catch (statusError) {
+            console.error('❌ Fehler beim Status-Update:', statusError);
+            // Nicht kritisch - Action trotzdem fortsetzen
+          }
+        }
+        
         toast.error('Per Post versenden ist noch nicht verfügbar');
+        
+        // 🔥 CRITICAL: onSend aufrufen für Navigation zur Detailseite
+        if (onSend) {
+          await onSend(method, { invoiceId });
+        }
+        
         return;
       }
 
@@ -1562,6 +1672,30 @@ ${document.companyName || 'Ihr Unternehmen'}`;
           toast.info('Bitte erlauben Sie Pop-ups, um das Dokument zu drucken');
         }
 
+        // 🔥 CRITICAL: GoBD-System nach erfolgreichem Drucken aktivieren
+        await activateGoBDLock();
+        
+        // 🔥 CRITICAL: Status auf 'finalized' setzen für Print-Aktion
+        if (documentType === 'invoice' && invoiceId && companyId) {
+          try {
+            const collectionName = 'invoices';
+            const docRef = doc(db, 'companies', companyId, collectionName, invoiceId);
+            await updateDoc(docRef, {
+              status: 'finalized',
+              finalizedAt: new Date(),
+              updatedAt: new Date()
+            });
+          } catch (statusError) {
+            console.error('❌ Fehler beim Status-Update:', statusError);
+            // Nicht kritisch - Action trotzdem fortsetzen
+          }
+        }
+
+        // 🔥 CRITICAL: onSend aufrufen für Navigation zur Detailseite
+        if (onSend) {
+          await onSend(method, { invoiceId });
+        }
+
         onClose();
         return;
       }
@@ -1575,10 +1709,98 @@ ${document.companyName || 'Ihr Unternehmen'}`;
           sendCopy: sendCopy
         });
 
+        // 🔥 CRITICAL: GoBD-System aktivieren nach erfolgreichem E-Mail-Versand
+        if (documentType === 'invoice' && invoiceId && companyId) {
+          try {
+            const { GoBDService } = await import('@/services/gobdService');
+            
+            // Get current user from existing auth hook (already imported at top)
+            // Note: useAuth hook is already imported and used in this component
+            const userId = user?.uid || 'unknown';
+            const userName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Unbekannt';
+            
+            console.log('🔒 Aktiviere GoBD Auto-Lock für Rechnung:', invoiceId);
+            await GoBDService.autoLockOnSend(companyId, invoiceId, userId, userName);
+            
+            // 🔥 CRITICAL: Status auf 'sent' setzen für E-Mail-Aktion
+            const collectionName = 'invoices';
+            const docRef = doc(db, 'companies', companyId, collectionName, invoiceId);
+            await updateDoc(docRef, {
+              status: 'sent',
+              sentAt: new Date(),
+              updatedAt: new Date()
+            });
+            console.log('✅ Status auf "sent" aktualisiert für Rechnung:', invoiceId);
+          } catch (gobdError) {
+            console.error('❌ GoBD Auto-Lock oder Status-Update fehlgeschlagen:', gobdError);
+            // Nicht kritisch - E-Mail wurde trotzdem versendet
+          }
+        }
+
         toast.success(`${documentLabel} erfolgreich versendet`);
         onClose();
         return;
       }
+
+      // 🔥 CRITICAL: Download-Logik mit PDF-API implementieren
+      if (method === 'download') {
+        if (!pdfBlob) {
+          toast.error('PDF konnte nicht generiert werden');
+          return;
+        }
+
+        // Sicherstellen, dass wir im Browser sind
+        if (typeof window === 'undefined' || !window.document) {
+          toast.error('Download ist nur im Browser möglich');
+          return;
+        }
+
+        try {
+          // PDF herunterladen
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          const link = window.document.createElement('a');
+          link.href = pdfUrl;
+          link.download = `${documentLabel}_${document.documentNumber || document.number || document.id?.substring(0, 8) || 'document'}.pdf`;
+          window.document.body.appendChild(link);
+          link.click();
+          window.document.body.removeChild(link);
+          URL.revokeObjectURL(pdfUrl);
+
+          // 🔥 CRITICAL: GoBD-System nach erfolgreichem Download aktivieren
+          await activateGoBDLock();
+          
+          // 🔥 CRITICAL: Status auf 'finalized' setzen für Download-Aktion
+          if (documentType === 'invoice' && invoiceId && companyId) {
+            try {
+              const collectionName = 'invoices';
+              const docRef = doc(db, 'companies', companyId, collectionName, invoiceId);
+              await updateDoc(docRef, {
+                status: 'finalized',
+                finalizedAt: new Date(),
+                updatedAt: new Date()
+              });
+            } catch (statusError) {
+              console.error('❌ Fehler beim Status-Update:', statusError);
+              // Nicht kritisch - Action trotzdem fortsetzen
+            }
+          }
+
+          toast.success(`${documentLabel} erfolgreich heruntergeladen`);
+          
+          // 🔥 CRITICAL: onSend aufrufen für Navigation zur Detailseite
+          if (onSend) {
+            await onSend(method, { invoiceId });
+          }
+          
+          onClose();
+          return;
+        } catch (downloadError) {
+          console.error('❌ Download fehlgeschlagen:', downloadError);
+          toast.error('Download fehlgeschlagen');
+          return;
+        }
+      }
+
     } catch (error) {
       console.error('Error sending document:', error);
       toast.error(`Fehler beim Versenden der ${documentLabel.toLowerCase()}`);
@@ -1667,15 +1889,10 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                   <div className="px-4 pb-4 bg-gray-50">
                       <Button
                       onClick={() => handleSend('download')}
-                      disabled={sending || !html2pdfReady}
+                      disabled={sending}
                       className="w-full bg-[#14ad9f] hover:bg-[#129488]">
 
-                        {!html2pdfReady ?
-                      <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Lädt PDF-Generator...
-                          </> :
-                      sending ?
+                        {sending ?
                       <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                             PDF herunterladen
@@ -1774,15 +1991,14 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                       <Button
                       variant="outline"
                       onClick={() => handleSend('print')}
-                      disabled={sending || !html2pdfReady}
+                      disabled={sending}
                       className="w-full">
 
-                        {!html2pdfReady ?
+                        {sending ?
                       <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Lädt PDF-Generator...
+                            Wird gedruckt...
                           </> :
-
                       <>
                             <Printer className="w-4 h-4 mr-2" />
                             Drucken

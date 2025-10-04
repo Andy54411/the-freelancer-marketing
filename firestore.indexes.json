@@ -486,11 +486,47 @@
             ]
         },
         {
-            "collectionGroup": "invoices",
+            "collectionGroup": "stornoRechnungen",
             "queryScope": "COLLECTION",
             "fields": [
                 {
+                    "fieldPath": "companyId",
+                    "order": "ASCENDING"
+                },
+                {
                     "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "stornoRechnungen",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "companyId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "stornoRechnungen",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "companyId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "originalInvoiceId",
                     "order": "ASCENDING"
                 }
             ]
