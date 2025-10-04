@@ -144,7 +144,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
               customerStats.totalInvoices !== customer.totalInvoices)
           ) {
             try {
-              await updateCustomerStats(customer.id, customerStats, user.uid);
+              await updateCustomerStats(customer.id, customerStats, user.uid, companyId);
             } catch (error) {}
           }
         } catch (error) {
@@ -172,7 +172,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
             stats.totalAmount !== customer.totalAmount ||
             stats.totalInvoices !== customer.totalInvoices
           ) {
-            await updateCustomerStats(customer.id, stats, user.uid);
+            await updateCustomerStats(customer.id, stats, user.uid, companyId);
 
             // Aktualisiere lokalen State
             setCustomers(prev =>
@@ -195,11 +195,10 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
       setLoading(true);
 
-      // TEMPORÄRE VEREINFACHTE QUERY - Index-Problem umgehen
+      // Lade Kunden aus der Subcollection: companies/{companyId}/customers
       const customersQuery = query(
-        collection(db, 'customers'),
-        where('companyId', '==', companyId)
-        // Temporär ohne isSupplier Filter und orderBy
+        collection(db, `companies/${companyId}/customers`),
+        orderBy('createdAt', 'desc')
       );
 
       const querySnapshot = await getDocs(customersQuery);
@@ -320,7 +319,8 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         updatedAt: serverTimestamp(),
       };
 
-      const docRef = await addDoc(collection(db, 'customers'), newCustomer);
+      // Speichere in Subcollection: companies/{companyId}/customers
+      const docRef = await addDoc(collection(db, `companies/${companyId}/customers`), newCustomer);
 
       const addedCustomer: Customer = {
         ...customerData,

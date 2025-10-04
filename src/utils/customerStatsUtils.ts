@@ -73,14 +73,20 @@ export async function calculateCustomerStats(
  * @param customerId - Die Kunden-ID
  * @param stats - Die neuen Statistiken
  * @param userId - Die User-ID für lastModifiedBy (optional)
+ * @param companyId - Die Firmen-ID (optional, für Subcollection-Support)
  */
 export async function updateCustomerStats(
   customerId: string,
   stats: CustomerStats,
-  userId?: string
+  userId?: string,
+  companyId?: string
 ): Promise<void> {
   try {
-    const customerRef = doc(db, 'customers', customerId);
+    // Verwende Subcollection wenn companyId übergeben wurde, sonst alte globale Collection
+    const customerRef = companyId
+      ? doc(db, 'companies', companyId, 'customers', customerId)
+      : doc(db, 'customers', customerId);
+
     const updateData: any = {
       totalAmount: stats.totalAmount,
       totalInvoices: stats.totalInvoices,
