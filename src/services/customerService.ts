@@ -112,16 +112,14 @@ export class CustomerService {
     customerData: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt' | 'companyId'>
   ): Promise<string> {
     try {
-      // 🔄 Synchronisiere Nummernkreise vor der Erstellung (verhindert Duplikate)
-      console.log('🔄 Synchronisiere Nummernkreise vor Kunden-Erstellung...');
-      await this.syncCustomerNumberSequence(companyId);
+      // ✅ Verwende die bereits korrekte customerNumber aus den Daten
+      console.log(`� Erstelle Geschäftspartner: ${customerData.customerNumber} (isSupplier: ${customerData.isSupplier})`);
       
-      // ✅ Generiere die nächste verfügbare Kundennummer
-      const customerNumberResult = await NumberSequenceService.getNextNumberForType(companyId, 'Kunde');
+      // ⚠️ NICHT mehr überschreiben - Create-Formular hat bereits die korrekte Nummer generiert
       
       const newCustomer = {
         ...customerData,
-        customerNumber: customerNumberResult.formattedNumber,
+        // customerNumber wird NICHT überschrieben - kommt bereits korrekt vom Create-Formular
         totalInvoices: 0,
         totalAmount: 0,
         createdAt: new Date().toISOString(),
@@ -130,7 +128,7 @@ export class CustomerService {
       // NEUE SUBCOLLECTION STRUKTUR
       const docRef = await addDoc(collection(db, 'companies', companyId, 'customers'), newCustomer);
 
-      console.log(`✅ Kunde erstellt: ${newCustomer.customerNumber} (ID: ${docRef.id})`);
+      console.log(`✅ Geschäftspartner erstellt: ${newCustomer.customerNumber} (ID: ${docRef.id}, Lieferant: ${newCustomer.isSupplier})`);
       return docRef.id;
     } catch (error) {
       console.error('❌ Fehler beim Erstellen des Kunden:', error);
@@ -218,11 +216,16 @@ export class CustomerService {
       // 1. Lade alle existierenden Kunden
       const customers = await this.getCustomers(companyId);
       console.log(`📊 Gefundene Kunden: ${customers.length}`);
+      console.log('📋 Alle Kunden:', customers.map(c => ({ name: c.name, customerNumber: c.customerNumber, isSupplier: c.isSupplier })));
       
-      // 2. Extrahiere alle Kundennummern - RESPEKTIERE die echten Daten aus der DB
+      // 2. Filtere nur echte Kunden (keine Lieferanten)
+      const actualCustomers = customers.filter(customer => !customer.isSupplier);
+      console.log(`📊 Echte Kunden (ohne Lieferanten): ${actualCustomers.length}`);
+      
+      // 3. Extrahiere alle Kundennummern - RESPEKTIERE die echten Daten aus der DB
       const customerNumbers: number[] = [];
-      customers.forEach(customer => {
-        console.log(`🔍 Prüfe Kundennummer: ${customer.customerNumber}`);
+      actualCustomers.forEach(customer => {
+        console.log(`🔍 Prüfe Kundennummer: ${customer.customerNumber} (${customer.name})`);
         
         // Unterstütze KD-XXX Format (führende Nullen beachten!)
         // KD-002 -> 2, KD-010 -> 10, KD-1000 -> 1000
@@ -240,15 +243,16 @@ export class CustomerService {
         }
       });
       
-      // 3. Bestimme die höchste verwendete Nummer
+      // 4. Bestimme die höchste verwendete Nummer
       const highestNumber = customerNumbers.length > 0 ? Math.max(...customerNumbers) : 1000;
       const nextNumber = highestNumber + 1;
       
-      console.log(`📈 Gefundene Kundennummern: [${customerNumbers.join(', ')}]`);
+      console.log(`📈 Gefundene Kundennummern: [${customerNumbers.sort((a, b) => a - b).join(', ')}]`);
       console.log(`📈 Höchste Kundennummer: ${highestNumber}`);
       console.log(`🔢 Nächste Nummer wird: ${nextNumber}`);
+      console.log(`🎯 WICHTIG: Nur ${actualCustomers.length} echte Kunden berücksichtigt (ohne Lieferanten/Partner)`);
       
-      // 4. Aktualisiere den Nummernkreis
+      // 5. Aktualisiere den Nummernkreis
       await NumberSequenceService.updateNumberSequence(
         companyId,
         `${companyId}_Kunde`,

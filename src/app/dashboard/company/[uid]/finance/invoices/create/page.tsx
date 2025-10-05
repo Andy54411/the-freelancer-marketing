@@ -5090,6 +5090,7 @@ export default function CreateQuotePage() {
           document={createdDocument || {} as any}
           documentType="invoice"
           companyId={uid}
+          redirectAfterAction={`/dashboard/company/${uid}/finance/invoices`}
           onSend={async (method, options) => {
             try {
               // Get the invoice ID from the created document or options

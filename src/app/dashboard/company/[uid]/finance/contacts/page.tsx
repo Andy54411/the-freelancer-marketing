@@ -3,9 +3,9 @@
 import React from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { CustomerManager } from '@/components/finance/CustomerManager';
+import { BusinessContactsManager } from '@/components/finance/BusinessContactsManager';
 
-export default function CustomersPage() {
+export default function BusinessContactsPage() {
   const params = useParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
@@ -25,13 +25,13 @@ export default function CustomersPage() {
   return (
     <div className="space-y-6">
       <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Kunden</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Geschäftspartner</h1>
         <p className="text-gray-600 mt-1">
-          Verwalten Sie Ihre Kundeninformationen und Rechnungshistorie
+          Verwalten Sie alle Ihre Geschäftspartner - Kunden, Lieferanten und mehr
         </p>
       </div>
 
-      <CustomerManager companyId={uid} />
+      <BusinessContactsManager companyId={uid} />
     </div>
   );
 }

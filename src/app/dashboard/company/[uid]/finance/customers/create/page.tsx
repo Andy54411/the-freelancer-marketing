@@ -94,33 +94,73 @@ export default function CreateCustomerPage() {
   const [showNumberSequenceModal, setShowNumberSequenceModal] = useState(false);
   const [currentNumberSequence, setCurrentNumberSequence] = useState<NumberSequence | null>(null);
 
-  // Generate next customer number using NumberSequenceService with sync
-  const generateNextCustomerNumber = async () => {
+  // Generate customer number for any organization type - FIXED VERSION
+  const generateCustomerNumber = async (organizationType: string = 'Kunde') => {
     try {
       if (!params?.uid || typeof params.uid !== 'string') return;
       
-      // 🔄 Synchronisiere zuerst die Nummernkreise mit echten Daten
-      console.log('🔄 Synchronisiere Nummernkreise vor Generierung...');
-      await CustomerService.syncCustomerNumberSequence(params.uid);
+      console.log(`🔢 Generiere ${organizationType}-Nummer...`);
       
-      // ✅ Generiere die nächste verfügbare Nummer
-      const { formattedNumber } = await NumberSequenceService.getNextNumberForType(params.uid, 'Kunde');
-      setNextCustomerNumber(formattedNumber);
-      handleInputChange('customerNumber', formattedNumber);
-      toast.success(`Neue Kundennummer generiert: ${formattedNumber}`);
+      // Erst prüfen, ob der Nummernkreis existiert
+      const sequences = await NumberSequenceService.getNumberSequences(params.uid);
+      const targetSequence = sequences.find(seq => seq.type === organizationType);
+      
+      if (!targetSequence) {
+        // Fallback-Nummern für jeden Typ
+        const fallbackNumbers = {
+          'Kunde': 'KD-001',
+          'Lieferant': 'LF-001',
+          'Partner': 'PA-001',
+          'Interessenten': 'IN-001'
+        };
+        const fallbackNumber = fallbackNumbers[organizationType as keyof typeof fallbackNumbers] || `${organizationType.substring(0, 2).toUpperCase()}-001`;
+        
+        setNextCustomerNumber(fallbackNumber);
+        handleInputChange('customerNumber', fallbackNumber);
+        console.log(`⚠️ Verwende Fallback für ${organizationType}: ${fallbackNumber}`);
+        return;
+      }
+      
+      // Zeige Preview-Nummer (ohne zu inkrementieren)
+      const previewNumber = NumberSequenceService.formatNumber(targetSequence.nextNumber, targetSequence.format);
+      setNextCustomerNumber(previewNumber);
+      handleInputChange('customerNumber', previewNumber);
+      console.log(`✅ ${organizationType}-Nummer: ${previewNumber}`);
+      
     } catch (error) {
-      console.error('Fehler beim Generieren der Kundennummer:', error);
+      console.error(`Fehler beim Generieren der ${organizationType}-Nummer:`, error);
       // Fallback zur manuellen Generierung
-      const fallbackNumber = `KD-${Date.now().toString().slice(-3)}`;
+      const prefix = organizationType === 'Kunde' ? 'KD' : organizationType === 'Lieferant' ? 'LF' : organizationType === 'Partner' ? 'PA' : 'IN';
+      const fallbackNumber = `${prefix}-${Date.now().toString().slice(-3)}`;
       setNextCustomerNumber(fallbackNumber);
       handleInputChange('customerNumber', fallbackNumber);
-      toast.info(`Fallback Kundennummer: ${fallbackNumber}`);
+      toast.error(`Fehler bei ${organizationType}-Nummer, verwende Fallback: ${fallbackNumber}`);
     }
   };
 
   // Load initial customer number on mount
   useEffect(() => {
-    generateNextCustomerNumber();
+    // Synchronisiere alle Nummernkreise beim ersten Laden
+    const initializeNumberSequences = async () => {
+      if (!params?.uid || typeof params.uid !== 'string') return;
+      
+      try {
+        console.log('🔄 Synchronisiere alle Nummernkreise...');
+        await Promise.all([
+          NumberSequenceService.syncSequenceWithRealData(params.uid, 'Kunde'),
+          NumberSequenceService.syncSequenceWithRealData(params.uid, 'Lieferant'),
+          NumberSequenceService.syncSequenceWithRealData(params.uid, 'Partner'),
+          NumberSequenceService.syncSequenceWithRealData(params.uid, 'Interessenten')
+        ]);
+        
+        // Generiere Nummer für den Standard-Typ 'Kunde'
+        await generateCustomerNumber('Kunde');
+      } catch (error) {
+        console.error('Fehler bei Nummernkreis-Initialisierung:', error);
+      }
+    };
+    
+    initializeNumberSequences();
   }, []);
 
   // Form State
@@ -134,6 +174,8 @@ export default function CreateCustomerPage() {
     firstName: '',
     lastName: '',
     title: '', // Herr, Frau, Dr., etc.
+    academicTitle: '', // MBA, M.Sc., etc.
+    nameSuffix: '', // jun., sen., etc.
     position: '',
     // Organisation-spezifische Felder
     companyName: '',
@@ -194,6 +236,35 @@ export default function CreateCustomerPage() {
       [field]: value
     }));
   };
+
+  // Update isSupplier and customer number when organizationType changes
+  React.useEffect(() => {
+    const isSupplier = formData.organizationType === 'Lieferant';
+    
+    // Update isSupplier flag
+    setFormData(prev => ({
+      ...prev,
+      isSupplier: isSupplier
+    }));
+
+    // Generate appropriate number sequence based on organizationType
+    const currentPrefix = formData.customerNumber.split('-')[0];
+    const expectedPrefix = {
+      'Kunde': 'KD',
+      'Lieferant': 'LF', 
+      'Partner': 'PA',
+      'Interessenten': 'IN'
+    }[formData.organizationType];
+
+    // Always generate new number when organizationType changes
+    if (expectedPrefix && currentPrefix !== expectedPrefix) {
+      console.log(`🔄 OrganizationType geändert zu: ${formData.organizationType}, generiere neue Nummer...`);
+      generateCustomerNumber(formData.organizationType);
+    }
+  }, [formData.organizationType]);
+
+  // Legacy function for backward compatibility  
+  const generateNextSupplierNumber = () => generateCustomerNumber('Lieferant');
 
   // VAT Validation
   const handleVATValidation = async () => {
@@ -288,6 +359,39 @@ export default function CreateCustomerPage() {
 
     setLoading(true);
     try {
+      // ✅ WICHTIG: Generiere die korrekte Nummer basierend auf dem gewählten Typ
+      console.log(`🔄 SAVE DEBUG: Typ=${formData.organizationType}, Aktuelle Nummer=${formData.customerNumber}`);
+      let finalCustomerNumber = formData.customerNumber;
+      
+      // Prüfe ob die aktuelle Nummer zum gewählten Typ passt
+      const expectedPrefix = {
+        'Kunde': 'KD',
+        'Lieferant': 'LF',
+        'Partner': 'PA',
+        'Interessenten': 'IN'
+      }[formData.organizationType];
+      
+      console.log(`🔍 Erwarteter Prefix: ${expectedPrefix}, Aktuelle Nummer startet mit: ${formData.customerNumber.substring(0, 2)}`);
+      
+      if (expectedPrefix && !formData.customerNumber.startsWith(expectedPrefix)) {
+        console.log(`⚠️ MISMATCH! Nummer ${formData.customerNumber} passt nicht zu Typ ${formData.organizationType}`);
+        console.log(`🔄 Generiere neue ${formData.organizationType}-Nummer...`);
+        
+        const result = await NumberSequenceService.getNextNumberForType(params.uid, formData.organizationType);
+        finalCustomerNumber = result.formattedNumber;
+        console.log(`✅ Neue ${formData.organizationType}-Nummer generiert: ${finalCustomerNumber}`);
+        
+        // Update auch das Formular für Anzeige
+        setFormData(prev => ({
+          ...prev,
+          customerNumber: finalCustomerNumber
+        }));
+      } else {
+        console.log(`✅ Nummer ${formData.customerNumber} passt zu Typ ${formData.organizationType}`);
+      }
+      
+      console.log(`💾 FINAL: Speichere mit Nummer: ${finalCustomerNumber}`);
+
       // Generiere Anzeigenamen basierend auf Kundentyp
       const displayName = customerType === 'person' 
         ? `${formData.title ? formData.title + ' ' : ''}${formData.firstName} ${formData.lastName}`.trim()
@@ -299,7 +403,7 @@ export default function CreateCustomerPage() {
       // Erstelle Customer-Objekt für Firebase
       const customerData = {
         // Grunddaten
-        customerNumber: formData.customerNumber, // Wird vom NumberSequenceService überschrieben
+        customerNumber: finalCustomerNumber, // ✅ Verwende die korrekte Nummer
         name: displayName,
         email: formData.email,
         phone: formData.phone,
@@ -387,7 +491,7 @@ export default function CreateCustomerPage() {
       
       console.log(`✅ Kunde erfolgreich erstellt: ${customerId}`);
       toast.success('Kunde erfolgreich erstellt');
-      router.push(`/dashboard/company/${params.uid}/finance/customers`);
+      router.push(`/dashboard/company/${params.uid}/finance/contacts`);
     } catch (error) {
       console.error('❌ Fehler beim Erstellen des Kunden:', error);
       toast.error('Fehler beim Erstellen des Kunden');
@@ -397,7 +501,7 @@ export default function CreateCustomerPage() {
 
   // Cancel Action
   const handleCancel = () => {
-    router.push(`/dashboard/company/${uid}/finance/customers`);
+    router.push(`/dashboard/company/${uid}/finance/contacts`);
   };
 
   // Tag Management
@@ -479,7 +583,7 @@ export default function CreateCustomerPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {customerType === 'person' ? (
                   <>
-                    {/* Person-spezifische Felder */}
+                    {/* Person-Geschäftsfelder */}
                     <div>
                       <Label htmlFor="title">Anrede</Label>
                       <select
@@ -496,7 +600,19 @@ export default function CreateCustomerPage() {
                         <option value="Prof. Dr.">Prof. Dr.</option>
                       </select>
                     </div>
-                    <div></div>
+
+                    {/* Titel (akademisch) */}
+                    <div>
+                      <Label htmlFor="academicTitle">Titel</Label>
+                      <Input
+                        id="academicTitle"
+                        value={formData.academicTitle || ''}
+                        onChange={(e) => handleInputChange('academicTitle', e.target.value)}
+                        placeholder="z.B. MBA, M.Sc."
+                        className="mt-1"
+                      />
+                    </div>
+
                     <div>
                       <Label htmlFor="firstName">Vorname *</Label>
                       <Input
@@ -507,6 +623,7 @@ export default function CreateCustomerPage() {
                         className="mt-1"
                       />
                     </div>
+
                     <div>
                       <Label htmlFor="lastName">Nachname *</Label>
                       <Input
@@ -517,35 +634,28 @@ export default function CreateCustomerPage() {
                         className="mt-1"
                       />
                     </div>
+
+                    {/* Namenszusatz */}
                     <div>
-                      <Label htmlFor="position">Position</Label>
+                      <Label htmlFor="nameSuffix">Namenszusatz</Label>
                       <Input
-                        id="position"
-                        value={formData.position}
-                        onChange={(e) => handleInputChange('position', e.target.value)}
-                        placeholder="z.B. Geschäftsführer"
-                        className="mt-1"
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {/* Organisation-spezifische Felder */}
-                    <div className="md:col-span-2">
-                      <Label htmlFor="companyName">Firmenname / Organisation *</Label>
-                      <Input
-                        id="companyName"
-                        value={formData.companyName}
-                        onChange={(e) => handleInputChange('companyName', e.target.value)}
-                        placeholder="z.B. Mustermann GmbH"
+                        id="nameSuffix"
+                        value={formData.nameSuffix || ''}
+                        onChange={(e) => handleInputChange('nameSuffix', e.target.value)}
+                        placeholder="z.B. jun., sen."
                         className="mt-1"
                       />
                     </div>
 
-                    {/* Kunden-Nr. mit Nummernkreise-Icon */}
+                    {/* Kunden-Nr. / Lieferanten-Nr. mit Nummernkreise-Icon */}
                     <div>
                       <Label htmlFor="customerNumber" className="text-sm font-medium text-gray-700">
-                        Kunden-Nr. <span className="text-red-500">*</span>
+                        {{
+                          'Kunde': 'Kunden-Nr.',
+                          'Lieferant': 'Lieferanten-Nr.',
+                          'Partner': 'Partner-Nr.', 
+                          'Interessenten': 'Interessenten-Nr.'
+                        }[formData.organizationType] || 'Kontakt-Nr.'} <span className="text-red-500">*</span>
                       </Label>
                       <div className="relative mt-1">
                         <Input
@@ -565,15 +675,213 @@ export default function CreateCustomerPage() {
                                 return;
                               }
                               
-                              // Lade die aktuelle 'Kunde' Nummernkreis
+                              // Lade die entsprechende Nummernkreis basierend auf Typ
+                              const sequenceType = formData.organizationType; // Direkt den Typ verwenden
                               const sequences = await NumberSequenceService.getNumberSequences(params.uid);
-                              const kundeSequence = sequences.find(seq => seq.type === 'Kunde');
+                              const sequence = sequences.find(seq => seq.type === sequenceType);
                               
-                              if (kundeSequence) {
-                                setCurrentNumberSequence(kundeSequence);
+                              if (sequence) {
+                                setCurrentNumberSequence(sequence);
                                 setShowNumberSequenceModal(true);
                               } else {
-                                toast.error('Kunden-Nummernkreis nicht gefunden');
+                                toast.error(`${sequenceType}-Nummernkreis nicht gefunden`);
+                              }
+                            } catch (error) {
+                              console.error('Fehler beim Laden der Nummernkreise:', error);
+                              toast.error('Fehler beim Laden der Nummernkreise');
+                            }
+                          }}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          title="Nummernkreis-Einstellungen"
+                        >
+                          <Settings className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Typ Dropdown */}
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 mb-1 block">Typ</Label>
+                      <div className="relative" ref={typeDropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+                          className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                        >
+                          <span>{formData.organizationType}</span>
+                          <ChevronDown className="h-4 w-4 text-gray-400" />
+                        </button>
+                        {showTypeDropdown && (
+                          <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                            <div className="py-1">
+                              {['Kunde', 'Lieferant', 'Partner', 'Interessent'].map((type) => (
+                                <button
+                                  key={type}
+                                  type="button"
+                                  onClick={() => {
+                                    handleInputChange('organizationType', type);
+                                    setShowTypeDropdown(false);
+                                  }}
+                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                >
+                                  {type}
+                                </button>
+                              ))}
+                              <hr className="my-1" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  toast.info('Neuen Kontakt-Typen erstellen - Feature wird implementiert');
+                                  setShowTypeDropdown(false);
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-[#14ad9f] hover:bg-gray-50 transition-colors"
+                              >
+                                Neuen Kontakt-Typen erstellen
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="position">Position</Label>
+                      <Input
+                        id="position"
+                        value={formData.position}
+                        onChange={(e) => handleInputChange('position', e.target.value)}
+                        placeholder="z.B. Geschäftsführer"
+                        className="mt-1"
+                      />
+                    </div>
+
+                    {/* Buchhaltungskonten */}
+                    <div className="md:col-span-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Debitoren-Nr. */}
+                        <div className="relative">
+                          <Label htmlFor="debitorNumber" className="text-sm font-medium text-gray-700">
+                            Debitoren-Nr.
+                            {formData.organizationType === 'Lieferant' && (
+                              <span className="text-xs text-gray-400 ml-1">(optional)</span>
+                            )}
+                          </Label>
+                          <div className="relative">
+                            <Input
+                              id="debitorNumber"
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={formData.debitorNumber}
+                              onChange={(e) => handleInputChange('debitorNumber', e.target.value)}
+                              className="mt-1 pr-8"
+                              disabled={formData.organizationType === 'Lieferant'}
+                            />
+                            <button
+                              type="button"
+                              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 mt-0.5"
+                              onMouseEnter={() => setTooltips(prev => ({ ...prev, debitorInfo: true }))}
+                              onMouseLeave={() => setTooltips(prev => ({ ...prev, debitorInfo: false }))}
+                            >
+                              <InfoIcon className="h-4 w-4" />
+                            </button>
+                            {tooltips.debitorInfo && (
+                              <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-xs rounded px-2 py-1 z-10 w-48 shadow-lg">
+                                Für ausgehende Rechnungen und Kundenforderungen. Wird bei Kunden und Interessenten verwendet.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Kreditoren-Nr. */}
+                        <div className="relative">
+                          <Label htmlFor="creditorNumber" className="text-sm font-medium text-gray-700">
+                            Kreditoren-Nr.
+                            {formData.organizationType !== 'Lieferant' && (
+                              <span className="text-xs text-gray-400 ml-1">(optional)</span>
+                            )}
+                          </Label>
+                          <div className="relative">
+                            <Input
+                              id="creditorNumber"
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={formData.creditorNumber}
+                              onChange={(e) => handleInputChange('creditorNumber', e.target.value)}
+                              className="mt-1 pr-8"
+                              disabled={formData.organizationType !== 'Lieferant' && formData.organizationType !== 'Partner'}
+                            />
+                            <button
+                              type="button"
+                              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 mt-0.5"
+                              onMouseEnter={() => setTooltips(prev => ({ ...prev, creditorInfo: true }))}
+                              onMouseLeave={() => setTooltips(prev => ({ ...prev, creditorInfo: false }))}
+                            >
+                              <InfoIcon className="h-4 w-4" />
+                            </button>
+                            {tooltips.creditorInfo && (
+                              <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-xs rounded px-2 py-1 z-10 w-48 shadow-lg">
+                                Für eingehende Rechnungen und Verbindlichkeiten. Wird bei Lieferanten verwendet.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Organisation-spezifische Felder */}
+                    <div className="md:col-span-2">
+                      <Label htmlFor="companyName">Firmenname / Organisation *</Label>
+                      <Input
+                        id="companyName"
+                        value={formData.companyName}
+                        onChange={(e) => handleInputChange('companyName', e.target.value)}
+                        placeholder="z.B. Mustermann GmbH"
+                        className="mt-1"
+                      />
+                    </div>
+
+                    {/* Kunden-Nr. / Lieferanten-Nr. mit Nummernkreise-Icon */}
+                    <div>
+                      <Label htmlFor="customerNumber" className="text-sm font-medium text-gray-700">
+                        {{
+                          'Kunde': 'Kunden-Nr.',
+                          'Lieferant': 'Lieferanten-Nr.',
+                          'Partner': 'Partner-Nr.', 
+                          'Interessenten': 'Interessenten-Nr.'
+                        }[formData.organizationType] || 'Kontakt-Nr.'} <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="relative mt-1">
+                        <Input
+                          id="customerNumber"
+                          value={formData.customerNumber}
+                          onChange={(e) => handleInputChange('customerNumber', e.target.value)}
+                          placeholder="1003"
+                          required
+                          className="pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              if (!params?.uid || typeof params.uid !== 'string') {
+                                toast.error('Firma-ID nicht verfügbar');
+                                return;
+                              }
+                              
+                              // Lade die entsprechende Nummernkreis basierend auf Typ
+                              const sequenceType = formData.organizationType; // Direkt den Typ verwenden
+                              const sequences = await NumberSequenceService.getNumberSequences(params.uid);
+                              const sequence = sequences.find(seq => seq.type === sequenceType);
+                              
+                              if (sequence) {
+                                setCurrentNumberSequence(sequence);
+                                setShowNumberSequenceModal(true);
+                              } else {
+                                toast.error(`${sequenceType}-Nummernkreis nicht gefunden`);
                               }
                             } catch (error) {
                               console.error('Fehler beim Laden der Nummernkreise:', error);

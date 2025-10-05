@@ -136,16 +136,10 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
-    label: 'Kunden',
+    label: 'Geschäftspartner',
     icon: FiUsers,
-    value: 'customers',
-    href: 'finance/customers',
-  },
-  {
-    label: 'Lieferanten',
-    icon: FiFolder,
-    value: 'suppliers',
-    href: 'finance/suppliers',
+    value: 'contacts',
+    href: 'finance/contacts',
   },
   {
     label: 'Banking',
@@ -293,7 +287,7 @@ export default function CompanySidebar({
 
     // Customers aktiv wenn Pfad /finance/customers
     if (item.value === 'customers') {
-      return pathname?.includes('/finance/customers');
+      return pathname?.includes('/finance/contacts');
     }
     // Suppliers aktiv wenn Pfad /finance/suppliers
     if (item.value === 'suppliers') {
@@ -311,7 +305,7 @@ export default function CompanySidebar({
         !pathname?.includes('/finance/reminders') &&
         !pathname?.includes('/finance/credits') &&
         !pathname?.includes('/finance/cashbook') &&
-        !pathname?.includes('/finance/customers') &&
+        !pathname?.includes('/finance/contacts') &&
         !pathname?.includes('/finance/suppliers') &&
         !pathname?.includes('/finance/payments') &&
         !pathname?.includes('/finance/time-tracking') &&

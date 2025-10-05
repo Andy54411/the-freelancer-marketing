@@ -1,14 +1,21 @@
 'use client';
 
-import React from 'react';
-import { useParams } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { SupplierManager } from '@/components/finance/SupplierManager';
 
 export default function SuppliersPage() {
   const params = useParams();
+  const router = useRouter();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
+
+  // Weiterleitung zur neuen einheitlichen Contacts-Seite mit Lieferanten-Filter
+  useEffect(() => {
+    if (user && user.uid === uid) {
+      router.replace(`/dashboard/company/${uid}/finance/contacts?tab=suppliers`);
+    }
+  }, [user, uid, router]);
 
   // Autorisierung prüfen
   if (!user || user.uid !== uid) {
@@ -23,15 +30,11 @@ export default function SuppliersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Lieferanten</h1>
-        <p className="text-gray-600 mt-1">
-          Verwalten Sie Ihre Lieferanteninformationen und Rechnungshistorie
-        </p>
+    <div className="flex justify-center items-center min-h-[400px]">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f] mx-auto mb-4"></div>
+        <p className="text-gray-600">Weiterleitung zur Geschäftspartner-Seite...</p>
       </div>
-
-      <SupplierManager companyId={uid} />
     </div>
   );
 }

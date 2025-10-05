@@ -58,11 +58,13 @@ interface AddCustomerModalProps {
     customer: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt' | 'companyId'>
   ) => Promise<void>;
   nextCustomerNumber: string;
+  nextSupplierNumber?: string; // Neue Prop für Lieferantennummer
 }
 
-export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCustomerModalProps) {
+export function AddCustomerModal({ onAddCustomer, nextCustomerNumber, nextSupplierNumber = 'LF-001' }: AddCustomerModalProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [contactType, setContactType] = useState<'customer' | 'supplier'>('customer');
   const [formData, setFormData] = useState({
     customerNumber: nextCustomerNumber,
     name: '',
@@ -129,6 +131,12 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
   React.useEffect(() => {
     setFormData(prev => ({ ...prev, customerNumber: nextCustomerNumber }));
   }, [nextCustomerNumber]);
+
+  // Update number based on contact type
+  React.useEffect(() => {
+    const newNumber = contactType === 'customer' ? nextCustomerNumber : nextSupplierNumber;
+    setFormData(prev => ({ ...prev, customerNumber: newNumber }));
+  }, [contactType, nextCustomerNumber, nextSupplierNumber]);
 
   // VAT Validation
   const handleVATChange = (value: string) => {
@@ -216,6 +224,7 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
         taxNumber: formData.taxNumber.trim() || undefined,
         vatId: formData.vatId.trim() || undefined,
         vatValidated: formData.vatValidated,
+        isSupplier: contactType === 'supplier', // Setze das isSupplier Flag basierend auf dem Kontakttyp
         contactPersons: validContactPersons.map((cp, index) => ({
           ...cp,
           id: `cp_${Date.now()}_${index}`,
@@ -231,6 +240,7 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
       await onAddCustomer(customerDataToSave);
 
       // Reset form
+      setContactType('customer');
       setFormData({
         customerNumber: '',
         name: '',
@@ -323,13 +333,42 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
 
       <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto w-[95vw] p-0">
         {/* Header mit Titel */}
-        <div className="p-6 pb-0">
+        <div className="p-6 pb-4">
           <DialogHeader>
-            <DialogTitle>Neuen Kunden hinzufügen</DialogTitle>
+            <DialogTitle>Neuen Kontakt hinzufügen</DialogTitle>
             <DialogDescription>
-              Geben Sie die Kundendaten ein. Pflichtfelder sind mit * gekennzeichnet.
+              Erstellen Sie einen neuen {contactType === 'customer' ? 'Kunden' : 'Lieferanten'} mit allen erforderlichen Informationen
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Kontakttyp-Auswahl */}
+          <div className="mt-4">
+            <Label className="text-sm font-medium text-gray-900">Kontakttyp</Label>
+            <div className="mt-2 flex gap-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="contactType"
+                  value="customer"
+                  checked={contactType === 'customer'}
+                  onChange={(e) => setContactType('customer')}
+                  className="h-4 w-4 text-[#14ad9f] border-gray-300 focus:ring-[#14ad9f]"
+                />
+                <span className="ml-2 text-sm text-gray-700">Kunde</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="contactType"
+                  value="supplier"
+                  checked={contactType === 'supplier'}
+                  onChange={(e) => setContactType('supplier')}
+                  className="h-4 w-4 text-[#14ad9f] border-gray-300 focus:ring-[#14ad9f]"
+                />
+                <span className="ml-2 text-sm text-gray-700">Lieferant</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -441,7 +480,9 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="customerNumber">Kundennummer</Label>
+              <Label htmlFor="customerNumber">
+                {contactType === 'customer' ? 'Kundennummer' : 'Lieferantennummer'}
+              </Label>
               <Input
                 id="customerNumber"
                 name="customerNumber"

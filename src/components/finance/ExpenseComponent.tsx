@@ -392,16 +392,17 @@ export function ExpenseComponent({
         .map((num: string) => parseInt(num.replace('LF-', ''), 10))
         .filter((num: number) => !isNaN(num));
 
-      // ✅ FIXED: Use SupplierService.getNextSupplierNumber(companyId)
-      let nextSupplierNumber = 'LF-TEMP';
+      // ✅ FIXED: Use NumberSequenceService for supplier numbers
+      let nextSupplierNumber = 'LF-001';
       try {
         // Import dynamic to avoid circular dependencies
-        const { SupplierService } = await import('@/services/supplierService');
-        nextSupplierNumber = await SupplierService.getNextSupplierNumber(companyId);
+        const { NumberSequenceService } = await import('@/services/numberSequenceService');
+        const numberResult = await NumberSequenceService.getNextNumberForType(companyId, 'Lieferant');
+        nextSupplierNumber = numberResult.formattedNumber;
       } catch (error) {
-        console.error('❌ Failed to get supplier number from SupplierService:', error);
+        console.error('❌ Failed to get supplier number from NumberSequenceService:', error);
         // Emergency fallback - no race conditions
-        console.warn('❌ SupplierService failed - using timestamp fallback');
+        console.warn('❌ NumberSequenceService failed - using timestamp fallback');
         nextSupplierNumber = `LF-${Date.now().toString().slice(-6)}`;
       }
 

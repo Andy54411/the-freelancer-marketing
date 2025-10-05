@@ -13,36 +13,12 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Building2,
-  Calendar,
-  FileText,
-  Star,
-  Edit,
-  Plus,
-  RefreshCw,
-  Loader2,
-} from 'lucide-react';
 import { Customer } from './AddCustomerModal';
-import { InvoiceData, InvoiceStatusHelper } from '@/types/invoiceTypes';
+import { InvoiceData } from '@/types/invoiceTypes';
 import { toast } from 'sonner';
 import { updateCustomerStats } from '@/utils/customerStatsUtils';
 import { useAuth } from '@/contexts/AuthContext';
+import { CustomerDetailModal as CustomerDetailModalComponent } from './customer-detail/CustomerDetailModal';
 
 interface CustomerDetailModalProps {
   customer: Customer | null;
@@ -58,12 +34,14 @@ export function CustomerDetailModal({
   onCustomerUpdated,
 }: CustomerDetailModalProps) {
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [syncingStats, setSyncingStats] = useState(false);
   const [calculatedStats, setCalculatedStats] = useState<{
     totalAmount: number;
     totalInvoices: number;
-  }>({ totalAmount: 0, totalInvoices: 0 });
+    totalMeetings: number;
+  }>({ totalAmount: 0, totalInvoices: 0, totalMeetings: 0 });
 
   // Lokaler State für Kundendaten, um Updates aus der DB zu reflektieren
   const [localCustomer, setLocalCustomer] = useState<Customer | null>(null);
@@ -73,24 +51,8 @@ export function CustomerDetailModal({
     setLocalCustomer(customer);
   }, [customer]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('de-DE', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
-
-  const formatDate = (date: string | Date) => {
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return dateObj.toLocaleDateString('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  };
-
-  // Berechne Statistiken basierend auf geladenen Rechnungen
-  const calculateCustomerStats = (invoiceList: InvoiceData[]) => {
+  // Berechne Statistiken basierend auf geladenen Rechnungen und Calendar Events
+  const calculateCustomerStats = (invoiceList: InvoiceData[], eventList: any[] = []) => {
     // Alle Rechnungen außer draft/cancelled für Umsatzberechnung
     const validInvoices = invoiceList.filter(
       invoice => invoice.status !== 'draft' && invoice.status !== 'cancelled'
@@ -102,9 +64,15 @@ export function CustomerDetailModal({
       return sum + amount;
     }, 0);
 
+    // Zähle Calendar Events als Termine
+    const totalMeetings = eventList.filter(event => 
+      ['meeting', 'appointment', 'call'].includes(event.eventType)
+    ).length;
+
     setCalculatedStats({
       totalAmount,
       totalInvoices: validInvoices.length,
+      totalMeetings,
     });
   };
 
@@ -143,7 +111,7 @@ export function CustomerDetailModal({
           updatedAt: serverTimestamp(),
         });
 
-        setCalculatedStats({ totalAmount, totalInvoices });
+        setCalculatedStats({ totalAmount, totalInvoices, totalMeetings: 0 });
       } else {
         // Für normale Kunden: Direkt in Subcollection aktualisieren
         const customerRef = doc(db, 'companies', localCustomer.companyId, 'customers', localCustomer.id);
@@ -178,13 +146,14 @@ export function CustomerDetailModal({
     }
   };
 
-  // Rechnungshistorie und Ausgaben laden
+  // Rechnungshistorie, Ausgaben und Calendar Events laden
   const loadInvoiceHistory = async () => {
     if (!localCustomer) return;
 
     try {
       setLoading(true);
       const loadedInvoices: InvoiceData[] = [];
+      const loadedCalendarEvents: any[] = [];
 
       // 1. Für KUNDEN: Rechnungen laden - für LIEFERANTEN: Ausgaben laden
 
@@ -260,8 +229,28 @@ export function CustomerDetailModal({
         }
       }
 
+      // 3. Calendar Events für diesen Kunden laden
+      try {
+        const calendarQuery = query(
+          collection(db, `companies/${localCustomer.companyId}/calendar_events`),
+          where('customerId', '==', localCustomer.id),
+          orderBy('createdAt', 'desc')
+        );
+
+        const calendarSnapshot = await getDocs(calendarQuery);
+        calendarSnapshot.forEach(doc => {
+          loadedCalendarEvents.push({
+            id: doc.id,
+            ...doc.data(),
+          });
+        });
+      } catch (calendarError) {
+        console.error('Fehler beim Laden der Calendar Events:', calendarError);
+      }
+
       setInvoices(loadedInvoices);
-      calculateCustomerStats(loadedInvoices);
+      setCalendarEvents(loadedCalendarEvents);
+      calculateCustomerStats(loadedInvoices, loadedCalendarEvents);
     } catch (error) {
       toast.error('Fehler beim Laden der Rechnungshistorie');
     } finally {
@@ -329,318 +318,26 @@ export function CustomerDetailModal({
     } catch (error) {}
   };
 
+  const handleEditContact = () => {
+    window.dispatchEvent(
+      new CustomEvent('openEditModal', { detail: localCustomer })
+    );
+  };
+
   if (!localCustomer) return null;
 
-  const primaryContact = localCustomer.contactPersons?.find(cp => cp.isPrimary);
-  const otherContacts = localCustomer.contactPersons?.filter(cp => !cp.isPrimary) || [];
-
-  // Debug: Ansprechpartner-Daten loggen (reduziert)
-
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className="!max-w-none !w-[95vw] max-h-[90vh] overflow-y-auto"
-        style={{ width: '95vw', maxWidth: 'none' }}
-      >
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-[#14ad9f]" />
-                {localCustomer.name}
-              </DialogTitle>
-              <DialogDescription>
-                Kunde {localCustomer.customerNumber} - Detailansicht und Rechnungshistorie
-              </DialogDescription>
-            </div>
-
-          </div>
-        </DialogHeader>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Linke Spalte: Kundeninformationen (2/3 der Breite) */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Kundeninformationen */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Unternehmensdaten</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-gray-500" />
-                  <span>{localCustomer.email}</span>
-                </div>
-
-                {localCustomer.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-gray-500" />
-                    <span>{localCustomer.phone}</span>
-                  </div>
-                )}
-
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 text-gray-500 mt-0.5" />
-                  <span className="text-sm">{localCustomer.address}</span>
-                </div>
-
-                {(localCustomer.taxNumber || localCustomer.vatId) && (
-                  <>
-                    <Separator />
-                    <div className="space-y-1">
-                      {localCustomer.taxNumber && (
-                        <div className="text-sm text-gray-600">
-                          <span className="font-medium">Steuernummer:</span>{' '}
-                          {localCustomer.taxNumber}
-                        </div>
-                      )}
-                      {localCustomer.vatId && (
-                        <div className="text-sm text-gray-600">
-                          <span className="font-medium">USt-IdNr:</span> {localCustomer.vatId}
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                <Separator />
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-700">Gesamtumsatz:</span>
-                    <div className="text-lg font-semibold text-[#14ad9f]">
-                      {formatCurrency(calculatedStats.totalAmount)}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Rechnungen:</span>
-                    <div className="text-lg font-semibold">{calculatedStats.totalInvoices}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Calendar className="h-4 w-4" />
-                  <span>Kunde seit {formatDate(localCustomer.createdAt)}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Rechnungshistorie in der linken Spalte */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">
-                  {localCustomer.isSupplier ? 'Rechnungen & Ausgaben' : 'Rechnungshistorie'}
-                </CardTitle>
-                <CardDescription>
-                  {localCustomer.isSupplier
-                    ? `Alle Rechnungen und Ausgaben für ${localCustomer.name}`
-                    : `Alle Rechnungen für ${localCustomer.name}`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="text-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-[#14ad9f]" />
-                    <p className="text-sm text-gray-500 mt-2">Lade Rechnungen...</p>
-                  </div>
-                ) : invoices.length > 0 ? (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {invoices.map(invoice => (
-                      <div
-                        key={invoice.id}
-                        className="border rounded-lg p-3 hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-gray-500" />
-                            <span className="font-medium">{invoice.invoiceNumber}</span>
-                            <Badge
-                              variant={
-                                invoice.status === 'paid'
-                                  ? 'default'
-                                  : invoice.status === 'draft' || invoice.status === 'finalized'
-                                    ? 'secondary'
-                                    : invoice.status === 'overdue'
-                                      ? 'destructive'
-                                      : 'outline'
-                              }
-                              className={
-                                invoice.status === 'paid'
-                                  ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                                  : ''
-                              }
-                            >
-                              {InvoiceStatusHelper.getStatusLabel(invoice.status)}
-                            </Badge>
-                            {(invoice as any).isExpense && (
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                                Ausgabe
-                              </Badge>
-                            )}
-                          </div>
-                          <span className="font-semibold text-[#14ad9f]">
-                            {formatCurrency(invoice.total)}
-                          </span>
-                        </div>
-
-                        <div className="text-xs text-gray-500 space-y-1">
-                          <div>
-                            Erstellt:{' '}
-                            {formatDate(
-                              invoice.createdAt instanceof Date
-                                ? invoice.createdAt.toISOString()
-                                : invoice.createdAt
-                            )}
-                          </div>
-                          {invoice.dueDate && <div>Fällig: {formatDate(invoice.dueDate)}</div>}
-                          {(invoice as any).description && (
-                            <div>Beschreibung: {(invoice as any).description}</div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <FileText className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                    <p>Noch keine Rechnungen vorhanden</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Rechte Spalte: Ansprechpartner (1/3 der Breite) */}
-          <div className="space-y-6">
-            {/* Ansprechpartner */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Ansprechpartner</CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      // Öffne EditCustomerModal für Ansprechpartner-Verwaltung
-                      window.dispatchEvent(
-                        new CustomEvent('openEditModal', { detail: localCustomer })
-                      );
-                    }}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Hinzufügen
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {localCustomer.contactPersons && localCustomer.contactPersons.length > 0 ? (
-                  <div className="space-y-4">
-                    {/* Hauptansprechpartner */}
-                    {primaryContact && (
-                      <div className="border rounded-lg p-3 bg-yellow-50 border-yellow-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-yellow-600" />
-                            <span className="font-medium text-yellow-800">
-                              {primaryContact.firstName} {primaryContact.lastName}
-                            </span>
-                            <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                          </div>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        </div>
-
-                        <div className="space-y-1 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-3 w-3 text-gray-500" />
-                            <span>{primaryContact.email}</span>
-                          </div>
-                          {primaryContact.phone && (
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-3 w-3 text-gray-500" />
-                              <span>{primaryContact.phone}</span>
-                            </div>
-                          )}
-                          {primaryContact.position && (
-                            <div className="text-gray-600">
-                              <span className="font-medium">Position:</span>{' '}
-                              {primaryContact.position}
-                            </div>
-                          )}
-                          {primaryContact.department && (
-                            <div className="text-gray-600">
-                              <span className="font-medium">Abteilung:</span>{' '}
-                              {primaryContact.department}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Weitere Ansprechpartner */}
-                    {otherContacts.map(contact => (
-                      <div key={contact.id} className="border rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-gray-500" />
-                            <span className="font-medium">
-                              {contact.firstName} {contact.lastName}
-                            </span>
-                          </div>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        </div>
-
-                        <div className="space-y-1 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-3 w-3 text-gray-500" />
-                            <span>{contact.email}</span>
-                          </div>
-                          {contact.phone && (
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-3 w-3 text-gray-500" />
-                              <span>{contact.phone}</span>
-                            </div>
-                          )}
-                          {contact.position && (
-                            <div className="text-gray-600">
-                              <span className="font-medium">Position:</span> {contact.position}
-                            </div>
-                          )}
-                          {contact.department && (
-                            <div className="text-gray-600">
-                              <span className="font-medium">Abteilung:</span> {contact.department}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-gray-500">
-                    <User className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                    <p>Keine Ansprechpartner hinterlegt</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-3"
-                      onClick={() => {
-                        window.dispatchEvent(
-                          new CustomEvent('openEditModal', { detail: localCustomer })
-                        );
-                      }}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Ersten Ansprechpartner hinzufügen
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <CustomerDetailModalComponent
+      customer={localCustomer}
+      isOpen={isOpen}
+      onClose={onClose}
+      invoices={invoices}
+      loading={loading}
+      calculatedStats={calculatedStats}
+      calendarEvents={calendarEvents}
+      onEditContact={handleEditContact}
+      companyId={localCustomer.companyId}
+    />
   );
 }
 export default CustomerDetailModal;

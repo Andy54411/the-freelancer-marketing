@@ -213,9 +213,9 @@ export class QuoteService {
         companyId,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        date: Timestamp.fromDate(quoteData.date),
-        validUntil: Timestamp.fromDate(quoteData.validUntil),
-        deliveryDate: quoteData.deliveryDate ? Timestamp.fromDate(quoteData.deliveryDate) : null,
+        date: Timestamp.fromDate(quoteData.date instanceof Date ? quoteData.date : new Date(quoteData.date)),
+        validUntil: Timestamp.fromDate(quoteData.validUntil instanceof Date ? quoteData.validUntil : new Date(quoteData.validUntil)),
+        deliveryDate: quoteData.deliveryDate ? Timestamp.fromDate(quoteData.deliveryDate instanceof Date ? quoteData.deliveryDate : new Date(quoteData.deliveryDate)) : null,
       };
       const cleanedPayload = Object.fromEntries(
         Object.entries(payload).filter(([, v]) => v !== undefined)
@@ -248,6 +248,11 @@ export class QuoteService {
       if (updates.date) updateData.date = Timestamp.fromDate(updates.date);
       if (updates.validUntil) updateData.validUntil = Timestamp.fromDate(updates.validUntil);
       if (updates.deliveryDate) updateData.deliveryDate = Timestamp.fromDate(updates.deliveryDate);
+      if (updates.sentAt) updateData.sentAt = Timestamp.fromDate(updates.sentAt);
+      if (updates.acceptedAt) updateData.acceptedAt = Timestamp.fromDate(updates.acceptedAt);
+      if (updates.rejectedAt) updateData.rejectedAt = Timestamp.fromDate(updates.rejectedAt);
+      if (updates.convertedAt) updateData.convertedAt = Timestamp.fromDate(updates.convertedAt);
+      if (updates.cancelledAt) updateData.cancelledAt = Timestamp.fromDate(updates.cancelledAt);
 
       const cleaned = Object.fromEntries(
         Object.entries(updateData).filter(([, v]) => v !== undefined)

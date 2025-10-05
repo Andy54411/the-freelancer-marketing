@@ -2792,6 +2792,7 @@ export default function CreateReminderPage() {
         document={buildPreviewData()}
         documentType="reminder"
         companyId={uid}
+        redirectAfterAction={`/dashboard/company/${uid}/finance/reminders`}
         onSend={async (method, options) => {
           toast.success(
             `Mahnung wird ${method === 'email' ? 'per E-Mail versendet' : method === 'download' ? 'heruntergeladen' : 'gedruckt'}...`

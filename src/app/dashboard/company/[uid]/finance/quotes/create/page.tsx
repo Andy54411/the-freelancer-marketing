@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 // PDF Template System für Quotes
@@ -83,10 +83,10 @@ import {
 import { InventoryService } from '@/services/inventoryService';
 import { TextTemplateService } from '@/services/TextTemplateService';
 import { UserPreferencesService } from '@/lib/userPreferences';
+import { NumberSequenceService } from '@/services/numberSequenceService';
 import { TaxRuleType } from '@/types/taxRules';
 import { getAllCurrencies } from '@/data/currencies';
 import { QuickAddService } from '@/components/QuickAddService';
-import { getCustomers } from '@/utils/api/companyApi'
 import {
   Dialog,
   DialogContent,
@@ -262,11 +262,14 @@ interface Customer {
   taxNumber?: string;
   vatId?: string;
   vatValidated?: boolean;
+  organizationType?: string; // Kunde, Lieferant, Partner, Interessenten
+  customerType?: string; // person, organisation
 }
 
 export default function CreateQuotePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
   const [selectedTemplate, setSelectedTemplate] = useState<string>('standard');
@@ -560,6 +563,113 @@ export default function CreateQuotePage() {
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+
+  // Reusable function to load customers from Firebase - memoized to prevent useEffect loop
+  const loadCustomers = useCallback(async (): Promise<Customer[]> => {
+    if (!uid) return [];
+    
+    setLoadingCustomers(true);
+    try {
+      const customersRef = collection(db, 'companies', uid, 'customers');
+      const customersSnapshot = await getDocs(customersRef);
+      
+      const customersData: Customer[] = customersSnapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        // Name basierend auf customerType bestimmen
+        let displayName = '';
+        if (data.companyName) {
+          displayName = data.companyName;
+        } else if (data.firstName || data.lastName) {
+          displayName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+        } else if (data.name) {
+          displayName = data.name;
+        }
+        
+        return {
+          id: doc.id,
+          customerNumber: data.customerNumber || '',
+          name: displayName,
+          email: data.email || '',
+          phone: data.phone || '',
+          street: data.street || '',
+          city: data.city || '',
+          postalCode: data.postalCode || '',
+          country: data.country || 'Deutschland',
+          taxNumber: data.taxNumber || '',
+          vatId: data.vatId || '',
+          vatValidated: data.vatValidated || false,
+          // Zusätzliche Informationen für bessere Anzeige
+          organizationType: data.organizationType || 'Kunde',
+          customerType: data.customerType || 'organisation'
+        };
+      });
+      
+      // Alle Typen einbeziehen: Kunde, Lieferant, Partner, Interessenten
+      const filteredCustomers = customersData.filter(customer => 
+        ['Kunde', 'Lieferant', 'Partner', 'Interessenten'].includes(customer.organizationType as string)
+      );
+      
+      console.log(`📋 Geladene Kontakte: ${filteredCustomers.length} (${customersData.length} gesamt)`);
+      
+      setCustomers(filteredCustomers);
+      return filteredCustomers;
+    } catch (error) {
+      console.error('Fehler beim Laden der Kunden:', error);
+      toast.error('Kunden konnten nicht geladen werden');
+      return [];
+    } finally {
+      setLoadingCustomers(false);
+    }
+  }, [uid]);
+
+  // Load customers from Firebase and handle URL parameters
+  useEffect(() => {
+    const loadCustomersAndHandleParams = async () => {
+      if (!uid) return;
+
+      try {
+        const customersData = await loadCustomers();
+
+        // Handle URL parameters for pre-filling customer data
+        const customerId = searchParams?.get('customerId');
+        const customerName = searchParams?.get('customerName');
+        
+        if (customerId) {
+          // Try to find customer by ID and pre-fill the form
+          const selectedCustomer = customersData.find(c => c.id === customerId);
+          
+          if (selectedCustomer) {
+            setFormData(prev => ({
+              ...prev,
+              customerName: selectedCustomer.name,
+              customerEmail: selectedCustomer.email,
+              customerAddress: `${selectedCustomer.street}\n${selectedCustomer.postalCode} ${selectedCustomer.city}\n${selectedCustomer.country}`,
+              // Split name for firstName/lastName if it's not a company
+              customerFirstName: selectedCustomer.name.includes(' ') ? selectedCustomer.name.split(' ')[0] : '',
+              customerLastName: selectedCustomer.name.includes(' ') ? selectedCustomer.name.split(' ').slice(1).join(' ') : '',
+            }));
+            toast.success(`Kundendaten für "${selectedCustomer.name}" wurden automatisch ausgefüllt`);
+          } else if (customerName && customerName !== 'undefined undefined') {
+            // If customer not found but name provided, just set the name
+            setFormData(prev => ({
+              ...prev,
+              customerName: decodeURIComponent(customerName)
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Kunden:', error);
+        toast.error('Kunden konnten nicht geladen werden');
+      } finally {
+        setLoadingCustomers(false);
+      }
+    };
+
+    loadCustomersAndHandleParams();
+  }, [uid, searchParams, loadCustomers]);
+
   const [showNet, setShowNet] = useState(true);
   const [taxRate, setTaxRate] = useState(19);
   const [showDetailedOptions, setShowDetailedOptions] = useState(false);
@@ -882,24 +992,7 @@ export default function CreateQuotePage() {
     });
   }, [items, dismissedCreatePromptIds, createProductOpen]);
 
-  // Kunden laden
-  useEffect(() => {
-    const loadCustomers = async () => {
-      if (!uid || !user || user.uid !== uid) return;
-      try {
-        setLoadingCustomers(true);
-        const response = await getCustomers(uid);
-        if (response.success && response.customers) {
-          setCustomers(response.customers);
-        }
-      } catch (e) {
-        toast.error('Fehler beim Laden der Kunden');
-      } finally {
-        setLoadingCustomers(false);
-      }
-    };
-    loadCustomers();
-  }, [uid, user]);
+  // This useEffect is now handled by the loadCustomersAndHandleParams function above
 
   // Popup schließen beim Klicken außerhalb
   useEffect(() => {
@@ -973,46 +1066,66 @@ export default function CreateQuotePage() {
     loadCompany();
   }, [uid, user, settings]); // settings als Dependency hinzugefügt für automatische Template-Updates
 
-  // Nummernkreis-Einstellungen laden (nur einmal)
+  // Angebot-Nummerierung laden - FIXED to use NumberSequenceService
   const [numberingLoaded, setNumberingLoaded] = useState(false);
 
   useEffect(() => {
     if (!uid || numberingLoaded) return;
 
-    const loadNumberingSettings = async () => {
+    const loadQuoteNumbering = async () => {
       try {
-        const companyRef = doc(db, 'companies', uid);
-        const companySnap = await getDoc(companyRef);
-
-        if (companySnap.exists()) {
-          const data = companySnap.data();
-          const numbering = data.invoiceNumbering;
-
-          if (numbering) {
-            setNumberingFormat(numbering.format || 'RE-%NUMBER');
-            setNextNumber(numbering.nextNumber || 1000);
-
-            // Setze die aktuelle Angebotsnummer basierend auf den geladenen Einstellungen
-            // Für Angebote verwende AN- statt RE- als Präfix
-            const quoteFormat = numbering.format
-              ? numbering.format.replace('RE-', 'AN-')
-              : 'AN-%NUMBER';
-            const previewNumber = generateNumberPreview(quoteFormat, numbering.nextNumber || 1000);
-
-            setFormData(prev => ({
-              ...prev,
-              title: previewNumber,
-            }));
-          }
+        console.log('🔢 Lade Angebot-Nummerierung...');
+        
+        // Verwende das NumberSequenceService für korrekte Angebotsnummerierung
+        const sequences = await NumberSequenceService.getNumberSequences(uid);
+        const quoteSequence = sequences.find(seq => seq.type === 'Angebot');
+        
+        if (quoteSequence) {
+          // Verwende das existierende NumberSequence für Angebote
+          const previewNumber = NumberSequenceService.formatNumber(
+            quoteSequence.nextNumber, 
+            quoteSequence.format
+          );
+          
+          console.log(`✅ Angebot-Nummer geladen: ${previewNumber}`);
+          
+          setNumberingFormat(quoteSequence.format);
+          setNextNumber(quoteSequence.nextNumber);
+          
+          setFormData(prev => ({
+            ...prev,
+            title: previewNumber,
+          }));
+        } else {
+          // Fallback: Erstelle neues Angebot-NumberSequence
+          console.log('⚠️ Kein Angebot-NumberSequence gefunden, verwende Fallback');
+          
+          const fallbackNumber = 'AN-1001';
+          setNumberingFormat('AN-{number}');
+          setNextNumber(1001);
+          
+          setFormData(prev => ({
+            ...prev,
+            title: fallbackNumber,
+          }));
         }
+        
         setNumberingLoaded(true);
       } catch (error) {
-        console.error('Fehler beim Laden der Nummernkreis-Einstellungen:', error);
+        console.error('Fehler beim Laden der Angebot-Nummerierung:', error);
+        
+        // Fallback bei Fehler
+        const fallbackNumber = `AN-${Date.now().toString().slice(-4)}`;
+        setFormData(prev => ({
+          ...prev,
+          title: fallbackNumber,
+        }));
+        
         setNumberingLoaded(true);
       }
     };
 
-    loadNumberingSettings();
+    loadQuoteNumbering();
   }, [uid]);
 
   // Steuerlogik aus der Auswahl ableiten (berücksichtigt Standard-Steuersatz aus Einstellungen)
@@ -1882,6 +1995,7 @@ export default function CreateQuotePage() {
   const handleCustomerSelect = (customerName: string) => {
     const customer = customers.find(c => c.name === customerName);
     if (!customer) return;
+    setSelectedCustomer(customer);
     setFormData(prev => ({
       ...prev,
       customerName: customer.name,
@@ -1891,7 +2005,11 @@ export default function CreateQuotePage() {
         customer.street && customer.city
           ? `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}`
           : prev.customerAddress,
+      // Handle name splitting for individual customers
+      customerFirstName: customer.name.includes(' ') ? customer.name.split(' ')[0] : '',
+      customerLastName: customer.name.includes(' ') ? customer.name.split(' ').slice(1).join(' ') : '',
     }));
+    toast.success(`Kundendaten für "${customer.name}" wurden ausgefüllt`);
   };
 
   const addItem = () => {
@@ -2563,7 +2681,24 @@ export default function CreateQuotePage() {
                                 className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
                                 onClick={() => selectCustomer(customer)}
                               >
-                                <div className="font-medium">{customer.name}</div>
+                                <div className="flex items-center justify-between">
+                                  <div className="font-medium">{customer.name}</div>
+                                  <div className="flex items-center gap-2">
+                                    {customer.customerNumber && (
+                                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                        {customer.customerNumber}
+                                      </span>
+                                    )}
+                                    <span className={`text-xs px-2 py-1 rounded ${
+                                      customer.organizationType === 'Kunde' ? 'bg-blue-100 text-blue-800' :
+                                      customer.organizationType === 'Lieferant' ? 'bg-green-100 text-green-800' :
+                                      customer.organizationType === 'Partner' ? 'bg-purple-100 text-purple-800' :
+                                      'bg-orange-100 text-orange-800'
+                                    }`}>
+                                      {customer.organizationType || 'Kunde'}
+                                    </span>
+                                  </div>
+                                </div>
                                 {customer.email && (
                                   <div className="text-gray-500">{customer.email}</div>
                                 )}
@@ -4172,14 +4307,30 @@ export default function CreateQuotePage() {
         companyId={uid}
         onSaved={async customerId => {
           try {
-            // Lade Kunden neu mit der existierenden Funktion
-            const response = await getCustomers(uid);
-            if (response.success && response.customers) {
-              setCustomers(response.customers);
+            // Lade Kunden neu mit der neuen Firebase-Funktion
+            const updatedCustomers = await loadCustomers();
+            
+            // Finde den neu erstellten Kunden und fülle das Formular aus
+            const newCustomer = updatedCustomers.find(c => c.id === customerId);
+            if (newCustomer) {
+              setSelectedCustomer(newCustomer);
+              setFormData(prev => ({
+                ...prev,
+                customerName: newCustomer.name,
+                customerEmail: newCustomer.email,
+                customerAddress: newCustomer.street && newCustomer.city
+                  ? `${newCustomer.street}\n${newCustomer.postalCode} ${newCustomer.city}\n${newCustomer.country}`
+                  : prev.customerAddress,
+                customerFirstName: newCustomer.name.includes(' ') ? newCustomer.name.split(' ')[0] : '',
+                customerLastName: newCustomer.name.includes(' ') ? newCustomer.name.split(' ').slice(1).join(' ') : '',
+              }));
+              toast.success(`Kunde "${newCustomer.name}" wurde erfolgreich erstellt und ausgewählt`);
+            } else {
+              toast.success('Kunde erfolgreich erstellt');
             }
-            toast.success('Kunde erfolgreich erstellt');
           } catch (error) {
             console.error('Fehler beim Aktualisieren der Kundenliste:', error);
+            toast.error('Fehler beim Aktualisieren der Kundenliste');
           }
         }}
       />
@@ -4321,6 +4472,7 @@ export default function CreateQuotePage() {
           document={createdDocument}
           documentType="quote"
           companyId={uid}
+          redirectAfterAction={`/dashboard/company/${uid}/finance/quotes`}
           onSend={async (method, options) => {
             try {
               // First save the invoice
@@ -4341,8 +4493,8 @@ export default function CreateQuotePage() {
                 toast.success('Druckvorbereitung abgeschlossen');
               }
 
-              // Navigate to invoices list after successful send
-              router.push(`/dashboard/company/${uid}/finance/invoices`);
+              // Navigate to quotes list after successful send (dynamic routing fix)
+              router.push(`/dashboard/company/${uid}/finance/quotes`);
             } catch (error) {
               console.error('Error sending document:', error);
               toast.error('Fehler beim Versenden der Rechnung');

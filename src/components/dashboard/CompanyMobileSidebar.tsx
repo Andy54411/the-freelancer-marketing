@@ -115,7 +115,7 @@ const navigationItems: NavigationItem[] = [
     label: 'Kunden',
     icon: FiUsers,
     value: 'customers',
-    href: 'finance/customers',
+    href: 'finance/contacts',
   },
   {
     label: 'Lieferanten',
@@ -296,7 +296,7 @@ export default function CompanyMobileSidebar({
                       !pathname?.includes('/finance/reminders') &&
                       !pathname?.includes('/finance/credits') &&
                       !pathname?.includes('/finance/cashbook') &&
-                      !pathname?.includes('/finance/customers') &&
+                      !pathname?.includes('/finance/contacts') &&
                       !pathname?.includes('/finance/suppliers') &&
                       !pathname?.includes('/finance/payments') &&
                       !pathname?.includes('/finance/time-tracking') &&
@@ -315,7 +315,7 @@ export default function CompanyMobileSidebar({
                   );
                 }
                 if (item.value === 'customers') {
-                  return pathname?.includes('/finance/customers');
+                  return pathname?.includes('/finance/contacts');
                 }
                 if (item.value === 'suppliers') {
                   return pathname?.includes('/finance/suppliers');

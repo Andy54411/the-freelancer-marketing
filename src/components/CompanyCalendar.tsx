@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, forwardRef, useImperativeHandle } from 'react';
 import { useRouter } from 'next/navigation';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { type EventInput, type EventClickArg, type EventContentArg } from '@fullcalendar/core';
+import { type DateClickArg } from '@fullcalendar/interaction';
 import deLocale from '@fullcalendar/core/locales/de';
 import { callHttpsFunction } from '@/lib/httpsFunctions';
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,9 +49,29 @@ type InvoiceData = {
   companyId: string;
 };
 
+// Calendar Event-Typ für Kalenderanzeige
+type CalendarEventData = {
+  id: string;
+  title: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  eventType: 'meeting' | 'appointment' | 'task' | 'reminder' | 'call';
+  status: 'planned' | 'confirmed' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  customerId?: string;
+  companyId: string;
+};
+
 interface CompanyCalendarProps {
   companyUid: string;
   selectedOrderId?: string | null; // Die ID des Auftrags, der hervorgehoben werden soll
+  onDateClick?: (dateInfo: { date: Date, dateStr: string }) => void; // NEU: Callback für Datum-Klicks
+  onEventClick?: (eventInfo: EventClickArg) => void; // NEU: Callback für Event-Klicks
+}
+
+export interface CompanyCalendarRef {
+  refreshEvents: () => void;
 }
 
 // NEU: Hilfsfunktion, um Farben basierend auf dem Auftragsstatus, Projektstatus oder Rechnungsstatus zu bestimmen
@@ -88,36 +109,37 @@ const getStatusColor = (status: string) => {
     case 'cancelled':
       return { backgroundColor: '#6b7280', borderColor: '#6b7280' }; // Grau
 
+    // Calendar Event statuses
+    case 'planned':
+      return { backgroundColor: '#3b82f6', borderColor: '#3b82f6' }; // Blau
+    case 'confirmed':
+      return { backgroundColor: '#10b981', borderColor: '#10b981' }; // Grün
+    case 'completed':
+      return { backgroundColor: '#6b7280', borderColor: '#6b7280' }; // Grau
+
     default:
       return { backgroundColor: '#a1a1aa', borderColor: '#a1a1aa' }; // Standard-Grau
   }
 };
 
-export default function CompanyCalendar({ companyUid, selectedOrderId }: CompanyCalendarProps) {
+const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ companyUid, selectedOrderId, onDateClick, onEventClick }, ref) => {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
   const [allOrders, setAllOrders] = useState<OrderData[]>([]); // Speichert die Rohdaten der Aufträge
   const [allProjects, setAllProjects] = useState<ProjectData[]>([]); // Speichert die Rohdaten der Projekte
   const [allInvoices, setAllInvoices] = useState<InvoiceData[]>([]); // Speichert die Rohdaten der Rechnungen
+  const [allCalendarEvents, setAllCalendarEvents] = useState<CalendarEventData[]>([]); // Speichert die Rohdaten der Kalenderereignisse
   const [events, setEvents] = useState<EventInput[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Effekt zum einmaligen Laden der Auftrags-, Projekt- und Rechnungsdaten
-  useEffect(() => {
-    if (authLoading) {
-      return; // Warten auf Authentifizierung
-    }
-
-    if (!user) {
-      setError('Benutzer nicht authentifiziert.');
-      setLoading(false);
-      return;
-    }
+  // Funktion zum Laden aller Daten
+  const fetchAllData = async () => {
+    if (authLoading || !user) return;
 
     // Berechtigungsprüfung: Benutzer muss entweder die Company UID haben ODER master/support sein
-    const hasAccess = user.uid === companyUid || user.role === 'master' || user.role === 'support';
+    const hasAccess = user.uid === companyUid || user.user_type === 'master' || user.user_type === 'support';
 
     if (!hasAccess) {
       setError('Zugriff verweigert. Keine Berechtigung für diese Firma.');
@@ -125,100 +147,134 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
       return;
     }
 
-    const fetchOrdersProjectsAndInvoices = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Aufträge laden
-        const orderResult = await callHttpsFunction(
-          'getProviderOrders',
-          { providerId: companyUid },
-          'GET'
-        );
+    setLoading(true);
+    setError(null);
+    try {
+      // Aufträge laden
+      const orderResult = await callHttpsFunction(
+        'getProviderOrders',
+        { providerId: companyUid },
+        'GET'
+      );
 
-        // KORREKTUR: Aufträge filtern, die im Kalender angezeigt werden sollen (AKTIV, IN BEARBEITUNG, ABGESCHLOSSEN)
-        // und sicherstellen, dass sie ein Startdatum haben.
-        const relevantOrders = orderResult.orders.filter((order: any) => {
-          const hasValidStatus = ['AKTIV', 'IN BEARBEITUNG', 'ABGESCHLOSSEN'].includes(
-            order.status
-          );
-          const hasStartDate = !!order.jobDateFrom;
-          if (!hasValidStatus || !hasStartDate) {
+      // KORREKTUR: Aufträge filtern, die im Kalender angezeigt werden sollen (AKTIV, IN BEARBEITUNG, ABGESCHLOSSEN)
+      // und sicherstellen, dass sie ein Startdatum haben.
+      const relevantOrders = orderResult.orders.filter((order: any) => {
+        const hasValidStatus = ['AKTIV', 'IN BEARBEITUNG', 'ABGESCHLOSSEN'].includes(
+          order.status
+        );
+        const hasStartDate = !!order.jobDateFrom;
+        return hasValidStatus && hasStartDate;
+      });
+
+      // Projekte aus Firebase laden
+      const projectsQuery = query(
+        collection(db, 'projects'),
+        where('companyId', '==', companyUid),
+        orderBy('createdAt', 'desc')
+      );
+
+      const projectSnapshot = await getDocs(projectsQuery);
+      const loadedProjects: ProjectData[] = [];
+
+      projectSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.startDate && data.endDate) {
+          loadedProjects.push({
+            id: doc.id,
+            name: data.name || '',
+            client: data.client || '',
+            status: data.status || 'planning',
+            startDate: data.startDate,
+            endDate: data.endDate,
+            companyId: data.companyId || companyUid,
+          });
+        }
+      });
+
+      // Rechnungen aus Firebase laden
+      const invoicesQuery = query(
+        collection(db, 'invoices'),
+        where('companyId', '==', companyUid),
+        orderBy('createdAt', 'desc')
+      );
+
+      const invoiceSnapshot = await getDocs(invoicesQuery);
+      const loadedInvoices: InvoiceData[] = [];
+
+      invoiceSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.dueDate && data.status !== 'paid' && data.status !== 'cancelled') {
+          // Automatisch prüfen ob Rechnung überfällig ist
+          const dueDate = new Date(data.dueDate);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); // Zeit auf 00:00 setzen für korrekte Vergleiche
+
+          let actualStatus = data.status;
+          if (dueDate < today && data.status === 'sent') {
+            actualStatus = 'overdue';
           }
-          return hasValidStatus && hasStartDate;
-        });
 
-        // Projekte aus Firebase laden
-        const projectsQuery = query(
-          collection(db, 'projects'),
-          where('companyId', '==', companyUid),
-          orderBy('createdAt', 'desc')
-        );
+          loadedInvoices.push({
+            id: doc.id,
+            invoiceNumber: data.invoiceNumber || data.number || '',
+            customerName: data.customerName || '',
+            total: data.total || 0,
+            dueDate: data.dueDate,
+            status: actualStatus,
+            companyId: data.companyId || companyUid,
+          });
+        }
+      });
 
-        const projectSnapshot = await getDocs(projectsQuery);
-        const loadedProjects: ProjectData[] = [];
+      // Calendar Events aus Firebase laden
+      const calendarEventsQuery = query(
+        collection(db, 'companies', companyUid, 'calendar_events'),
+        orderBy('createdAt', 'desc')
+      );
 
-        projectSnapshot.forEach(doc => {
+      const calendarEventsSnapshot = await getDocs(calendarEventsQuery);
+      const loadedCalendarEvents: CalendarEventData[] = [];
+
+        calendarEventsSnapshot.forEach(doc => {
           const data = doc.data();
-          if (data.startDate && data.endDate) {
-            loadedProjects.push({
+          if (data.startDate && data.title) {
+            loadedCalendarEvents.push({
               id: doc.id,
-              name: data.name || '',
-              client: data.client || '',
-              status: data.status || 'planning',
+              title: data.title,
+              description: data.description,
               startDate: data.startDate,
-              endDate: data.endDate,
+              endDate: data.endDate || data.startDate,
+              eventType: data.eventType || 'meeting',
+              status: data.status || 'planned',
+              priority: data.priority || 'medium',
+              customerId: data.customerId,
               companyId: data.companyId || companyUid,
             });
           }
         });
+        
+      setAllOrders(relevantOrders);
+      setAllProjects(loadedProjects);
+      setAllInvoices(loadedInvoices);
+      setAllCalendarEvents(loadedCalendarEvents);
+    } catch (err: any) {
+      setError(err.message || 'Fehler beim Laden der Aufträge, Projekte und Rechnungen.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        // Rechnungen aus Firebase laden
-        const invoicesQuery = query(
-          collection(db, 'invoices'),
-          where('companyId', '==', companyUid),
-          orderBy('createdAt', 'desc')
-        );
+  // useImperativeHandle für externe Aktualisierung
+  useImperativeHandle(ref, () => ({
+    refreshEvents: () => {
+      fetchAllData();
+    }
+  }));
 
-        const invoiceSnapshot = await getDocs(invoicesQuery);
-        const loadedInvoices: InvoiceData[] = [];
-
-        invoiceSnapshot.forEach(doc => {
-          const data = doc.data();
-          if (data.dueDate && data.status !== 'paid' && data.status !== 'cancelled') {
-            // Automatisch prüfen ob Rechnung überfällig ist
-            const dueDate = new Date(data.dueDate);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Zeit auf 00:00 setzen für korrekte Vergleiche
-
-            let actualStatus = data.status;
-            if (dueDate < today && data.status === 'sent') {
-              actualStatus = 'overdue';
-            }
-
-            loadedInvoices.push({
-              id: doc.id,
-              invoiceNumber: data.invoiceNumber || data.number || '',
-              customerName: data.customerName || '',
-              total: data.total || 0,
-              dueDate: data.dueDate,
-              status: actualStatus,
-              companyId: data.companyId || companyUid,
-            });
-          }
-        });
-
-        setAllOrders(relevantOrders);
-        setAllProjects(loadedProjects);
-        setAllInvoices(loadedInvoices);
-      } catch (err: any) {
-        setError(err.message || 'Fehler beim Laden der Aufträge, Projekte und Rechnungen.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrdersProjectsAndInvoices();
+  // Effekt zum einmaligen Laden der Auftrags-, Projekt- und Rechnungsdaten
+  useEffect(() => {
+    fetchAllData();
   }, [user, authLoading, companyUid]);
 
   // Effekt zum Erstellen der Kalender-Events, wenn sich die Aufträge, Projekte, Rechnungen oder die Auswahl ändern
@@ -240,7 +296,7 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
 
       const eventObject = {
         id: order.id,
-        title: `📋 ${order.selectedSubcategory}`,
+        title: order.selectedSubcategory,
         start: order.jobDateFrom ? new Date(order.jobDateFrom) : undefined,
         end: inclusiveEndDate, // Korrigiertes End-Datum verwenden
         allDay: true, // Behandle alle Aufträge mit Datum als "allDay" für eine saubere Monatsansicht
@@ -272,7 +328,7 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
 
       const eventObject = {
         id: `project-${project.id}`,
-        title: `🚀 ${project.name}`,
+        title: `Projekt: ${project.name}`,
         start: project.startDate ? new Date(project.startDate) : undefined,
         end: inclusiveEndDate,
         allDay: true,
@@ -292,23 +348,9 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
     const invoiceEvents = allInvoices.map(invoice => {
       const colors = getStatusColor(invoice.status);
 
-      // Emoji basierend auf Status wählen
-      const getInvoiceEmoji = (status: string) => {
-        switch (status) {
-          case 'overdue':
-            return '🚨'; // Überfällig
-          case 'sent':
-            return '📄'; // Versendet
-          case 'draft':
-            return '📝'; // Entwurf
-          default:
-            return '💰'; // Standard
-        }
-      };
-
       const eventObject = {
         id: `invoice-${invoice.id}`,
-        title: `${getInvoiceEmoji(invoice.status)} Rechnung ${invoice.invoiceNumber}`,
+        title: `Rechnung ${invoice.invoiceNumber}`,
         start: invoice.dueDate ? new Date(invoice.dueDate) : undefined,
         allDay: true,
         url: `/dashboard/company/${companyUid}/finance/invoices`,
@@ -327,11 +369,37 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
       return eventObject;
     });
 
+    // Events für Calendar Events erstellen
+    const calendarEventEvents = allCalendarEvents.map(calendarEvent => {
+      const colors = getStatusColor(calendarEvent.status);
+
+      const eventObject = {
+        id: `calendar-${calendarEvent.id}`,
+        title: calendarEvent.title,
+        start: calendarEvent.startDate ? new Date(calendarEvent.startDate) : undefined,
+        end: calendarEvent.endDate ? new Date(calendarEvent.endDate) : undefined,
+        allDay: false, // Calendar Events können spezifische Zeiten haben
+        extendedProps: {
+          description: calendarEvent.description,
+          status: calendarEvent.status,
+          type: 'calendar_event',
+          eventType: calendarEvent.eventType,
+          priority: calendarEvent.priority,
+          customerId: calendarEvent.customerId,
+        },
+        // Priorität-basierte Hervorhebung
+        className: calendarEvent.priority === 'urgent' ? 'calendar-event-urgent' : '',
+        ...colors,
+      };
+
+      return eventObject;
+    });
+
     // Alle Events kombinieren
-    const calendarEvents = [...orderEvents, ...projectEvents, ...invoiceEvents];
+    const calendarEvents = [...orderEvents, ...projectEvents, ...invoiceEvents, ...calendarEventEvents];
 
     setEvents(calendarEvents);
-  }, [allOrders, allProjects, allInvoices, selectedOrderId, companyUid]);
+  }, [allOrders, allProjects, allInvoices, allCalendarEvents, selectedOrderId, companyUid]);
 
   // NEU: Funktion zum Rendern des Event-Inhalts mit Tooltip
   const renderEventContent = (eventInfo: EventContentArg) => {
@@ -355,6 +423,9 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
         sent: 'Versendet',
         paid: 'Bezahlt',
         overdue: 'Überfällig',
+        // Calendar Event statuses
+        planned: 'Geplant',
+        confirmed: 'Bestätigt',
       };
       return statusLabels[status] || status;
     };
@@ -365,8 +436,27 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
           return 'Projekt';
         case 'invoice':
           return 'Rechnung';
+        case 'calendar_event':
+          return 'Termin';
         default:
           return 'Auftrag';
+      }
+    };
+
+    const getEventTypeLabel = (eventType: string) => {
+      switch (eventType) {
+        case 'meeting':
+          return 'Besprechung';
+        case 'appointment':
+          return 'Termin';
+        case 'task':
+          return 'Aufgabe';
+        case 'reminder':
+          return 'Erinnerung';
+        case 'call':
+          return 'Anruf';
+        default:
+          return 'Termin';
       }
     };
 
@@ -384,19 +474,35 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
       <Tooltip>
         <TooltipTrigger className="w-full h-full text-left flex items-center">
           <div className="fc-event-title-container w-full overflow-hidden">
-            <div className="fc-event-title fc-sticky truncate">{eventInfo.event.title}</div>
+            <div className="fc-event-title fc-sticky truncate font-medium text-xs leading-tight">
+              {eventInfo.event.title}
+              {type === 'calendar_event' && eventInfo.event.extendedProps.priority === 'urgent' && (
+                <span className="ml-1 text-red-500 font-bold">!</span>
+              )}
+            </div>
           </div>
         </TooltipTrigger>
         <TooltipContent>
           <p className="font-semibold">{eventInfo.event.title}</p>
           <p>{typeLabel}</p>
-          <p>Kunde: {customerName}</p>
+          {type === 'calendar_event' && (
+            <>
+              <p>Art: {getEventTypeLabel(eventInfo.event.extendedProps.eventType)}</p>
+              {eventInfo.event.extendedProps.description && (
+                <p>Beschreibung: {eventInfo.event.extendedProps.description}</p>
+              )}
+            </>
+          )}
+          {customerName && <p>Kunde: {customerName}</p>}
           <p>Status: {getStatusLabel(status)}</p>
           {type === 'invoice' && total && (
             <>
               <p>Betrag: {formatCurrency(total)}</p>
-              {status === 'overdue' && <p className="text-red-600 font-semibold">⚠️ Überfällig!</p>}
+              {status === 'overdue' && <p className="text-red-600 font-semibold">Überfällig!</p>}
             </>
+          )}
+          {type === 'calendar_event' && eventInfo.event.extendedProps.priority === 'urgent' && (
+            <p className="text-red-600 font-semibold">Dringend!</p>
           )}
         </TooltipContent>
       </Tooltip>
@@ -441,8 +547,21 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
             events={events}
             eventClick={info => {
               info.jsEvent.preventDefault();
-              if (info.event.url) {
+              
+              // Wenn onEventClick Callback vorhanden, verwende ihn
+              if (onEventClick) {
+                onEventClick(info);
+              } else if (info.event.url) {
                 router.push(info.event.url);
+              }
+            }}
+            dateClick={info => {
+              // Wenn onDateClick Callback vorhanden, verwende ihn
+              if (onDateClick) {
+                onDateClick({
+                  date: info.date,
+                  dateStr: info.dateStr
+                });
               }
             }}
             eventContent={renderEventContent} // NEU: Tooltip-Rendering
@@ -491,6 +610,53 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
           box-shadow: 0 0 10px rgba(239, 68, 68, 0.5) !important;
         }
 
+        /* Dringende Calendar Events - besondere Hervorhebung */
+        .fc-event.calendar-event-urgent {
+          box-shadow: 0 0 8px rgba(239, 68, 68, 0.6) !important;
+          border: 2px solid #ef4444 !important;
+        }
+
+        /* Marker-Style wie Tilvo - kleine grüne Punkte */
+        .fc-event {
+          min-height: 20px !important;
+          font-size: 0.7rem !important;
+          font-weight: 600 !important;
+          padding: 2px 6px !important;
+          border-radius: 12px !important;
+          margin: 1px 2px 2px 0 !important;
+          line-height: 1.1 !important;
+          border: none !important;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important;
+          text-align: center !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
+        .fc-event-title {
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
+          width: 100% !important;
+          text-align: center !important;
+          font-weight: 600 !important;
+        }
+
+        /* Spezielle Marker für verschiedene Event-Typen */
+        .fc-daygrid-event {
+          font-size: 0.65rem !important;
+          margin: 1px 1px 2px 0 !important;
+          min-height: 18px !important;
+          border-radius: 10px !important;
+        }
+
+        /* Hover-Effekt für bessere Interaktion */
+        .fc-event:hover {
+          transform: translateY(-1px) !important;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+          cursor: pointer !important;
+        }
+
         @keyframes blink {
           0%,
           50% {
@@ -504,4 +670,8 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
       `}</style>
     </Suspense>
   );
-}
+});
+
+CompanyCalendar.displayName = 'CompanyCalendar';
+
+export default CompanyCalendar;

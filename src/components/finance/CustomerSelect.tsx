@@ -294,7 +294,7 @@ export function CustomerSelect({
                     <Button
                       onClick={() => {
                         window.open(
-                          '/dashboard/company/' + companyId + '/finance/customers',
+                          '/dashboard/company/' + companyId + '/finance/contacts',
                           '_blank'
                         );
                       }}

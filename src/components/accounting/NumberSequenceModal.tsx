@@ -21,6 +21,7 @@ interface NumberSequenceModalProps {
   onClose: () => void;
   onSave: (updates: Partial<NumberSequence> & { id: string }) => void;
   sequence: NumberSequence | null;
+  companyId?: string; // Für Synchronisation mit echten Daten
 }
 
 export default function NumberSequenceModal({
@@ -28,6 +29,7 @@ export default function NumberSequenceModal({
   onClose,
   onSave,
   sequence,
+  companyId,
 }: NumberSequenceModalProps) {
   const [format, setFormat] = useState('');
   const [nextNumber, setNextNumber] = useState(0);

@@ -9,6 +9,7 @@ import { db } from '@/firebase/clients';
 import { doc, updateDoc } from 'firebase/firestore';
 
 import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
+import { useRouter } from 'next/navigation';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,7 @@ interface SendDocumentModalProps {
   documentType: 'invoice' | 'quote' | 'reminder' | 'credit-note' | 'cancellation';
   companyId: string;
   onSend?: (method: 'email' | 'download' | 'print' | 'save' | 'post', options?: any) => Promise<void>;
+  redirectAfterAction?: string | ((documentId: string, documentType: string) => string); // Flexible redirect logic
 }
 
 type SendOption =
@@ -148,8 +150,10 @@ export function SendDocumentModal({
   document,
   documentType,
   companyId,
-  onSend
+  onSend,
+  redirectAfterAction
 }: SendDocumentModalProps) {
+  const router = useRouter();
   const [sending, setSending] = useState(false);
   const [showCompanySettings, setShowCompanySettings] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
@@ -159,6 +163,24 @@ export function SendDocumentModal({
 
   // Auth Context für Auto-Lock
   const { user } = useAuth();
+
+  // ✅ Dynamic redirect handler
+  const handleRedirectAfterAction = useCallback((invoiceId?: string) => {
+    if (!redirectAfterAction || !invoiceId) return;
+    
+    let redirectUrl: string;
+    
+    if (typeof redirectAfterAction === 'function') {
+      // Function: Custom redirect logic
+      redirectUrl = redirectAfterAction(invoiceId, documentType);
+    } else {
+      // String: Direct URL or template
+      redirectUrl = redirectAfterAction.replace('{documentId}', invoiceId).replace('{companyId}', companyId);
+    }
+    
+    console.log(`🔀 Redirecting after action to: ${redirectUrl}`);
+    router.push(redirectUrl);
+  }, [redirectAfterAction, documentType, companyId, router]);
 
   // GoBD Action Warning Hook
   const { showWarning, WarningComponent } = useGoBDActionWarning(); // Document Settings States
@@ -1485,6 +1507,8 @@ ${document.companyName || 'Ihr Unternehmen'}`;
           await onSend(method, { invoiceId });
         }
         
+        // 🔀 Dynamic redirect after action
+        handleRedirectAfterAction(invoiceId);
         onClose();
         return;
       }
@@ -1517,6 +1541,9 @@ ${document.companyName || 'Ihr Unternehmen'}`;
           await onSend(method, { invoiceId });
         }
         
+        // 🔀 Dynamic redirect after action
+        handleRedirectAfterAction(invoiceId);
+        onClose();
         return;
       }
 
@@ -1696,6 +1723,8 @@ ${document.companyName || 'Ihr Unternehmen'}`;
           await onSend(method, { invoiceId });
         }
 
+        // 🔀 Dynamic redirect after action
+        handleRedirectAfterAction(invoiceId);
         onClose();
         return;
       }
@@ -1738,6 +1767,8 @@ ${document.companyName || 'Ihr Unternehmen'}`;
         }
 
         toast.success(`${documentLabel} erfolgreich versendet`);
+        // 🔀 Dynamic redirect after action
+        handleRedirectAfterAction(invoiceId);
         onClose();
         return;
       }
@@ -1792,6 +1823,8 @@ ${document.companyName || 'Ihr Unternehmen'}`;
             await onSend(method, { invoiceId });
           }
           
+          // 🔀 Dynamic redirect after action
+          handleRedirectAfterAction(invoiceId);
           onClose();
           return;
         } catch (downloadError) {
