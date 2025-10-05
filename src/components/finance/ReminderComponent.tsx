@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReminderSettings } from './ReminderSettings';
+import { NumberSequenceService } from '@/services/numberSequenceService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -97,7 +98,7 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
       const mockReminders: Reminder[] = [
         {
           id: '1',
-          number: 'M1-2025-001',
+          number: 'M1-MOCK-001',
           invoiceNumber: 'R-2025-012',
           customerName: 'Müller & Co KG',
           customerEmail: 'buchhaltung@mueller-co.de',
@@ -112,7 +113,7 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
         },
         {
           id: '2',
-          number: 'M2-2025-001',
+          number: 'M2-MOCK-001',
           invoiceNumber: 'R-2025-008',
           customerName: 'Schmidt GmbH',
           customerEmail: 'info@schmidt.de',
@@ -127,7 +128,7 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
         },
         {
           id: '3',
-          number: 'M3-2025-001',
+          number: 'M3-MOCK-001',
           invoiceNumber: 'R-2024-156',
           customerName: 'Weber AG',
           customerEmail: 'finanzen@weber.de',
@@ -199,10 +200,19 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
 
       const reminderConfig = reminderSettings[newReminder.reminderLevel];
 
-      // Mock creation
+      // ✅ Use NumberSequenceService for reminder numbers
+      let reminderNumber = `M${newReminder.reminderLevel}-TEMP`;
+      try {
+        const result = await NumberSequenceService.getNextNumberForType(companyId || '', 'Mahnung');
+        reminderNumber = `M${newReminder.reminderLevel}-${result.formattedNumber}`;
+      } catch (error) {
+        console.error('Error generating reminder number:', error);
+        reminderNumber = `M${newReminder.reminderLevel}-${Date.now()}`; // Emergency fallback
+      }
+
       const reminder: Reminder = {
         id: Date.now().toString(),
-        number: `M${newReminder.reminderLevel}-${new Date().getFullYear()}-${String(reminders.filter(r => r.reminderLevel === newReminder.reminderLevel).length + 1).padStart(3, '0')}`,
+        number: reminderNumber,
         invoiceNumber: newReminder.invoiceNumber,
         customerName: 'Test Kunde',
         customerEmail: 'test@kunde.de',

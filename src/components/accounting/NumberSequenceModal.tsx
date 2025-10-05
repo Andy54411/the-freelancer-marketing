@@ -14,12 +14,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { X, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { NumberSequence } from './NumberSequencesTab';
+import { NumberSequence } from '@/services/numberSequenceService';
 
 interface NumberSequenceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (sequence: NumberSequence) => void;
+  onSave: (updates: Partial<NumberSequence> & { id: string }) => void;
   sequence: NumberSequence | null;
 }
 
@@ -92,14 +92,14 @@ export default function NumberSequenceModal({
       return;
     }
 
-    const updatedSequence: NumberSequence = {
-      ...sequence,
+    const updates = {
+      id: sequence.id!,
       format,
       nextNumber,
       nextFormatted: preview,
     };
 
-    onSave(updatedSequence);
+    onSave(updates);
     onClose();
   };
 

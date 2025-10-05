@@ -138,7 +138,7 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
           amount: 8.5,
           description: 'Porto - Einschreiben',
           category: 'Porto',
-          reference: 'POST-123',
+          reference: 'POST-MOCK',
           createdAt: '2025-02-02T11:20:00Z',
         },
       ];

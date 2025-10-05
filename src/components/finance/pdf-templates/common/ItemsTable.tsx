@@ -71,7 +71,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                     <td className="py-4 px-3 text-sm">{index + 1}</td>
                     {showArticleNumber && (
                       <td className="py-4 px-3 text-sm text-gray-600">
-                        {(item as any).articleNumber || `ART-${String(index + 1).padStart(3, '0')}`}
+                        {(item as any).articleNumber || `ART${index + 1}`}
                       </td>
                     )}
                     <td className="py-4 px-3 text-sm">
@@ -157,11 +157,11 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   style={PDF_PAGE_STYLES.tableRow}
                 >
                   <td className="py-2 px-2 text-xs font-mono">
-                    {String(index + 1).padStart(3, '0')}
+                    {index + 1}
                   </td>
                   {showArticleNumber && (
                     <td className="py-2 px-2 text-xs font-mono text-gray-600">
-                      {(item as any).articleNumber || `ART${String(index + 1).padStart(3, '0')}`}
+                      {(item as any).articleNumber || `ART${index + 1}`}
                     </td>
                   )}
                   <td className="py-2 px-2 text-xs font-mono">

@@ -92,7 +92,7 @@ function decodeUTF8Properly(text: string): string {
   }
 
   try {
-    // Schritt 1: HTML-Entitäten dekodieren (z.B. &#252; -> ü)
+    // Schritt 1: HTML-Entitäten dekodieren
     let decoded = decode(text);
 
     // Schritt 2: URL-encoded Zeichen dekodieren (z.B. %C3%BC -> ü)
@@ -357,8 +357,20 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
 
     // CHARACTER CODE ANALYZER - Finde die exakten problematischen Zeichen!
     // 🔥 ULTIMATE CHARACTER ANALYZER - FINDET ALLE PROBLEMATISCHEN ZEICHEN
-    const suspiciousChars = [];
-    const matchSearchResults = [];
+    const suspiciousChars: Array<{
+      char: string;
+      charCode: number;
+      hex: string;
+      unicode: string;
+      index: number;
+      context: string;
+    }> = [];
+    
+    const matchSearchResults: Array<{
+      match: string;
+      index: number;
+      context: string;
+    }> = [];
 
     // Suche speziell nach "Match" mit problematischen Zeichen
     const matchRegex = /[""''€‚„‹›«»‰‱][Mm]atch[""''€‚„‹›«»‰‱]/g;
@@ -366,8 +378,8 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
     while ((matchResult = matchRegex.exec(htmlContent)) !== null) {
       matchSearchResults.push({
         match: matchResult[0],
-        index: matchResult.index,
-        context: htmlContent.substring(Math.max(0, matchResult.index - 30), matchResult.index + 30),
+        index: matchResult.index!,
+        context: htmlContent.substring(Math.max(0, matchResult.index! - 30), matchResult.index! + 30),
       });
     }
 
@@ -710,7 +722,7 @@ export default function EmailDetailView({
         markdown: markdown,
         subject: subject || email.subject,
         from: from || email.from,
-        to: email.to ? [email.to] : [],
+        to: email.to ? [email.to].filter((item): item is string => Boolean(item)) : [],
         attachments:
           email.attachments?.map(att => ({
             filename: att.name,
@@ -970,7 +982,7 @@ export default function EmailDetailView({
               markdown: textContent,
               subject: email.subject,
               from: email.from,
-              to: [email.to].filter(Boolean),
+              to: email.to ? [email.to].filter((item): item is string => Boolean(item)) : [],
               attachments: [],
             });
           } else {
@@ -981,7 +993,7 @@ export default function EmailDetailView({
               markdown: email.rawContent,
               subject: email.subject,
               from: email.from,
-              to: [email.to].filter(Boolean),
+              to: email.to ? [email.to].filter((item): item is string => Boolean(item)) : [],
               attachments: [],
             });
           }
@@ -993,7 +1005,7 @@ export default function EmailDetailView({
             markdown: 'E-Mail konnte nicht verarbeitet werden',
             subject: email.subject,
             from: email.from,
-            to: [email.to].filter(Boolean),
+            to: email.to ? [email.to].filter((item): item is string => Boolean(item)) : [],
             attachments: [],
           });
         }
@@ -1010,7 +1022,12 @@ export default function EmailDetailView({
       if (parsedEmail.text) {
         // Detaillierte Euro-Symbol-Analyse
         let euroCount = 0;
-        const sampleEuros = [];
+        const sampleEuros: Array<{
+          index: number;
+          char: string;
+          charCode: number;
+          context: string;
+        }> = [];
         for (let i = 0; i < Math.min(parsedEmail.text.length, 1000); i++) {
           const char = parsedEmail.text[i];
           if (char === '€') {

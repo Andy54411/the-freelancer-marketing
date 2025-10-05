@@ -57,7 +57,7 @@ export default function InvoiceHeaderTextSection({
                   type="text"
                   value={title}
                   onChange={e => onTitleChange(e.target.value)}
-                  placeholder="RE-1000"
+                  placeholder="Wird automatisch generiert"
                   className={`${getFieldErrorClass('title')}`}
                   required
                 />

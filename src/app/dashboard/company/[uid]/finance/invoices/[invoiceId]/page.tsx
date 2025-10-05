@@ -541,7 +541,7 @@ export default function InvoiceDetailPage() {
     try {
       // 1. Generiere Storno-Nummer (ST-XXXX Format)
       const stornoResult = await FirestoreInvoiceService.getNextStornoNumber(uid);
-      const stornoNumber = stornoResult.formattedNumber; // z.B. "ST-1001"
+      const stornoNumber = stornoResult.formattedNumber;
 
       // 2. Erstelle Storno-Rechnung in separater Collection
       // Entferne undefined Werte aus der Original-Rechnung

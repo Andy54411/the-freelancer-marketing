@@ -495,14 +495,14 @@ export default function QuoteResponsePage({
     const address = typeof location === 'string' ? location : location.address;
     if (!address) return '';
 
-    // Versuche Stadt nach PLZ-Muster zu finden (z.B. "10115 Berlin")
+    // Versuche Stadt nach PLZ-Muster zu finden
     const lines = address.split('\n');
     for (const line of lines) {
       const match = line.match(/\d{5}\s+(.+)/);
       if (match) return match[1].trim();
     }
 
-    // Alternative: Suche nach Komma-getrennten Teilen (z.B. "Straße, 10115 Berlin")
+    // Alternative: Suche nach Komma-getrennten Teilen
     if (address.includes(',')) {
       const parts = address.split(',');
       const lastPart = parts[parts.length - 1].trim();
@@ -993,14 +993,15 @@ export default function QuoteResponsePage({
             {/* Chat - nur wenn Kontakte ausgetauscht oder bezahlt */}
             {(quote.status === 'contacts_exchanged' ||
               (quote.status === 'accepted' && quote.payment?.provisionStatus === 'paid')) && (
-              <QuoteChat
-                quoteId={quote.id}
-                customerId={quote.customerUid || quote.customer.uid}
-                providerId={getCompanyId()}
-                customerName={quote.customer.name}
-                providerName="Anbieter"
-                currentUserType="provider"
-              />
+                <QuoteChat
+                  quoteId={quote.id}
+                  customerId={quote.customer?.uid || quote.customerUid || ''}
+                  providerId={getCompanyId()}
+                  customerName={quote.customer?.name || ''}
+                  providerName="Unternehmen"
+                  currentUserType="provider"
+                  companyId={getCompanyId()}
+                />
             )}
 
             {/* Status */}

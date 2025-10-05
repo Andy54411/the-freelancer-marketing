@@ -1591,7 +1591,7 @@ export default function EditInvoicePage() {
 
     const data: PreviewTemplateData = {
       invoiceNumber: 'Vorschau',
-      documentNumber: formData.title || 'RE-1000',
+      documentNumber: formData.title || 'VORSCHAU',
       date: formData.invoiceDate
         ? formatDateDE(new Date(formData.invoiceDate))
         : formatDateDE(today),
@@ -3586,7 +3586,7 @@ export default function EditInvoicePage() {
                     </div>
                     <div className="relative">
                       <Input
-                        placeholder="RE-1000"
+                        placeholder="Wird automatisch generiert"
                         value={formData.title || ''}
                         onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
                         required

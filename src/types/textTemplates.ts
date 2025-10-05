@@ -79,7 +79,7 @@ export const PLACEHOLDER_CATEGORIES = {
       },
       '[%KUNDENNUMMER%]': {
         description: 'Kundennummer',
-        example: 'KD-001',
+        example: 'KD-XXXX',
         dataPath: 'data.customerNumber',
       },
       '[%EMAIL%]': {
@@ -124,7 +124,7 @@ export const PLACEHOLDER_CATEGORIES = {
       },
       '[%RECHNUNGSNUMMER%]': {
         description: 'Rechnungsnummer',
-        example: 'RE-2024-001',
+        example: 'RE-YYYY-XXX',
         dataPath: 'data.invoiceNumber',
       },
       '[%ZAHLUNGSZIEL%]': {

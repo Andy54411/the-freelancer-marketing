@@ -373,7 +373,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
         const data = doc.data();
         loadedCustomers.push({
           id: doc.id,
-          customerNumber: data.customerNumber || 'KD-000',
+          customerNumber: data.customerNumber || '', // NumberSequenceService manages numbering
           name: data.name || '',
           email: data.email || '',
           phone: data.phone,

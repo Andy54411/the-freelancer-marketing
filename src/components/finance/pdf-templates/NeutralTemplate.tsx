@@ -242,7 +242,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
                   data.title ||
                   data.invoiceNumber ||
                   'AN-000' :
-                  data.invoiceNumber || data.documentNumber || data.title || 'RE-000'}
+                  data.invoiceNumber || data.documentNumber || data.title || 'DOKUMENT'}
                 </div>
                 <div>
                   {config.dateLabel}:{' '}
@@ -471,7 +471,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
                     data.title ||
                     data.invoiceNumber ||
                     'AN-000' :
-                    data.invoiceNumber || data.documentNumber || data.title || 'RE-000'}
+                    data.invoiceNumber || data.documentNumber || data.title || 'DOKUMENT'}
                     </div>
                     <div>
                       {config.dateLabel}:{' '}

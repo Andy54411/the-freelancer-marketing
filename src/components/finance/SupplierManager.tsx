@@ -20,11 +20,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Search, Eye, Mail, Phone, MapPin, Trash2, Plus } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Edit, Search, Eye, Mail, Phone, MapPin, Trash2, Plus, FileText, Receipt, Archive, Building, Users, History, MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { AddSupplierModal } from './AddSupplierModal';
 import { CustomerDetailModal } from './CustomerDetailModal';
 import { EditCustomerModal } from './EditCustomerModal';
+import { SupplierOverviewTab } from './supplier/SupplierOverviewTab';
+import { SupplierExpensesTab } from './supplier/SupplierExpensesTab';
+import { SupplierDocumentsTab } from './supplier/SupplierDocumentsTab';
+import { SupplierHistoryTab } from './supplier/SupplierHistoryTab';
+import { SupplierContactsTab } from './supplier/SupplierContactsTab';
+import { SupplierDetailView } from './supplier/SupplierDetailView';
 
 // Supplier Interface (erweitert Customer für Lieferanten)
 export interface Supplier {
@@ -40,6 +47,7 @@ export interface Supplier {
   vatId?: string;
   taxNumber?: string;
   supplierNumber: string;
+  customerNumber: string; // Für CustomerDetailModal: entspricht supplierNumber
   companyId: string;
   isSupplier: true; // Immer true für Lieferanten
   totalAmount: number;
@@ -59,42 +67,93 @@ interface SupplierManagerProps {
   companyId: string;
 }
 
+// Tab definition interface
+interface SupplierTab {
+  id: string;
+  label: string;
+  count?: number;
+  icon?: React.ComponentType<{ className?: string }>;
+}
+
 export function SupplierManager({ companyId }: SupplierManagerProps) {
   const { user } = useAuth();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [nextSupplierNumber, setNextSupplierNumber] = useState('LF-001');
+  const [nextSupplierNumber, setNextSupplierNumber] = useState(''); // Will be set by NumberSequenceService
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [expenseCount, setExpenseCount] = useState(0);
+  const [documentCount, setDocumentCount] = useState(0);
+  const [showDetailView, setShowDetailView] = useState(false);
+  const [detailSupplier, setDetailSupplier] = useState<Supplier | null>(null);
 
-  // Generate next supplier number
-  const generateNextSupplierNumber = (existingSuppliers: Supplier[]) => {
-    if (existingSuppliers.length === 0) {
-      return 'LF-001';
+  // Tab definitions with counts
+  const tabs: SupplierTab[] = [
+    {
+      id: 'overview',
+      label: 'Übersicht',
+      count: suppliers.length,
+      icon: Building,
+    },
+    {
+      id: 'expenses',
+      label: 'Ausgaben',
+      count: expenseCount,
+      icon: Receipt,
+    },
+    {
+      id: 'documents',
+      label: 'Belege',
+      count: documentCount,
+      icon: FileText,
+    },
+    {
+      id: 'history',
+      label: 'Verlauf',
+      icon: History,
+    },
+    {
+      id: 'contacts',
+      label: 'Personen',
+      count: 0,
+      icon: Users,
+    },
+  ];
+
+  // ✅ REMOVED: generateNextSupplierNumber - use SupplierService.getNextSupplierNumber() instead  // Load expense and document counts
+  const loadCounts = async () => {
+    try {
+      if (!companyId) return;
+
+      // Count expenses for all suppliers
+      const expensesQuery = query(
+        collection(db, `companies/${companyId}/expenses`),
+        where('supplierId', '!=', null)
+      );
+      const expensesSnapshot = await getDocs(expensesQuery);
+      setExpenseCount(expensesSnapshot.size);
+
+      // Count documents (could be extended to actual document collection)
+      setDocumentCount(0); // Placeholder
+    } catch (error) {
+      console.error('Fehler beim Laden der Zähler:', error);
     }
-
-    const numbers = existingSuppliers
-      .map(s => s.supplierNumber)
-      .filter(num => num.startsWith('LF-'))
-      .map(num => parseInt(num.replace('LF-', ''), 10))
-      .filter(num => !isNaN(num));
-
-    const highestNumber = Math.max(...numbers, 0);
-    return `LF-${String(highestNumber + 1).padStart(3, '0')}`;
   };
 
   // Load suppliers from Firebase
   const loadSuppliers = async () => {
     try {
-      if (!user || !companyId) return;
-
+      if (!user || !companyId) {
+        return;
+      }
+      
       const suppliersQuery = query(
-        collection(db, 'customers'),
-        where('companyId', '==', companyId),
+        collection(db, `companies/${companyId}/customers`),
         where('isSupplier', '==', true),
         orderBy('createdAt', 'desc')
       );
@@ -132,6 +191,8 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
           }
         } catch (error) {}
 
+        const supplierNumber = data.supplierNumber || data.customerNumber || '';
+        
         suppliersData.push({
           id: doc.id,
           name: data.name || '',
@@ -144,8 +205,9 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
           country: data.country || '',
           vatId: data.vatId || '',
           taxNumber: data.taxNumber || '',
-          supplierNumber: data.supplierNumber || data.customerNumber || '', // Fallback
-          companyId: data.companyId,
+          supplierNumber: supplierNumber,
+          customerNumber: supplierNumber, // Für CustomerDetailModal: customerNumber = supplierNumber
+          companyId: data.companyId || companyId, // Fallback auf aktuelle companyId
           isSupplier: true,
           totalAmount: data.totalAmount || 0,
           totalInvoices: data.totalInvoices || 0,
@@ -157,8 +219,10 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
       });
 
       setSuppliers(suppliersData);
-      setNextSupplierNumber(generateNextSupplierNumber(suppliersData));
+      // ✅ REMOVED: generateNextSupplierNumber call - NumberSequenceService handles this
+      // setNextSupplierNumber will be set by NumberSequenceService when needed
     } catch (error) {
+      console.error('Fehler beim Laden der Lieferanten:', error);
       toast.error('Fehler beim Laden der Lieferanten');
     } finally {
       setLoading(false);
@@ -167,6 +231,7 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
 
   useEffect(() => {
     loadSuppliers();
+    loadCounts();
   }, [user, companyId]);
 
   // Event-Listener für das Öffnen des EditModals von CustomerDetailModal
@@ -202,7 +267,7 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
         throw new Error('Keine Berechtigung für diese Firma');
       }
 
-      const newSupplierDoc = await addDoc(collection(db, 'customers'), {
+      const newSupplierDoc = await addDoc(collection(db, `companies/${companyId}/customers`), {
         ...supplierData,
         isSupplier: true,
         totalAmount: 0,
@@ -220,7 +285,8 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
       };
 
       setSuppliers(prev => [newSupplier, ...prev]);
-      setNextSupplierNumber(generateNextSupplierNumber([newSupplier, ...suppliers]));
+      // ✅ REMOVED: generateNextSupplierNumber call - NumberSequenceService handles this
+      loadCounts(); // Update counts after adding
 
       toast.success('Lieferant erfolgreich hinzugefügt');
     } catch (error) {
@@ -231,8 +297,8 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
 
   // View supplier details
   const handleViewSupplier = (supplier: Supplier) => {
-    setSelectedSupplier(supplier);
-    setShowDetailModal(true);
+    setDetailSupplier(supplier);
+    setShowDetailView(true);
   };
 
   // Edit supplier
@@ -266,6 +332,7 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
       await updateDoc(supplierRef, cleanSupplierData);
 
       setSuppliers(prev => prev.map(s => (s.id === updatedSupplier.id ? updatedSupplier : s)));
+      loadCounts(); // Update counts after updating
 
       toast.success('Lieferant erfolgreich aktualisiert');
     } catch (error) {
@@ -296,6 +363,7 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
 
       // Update local state only if deletion was successful
       setSuppliers(prev => prev.filter(s => s.id !== supplier.id));
+      loadCounts(); // Update counts after deletion
 
       toast.success('Lieferant erfolgreich gelöscht');
     } catch (error) {
@@ -315,9 +383,9 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
   // Filter suppliers based on search term
   const filteredSuppliers = suppliers.filter(
     supplier =>
-      supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.supplierNumber.toLowerCase().includes(searchTerm.toLowerCase())
+      supplier.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      supplier.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      supplier.supplierNumber?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Format currency
@@ -388,155 +456,63 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Lieferanten</CardTitle>
-            <CardDescription>
-              Verwalten Sie Ihre Lieferantendaten ({suppliers.length} Lieferanten)
-            </CardDescription>
-          </div>
-          <Button
-            onClick={() => setShowAddModal(true)}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Neuer Lieferant
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Lieferanten suchen..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {/* Suppliers List */}
-          {filteredSuppliers.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <div className="text-center">
-                <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p>Noch keine Lieferanten erfasst</p>
-                <p className="text-sm">
-                  Klicken Sie auf &quot;Neuer Lieferant&quot; um zu beginnen
-                </p>
-              </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Lieferanten Management</CardTitle>
+              <CardDescription>
+                Verwalten Sie Ihre Lieferantendaten und Ausgaben ({suppliers.length} Lieferanten)
+              </CardDescription>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredSuppliers.map(supplier => (
-                <div
-                  key={supplier.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Badge
-                          variant="outline"
-                          className="text-xs bg-blue-50 text-blue-700 border-blue-200"
-                        >
-                          {supplier.supplierNumber}
-                        </Badge>
-                        <h3 className="font-semibold text-gray-900">{supplier.name}</h3>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4" />
-                          <span>{supplier.email}</span>
-                        </div>
-
-                        {supplier.phone && (
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4" />
-                            <span>{supplier.phone}</span>
-                          </div>
-                        )}
-
-                        <div className="flex items-start gap-2 md:col-span-2">
-                          <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                          <span className="break-words">
-                            {supplier.street ||
-                            supplier.city ||
-                            supplier.postalCode ||
-                            supplier.country
-                              ? `${supplier.street}${supplier.street ? ', ' : ''}${supplier.postalCode}${supplier.postalCode ? ' ' : ''}${supplier.city}${supplier.city && supplier.country ? ', ' : ''}${supplier.country}`
-                              : supplier.address}
-                          </span>
-                        </div>
-
-                        {(supplier.taxNumber || supplier.vatId) && (
-                          <div className="md:col-span-2 pt-2 border-t border-gray-100">
-                            {supplier.taxNumber && (
-                              <span className="text-xs text-gray-500 mr-4">
-                                Steuer-Nr: {supplier.taxNumber}
-                              </span>
-                            )}
-                            {supplier.vatId && (
-                              <span className="text-xs text-gray-500">
-                                USt-IdNr: {supplier.vatId}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="text-right ml-4">
-                      <div className="font-semibold text-lg text-gray-900 mb-1">
-                        {formatCurrency(supplier.totalAmount)}
-                      </div>
-                      <div className="text-sm text-gray-500 mb-2">
-                        {supplier.totalInvoices} Rechnungen
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        Seit {formatDate(supplier.createdAt)}
-                      </div>
-
-                      <div className="flex gap-1 mt-3">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewSupplier(supplier)}
-                          title="Lieferant anzeigen"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditSupplier(supplier)}
-                          title="Lieferant bearbeiten"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteSupplier(supplier)}
-                          title="Lieferant löschen"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowAddModal(true)}
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Neuer Lieferant
+              </Button>
+              <Button variant="outline">
+                <MoreHorizontal className="h-4 w-4 mr-2" />
+                Optionen
+              </Button>
             </div>
-          )}
-        </div>
-      </CardContent>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Supplier Overview */}
+      <Card>
+        <CardContent className="p-6">
+          <SupplierOverviewTab
+            suppliers={filteredSuppliers}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            onViewSupplier={handleViewSupplier}
+            onEditSupplier={handleEditSupplier}
+            onDeleteSupplier={handleDeleteSupplier}
+            formatCurrency={formatCurrency}
+            formatDate={formatDate}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Supplier Detail View Modal */}
+      {detailSupplier && (
+        <SupplierDetailView
+          supplier={detailSupplier}
+          isOpen={showDetailView}
+          onClose={() => {
+            setShowDetailView(false);
+            setDetailSupplier(null);
+          }}
+          formatCurrency={formatCurrency}
+          formatDate={formatDate}
+        />
+      )}
 
       {/* Add Supplier Modal */}
       <AddSupplierModal
@@ -570,6 +546,6 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
         }}
         onUpdateCustomer={handleUpdateSupplier as any} // Type assertion for compatibility
       />
-    </Card>
+    </div>
   );
 }

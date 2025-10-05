@@ -13,22 +13,13 @@ import {
 } from '@/components/ui/table';
 import { Pencil, Trash2 } from 'lucide-react';
 import NumberSequenceModal from './NumberSequenceModal';
-
-export interface NumberSequence {
-  id: string;
-  format: string;
-  type: string;
-  nextNumber: number;
-  nextFormatted: string;
-  canEdit: boolean;
-  canDelete: boolean;
-}
+import { NumberSequence } from '@/services/numberSequenceService';
 
 interface NumberSequencesTabProps {
   sequences: NumberSequence[];
   onEdit: (sequence: NumberSequence) => void;
   onDelete: (sequence: NumberSequence) => void;
-  onUpdate: (sequence: NumberSequence) => void;
+  onUpdate: (updates: Partial<NumberSequence> & { id: string }) => void;
 }
 
 export default function NumberSequencesTab({
@@ -50,8 +41,8 @@ export default function NumberSequencesTab({
     setSelectedSequence(null);
   };
 
-  const handleModalSave = (updatedSequence: NumberSequence) => {
-    onUpdate(updatedSequence);
+  const handleModalSave = (updates: Partial<NumberSequence> & { id: string }) => {
+    onUpdate(updates);
   };
   return (
     <Card>

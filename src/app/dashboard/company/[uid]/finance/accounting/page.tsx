@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Calculator, Hash, CreditCard, Wallet, ArrowLeftRight, Building2, Shield } from 'lucide-react';
 
 // Import Tab Components
-import NumberSequencesTab, { NumberSequence } from '@/components/accounting/NumberSequencesTab';
+import NumberSequencesTab from '@/components/accounting/NumberSequencesTab';
 import BookingAccountsTab from '@/components/accounting/BookingAccountsTab';
 import PaymentMethodsTab, { PaymentMethod } from '@/components/accounting/PaymentMethodsTab';
 import PaymentAccountsTab, { PaymentAccount } from '@/components/accounting/PaymentAccountsTab';
@@ -16,7 +16,7 @@ import CostCentersTab, { CostCenter } from '@/components/accounting/CostCentersT
 import { GoBDSystem } from '@/components/finance/gobd';
 
 // Import Services
-import { NumberSequenceService } from '@/services/numberSequenceService';
+import { NumberSequenceService, NumberSequence } from '@/services/numberSequenceService';
 
 export default function AccountingPage() {
   const params = useParams();
@@ -110,17 +110,17 @@ export default function AccountingPage() {
 
   const handleDeleteNumberSequence = (sequence: NumberSequence) => {};
 
-  const handleUpdateNumberSequence = async (updatedSequence: NumberSequence) => {
+  const handleUpdateNumberSequence = async (updates: Partial<NumberSequence> & { id: string }) => {
     try {
       // Aktualisiere die Datenbank
-      await NumberSequenceService.updateNumberSequence(uid, updatedSequence.id, {
-        format: updatedSequence.format,
-        nextNumber: updatedSequence.nextNumber,
+      await NumberSequenceService.updateNumberSequence(uid, updates.id, {
+        format: updates.format,
+        nextNumber: updates.nextNumber,
       });
 
       // Aktualisiere den lokalen State
       setNumberSequences(prev =>
-        prev.map(seq => (seq.id === updatedSequence.id ? updatedSequence : seq))
+        prev.map(seq => (seq.id === updates.id ? { ...seq, ...updates } : seq))
       );
     } catch (error) {
       console.error('Fehler beim Aktualisieren des Nummerkreises:', error);

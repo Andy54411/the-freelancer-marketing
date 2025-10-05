@@ -23,7 +23,7 @@ import { ComplianceDashboard } from './ComplianceDashboard';
 // Mock-Dokument für Demo-Zwecke
 const mockDocument = {
   id: 'invoice-123',
-  documentNumber: 'RE-2025-001',
+  documentNumber: 'RE-MOCK-001',
   documentType: 'invoice' as const,
   createdAt: new Date('2025-10-15'),
   amount: 1190.00,

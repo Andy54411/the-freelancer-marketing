@@ -20,19 +20,20 @@ interface CustomerStats {
 /**
  * Berechnet die Kundenstatistiken basierend auf Rechnungen
  * @param companyId - Die Firmen-ID
- * @param customerName - Der Kundenname
+ * @param customerNumber - Die Kundennummer (eindeutig!)
  * @returns Promise mit den berechneten Statistiken
  */
 export async function calculateCustomerStats(
   companyId: string,
-  customerName: string
+  customerNumber: string
 ): Promise<CustomerStats> {
   try {
-    // Lade alle Rechnungen für den Kunden
+
+    
+    // Lade alle Rechnungen für den Kunden AUS DER SUBCOLLECTION mit customerNumber (eindeutig!)
     const invoicesQuery = query(
-      collection(db, 'invoices'),
-      where('companyId', '==', companyId),
-      where('customerName', '==', customerName)
+      collection(db, `companies/${companyId}/invoices`),
+      where('customerNumber', '==', customerNumber)
     );
 
     const querySnapshot = await getDocs(invoicesQuery);

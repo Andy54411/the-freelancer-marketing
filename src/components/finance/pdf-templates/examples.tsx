@@ -18,7 +18,7 @@ import {
 
 const BasicUsageExample: React.FC = () => {
   const sampleInvoiceData = {
-    invoiceNumber: 'RE-2024-001',
+    invoiceNumber: 'RE-MOCK-001',
     companyName: 'Meine Firma GmbH',
     customerName: 'Max Mustermann',
     items: [
@@ -143,7 +143,7 @@ const PDFTemplate: React.FC<PDFTemplateProps> = (props) => {
 
 // Mock für Tests
 const createMockInvoiceData = (overrides = {}) => ({
-  invoiceNumber: 'TEST-001',
+  invoiceNumber: 'TEST-MOCK',
   companyName: 'Test Company',
   customerName: 'Test Customer',
   items: [{ description: 'Test Item', quantity: 1, unitPrice: 100, total: 100 }],
@@ -166,7 +166,7 @@ describe('PDF Templates', () => {
     );
     
     expect(container.querySelector('[data-testid="invoice-number"]'))
-      .toHaveTextContent('TEST-001');
+      .toHaveTextContent('TEST-MOCK');
   });
 
   test('should calculate totals correctly', () => {

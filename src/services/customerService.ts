@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { Customer } from '@/components/finance/AddCustomerModal';
+import { NumberSequenceService } from '@/services/numberSequenceService';
 
 export class CustomerService {
   /**
@@ -31,7 +32,8 @@ export class CustomerService {
 
       return snapshot.docs.map(doc => {
         const data = doc.data();
-        const customerNumber = data.customerNumber || `KD-${doc.id.substring(0, 6).toUpperCase()}`;
+        // ✅ NEUE: Verwende NumberSequenceService für konsistente Kundennummern
+        const customerNumber = data.customerNumber || 'KD-PENDING';
 
         return {
           id: doc.id,
@@ -73,8 +75,8 @@ export class CustomerService {
       }
 
       const data = customerDoc.data();
-      const customerNumber =
-        data.customerNumber || `KD-${customerDoc.id.substring(0, 6).toUpperCase()}`;
+      // ✅ NEUE: Verwende NumberSequenceService für konsistente Kundennummern  
+      const customerNumber = data.customerNumber || 'KD-PENDING';
 
       return {
         id: customerDoc.id,
@@ -110,9 +112,12 @@ export class CustomerService {
     customerData: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt' | 'companyId'>
   ): Promise<string> {
     try {
+      // ✅ NEUE: Generiere Kundennummer mit NumberSequenceService (race-condition-safe)
+      const customerNumberResult = await NumberSequenceService.getNextNumberForType(companyId, 'Kunde');
+      
       const newCustomer = {
         ...customerData,
-        // companyId nicht mehr nötig - ist implizit durch Subcollection
+        customerNumber: customerNumberResult.formattedNumber,
         totalInvoices: 0,
         totalAmount: 0,
         createdAt: new Date().toISOString(),
@@ -121,8 +126,10 @@ export class CustomerService {
       // NEUE SUBCOLLECTION STRUKTUR
       const docRef = await addDoc(collection(db, 'companies', companyId, 'customers'), newCustomer);
 
+      console.log(`✅ Kunde erstellt: ${newCustomer.customerNumber} (ID: ${docRef.id})`);
       return docRef.id;
     } catch (error) {
+      console.error('❌ Fehler beim Erstellen des Kunden:', error);
       throw error;
     }
   }
@@ -183,27 +190,15 @@ export class CustomerService {
   }
 
   /**
-   * Generiert die nächste Kundennummer
+   * ✅ NEUE: Generiert die nächste Kundennummer mit NumberSequenceService (race-condition-safe)
    */
   static async getNextCustomerNumber(companyId: string): Promise<string> {
     try {
-      const customers = await this.getCustomers(companyId);
-
-      // Finde die höchste Kundennummer
-      let maxNumber = 0;
-      customers.forEach(customer => {
-        const match = customer.customerNumber.match(/KD-(\d+)/);
-        if (match) {
-          const number = parseInt(match[1]);
-          if (number > maxNumber) {
-            maxNumber = number;
-          }
-        }
-      });
-
-      const nextNumber = maxNumber + 1;
-      return `KD-${nextNumber.toString().padStart(4, '0')}`;
+      const result = await NumberSequenceService.getNextNumberForType(companyId, 'Kunde');
+      return result.formattedNumber;
     } catch (error) {
+      console.error('❌ Fehler beim Generieren der Kundennummer:', error);
+      // Fallback nur im Notfall
       return `KD-${Date.now().toString().slice(-4)}`;
     }
   }
@@ -226,7 +221,8 @@ export class CustomerService {
 
       snapshot.forEach(doc => {
         const data = doc.data();
-        const customerNumber = data.customerNumber || `KD-${doc.id.substring(0, 6).toUpperCase()}`;
+        // ✅ NEUE: Verwende NumberSequenceService für konsistente Kundennummern
+        const customerNumber = data.customerNumber || 'KD-PENDING';
 
         // Filter: Nur echte Kunden anzeigen
         if (customerNumber.startsWith('KD-')) {

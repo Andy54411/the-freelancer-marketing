@@ -535,11 +535,9 @@ export function InvoiceListView({
                       <TableCell>
                         {invoice.number ||
                           invoice.invoiceNumber ||
-                          (invoice.sequentialNumber && invoice.sequentialNumber > 0
-                            ? `R-${new Date().getFullYear()}-${String(invoice.sequentialNumber).padStart(3, '0')}`
-                            : invoice.status === 'draft'
+                          (invoice.status === 'draft'
                             ? 'Entwurf'
-                            : `R-${invoice.id.substring(0, 8)}`)}
+                            : `DOK-${invoice.id.substring(0, 8)}`)} {/* NumberSequenceService manages numbering */}
                       </TableCell>
                       <TableCell>{invoice.customerName}</TableCell>
                       <TableCell>

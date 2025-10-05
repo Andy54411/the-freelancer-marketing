@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, Loader2, Trash2, UserPlus, Star, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Loader2, Trash2, UserPlus, Star, CheckCircle, XCircle, History, Users, FileText, Receipt, CreditCard, Upload, Printer, Download, Edit, User, Check, File, Folder, Book, Mail, DollarSign, MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { validateVATNumber, getVATFormat } from '@/utils/vatValidation';
 
@@ -93,6 +93,37 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
       isPrimary: true,
     },
   ]);
+
+  const [activeTab, setActiveTab] = useState('overview');
+
+  // Tab definitions
+  const tabs = [
+    { id: 'overview', label: 'Übersicht', count: null, icon: FileText },
+    { id: 'history', label: 'Verlauf', count: null, icon: History },
+    { id: 'persons', label: 'Personen', count: contactPersons.length, icon: Users },
+    { id: 'orders', label: 'Aufträge', count: 0, icon: Folder },
+    { id: 'invoices', label: 'Rechnungen', count: 0, icon: Receipt },
+    { id: 'credits', label: 'Gutschriften', count: 0, icon: CreditCard },
+    { id: 'documents', label: 'Belege', count: 0, icon: FileText },
+    { id: 'files', label: 'Dokumente', count: 0, icon: Upload },
+  ];
+
+  // Action menu items
+  const actionItems = [
+    { id: 'task', label: 'Aufgabe erstellen', icon: Check, action: () => {} },
+    { id: 'print', label: 'PDF Download / Drucken', icon: Printer, action: () => {} },
+    { id: 'export', label: 'Exportieren (CSV)', icon: Download, action: () => {} },
+    { id: 'invoice', label: 'Rechnung erstellen', icon: File, action: () => {} },
+    { id: 'recurring', label: 'Wiederkehrende Rechnung', icon: File, action: () => {} },
+    { id: 'quote', label: 'Angebot erstellen', icon: Folder, action: () => {} },
+    { id: 'order', label: 'Auftrag erstellen', icon: Folder, action: () => {} },
+    { id: 'delivery', label: 'Lieferschein erstellen', icon: Folder, action: () => {} },
+    { id: 'credit', label: 'Gutschrift erstellen', icon: Book, action: () => {} },
+    { id: 'letter', label: 'Brief schreiben', icon: Mail, action: () => {} },
+    { id: 'upload', label: 'Datei hochladen', icon: Upload, action: () => {} },
+    { id: 'pricing', label: 'Kundenpreis hinzufügen', icon: DollarSign, action: () => {} },
+    { id: 'delete', label: 'Löschen', icon: Trash2, action: () => {} },
+  ];
 
   // Update customer number when prop changes
   React.useEffect(() => {
@@ -290,15 +321,117 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[1000px] max-h-[90vh] overflow-y-auto w-[90vw]">
-        <DialogHeader>
-          <DialogTitle>Neuen Kunden hinzufügen</DialogTitle>
-          <DialogDescription>
-            Geben Sie die Kundendaten ein. Pflichtfelder sind mit * gekennzeichnet.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto w-[95vw] p-0">
+        {/* Header mit Titel */}
+        <div className="p-6 pb-0">
+          <DialogHeader>
+            <DialogTitle>Neuen Kunden hinzufügen</DialogTitle>
+            <DialogDescription>
+              Geben Sie die Kundendaten ein. Pflichtfelder sind mit * gekennzeichnet.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200 bg-white">
+          <div className="flex items-center justify-between px-6 py-0">
+            {/* Tab Navigation */}
+            <nav className="flex items-center space-x-0 overflow-x-auto">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                      activeTab === tab.id
+                        ? 'border-[#14ad9f] text-[#14ad9f]'
+                        : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{tab.label}</span>
+                    {tab.count !== null && (
+                      <span className="ml-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                        ({tab.count})
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 py-3">
+              {/* Person hinzufügen Dropdown */}
+              <div className="relative group">
+                <button className="flex items-center gap-2 px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                  <User className="h-4 w-4" />
+                  Person hinzufügen
+                </button>
+                {/* Dropdown Menu für Person hinzufügen */}
+                <div className="absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="py-1">
+                    <button 
+                      onClick={() => {/* Bestehende Person auswählen */}}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      Bestehende Person auswählen
+                    </button>
+                    <button 
+                      onClick={() => {/* Neue Person anlegen */}}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      Neue Person anlegen
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bearbeiten Button */}
+              <button 
+                onClick={() => {/* Bearbeiten Funktion */}}
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                <Edit className="h-4 w-4" />
+                Bearbeiten
+              </button>
+
+              {/* Optionen Dropdown */}
+              <div className="relative group">
+                <button className="flex items-center gap-2 px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                  Optionen
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                {/* Dropdown Menu für Optionen */}
+                <div className="absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="py-1">
+                    {actionItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={item.action}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          <Icon className="h-4 w-4 mr-3" />
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="p-6">
+          {activeTab === 'overview' && (
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
           {/* Autofill-Honeypot - versteckte Felder für Browser-Autofill */}
           <div style={{ display: 'none' }}>
             <input type="text" name="username" tabIndex={-1} autoComplete="username" />
@@ -314,7 +447,7 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
                 name="customerNumber"
                 value={formData.customerNumber}
                 onChange={e => handleChange('customerNumber', e.target.value)}
-                placeholder="KD-001"
+                placeholder="Wird automatisch generiert"
                 disabled
                 className="bg-gray-50"
                 autoComplete="off"
@@ -712,7 +845,65 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
               Kunde hinzufügen
             </Button>
           </DialogFooter>
-        </form>
+            </form>
+          )}
+
+          {activeTab === 'history' && (
+            <div className="text-center py-12 text-gray-500">
+              <History className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Verlauf</h3>
+              <p>Hier werden alle Aktivitäten und Änderungen angezeigt</p>
+            </div>
+          )}
+
+          {activeTab === 'persons' && (
+            <div className="text-center py-12 text-gray-500">
+              <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Personen ({contactPersons.length})</h3>
+              <p>Verwalten Sie Ansprechpartner für diesen Kunden</p>
+            </div>
+          )}
+
+          {activeTab === 'orders' && (
+            <div className="text-center py-12 text-gray-500">
+              <Folder className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Aufträge (0)</h3>
+              <p>Hier werden alle Aufträge für diesen Kunden angezeigt</p>
+            </div>
+          )}
+
+          {activeTab === 'invoices' && (
+            <div className="text-center py-12 text-gray-500">
+              <Receipt className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Rechnungen (0)</h3>
+              <p>Hier werden alle Rechnungen für diesen Kunden angezeigt</p>
+            </div>
+          )}
+
+          {activeTab === 'credits' && (
+            <div className="text-center py-12 text-gray-500">
+              <CreditCard className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Gutschriften (0)</h3>
+              <p>Hier werden alle Gutschriften für diesen Kunden angezeigt</p>
+            </div>
+          )}
+
+          {activeTab === 'documents' && (
+            <div className="text-center py-12 text-gray-500">
+              <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Belege (0)</h3>
+              <p>Hier werden alle Belege für diesen Kunden angezeigt</p>
+            </div>
+          )}
+
+          {activeTab === 'files' && (
+            <div className="text-center py-12 text-gray-500">
+              <Upload className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Dokumente (0)</h3>
+              <p>Hier können Sie Dateien für diesen Kunden hochladen</p>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

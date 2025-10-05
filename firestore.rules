@@ -927,7 +927,7 @@ service cloud.firestore {
       // Erstellen: Nur eigene Firma (erweitert für automatische Storno-Nummerkreis-Erstellung)
       allow create: if request.auth != null && 
                        request.resource.data.companyId == request.auth.uid &&
-                       (isCompany() || exists(/databases/$(database)/documents/companies/$(request.auth.uid))) &&
+                       exists(/databases/$(database)/documents/companies/$(request.auth.uid)) &&
                        request.resource.data.keys().hasAll(['type', 'companyId']) &&
                        (request.resource.data.createdAt == request.time || 
                         request.resource.data.createdAt is timestamp) &&
@@ -937,7 +937,6 @@ service cloud.firestore {
       // Aktualisieren: Nur eigene Firma (für Nummernkreis-Updates und Generierung)
       allow update: if request.auth != null && 
                        resource.data.companyId == request.auth.uid &&
-                       isCompany() &&
                        request.resource.data.companyId == resource.data.companyId &&
                        request.resource.data.type == resource.data.type &&
                        request.resource.data.updatedAt == request.time;

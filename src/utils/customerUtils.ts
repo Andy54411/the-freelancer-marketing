@@ -84,21 +84,9 @@ export const fuzzyMatchCustomer = (
 
 /**
  * Generate next customer number
+ * @deprecated Use NumberSequenceService.getNextNumberForType(companyId, 'Kunde') instead
  */
-export const generateNextCustomerNumber = (existingCustomers: Customer[]): string => {
-  if (existingCustomers.length === 0) {
-    return 'KD-001';
-  }
-
-  const numbers = existingCustomers
-    .map(c => c.customerNumber)
-    .filter(num => num.startsWith('KD-'))
-    .map(num => parseInt(num.replace('KD-', ''), 10))
-    .filter(num => !isNaN(num));
-
-  const highestNumber = Math.max(...numbers, 0);
-  return `KD-${String(highestNumber + 1).padStart(3, '0')}`;
-};
+// ✅ ALL LEGACY FUNCTIONS REMOVED - Use CustomerService.getNextCustomerNumber(companyId)
 
 /**
  * Load all customers for a company
@@ -117,7 +105,7 @@ export const loadCustomers = async (companyId: string): Promise<Customer[]> => {
     const data = doc.data();
     customers.push({
       id: doc.id,
-      customerNumber: data.customerNumber || 'KD-000',
+      customerNumber: data.customerNumber || '', // NumberSequenceService manages numbering
       name: data.name || '',
       email: data.email || '',
       phone: data.phone,
@@ -161,54 +149,12 @@ export const findOrCreateCustomer = async (
     }
 
     // Customer doesn't exist, create new one
-
-    const newCustomerData = {
-      customerNumber: generateNextCustomerNumber(existingCustomers),
-      name: customerName.trim(),
-      email: '', // Will be empty initially
-      phone: '',
-      address: '',
-      street: '',
-      city: '',
-      postalCode: '',
-      country: 'Deutschland',
-      taxNumber: '',
-      vatId: '',
-      vatValidated: false,
-      totalInvoices: 0,
-      totalAmount: 0,
-      contactPersons: [],
-      companyId,
-      createdAt: serverTimestamp(),
-      createdBy: userUid,
-      lastModifiedBy: userUid,
-      updatedAt: serverTimestamp(),
-    };
-
-    const docRef = await addDoc(collection(db, 'customers'), newCustomerData);
-
-    const newCustomer: Customer = {
-      id: docRef.id,
-      customerNumber: newCustomerData.customerNumber,
-      name: customerName.trim(),
-      email: '',
-      phone: '',
-      address: '',
-      street: '',
-      city: '',
-      postalCode: '',
-      country: 'Deutschland',
-      taxNumber: '',
-      vatId: '',
-      vatValidated: false,
-      totalInvoices: 0,
-      totalAmount: 0,
-      contactPersons: [],
-      companyId,
-      createdAt: new Date().toISOString(),
-    };
-
-    return newCustomer;
+    // ❌ CRITICAL: This function should NOT create customers without proper NumberSequenceService integration!
+    console.error('❌ customerUtils.createCustomerIfNeeded is DEPRECATED - use CustomerService.addCustomer() instead!');
+    
+    throw new Error('❌ customerUtils.createCustomerIfNeeded is deprecated! Use CustomerService.addCustomer(companyId, customerData) instead.');
+    
+    // REMOVED: All legacy customer creation logic - use CustomerService.addCustomer() instead
   } catch (error) {
     throw error;
   }

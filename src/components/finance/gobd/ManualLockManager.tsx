@@ -57,7 +57,7 @@ export function ManualLockManager({ companyId, onLockComplete }: ManualLockManag
       const mockDocuments: GoBDDocument[] = [
         {
           id: '1',
-          documentNumber: 'RE-2025-001',
+          documentNumber: 'RE-MOCK-001',
           documentType: 'invoice',
           createdAt: new Date('2025-10-15'),
           amount: 1190.00,
@@ -67,7 +67,7 @@ export function ManualLockManager({ companyId, onLockComplete }: ManualLockManag
         },
         {
           id: '2',
-          documentNumber: 'RE-2025-002',
+          documentNumber: 'RE-MOCK-002',
           documentType: 'invoice',
           createdAt: new Date('2025-10-20'),
           amount: 595.00,

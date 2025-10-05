@@ -16,7 +16,16 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { DeliveryNoteTemplate } from '@/components/templates/delivery-note-templates';
+import { NumberSequenceService } from './numberSequenceService';
+
+// Taskilo PDF-Template-Typen für Lieferscheine (basierend auf den Taskilo InvoiceTemplates)
+type DeliveryNoteTemplate =
+  | 'TEMPLATE_STANDARD'
+  | 'TEMPLATE_NEUTRAL'
+  | 'TEMPLATE_ELEGANT'
+  | 'TEMPLATE_TECHNICAL'
+  | 'TEMPLATE_GEOMETRIC'
+  | 'TEMPLATE_DYNAMIC';
 
 export interface DeliveryNote {
   id: string;
@@ -146,15 +155,14 @@ export class DeliveryNoteService {
     noteData: Omit<DeliveryNote, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-      // Sequenznummer generieren - Mit robuster Fehlerbehandlung für Settings
-      let settings: DeliveryNoteSettings | null = null;
+      // Sequenznummer mit NumberSequenceService generieren
       let sequentialNumber = 1;
       let deliveryNoteNumber = '';
 
       try {
-        settings = await this.getSettings(noteData.companyId || '');
-        sequentialNumber = settings?.nextNumber || 1;
-        deliveryNoteNumber = this.generateDeliveryNoteNumber(settings, sequentialNumber);
+        const result = await NumberSequenceService.getNextNumberForType(noteData.companyId || '', 'Lieferschein');
+        sequentialNumber = result.number;
+        deliveryNoteNumber = result.formattedNumber;
       } catch (settingsError) {
         // Fallback: Einfache Nummerierung ohne Settings
         const timestamp = Date.now();
@@ -185,16 +193,8 @@ export class DeliveryNoteService {
 
       const docRef = await addDoc(collectionRef, docData);
 
-      // Nächste Nummer aktualisieren - Mit Fehlerbehandlung
-      if (settings && noteData.companyId) {
-        try {
-          await this.updateSettings(noteData.companyId, {
-            ...settings,
-            nextNumber: sequentialNumber + 1,
-          });
-        } catch (updateError) {}
-      } else {
-      }
+      // Nächste Nummer wird automatisch durch NumberSequenceService verwaltet
+      // Keine manuelle Update mehr nötig
       return docRef.id;
     } catch (error) {
       if (error instanceof Error) {

@@ -127,6 +127,24 @@ export class SomeService {
 - **Notifications**: Sonner for toast notifications
 - **Animations**: Framer Motion for smooth transitions
 
+### UI/UX Patterns
+- **Info-Dialoge**: IMMER als Info-Icons rechts in Input-Feldern implementieren, NIEMALS als separaten Text darunter
+  ```tsx
+  // ✅ RICHTIG: Info-Icon im Input mit Tooltip
+  <div className="relative">
+    <Input className="pr-8" />
+    <button className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+      <InfoIcon className="h-4 w-4" />
+    </button>
+    {tooltip && <div className="tooltip">Erklärungstext</div>}
+  </div>
+  
+  // ❌ FALSCH: Text unter dem Input
+  <p className="text-xs text-gray-500 mt-2">Erklärungstext</p>
+  ```
+- **Tooltips**: State-basierte onMouseEnter/onMouseLeave Handler, NICHT CSS-only hover
+- **Dropdown-Menüs**: Click-outside Handler mit useRef für automatisches Schließen
+
 ### Taskilo Color Scheme
 - **Primary Color**: `#14ad9f` (Türkis/Teal) - Use for primary buttons, headers, main actions
 - **Primary Hover**: `#129488` (Darker Teal) - Use for hover states

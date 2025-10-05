@@ -176,7 +176,7 @@ export class TimeTracker {
           totalLoggedHours: 0,
           totalApprovedHours: 0,
           totalBilledHours: 0,
-          hourlyRate: Math.round(hourlyRateInEuros * 100), // Convert to cents, z.B. 4100 cents = 41€
+          hourlyRate: Math.round(hourlyRateInEuros * 100), // Convert to cents
           timeEntries: [],
           status: 'active',
           lastUpdated: serverTimestamp() as Timestamp,

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { CustomerService } from '@/services/customerService';
 import {
   collection,
   addDoc,
@@ -21,12 +23,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Search, Eye, Mail, Phone, MapPin, Download, Trash2 } from 'lucide-react';
+import { Edit, Search, Eye, Mail, Phone, MapPin, Download, Trash2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { AddCustomerModal, Customer } from './AddCustomerModal';
+import { Customer } from './AddCustomerModal';
 import { CustomerDetailModal } from './CustomerDetailModal';
 import { EditCustomerModal } from './EditCustomerModal';
 import { calculateCustomerStats, updateCustomerStats } from '@/utils/customerStatsUtils';
+import { NumberSequenceService } from '@/services/numberSequenceService';
 
 interface CustomerManagerProps {
   companyId: string;
@@ -34,10 +37,11 @@ interface CustomerManagerProps {
 
 export function CustomerManager({ companyId }: CustomerManagerProps) {
   const { user } = useAuth();
+  const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [nextCustomerNumber, setNextCustomerNumber] = useState('KD-001');
+  const [nextCustomerNumber, setNextCustomerNumber] = useState(''); // Will be set by NumberSequenceService
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -46,40 +50,19 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
     [customerId: string]: { totalAmount: number; totalInvoices: number };
   }>({});
 
-  // Generiere eine eindeutige Kundennummer
-  const generateUniqueCustomerNumber = (existingNumbers: string[]): string => {
-    const kdNumbers = existingNumbers
-      .filter(num => num && num.startsWith('KD-'))
-      .map(num => parseInt(num.replace('KD-', ''), 10))
-      .filter(num => !isNaN(num));
-
-    let nextNumber = Math.max(...kdNumbers, 0) + 1;
-    let newNumber = `KD-${String(nextNumber).padStart(3, '0')}`;
-
-    // Sicherstellen, dass die Nummer wirklich eindeutig ist
-    while (existingNumbers.includes(newNumber)) {
-      nextNumber++;
-      newNumber = `KD-${String(nextNumber).padStart(3, '0')}`;
+  // ✅ NEUE: Generiere Kundennummer mit NumberSequenceService (race-condition-safe)
+  const generateUniqueCustomerNumber = async (): Promise<string> => {
+    try {
+      const result = await NumberSequenceService.getNextNumberForType(companyId, 'Kunde');
+      return result.formattedNumber;
+    } catch (error) {
+      console.error('❌ Fehler beim Generieren der Kundennummer:', error);
+      // Fallback nur im Notfall
+      return `KD-${Date.now().toString().slice(-4)}`;
     }
-
-    return newNumber;
   };
 
-  // Generate next customer number
-  const generateNextCustomerNumber = (existingCustomers: Customer[]) => {
-    if (existingCustomers.length === 0) {
-      return 'KD-001';
-    }
-
-    const numbers = existingCustomers
-      .map(c => c.customerNumber)
-      .filter(num => num.startsWith('KD-'))
-      .map(num => parseInt(num.replace('KD-', ''), 10))
-      .filter(num => !isNaN(num));
-
-    const highestNumber = Math.max(...numbers, 0);
-    return `KD-${String(highestNumber + 1).padStart(3, '0')}`;
-  };
+  // ✅ REMOVED: Use CustomerService.getNextCustomerNumber(companyId) directly
 
   // Normalize customer name for fuzzy matching (similar to supplier system)
   const normalizeCustomerName = (name: string): string => {
@@ -129,12 +112,15 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
   // Lade Kundenstatistiken im Hintergrund (ohne DB-Update)
   const loadCustomerStatsInBackground = async (customerList: Customer[]) => {
+
     try {
       const stats: { [customerId: string]: { totalAmount: number; totalInvoices: number } } = {};
 
       for (const customer of customerList) {
+
         try {
-          const customerStats = await calculateCustomerStats(companyId, customer.name);
+          const customerStats = await calculateCustomerStats(companyId, customer.customerNumber);
+
           stats[customer.id] = customerStats;
 
           // SOFORTIGE UPDATE in der Datenbank für künftige Ladevorgänge
@@ -145,12 +131,27 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
           ) {
             try {
               await updateCustomerStats(customer.id, customerStats, user.uid, companyId);
+              
+
+              
+              // Aktualisiere den Kunden in der lokalen Liste sofort
+              setCustomers(prevCustomers => 
+                prevCustomers.map(c => 
+                  c.id === customer.id 
+                    ? { ...c, totalAmount: customerStats.totalAmount, totalInvoices: customerStats.totalInvoices }
+                    : c
+                )
+              );
+              
+
             } catch (error) {}
           }
         } catch (error) {
+
           stats[customer.id] = { totalAmount: 0, totalInvoices: 0 };
         }
       }
+
 
       setCustomerStats(stats);
     } catch (error) {}
@@ -165,7 +166,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
     try {
       for (const customer of customerList) {
         try {
-          const stats = await calculateCustomerStats(companyId, customer.name);
+          const stats = await calculateCustomerStats(companyId, customer.customerNumber);
 
           // Nur aktualisieren, wenn sich die Werte geändert haben
           if (
@@ -210,7 +211,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
         loadedCustomers.push({
           id: doc.id,
-          customerNumber: data.customerNumber || 'KD-000',
+          customerNumber: data.customerNumber || '', // NumberSequenceService manages numbering
           name: data.name || '',
           email: data.email || '',
           phone: data.phone,
@@ -253,10 +254,18 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         });
 
       setCustomers(filteredCustomers);
-      setNextCustomerNumber(generateNextCustomerNumber(filteredCustomers));
+      
+      // ✅ NEUE: Async Kundennummer-Generierung
+      try {
+        const nextNumber = await CustomerService.getNextCustomerNumber(companyId);
+        setNextCustomerNumber(nextNumber);
+      } catch (error) {
+        console.error('Fehler beim Generieren der nächsten Kundennummer:', error);
+        setNextCustomerNumber('KD-FEHLER');
+      }
 
-      // Lade die korrekten Statistiken für jeden Kunden
-      loadCustomerStatsInBackground(filteredCustomers);
+      // Lade die korrekten Statistiken für jeden Kunden SOFORT
+      await loadCustomerStatsInBackground(filteredCustomers);
     } catch (error) {
       toast.error('Fehler beim Laden der Kundendaten');
     } finally {
@@ -280,9 +289,8 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         throw new Error('Keine Berechtigung für diese Firma');
       }
 
-      // Generiere neue Kundennummer BEVOR das Speichern
-      const actualCustomerNumber =
-        customerData.customerNumber || generateNextCustomerNumber(customers);
+      // ✅ NEUE: Generiere neue Kundennummer BEVOR das Speichern (async)
+      const actualCustomerNumber = customerData.customerNumber || await CustomerService.getNextCustomerNumber(companyId);
 
       // Filter undefined values for Firebase compatibility
       const cleanCustomerData = Object.entries({
@@ -335,9 +343,14 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
       setCustomers(prev => [addedCustomer, ...prev]);
 
-      // Generiere die NÄCHSTE Kundennummer für den nächsten Kunden
-      const nextNum = generateNextCustomerNumber([addedCustomer, ...customers]);
-      setNextCustomerNumber(nextNum);
+      // ✅ NEUE: Generiere die NÄCHSTE Kundennummer für den nächsten Kunden (async)
+      try {
+        const nextNum = await CustomerService.getNextCustomerNumber(companyId);
+        setNextCustomerNumber(nextNum);
+      } catch (error) {
+        console.error('Fehler beim Generieren der nächsten Kundennummer:', error);
+        setNextCustomerNumber('KD-FEHLER');
+      }
 
       toast.success(`Kunde ${customerData.name} erfolgreich hinzugefügt`);
     } catch (error) {
@@ -388,10 +401,8 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
         if (!existingCustomer) {
           try {
-            const newCustomerNumber = generateNextCustomerNumber([
-              ...customers,
-              ...Array(createdCount).fill(null),
-            ]);
+            // ✅ NEUE: Async Kundennummer-Generierung
+            const newCustomerNumber = await CustomerService.getNextCustomerNumber(companyId);
 
             const newCustomerData = {
               customerNumber: newCustomerNumber,
@@ -556,6 +567,44 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
     });
   };
 
+  // Synchronisiere ALLE Kundenstatistiken sofort
+  const [syncingAllStats, setSyncingAllStats] = useState(false);
+  const syncAllCustomerStats = async () => {
+    if (!user?.uid) return;
+
+    try {
+      setSyncingAllStats(true);
+      let updatedCount = 0;
+
+      for (const customer of customers) {
+        try {
+          // Berechne aktuelle Statistiken für diesen Kunden
+          const calculatedStats = await calculateCustomerStats(companyId, customer.customerNumber);
+          
+          // Update nur wenn sich Werte geändert haben
+          if (
+            calculatedStats.totalAmount !== customer.totalAmount ||
+            calculatedStats.totalInvoices !== customer.totalInvoices
+          ) {
+            await updateCustomerStats(customer.id, calculatedStats, user.uid, companyId);
+            updatedCount++;
+          }
+        } catch (error) {
+          console.error(`Fehler beim Aktualisieren von Kunde ${customer.name}:`, error);
+        }
+      }
+
+      toast.success(`${updatedCount} Kunden aktualisiert`);
+      
+      // Lade Kunden neu um die aktualisierten Werte anzuzeigen
+      await loadCustomers();
+    } catch (error) {
+      toast.error('Fehler beim Synchronisieren der Statistiken');
+    } finally {
+      setSyncingAllStats(false);
+    }
+  };
+
   useEffect(() => {
     if (companyId) {
       loadCustomers();
@@ -586,10 +635,13 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <AddCustomerModal
-              onAddCustomer={handleAddCustomer}
-              nextCustomerNumber={nextCustomerNumber}
-            />
+            <Button
+              onClick={() => router.push(`/dashboard/company/${companyId}/finance/customers/create`)}
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Neuer Kunde
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -618,10 +670,13 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
                 {searchTerm ? 'Keine Kunden gefunden' : 'Noch keine Kunden vorhanden'}
               </div>
               {!searchTerm && (
-                <AddCustomerModal
-                  onAddCustomer={handleAddCustomer}
-                  nextCustomerNumber={nextCustomerNumber}
-                />
+                <Button
+                  onClick={() => router.push(`/dashboard/company/${companyId}/finance/customers/create`)}
+                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ersten Kunden erstellen
+                </Button>
               )}
             </div>
           ) : (
@@ -687,11 +742,11 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
                     <div className="text-right ml-4">
                       <div className="font-semibold text-lg text-gray-900 mb-1">
                         {formatCurrency(
-                          customerStats[customer.id]?.totalAmount || customer.totalAmount
+                          customerStats[customer.id]?.totalAmount ?? customer.totalAmount ?? 0
                         )}
                       </div>
                       <div className="text-sm text-gray-500 mb-2">
-                        {customerStats[customer.id]?.totalInvoices || customer.totalInvoices}{' '}
+                        {customerStats[customer.id]?.totalInvoices ?? customer.totalInvoices ?? 0}{' '}
                         Rechnungen
                       </div>
                       <div className="text-xs text-gray-400">

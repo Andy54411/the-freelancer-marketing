@@ -6,6 +6,7 @@ import {
   query,
   where,
   getDocs,
+  getDoc,
   orderBy,
   doc,
   updateDoc,
@@ -109,18 +110,18 @@ export function CustomerDetailModal({
 
   // Synchronisiere Kundenstatistiken in der Datenbank
   const handleSyncStats = async () => {
-    if (!customer) return;
+    if (!customer || !localCustomer) return;
 
     try {
       setSyncingStats(true);
 
       // Für Supplier: Statistiken aus expenses berechnen
-      if (customer.isSupplier) {
+      if (localCustomer.isSupplier) {
         // Expenses für diesen Supplier laden
         const expensesQuery = query(
           collection(db, 'expenses'),
-          where('supplierId', '==', customer.id),
-          where('companyId', '==', customer.companyId)
+          where('supplierId', '==', localCustomer.id),
+          where('companyId', '==', localCustomer.companyId)
         );
 
         const expensesSnapshot = await getDocs(expensesQuery);
@@ -134,7 +135,7 @@ export function CustomerDetailModal({
         });
 
         // Supplier-Dokument direkt aktualisieren
-        const supplierRef = doc(db, 'companies', companyId, 'customers', customer.id);
+        const supplierRef = doc(db, 'companies', localCustomer.companyId, 'customers', localCustomer.id);
         await updateDoc(supplierRef, {
           totalAmount,
           totalInvoices,
@@ -144,9 +145,29 @@ export function CustomerDetailModal({
 
         setCalculatedStats({ totalAmount, totalInvoices });
       } else {
-        // Für normale Kunden: bestehende Logik
-        await updateCustomerStats(customer.id, calculatedStats);
+        // Für normale Kunden: Direkt in Subcollection aktualisieren
+        const customerRef = doc(db, 'companies', localCustomer.companyId, 'customers', localCustomer.id);
+        await updateDoc(customerRef, {
+          totalAmount: calculatedStats.totalAmount,
+          totalInvoices: calculatedStats.totalInvoices,
+          lastStatsUpdate: new Date(),
+          updatedAt: serverTimestamp(),
+        });
       }
+
+      // Lokalen Customer State mit neuen DB-Werten aktualisieren
+      setLocalCustomer(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          totalAmount: calculatedStats.totalAmount,
+          totalInvoices: calculatedStats.totalInvoices,
+          lastStatsUpdate: new Date(),
+        };
+      });
+
+      // Nach dem Sync: Kundendaten aus der DB neu laden, damit auch Parent aktualisiert wird
+      await reloadCustomerData();
 
       toast.success('Statistiken erfolgreich synchronisiert');
       onCustomerUpdated?.();
@@ -165,38 +186,60 @@ export function CustomerDetailModal({
       setLoading(true);
       const loadedInvoices: InvoiceData[] = [];
 
-      // 1. IMMER Rechnungen laden (für alle Kunden/Supplier)
+      // 1. Für KUNDEN: Rechnungen laden - für LIEFERANTEN: Ausgaben laden
+
+      
       const invoicesQuery = query(
-        collection(db, 'invoices'),
-        where('companyId', '==', localCustomer.companyId),
-        where('customerName', '==', localCustomer.name),
-        orderBy('createdAt', 'desc')
+        collection(db, `companies/${localCustomer.companyId}/invoices`),
+        where('customerNumber', '==', localCustomer.customerNumber)
       );
 
       const invoicesSnapshot = await getDocs(invoicesQuery);
 
+      // GoBD-konform: NUR festgeschriebene Rechnungen anzeigen, aber KEINE abgebrochenen
+      // Eine Rechnung wird angezeigt wenn:
+      // 1. Status ist NICHT 'draft' UND NICHT 'cancelled' (abgebrochen)
+      // 2. UND (isLocked = true ODER status ist finalisiert)
       invoicesSnapshot.forEach(doc => {
         const data = doc.data();
-        loadedInvoices.push({
-          ...data,
-          id: doc.id,
-          createdAt: data.createdAt?.toDate?.() || new Date(),
-        } as InvoiceData);
+        
+        // IMMER ausschließen: draft und cancelled/abgebrochen
+        if (data.status === 'draft' || data.status === 'cancelled') {
+          return; // Skip diese Rechnung
+        }
+        
+        // Filter: Nur festgeschriebene oder finalisierte Rechnungen (aber nie abgebrochene)
+        const isLockedInvoice = data.isLocked === true;
+        const isFinalizedInvoice = data.status !== 'draft';
+        
+        if (isLockedInvoice || isFinalizedInvoice) {
+          loadedInvoices.push({
+            ...data,
+            id: doc.id,
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+          } as InvoiceData);
+        }
+      });
+
+      // Sortiere im Client nach createdAt (neueste zuerst)
+      loadedInvoices.sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+        const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+        return dateB - dateA; // Neueste zuerst
       });
 
       // 2. ZUSÄTZLICH für Supplier: Ausgaben laden und als "Rechnungen" anzeigen
       if (localCustomer.isSupplier) {
         const expensesQuery = query(
-          collection(db, 'expenses'),
-          where('supplierId', '==', localCustomer.id),
-          where('companyId', '==', localCustomer.companyId),
-          orderBy('createdAt', 'desc')
+          collection(db, `companies/${localCustomer.companyId}/expenses`),
+          where('supplierId', '==', localCustomer.id)
         );
 
-        const expensesSnapshot = await getDocs(expensesQuery);
+        try {
+          const expensesSnapshot = await getDocs(expensesQuery);
 
-        // Expenses als "Rechnungen" formatieren
-        expensesSnapshot.forEach(doc => {
+          // Expenses als "Rechnungen" formatieren
+          expensesSnapshot.forEach(doc => {
           const data = doc.data();
           loadedInvoices.push({
             id: doc.id,
@@ -212,6 +255,9 @@ export function CustomerDetailModal({
             description: data.description || data.title || 'Ausgabe',
           } as any);
         });
+        } catch (expenseError) {
+          console.error('Fehler beim Laden der Ausgaben:', expenseError);
+        }
       }
 
       setInvoices(loadedInvoices);
@@ -228,6 +274,22 @@ export function CustomerDetailModal({
       loadInvoiceHistory();
       // Reload customer data to ensure we have latest contactPersons
       reloadCustomerData();
+      
+      // Automatische Synchronisation der Statistiken beim Öffnen
+      const autoSyncStats = async () => {
+        if (localCustomer && calculatedStats.totalAmount > 0) {
+          // Prüfe ob Sync nötig ist und führe ihn automatisch durch
+          if (
+            localCustomer.totalAmount !== calculatedStats.totalAmount ||
+            localCustomer.totalInvoices !== calculatedStats.totalInvoices
+          ) {
+            await handleSyncStats();
+          }
+        }
+      };
+      
+      // Warte kurz bis Rechnungen geladen sind, dann sync
+      setTimeout(autoSyncStats, 1000);
     }
   }, [isOpen, localCustomer?.id]); // Nur ID als Dependency verwenden
 
@@ -236,13 +298,11 @@ export function CustomerDetailModal({
     if (!localCustomer?.id) return;
 
     try {
-      const customerDocRef = doc(db, 'companies', companyId, 'customers', localCustomer.id);
-      const customerDocSnapshot = await getDocs(
-        query(collection(db, 'customers'), where('__name__', '==', localCustomer.id))
-      );
+      const customerDocRef = doc(db, 'companies', localCustomer.companyId, 'customers', localCustomer.id);
+      const customerDocSnapshot = await getDoc(customerDocRef);
 
-      if (!customerDocSnapshot.empty) {
-        const freshData = customerDocSnapshot.docs[0].data();
+      if (customerDocSnapshot.exists()) {
+        const freshData = customerDocSnapshot.data();
 
         // Nur aktualisieren wenn sich contactPersons wirklich geändert haben
         const currentContactPersonsLength = localCustomer.contactPersons?.length || 0;
@@ -293,27 +353,7 @@ export function CustomerDetailModal({
                 Kunde {localCustomer.customerNumber} - Detailansicht und Rechnungshistorie
               </DialogDescription>
             </div>
-            {(localCustomer.totalAmount !== calculatedStats.totalAmount ||
-              localCustomer.totalInvoices !== calculatedStats.totalInvoices) && (
-              <Button
-                onClick={handleSyncStats}
-                disabled={syncingStats}
-                size="sm"
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-              >
-                {syncingStats ? (
-                  <>
-                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                    Sync...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Stats sync
-                  </>
-                )}
-              </Button>
-            )}
+
           </div>
         </DialogHeader>
 
@@ -369,20 +409,10 @@ export function CustomerDetailModal({
                     <div className="text-lg font-semibold text-[#14ad9f]">
                       {formatCurrency(calculatedStats.totalAmount)}
                     </div>
-                    {localCustomer.totalAmount !== calculatedStats.totalAmount && (
-                      <div className="text-xs text-gray-500">
-                        (DB: {formatCurrency(localCustomer.totalAmount)})
-                      </div>
-                    )}
                   </div>
                   <div>
                     <span className="font-medium text-gray-700">Rechnungen:</span>
                     <div className="text-lg font-semibold">{calculatedStats.totalInvoices}</div>
-                    {localCustomer.totalInvoices !== calculatedStats.totalInvoices && (
-                      <div className="text-xs text-gray-500">
-                        (DB: {localCustomer.totalInvoices})
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -613,3 +643,4 @@ export function CustomerDetailModal({
     </Dialog>
   );
 }
+export default CustomerDetailModal;

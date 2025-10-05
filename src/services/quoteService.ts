@@ -20,6 +20,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { InventoryService } from './inventoryService';
+import { NumberSequenceService } from './numberSequenceService';
 
 export interface QuoteItem {
   id: string;
@@ -408,23 +409,12 @@ export class QuoteService {
    */
   static async generateQuoteNumber(companyId: string): Promise<string> {
     try {
-      const settings = await this.getQuoteSettings(companyId);
-      const year = new Date().getFullYear();
-      const nextNumber = settings.currentNumber + 1;
-
-      // Format: A-2025-001
-      const number = settings.numberFormat
-        .replace('{PREFIX}', settings.numberPrefix)
-        .replace('{YYYY}', year.toString())
-        .replace('{NNN}', nextNumber.toString().padStart(3, '0'));
-
-      // Zähler erhöhen
-      await this.updateQuoteSettings(companyId, { currentNumber: nextNumber });
-
-      return number;
+      const result = await NumberSequenceService.getNextNumberForType(companyId, 'Angebot');
+      return result.formattedNumber;
     } catch (error) {
+      console.error('Fehler beim Generieren der Angebotsnummer:', error);
       // Fallback
-      return `A-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 9)}`;
+      return `AG-${Date.now().toString().slice(-4)}`;
     }
   }
 

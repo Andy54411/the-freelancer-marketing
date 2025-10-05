@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { NumberSequenceService } from '@/services/numberSequenceService';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -92,7 +93,7 @@ export function CreditComponent({ companyId }: CreditComponentProps) {
       const mockCredits: CreditNote[] = [
         {
           id: '1',
-          number: 'GS-2025-001',
+          number: 'GS-MOCK-001',
           originalInvoiceNumber: 'R-2025-015',
           customerName: 'Mustermann GmbH',
           customerEmail: 'info@mustermann.de',
@@ -113,7 +114,7 @@ export function CreditComponent({ companyId }: CreditComponentProps) {
         },
         {
           id: '2',
-          number: 'GS-2025-002',
+          number: 'GS-MOCK-002',
           originalInvoiceNumber: 'R-2025-018',
           customerName: 'Tech Solutions AG',
           customerEmail: 'kontakt@techsolutions.de',
@@ -174,10 +175,19 @@ export function CreditComponent({ companyId }: CreditComponentProps) {
         return;
       }
 
-      // Mock creation
+      // ✅ Use NumberSequenceService for credit note numbers
+      let creditNumber = 'GS-TEMP';
+      try {
+        const result = await NumberSequenceService.getNextNumberForType(companyId || '', 'Gutschrift');
+        creditNumber = result.formattedNumber;
+      } catch (error) {
+        console.error('Error generating credit number:', error);
+        creditNumber = `GS-${Date.now()}`; // Emergency fallback
+      }
+
       const creditNote: CreditNote = {
         id: Date.now().toString(),
-        number: `GS-${new Date().getFullYear()}-${String(credits.length + 1).padStart(3, '0')}`,
+        number: creditNumber,
         originalInvoiceNumber: newCredit.originalInvoiceNumber,
         customerName: 'Test Kunde',
         customerEmail: 'test@kunde.de',

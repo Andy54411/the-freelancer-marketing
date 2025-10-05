@@ -2282,18 +2282,9 @@ export default function CreateQuotePage() {
         // Continue anyway - inventory reservation is not critical for invoice creation
       }
 
-      // Update invoice number sequence
-      if (!asDraft) {
-        try {
-          const companyRef = doc(db, 'companies', uid);
-          await updateDoc(companyRef, {
-            'invoiceNumbering.nextNumber': nextNumber + 1,
-          });
-          setNextNumber(prev => prev + 1);
-        } catch (error) {
-          console.error('❌ Failed to update invoice number sequence:', error);
-        }
-      }
+      // ✅ Quote number sequence is now automatically managed by NumberSequenceService via QuoteService
+      // ❌ REMOVED: setNextNumber manipulation - causes race conditions!
+      // NumberSequenceService handles all numbering automatically
 
       toast.success(asDraft ? 'Angebot als Entwurf gespeichert' : 'Angebot erstellt');
 
@@ -2985,7 +2976,7 @@ export default function CreateQuotePage() {
                     </div>
                     <div className="relative">
                       <Input
-                        placeholder="RE-1000"
+                        placeholder="Wird automatisch generiert"
                         value={formData.title || ''}
                         onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
                         required
@@ -4294,13 +4285,8 @@ export default function CreateQuotePage() {
                 className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                 onClick={async () => {
                   try {
-                    // Speichere die Nummernkreis-Einstellungen in Firestore
-                    const companyRef = doc(db, 'companies', uid);
-                    await updateDoc(companyRef, {
-                      'invoiceNumbering.format': numberingFormat,
-                      'invoiceNumbering.nextNumber': nextNumber,
-                      'invoiceNumbering.lastUpdated': new Date().toISOString(),
-                    });
+                    // Nummernkreis-Einstellungen werden jetzt automatisch durch NumberSequenceService verwaltet
+                    // Keine manuellen Updates der invoiceNumbering Felder mehr nötig
 
                     // Aktualisiere das Rechnungsnummer-Feld mit der neuen Vorschau
                     setFormData(prev => ({

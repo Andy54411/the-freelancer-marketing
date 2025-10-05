@@ -392,10 +392,18 @@ export function ExpenseComponent({
         .map((num: string) => parseInt(num.replace('LF-', ''), 10))
         .filter((num: number) => !isNaN(num));
 
-      const nextSupplierNumber =
-        supplierNumbers.length > 0
-          ? `LF-${String(Math.max(...supplierNumbers) + 1).padStart(3, '0')}`
-          : 'LF-001';
+      // ✅ FIXED: Use SupplierService.getNextSupplierNumber(companyId)
+      let nextSupplierNumber = 'LF-TEMP';
+      try {
+        // Import dynamic to avoid circular dependencies
+        const { SupplierService } = await import('@/services/supplierService');
+        nextSupplierNumber = await SupplierService.getNextSupplierNumber(companyId);
+      } catch (error) {
+        console.error('❌ Failed to get supplier number from SupplierService:', error);
+        // Emergency fallback - no race conditions
+        console.warn('❌ SupplierService failed - using timestamp fallback');
+        nextSupplierNumber = `LF-${Date.now().toString().slice(-6)}`;
+      }
 
       // Erstelle neuen Lieferanten über API
       const createResponse = await fetch('/api/suppliers', {

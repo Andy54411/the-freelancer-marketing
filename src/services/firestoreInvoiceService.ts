@@ -97,7 +97,7 @@ export class FirestoreInvoiceService {
 
   /**
    * Generiert die nächste fortlaufende Storno-Nummer
-   * Format: ST-XXXX (z.B. ST-1001)
+   * Format: ST-XXXX
    */
   static async getNextStornoNumber(companyId: string): Promise<{
     sequentialNumber: number;
@@ -154,7 +154,7 @@ export class FirestoreInvoiceService {
         
         return {
           sequentialNumber: nextNumber,
-          formattedNumber: `ST-${String(nextNumber).padStart(4, '0')}` // ST-1001, ST-1002, etc.
+          formattedNumber: `ST-${String(nextNumber).padStart(4, '0')}`
         };
       });
     } catch (error) {

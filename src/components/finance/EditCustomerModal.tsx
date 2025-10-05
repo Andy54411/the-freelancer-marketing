@@ -294,7 +294,7 @@ export function EditCustomerModal({
                 name="customerNumber"
                 value={formData.customerNumber}
                 onChange={e => handleChange('customerNumber', e.target.value)}
-                placeholder="KD-001"
+                placeholder="Wird automatisch generiert"
                 disabled
                 className="bg-gray-50"
                 autoComplete="off"
