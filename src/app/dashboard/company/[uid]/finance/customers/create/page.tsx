@@ -106,11 +106,16 @@ export default function CreateCustomerPage() {
   const [showNumberSequenceModal, setShowNumberSequenceModal] = useState(false);
   const [currentNumberSequence, setCurrentNumberSequence] = useState<NumberSequence | null>(null);
 
-  // Generate next customer number using NumberSequenceService
+  // Generate next customer number using NumberSequenceService with sync
   const generateNextCustomerNumber = async () => {
     try {
       if (!params?.uid || typeof params.uid !== 'string') return;
       
+      // 🔄 Synchronisiere zuerst die Nummernkreise mit echten Daten
+      console.log('🔄 Synchronisiere Nummernkreise vor Generierung...');
+      await CustomerService.syncCustomerNumberSequence(params.uid);
+      
+      // ✅ Generiere die nächste verfügbare Nummer
       const { formattedNumber } = await NumberSequenceService.getNextNumberForType(params.uid, 'Kunde');
       setNextCustomerNumber(formattedNumber);
       handleInputChange('customerNumber', formattedNumber);
@@ -154,6 +159,7 @@ export default function CreateCustomerPage() {
     country: 'Deutschland',
     taxNumber: '',
     vatId: '',
+    vatValidated: false,
     website: '',
     notes: '',
     paymentTerms: '30 Tage netto',
@@ -209,11 +215,14 @@ export default function CreateCustomerPage() {
     try {
       const isValid = await validateVATNumber(formData.vatId);
       if (isValid) {
+        handleInputChange('vatValidated', true);
         toast.success('USt-IdNr. ist gültig');
       } else {
+        handleInputChange('vatValidated', false);
         toast.error('USt-IdNr. ist ungültig');
       }
     } catch (error) {
+      handleInputChange('vatValidated', false);
       toast.error('Fehler bei der VAT-Validierung');
     }
     setLoading(false);
@@ -266,6 +275,29 @@ export default function CreateCustomerPage() {
       }
     }
 
+    // Zusätzliche Pflichtfeld-Validierung
+    if (!formData.email.trim()) {
+      toast.error('Bitte geben Sie eine E-Mail-Adresse ein');
+      return;
+    }
+
+    if (!formData.street.trim() || !formData.city.trim() || !formData.postalCode.trim()) {
+      toast.error('Bitte geben Sie eine vollständige Adresse ein');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error('Bitte geben Sie eine gültige E-Mail-Adresse ein');
+      return;
+    }
+
+    if (!params?.uid || typeof params.uid !== 'string') {
+      toast.error('Firma-ID nicht verfügbar');
+      return;
+    }
+
     setLoading(true);
     try {
       // Generiere Anzeigenamen basierend auf Kundentyp
@@ -273,26 +305,103 @@ export default function CreateCustomerPage() {
         ? `${formData.title ? formData.title + ' ' : ''}${formData.firstName} ${formData.lastName}`.trim()
         : formData.companyName;
 
-      // TODO: Firebase Integration - Customer erstellen
+      // Erstelle legacy address string für Kompatibilität
+      const legacyAddress = `${formData.street}\n${formData.postalCode} ${formData.city}\n${formData.country}`;
+
+      // Erstelle Customer-Objekt für Firebase
       const customerData = {
-        ...formData,
-        name: displayName, // Setze den generierten Namen
-        customerType,
-        contacts,
-        customerNumber: `KD-${Date.now()}`, // Temporäre Kundennummer
-        totalInvoices: 0,
-        totalAmount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        createdBy: uid
+        // Grunddaten
+        customerNumber: formData.customerNumber, // Wird vom NumberSequenceService überschrieben
+        name: displayName,
+        email: formData.email,
+        phone: formData.phone,
+        
+        // Adressdaten
+        address: legacyAddress, // Legacy-Feld für Kompatibilität
+        street: formData.street,
+        city: formData.city,
+        postalCode: formData.postalCode,
+        country: formData.country,
+        
+        // Steuerliche Daten
+        taxNumber: formData.taxNumber,
+        vatId: formData.vatId,
+        vatValidated: formData.vatValidated,
+        
+        // Organisation/Person-spezifische Felder
+        isSupplier: formData.organizationType === 'Lieferant',
+        organizationType: formData.organizationType,
+        
+        // Person-spezifische Felder (falls customerType === 'person')
+        firstName: customerType === 'person' ? formData.firstName : '',
+        lastName: customerType === 'person' ? formData.lastName : '',
+        title: customerType === 'person' ? formData.title : '',
+        position: formData.position, // Position kann auch bei Organisationen relevant sein
+        
+        // Organisation-spezifische Felder
+        companyName: customerType === 'organisation' ? formData.companyName : '',
+        website: formData.website,
+        companySize: formData.companySize,
+        industry: formData.industry,
+        
+        // Buchhaltungskonten
+        debitorNumber: formData.debitorNumber,
+        creditorNumber: formData.creditorNumber,
+        
+        // Geschäftsbedingungen & Zahlungsinformationen
+        paymentTerms: formData.paymentTerms,
+        discount: formData.discount,
+        creditLimit: formData.creditLimit,
+        currency: formData.currency,
+        
+        // Bankdaten
+        bankName: formData.bankName,
+        iban: formData.iban,
+        bic: formData.bic,
+        accountHolder: formData.accountHolder,
+        
+        // Zahlungsbedingungen
+        preferredPaymentMethod: formData.preferredPaymentMethod,
+        defaultInvoiceDueDate: formData.defaultInvoiceDueDate,
+        earlyPaymentDiscount: formData.earlyPaymentDiscount,
+        earlyPaymentDays: formData.earlyPaymentDays,
+        
+        // Mahnwesen
+        reminderFee: formData.reminderFee,
+        lateFee: formData.lateFee,
+        automaticReminders: formData.automaticReminders,
+        
+        // E-Rechnung
+        eInvoiceEnabled: formData.eInvoiceEnabled,
+        customerReference: formData.customerReference,
+        leitwegId: formData.leitwegId,
+        
+        // Zusätzliche Informationen
+        notes: formData.notes,
+        tags: formData.tags,
+        language: formData.language,
+        
+        // Kontaktpersonen
+        contactPersons: contacts.map(contact => ({
+          id: contact.id,
+          firstName: contact.firstName,
+          lastName: contact.lastName,
+          email: contact.email,
+          phone: contact.phone,
+          position: contact.position,
+          department: contact.department,
+          isPrimary: contact.isPrimary
+        }))
       };
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Speichere Kunden in Firebase Subcollection
+      const customerId = await CustomerService.addCustomer(params.uid, customerData);
       
+      console.log(`✅ Kunde erfolgreich erstellt: ${customerId}`);
       toast.success('Kunde erfolgreich erstellt');
-      router.push(`/dashboard/company/${uid}/finance/customers`);
+      router.push(`/dashboard/company/${params.uid}/finance/customers`);
     } catch (error) {
+      console.error('❌ Fehler beim Erstellen des Kunden:', error);
       toast.error('Fehler beim Erstellen des Kunden');
     }
     setLoading(false);

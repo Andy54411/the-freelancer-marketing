@@ -112,7 +112,11 @@ export class CustomerService {
     customerData: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt' | 'companyId'>
   ): Promise<string> {
     try {
-      // ✅ NEUE: Generiere Kundennummer mit NumberSequenceService (race-condition-safe)
+      // 🔄 Synchronisiere Nummernkreise vor der Erstellung (verhindert Duplikate)
+      console.log('🔄 Synchronisiere Nummernkreise vor Kunden-Erstellung...');
+      await this.syncCustomerNumberSequence(companyId);
+      
+      // ✅ Generiere die nächste verfügbare Kundennummer
       const customerNumberResult = await NumberSequenceService.getNextNumberForType(companyId, 'Kunde');
       
       const newCustomer = {
@@ -200,6 +204,66 @@ export class CustomerService {
       console.error('❌ Fehler beim Generieren der Kundennummer:', error);
       // Fallback nur im Notfall
       return `KD-${Date.now().toString().slice(-4)}`;
+    }
+  }
+
+  /**
+   * ✅ NEUE: Synchronisiert Nummernkreise mit tatsächlichen Kundendaten
+   * Verhindert Duplikate durch Abgleich mit existierenden Kundennummern
+   */
+  static async syncCustomerNumberSequence(companyId: string): Promise<void> {
+    try {
+      console.log('🔄 Synchronisiere Kunden-Nummernkreis...');
+      
+      // 1. Lade alle existierenden Kunden
+      const customers = await this.getCustomers(companyId);
+      console.log(`📊 Gefundene Kunden: ${customers.length}`);
+      
+      // 2. Extrahiere alle Kundennummern - RESPEKTIERE die echten Daten aus der DB
+      const customerNumbers: number[] = [];
+      customers.forEach(customer => {
+        console.log(`🔍 Prüfe Kundennummer: ${customer.customerNumber}`);
+        
+        // Unterstütze KD-XXX Format (führende Nullen beachten!)
+        // KD-002 -> 2, KD-010 -> 10, KD-1000 -> 1000
+        const match = customer.customerNumber.match(/^KD-0*(\d+)$/);
+        if (match && match[1]) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num)) {
+            customerNumbers.push(num);
+            console.log(`✅ Erkannte Nummer: ${num} aus ${customer.customerNumber}`);
+          } else {
+            console.log(`⚠️ Konnte Nummer nicht parsen: ${customer.customerNumber}`);
+          }
+        } else {
+          console.log(`⚠️ Format nicht erkannt: ${customer.customerNumber}`);
+        }
+      });
+      
+      // 3. Bestimme die höchste verwendete Nummer
+      const highestNumber = customerNumbers.length > 0 ? Math.max(...customerNumbers) : 1000;
+      const nextNumber = highestNumber + 1;
+      
+      console.log(`📈 Gefundene Kundennummern: [${customerNumbers.join(', ')}]`);
+      console.log(`📈 Höchste Kundennummer: ${highestNumber}`);
+      console.log(`🔢 Nächste Nummer wird: ${nextNumber}`);
+      
+      // 4. Aktualisiere den Nummernkreis
+      await NumberSequenceService.updateNumberSequence(
+        companyId,
+        `${companyId}_Kunde`,
+        {
+          nextNumber,
+          nextFormatted: `KD-${nextNumber.toString().padStart(3, '0')}`,
+          updatedAt: new Date()
+        }
+      );
+      
+      console.log('✅ Kunden-Nummernkreis erfolgreich synchronisiert');
+      
+    } catch (error) {
+      console.error('❌ Fehler beim Synchronisieren des Kunden-Nummernkreises:', error);
+      throw error;
     }
   }
 

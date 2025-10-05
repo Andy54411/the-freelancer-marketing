@@ -30,7 +30,7 @@ export default function NumberSequenceModal({
   sequence,
 }: NumberSequenceModalProps) {
   const [format, setFormat] = useState('');
-  const [nextNumber, setNextNumber] = useState(1000);
+  const [nextNumber, setNextNumber] = useState(0);
   const [preview, setPreview] = useState('');
   const [formatError, setFormatError] = useState('');
 
@@ -68,8 +68,12 @@ export default function NumberSequenceModal({
     formattedPreview = formattedPreview.replace(/%DD/g, now.getDate().toString().padStart(2, '0'));
     formattedPreview = formattedPreview.replace(/%D/g, now.getDate().toString());
 
-    // %NUMBER ersetzen
-    formattedPreview = formattedPreview.replace(/%NUMBER/g, currentNumber.toString());
+    // %NUMBER ersetzen - mit Spezialbehandlung für KD Format
+    if (currentFormat === 'KD-%NUMBER') {
+      formattedPreview = formattedPreview.replace(/%NUMBER/g, currentNumber.toString().padStart(3, '0'));
+    } else {
+      formattedPreview = formattedPreview.replace(/%NUMBER/g, currentNumber.toString());
+    }
 
     setPreview(formattedPreview);
   };
@@ -157,13 +161,25 @@ export default function NumberSequenceModal({
             <div className="space-y-1">
               <Label htmlFor="nextNumber" className="text-sm">
                 Nächste Zahl
+                <span className="text-xs text-muted-foreground ml-1">Obligatorisch</span>
               </Label>
               <Input
                 id="nextNumber"
                 type="number"
                 value={nextNumber}
-                onChange={e => handleNextNumberChange(parseInt(e.target.value) || 1000)}
-                min="1"
+                onChange={e => {
+                  const value = e.target.value;
+                  // Erlaube leeres Feld oder gültige Zahlen >= 0
+                  if (value === '' || value === '0') {
+                    handleNextNumberChange(0);
+                  } else {
+                    const num = parseInt(value);
+                    if (!isNaN(num) && num >= 0) {
+                      handleNextNumberChange(num);
+                    }
+                  }
+                }}
+                min="0"
                 className="text-sm"
               />
             </div>

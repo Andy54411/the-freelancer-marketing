@@ -178,6 +178,10 @@ export class NumberSequenceService {
 
     // Handle %NUMBER format replacement
     if (format.includes('%NUMBER')) {
+      // ✅ SPEZIAL: KD-%NUMBER soll KD-003 Format verwenden (3 Stellen mit führenden Nullen)
+      if (format === 'KD-%NUMBER') {
+        return format.replace('%NUMBER', number.toString().padStart(3, '0'));
+      }
       return format.replace('%NUMBER', number.toString());
     }
 
@@ -261,6 +265,56 @@ export class NumberSequenceService {
       console.log(`✅ Nummerkreis ${sequenceId} erfolgreich aktualisiert`);
     } catch (error) {
       console.error('❌ Fehler beim Aktualisieren des Nummerkreises:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * ✅ DEBUG: Zeigt Status aller Nummernkreise für eine Company
+   */
+  static async debugNumberSequences(companyId: string): Promise<void> {
+    try {
+      console.log(`\n📊 === NUMMERNKREISE DEBUG für Company: ${companyId} ===`);
+      
+      const sequences = await this.getNumberSequences(companyId);
+      
+      if (sequences.length === 0) {
+        console.log('❌ Keine Nummernkreise gefunden!');
+        return;
+      }
+      
+      sequences.forEach(seq => {
+        console.log(`\n🔢 ${seq.type}:`);
+        console.log(`   ID: ${seq.id}`);
+        console.log(`   Format: ${seq.format}`);
+        console.log(`   Nächste Nummer: ${seq.nextNumber}`);
+        console.log(`   Nächste Formatiert: ${seq.nextFormatted || 'N/A'}`);
+        console.log(`   Erstellt: ${seq.createdAt}`);
+        console.log(`   Aktualisiert: ${seq.updatedAt}`);
+      });
+      
+      console.log(`\n✅ === DEBUG ENDE ===\n`);
+    } catch (error) {
+      console.error('❌ Fehler beim Debug der Nummernkreise:', error);
+    }
+  }
+
+  /**
+   * 🔧 REPARATUR: Korrigiert Kunden-Nummernkreis basierend auf existierenden Daten
+   */
+  static async repairCustomerNumberSequence(companyId: string): Promise<void> {
+    try {
+      console.log(`\n🔧 === REPARIERE KUNDEN-NUMMERNKREIS ===`);
+      
+      // Importiere CustomerService dynamisch um zirkuläre Abhängigkeiten zu vermeiden
+      const { CustomerService } = await import('@/services/customerService');
+      
+      // Führe die Synchronisation durch
+      await CustomerService.syncCustomerNumberSequence(companyId);
+      
+      console.log(`✅ === REPARATUR ABGESCHLOSSEN ===\n`);
+    } catch (error) {
+      console.error('❌ Fehler bei der Reparatur:', error);
       throw error;
     }
   }

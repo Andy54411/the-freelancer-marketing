@@ -65,7 +65,12 @@ export default function NumberSequencesTab({
               <TableRow key={sequence.id}>
                 <TableCell className="font-mono">{sequence.format}</TableCell>
                 <TableCell>{sequence.type}</TableCell>
-                <TableCell>{sequence.nextNumber}</TableCell>
+                <TableCell className="font-mono">
+                  {sequence.format === 'KD-%NUMBER' 
+                    ? sequence.nextNumber.toString().padStart(3, '0')
+                    : sequence.nextNumber
+                  }
+                </TableCell>
                 <TableCell className="font-mono">{sequence.nextFormatted}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
