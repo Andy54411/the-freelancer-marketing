@@ -21,52 +21,43 @@ export function useCustomerNumber(companyId: string, customerName: string): stri
 
     const loadCustomerNumber = async () => {
       try {
-        // Versuche zuerst die Subcollection Struktur
-        let customersQuery = query(
-          collection(db, 'companies', companyId, 'customers'),
-          where('name', '==', customerName),
-          limit(1)
-        );
-
-        let querySnapshot = await getDocs(customersQuery);
-
-        // Falls keine Ergebnisse in Subcollection, versuche die Hauptcollection
-        if (querySnapshot.empty) {
-          customersQuery = query(
-            collection(db, 'customers'),
+        // Versuche zuerst die Subcollection Struktur (nur falls authentifiziert)
+        if (companyId && customerName) {
+          let customersQuery = query(
+            collection(db, 'companies', companyId, 'customers'),
             where('name', '==', customerName),
             limit(1)
           );
-          querySnapshot = await getDocs(customersQuery);
-        }
 
-        if (!querySnapshot.empty) {
-          const customerDoc = querySnapshot.docs[0];
-          const customerData = customerDoc.data();
+          let querySnapshot = await getDocs(customersQuery);
 
-          setCustomerNumber(customerData.customerNumber || '');
-        } else {
-          // Fallback: Generiere Kundennummer basierend auf dem Namen
-          const nameWords = customerName.split(' ').filter((word) => word.length > 0);
-          let fallbackNumber = '';
-
-          if (nameWords.length === 1) {
-            fallbackNumber = `${nameWords[0].substring(0, 4).toUpperCase()}-001`;
-          } else {
-            const initials = nameWords.map((word) => word.charAt(0).toUpperCase()).join('');
-            fallbackNumber = `${initials}-001`;
+          if (!querySnapshot.empty) {
+            const customerDoc = querySnapshot.docs[0];
+            const customerData = customerDoc.data();
+            setCustomerNumber(customerData.customerNumber || '');
+            return;
           }
-
-          setCustomerNumber(fallbackNumber);
         }
-      } catch (error) {
-        console.error('Error loading customer number:', error);
-        // Fallback bei Fehlern
+        
+        // Fallback: Generiere Kundennummer aus dem Namen (ohne DB-Zugriff)
         const nameWords = customerName.split(' ').filter((word) => word.length > 0);
-        const initials = nameWords.
-        map((word) => word.charAt(0).toUpperCase()).
-        join('').
-        substring(0, 4);
+        let fallbackNumber = '';
+
+        if (nameWords.length === 1) {
+          fallbackNumber = `${nameWords[0].substring(0, 4).toUpperCase()}-001`;
+        } else {
+          const initials = nameWords.map((word) => word.charAt(0).toUpperCase()).join('');
+          fallbackNumber = `${initials}-001`;
+        }
+
+        setCustomerNumber(fallbackNumber);
+      } catch (error) {
+        // Stiller Fallback bei Fehlern - keine Console-Error-Ausgabe
+        const nameWords = customerName.split(' ').filter((word) => word.length > 0);
+        const initials = nameWords
+          .map((word) => word.charAt(0).toUpperCase())
+          .join('')
+          .substring(0, 4);
         setCustomerNumber(`${initials}-001`);
       }
     };

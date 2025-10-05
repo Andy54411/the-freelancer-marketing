@@ -91,6 +91,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   DialogClose } from
 '@/components/ui/dialog';
@@ -4651,6 +4652,9 @@ export default function CreateQuotePage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Deine Angaben</DialogTitle>
+            <DialogDescription>
+              Bearbeite deine Firmendaten und Einstellungen
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
             {/* Pflichtangaben */}

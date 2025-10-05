@@ -185,7 +185,10 @@ export default function HeaderTextEditor({
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        // Exclude built-in Link to avoid conflicts
+        link: false,
+      }),
       Underline,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
