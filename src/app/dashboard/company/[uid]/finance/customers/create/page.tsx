@@ -69,19 +69,7 @@ export default function CreateCustomerPage() {
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
-  // Autorisierung prüfen
-  if (!user || user.uid !== uid) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
-          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // State Management
+  // State Management - ALL HOOKS MUST BE BEFORE EARLY RETURNS
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [contacts, setContacts] = useState<ContactPerson[]>([]);
