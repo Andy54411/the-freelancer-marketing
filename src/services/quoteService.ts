@@ -43,9 +43,12 @@ export interface Quote {
   // Kunde
   customerId?: string;
   customerName: string;
+  customerFirstName?: string;
+  customerLastName?: string;
+  customerNumber?: string;
   customerEmail: string;
   customerPhone?: string;
-  customerAddress?: {
+  customerAddress?: string | {
     street: string;
     city: string;
     postalCode: string;
@@ -64,9 +67,11 @@ export interface Quote {
   // Inhalt
   title?: string;
   description?: string;
+  headTextHtml?: string;
   notes?: string;
   footerText?: string;
   customerOrderNumber?: string; // Referenz / Bestellnummer des Kunden
+  servicePeriod?: string;
   // Zusätzliche optionale Felder (Mehr Optionen)
   taxRule?: TaxRuleType;
   internalContactPerson?: string;
@@ -144,20 +149,48 @@ export class QuoteService {
       const q = query(quotesRef, orderBy('date', 'desc'));
       const snapshot = await getDocs(q);
 
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        date: doc.data().date?.toDate() || new Date(),
-        validUntil: doc.data().validUntil?.toDate() || new Date(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        deliveryDate: doc.data().deliveryDate?.toDate(),
-        sentAt: doc.data().sentAt?.toDate(),
-        acceptedAt: doc.data().acceptedAt?.toDate(),
-        rejectedAt: doc.data().rejectedAt?.toDate(),
-        convertedAt: doc.data().convertedAt?.toDate(),
-        cancelledAt: doc.data().cancelledAt?.toDate(),
-      })) as Quote[];
+      const quotes = snapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        // Debug logging to see what's happening
+        console.log('🔍 Processing quote document:', {
+          docId: doc.id,
+          dataId: data.id,
+          docExists: doc.exists(),
+          dataKeys: Object.keys(data),
+          hasEmptyId: data.id === ''
+        });
+        
+        // CRITICAL FIX: Always use Firestore document ID, ignore any id field in data
+        const quote = {
+          ...data,
+          id: doc.id, // ALWAYS override with Firestore document ID
+          date: data.date?.toDate() || new Date(),
+          validUntil: data.validUntil?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          deliveryDate: data.deliveryDate?.toDate(),
+          sentAt: data.sentAt?.toDate(),
+          acceptedAt: data.acceptedAt?.toDate(),
+          rejectedAt: data.rejectedAt?.toDate(),
+          convertedAt: data.convertedAt?.toDate(),
+          cancelledAt: data.cancelledAt?.toDate(),
+        } as Quote;
+        
+        // Force ID to be the document ID - this fixes existing data
+        quote.id = doc.id;
+        
+        console.log('🔧 Fixed quote ID:', {
+          docId: doc.id,
+          finalId: quote.id,
+          customerName: quote.customerName
+        });
+        
+        return quote;
+      });
+      
+      console.log('🔍 Loaded quotes:', quotes.map(q => ({ id: q.id, customerName: q.customerName })));
+      return quotes;
     } catch (error) {
       throw error;
     }
@@ -176,9 +209,11 @@ export class QuoteService {
       }
 
       const data = snapshot.data();
-      return {
-        id: snapshot.id,
+      
+      // CRITICAL FIX: Always use Firestore document ID, ignore any id field in data
+      const quote = {
         ...data,
+        id: snapshot.id, // ALWAYS override with Firestore document ID
         date: data.date?.toDate() || new Date(),
         validUntil: data.validUntil?.toDate() || new Date(),
         createdAt: data.createdAt?.toDate() || new Date(),
@@ -190,6 +225,17 @@ export class QuoteService {
         convertedAt: data.convertedAt?.toDate(),
         cancelledAt: data.cancelledAt?.toDate(),
       } as Quote;
+      
+      // Force ID to be the document ID - this fixes existing data
+      quote.id = snapshot.id;
+      
+      console.log('🔧 Fixed single quote ID:', {
+        docId: snapshot.id,
+        finalId: quote.id,
+        customerName: quote.customerName
+      });
+      
+      return quote;
     } catch (error) {
       throw error;
     }
@@ -206,21 +252,54 @@ export class QuoteService {
       // Angebotsnummer generieren
       const number = await this.generateQuoteNumber(companyId);
 
+      // CRITICAL FIX: Remove 'id' field from quoteData to prevent empty ID from being saved
+      const { id, ...cleanQuoteData } = quoteData as any;
+      
+      console.log('🔍 Creating quote with ID removed:', {
+        hadIdField: 'id' in quoteData,
+        removedId: id,
+        cleanDataHasId: 'id' in cleanQuoteData
+      });
+
       const quotesRef = collection(db, 'companies', companyId, 'quotes');
       const payload: Record<string, any> = {
-        ...quoteData,
+        ...cleanQuoteData, // Use cleaned data without ID
         number,
         companyId,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        date: Timestamp.fromDate(quoteData.date instanceof Date ? quoteData.date : new Date(quoteData.date)),
-        validUntil: Timestamp.fromDate(quoteData.validUntil instanceof Date ? quoteData.validUntil : new Date(quoteData.validUntil)),
-        deliveryDate: quoteData.deliveryDate ? Timestamp.fromDate(quoteData.deliveryDate instanceof Date ? quoteData.deliveryDate : new Date(quoteData.deliveryDate)) : null,
+        date: Timestamp.fromDate(cleanQuoteData.date instanceof Date ? cleanQuoteData.date : new Date(cleanQuoteData.date)),
+        validUntil: Timestamp.fromDate(cleanQuoteData.validUntil instanceof Date ? cleanQuoteData.validUntil : new Date(cleanQuoteData.validUntil)),
+        deliveryDate: cleanQuoteData.deliveryDate ? Timestamp.fromDate(cleanQuoteData.deliveryDate instanceof Date ? cleanQuoteData.deliveryDate : new Date(cleanQuoteData.deliveryDate)) : null,
       };
+      
       const cleanedPayload = Object.fromEntries(
-        Object.entries(payload).filter(([, v]) => v !== undefined)
+        Object.entries(payload).filter(([key, value]) => value !== undefined && key !== 'id') // Also filter out any id field
       );
+      
+      console.log('🔍 Final payload has ID field:', 'id' in cleanedPayload);
+      
       const docRef = await addDoc(quotesRef, cleanedPayload);
+
+      // Automatisch Aktivität in Kundenhistorie erstellen
+      try {
+        await this.createCustomerActivity(
+          companyId,
+          cleanQuoteData.customerId || cleanQuoteData.customerName,
+          'document',
+          `Angebot erstellt: ${number}`,
+          `Ein neues Angebot über ${cleanQuoteData.total ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: cleanQuoteData.currency || 'EUR' }).format(cleanQuoteData.total) : ''} wurde erstellt.`,
+          {
+            quoteId: docRef.id,
+            quoteNumber: number,
+            amount: cleanQuoteData.total,
+            currency: cleanQuoteData.currency
+          }
+        );
+      } catch (activityError) {
+        console.warn('Could not create customer activity:', activityError);
+        // Don't fail the quote creation if activity logging fails
+      }
 
       return docRef.id;
     } catch (error) {
@@ -258,6 +337,33 @@ export class QuoteService {
         Object.entries(updateData).filter(([, v]) => v !== undefined)
       );
       await updateDoc(quoteRef, cleaned);
+
+      // Automatisch Aktivität in Kundenhistorie bei relevanten Updates erstellen
+      try {
+        if (updates.customerName || updates.customerId) {
+          // Lade das vollständige Angebot für Details
+          const quoteSnapshot = await getDoc(quoteRef);
+          if (quoteSnapshot.exists()) {
+            const quoteData = quoteSnapshot.data();
+            
+            await this.createCustomerActivity(
+              companyId,
+              updates.customerId || updates.customerName || quoteData.customerId || quoteData.customerName,
+              'document',
+              `Angebot aktualisiert: ${quoteData.number}`,
+              `Das Angebot wurde bearbeitet und aktualisiert.`,
+              {
+                quoteId: quoteId,
+                quoteNumber: quoteData.number,
+                updateType: 'modification'
+              }
+            );
+          }
+        }
+      } catch (activityError) {
+        console.warn('Could not create customer activity for quote update:', activityError);
+        // Don't fail the quote update if activity logging fails
+      }
     } catch (error) {
       throw error;
     }
@@ -268,8 +374,10 @@ export class QuoteService {
    */
   static async deleteQuote(companyId: string, quoteId: string): Promise<void> {
     try {
-      // Vor dem Löschen: evtl. bestehende Reservierungen freigeben
+      // Vor dem Löschen: Angebotsdaten für Aktivität speichern
       const quote = await this.getQuote(companyId, quoteId);
+      
+      // Evtl. bestehende Reservierungen freigeben
       if (quote && (quote.status === 'draft' || quote.status === 'sent')) {
         const inventoryItems = (quote.items || [])
           .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
@@ -278,8 +386,31 @@ export class QuoteService {
           await InventoryService.releaseReservationForQuote(companyId, quoteId, inventoryItems);
         }
       }
+
+      // Angebot löschen
       const quoteRef = doc(db, 'companies', companyId, 'quotes', quoteId);
       await deleteDoc(quoteRef);
+
+      // Automatisch Aktivität in Kundenhistorie erstellen
+      if (quote && (quote.customerId || quote.customerName)) {
+        try {
+          await this.createCustomerActivity(
+            companyId,
+            (quote.customerId || quote.customerName) as string,
+            'system',
+            `Angebot gelöscht: ${quote.number}`,
+            `Das Angebot wurde aus dem System gelöscht.`,
+            {
+              quoteNumber: quote.number,
+              amount: quote.total,
+              currency: quote.currency,
+              actionType: 'deleted'
+            }
+          );
+        } catch (activityError) {
+          console.warn('Could not create customer activity for quote deletion:', activityError);
+        }
+      }
     } catch (error) {
       throw error;
     }
@@ -291,11 +422,40 @@ export class QuoteService {
   static async sendQuote(companyId: string, quoteId: string): Promise<void> {
     try {
       const quoteRef = doc(db, 'companies', companyId, 'quotes', quoteId);
+      
+      // Lade das Angebot für Kundenaktivität
+      const quoteSnapshot = await getDoc(quoteRef);
+      if (!quoteSnapshot.exists()) {
+        throw new Error('Quote not found');
+      }
+      
+      const quoteData = quoteSnapshot.data();
+      
       await updateDoc(quoteRef, {
         status: 'sent',
         sentAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+
+      // Automatisch Aktivität in Kundenhistorie erstellen
+      try {
+        await this.createCustomerActivity(
+          companyId,
+          quoteData.customerId || quoteData.customerName,
+          'email',
+          `Angebot versendet: ${quoteData.number}`,
+          `Das Angebot wurde per E-Mail an den Kunden versendet.`,
+          {
+            quoteId: quoteId,
+            quoteNumber: quoteData.number,
+            amount: quoteData.total,
+            currency: quoteData.currency,
+            actionType: 'sent'
+          }
+        );
+      } catch (activityError) {
+        console.warn('Could not create customer activity for quote sending:', activityError);
+      }
     } catch (error) {
       throw error;
     }
@@ -320,6 +480,28 @@ export class QuoteService {
         .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
       if (inventoryItems.length > 0) {
         await InventoryService.sellReservedItems(companyId, quoteId, inventoryItems);
+      }
+
+      // Automatisch Aktivität in Kundenhistorie erstellen
+      if (quote?.customerId || quote?.customerName) {
+        try {
+          await this.createCustomerActivity(
+            companyId,
+            (quote.customerId || quote.customerName) as string,
+            'system',
+            `Angebot angenommen: ${quote.number}`,
+            `Das Angebot wurde vom Kunden angenommen und der Auftrag ist bestätigt.`,
+            {
+              quoteId: quoteId,
+              quoteNumber: quote.number,
+              amount: quote.total,
+              currency: quote.currency,
+              actionType: 'accepted'
+            }
+          );
+        } catch (activityError) {
+          console.warn('Could not create customer activity for quote acceptance:', activityError);
+        }
       }
     } catch (error) {
       throw error;
@@ -346,6 +528,33 @@ export class QuoteService {
         .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
       if (inventoryItems.length > 0) {
         await InventoryService.releaseReservationForQuote(companyId, quoteId, inventoryItems);
+      }
+
+      // Automatisch Aktivität in Kundenhistorie erstellen
+      if (quote?.customerId || quote?.customerName) {
+        try {
+          const description = reason 
+            ? `Das Angebot wurde abgelehnt. Grund: ${reason}`
+            : 'Das Angebot wurde vom Kunden abgelehnt.';
+          
+          await this.createCustomerActivity(
+            companyId,
+            (quote.customerId || quote.customerName) as string,
+            'system',
+            `Angebot abgelehnt: ${quote.number}`,
+            description,
+            {
+              quoteId: quoteId,
+              quoteNumber: quote.number,
+              amount: quote.total,
+              currency: quote.currency,
+              actionType: 'rejected',
+              rejectionReason: reason
+            }
+          );
+        } catch (activityError) {
+          console.warn('Could not create customer activity for quote rejection:', activityError);
+        }
       }
     } catch (error) {
       throw error;
@@ -519,21 +728,87 @@ export class QuoteService {
     const q = query(quotesRef, orderBy('date', 'desc'));
 
     return onSnapshot(q, snapshot => {
-      const quotes = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        date: doc.data().date?.toDate() || new Date(),
-        validUntil: doc.data().validUntil?.toDate() || new Date(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        deliveryDate: doc.data().deliveryDate?.toDate(),
-        sentAt: doc.data().sentAt?.toDate(),
-        acceptedAt: doc.data().acceptedAt?.toDate(),
-        rejectedAt: doc.data().rejectedAt?.toDate(),
-        convertedAt: doc.data().convertedAt?.toDate(),
-      })) as Quote[];
+      const quotes = snapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        // CRITICAL FIX: Always use Firestore document ID, ignore any id field in data
+        const quote = {
+          ...data,
+          id: doc.id, // ALWAYS override with Firestore document ID
+          date: data.date?.toDate() || new Date(),
+          validUntil: data.validUntil?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          deliveryDate: data.deliveryDate?.toDate(),
+          sentAt: data.sentAt?.toDate(),
+          acceptedAt: data.acceptedAt?.toDate(),
+          rejectedAt: data.rejectedAt?.toDate(),
+          convertedAt: data.convertedAt?.toDate(),
+        } as Quote;
+        
+        // Force ID to be the document ID - this fixes existing data
+        quote.id = doc.id;
+        
+        return quote;
+      });
 
       callback(quotes);
     });
+  }
+
+  /**
+   * Aktivität in der Kundenhistorie erstellen
+   */
+  static async createCustomerActivity(
+    companyId: string,
+    customerIdOrName: string,
+    type: 'call' | 'email' | 'meeting' | 'document' | 'system' | 'invoice' | 'note',
+    title: string,
+    description: string,
+    metadata?: any
+  ): Promise<void> {
+    try {
+      // Versuche zuerst den Kunden anhand der ID zu finden
+      let customerId = customerIdOrName;
+      
+      // Falls customerIdOrName ein Name ist, suche die entsprechende Kunden-ID
+      if (customerIdOrName && !customerIdOrName.includes('customer_')) {
+        const customersRef = collection(db, 'companies', companyId, 'customers');
+        const customerQuery = query(customersRef, where('name', '==', customerIdOrName));
+        const customerSnapshot = await getDocs(customerQuery);
+        
+        if (!customerSnapshot.empty) {
+          customerId = customerSnapshot.docs[0].id;
+        } else {
+          console.warn(`Customer not found for name: ${customerIdOrName}`);
+          return; // Keine Aktivität erstellen, wenn Kunde nicht gefunden
+        }
+      }
+
+      // Aktivität in der Kundenhistorie erstellen
+      const activitiesRef = collection(
+        db,
+        'companies',
+        companyId,
+        'customers',
+        customerId,
+        'activities'
+      );
+
+      await addDoc(activitiesRef, {
+        type,
+        title,
+        description,
+        timestamp: serverTimestamp(),
+        user: 'System', // Da es automatisch erstellt wird
+        userId: 'system',
+        metadata: metadata || {}
+      });
+
+      console.log(`✅ Kundenaktivität erstellt: ${title} für Kunde ${customerId}`);
+    } catch (error) {
+      console.error('Fehler beim Erstellen der Kundenaktivität:', error);
+      throw error;
+    }
   }
 }

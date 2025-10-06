@@ -45,24 +45,9 @@ export class NumberSequenceService {
     format: string;
   }> {
     try {
-      // 🔥 KRITISCHER FIX: Für Dokument-Typen MUSS die entsprechende Subcollection geprüft werden!
-      console.log('🔥🔥🔥 NumberSequenceService.getNextNumberForType CALLED V2:', { companyId, type, timestamp: Date.now() });
-      
+      // 🔥 KRITISCHER FIX: Für Rechnungen MUSS die Invoice-Subcollection geprüft werden!
       if (type === 'Rechnung') {
-        console.log('🚀🚀🚀 USING SUBCOLLECTION LOGIC for Rechnung V2');
-        return await this.getNextDocumentNumberFromSubcollection(companyId, 'invoices', 'invoiceNumber', 'RE');
-      }
-      if (type === 'Angebot') {
-        return await this.getNextDocumentNumberFromSubcollection(companyId, 'quotes', 'quoteNumber', 'AN');
-      }
-      if (type === 'Storno') {
-        return await this.getNextDocumentNumberFromSubcollection(companyId, 'invoices', 'stornoNumber', 'ST');
-      }
-      if (type === 'Mahnung') {
-        return await this.getNextDocumentNumberFromSubcollection(companyId, 'reminders', 'reminderNumber', 'MA');
-      }
-      if (type === 'Gutschrift') {
-        return await this.getNextDocumentNumberFromSubcollection(companyId, 'credits', 'creditNumber', 'GU');
+        return await this.getNextInvoiceNumberFromSubcollection(companyId);
       }
 
       // ✅ Verwende deterministische Document ID um Duplikate zu vermeiden
@@ -235,75 +220,60 @@ export class NumberSequenceService {
   }
 
   /**
-   * 🔥 GENERISCHE METHODE: Holt die nächste Dokumentnummer basierend auf echten Dokumenten in der Subcollection
-   * und synchronisiert mit NumberSequence
+   * 🔥 NEUE METHODE: Holt die nächste Rechnungsnummer basierend auf echten Rechnungen in der Subcollection
+   * companies/{companyId}/invoices und synchronisiert mit NumberSequence
    */
-  private static async getNextDocumentNumberFromSubcollection(
-    companyId: string,
-    subcollectionName: string,
-    numberFieldName: string,
-    prefix: string
-  ): Promise<{
+  private static async getNextInvoiceNumberFromSubcollection(companyId: string): Promise<{
     number: number;
     formattedNumber: string;
     format: string;
   }> {
-      console.log(`🔥 ${subcollectionName.toUpperCase()} SUBCOLLECTION CHECK - START:`, { companyId, subcollectionName, numberFieldName, prefix });
+    console.log('🔥 INVOICE SUBCOLLECTION CHECK - START:', { companyId });
 
     try {
-      // 1. Prüfe alle vorhandenen Dokumente in der Subcollection
-      console.log('🔍 Creating Firestore query for subcollection...');
-      const documentsQuery = query(
-        collection(db, 'companies', companyId, subcollectionName),
-        where(numberFieldName, '!=', null)
+      // 1. Prüfe alle vorhandenen Rechnungen in der Subcollection
+      const invoicesQuery = query(
+        collection(db, 'companies', companyId, 'invoices'),
+        where('invoiceNumber', '!=', null)
       );
-      
-      console.log('✅ Query created, executing getDocs...');
-      const documentsSnapshot = await getDocs(documentsQuery);
-      const documentNumbers: number[] = [];
 
-      console.log(`📊 Gefundene ${subcollectionName} in Subcollection: ${documentsSnapshot.size}`);
+      const invoicesSnapshot = await getDocs(invoicesQuery);
+      const invoiceNumbers: number[] = [];
 
-      // 2. Extrahiere alle Nummern (z.B. RE-1077, AN-1234, ST-500)
-      documentsSnapshot.forEach((doc) => {
+      console.log(`📊 Gefundene Rechnungen in Subcollection: ${invoicesSnapshot.size}`);
+
+      // 2. Extrahiere alle RE-Nummern
+      invoicesSnapshot.forEach((doc) => {
         const data = doc.data();
-        const documentNumber = data[numberFieldName] || data.number;
+        const invoiceNumber = data.invoiceNumber || data.number;
         
-        if (documentNumber && typeof documentNumber === 'string') {
-          // Extrahiere Nummer aus PREFIX-XXXX Format
-          const match = documentNumber.match(new RegExp(`^${prefix}-(\\d+)$`));
+        if (invoiceNumber && typeof invoiceNumber === 'string') {
+          // Extrahiere Nummer aus RE-1077 Format
+          const match = invoiceNumber.match(/^RE-(\d+)$/);
           if (match && match[1]) {
             const num = parseInt(match[1], 10);
             if (!isNaN(num)) {
-              documentNumbers.push(num);
+              invoiceNumbers.push(num);
             }
           }
         }
       });
 
-      console.log(`🔢 Extrahierte ${prefix}-Nummern:`, documentNumbers.slice(0, 10), documentNumbers.length > 10 ? `... (${documentNumbers.length} total)` : '');
+      console.log('🔢 Extrahierte Rechnungsnummern:', invoiceNumbers.slice(0, 10), invoiceNumbers.length > 10 ? `... (${invoiceNumbers.length} total)` : '');
 
       // 3. Bestimme nächste Nummer
       let nextNumber = 1000; // Standardstart
       
-      if (documentNumbers.length > 0) {
-        const highestNumber = Math.max(...documentNumbers);
+      if (invoiceNumbers.length > 0) {
+        const highestNumber = Math.max(...invoiceNumbers);
         nextNumber = highestNumber + 1;
-        console.log(`📈 Höchste gefundene ${prefix}-Nummer: ${highestNumber} -> Nächste: ${nextNumber}`);
+        console.log(`📈 Höchste gefundene Nummer: ${highestNumber} -> Nächste: ${nextNumber}`);
       } else {
-        console.log(`ℹ️ Keine vorhandenen ${subcollectionName} gefunden - verwende Standard: 1000`);
+        console.log('ℹ️ Keine vorhandenen Rechnungen gefunden - verwende Standard: 1000');
       }
 
       // 4. Synchronisiere NumberSequence (optional - falls es existiert)
-      const typeMapping = {
-        'invoices': 'Rechnung',
-        'quotes': 'Angebot', 
-        'reminders': 'Mahnung',
-        'credits': 'Gutschrift'
-      };
-      
-      const docType = typeMapping[subcollectionName as keyof typeof typeMapping] || subcollectionName;
-      const docId = `${companyId}_${docType}`;
+      const docId = `${companyId}_Rechnung`;
       const sequenceDocRef = doc(db, 'numberSequences', docId);
       
       try {
@@ -313,30 +283,30 @@ export class NumberSequenceService {
           
           // Nur aktualisieren wenn unsere Nummer höher ist
           if (nextNumber > sequenceData.nextNumber) {
-            console.log(`🔄 Synchronisiere NumberSequence ${docType}: ${sequenceData.nextNumber} -> ${nextNumber}`);
+            console.log(`🔄 Synchronisiere NumberSequence: ${sequenceData.nextNumber} -> ${nextNumber}`);
             
             await runTransaction(db, async (transaction) => {
               transaction.update(sequenceDocRef, {
                 nextNumber: nextNumber + 1, // Für die nächste nach dieser
-                nextFormatted: this.formatNumber(nextNumber + 1, `${prefix}-{number}`),
+                nextFormatted: this.formatNumber(nextNumber + 1, 'RE-{number}'),
                 updatedAt: serverTimestamp(),
-                lastSyncedFrom: `${subcollectionName}-subcollection`
+                lastSyncedFrom: 'invoice-subcollection'
               });
             });
           }
         }
       } catch (syncError) {
-        console.warn(`⚠️ NumberSequence sync für ${docType} fehlgeschlagen (nicht kritisch):`, syncError);
+        console.warn('⚠️ NumberSequence sync fehlgeschlagen (nicht kritisch):', syncError);
       }
 
       // 5. Return die korrekte nächste Nummer
       const result = {
         number: nextNumber,
-        formattedNumber: `${prefix}-${nextNumber}`,
-        format: `${prefix}-{number}`
+        formattedNumber: `RE-${nextNumber}`,
+        format: 'RE-{number}'
       };
 
-      console.log(`🔥 ${subcollectionName.toUpperCase()} SUBCOLLECTION RESULT:`, result);
+      console.log('🔥 SUBCOLLECTION RESULT:', result);
       return result;
 
     } catch (error) {
@@ -344,31 +314,19 @@ export class NumberSequenceService {
       
       // Fallback zu Standard-Logik
       console.log('🚨 FALLBACK zu NumberSequence...');
-      return await this.getNextDocumentNumberFallback(companyId, subcollectionName, prefix);
+      return await this.getNextInvoiceNumberFallback(companyId);
     }
   }
 
   /**
    * 🚨 FALLBACK: Verwendet NumberSequence wenn Subcollection-Prüfung fehlschlägt
    */
-  private static async getNextDocumentNumberFallback(
-    companyId: string, 
-    subcollectionName: string, 
-    prefix: string
-  ): Promise<{
+  private static async getNextInvoiceNumberFallback(companyId: string): Promise<{
     number: number;
     formattedNumber: string;
     format: string;
   }> {
-    const typeMapping = {
-      'invoices': 'Rechnung',
-      'quotes': 'Angebot', 
-      'reminders': 'Mahnung',
-      'credits': 'Gutschrift'
-    };
-    
-    const docType = typeMapping[subcollectionName as keyof typeof typeMapping] || subcollectionName;
-    const docId = `${companyId}_${docType}`;
+    const docId = `${companyId}_Rechnung`;
     const sequenceDocRef = doc(db, 'numberSequences', docId);
     
     try {
@@ -377,13 +335,13 @@ export class NumberSequenceService {
 
         if (!sequenceDoc.exists()) {
           // Erstelle Standard NumberSequence
-          const newSequenceData = this.getDefaultSequenceData(companyId, docType);
+          const newSequenceData = this.getDefaultSequenceData(companyId, 'Rechnung');
           transaction.set(sequenceDocRef, newSequenceData);
           
           return {
             number: 1000,
-            formattedNumber: `${prefix}-1000`,
-            format: `${prefix}-{number}`
+            formattedNumber: 'RE-1000',
+            format: 'RE-{number}'
           };
         }
 
@@ -398,8 +356,8 @@ export class NumberSequenceService {
 
         return {
           number: numberToUse,
-          formattedNumber: `${prefix}-${numberToUse}`,
-          format: `${prefix}-{number}`
+          formattedNumber: `RE-${numberToUse}`,
+          format: 'RE-{number}'
         };
       });
     } catch (error) {
@@ -409,8 +367,8 @@ export class NumberSequenceService {
       const emergencyNumber = Date.now() % 10000;
       return {
         number: emergencyNumber,
-        formattedNumber: `${prefix}-${emergencyNumber}`,
-        format: `${prefix}-{number}`
+        formattedNumber: `RE-${emergencyNumber}`,
+        format: 'RE-{number}'
       };
     }
   }
@@ -478,20 +436,6 @@ export class NumberSequenceService {
           format: 'AN-{number}',
           prefix: 'AN-'
         };
-      case 'Mahnung':
-        return {
-          ...baseData,
-          nextNumber: 1000,
-          format: 'MA-{number}',
-          prefix: 'MA-'
-        };
-      case 'Gutschrift':
-        return {
-          ...baseData,
-          nextNumber: 1000,
-          format: 'GU-{number}',
-          prefix: 'GU-'
-        };
       default:
         throw new Error(`Unbekannter Nummerkreis-Typ: ${type}`);
     }
@@ -548,18 +492,6 @@ export class NumberSequenceService {
           formattedNumber: 'AN-1001',
           format: 'AN-{number}'
         };
-      case 'Mahnung':
-        return {
-          number: 1000,
-          formattedNumber: 'MA-1000',
-          format: 'MA-{number}'
-        };
-      case 'Gutschrift':
-        return {
-          number: 1000,
-          formattedNumber: 'GU-1000',
-          format: 'GU-{number}'
-        };
       default:
         return {
           number: 1,
@@ -580,10 +512,6 @@ export class NumberSequenceService {
         return 'AN-{number}';
       case 'Storno':
         return 'ST-{number}';
-      case 'Mahnung':
-        return 'MA-{number}';
-      case 'Gutschrift':
-        return 'GU-{number}';
       case 'Kunde':
         return 'KD-%NUMBER';
       case 'Lieferant':

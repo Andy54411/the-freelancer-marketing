@@ -205,9 +205,7 @@ export function CustomerDetailModal({
 
           {activeTab === 'invoices' && (
             <CustomerInvoiceCard 
-              customer={customer} 
-              invoices={invoices} 
-              loading={loading} 
+              customer={customer}
             />
           )}
 

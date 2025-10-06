@@ -1388,6 +1388,27 @@ ${document.companyName || 'Ihr Unternehmen'}`;
           // Kombiniere die Daten aus realDocumentData und document
           const sourceData = realDocumentData || document;
 
+          // 🔥 KRITISCHER FIX: Generiere neue Rechnungsnummer falls noch nicht vorhanden
+          let finalInvoiceNumber = sourceData.invoiceNumber || '';
+          let finalSequentialNumber = sourceData.sequentialNumber || 1;
+
+          // 🔥 KRITISCH: IMMER neue Nummer generieren bei neuen Dokumenten (keine ID = neues Dokument)
+          if (!invoiceId || !finalInvoiceNumber || finalInvoiceNumber.startsWith('RE-1')) {
+            console.log('🔢 SendDocumentModal: Generiere neue Rechnungsnummer...');
+            try {
+              const numberResult = await FirestoreInvoiceService.getNextInvoiceNumber(companyId);
+              finalInvoiceNumber = numberResult.formattedNumber;
+              finalSequentialNumber = numberResult.sequentialNumber;
+              console.log('✅ SendDocumentModal: Neue Rechnungsnummer generiert:', { finalInvoiceNumber, finalSequentialNumber });
+            } catch (numberError) {
+              console.error('❌ SendDocumentModal: Fehler bei Nummernkreis-Generierung:', numberError);
+              // Fallback nur im Notfall
+              finalInvoiceNumber = `RE-${Date.now().toString().slice(-4)}`;
+              finalSequentialNumber = Date.now() % 1000;
+              console.log('🚨 SendDocumentModal: Using fallback number:', finalInvoiceNumber);
+            }
+          }
+
           // Bereite die Invoice-Daten vor und entferne undefined Felder
           const invoiceToSave: any = {
             companyId,
@@ -1397,8 +1418,9 @@ ${document.companyName || 'Ihr Unternehmen'}`;
             items: sourceData.items || [],
             total: sourceData.total || 0,
             status: sourceData.status || 'draft',
-            invoiceNumber: sourceData.invoiceNumber || '',
-            number: sourceData.number || '',
+            invoiceNumber: finalInvoiceNumber, // ✅ Atomisch generierte Nummer
+            number: finalInvoiceNumber, // ✅ Atomisch generierte Nummer
+            sequentialNumber: finalSequentialNumber, // ✅ Atomisch generierte Nummer
             date: sourceData.date || new Date().toISOString(),
             issueDate: sourceData.issueDate || new Date().toISOString(),
             dueDate: sourceData.dueDate || new Date().toISOString(),

@@ -19,7 +19,12 @@ import {
   Plus,
   CalendarDays,
   Briefcase,
-  Activity
+  Activity,
+  Edit,
+  Send,
+  CheckCircle,
+  XCircle,
+  Trash2
 } from 'lucide-react';
 import { Customer } from '../AddCustomerModal';
 import CompanyCalendar, { CompanyCalendarRef } from '@/components/CompanyCalendar';
@@ -312,7 +317,35 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
     await addActivity('call', 'Telefonanruf protokolliert', newCallNote.trim());
   };
 
-  const getActivityIcon = (type: ActivityItem['type']) => {
+  const getActivityIcon = (type: ActivityItem['type'], metadata?: any) => {
+    // Spezielle Icons für Angebots-bezogene Aktivitäten basierend auf actionType
+    if (metadata?.quoteId || metadata?.quoteNumber) {
+      switch (metadata?.actionType) {
+        case 'created': return <Plus className="h-4 w-4" />;
+        case 'updated': return <Edit className="h-4 w-4" />;
+        case 'sent': return <Send className="h-4 w-4" />;
+        case 'accepted': return <CheckCircle className="h-4 w-4" />;
+        case 'rejected': return <XCircle className="h-4 w-4" />;
+        case 'deleted': return <Trash2 className="h-4 w-4" />;
+        default: return <FileText className="h-4 w-4" />;
+      }
+    }
+
+    // Spezielle Icons für Rechnungs-bezogene Aktivitäten basierend auf actionType
+    if (metadata?.invoiceId || metadata?.invoiceNumber) {
+      switch (metadata?.actionType) {
+        case 'created': return <Plus className="h-4 w-4" />;
+        case 'updated': return <Edit className="h-4 w-4" />;
+        case 'sent': return <Send className="h-4 w-4" />;
+        case 'paid': return <CheckCircle className="h-4 w-4" />;
+        case 'overdue': return <Clock className="h-4 w-4" />;
+        case 'cancelled': return <XCircle className="h-4 w-4" />;
+        case 'deleted': return <Trash2 className="h-4 w-4" />;
+        case 'storno': return <XCircle className="h-4 w-4" />;
+        default: return <FileText className="h-4 w-4" />;
+      }
+    }
+    
     switch (type) {
       case 'call': return <Phone className="h-4 w-4" />;
       case 'email': return <Mail className="h-4 w-4" />;
@@ -325,7 +358,35 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
     }
   };
 
-  const getActivityColor = (type: ActivityItem['type']) => {
+  const getActivityColor = (type: ActivityItem['type'], metadata?: any) => {
+    // Spezielle Farben für Angebots-bezogene Aktivitäten basierend auf actionType
+    if (metadata?.quoteId || metadata?.quoteNumber) {
+      switch (metadata?.actionType) {
+        case 'created': return 'bg-blue-500';
+        case 'updated': return 'bg-yellow-500';
+        case 'sent': return 'bg-indigo-500';
+        case 'accepted': return 'bg-green-500';
+        case 'rejected': return 'bg-red-500';
+        case 'deleted': return 'bg-gray-500';
+        default: return 'bg-indigo-500'; // Default für Angebote
+      }
+    }
+
+    // Spezielle Farben für Rechnungs-bezogene Aktivitäten basierend auf actionType
+    if (metadata?.invoiceId || metadata?.invoiceNumber) {
+      switch (metadata?.actionType) {
+        case 'created': return 'bg-emerald-500';
+        case 'updated': return 'bg-amber-500';
+        case 'sent': return 'bg-blue-500';
+        case 'paid': return 'bg-green-600';
+        case 'overdue': return 'bg-orange-500';
+        case 'cancelled': return 'bg-red-500';
+        case 'deleted': return 'bg-gray-500';
+        case 'storno': return 'bg-red-600';
+        default: return 'bg-emerald-500'; // Default für Rechnungen
+      }
+    }
+    
     switch (type) {
       case 'call': return 'bg-blue-500';
       case 'email': return 'bg-green-500';
@@ -390,16 +451,25 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="activities" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="activities" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-3 bg-gray-100 p-1 rounded-lg">
+          <TabsTrigger 
+            value="activities" 
+            className="flex items-center gap-2 data-[state=active]:bg-[#14ad9f] data-[state=active]:text-white data-[state=active]:shadow-sm transition-all duration-200"
+          >
             <Activity className="h-4 w-4" />
             Aktivitäten
           </TabsTrigger>
-          <TabsTrigger value="calendar" className="flex items-center gap-2">
+          <TabsTrigger 
+            value="calendar" 
+            className="flex items-center gap-2 data-[state=active]:bg-[#14ad9f] data-[state=active]:text-white data-[state=active]:shadow-sm transition-all duration-200"
+          >
             <CalendarDays className="h-4 w-4" />
             Kalender
           </TabsTrigger>
-          <TabsTrigger value="workspace" className="flex items-center gap-2">
+          <TabsTrigger 
+            value="workspace" 
+            className="flex items-center gap-2 data-[state=active]:bg-[#14ad9f] data-[state=active]:text-white data-[state=active]:shadow-sm transition-all duration-200"
+          >
             <Briefcase className="h-4 w-4" />
             Workspace
           </TabsTrigger>
@@ -412,7 +482,7 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-blue-500" />
+              <Phone className="h-4 w-4 text-[#14ad9f]" />
               <div>
                 <p className="text-sm text-gray-600">Anrufe</p>
                 <p className="text-lg font-semibold">{stats.calls}</p>
@@ -424,7 +494,7 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-green-500" />
+              <Mail className="h-4 w-4 text-[#14ad9f]" />
               <div>
                 <p className="text-sm text-gray-600">E-Mails</p>
                 <p className="text-lg font-semibold">{stats.emails}</p>
@@ -436,7 +506,7 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-purple-500" />
+              <Calendar className="h-4 w-4 text-[#14ad9f]" />
               <div>
                 <p className="text-sm text-gray-600">Termine</p>
                 <p className="text-lg font-semibold">{stats.meetings}</p>
@@ -448,7 +518,7 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-orange-500" />
+              <FileText className="h-4 w-4 text-[#14ad9f]" />
               <div>
                 <p className="text-sm text-gray-600">Dokumente</p>
                 <p className="text-lg font-semibold">{stats.documents}</p>
@@ -464,24 +534,22 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Aktivitätsverlauf</CardTitle>
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
+              <button
+                className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs dark:bg-input/30 dark:border-input dark:hover:bg-input/50 rounded-md gap-1.5 has-[>svg]:px-2.5 h-8 px-3 text-sm border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
                 onClick={() => setShowAddNote(!showAddNote)}
                 disabled={addingActivity}
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Notiz hinzufügen
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
+              </button>
+              <button
+                className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs dark:bg-input/30 dark:border-input dark:hover:bg-input/50 rounded-md gap-1.5 has-[>svg]:px-2.5 h-8 px-3 text-sm border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
                 onClick={() => setShowAddCall(!showAddCall)}
                 disabled={addingActivity}
               >
                 <Phone className="h-4 w-4 mr-2" />
                 Anruf protokollieren
-              </Button>
+              </button>
             </div>
           </div>
         </CardHeader>
@@ -581,8 +649,8 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
                   {combinedTimeline.map((item, index) => (
                     <div key={`${item.source}-${item.id}`} className="relative flex items-start gap-4">
                       {/* Timeline dot */}
-                      <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full ${getActivityColor(item.type)} text-white`}>
-                        {getActivityIcon(item.type)}
+                      <div className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full ${getActivityColor(item.type, item.metadata)} text-white`}>
+                        {getActivityIcon(item.type, item.metadata)}
                         {item.source === 'calendar' && (
                           <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                             <Calendar className="h-2 w-2 text-white" />
@@ -598,8 +666,63 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
                             <span className="text-xs text-gray-500">{formatDate(item.timestamp)}</span>
                           </div>
                           <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                          
+                          {/* Angebot-Verlinkung anzeigen */}
+                          {item.metadata?.quoteId && item.metadata?.quoteNumber && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <button
+                                className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs dark:bg-input/30 dark:border-input dark:hover:bg-input/50 rounded-md gap-1.5 has-[>svg]:px-2.5 h-7 px-2 text-xs border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                                onClick={() => {
+                                  // Navigation zum Angebot
+                                  window.open(
+                                    `/dashboard/company/${customer.companyId}/finance/quotes/${item.metadata.quoteId}`,
+                                    '_blank'
+                                  );
+                                }}
+                              >
+                                <FileText className="h-3 w-3 mr-1" />
+                                {item.metadata.quoteNumber} ansehen
+                              </button>
+                              {item.metadata.amount && item.metadata.currency && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {new Intl.NumberFormat('de-DE', { 
+                                    style: 'currency', 
+                                    currency: item.metadata.currency 
+                                  }).format(item.metadata.amount)}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Rechnungs-Verlinkung anzeigen */}
+                          {item.metadata?.invoiceId && item.metadata?.invoiceNumber && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <button
+                                className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs dark:bg-input/30 dark:border-input dark:hover:bg-input/50 rounded-md gap-1.5 has-[>svg]:px-2.5 h-7 px-2 text-xs border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                                onClick={() => {
+                                  // Navigation zur Rechnung
+                                  window.open(
+                                    `/dashboard/company/${customer.companyId}/finance/invoices/${item.metadata.invoiceId}`,
+                                    '_blank'
+                                  );
+                                }}
+                              >
+                                <FileText className="h-3 w-3 mr-1" />
+                                {item.metadata.invoiceNumber} ansehen
+                              </button>
+                              {item.metadata.amount && item.metadata.currency && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {new Intl.NumberFormat('de-DE', { 
+                                    style: 'currency', 
+                                    currency: item.metadata.currency 
+                                  }).format(item.metadata.amount)}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+
                           {item.user && (
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <div className="flex items-center gap-1 text-xs text-gray-500 mt-2">
                               <User className="h-3 w-3" />
                               {item.user}
                             </div>

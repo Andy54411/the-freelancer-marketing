@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +45,7 @@ import {
 } from 'lucide-react';
 import { Quote } from '@/services/quoteService';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface QuoteListViewProps {
   quotes: Quote[];
@@ -75,6 +76,24 @@ export function QuoteListView({
   const [sortField, setSortField] = useState<'validUntil' | 'number' | 'date' | 'total'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const router = useRouter();
+
+  // Debug: Log incoming quotes and fix any with empty IDs
+  useEffect(() => {
+    console.log('🔍 QuoteListView received quotes:', initialQuotes.map(q => ({
+      id: q.id,
+      customerName: q.customerName,
+      hasValidId: !!q.id && q.id.trim() !== '',
+      idType: typeof q.id,
+      idLength: q.id ? q.id.length : 0
+    })));
+
+    // CRITICAL FIX: If we still receive quotes with empty IDs, warn the user
+    const quotesWithEmptyId = initialQuotes.filter(q => !q.id || q.id.trim() === '');
+    if (quotesWithEmptyId.length > 0) {
+      console.error('❌ Still receiving quotes with empty IDs:', quotesWithEmptyId);
+      toast.error(`⚠️ ${quotesWithEmptyId.length} Angebote haben keine gültige ID. Bitte kontaktieren Sie den Support.`);
+    }
+  }, [initialQuotes]);
 
   const handleSort = (field: 'validUntil' | 'number' | 'date' | 'total') => {
     if (sortField === field) {
@@ -230,25 +249,74 @@ export function QuoteListView({
     });
   };
 
-  const handleEdit = (quote: Quote) => {
-    router.push(`/dashboard/company/${companyId}/finance/quotes/${quote.id}/edit`);
-  };
-
-  const handleView = (quote: Quote) => {
-    console.log('🔍 Navigating to quote detail:', quote.id, 'Quote:', quote);
-    if (!quote.id) {
-      console.error('❌ Quote has no ID!', quote);
+  const handleEdit = (quote: Quote, index?: number) => {
+    const reliableId = getReliableQuoteId(quote, index || 0);
+    if (!reliableId) {
+      toast.error('Fehler: Angebot hat keine gültige ID. Kann nicht bearbeitet werden.');
       return;
     }
-    router.push(`/dashboard/company/${companyId}/finance/quotes/${quote.id}`);
+    router.push(`/dashboard/company/${companyId}/finance/quotes/${reliableId}/edit`);
   };
 
-  const handleConvertToInvoice = (quote: Quote) => {
-    router.push(`/dashboard/company/${companyId}/finance/invoices/create?quoteId=${quote.id}`);
+  // Helper function to get a reliable quote ID
+  const getReliableQuoteId = (quote: Quote, index: number): string | null => {
+    // First try the quote.id
+    if (quote.id && quote.id.trim() !== '') {
+      return quote.id;
+    }
+    
+    // If quote has a number, try to find it by number in the company's quotes
+    // This is a fallback for when we know the quote exists but has empty ID
+    if (quote.number) {
+      console.warn('🔧 Quote has empty ID, but has number:', quote.number);
+      // For now, return null to trigger error - we need the actual Firestore doc ID
+      return null;
+    }
+    
+    return null;
   };
 
-  const handleDuplicate = (quote: Quote) => {
-    router.push(`/dashboard/company/${companyId}/finance/quotes/create?duplicateId=${quote.id}`);
+  const handleView = (quote: Quote, index?: number) => {
+    const reliableId = getReliableQuoteId(quote, index || 0);
+    
+    console.log('🔍 Navigating to quote detail:', {
+      id: quote.id,
+      reliableId,
+      hasId: !!quote.id,
+      idLength: quote.id ? quote.id.length : 0,
+      idType: typeof quote.id,
+      number: quote.number,
+      customerName: quote.customerName
+    });
+    
+    if (!reliableId) {
+      console.error('❌ Quote has no reliable ID!', {
+        quote,
+        allQuotes: initialQuotes.map(q => ({ id: q.id, number: q.number, customerName: q.customerName }))
+      });
+      toast.error('Fehler: Angebot hat keine gültige ID. Das ist ein Datenintegritätsproblem. Bitte kontaktieren Sie den Support.');
+      return;
+    }
+    
+    router.push(`/dashboard/company/${companyId}/finance/quotes/${reliableId}`);
+  };
+
+  const handleConvertToInvoice = (quote: Quote, index?: number) => {
+    const reliableId = getReliableQuoteId(quote, index || 0);
+    if (!reliableId) {
+      toast.error('Fehler: Angebot hat keine gültige ID. Kann nicht zu Rechnung umgewandelt werden.');
+      return;
+    }
+    router.push(`/dashboard/company/${companyId}/finance/invoices/create?quoteId=${reliableId}`);
+  };
+
+  const handleDuplicate = (quote: Quote, index?: number) => {
+    const reliableId = getReliableQuoteId(quote, index || 0);
+    if (!reliableId) {
+      toast.error('Fehler: Angebot hat keine gültige ID. Kann nicht dupliziert werden.');
+      return;
+    }
+    router.push(`/dashboard/company/${companyId}/finance/quotes/create?duplicateId=${reliableId}`);
   };
 
   const clearFilters = () => {
@@ -482,7 +550,7 @@ export function QuoteListView({
                     <TableRow 
                       key={quote.id || `quote-${index}-${quote.number || ''}`} 
                       className="hover:bg-gray-50 cursor-pointer"
-                      onClick={() => handleView(quote)}
+                      onClick={() => handleView(quote, index)}
                     >
                       <TableCell className="font-medium">
                         {quote.number || 'Ohne Nummer'}
@@ -515,21 +583,21 @@ export function QuoteListView({
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={(e) => {
                               e.stopPropagation();
-                              handleView(quote);
+                              handleView(quote, index);
                             }}>
                               <Eye className="mr-2 h-4 w-4" />
                               Anzeigen
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={(e) => {
                               e.stopPropagation();
-                              handleEdit(quote);
+                              handleEdit(quote, index);
                             }}>
                               <Edit className="mr-2 h-4 w-4" />
                               Bearbeiten
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={(e) => {
                               e.stopPropagation();
-                              handleDuplicate(quote);
+                              handleDuplicate(quote, index);
                             }}>
                               <Copy className="mr-2 h-4 w-4" />
                               Duplizieren
@@ -537,7 +605,7 @@ export function QuoteListView({
                             {(quote.status === 'accepted') && (
                               <DropdownMenuItem onClick={(e) => {
                                 e.stopPropagation();
-                                handleConvertToInvoice(quote);
+                                handleConvertToInvoice(quote, index);
                               }}>
                                 <FileText className="mr-2 h-4 w-4" />
                                 Zu Rechnung umwandeln

@@ -75,17 +75,21 @@ import {
   deleteDoc,
   FieldValue,
   DocumentData,
-  QuerySnapshot } from
+  QuerySnapshot,
+  query,
+  orderBy } from
 'firebase/firestore';
 import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteService';
 import { FirestoreInvoiceService as InvoiceService } from '@/services/firestoreInvoiceService';
+import { NumberSequenceService } from '@/services/numberSequenceService';
 import { InvoiceData as InvoiceType, InvoiceData } from '@/types/invoiceTypes';
+import { useNextInvoiceNumber } from '@/hooks/useNextInvoiceNumber';
 import { CreateInvoiceFormData } from '@/types/formData';
 import { QuoteItem as InvoiceItem } from '@/services/quoteService';
 import { TaxRuleType } from '@/types/taxRules';
 import { getAllCurrencies } from '@/data/currencies';
 import { QuickAddService } from '@/components/QuickAddService';
-import { getCustomers } from '@/utils/api/companyApi';
+import { Customer as CustomerType } from '@/components/finance/AddCustomerModal';
 import {
   Dialog,
   DialogContent,
@@ -253,27 +257,26 @@ import { EInvoiceIntegration } from '@/components/finance/EInvoiceIntegration';
 import { EInvoiceComplianceDashboard } from '@/components/finance/EInvoiceComplianceDashboard';
 import { SendDocumentModal } from '@/components/finance/SendDocumentModal';
 
-interface Customer {
-  id: string;
-  customerNumber?: string;
-  name: string;
-  email: string;
-  phone?: string;
-  street?: string;
-  city?: string;
-  postalCode?: string;
-  country?: string;
-  taxNumber?: string;
-  vatId?: string;
-  vatValidated?: boolean;
-  contactPersons?: string[];
-}
+// CustomerType wird aus @/components/finance/AddCustomerModal importiert
+type Customer = CustomerType;
 
 export default function CreateQuotePage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
+  const { nextNumber: nextInvoiceNumber, isLoading: nextNumberLoading, error: nextNumberError, refresh: refreshNextNumber } = useNextInvoiceNumber(uid);
+  
+  // 🔍 DEBUG: Hook-Status loggen
+  React.useEffect(() => {
+    console.log('🔍 Hook Status:', {
+      nextInvoiceNumber,
+      nextNumberLoading,
+      nextNumberError,
+      uid
+    });
+  }, [nextInvoiceNumber, nextNumberLoading, nextNumberError, uid]);
+  
   const [selectedTemplate, setSelectedTemplate] =
   useState<ImportedInvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
 
@@ -564,7 +567,7 @@ export default function CreateQuotePage() {
 
   // UI state
   const [loading, setLoading] = useState(false);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerType[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [showNet, setShowNet] = useState(true);
   const [taxRate, setTaxRate] = useState(19);
@@ -661,7 +664,7 @@ export default function CreateQuotePage() {
   });
 
   // Customer helper functions
-  const selectCustomer = (customer: Customer) => {
+  const selectCustomer = (customer: CustomerType) => {
     setFormData((prev) => ({
       ...prev,
       customerName: customer.name,
@@ -900,17 +903,53 @@ export default function CreateQuotePage() {
     });
   }, [items, dismissedCreatePromptIds, createProductOpen]);
 
-  // Kunden laden
+  // Kunden laden - direkt aus Firebase Subcollection
   useEffect(() => {
     const loadCustomers = async () => {
       if (!uid || !user || user.uid !== uid) return;
       try {
         setLoadingCustomers(true);
-        const response = await getCustomers(uid);
-        if (response.success && response.customers) {
-          setCustomers(response.customers);
-        }
+        
+        // Lade Kunden direkt aus der Subcollection companies/{uid}/customers
+        const customersQuery = query(
+          collection(db, 'companies', uid, 'customers'),
+          orderBy('createdAt', 'desc')
+        );
+        
+        const querySnapshot = await getDocs(customersQuery);
+        const loadedCustomers: CustomerType[] = [];
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          
+          // Lade ALLE Kunden: echte Kunden, Lieferanten (LF-), und Partner
+          loadedCustomers.push({
+            id: doc.id,
+            customerNumber: data.customerNumber || '',
+            name: data.name || '',
+            email: data.email || '',
+            phone: data.phone || '',
+            address: data.address || '',
+            street: data.street || '',
+            city: data.city || '',
+            postalCode: data.postalCode || '',
+            country: data.country || '',
+            taxNumber: data.taxNumber || '',
+            vatId: data.vatId || '',
+            vatValidated: data.vatValidated || false,
+            isSupplier: data.isSupplier || false,
+            totalInvoices: data.totalInvoices || 0,
+            totalAmount: data.totalAmount || 0,
+            createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+            contactPersons: data.contactPersons || [],
+            companyId: uid,
+          });
+        });
+        
+        console.log(`🔍 Geladene Kunden (${loadedCustomers.length}):`, loadedCustomers);
+        setCustomers(loadedCustomers);
       } catch (e) {
+        console.error('Fehler beim Laden der Kunden:', e);
         toast.error('Fehler beim Laden der Kunden');
       } finally {
         setLoadingCustomers(false);
@@ -991,35 +1030,45 @@ export default function CreateQuotePage() {
     loadCompany();
   }, [uid, user, settings]); // settings als Dependency hinzugefügt für automatische Template-Updates
 
-  // Nummernkreis-Einstellungen laden
+  // Nummernkreis-Einstellungen laden (ohne sofortige Nummer-Anzeige)
   useEffect(() => {
     const loadNumberingSettings = async () => {
       if (!uid) return;
 
       try {
-        const companyRef = doc(db, 'companies', uid);
-        const companySnap = await getDoc(companyRef);
-
-        if (companySnap.exists()) {
-          const data = companySnap.data();
-          const numbering = data.invoiceNumbering;
-
-          if (numbering) {
-            setNumberingFormat(numbering.format || 'RE-%NUMBER');
-            setNextNumber(numbering.nextNumber || 1000);
-
-            // Setze die aktuelle Rechnungsnummer basierend auf den geladenen Einstellungen
-            setFormData((prev) => ({
-              ...prev,
-              title: generateNumberPreview(
-                numbering.format || 'RE-%NUMBER',
-                numbering.nextNumber || 1000
-              )
-            }));
-          }
+        // 🚨 KRITISCHER FIX: Lade nur Format-Einstellungen, NICHT die nächste Nummer!
+        // Die nächste Nummer wird erst beim Speichern atomisch generiert
+        const result = await NumberSequenceService.getNumberSequences(uid);
+        const invoiceSequence = result.find(seq => seq.type === 'Rechnung');
+        
+        if (invoiceSequence) {
+          setNumberingFormat(invoiceSequence.format || 'RE-{number}');
+          setNextNumber(invoiceSequence.nextNumber || 1);
+          
+          // ✅ ZEIGE NUR PLATZHALTER an, NICHT die echte nächste Nummer!
+          // Die echte Nummer wird erst beim Speichern vergeben
+          setFormData((prev) => ({
+            ...prev,
+            title: '' // Leer lassen - wird beim Speichern automatisch gesetzt
+          }));
+        } else {
+          // Fallback für neue Companies ohne Nummerkreis
+          setNumberingFormat('RE-{number}');
+          setNextNumber(1);
+          setFormData((prev) => ({
+            ...prev,
+            title: '' // Leer lassen - wird beim Speichern automatisch gesetzt
+          }));
         }
       } catch (error) {
         console.error('Fehler beim Laden der Nummernkreis-Einstellungen:', error);
+        // Fallback
+        setNumberingFormat('RE-{number}');
+        setNextNumber(1);
+        setFormData((prev) => ({
+          ...prev,
+          title: ''
+        }));
       }
     };
 
@@ -1462,7 +1511,15 @@ export default function CreateQuotePage() {
       // DEBUG: Customer-Daten loggen
 
       if (selectedCustomer?.contactPersons && selectedCustomer.contactPersons.length > 0) {
-        return selectedCustomer.contactPersons[0]; // Erste Kontaktperson nehmen
+        const firstContact = selectedCustomer.contactPersons[0];
+        // Handle both string and ContactPerson types
+        if (typeof firstContact === 'string') {
+          return firstContact;
+        } else if (firstContact) {
+          // ContactPerson object: combine firstName and lastName
+          const fullName = [firstContact.firstName, firstContact.lastName].filter(Boolean).join(' ');
+          return fullName || '';
+        }
       }
 
       // Fallback auf Company-Kontakt
@@ -2205,15 +2262,53 @@ export default function CreateQuotePage() {
       const finalPaymentTerms =
       [formData.paymentTerms?.trim(), skontoSentence].filter(Boolean).join('\n\n') || undefined;
 
-      // 🚨 COMPLETE INVOICE DATA OBJECT - **EVERY SINGLE FIELD** FROM THE FORM!
+      // � KRITISCHER FIX: Generiere Rechnungsnummer DYNAMISCH beim Speichern!
+      // Verhindert Race Conditions bei gleichzeitiger Rechnungserstellung
+      
+      let finalInvoiceNumber = '';
+      let finalSequentialNumber = 1;
+      
+      console.log('🔥 INVOICE CREATION DEBUG - START:', {
+        uid,
+        timestamp: new Date().toISOString(),
+        step: 'about_to_generate_number'
+      });
+      
+      try {
+        console.log('🔢 Generiere neue Rechnungsnummer atomisch...', { uid });
+        const numberResult = await InvoiceService.getNextInvoiceNumber(uid);
+        finalInvoiceNumber = numberResult.formattedNumber;
+        finalSequentialNumber = numberResult.sequentialNumber;
+        console.log('✅ Neue Rechnungsnummer generiert:', { finalInvoiceNumber, finalSequentialNumber, uid });
+      } catch (numberError) {
+        console.error('❌ Fehler bei Rechnungsnummer-Generierung:', {
+          error: numberError,
+          errorMessage: numberError?.message,
+          errorStack: numberError?.stack,
+          uid
+        });
+        // Fallback nur im Notfall
+        finalInvoiceNumber = `RE-${Date.now().toString().slice(-4)}`;
+        finalSequentialNumber = Date.now() % 1000;
+        console.log('🚨 USING FALLBACK NUMBER:', { finalInvoiceNumber, finalSequentialNumber });
+      }
+      
+      console.log('🔥 FINAL NUMBER RESULT:', {
+        finalInvoiceNumber,
+        finalSequentialNumber,
+        uid,
+        timestamp: new Date().toISOString()
+      });
+
+      // �🚨 COMPLETE INVOICE DATA OBJECT - **EVERY SINGLE FIELD** FROM THE FORM!
       // This object must contain ALL form fields to ensure complete data persistence
       const invoiceData = {
         // Basic Invoice Info - ID will be set by Firestore
         id: '', // This will be set by Firestore when saving
         companyId: uid,
-        invoiceNumber: formData.title || `RE-${nextNumber}`,
-        number: formData.title || `RE-${nextNumber}`,
-        sequentialNumber: nextNumber,
+        invoiceNumber: finalInvoiceNumber, // ✅ Atomisch generierte Nummer
+        number: finalInvoiceNumber, // ✅ Atomisch generierte Nummer
+        sequentialNumber: finalSequentialNumber, // ✅ Korrekte sequentielle Nummer
         status: asDraft ? 'draft' : 'finalized',
 
         // Dates - ALLE Datumswerte aus dem Formular
@@ -3625,11 +3720,25 @@ export default function CreateQuotePage() {
                     </div>
                     <div className="relative">
                       <Input
-                          placeholder="Wird automatisch generiert"
-                          value={formData.title || ''}
+                          placeholder={
+                            nextNumberLoading 
+                              ? "Lädt nächste Rechnungsnummer..." 
+                              : nextNumberError 
+                                ? `Fehler beim Laden: ${nextNumberError}` 
+                                : nextInvoiceNumber
+                                  ? `${nextInvoiceNumber}`
+                                  : "Wird beim Speichern automatisch vergeben"
+                          }
+                          value={
+                            formData.title || 
+                            (nextInvoiceNumber && !nextNumberLoading && !nextNumberError 
+                              ? nextInvoiceNumber 
+                              : '')
+                          }
                           onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
-                          required
-                          className="pr-10" />
+                          className="pr-10 bg-gray-50 text-gray-600"
+                          readOnly
+                          title="Die Rechnungsnummer wird beim Speichern automatisch vergeben, um doppelte Nummern zu verhindern." />
 
 
                       <Button
@@ -4824,11 +4933,51 @@ export default function CreateQuotePage() {
           companyId={uid}
           onSaved={async (customerId) => {
             try {
-              // Lade Kunden neu mit der existierenden Funktion
-              const response = await getCustomers(uid);
-              if (response.success && response.customers) {
-                setCustomers(response.customers);
-              }
+              // Lade Kunden neu direkt aus Firebase Subcollection
+              const customersQuery = query(
+                collection(db, 'companies', uid, 'customers'),
+                orderBy('createdAt', 'desc')
+              );
+              
+              const querySnapshot = await getDocs(customersQuery);
+              const loadedCustomers: CustomerType[] = [];
+              
+              querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                
+                // Filter: Nur echte Kunden, keine Lieferanten
+                const isSupplier = data.isSupplier === true;
+                const customerNumber = data.customerNumber || '';
+                const isLieferantNumber = customerNumber.startsWith('LF-');
+                
+                if (isSupplier || isLieferantNumber) {
+                  return;
+                }
+                
+                loadedCustomers.push({
+                  id: doc.id,
+                  customerNumber: data.customerNumber || '',
+                  name: data.name || '',
+                  email: data.email || '',
+                  phone: data.phone || '',
+                  address: data.address || '',
+                  street: data.street || '',
+                  city: data.city || '',
+                  postalCode: data.postalCode || '',
+                  country: data.country || '',
+                  taxNumber: data.taxNumber || '',
+                  vatId: data.vatId || '',
+                  vatValidated: data.vatValidated || false,
+                  isSupplier: data.isSupplier || false,
+                  totalInvoices: data.totalInvoices || 0,
+                  totalAmount: data.totalAmount || 0,
+                  createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+                  contactPersons: data.contactPersons || [],
+                  companyId: uid,
+                });
+              });
+              
+              setCustomers(loadedCustomers);
               toast.success('Kunde erfolgreich erstellt');
             } catch (error) {
               console.error('Fehler beim Aktualisieren der Kundenliste:', error);

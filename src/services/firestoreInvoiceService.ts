@@ -12,7 +12,9 @@ import {
   orderBy,
   getDocs,
   runTransaction,
-  Timestamp } from
+  Timestamp,
+  serverTimestamp,
+  limit } from
 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { InvoiceData, InvoiceNumbering, GermanInvoiceService } from '@/types/invoiceTypes';
@@ -27,19 +29,42 @@ export class FirestoreInvoiceService {
     sequentialNumber: number;
     formattedNumber: string;
   }> {
+    console.log('🔥🔥🔥 FirestoreInvoiceService.getNextInvoiceNumber CALLED V2:', { companyId, timestamp: Date.now() });
+    
     try {
+      console.log('🔢🔢🔢 Calling NumberSequenceService.getNextNumberForType V2...', { companyId });
+      console.log('🧪 NumberSequenceService object:', NumberSequenceService);
+      console.log('🧪 getNextNumberForType method:', NumberSequenceService.getNextNumberForType);
+      
       // Nutze den NumberSequenceService für die Rechnungsnummerierung
       const result = await NumberSequenceService.getNextNumberForType(companyId, 'Rechnung');
 
-      return {
+      console.log('✅ NumberSequenceService returned:', { result, companyId });
+
+      const finalResult = {
         sequentialNumber: result.number,
         formattedNumber: result.formattedNumber
       };
+
+      console.log('🔥 FirestoreInvoiceService RETURNING:', { finalResult, companyId });
+
+      return finalResult;
     } catch (error) {
-      console.error('Fehler beim Generieren der Rechnungsnummer:', error);
+      console.error('❌ Fehler beim Generieren der Rechnungsnummer:', {
+        error,
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+        companyId
+      });
+
+      console.log('🚨 FALLING BACK TO OLD SYSTEM...', { companyId });
 
       // Fallback auf das alte System falls NumberSequence nicht gefunden wird
-      return await this.getNextInvoiceNumberFallback(companyId);
+      const fallbackResult = await this.getNextInvoiceNumberFallback(companyId);
+      
+      console.log('🔥 FALLBACK RESULT:', { fallbackResult, companyId });
+      
+      return fallbackResult;
     }
   }
 
@@ -177,9 +202,114 @@ export class FirestoreInvoiceService {
   }
 
   /**
+   * Hilfsfunktion: Findet Kunden-ID anhand des Kundennamens oder der E-Mail
+   */
+  static async findCustomerIdByNameOrEmail(
+    companyId: string,
+    customerName?: string,
+    customerEmail?: string
+  ): Promise<string | null> {
+    try {
+      if (!customerName && !customerEmail) {
+        console.warn('⚠️ Weder Kundenname noch E-Mail angegeben');
+        return null;
+      }
+
+      const customersRef = collection(db, 'companies', companyId, 'customers');
+      let customerQuery;
+
+      // Suche zuerst nach Name, dann nach E-Mail
+      if (customerName) {
+        customerQuery = query(customersRef, where('name', '==', customerName), limit(1));
+        const snapshot = await getDocs(customerQuery);
+        if (!snapshot.empty) {
+          return snapshot.docs[0].id;
+        }
+      }
+
+      if (customerEmail) {
+        customerQuery = query(customersRef, where('email', '==', customerEmail), limit(1));
+        const snapshot = await getDocs(customerQuery);
+        if (!snapshot.empty) {
+          return snapshot.docs[0].id;
+        }
+      }
+
+      console.warn(`⚠️ Kunde nicht gefunden: Name=${customerName}, Email=${customerEmail}`);
+      return null;
+    } catch (error) {
+      console.error('❌ Fehler bei der Kundensuche:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Erstellt automatisch eine Kundenaktivität für rechnungsbezogene Aktionen
+   * @param companyId - Die Firmen-ID
+   * @param customerNameOrId - Entweder die Kunden-ID oder der Kundenname (wird automatisch aufgelöst)
+   * @param customerEmail - Optional: E-Mail für bessere Suche
+   * @param type - Art der Aktivität
+   * @param title - Titel der Aktivität
+   * @param description - Beschreibung der Aktivität
+   * @param metadata - Zusätzliche Metadaten
+   */
+  static async createCustomerActivity(
+    companyId: string,
+    customerNameOrId: string,
+    type: 'user' | 'system' | 'invoice',
+    title: string,
+    description: string,
+    metadata?: any,
+    customerEmail?: string
+  ): Promise<void> {
+    try {
+      let customerId: string;
+
+      // Prüfe ob es bereits eine ID ist (Firebase IDs sind meist 20 Zeichen lang)
+      if (customerNameOrId.length > 15 && !customerNameOrId.includes(' ')) {
+        customerId = customerNameOrId;
+      } else {
+        // Suche Kunden-ID anhand des Namens oder der E-Mail
+        const foundCustomerId = await this.findCustomerIdByNameOrEmail(
+          companyId,
+          customerNameOrId,
+          customerEmail
+        );
+        
+        if (!foundCustomerId) {
+          console.warn(`⚠️ Kunde nicht gefunden für Aktivität: ${customerNameOrId}`);
+          return; // Aktivität nicht erstellen wenn Kunde nicht existiert
+        }
+        
+        customerId = foundCustomerId;
+      }
+
+      const activityData = {
+        type: type,
+        title: title,
+        description: description,
+        timestamp: serverTimestamp(),
+        user: ['system', 'invoice'].includes(type) ? 'System' : undefined,
+        userId: ['system', 'invoice'].includes(type) ? 'system' : undefined,
+        metadata: metadata || {}
+      };
+
+      const activitiesRef = collection(db, 'companies', companyId, 'customers', customerId, 'activities');
+      await addDoc(activitiesRef, activityData);
+      
+      console.log(`✅ Kundenaktivität erstellt für Kunde ${customerId}: ${title}`);
+    } catch (error) {
+      console.error('❌ Fehler beim Erstellen der Kundenaktivität:', error);
+      // Nicht werfen - Aktivitäten sind nicht kritisch für den Hauptvorgang
+    }
+  }
+
+  /**
    * Speichert eine Rechnung in Firestore - SUBCOLLECTION companies/{companyId}/invoices
    */
   static async saveInvoice(invoice: InvoiceData): Promise<string> {
+    console.log('🚨🚨🚨 SAVE INVOICE CALLED - CACHE BUSTER V3:', { invoiceNumber: invoice.invoiceNumber, timestamp: Date.now() });
+    
     try {
       // Rekursive Funktion zum Entfernen aller undefined Werte
       const removeUndefined = (obj: any): any => {
@@ -215,6 +345,45 @@ export class FirestoreInvoiceService {
         cleanedData
       );
 
+      // Automatisch Aktivität in Kundenhistorie erstellen
+      const customerName = invoice.customer?.name || invoice.customerName;
+      const customerEmail = invoice.customer?.email || invoice.customerEmail;
+      if (customerName) {
+        try {
+          console.log('🔄 Creating customer activity for invoice:', {
+            companyId: invoice.companyId,
+            customerName,
+            customerEmail,
+            invoiceId: docRef.id,
+            invoiceNumber: invoice.invoiceNumber
+          });
+          
+          await this.createCustomerActivity(
+            invoice.companyId,
+            customerName,
+            'invoice',
+            `Rechnung erstellt: ${invoice.invoiceNumber}`,
+            `Eine neue Rechnung wurde erstellt und im System gespeichert.`,
+            {
+              invoiceId: docRef.id,
+              invoiceNumber: invoice.invoiceNumber,
+              amount: invoice.total,
+              currency: 'EUR',
+              actionType: 'created'
+            },
+            customerEmail // Pass email for better customer lookup
+          );
+          
+          console.log('✅ Customer activity created successfully for invoice');
+        } catch (activityError) {
+          console.error('❌ Could not create customer activity for invoice creation:', activityError);
+        }
+      } else {
+        console.warn('⚠️ No customer name found for invoice activity creation:', {
+          invoiceCustomer: invoice.customer,
+          invoiceCustomerName: invoice.customerName
+        });
+      }
 
       return docRef.id;
     } catch (error) {
@@ -379,6 +548,51 @@ export class FirestoreInvoiceService {
     try {
       const docRef = doc(db, 'companies', companyId, 'invoices', invoiceId);
       await updateDoc(docRef, { status });
+
+      // Automatisch Aktivität in Kundenhistorie erstellen für wichtige Statusänderungen
+      if (['sent', 'paid', 'overdue', 'cancelled'].includes(status)) {
+        try {
+          // Lade Rechnungsdaten für Kundeninformationen
+          const invoice = await this.getInvoiceById(companyId, invoiceId);
+          if (invoice && (invoice.customer?.name || invoice.customerName)) {
+            const statusTexts = {
+              'sent': 'Rechnung versendet',
+              'paid': 'Rechnung bezahlt',
+              'overdue': 'Rechnung überfällig',
+              'cancelled': 'Rechnung storniert'
+            };
+
+            const statusDescriptions = {
+              'sent': 'Die Rechnung wurde an den Kunden versendet.',
+              'paid': 'Die Zahlung für diese Rechnung wurde erhalten.',
+              'overdue': 'Die Rechnung ist überfällig und eine Mahnung könnte erforderlich sein.',
+              'cancelled': 'Die Rechnung wurde storniert oder zurückgezogen.'
+            };
+
+            const customerName = (invoice.customer?.name || invoice.customerName) as string;
+            const customerEmail = invoice.customer?.email || invoice.customerEmail;
+            
+            await this.createCustomerActivity(
+              companyId,
+              customerName,
+              'system',
+              `${statusTexts[status as keyof typeof statusTexts]}: ${invoice.invoiceNumber}`,
+              statusDescriptions[status as keyof typeof statusDescriptions],
+              {
+                invoiceId: invoiceId,
+                invoiceNumber: invoice.invoiceNumber,
+                amount: invoice.total,
+                currency: 'EUR',
+                actionType: status,
+                previousStatus: invoice.status
+              },
+              customerEmail
+            );
+          }
+        } catch (activityError) {
+          console.warn('Could not create customer activity for invoice status update:', activityError);
+        }
+      }
     } catch (error) {
       throw error;
     }
@@ -415,6 +629,32 @@ export class FirestoreInvoiceService {
 
       const docRef = doc(db, 'companies', invoice.companyId, 'invoices', invoiceId);
       await updateDoc(docRef, cleanInvoiceData);
+
+      // Automatisch Aktivität in Kundenhistorie erstellen
+      if (invoice.customer?.name || invoice.customerName) {
+        try {
+          const customerName = (invoice.customer?.name || invoice.customerName) as string;
+          const customerEmail = invoice.customer?.email || invoice.customerEmail;
+          
+          await this.createCustomerActivity(
+            invoice.companyId,
+            customerName,
+            'system',
+            `Rechnung aktualisiert: ${invoice.invoiceNumber}`,
+            `Die Rechnung wurde bearbeitet und die Änderungen wurden gespeichert.`,
+            {
+              invoiceId: invoiceId,
+              invoiceNumber: invoice.invoiceNumber,
+              amount: invoice.total,
+              currency: 'EUR',
+              actionType: 'updated'
+            },
+            customerEmail
+          );
+        } catch (activityError) {
+          console.warn('Could not create customer activity for invoice update:', activityError);
+        }
+      }
     } catch (error) {
       console.error('❌ CRITICAL ERROR updating invoice in subcollection:', error);
       throw error;
@@ -639,6 +879,35 @@ export class FirestoreInvoiceService {
           id: stornoDocRef.id
         };
 
+        // Automatisch Aktivität in Kundenhistorie erstellen nach erfolgreichem Storno
+        try {
+          if (originalInvoice.customer?.name || originalInvoice.customerName) {
+            const customerName = (originalInvoice.customer?.name || originalInvoice.customerName) as string;
+            const customerEmail = originalInvoice.customer?.email || originalInvoice.customerEmail;
+            
+            await this.createCustomerActivity(
+              companyId,
+              customerName,
+              'system',
+              `Storno-Rechnung erstellt: ${result.invoiceNumber}`,
+              `Für die ursprüngliche Rechnung ${originalInvoice.invoiceNumber} wurde eine Storno-Rechnung erstellt. Grund: ${stornoReason}`,
+              {
+                invoiceId: stornoDocRef.id,
+                invoiceNumber: result.invoiceNumber,
+                originalInvoiceId: originalInvoiceId,
+                originalInvoiceNumber: originalInvoice.invoiceNumber,
+                amount: result.total,
+                currency: 'EUR',
+                actionType: 'storno',
+                stornoReason: stornoReason
+              },
+              customerEmail
+            );
+          }
+        } catch (activityError) {
+          console.warn('Could not create customer activity for storno invoice:', activityError);
+        }
+
         return result;
       });
     } catch (error) {
@@ -725,6 +994,31 @@ export class FirestoreInvoiceService {
 
       const docRef = doc(db, 'companies', companyId, 'invoices', invoiceId);
       await setDoc(docRef, { deleted: true }, { merge: true });
+
+      // Automatisch Aktivität in Kundenhistorie erstellen
+      if (invoice.customer?.name || invoice.customerName) {
+        try {
+          const customerName = (invoice.customer?.name || invoice.customerName) as string;
+          const customerEmail = invoice.customer?.email || invoice.customerEmail;
+          
+          await this.createCustomerActivity(
+            companyId,
+            customerName,
+            'system',
+            `Rechnung gelöscht: ${invoice.invoiceNumber}`,
+            `Die Rechnung wurde aus dem System entfernt.`,
+            {
+              invoiceNumber: invoice.invoiceNumber,
+              amount: invoice.total,
+              currency: 'EUR',
+              actionType: 'deleted'
+            },
+            customerEmail
+          );
+        } catch (activityError) {
+          console.warn('Could not create customer activity for invoice deletion:', activityError);
+        }
+      }
     } catch (error) {
       throw error;
     }
