@@ -26,6 +26,8 @@ interface ExpenseData {
   amount: number | null;
   category: string;
   date: string;
+  dueDate?: string; // Fälligkeitsdatum hinzugefügt
+  paymentTerms?: string; // Zahlungsbedingungen hinzugefügt
   description: string;
   vendor?: string;
   invoiceNumber?: string;
@@ -51,6 +53,8 @@ interface ExpenseFormData {
   amount: string;
   category: string;
   date: string;
+  dueDate: string; // Fälligkeitsdatum hinzugefügt
+  paymentTerms: string; // Zahlungsbedingungen hinzugefügt
   description: string;
   vendor: string;
   invoiceNumber: string;
@@ -92,6 +96,8 @@ export function ExpenseComponent({
     amount: '',
     category: 'Sonstiges',
     date: new Date().toISOString().split('T')[0],
+    dueDate: '', // Fälligkeitsdatum
+    paymentTerms: '', // Zahlungsbedingungen
     description: '',
     vendor: '',
     invoiceNumber: '',
@@ -289,6 +295,8 @@ export function ExpenseComponent({
           description: data.description || prev.description,
           vendor: data.vendor || prev.vendor,
           date: data.date || prev.date,
+          dueDate: data.dueDate || prev.dueDate, // 🎯 FÄLLIGKEITSDATUM AUS OCR!
+          paymentTerms: data.paymentTerms || prev.paymentTerms, // 🎯 ZAHLUNGSBEDINGUNGEN AUS OCR!
           invoiceNumber: data.invoiceNumber || prev.invoiceNumber,
           vatAmount:
             data.vatAmount !== null && data.vatAmount !== undefined
@@ -523,6 +531,8 @@ export function ExpenseComponent({
         amount,
         category: formData.category,
         date: formData.date,
+        dueDate: formData.dueDate || '', // 🎯 FÄLLIGKEITSDATUM
+        paymentTerms: formData.paymentTerms || '', // 🎯 ZAHLUNGSBEDINGUNGEN
         description: formData.description,
         vendor: formData.vendor || '',
         invoiceNumber: formData.invoiceNumber || '',
@@ -553,6 +563,8 @@ export function ExpenseComponent({
           amount: '',
           category: 'Sonstiges',
           date: new Date().toISOString().split('T')[0],
+          dueDate: '', // Fälligkeitsdatum
+          paymentTerms: '', // Zahlungsbedingungen
           description: '',
           vendor: '',
           invoiceNumber: '',
@@ -590,6 +602,8 @@ export function ExpenseComponent({
       amount: expense.amount ? expense.amount.toString() : '',
       category: expense.category || 'Sonstiges',
       date: expense.date || new Date().toISOString().split('T')[0],
+      dueDate: expense.dueDate || '', // Fälligkeitsdatum aus Expense
+      paymentTerms: expense.paymentTerms || '', // Zahlungsbedingungen aus Expense
       description: expense.description || '',
       vendor: expense.vendor || '',
       invoiceNumber: expense.invoiceNumber || '',
@@ -621,6 +635,8 @@ export function ExpenseComponent({
       amount: '',
       category: 'Sonstiges',
       date: new Date().toISOString().split('T')[0],
+      dueDate: '', // Fälligkeitsdatum
+      paymentTerms: '', // Zahlungsbedingungen
       description: '',
       vendor: '',
       invoiceNumber: '',
@@ -894,7 +910,7 @@ export function ExpenseComponent({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="date">Datum</Label>
+                    <Label htmlFor="date">Rechnungsdatum</Label>
                     <Input
                       id="date"
                       type="date"
@@ -904,6 +920,20 @@ export function ExpenseComponent({
                     />
                   </div>
                   <div>
+                    <Label htmlFor="dueDate">Fälligkeitsdatum</Label>
+                    <Input
+                      id="dueDate"
+                      type="date"
+                      value={formData.dueDate}
+                      onChange={e => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                      className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                      placeholder="Fälligkeitsdatum der Rechnung"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
                     <Label htmlFor="invoiceNumber">Rechnungsnummer</Label>
                     <Input
                       id="invoiceNumber"
@@ -911,7 +941,19 @@ export function ExpenseComponent({
                       onChange={e =>
                         setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))
                       }
-                      placeholder="z.B. RG-2024-001"
+                      placeholder="z.B. RE-1082"
+                      className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="paymentTerms">Zahlungsbedingungen</Label>
+                    <Input
+                      id="paymentTerms"
+                      value={formData.paymentTerms}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, paymentTerms: e.target.value }))
+                      }
+                      placeholder="z.B. Zahlbar binnen 14 Tagen ohne Abzug"
                       className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                     />
                   </div>
@@ -1162,6 +1204,8 @@ export function ExpenseComponent({
                       amount: '',
                       category: 'Sonstiges',
                       date: new Date().toISOString().split('T')[0],
+                      dueDate: '', // Fälligkeitsdatum
+                      paymentTerms: '', // Zahlungsbedingungen
                       description: '',
                       vendor: '',
                       invoiceNumber: '',

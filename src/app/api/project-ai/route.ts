@@ -242,7 +242,7 @@ export async function POST(request: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+        const model = genAI.getGenerativeModel({ model: 'models/gemini-2.5-flash' });
 
     const generationConfig: GenerationConfig = {
       temperature: 0.7,
@@ -880,6 +880,9 @@ export async function POST(request: Request) {
 
               try {
                 // Lade echte Bewertungen für diesen Dienstleister
+                if (!db) {
+                  throw new Error('Database nicht verfügbar');
+                }
                 const reviewsSnapshot = await db
                   .collection('reviews')
                   .where('providerId', '==', doc.id)
@@ -904,6 +907,9 @@ export async function POST(request: Request) {
                     : 0;
 
                 // Lade echte abgeschlossene Projekte
+                if (!db) {
+                  throw new Error('Database nicht verfügbar');
+                }
                 const completedProjectsSnapshot = await db
                   .collection('projects')
                   .where('providerId', '==', doc.id)

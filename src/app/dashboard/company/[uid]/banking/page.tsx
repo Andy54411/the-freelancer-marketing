@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FinAPIWebFormModal from '@/components/FinAPIWebFormModal';
 import RevolutConnectModal from '@/components/RevolutConnectModal';
 import BankDisconnectDialog from '@/components/BankDisconnectDialog';
@@ -18,7 +19,6 @@ import {
   Settings,
   Zap,
   Shield,
-  FlaskConical,
   AlertCircle,
   Search,
   Loader2,
@@ -26,6 +26,18 @@ import {
   CheckCircle,
   Clock,
   Activity,
+  Send,
+  Filter,
+  Download,
+  Calendar,
+  Euro,
+  MoreHorizontal,
+  ArrowUp,
+  ArrowDown,
+  FileText,
+  Link,
+  ChevronDown,
+  Users,
 } from 'lucide-react';
 
 interface BankConnection {
@@ -82,6 +94,31 @@ export default function BankingDashboardPage() {
   const [selectedConnectionForDisconnect, setSelectedConnectionForDisconnect] =
     useState<BankConnection | null>(null);
 
+  // Bank Search States
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
+  // Function to get the correct bank logo filename
+  const getBankLogoPath = (name: string): string => {
+    const bankMappings: { [key: string]: string } = {
+      'sparkasse': 'Sparkasse.png',
+      'deutsche bank': 'Deutsche_Bank.png',
+      'commerzbank': 'Commerzbank.png',
+      'volksbank': 'Volksbanken_Raiffeisenbanken.png',
+      'n26': 'N26.png',
+      'paypal': 'Paypal.png',
+      'qonto': 'Qonto.png',
+      'fyrst': 'Fyrst.png',
+      'norisbank': 'Deutsche_Bank.png', // norisbank gehört zur Deutsche Bank
+    };
+    
+    const normalizedName = name.toLowerCase();
+    const logoFile = bankMappings[normalizedName];
+    
+    return logoFile ? `/images/banks/${logoFile}` : '/images/banks/default-bank-logo.svg';
+  };
+
   useEffect(() => {
     if (user && user.uid === uid) {
       loadBankConnections();
@@ -134,6 +171,134 @@ export default function BankingDashboardPage() {
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [user, uid]);
+
+  // FinAPI Bank Search für Test-Banken
+  const searchBanks = async (query: string) => {
+    if (!query.trim()) {
+      setFilteredBanks([]);
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      // Suche in FinAPI Sandbox mit Test-Banken
+      const response = await fetch(`/api/finapi/banks?search=${query}&perPage=20&includeTestBanks=true`);
+      const data = await response.json();
+      
+      console.log(`🔍 Suche für "${query}":`, data);
+      
+      if (data.success && data.banks) {
+        console.log(`✅ ${data.banks.length} Banken gefunden für "${query}"`);
+        // Priorisiere Test-Banken in den Ergebnissen
+        const testBanks = data.banks.filter((bank: any) => bank.isTestBank);
+        const realBanks = data.banks.filter((bank: any) => !bank.isTestBank);
+        
+        // Zeige Test-Banken zuerst, dann echte Banken
+        const sortedBanks = [...testBanks, ...realBanks];
+        setFilteredBanks(sortedBanks);
+      } else if (data.data?.banks) {
+        console.log(`✅ ${data.data.banks.length} Banken in data.data.banks für "${query}"`);
+        setFilteredBanks(data.data.banks);
+      } else {
+        console.log(`❌ Keine Banken für "${query}". Response:`, data);
+        setFilteredBanks([]);
+      }
+    } catch (error) {
+      console.error(`🚨 Fehler bei Suche "${query}":`, error);
+      setFilteredBanks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Lade alle verfügbaren Banken aus der FinAPI
+  const loadAllAvailableBanks = async () => {
+    setLoading(true);
+    setSearchTerm("Alle Banken");
+    
+    try {
+      // Lade alle Banken ohne Suchfilter
+      const response = await fetch('/api/finapi/banks?perPage=50&includeTestBanks=true');
+      const data = await response.json();
+      
+      // Debug: Zeige API-Response
+      console.log('🔍 FinAPI Response:', data);
+      console.log('📊 Response Keys:', Object.keys(data));
+      
+      if (data.success && data.banks) {
+        console.log('✅ Gefunden unter data.banks:', data.banks.length, 'Banken');
+        // Sortiere: Test-Banken zuerst, dann alphabetisch
+        const testBanks = data.banks.filter((bank: any) => bank.isTestBank)
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
+        const realBanks = data.banks.filter((bank: any) => !bank.isTestBank)
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
+        
+        const allBanks = [...testBanks, ...realBanks];
+        console.log('🏦 Test-Banken:', testBanks.length, 'Real-Banken:', realBanks.length);
+        setFilteredBanks(allBanks);
+      } else if (data.data?.banks) {
+        console.log('✅ Gefunden unter data.data.banks:', data.data.banks.length, 'Banken');
+        // Fallback für andere API-Struktur
+        const banks = data.data.banks;
+        const testBanks = banks.filter((bank: any) => bank.isTestBank || bank.name.toLowerCase().includes('test') || bank.name.toLowerCase().includes('demo'))
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
+        const realBanks = banks.filter((bank: any) => !bank.isTestBank && !bank.name.toLowerCase().includes('test') && !bank.name.toLowerCase().includes('demo'))
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
+        
+        const allBanks = [...testBanks, ...realBanks];
+        console.log('🏦 Test-Banken:', testBanks.length, 'Real-Banken:', realBanks.length);
+        setFilteredBanks(allBanks);
+      } else {
+        console.log('❌ Keine Banken gefunden in der Response');
+        console.log('📋 Verfügbare Properties:', Object.keys(data));
+        
+        // Versuche andere mögliche Strukturen
+        if (data.banks && Array.isArray(data.banks)) {
+          console.log('🔄 Fallback: data.banks als Array');
+          setFilteredBanks(data.banks);
+        } else if (data.result?.banks) {
+          console.log('🔄 Fallback: data.result.banks');
+          setFilteredBanks(data.result.banks);
+        } else {
+          setFilteredBanks([]);
+          // Zeige verfügbare Struktur als Fallback-Info
+          if (Object.keys(data).length > 0) {
+            setError(`FinAPI Debug: Verfügbare Keys: ${Object.keys(data).join(', ')}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('🚨 Fehler beim Laden der Banken:', error);
+      setFilteredBanks([]);
+      setError(`Fehler beim Laden der Banken: ${error}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchTerm(query);
+    searchBanks(query);
+  };
+
+  const handleBankSelect = (bank: any) => {
+    // Navigate to connect page with bank details including FinAPI ID
+    if (params?.uid) {
+      const queryParams = new URLSearchParams({
+        bank: bank.name,
+        bic: bank.bic,
+        blz: bank.blz,
+        finapiId: bank.finapiId?.toString() || bank.id,
+        location: bank.location || '',
+        isTestBank: bank.isTestBank?.toString() || 'false',
+      });
+      
+      window.location.href = `/dashboard/company/${params.uid}/banking/connect?${queryParams.toString()}`;
+    }
+    setShowSearchResults(false);
+  };
 
   // Filter banks based on search
   useEffect(() => {
@@ -404,14 +569,19 @@ export default function BankingDashboardPage() {
 
       const data = await response.json();
 
-      if (data.success && data.data && Array.isArray(data.data.banks)) {
-        setAvailableBanks(data.data.banks);
-      } else if (data.banks && Array.isArray(data.banks)) {
+      // Updated to match the new API response structure
+      if (data.success && data.banks && Array.isArray(data.banks)) {
         setAvailableBanks(data.banks);
+        console.log(`✅ ${data.banks.length} Banken geladen (${data.totalCount} verfügbar)`);
+      } else if (data.data && Array.isArray(data.data.banks)) {
+        // Fallback for old API structure
+        setAvailableBanks(data.data.banks);
       } else {
+        console.error('❌ Keine Banken gefunden in API Response:', data);
         throw new Error('Invalid response format - no banks data received');
       }
     } catch (error) {
+      console.error('❌ Fehler beim Laden der Banken:', error);
       setError(
         'Die Bankliste konnte nicht geladen werden. Bitte prüfen Sie die finAPI Sandbox-Konfiguration.'
       );
@@ -613,507 +783,368 @@ export default function BankingDashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-start border-b border-gray-200 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Banking Dashboard</h1>
-          <p className="text-gray-600 mt-1">
-            Verwalten Sie Ihre Bankverbindungen und Transaktionen zentral
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-500">Verbundene Konten</p>
-          <p className="text-xl font-bold text-gray-900">{connections.length}</p>
-        </div>
-      </div>
+    <main className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Hero Section */}
+        <section className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
+            Deine Finanzen immer im Blick.<br />
+            Verbinde Taskilo mit deiner Bank.
+          </h1>
+        </section>
 
-      {/* WebForm 2.0 Features Banner */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Zap className="h-6 w-6 text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-blue-900 mb-1">
-                WebForm 2.0 Integration aktiv
-              </h3>
-              <p className="text-blue-700 text-sm">
-                Moderne Bankverbindungen mit verbesserter Sicherheit und Benutzerfreundlichkeit
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-blue-600">
-              <Shield className="h-5 w-5" />
-              <span className="text-sm font-medium">Sicher & Zuverlässig</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Revolut Business Affiliate Banner */}
-      <Card className="relative overflow-hidden bg-gradient-to-r from-[#14ad9f] to-[#0f9d84] border-[#14ad9f] shadow-lg">
-        {/* Background Image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
-          style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=400&fit=crop&auto=format&q=80')",
-          }}
-        />
-
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#14ad9f]/80 to-[#0f9d84]/80" />
-
-        <CardContent className="relative z-10 p-6">
-          <div className="flex items-center gap-6">
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-white mb-2">
-                🎉 Revolutioniere dein Business Banking!
-              </h3>
-              <p className="text-white/90 text-sm mb-3">
-                Eröffne ein Revolut Business Konto und erhalte deinen ersten Monat ohne
-                Abo-Gebühren. Globales Geschäftskonto mit Taskilo-Integration.
-              </p>
-              <div className="flex items-center gap-2 text-white/80 text-xs">
-                <CheckCircle className="h-4 w-4" />
-                <span>Kostenloser erster Monat</span>
-                <CheckCircle className="h-4 w-4 ml-2" />
-                <span>Direkte Taskilo-Integration</span>
-              </div>
-            </div>
-            <div className="flex-shrink-0">
-              <Button
-                onClick={() =>
-                  window.open(
-                    'https://business.revolut.com/signup?promo=b2b-ref-029-H2-TXC&ext=c77b9c27-bb0b-39b0-ac44-5b34dff30c6e&context=B2B_REFERRAL',
-                    '_blank'
-                  )
-                }
-                className="bg-white text-[#14ad9f] hover:bg-gray-100 font-semibold px-6 py-2 shadow-md"
-              >
-                Jetzt anmelden
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Error Display */}
-      {error && !error.includes('✅') && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-red-600" />
-              <div>
-                <h4 className="font-medium text-red-800">Information</h4>
-                <p className="text-red-700 text-sm mt-1">{error}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Success Message */}
-      {error && error.includes('✅') && (
-        <Card className="border-[#14ad9f] border-opacity-30 bg-[#14ad9f] bg-opacity-10">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-[#14ad9f]" />
-              <div>
-                <h4 className="font-medium text-[#14ad9f]">Erfolgreich</h4>
-                <p className="text-[#14ad9f] text-sm mt-1 opacity-80">{error}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Banking Statistics Overview */}
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        <div
-          data-slot="card"
-          className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
-        >
-          <div
-            data-slot="card-header"
-            className="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6"
-          >
-            <div
-              data-slot="card-title"
-              className="leading-none font-semibold flex items-center gap-2"
-            >
-              <CreditCard className="h-5 w-5 text-[#14ad9f]" />
-              Bankkonten
-            </div>
-          </div>
-          <div data-slot="card-content" className="px-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{connections.length}</p>
-                <p className="text-sm text-gray-600">Verbundene Banken</p>
-              </div>
-              <Building2 className="h-8 w-8 text-[#14ad9f]" />
-            </div>
+        {/* Tab Navigation */}
+        <div className="mb-8">
+          <div className="border-b border-gray-200">
+            <nav className="flex space-x-8">
+              <button className="py-3 px-1 border-b-2 border-[#14ad9f] text-[#14ad9f] font-medium text-sm">
+                Bankkonto
+              </button>
+              <button className="py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm">
+                Verrechnungskonto
+              </button>
+            </nav>
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <RefreshCw className="h-5 w-5 text-[#14ad9f]" />
-              Letzter Sync
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">
-                  {connections.length > 0
-                    ? formatLastSync(connections[0]?.lastSync)
-                    : 'Noch kein Sync'}
-                </p>
-                <p className="text-xs text-gray-600">Automatische Synchronisation</p>
+        {/* Search Section */}
+        <div className="mb-8">
+          <div className="max-w-md mx-auto">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
               </div>
-              {connections.length > 0 ? (
-                <CheckCircle className="h-8 w-8 text-[#14ad9f]" />
-              ) : (
-                <Clock className="h-8 w-8 text-gray-400" />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-[#14ad9f]" />
-              Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">
-                  {connections.length > 0 ? 'Aktiv' : 'Inaktiv'}
-                </p>
-                <p className="text-xs text-gray-600">Banking-Integration</p>
-              </div>
-              {connections.length > 0 ? (
-                <Activity className="h-8 w-8 text-[#14ad9f]" />
-              ) : (
-                <Activity className="h-8 w-8 text-gray-400" />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Connected Banks or Bank Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-[#14ad9f]" />
-            Banking-Übersicht
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {showBankSelection ? (
-            // Bank Selection Section
-            <div className="space-y-6">
-              {/* Sandbox Info */}
-              <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <FlaskConical className="h-5 w-5 text-blue-600" />
-                    <div className="flex-1">
-                      <h4 className="font-medium text-blue-900">finAPI Sandbox-Umgebung</h4>
-                      <p className="text-blue-700 text-sm">
-                        Test-Umgebung mit Demo-Banken. Nur Banken mit &ldquo;Demo&rdquo; oder
-                        &ldquo;Test&rdquo; unterstützen Kontoinformationen.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  type="text"
-                  placeholder="Bank suchen..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* Bank List */}
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {filteredBanks.map(bank => {
-                  const isConnected = connectedBanks[bank.id.toString()];
-                  return (
-                    <div
-                      key={bank.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                    >
-                      <div className="flex items-center gap-4">
-                        <Building2 className="h-5 w-5 text-[#14ad9f]" />
-                        <div>
-                          <h3 className="font-medium text-gray-900">{bank.name}</h3>
-                          <div className="flex items-center gap-3 mt-1">
-                            {bank.city && (
-                              <span className="text-sm text-gray-600">{bank.city}</span>
-                            )}
-                            {bank.blz && (
-                              <span className="text-sm text-gray-600">BLZ: {bank.blz}</span>
-                            )}
-                            {bank.isTestBank && (
-                              <Badge variant="secondary" className="text-xs">
-                                Test Bank
-                              </Badge>
-                            )}
-                            {isConnected && (
-                              <Badge variant="default" className="text-xs bg-green-600 text-white">
-                                Verbunden
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {isConnected ? (
-                          <div className="flex items-center gap-2 text-[#14ad9f]">
-                            <CheckCircle className="h-4 w-4" />
-                            <span className="text-sm font-medium">Bereits verbunden</span>
-                          </div>
-                        ) : selectedBank?.id === bank.id && isConnecting ? (
-                          <div className="flex items-center gap-2 text-blue-600">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span className="text-sm">Verbinde...</span>
-                          </div>
+              <Input
+                type="text"
+                placeholder="Bank suchen"
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="pl-10 w-full h-12 text-lg border-gray-300 rounded-lg focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+              />
+              
+              {/* Search Results Dropdown - PRODUCTION VERSION */}
+              {(searchTerm.length > 0) && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+                  {filteredBanks.length === 0 && !loading && (
+                    <div className="p-4">
+                      <div className="text-sm text-gray-600 mb-3">
+                        {searchTerm === "Alle Banken" ? (
+                          "Keine Banken in der FinAPI Sandbox verfügbar"
                         ) : (
-                          <Button
-                            size="sm"
-                            className="bg-[#14ad9f] hover:bg-[#129488]"
-                            onClick={() => handleConnectBank(bank)}
-                          >
-                            <CreditCard className="mr-2 h-4 w-4" />
-                            Verbinden
-                          </Button>
+                          `Keine Banken gefunden für "${searchTerm}"`
                         )}
                       </div>
+                      <div className="text-xs text-blue-600 mb-3">
+                        💡 FinAPI Sandbox kann limitierte Test-Daten haben. Nutze die Buttons unten zum Testen:
+                      </div>
+                      <div className="text-xs text-gray-500 mb-2">
+                        🔧 Öffne die Browser-Konsole (F12) für Debug-Informationen
+                      </div>
+                      <div className="mt-2">
+                        <button
+                          onClick={() => {
+                            setSearchTerm("Demo Bank");
+                            searchBanks("Demo Bank");
+                          }}
+                          className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2"
+                        >
+                          Demo Bank testen
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSearchTerm("FinAPI");
+                            searchBanks("FinAPI");
+                          }}
+                          className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2"
+                        >
+                          FinAPI testen
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSearchTerm("Sparkasse");
+                            searchBanks("Sparkasse");
+                          }}
+                          className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2"
+                        >
+                          Sparkasse testen
+                        </button>
+                        <button
+                          onClick={loadAllAvailableBanks}
+                          className="text-xs bg-green-50 hover:bg-green-100 text-green-700 px-2 py-1 rounded mr-2"
+                        >
+                          Alle verfügbaren Banken anzeigen
+                        </button>
+                        <button
+                          onClick={() => {
+                            // Teste auch ohne Parameter
+                            setLoading(true);
+                            fetch('/api/finapi/banks')
+                              .then(res => res.json())
+                              .then(data => {
+                                console.log('🧪 Basis-API Test:', data);
+                                if (data.banks?.length > 0 || data.data?.banks?.length > 0) {
+                                  setError(`✅ API funktioniert! Gefunden: ${data.banks?.length || data.data?.banks?.length || 0} Banken`);
+                                } else {
+                                  setError(`ℹ️ API Response: ${JSON.stringify(data).substring(0, 200)}...`);
+                                }
+                              })
+                              .catch(err => setError(`❌ API Fehler: ${err}`))
+                              .finally(() => setLoading(false));
+                          }}
+                          className="text-xs bg-yellow-50 hover:bg-yellow-100 text-yellow-700 px-2 py-1 rounded"
+                        >
+                          🧪 API testen
+                        </button>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            // Connected Banks Overview
-            <div>
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                  )}
+                  {filteredBanks.length > 0 && (
+                      <>
+                      <ul className="py-2">
+                        {filteredBanks.map((bank: any) => (
+                          <li key={bank.id}>
+                            <button
+                              type="button"
+                              onClick={() => handleBankSelect(bank)}
+                              className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-3"
+                            >
+                              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <img 
+                                  src={getBankLogoPath(bank.name)} 
+                                  alt={bank.name}
+                                  className="w-6 h-6 object-contain"
+                                  onError={(e) => {
+                                    // Fallback to text initial
+                                    const target = e.currentTarget;
+                                    target.style.display = 'none';
+                                    target.parentElement!.innerHTML = `<div class="w-6 h-6 bg-[#14ad9f] rounded flex items-center justify-center text-white font-semibold text-xs">${bank.name.charAt(0).toUpperCase()}</div>`;
+                                  }}
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <div className="text-sm font-medium text-gray-900">
+                                  <span dangerouslySetInnerHTML={{
+                                    __html: bank.name.replace(
+                                      new RegExp(`(${searchTerm})`, 'gi'),
+                                      '<mark class="bg-yellow-200">$1</mark>'
+                                    )
+                                  }} />
+                                  {bank.isTestBank && (
+                                    <span className="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">
+                                      Test Bank
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {bank.bic && `BIC: ${bank.bic}`} {bank.blz && `· BLZ: ${bank.blz}`}
+                                  {bank.location && ` · ${bank.location}`}
+                                </div>
+                              </div>
+                              <div className="text-gray-400">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </div>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                      
+                      {/* +4000 weitere Banken Text */}
+                      <div className="border-t border-gray-100 px-4 py-2 text-center">
+                        <span className="text-sm text-gray-500">+4000 weitere Banken in Deutschland und Österreich</span>
+                      </div>
+                    </>
+                  )}
                 </div>
-              ) : connections.length === 0 ? (
-                <div className="text-center py-8">
-                  <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Bankverbindungen</h3>
-                  <p className="text-gray-600 mb-6">
-                    Verbinden Sie Ihre erste Bank mit einem unserer Banking-Provider.
-                  </p>
-
-                  {/* Provider Selection */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto mb-6">
-                    {/* FinAPI Option */}
-                    <div className="border border-gray-200 rounded-lg p-4 hover:border-[#14ad9f] transition-colors">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
-                          <Building2 className="h-6 w-6 text-blue-600" />
-                        </div>
-                        <h4 className="font-medium text-gray-900 mb-1">FinAPI</h4>
-                        <p className="text-xs text-gray-600 mb-3">Deutsche Banken & PSD2</p>
-                        <Button
-                          onClick={() => setShowBankSelection(true)}
-                          size="sm"
-                          className="bg-[#14ad9f] hover:bg-[#129488] w-full"
-                        >
-                          <CreditCard className="h-4 w-4 mr-2" />
-                          Bank auswählen
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Revolut Option */}
-                    <div className="border border-gray-200 rounded-lg p-4 hover:border-[#14ad9f] transition-colors">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center mb-3 p-1">
-                          <img
-                            src="/icon/unnamed.webp"
-                            alt="Revolut Logo"
-                            className="w-10 h-10 object-contain"
-                          />
-                        </div>
-                        <h4 className="font-medium text-gray-900 mb-1">Revolut</h4>
-                        <p className="text-xs text-gray-600 mb-3">Business Banking</p>
-                        <Button
-                          onClick={() => setIsRevolutModalOpen(true)}
-                          size="sm"
-                          className="bg-[#14ad9f] hover:bg-[#129488] w-full"
-                        >
-                          <CreditCard className="h-4 w-4 mr-2" />
-                          Verbinden
-                        </Button>
-                      </div>
-                    </div>
+              )}
+              
+              {/* Loading indicator */}
+              {loading && searchTerm.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center">
+                  <div className="flex items-center justify-center space-x-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#14ad9f]" />
+                    <span className="text-sm text-gray-600">Suche Banken...</span>
                   </div>
-
-                  <p className="text-xs text-gray-500">
-                    Wählen Sie Ihren bevorzugten Banking-Provider für die Kontoverbindung.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {connections.map(connection => (
-                    <div
-                      key={connection.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                    >
-                      <div className="flex items-center gap-4">
-                        <Building2 className="h-5 w-5 text-[#14ad9f]" />
-                        <div>
-                          <h4 className="font-medium text-gray-900">{connection.bankName}</h4>
-                          <p className="text-sm text-gray-600">
-                            {connection.accountCount} Konto(s) • Letzte Sync:{' '}
-                            {formatLastSync(connection.lastSync)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(connection.status)}
-                          <Badge className={getStatusColor(connection.status)}>
-                            {connection.status === 'connected'
-                              ? 'Verbunden'
-                              : connection.status === 'error'
-                                ? 'Fehler'
-                                : 'Ausstehend'}
-                          </Badge>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenDisconnectDialog(connection)}
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               )}
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Status Overview - Converted from Quick Actions to Status-Only Cards */}
-      {connections.length > 0 && !showBankSelection && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <CreditCard className="h-8 w-8 text-[#14ad9f]" />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">Konten-Status</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {connections.reduce((total, conn) => total + conn.accountCount, 0)} Bankkonten
-                    aktiv
-                  </p>
-                  <div className="mt-2 text-lg font-bold text-[#14ad9f]">
-                    {connections.length} Bank{connections.length !== 1 ? 'en' : ''} verbunden
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <RefreshCw className="h-8 w-8 text-[#14ad9f]" />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">Sync-Status</h3>
-                  <p className="text-sm text-gray-600 mt-1">Automatische Synchronisation aktiv</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-green-600">Online</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <Settings className="h-8 w-8 text-[#14ad9f]" />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">Konfiguration</h3>
-                  <p className="text-sm text-gray-600 mt-1">Import-Einstellungen verwaltet</p>
-                  <div className="mt-2 text-sm font-medium text-gray-700">
-                    Bereit für Banking-Operationen
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          </div>
         </div>
-      )}
 
-      {/* WebForm Modal */}
-      <FinAPIWebFormModal
-        isOpen={isWebFormModalOpen}
-        onClose={handleWebFormClose}
-        onSuccess={handleWebFormSuccess}
-        onError={handleWebFormError}
-        webFormUrl={webFormUrl}
-        bankName={webFormBankName}
-        title={`${webFormBankName} verbinden`}
-      />
+        {/* Bank Gallery */}
+        <div className="mb-8">
+          <div className="grid grid-cols-3 gap-3 max-w-4xl mx-auto">
+            {/* Datenimport-Konto */}
+            <button 
+              type="button" 
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex flex-col items-center justify-center group p-4"
+            >
+              <Plus className="h-8 w-8 mb-2 text-gray-400 group-hover:text-[#14ad9f] transition-colors" />
+              <span className="text-xs text-gray-600 group-hover:text-[#14ad9f] font-medium transition-colors text-center">
+                Datenimport-Konto
+              </span>
+            </button>
 
-      {/* Revolut Connect Modal */}
-      <RevolutConnectModal
-        isOpen={isRevolutModalOpen}
-        onClose={() => setIsRevolutModalOpen(false)}
-        onSuccess={connectionId => {
-          setIsRevolutModalOpen(false);
-          // Reload connections after successful connection
-          setTimeout(() => {
-            loadBankConnections();
-          }, 1000);
-        }}
-        onError={error => {
-          setError(`Revolut Verbindung fehlgeschlagen: ${error}`);
-          setIsRevolutModalOpen(false);
-        }}
-        userId={uid}
-        companyEmail={user?.email || ''}
-        title="Revolut Business verbinden"
-      />
+            {/* Sparkasse */}
+            <button 
+              type="button" 
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
+              <img 
+                src="/images/banks/Sparkasse.png" 
+                alt="Sparkasse" 
+                className="max-w-full max-h-full object-contain p-4"
+              />
+            </button>
 
-      {/* Bank Disconnect Dialog */}
-      <BankDisconnectDialog
-        isOpen={isDisconnectDialogOpen}
-        onClose={() => {
-          setIsDisconnectDialogOpen(false);
-          setSelectedConnectionForDisconnect(null);
-        }}
-        onConfirm={handleDisconnectBank}
-        bankName={selectedConnectionForDisconnect?.bankName || 'Bank'}
-      />
-    </div>
+            {/* PayPal */}
+            <button 
+              type="button" 
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
+              <img 
+                src="/images/banks/Paypal.png" 
+                alt="PayPal" 
+                className="max-w-full max-h-full object-contain p-4"
+              />
+            </button>
+
+            {/* Deutsche Bank */}
+            <button 
+              type="button" 
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
+              <img 
+                src="/images/banks/Deutsche_Bank.png" 
+                alt="Deutsche Bank" 
+                className="max-w-full max-h-full object-contain p-4"
+              />
+            </button>
+
+            {/* Commerzbank */}
+            <button 
+              type="button" 
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
+              <img 
+                src="/images/banks/Commerzbank.png" 
+                alt="Commerzbank" 
+                className="max-w-full max-h-full object-contain p-4"
+              />
+            </button>
+
+            {/* N26 */}
+            <button 
+              type="button" 
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
+              <img 
+                src="/images/banks/N26.png" 
+                alt="N26" 
+                className="max-w-full max-h-full object-contain p-4"
+              />
+            </button>
+
+            {/* Volksbank */}
+            <button 
+              type="button" 
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
+              <img 
+                src="/images/banks/Volksbanken_Raiffeisenbanken.png" 
+                alt="Volksbank" 
+                className="max-w-full max-h-full object-contain p-4"
+              />
+            </button>
+
+            {/* Qonto */}
+            <button 
+              type="button" 
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
+              <img 
+                src="/images/banks/Qonto.png" 
+                alt="Qonto" 
+                className="max-w-full max-h-full object-contain p-4"
+              />
+            </button>
+
+            {/* Fyrst */}
+            <button 
+              type="button" 
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
+              <img 
+                src="/images/banks/Fyrst.png" 
+                alt="Fyrst" 
+                className="max-w-full max-h-full object-contain p-4"
+              />
+            </button>
+          </div>
+          
+          {/* +4000 weitere Banken Text */}
+          <div className="text-center mt-6">
+            <span className="text-sm text-gray-500">+4000 weitere Banken in Deutschland und Österreich</span>
+          </div>
+        </div>
+
+        {/* Benefits Card */}
+        <Card className="bg-white border border-gray-200 shadow-sm max-w-4xl mx-auto">
+          <CardContent className="p-8">
+            <ul className="space-y-4">
+              <li className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <CheckCircle className="h-6 w-6 text-[#14ad9f]" />
+                </div>
+                <span className="text-gray-700">Zahlungseingänge werden automatisch verbucht</span>
+              </li>
+              <li className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <CheckCircle className="h-6 w-6 text-[#14ad9f]" />
+                </div>
+                <span className="text-gray-700">Tätige Überweisungen ohne Umwege direkt in Taskilo</span>
+              </li>
+              <li className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <CheckCircle className="h-6 w-6 text-[#14ad9f]" />
+                </div>
+                <span className="text-gray-700">Sehen, wenn ein Beleg vergessen wurde</span>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        {/* Error Display */}
+        {error && !error.includes('✅') && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <div>
+                  <h4 className="font-medium text-red-800">Information</h4>
+                  <p className="text-red-700 text-sm mt-1">{error}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Success Message */}
+        {error && error.includes('✅') && (
+          <Card className="border-[#14ad9f] border-opacity-30 bg-[#14ad9f] bg-opacity-10">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="h-5 w-5 text-[#14ad9f]" />
+                <div>
+                  <h4 className="font-medium text-[#14ad9f]">Erfolgreich</h4>
+                  <p className="text-[#14ad9f] text-sm mt-1 opacity-80">{error}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </main>
   );
 }

@@ -13,16 +13,26 @@ export async function GET(request: NextRequest) {
     const perPage = parseInt(searchParams.get('perPage') || '20');
     const includeTestBanks = searchParams.get('includeTestBanks') === 'true';
 
+    // Debug: Check environment variables
+    console.log('🔧 Environment Variables Check:');
+    console.log('FINAPI_SANDBOX_CLIENT_ID:', process.env.FINAPI_SANDBOX_CLIENT_ID ? 'SET' : 'MISSING');
+    console.log('FINAPI_SANDBOX_CLIENT_SECRET:', process.env.FINAPI_SANDBOX_CLIENT_SECRET ? 'SET' : 'MISSING');
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+
     // Use the same service as other finAPI endpoints
     const finapiService = createFinAPIService();
 
     // Get banks from finAPI using the service
+    console.log('🚀 Starting getBanks with params:', { search, page, perPage, includeTestBanks });
+    
     const result = await finapiService.getBanks({
       search: search || undefined,
       page,
       perPage,
       includeTestBanks,
     });
+    
+    console.log('📊 getBanks result:', result);
 
     return NextResponse.json({
       success: true,
@@ -34,6 +44,14 @@ export async function GET(request: NextRequest) {
       search,
       source: 'finapi_service',
       timestamp: new Date().toISOString(),
+      debug: {
+        envVars: {
+          hasClientId: !!process.env.FINAPI_SANDBOX_CLIENT_ID,
+          hasClientSecret: !!process.env.FINAPI_SANDBOX_CLIENT_SECRET,
+          nodeEnv: process.env.NODE_ENV,
+          clientIdLength: process.env.FINAPI_SANDBOX_CLIENT_ID?.length || 0,
+        }
+      }
     });
   } catch (error: any) {
     return NextResponse.json(

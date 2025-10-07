@@ -85,13 +85,19 @@ pnpm run logs:remove  # Remove debug logs before commits
 ## KRITISCHE AI-ANWEISUNGEN - NIEMALS IGNORIEREN!
 
 **PROBLEMLÖSUNG-PRINZIPIEN:**
-- **NIEMALS NUR SYMPTOME VERSTECKEN** - Debug-Logs entfernen oder Fallback/Mock-Daten verwenden ist KEINE Lösung!
+- **NIEMALS NUR SYMPTOME VERSTECKEN** - Debug-Logs entfernen oder NIemals Fallback/Mock-Daten verwenden!!
 - **PROBLEME RICHTIG UND GEWISSENHAFT LÖSEN** - Die echte Ursache finden und beheben
 - **KEINE SPIELEREI** - Direkt zur Wurzel des Problems gehen
 - **ZEIT RESPEKTIEREN** - Effizient und zielgerichtet arbeiten
 - **KEINE FALLBACK-LOGIK** wenn der User explizit dagegen ist
 - **KEINE MOCK-DATEN** - Immer echte Daten verwenden
 - **ORDENTLICH UND GEWISSENHAFT** arbeiten - nicht oberflächlich reparieren
+
+**QUALITÄTSSICHERUNG:**
+- **IMMER ARBEITSBEREICH PRÜFEN** - Vor Abschluss jeder Aufgabe MUSS `get_errors` ausgeführt werden
+- **TYPESCRIPT-ERRORS BEHEBEN** - Alle TypeScript-Compilation-Fehler müssen behoben werden
+- **KEINE UNVOLLENDETEN AUFGABEN** - Erst bei fehlerfreiem Arbeitsbereich ist die Aufgabe abgeschlossen
+- **FEHLERFREIE PRODUCTION** - System muss vollständig kompilierbar und einsatzbereit sein
 
 ## Code Patterns & Conventions
 

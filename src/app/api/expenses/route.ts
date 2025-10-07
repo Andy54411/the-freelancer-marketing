@@ -8,13 +8,18 @@ async function updateSupplierStats(supplierId: string, companyId: string) {
   }
 
   try {
+    // Prüfe ob db verfügbar ist
+    if (!db) {
+      console.error('Database not initialized');
+      return;
+    }
+
     // Alle Expenses für diesen Supplier abrufen
     const expensesSnapshot = await db
       .collection('companies')
       .doc(companyId)
       .collection('expenses')
       .where('supplierId', '==', supplierId)
-
       .get();
 
     let totalAmount = 0;
@@ -28,7 +33,7 @@ async function updateSupplierStats(supplierId: string, companyId: string) {
     });
 
     // Supplier-Dokument aktualisieren
-    const supplierRef = db!
+    const supplierRef = db
       .collection('companies')
       .doc(companyId)
       .collection('customers')
@@ -63,8 +68,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Prüfe ob db verfügbar ist
+    if (!db) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Database not initialized',
+        },
+        { status: 500 }
+      );
+    }
+
     // Firebase Admin SDK Abfrage
-    const expensesRef = db!.collection('companies').doc(companyId).collection('expenses');
+    const expensesRef = db.collection('companies').doc(companyId).collection('expenses');
     const querySnapshot = await expensesRef.orderBy('createdAt', 'desc').get();
 
     const expenses: any[] = [];
@@ -79,6 +95,8 @@ export async function GET(request: NextRequest) {
         category: data.category || 'Sonstiges',
         description: data.description || '',
         date: data.date || new Date().toISOString().split('T')[0],
+        dueDate: data.dueDate || '', // 🎯 FÄLLIGKEITSDATUM aus DB laden
+        paymentTerms: data.paymentTerms || '', // 🎯 ZAHLUNGSBEDINGUNGEN aus DB laden
         vendor: data.vendor || '',
         invoiceNumber: data.invoiceNumber || '',
         vatAmount: data.vatAmount || null,
@@ -167,6 +185,8 @@ export async function POST(request: NextRequest) {
       category,
       description: description || '',
       date: date || new Date().toISOString().split('T')[0],
+      dueDate: body.dueDate || '', // 🎯 FÄLLIGKEITSDATUM 
+      paymentTerms: body.paymentTerms || '', // 🎯 ZAHLUNGSBEDINGUNGEN
       vendor: vendor || '',
       invoiceNumber: invoiceNumber || '',
       vatAmount: vatAmount || null,
@@ -185,7 +205,17 @@ export async function POST(request: NextRequest) {
 
     if (id) {
       // UPDATE: Bestehende Ausgabe aktualisieren
-      const docRef = db!.collection('companies').doc(companyId).collection('expenses').doc(id);
+      if (!db) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Database not initialized',
+          },
+          { status: 500 }
+        );
+      }
+      
+      const docRef = db.collection('companies').doc(companyId).collection('expenses').doc(id);
       const docSnapshot = await docRef.get();
 
       if (!docSnapshot.exists) {
@@ -233,7 +263,17 @@ export async function POST(request: NextRequest) {
         createdAt: new Date(),
       };
 
-      const docRef = await db!
+      if (!db) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Database not initialized',
+          },
+          { status: 500 }
+        );
+      }
+
+      const docRef = await db
         .collection('companies')
         .doc(companyId)
         .collection('expenses')
@@ -282,7 +322,17 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const docRef = db!.collection('companies').doc(companyId).collection('expenses').doc(expenseId);
+    if (!db) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Database not initialized',
+        },
+        { status: 500 }
+      );
+    }
+
+    const docRef = db.collection('companies').doc(companyId).collection('expenses').doc(expenseId);
     const docSnapshot = await docRef.get();
 
     if (!docSnapshot.exists) {

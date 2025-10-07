@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/firebase/server'; // Korrekt: Server-Instanz für API-Routen verwenden
 import { getSystemInstruction } from '@/shared/chatbot-utils';
 
-const MODEL_NAME = 'gemini-1.5-flash-latest';
+const MODEL_NAME = 'models/gemini-2.5-flash';
 
 export async function POST(request: Request) {
   try {
@@ -30,6 +30,9 @@ export async function POST(request: Request) {
     const chatHistory = history.map((msg: { parts: Array<{ text: string }> }) => msg.parts[0].text);
 
     // KORREKTUR: Verwende die geteilte Funktion und übergebe die aktuelle Nachricht und Historie
+    if (!db) {
+      return NextResponse.json({ error: 'Database nicht verfügbar' }, { status: 500 });
+    }
     const systemInstruction = await getSystemInstruction(db, console.error, message, chatHistory);
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -85,6 +88,9 @@ export async function POST(request: Request) {
         const supportChatId = `support_chat_${userId}`;
 
         // Erstelle oder aktualisiere Support-Chat
+        if (!db) {
+          throw new Error('Database nicht verfügbar');
+        }
         await db
           .collection('supportChats')
           .doc(supportChatId)
@@ -112,6 +118,9 @@ export async function POST(request: Request) {
           );
 
         // Füge die Eskalations-Nachricht als erste Support-Message hinzu
+        if (!db) {
+          throw new Error('Database nicht verfügbar');
+        }
         await db
           .collection('supportChats')
           .doc(supportChatId)

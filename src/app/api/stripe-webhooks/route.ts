@@ -1038,6 +1038,30 @@ export async function POST(req: NextRequest, companyId: string) {
                 orderNotificationData
               );
             } catch (notificationError) {}
+
+            // 📊 SERVICE USAGE TRACKING - Track platform booking for analytics
+            try {
+              // Dynamic import des Service Tracking Service
+              const { ServiceUsageTrackingService } = await import('@/services/serviceUsageTrackingService');
+              
+              // Erstelle Service-Package-Daten aus Order-Informationen
+              const servicePackageData = {
+                packageName: orderData.selectedSubcategory || 'Platform Service',
+                packagePrice: (orderData.originalJobPriceInCents || 0) / 100, // Convert to euros
+                subcategory: orderData.selectedSubcategory || 'Service',
+              };
+
+              await ServiceUsageTrackingService.trackPlatformBookingUsage(
+                orderData.selectedAnbieterId, // Provider ID
+                newOrderId, // Order ID
+                servicePackageData,
+                orderData.customerName || 'Kunde',
+                orderData.jobDateFrom
+              );
+            } catch (trackingError) {
+              // Service-Tracking ist nicht kritisch für die Hauptfunktion
+              console.warn('⚠️ Platform service usage tracking failed (non-critical):', trackingError);
+            }
           } else {
           }
         } catch (dbError: unknown) {

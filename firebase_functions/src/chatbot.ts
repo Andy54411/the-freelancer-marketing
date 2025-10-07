@@ -131,7 +131,7 @@ export const handleSupportMessage = onDocumentCreated("supportChats/{chatId}/mes
         );
 
         const model = getGenAIClient().getGenerativeModel({
-            model: "gemini-1.5-flash",
+            model: "models/gemini-2.5-flash",
             systemInstruction: systemInstruction,
             safetySettings: [
                 { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },

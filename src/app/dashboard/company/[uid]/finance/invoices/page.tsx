@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { InvoiceListView } from '@/components/finance/InvoiceListView';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
@@ -12,13 +12,18 @@ import Link from 'next/link';
 
 export default function InvoicesPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
+
+  // Get initial tab from URL parameters
+  const initialTab = searchParams?.get('tab') || 'all';
+  const initialFilter = searchParams?.get('filter');
 
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
@@ -26,6 +31,14 @@ export default function InvoicesPage() {
       loadInvoices();
     }
   }, [user, uid]);
+
+  // Update active tab when URL parameters change
+  useEffect(() => {
+    const tabFromUrl = searchParams?.get('tab') || 'all';
+    if (tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams, activeTab]);
 
   const loadInvoices = async () => {
     try {

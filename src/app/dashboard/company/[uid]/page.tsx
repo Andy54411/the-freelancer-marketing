@@ -21,8 +21,17 @@ import FinanceComponent from '@/components/FinanceComponent';
 import { useCompanyOnboardingCheck } from '@/hooks/useCompanyOnboardingCheck';
 import OnboardingBanner from '@/components/onboarding/OnboardingBanner';
 import AdminApprovalStatus from '@/components/AdminApprovalStatus';
+import OutstandingInvoicesCard from '@/components/dashboard/OutstandingInvoicesCard';
+import VatPreRegistrationCard from '@/components/dashboard/VatPreRegistrationCard';
+import BankAccountCard from '@/components/dashboard/BankAccountCard';
+import AccountingScoreCard from '@/components/dashboard/AccountingScoreCard';
+import ProductsServicesCard from '@/components/dashboard/ProductsServicesCard';
+import ActivityHistoryCard from '@/components/dashboard/ActivityHistoryCard';
+import TopExpensesCard from '@/components/dashboard/TopExpensesCard';
+import TopCustomersCard from '@/components/dashboard/TopCustomersCard';
+import DraggableDashboardGrid, { DashboardComponent } from '@/components/dashboard/DraggableDashboardGrid';
+import { useDashboardConfig } from '@/hooks/useDashboardConfig';
 
-// Typ für die Auftragsdaten, die von der API kommen
 type OrderData = {
   id: string;
   selectedSubcategory: string;
@@ -40,7 +49,6 @@ const isNonEmptyString = (val: unknown): val is string =>
 export default function CompanyDashboard({ params }: { params: Promise<{ uid: string }> }) {
   const searchParams = useSearchParams();
 
-  // Spaltendefinitionen für die DataTable
   const columns: ColumnDef<OrderData>[] = [
     {
       id: 'Dienstleistung',
@@ -138,15 +146,26 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
     currentStep,
   } = useCompanyDashboard();
 
-  // Onboarding-Status kommt zentral aus useCompanyDashboard
-
-  // NEU: Direkter Zugriff auf Auth-Context für Debugging
   const { user: authUser, firebaseUser } = useAuth();
 
-  // Get the company name from the already fetched user data to pass to the drawer.
+  const [financialData, setFinancialData] = useState({
+    netRevenue: 0,
+    totalExpenses: 0,
+    grossProfitBeforeTax: 0,
+    vatAmount: 0
+  });
+
+  const handleFinancialDataChange = React.useCallback((data: {
+    netRevenue: number;
+    totalExpenses: number;
+    grossProfitBeforeTax: number;
+    vatAmount: number;
+  }) => {
+    setFinancialData(data);
+  }, []);
+
   const companyName = userData?.companyName || userData?.step2?.companyName || 'Ihre Firma';
 
-  // State für Auftragsdaten
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [companyMetrics, setCompanyMetrics] = useState<CompanyMetrics | null>(null);
@@ -154,13 +173,104 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
   const [selectedOrder, setSelectedOrder] = useState<OrderData | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Handler, um einen Auftrag auszuwählen und die Sidebar zu öffnen
+  // Dashboard Configuration Hook
+  // Dashboard Configuration Hook
+  const { 
+    components: dashboardComponents, 
+    setComponents: setDashboardComponents, 
+    isLoading: isLoadingConfig 
+  } = useDashboardConfig(uid || '');
+
+  // Dashboard-Komponenten mit echten React-Komponenten verknüpfen - ALLE KOMPONENTEN
+  const getDashboardComponentsWithContent = React.useCallback((): DashboardComponent[] => {
+    if (!dashboardComponents) return [];
+    
+    return dashboardComponents.map(comp => ({
+      ...comp,
+      component: (() => {
+        switch (comp.id) {
+          case 'onboarding-banner':
+            return uid && (
+              <OnboardingBanner
+                key="onboarding-banner"
+                companyUid={uid}
+                needsOnboarding={needsOnboarding}
+                completionPercentage={completionPercentage}
+                currentStep={currentStep}
+                isLoading={isChecking}
+              />
+            );
+          case 'section-cards':
+            return <SectionCards key="section-cards" />;
+          case 'chart-interactive':
+            return (
+              <div key="chart-interactive" className="bg-white rounded-lg border shadow-sm p-6">
+                {uid && isAuthorized && !isChecking ? (
+                  <ChartAreaInteractive 
+                    companyUid={uid} 
+                    onFinancialDataChange={handleFinancialDataChange}
+                  />
+                ) : (
+                  <div className="flex h-[350px] w-full items-center justify-center">
+                    <div className="text-gray-500">Lade Diagramm...</div>
+                  </div>
+                )}
+              </div>
+            );
+          case 'outstanding-invoices':
+            return <OutstandingInvoicesCard key="outstanding-invoices" />;
+          case 'vat-pre-registration':
+            return <VatPreRegistrationCard key="vat-pre-registration" />;
+          case 'top-expenses':
+            return <TopExpensesCard key="top-expenses" />;
+          case 'top-customers':
+            return <TopCustomersCard key="top-customers" />;
+          case 'bank-account':
+            return uid ? <BankAccountCard key="bank-account" companyId={uid} /> : null;
+          case 'accounting-score':
+            return <AccountingScoreCard key="accounting-score" />;
+          case 'products-services':
+            return <ProductsServicesCard key="products-services" />;
+          case 'activity-history':
+            return <ActivityHistoryCard key="activity-history" />;
+          case 'orders-table':
+            return (
+              <div key="orders-table" className="bg-white rounded-lg border shadow-sm p-6">
+                <h3 className="text-lg font-semibold mb-4">Aufträge Übersicht</h3>
+                <DataTable
+                  columns={columns}
+                  data={orders || []}
+                  isLoading={loadingOrders}
+                  onRowClick={(order: OrderData) => {
+                    setSelectedOrder(order);
+                    setIsDrawerOpen(true);
+                  }}
+                />
+              </div>
+            );
+          case 'view-all-orders':
+            return uid && (
+              <div key="view-all-orders" className="text-center p-6">
+                <Link
+                  href={`/dashboard/company/${uid}/orders/overview`}
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-[#129a8f]"
+                >
+                  Alle Aufträge anzeigen
+                </Link>
+              </div>
+            );
+          default:
+            return <div key={comp.id}>Unbekannte Komponente: {comp.id}</div>;
+        }
+      })(),
+    }));
+  }, [dashboardComponents, uid, needsOnboarding, completionPercentage, currentStep, isChecking, isAuthorized, handleFinancialDataChange, orders, loadingOrders]);
+
   const handleRowClick = (order: OrderData) => {
     setSelectedOrder(order);
     setIsDrawerOpen(true);
   };
 
-  // Handler, um die Sidebar zu schließen und die Auswahl aufzuheben
   const handleDrawerChange = (isOpen: boolean) => {
     setIsDrawerOpen(isOpen);
     if (!isOpen) {
@@ -168,10 +278,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
     }
   };
 
-  // Effekt zum Laden der Auftragsdaten
   useEffect(() => {
-    // KRITISCHE DEBUG-INFORMATION
-
     if (uid && isAuthorized) {
       const fetchOrders = async () => {
         setLoadingOrders(true);
@@ -179,12 +286,9 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
           const result = await callHttpsFunction('getProviderOrders', { providerId: uid }, 'GET');
 
           if (result.orders && result.orders.length > 0) {
-            // KORREKTUR: Transformiere die Daten für die DataTable
             const transformedOrders = result.orders.map((order: any) => ({
               ...order,
-              // Stelle sicher, dass jeder Auftrag eine gültige ID hat
               id: order.id || `order-${Date.now()}`,
-              // Transformiere orderDate zu einem konsistenten Format
               orderDate: order.orderDate?._seconds
                 ? { _seconds: order.orderDate._seconds, _nanoseconds: order.orderDate._nanoseconds }
                 : order.orderDate,
@@ -205,7 +309,6 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
     }
   }, [uid, isAuthorized, authUser?.uid]);
 
-  // Effekt zum Berechnen der Company Metriken
   useEffect(() => {
     if (uid) {
       const fetchMetrics = async () => {
@@ -222,7 +325,6 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
     }
   }, [uid]);
 
-  // Effekt, um die Ansicht basierend auf dem URL-Parameter zu synchronisieren
   useEffect(() => {
     const viewFromUrl = searchParams?.get('view');
     if (viewFromUrl === 'settings' && view !== 'settings') {
@@ -232,54 +334,45 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
     }
   }, [searchParams, view, setView]);
 
-  // Render content based on current view
   const renderContent = () => {
     switch (view) {
       case 'dashboard':
         return (
           <div className="flex flex-col gap-4 md:gap-6">
-            {/* Onboarding Banner für bestehende Firmen */}
-            {uid && (
-              <OnboardingBanner
-                companyUid={uid}
-                needsOnboarding={needsOnboarding}
-                completionPercentage={completionPercentage}
-                currentStep={currentStep}
-                isLoading={isChecking}
+            {/* Vollständig Draggable Dashboard - ALLE Komponenten */}
+            {!isLoadingConfig ? (
+              <DraggableDashboardGrid
+                components={getDashboardComponentsWithContent()}
+                onReorder={setDashboardComponents}
+                className=""
               />
+            ) : (
+              <div className="space-y-6">
+                {/* Loading Skeleton für alle Komponenten */}
+                {Array.from({ length: 13 }).map((_, index) => (
+                  <div key={index} className="bg-white rounded-lg border shadow-sm p-6">
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+                      <div className="space-y-2">
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
-
-            <SectionCards />
-            {uid && <ChartAreaInteractive companyUid={uid} />}
-
-            {/* DATATABLE MIT ORDERS DATEN */}
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold mb-2">📊 Aufträge Übersicht</h3>
-              <DataTable
-                columns={columns}
-                data={orders || []}
-                isLoading={loadingOrders}
-                onRowClick={handleRowClick}
-              />
-            </div>
-            <div className="mt-8 text-center">
-              <Link
-                href={`/dashboard/company/${uid}/orders/overview`}
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-[#129a8f]"
-              >
-                Alle Aufträge anzeigen
-              </Link>
-            </div>
           </div>
         );
 
       case 'calendar':
         return (
-          <>{uid && <CompanyCalendar companyUid={uid} selectedOrderId={selectedOrder?.id} />}</>
+          <>{uid && isAuthorized && !isChecking && <CompanyCalendar companyUid={uid} selectedOrderId={selectedOrder?.id} />}</>
         );
 
       case 'finance':
-        return <>{uid && <FinanceComponent companyUid={uid} />}</>;
+        return <>{uid && isAuthorized && !isChecking && <FinanceComponent companyUid={uid || ''} />}</>;
 
       case 'banking':
         return (
@@ -308,7 +401,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
                 Antworten Sie auf Kundenbewertungen und verwalten Sie Ihr Feedback
               </p>
             </div>
-            {uid && userData?.companyName && (
+            {uid && isAuthorized && !isChecking && userData?.companyName && (
               <CompanyReviewManagement
                 companyId={uid}
                 companyName={userData.companyName || userData.step2?.companyName || 'Ihre Firma'}
@@ -341,8 +434,6 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
   return (
     <>
       {renderContent()}
-
-      {/* OrderSummaryDrawer außerhalb des Haupt-Renderings */}
       <OrderSummaryDrawer
         order={selectedOrder}
         isOpen={isDrawerOpen}

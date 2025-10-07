@@ -2506,6 +2506,19 @@ export default function CreateQuotePage() {
       // Save Invoice using FirestoreInvoiceService - TARGET: invoices subcollection
       const createdInvoiceId = await InvoiceService.saveInvoice(cleanInvoiceData);
 
+      // 📊 SERVICE USAGE TRACKING - Track service usage for analytics
+      try {
+        const { ServiceUsageTrackingService } = await import('@/services/serviceUsageTrackingService');
+        await ServiceUsageTrackingService.trackInvoiceServiceUsage(
+          uid,
+          createdInvoiceId,
+          items || [],
+          selectedCustomer?.name || formData.customerName
+        );
+      } catch (trackingError) {
+        console.warn('⚠️ Service usage tracking failed (non-critical):', trackingError);
+      }
+
       // Inventory Management
       try {
         const inventoryItems = (items || []).

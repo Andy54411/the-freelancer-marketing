@@ -106,6 +106,9 @@ export class FinAPISDKService {
     // Security: Only log environment and availability, never actual credentials
 
     try {
+      console.log('🎯 FinAPI Token Request to:', `${this.baseUrl}/api/v2/oauth/token`);
+      console.log('🔑 Using Client ID:', this.config.credentials.clientId.substring(0, 8) + '...');
+      
       const response = await fetch(`${this.baseUrl}/api/v2/oauth/token`, {
         method: 'POST',
         headers: {
@@ -119,8 +122,11 @@ export class FinAPISDKService {
         }),
       });
 
+      console.log('🎫 Token Response Status:', response.status);
+      
       if (!response.ok) {
         const errorText = await response.text();
+        console.log('❌ Token Error Response:', errorText);
         throw new Error(`Token request failed: ${response.status} ${errorText}`);
       }
 
@@ -744,8 +750,15 @@ export class FinAPISDKService {
         url.searchParams.set('search', search.trim());
       }
 
-      // Note: finAPI returns test banks by default in sandbox environment
-      // We don't need to filter them here as they are useful for testing
+      // Include test banks if requested (wichtig für FinAPI Sandbox Test-Banken!)
+      if (includeTestBanks) {
+        url.searchParams.set('isTestBank', 'true');
+      }
+
+      console.log('🔗 FinAPI URL:', url.toString());
+      console.log('🧪 Test-Banks aktiviert:', includeTestBanks);
+      console.log('🔍 Suchbegriff für FinAPI:', search);
+      console.log('🎫 Client Token (first 10 chars):', clientToken.substring(0, 10) + '...');
 
       const response = await fetch(url.toString(), {
         method: 'GET',
@@ -755,8 +768,12 @@ export class FinAPISDKService {
         },
       });
 
+      console.log('📡 FinAPI Response Status:', response.status);
+      console.log('📡 FinAPI Response Headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorText = await response.text();
+        console.log('❌ FinAPI Error Response:', errorText);
         throw new Error(`Banks request failed: ${response.status} ${errorText}`);
       }
 
@@ -837,11 +854,13 @@ export class FinAPISDKService {
   ): Promise<void> {
     try {
       // Update the company document with finAPI user data
-      await db.collection('companies').doc(companyId).update({
-        finapiUser: finapiUserData,
-        updatedAt: new Date().toISOString(),
-        lastModifiedBy: 'finapi-service',
-      });
+      if (db) {
+        await db.collection('companies').doc(companyId).update({
+          finapiUser: finapiUserData,
+          updatedAt: new Date().toISOString(),
+          lastModifiedBy: 'finapi-service',
+        });
+      }
     } catch (error: any) {}
   }
 }

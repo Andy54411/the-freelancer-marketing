@@ -12,6 +12,8 @@ interface ExpenseData {
   amount: number;
   category: string;
   date: string;
+  dueDate?: string; // 🎯 FÄLLIGKEITSDATUM hinzugefügt
+  paymentTerms?: string; // 🎯 ZAHLUNGSBEDINGUNGEN hinzugefügt
   description: string;
   vendor?: string;
   invoiceNumber?: string;
@@ -67,6 +69,8 @@ export default function ExpensesPage() {
           amount: expense.amount || 0,
           category: expense.category || 'Sonstiges',
           date: expense.date || new Date().toISOString().split('T')[0],
+          dueDate: expense.dueDate || '', // 🎯 FÄLLIGKEITSDATUM vom Backend
+          paymentTerms: expense.paymentTerms || '', // 🎯 ZAHLUNGSBEDINGUNGEN vom Backend
           description: expense.description || '',
           vendor: expense.vendor || '',
           invoiceNumber: expense.invoiceNumber || '',

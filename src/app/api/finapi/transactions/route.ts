@@ -132,14 +132,29 @@ export async function GET(request: NextRequest) {
           purpose: 'Grocery Shopping Demo',
           counterpartName: 'DEMO Supermarket',
           counterpartIban: 'DE89370400440532013002',
+          counterpartBic: 'DEMODEDEMDE1',
+          counterpartBankName: 'Demo Bank AG',
+          counterpartBlz: '37040044',
           bookingDate: '2025-08-29',
           valueDate: '2025-08-29',
           typeCodeZka: 'CARD_PAYMENT',
+          typeCodeSwift: 'PMNT',
+          sepaPurposeCode: 'CBFF',
+          mcCode: '5411', // Grocery Stores
+          primanota: '2025089001',
           category: {
             id: 'cat_1',
             name: 'Groceries',
+            parentName: 'Operating Expenses'
           },
+          labels: [
+            { id: 'lbl_1', name: 'Geschäftsausstattung' },
+            { id: 'lbl_2', name: 'Steuerlich absetzbar' }
+          ],
+          isPotentialDuplicate: false,
+          isAdjustingEntry: false,
           isNew: false,
+          importDate: '2025-08-29T10:30:00Z',
           isDemoData: true,
         },
         {
@@ -150,14 +165,86 @@ export async function GET(request: NextRequest) {
           purpose: 'Salary Payment Demo',
           counterpartName: 'DEMO Company',
           counterpartIban: 'DE89370400440532013003',
+          counterpartBic: 'DEMODEDEMDE2',
+          counterpartBankName: 'Deutsche Demo Bank',
+          counterpartBlz: '50010517',
           bookingDate: '2025-08-28',
           valueDate: '2025-08-28',
           typeCodeZka: 'TRANSFER',
+          typeCodeSwift: 'TRAD',
+          sepaPurposeCode: 'SALA',
+          primanota: '2025088001',
           category: {
             id: 'cat_2',
             name: 'Salary',
+            parentName: 'Income'
           },
+          labels: [
+            { id: 'lbl_3', name: 'Regelmäßig' },
+            { id: 'lbl_4', name: 'Gehalt' }
+          ],
+          isPotentialDuplicate: false,
+          isAdjustingEntry: false,
           isNew: false,
+          importDate: '2025-08-28T08:15:00Z',
+          isDemoData: true,
+        },
+        {
+          id: 'demo_tx_3',
+          accountId: 3072163,
+          amount: -150.0,
+          currency: 'EUR',
+          purpose: 'Office Rent - Duplicate Check',
+          counterpartName: 'DEMO Landlord',
+          counterpartIban: 'DE89370400440532013004',
+          counterpartBic: 'DEMODEDEMDE3',
+          counterpartBankName: 'Commerzbank Demo',
+          counterpartBlz: '76040061',
+          bookingDate: '2025-08-27',
+          valueDate: '2025-08-27',
+          typeCodeZka: 'STANDING_ORDER',
+          sepaPurposeCode: 'RENT',
+          primanota: '2025087002',
+          category: {
+            id: 'cat_3',
+            name: 'Office Expenses',
+          },
+          labels: [
+            { id: 'lbl_5', name: 'Bürokosten' },
+            { id: 'lbl_6', name: 'Monatlich' }
+          ],
+          isPotentialDuplicate: true, // DUPLIKAT-WARNUNG
+          isAdjustingEntry: false,
+          isNew: true,
+          importDate: '2025-08-27T14:20:00Z',
+          isDemoData: true,
+        },
+        {
+          id: 'demo_tx_4',
+          accountId: 3072163,
+          amount: 45.0,
+          currency: 'EUR',
+          purpose: 'Correction: Wrong booking amount',
+          counterpartName: 'DEMO Bank',
+          counterpartIban: 'DE89370400440532013001',
+          counterpartBic: 'DEMODEDEMDE0',
+          counterpartBankName: 'Demo Bank AG',
+          bookingDate: '2025-08-26',
+          valueDate: '2025-08-26',
+          typeCodeZka: 'ADJUSTMENT',
+          sepaPurposeCode: 'ADJM',
+          primanota: '2025086003',
+          category: {
+            id: 'cat_4',
+            name: 'Bank Adjustments',
+          },
+          labels: [
+            { id: 'lbl_7', name: 'Korrektur' }
+          ],
+          isPotentialDuplicate: false,
+          isAdjustingEntry: true, // KORREKTUR-BUCHUNG
+          isNew: false,
+          importDate: '2025-08-26T16:45:00Z',
           isDemoData: true,
         },
       ];

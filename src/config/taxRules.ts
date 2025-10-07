@@ -75,7 +75,7 @@ export const TAX_RULES: TaxRule[] = [
     name: 'OSS – One-Stop-Shop',
     category: TaxRuleCategory.EU_DELIVERY,
     taxRate: 0, // Variiert je nach Land
-    invoiceText: 'Meldung über OSS-Verfahren',
+    invoiceText: '',
     legalBasis: '§18j UStG',
     description: 'Für B2C-Leistungen in der EU (One-Stop-Shop)',
     validCountries: ['EU'],

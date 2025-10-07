@@ -472,6 +472,30 @@ export default function EditInvoicePage() {
 
       const result = await addDoc(ref, serviceData);
 
+      // 📊 SERVICE USAGE TRACKING - Initialisiere Service-Statistiken
+      try {
+        const { ServiceUsageTrackingService } = await import('@/services/serviceUsageTrackingService');
+        // Erstelle ein temporäres Item für das Tracking
+        const tempItem = {
+          id: result.id,
+          description: serviceData.name,
+          quantity: 1,
+          unitPrice: serviceData.price,
+          total: serviceData.price,
+          inventoryItemId: result.id,
+          category: 'Dienstleistung'
+        };
+        
+        await ServiceUsageTrackingService.trackInvoiceServiceUsage(
+          uid,
+          invoiceId || 'service-creation', 
+          [tempItem],
+          formData.customerName || 'Service-Erstellung'
+        );
+      } catch (trackingError) {
+        console.warn('⚠️ Service initialization tracking failed (non-critical):', trackingError);
+      }
+
       toast.success('Dienstleistung gespeichert');
       setServiceDraft({ name: '', description: '', price: '', unit: 'Stk' });
       setServiceModalOpen(false);
@@ -522,6 +546,19 @@ export default function EditInvoicePage() {
       };
 
       setItems(prev => [...prev, newItem]);
+
+      // 📊 SERVICE USAGE TRACKING - Sofortiges Tracking für schnelle Nutzung
+      try {
+        const { ServiceUsageTrackingService } = await import('@/services/serviceUsageTrackingService');
+        await ServiceUsageTrackingService.trackInvoiceServiceUsage(
+          uid,
+          invoiceId || 'temp-invoice', // Fallback für neue Rechnungen
+          [newItem], // Nur das neue Item tracken
+          formData.customerName || 'Kunde'
+        );
+      } catch (trackingError) {
+        console.warn('⚠️ Immediate service usage tracking failed (non-critical):', trackingError);
+      }
 
       // 3. UI zurücksetzen
       setQuickServiceName('');
@@ -2414,6 +2451,19 @@ export default function EditInvoicePage() {
       // Update Invoice using FirestoreInvoiceService
       await InvoiceService.updateInvoice(invoiceId, cleanInvoiceData);
 
+      // 📊 SERVICE USAGE TRACKING - Update service usage analytics
+      try {
+        const { ServiceUsageTrackingService } = await import('@/services/serviceUsageTrackingService');
+        await ServiceUsageTrackingService.trackInvoiceServiceUsage(
+          uid,
+          invoiceId,
+          items || [],
+          formData.customerName
+        );
+      } catch (trackingError) {
+        console.warn('⚠️ Service usage tracking failed (non-critical):', trackingError);
+      }
+
       // Inventory Management (Optional für Edit)
       try {
         const inventoryItems = (items || [])
@@ -3944,22 +3994,22 @@ export default function EditInvoicePage() {
                       await saveServiceToSubcollection();
 
                       // 2. Dann als Position zur Rechnung hinzufügen
-                      setItems(prev => [
-                        ...prev,
-                        {
-                          id:
-                            typeof crypto !== 'undefined' && 'randomUUID' in crypto
-                              ? crypto.randomUUID()
-                              : Math.random().toString(36).slice(2),
-                          description:
-                            serviceDraft.name +
-                            (serviceDraft.description ? `: ${serviceDraft.description}` : ''),
-                          quantity: 1,
-                          unitPrice: parseFloat(serviceDraft.price),
-                          total: parseFloat(serviceDraft.price),
-                          unit: serviceDraft.unit,
-                        },
-                      ]);
+                      const newItemWithInventoryId = {
+                        id:
+                          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                            ? crypto.randomUUID()
+                            : Math.random().toString(36).slice(2),
+                        description:
+                          serviceDraft.name +
+                          (serviceDraft.description ? `: ${serviceDraft.description}` : ''),
+                        quantity: 1,
+                        unitPrice: parseFloat(serviceDraft.price),
+                        total: parseFloat(serviceDraft.price),
+                        unit: serviceDraft.unit,
+                        inventoryItemId: 'will-be-set-by-saveServiceToSubcollection', // Wird gesetzt
+                      };
+
+                      setItems(prev => [...prev, newItemWithInventoryId]);
 
                       // 3. Dialog schließen und Form zurücksetzen
                       setServiceModalOpen(false);

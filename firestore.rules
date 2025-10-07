@@ -1971,6 +1971,40 @@ service cloud.firestore {
       }
     }
 
+    // Transaction Links Collection - Verknüpfungen zwischen Banking-Transaktionen und Dokumenten
+    match /companies/{companyId}/transaction_links/{linkId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma oder Support Staff
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.createdBy == request.auth.uid;
+      
+      // Aktualisieren: Nur eigene Firma - nur bestimmte Felder
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       // Kern-Daten dürfen nicht verändert werden
+                       (!('transactionId' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                        !('documentId' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                        !('createdBy' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                        !('linkDate' in request.resource.data.diff(resource.data).affectedKeys()));
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+
     // Storno-Rechnungen Collection - als Subcollection unter companies
     match /companies/{companyId}/stornoRechnungen/{stornoId} {
       // Lesen: Nur eigene Firma oder Support Staff

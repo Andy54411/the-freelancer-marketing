@@ -946,6 +946,7 @@ const COMPLETE_DATEV_ACCOUNTS = [
   { number: '5800', name: 'Bezugsnebenkosten', type: 'EXPENSE' },
   { number: '5820', name: 'Leergut', type: 'EXPENSE' },
   { number: '5840', name: 'Zölle und Einfuhrabgaben', type: 'EXPENSE' },
+  { number: '5900', name: 'Externe Dienstleistungen', type: 'EXPENSE' },
   { number: '5906', name: 'Fremdleistung 19 % Vorsteuer', type: 'EXPENSE' },
   { number: '5908', name: 'Fremdleistungen 7 %  Vorsteuer', type: 'EXPENSE' },
   {

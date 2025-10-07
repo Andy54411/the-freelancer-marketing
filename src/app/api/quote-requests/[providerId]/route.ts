@@ -5,14 +5,16 @@ import { db } from '../../../../firebase/server'; /**
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ providerId: string }> },
-  companyId: string
+  { params }: { params: Promise<{ providerId: string }> }
 ) {
   let providerId: string = '';
 
   try {
     const resolvedParams = await params;
     providerId = resolvedParams.providerId;
+    
+    // Use providerId as companyId since the URL structure suggests they're the same
+    const companyId = providerId;
 
     if (!providerId) {
       return NextResponse.json({ error: 'Provider ID ist erforderlich' }, { status: 400 });
