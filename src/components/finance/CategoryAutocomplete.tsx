@@ -1,14 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Search,
-  MessageSquare,
-  Megaphone,
-  Briefcase,
-  Package,
-  Building2
-} from 'lucide-react';
+import { Search, MessageSquare, Megaphone, Briefcase, Package, Building2 } from 'lucide-react';
 import { DatevCardService } from '@/services/datevCardService';
 
 interface Category {
@@ -33,8 +26,8 @@ export default function CategoryAutocomplete({
   onChange,
   onCategorySelect,
   onOpenAdvancedSearch,
-  placeholder = "Suche nach Stichwort, Kategorie oder Buchhaltungskonto",
-  required = false
+  placeholder = 'Suche nach Stichwort, Kategorie oder Buchhaltungskonto',
+  required = false,
 }: CategoryAutocompleteProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -51,9 +44,18 @@ export default function CategoryAutocomplete({
         code: card.code,
         description: card.description || '',
         category: card.category,
-        icon: <Building2 className="h-5 w-5" />
+        icon: <Building2 className="h-5 w-5" />,
       }));
-    
+
+    // Debug: Suche nach "Sonstiges" Einträgen
+    const sonstigeCards = allCards.filter(
+      card =>
+        card.name.toLowerCase().includes('sonstig') ||
+        card.description.toLowerCase().includes('sonstig') ||
+        card.code.includes('6850')
+    );
+    console.log('🔍 Found "Sonstige" cards:', sonstigeCards);
+
     // Gruppiere nach Kategorien für bessere Organisation
     const grouped = new Map<string, typeof allCards>();
     allCards.forEach(card => {
@@ -62,7 +64,7 @@ export default function CategoryAutocomplete({
       }
       grouped.get(card.category)!.push(card);
     });
-    
+
     return { all: allCards, grouped };
   }, []);
 
@@ -70,15 +72,15 @@ export default function CategoryAutocomplete({
   const filteredCategories = React.useMemo(() => {
     const searchTerm = value.toLowerCase().trim();
     console.log('🔍 Searching for:', searchTerm);
-    
+
     if (searchTerm.length === 0) {
       // Zeige Top-Kategorien aus jeder Gruppe (ca. 50-80 wichtigste)
       const topCategories: Category[] = [];
-      
+
       // Wichtigste Kategorien zuerst
       const priorityOrder = [
         'Büro & Verwaltung',
-        'Betriebsausgaben', 
+        'Betriebsausgaben',
         'Fahrzeugkosten',
         'Raumkosten',
         'Personalkosten',
@@ -87,55 +89,98 @@ export default function CategoryAutocomplete({
         'Werbung & Marketing',
         'Versicherungen & Beiträge',
         'Zinsen',
-        'Steuern & Abgaben'
+        'Steuern & Abgaben',
       ];
-      
+
       // Füge Top-Einträge aus jeder wichtigen Kategorie hinzu
       priorityOrder.forEach(category => {
         const categoryCards = datevCategories.grouped.get(category) || [];
         topCategories.push(...categoryCards.slice(0, 8)); // Top 8 je Kategorie
       });
-      
+
       // Füge auch andere wichtige Einzelkonten hinzu
-      const otherImportant = datevCategories.all.filter(card => 
-        card.name.includes('Sonstige') || 
-        card.name.includes('sonstige') ||
-        card.code.includes('6850') ||
-        card.code.includes('6090') ||
-        card.code.includes('6640')
+      const otherImportant = datevCategories.all.filter(
+        card =>
+          card.name.includes('Sonstige') ||
+          card.name.includes('sonstige') ||
+          card.code.includes('6850') ||
+          card.code.includes('6090') ||
+          card.code.includes('6640')
       );
-      
+
       topCategories.push(...otherImportant);
-      
+
       // Entferne Duplikate und limitiere
-      const uniqueCategories = Array.from(new Map(
-        topCategories.map(cat => [cat.id, cat])
-      ).values()).slice(0, 100); // Top 100 wichtigste
-      
+      const uniqueCategories = Array.from(
+        new Map(topCategories.map(cat => [cat.id, cat])).values()
+      ).slice(0, 100); // Top 100 wichtigste
+
       console.log('🎯 Showing', uniqueCategories.length, 'categories when empty');
       return uniqueCategories;
     }
-    
-    // Such-Filterung für alle Kategorien
+
+    // Such-Filterung für alle Kategorien - ERWEITERTE DEBUG-VERSION
+    console.log('🔍 Total available categories:', datevCategories.all.length);
+    console.log(
+      '🔍 Sample categories:',
+      datevCategories.all
+        .slice(0, 5)
+        .map(c => ({ name: c.name, category: c.category, code: c.code }))
+    );
+
     const filtered = datevCategories.all.filter(category => {
-      const nameMatch = category.name.toLowerCase().includes(searchTerm);
-      const descMatch = category.description.toLowerCase().includes(searchTerm);
-      const codeMatch = category.code.toLowerCase().includes(searchTerm);
-      const categoryMatch = category.category.toLowerCase().includes(searchTerm);
-      
-      // Debug für "Sonstiges" Suche
+      // Erweiterte Suchlogik für bessere Treffer
+      const nameMatch = category.name && category.name.toLowerCase().includes(searchTerm);
+      const descMatch =
+        category.description && category.description.toLowerCase().includes(searchTerm);
+      const codeMatch = category.code && category.code.toLowerCase().includes(searchTerm);
+      const categoryMatch =
+        category.category && category.category.toLowerCase().includes(searchTerm);
+
+      // Spezielle Behandlung für "Sonstiges" - auch nach einzelnen Worten suchen
+      let sonstigesMatch = false;
       if (searchTerm.includes('sonstig')) {
-        console.log('🔍 Testing category:', category.name, {nameMatch, descMatch, codeMatch, categoryMatch});
+        sonstigesMatch =
+          !!(category.name && category.name.toLowerCase().includes('sonstig')) ||
+          !!(category.description && category.description.toLowerCase().includes('sonstig')) ||
+          !!(category.category && category.category.toLowerCase().includes('sonstig'));
       }
-      
-      return nameMatch || descMatch || codeMatch || categoryMatch;
-    }).slice(0, 50); // Max 50 Ergebnisse bei Suche
-    
-    console.log('🔍 Filtered results:', filtered.length);
-    return filtered;
+
+      // Debug-Output für "Sonstiges" Suche
+      if (searchTerm.includes('sonstig')) {
+        console.log('🔍 Testing category:', {
+          name: category.name,
+          category: category.category,
+          code: category.code,
+          matches: { nameMatch, descMatch, codeMatch, categoryMatch, sonstigesMatch },
+        });
+      }
+
+      return nameMatch || descMatch || codeMatch || categoryMatch || sonstigesMatch;
+    });
+
+    // Sortiere Ergebnisse: Exakte Matches zuerst, dann Code-Matches, dann Rest
+    const sortedFiltered = filtered
+      .sort((a, b) => {
+        const aExactName = a.name && a.name.toLowerCase() === searchTerm;
+        const bExactName = b.name && b.name.toLowerCase() === searchTerm;
+        if (aExactName !== bExactName) return aExactName ? -1 : 1;
+
+        const aCodeMatch = a.code && a.code.toLowerCase().includes(searchTerm);
+        const bCodeMatch = b.code && b.code.toLowerCase().includes(searchTerm);
+        if (aCodeMatch !== bCodeMatch) return aCodeMatch ? -1 : 1;
+
+        return 0;
+      })
+      .slice(0, 50); // Max 50 Ergebnisse bei Suche
+
+    console.log('🔍 Filtered results:', sortedFiltered.length);
+    console.log(
+      '🔍 First 3 results:',
+      sortedFiltered.slice(0, 3).map(c => c.name)
+    );
+    return sortedFiltered;
   }, [value, datevCategories]);
-
-
 
   // Handle input focus
   const handleInputFocus = () => {
@@ -250,11 +295,9 @@ export default function CategoryAutocomplete({
         />
       </div>
 
-
-
       {/* Dropdown/Popover */}
       {isOpen && (
-        <div 
+        <div
           className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-md shadow-xl overflow-hidden"
           style={{ minWidth: '400px' }}
           role="listbox"
@@ -264,7 +307,7 @@ export default function CategoryAutocomplete({
             {/* Favorites Group */}
             {filteredCategories.length > 0 && (
               <div>
-                <h6 
+                <h6
                   className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100"
                   role="presentation"
                   id="DeineFavoriten"
@@ -287,15 +330,11 @@ export default function CategoryAutocomplete({
                       onMouseEnter={() => setActiveIndex(index)}
                     >
                       {/* Icon */}
-                      <div className="flex-shrink-0 mt-0.5 text-gray-400">
-                        {category.icon}
-                      </div>
-                      
+                      <div className="flex-shrink-0 mt-0.5 text-gray-400">{category.icon}</div>
+
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm">
-                          {category.name}
-                        </div>
+                        <div className="font-medium text-sm">{category.name}</div>
                         <div className="text-xs text-gray-500 mt-1 leading-relaxed">
                           <span className="font-mono">{category.code}</span>
                           {category.code && ' - '}
@@ -311,7 +350,7 @@ export default function CategoryAutocomplete({
             {/* No Results */}
             {filteredCategories.length === 0 && value.length > 0 && (
               <div className="px-4 py-8 text-center text-gray-500 text-sm">
-                Keine Kategorien gefunden für "{value}"
+                Keine Kategorien gefunden für &quot;{value}&quot;
               </div>
             )}
           </div>
