@@ -33,8 +33,8 @@ interface ExtractedReceiptData {
 
 interface ReceiptPreviewUploadProps {
   companyId: string;
-  onDataExtracted: (data: ExtractedReceiptData) => void | Promise<void>;
-  onFileUploaded?: (file: File) => void;
+  onDataExtracted: (data: ExtractedReceiptData, storageUrl?: string) => void | Promise<void>;
+  onFileUploaded?: (file: File, storageUrl?: string) => void;
   className?: string;
   accept?: string;
   maxSize?: number; // in bytes
@@ -59,6 +59,7 @@ export default function ReceiptPreviewUpload({
   const [extractedData, setExtractedData] = useState<ExtractedReceiptData | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [storageUrl, setStorageUrl] = useState<string | null>(null); // 🎯 NEU: Storage-URL speichern
   const [ocrProgress, setOcrProgress] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -116,6 +117,11 @@ export default function ReceiptPreviewUpload({
         throw new Error(`Upload failed: ${uploadResult.error}`);
       }
 
+      // 🎯 Speichere Storage-URL (Priorität: fileUrl > s3Path > gcsPath)
+      const finalStorageUrl = uploadResult.fileUrl || uploadResult.s3Path || uploadResult.gcsPath;
+      setStorageUrl(finalStorageUrl);
+      console.log('✅ Storage-URL gespeichert:', finalStorageUrl);
+
       setOcrProgress('OCR-Analyse wird gestartet...');
 
       // Step 2: Process OCR with cloud storage reference
@@ -158,8 +164,8 @@ export default function ReceiptPreviewUpload({
 
         // Callback to parent component (mit Gemini AI support)
         setOcrProgress('Gemini AI analysiert Kategorien...');
-        await onDataExtracted(data);
-        onFileUploaded?.(file);
+        await onDataExtracted(data, finalStorageUrl); // 🎯 Storage-URL übergeben
+        onFileUploaded?.(file, finalStorageUrl); // 🎯 Storage-URL übergeben
 
         // Brief delay to show completion
         setTimeout(() => {

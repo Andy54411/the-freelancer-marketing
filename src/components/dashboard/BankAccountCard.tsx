@@ -43,7 +43,7 @@ export default function BankAccountCard({
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [transactionFilter, setTransactionFilter] = useState<'all' | 'income' | 'expense'>('all');
-  
+
   const credentialType = getFinAPICredentialType();
 
   // Load bank accounts
@@ -60,7 +60,7 @@ export default function BankAccountCard({
       }
 
       const data = await response.json();
-      
+
       if (data.success && data.accounts) {
         const bankAccounts: BankAccount[] = data.accounts.map((acc: any) => ({
           id: acc.id,
@@ -73,12 +73,12 @@ export default function BankAccountCard({
         }));
 
         setAccounts(bankAccounts);
-        
+
         // Calculate total balance
         const total = bankAccounts.reduce((sum, acc) => sum + acc.balance, 0);
         setTotalBalance(total);
-        
-        console.log(`Loaded ${bankAccounts.length} bank accounts with total balance: ${total}€`);
+
+
       }
     } catch (error) {
       console.error('Error loading bank accounts:', error);
@@ -101,7 +101,7 @@ export default function BankAccountCard({
       }
 
       const data = await response.json();
-      
+
       if (data.success && data.transactions) {
         const formattedTransactions: Transaction[] = data.transactions.map((tx: any) => ({
           id: tx.id,
@@ -114,7 +114,7 @@ export default function BankAccountCard({
         }));
 
         setTransactions(formattedTransactions);
-        console.log(`Loaded ${formattedTransactions.length} transactions`);
+
       }
     } catch (error) {
       console.error('Error loading transactions:', error);
@@ -133,77 +133,77 @@ export default function BankAccountCard({
         const data = await response.json();
         const savedSelection = data?.settings?.banking?.selectedAccounts;
         if (Array.isArray(savedSelection) && savedSelection.length > 0) {
-          console.log('Gespeicherte Konto-Auswahl geladen:', savedSelection);
+
           return savedSelection;
         }
       }
-      
+
       // Fallback: localStorage
       const localSelection = localStorage.getItem(`selectedAccounts_${companyId}`);
       if (localSelection) {
         const parsedSelection = JSON.parse(localSelection);
-        console.log('Fallback: Konto-Auswahl aus localStorage geladen:', parsedSelection);
+
         return parsedSelection;
       }
-      
+
     } catch (error) {
       console.error('Fehler beim Laden der gespeicherten Konto-Auswahl:', error);
     }
-    
+
     return [];
   }, [user?.uid, companyId]);
 
   // Load data on component mount
   useEffect(() => {
     if (!companyId || !user?.uid) return;
-    
+
     const loadData = async () => {
       setLoading(true);
       await loadBankAccounts();
       setLoading(false);
     };
-    
+
     loadData();
   }, [user?.uid, companyId, loadBankAccounts]);
 
   // Load transactions after accounts are loaded
   useEffect(() => {
     if (!companyId) return;
-    
+
     const initializeAccountSelection = async () => {
       if (accounts.length > 0) {
         // Lade gespeicherte Auswahl
         const savedSelection = await loadSavedAccountSelection();
-        
+
         if (savedSelection.length > 0) {
           // Filtere nur die Konten, die noch existieren
-          const validSelection = savedSelection.filter(accountId => 
-            accounts.some(acc => acc.id === accountId)
+          const validSelection = savedSelection.filter((accountId) =>
+          accounts.some((acc) => acc.id === accountId)
           );
-          
+
           if (validSelection.length > 0) {
             setSelectedAccounts(validSelection);
           } else {
             // Alle Konten auswählen, wenn keine gültige Auswahl gefunden
-            setSelectedAccounts(accounts.map(acc => acc.id));
+            setSelectedAccounts(accounts.map((acc) => acc.id));
           }
         } else {
           // Standard: Alle Konten auswählen
-          setSelectedAccounts(accounts.map(acc => acc.id));
+          setSelectedAccounts(accounts.map((acc) => acc.id));
         }
-        
+
         // Lade Transaktionen
         await loadRecentTransactions();
       }
     };
-    
+
     initializeAccountSelection();
   }, [accounts, companyId, loadRecentTransactions, loadSavedAccountSelection]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     if (!companyId) return;
-    
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
       if (showAccountDropdown && !target.closest('.account-dropdown')) {
@@ -221,9 +221,9 @@ export default function BankAccountCard({
   const filteredTransactions = React.useMemo(() => {
     switch (transactionFilter) {
       case 'income':
-        return transactions.filter(t => t.type === 'income');
+        return transactions.filter((t) => t.type === 'income');
       case 'expense':
-        return transactions.filter(t => t.type === 'expense');
+        return transactions.filter((t) => t.type === 'expense');
       default:
         return transactions;
     }
@@ -255,10 +255,10 @@ export default function BankAccountCard({
       } else if (date.toDateString() === yesterday.toDateString()) {
         return 'Gestern';
       } else {
-        return date.toLocaleDateString('de-DE', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric' 
+        return date.toLocaleDateString('de-DE', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
         });
       }
     } catch {
@@ -295,9 +295,9 @@ export default function BankAccountCard({
         }
       }
     } catch (error) {
-      console.log('Error processing bank name:', error);
+
     }
-    
+
     return '/images/bank-avatar-fallback.svg';
   };
 
@@ -312,22 +312,22 @@ export default function BankAccountCard({
   // Berechne Gesamtsaldo nur für ausgewählte Konten
   const calculateSelectedAccountsBalance = () => {
     if (selectedAccounts.length === 0) return totalBalance;
-    
-    return accounts
-      .filter(account => selectedAccounts.includes(account.id))
-      .reduce((sum, account) => sum + account.balance, 0);
+
+    return accounts.
+    filter((account) => selectedAccounts.includes(account.id)).
+    reduce((sum, account) => sum + account.balance, 0);
   };
 
   const toggleAccountSelection = (accountId: string) => {
-    setSelectedAccounts(prev => 
-      prev.includes(accountId) 
-        ? prev.filter(id => id !== accountId)
-        : [...prev, accountId]
+    setSelectedAccounts((prev) =>
+    prev.includes(accountId) ?
+    prev.filter((id) => id !== accountId) :
+    [...prev, accountId]
     );
   };
 
   const selectAllAccounts = () => {
-    setSelectedAccounts(accounts.map(acc => acc.id));
+    setSelectedAccounts(accounts.map((acc) => acc.id));
   };
 
   const saveAccountSelection = async () => {
@@ -335,7 +335,7 @@ export default function BankAccountCard({
       // Speichere die Auswahl in Firestore (ähnlich wie in Receipt-Page)
       const { doc, updateDoc } = await import('firebase/firestore');
       const { db } = await import('@/firebase/clients');
-      
+
       if (!user?.uid || !companyId) {
         return;
       }
@@ -347,19 +347,19 @@ export default function BankAccountCard({
         'settings.banking.lastUpdated': new Date().toISOString()
       });
 
-      console.log('Konto-Auswahl gespeichert:', selectedAccounts);
-      
+
+
       // Lade Transaktionen neu basierend auf der neuen Auswahl
       await loadRecentTransactions();
-      
+
       setShowAccountDropdown(false);
     } catch (error) {
       console.error('Fehler beim Speichern der Konto-Auswahl:', error);
-      
+
       // Fallback: localStorage als Backup
       try {
         localStorage.setItem(`selectedAccounts_${companyId}`, JSON.stringify(selectedAccounts));
-        console.log('Fallback: Konto-Auswahl in localStorage gespeichert');
+
         setShowAccountDropdown(false);
       } catch (localError) {
         console.error('Auch localStorage-Fallback fehlgeschlagen:', localError);
@@ -381,8 +381,8 @@ export default function BankAccountCard({
             </div>
           </div>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -400,81 +400,81 @@ export default function BankAccountCard({
                 <div>
                   <div className="text-sm font-medium text-gray-600 mb-1">
                     Gesamtsaldo
-                    {selectedAccounts.length > 0 && selectedAccounts.length < accounts.length && (
-                      <span className="text-xs text-gray-500 ml-1">
+                    {selectedAccounts.length > 0 && selectedAccounts.length < accounts.length &&
+                    <span className="text-xs text-gray-500 ml-1">
                         ({selectedAccounts.length} von {accounts.length} Konten)
                       </span>
-                    )}
+                    }
                   </div>
                   <span className="text-2xl font-bold text-gray-900">{formatAmount(calculateSelectedAccountsBalance())}</span>
                 </div>
                 <div className="flex items-center relative">
-                  {hasAccounts ? (
-                    accounts.slice(0, 2).map((account, index) => (
-                      <div 
-                        key={account.id}
-                        className="relative"
-                        title={account.accountName}
-                        style={{ right: `${index * 21.6}px` }}
-                      >
-                        <img 
-                          alt={`avatar image ${account.accountName}`}
-                          className="w-9 h-9 rounded-full border-2 border-white shadow-sm object-cover bg-gray-100"
-                          src={getBankAvatar(account.bankName || 'unknown')}
-                          width="36" 
-                          height="36"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '/images/bank-avatar-fallback.svg';
-                          }}
-                        />
+                  {hasAccounts ?
+                  accounts.slice(0, 2).map((account, index) =>
+                  <div
+                    key={account.id}
+                    className="relative"
+                    title={account.accountName}
+                    style={{ right: `${index * 21.6}px` }}>
+
+                        <img
+                      alt={`avatar image ${account.accountName}`}
+                      className="w-9 h-9 rounded-full border-2 border-white shadow-sm object-cover bg-gray-100"
+                      src={getBankAvatar(account.bankName || 'unknown')}
+                      width="36"
+                      height="36"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/images/bank-avatar-fallback.svg';
+                      }} />
+
                       </div>
-                    ))
-                  ) : (
-                    // Fallback: Zeige 2 Standard-Avatare wenn keine Konten geladen sind
-                    [0, 1].map((index) => (
-                      <div 
-                        key={`fallback-${index}`}
-                        className="relative"
-                        title="Konto wird geladen..."
-                        style={{ right: `${index * 21.6}px` }}
-                      >
-                        <img 
-                          alt="avatar fallback"
-                          className="w-9 h-9 rounded-full border-2 border-white shadow-sm object-cover bg-gray-100"
-                          src="/images/bank-avatar-fallback.svg"
-                          width="36" 
-                          height="36"
-                        />
+                  ) :
+
+                  // Fallback: Zeige 2 Standard-Avatare wenn keine Konten geladen sind
+                  [0, 1].map((index) =>
+                  <div
+                    key={`fallback-${index}`}
+                    className="relative"
+                    title="Konto wird geladen..."
+                    style={{ right: `${index * 21.6}px` }}>
+
+                        <img
+                      alt="avatar fallback"
+                      className="w-9 h-9 rounded-full border-2 border-white shadow-sm object-cover bg-gray-100"
+                      src="/images/bank-avatar-fallback.svg"
+                      width="36"
+                      height="36" />
+
                       </div>
-                    ))
-                  )}
+                  )
+                  }
                 </div>
               </div>
 
               {/* Dropdown Menu - wird jetzt vom Filter-Button gesteuert */}
               <div className="relative account-dropdown">
-                {showAccountDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                {showAccountDropdown &&
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                     <div className="p-4">
                       <h2 className="text-lg font-semibold text-gray-900 mb-4">Konto wählen</h2>
                       <ul className="space-y-0" data-testid="bank-account-list">
-                        {accounts.map((account, index) => (
-                          <li key={account.id} role="row" className={index < accounts.length - 1 ? 'border-b border-gray-100' : ''}>
+                        {accounts.map((account, index) =>
+                      <li key={account.id} role="row" className={index < accounts.length - 1 ? 'border-b border-gray-100' : ''}>
                             <div className="flex items-center justify-between py-3 px-2 hover:bg-gray-50 rounded cursor-pointer" onClick={() => toggleAccountSelection(account.id)}>
                               <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-3">
-                                  <img 
-                                    src={getBankAvatar(account.bankName)} 
-                                    width="32" 
-                                    height="32" 
-                                    className="w-8 h-8 rounded-full object-cover bg-gray-100" 
-                                    alt={`logo of ${account.accountName}`}
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.src = '/images/bank-avatar-fallback.svg';
-                                    }}
-                                  />
+                                  <img
+                                src={getBankAvatar(account.bankName)}
+                                width="32"
+                                height="32"
+                                className="w-8 h-8 rounded-full object-cover bg-gray-100"
+                                alt={`logo of ${account.accountName}`}
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = '/images/bank-avatar-fallback.svg';
+                                }} />
+
                                   <div>
                                     <div role="title">
                                       <span className="text-sm font-medium text-gray-900">{account.accountName}</span>
@@ -490,57 +490,57 @@ export default function BankAccountCard({
                               </div>
                               <div>
                                 <div className="flex items-center">
-                                  <input 
-                                    type="checkbox" 
-                                    readOnly 
-                                    aria-hidden="true" 
-                                    data-testid="checkbox-input"
-                                    checked={selectedAccounts.includes(account.id)}
-                                    className="sr-only"
-                                  />
+                                  <input
+                                type="checkbox"
+                                readOnly
+                                aria-hidden="true"
+                                data-testid="checkbox-input"
+                                checked={selectedAccounts.includes(account.id)}
+                                className="sr-only" />
+
                                   <div className="flex items-center">
-                                    <div 
-                                      className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                                        selectedAccounts.includes(account.id) 
-                                          ? 'bg-[#14ad9f] border-[#14ad9f]' 
-                                          : 'border-gray-300 bg-white'
-                                      }`}
-                                      role="checkbox" 
-                                      aria-checked={selectedAccounts.includes(account.id)} 
-                                      tabIndex={0}
-                                    >
-                                      {selectedAccounts.includes(account.id) && (
-                                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white" data-testid="icon-check">
+                                    <div
+                                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                                  selectedAccounts.includes(account.id) ?
+                                  'bg-[#14ad9f] border-[#14ad9f]' :
+                                  'border-gray-300 bg-white'}`
+                                  }
+                                  role="checkbox"
+                                  aria-checked={selectedAccounts.includes(account.id)}
+                                  tabIndex={0}>
+
+                                      {selectedAccounts.includes(account.id) &&
+                                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white" data-testid="icon-check">
                                           <path fillRule="evenodd" clipRule="evenodd" d="M9.03033 2.21967C9.32322 2.51256 9.32322 2.98744 9.03033 3.28033L4.53033 7.78033C4.23744 8.07322 3.76256 8.07322 3.46967 7.78033L1.21967 5.53033C0.926777 5.23744 0.926777 4.76256 1.21967 4.46967C1.51256 4.17678 1.98744 4.17678 2.28033 4.46967L4 6.18934L7.96967 2.21967C8.26256 1.92678 8.73744 1.92678 9.03033 2.21967Z" fill="currentColor" vectorEffect="non-scaling-stroke"></path>
                                         </svg>
-                                      )}
+                                  }
                                     </div>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           </li>
-                        ))}
+                      )}
                       </ul>
                       <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                        <button 
-                          className="px-4 py-2 text-sm font-medium text-gray-700 bg-transparent border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                          type="button"
-                          onClick={selectAllAccounts}
-                        >
+                        <button
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-transparent border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                        type="button"
+                        onClick={selectAllAccounts}>
+
                           Alle auswählen
                         </button>
-                        <button 
-                          className="px-4 py-2 text-sm font-medium text-white bg-[#14ad9f] rounded-md hover:bg-[#129a8f] transition-colors"
-                          type="button"
-                          onClick={saveAccountSelection}
-                        >
+                        <button
+                        className="px-4 py-2 text-sm font-medium text-white bg-[#14ad9f] rounded-md hover:bg-[#129a8f] transition-colors"
+                        type="button"
+                        onClick={saveAccountSelection}>
+
                           Speichern
                         </button>
                       </div>
                     </div>
                   </div>
-                )}
+                }
               </div>
             </section>
 
@@ -548,28 +548,28 @@ export default function BankAccountCard({
             <div className="grid grid-cols-3 gap-2 mt-4 mb-4">
               <button
                 onClick={() => setShowAccountDropdown(!showAccountDropdown)}
-                className="p-2 bg-[#14ad9f] hover:bg-[#129a8f] rounded text-xs font-medium text-white"
-              >
+                className="p-2 bg-[#14ad9f] hover:bg-[#129a8f] rounded text-xs font-medium text-white">
+
                 Konten auswahl
               </button>
               <button
                 onClick={() => setTransactionFilter(transactionFilter === 'expense' ? 'all' : 'expense')}
                 className={`p-2 rounded text-xs font-medium ${
-                  transactionFilter === 'expense' 
-                    ? 'bg-red-500 text-white' 
-                    : 'bg-red-100 text-red-600 hover:bg-red-200'
-                }`}
-              >
+                transactionFilter === 'expense' ?
+                'bg-red-500 text-white' :
+                'bg-red-100 text-red-600 hover:bg-red-200'}`
+                }>
+
                 Ausgaben
               </button>
               <button
                 onClick={() => setTransactionFilter(transactionFilter === 'income' ? 'all' : 'income')}
                 className={`p-2 rounded text-xs font-medium ${
-                  transactionFilter === 'income' 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-green-100 text-green-600 hover:bg-green-200'
-                }`}
-              >
+                transactionFilter === 'income' ?
+                'bg-green-500 text-white' :
+                'bg-green-100 text-green-600 hover:bg-green-200'}`
+                }>
+
                 Einnahmen
               </button>
             </div>
@@ -577,24 +577,24 @@ export default function BankAccountCard({
             {/* Transaktionsliste */}
             <div className="mt-4">
               <ul className="space-y-0">
-                {filteredTransactions.length > 0 ? (
-                  filteredTransactions.map((transaction) => (
-                    <li key={transaction.id} role="row" className="border-b border-gray-100 last:border-0">
+                {filteredTransactions.length > 0 ?
+                filteredTransactions.map((transaction) =>
+                <li key={transaction.id} role="row" className="border-b border-gray-100 last:border-0">
                       <div className="py-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="flex items-center gap-3">
-                              <img 
-                                src={getCounterpartAvatar(transaction.counterpartName)} 
-                                width="32" 
-                                height="32" 
-                                className="w-8 h-8 rounded-full object-cover bg-gray-100"
-                                alt={`logo of ${transaction.counterpartName}`}
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = '/images/transaction-avatar-fallback.svg';
-                                }}
-                              />
+                              <img
+                            src={getCounterpartAvatar(transaction.counterpartName)}
+                            width="32"
+                            height="32"
+                            className="w-8 h-8 rounded-full object-cover bg-gray-100"
+                            alt={`logo of ${transaction.counterpartName}`}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/images/transaction-avatar-fallback.svg';
+                            }} />
+
                               <div>
                                 <div role="title">
                                   <span className="text-sm font-medium text-gray-900">{transaction.counterpartName}</span>
@@ -614,8 +614,8 @@ export default function BankAccountCard({
                           <div>
                             <div className="text-right">
                               <div className={`text-sm font-semibold ${
-                                transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                              }`}>
+                          transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`
+                          }>
                                 {formatAmountWithSign(transaction.amount)}
                               </div>
                             </div>
@@ -623,26 +623,26 @@ export default function BankAccountCard({
                         </div>
                       </div>
                     </li>
-                  ))
-                ) : (
-                  <li className="text-center py-6 text-gray-500">
+                ) :
+
+                <li className="text-center py-6 text-gray-500">
                     <div className="text-sm">Keine Transaktionen gefunden</div>
                   </li>
-                )}
+                }
               </ul>
             </div>
           </div>
         </div>
       </div>
       
-      {!hasAccounts && (
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+      {!hasAccounts &&
+      <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-500">Bankkonto erforderlich</div>
-            <button 
-              onClick={onConnectBank}
-              className="text-sm text-[#14ad9f] hover:text-[#129a8f] font-medium flex items-center gap-2 transition-colors ml-auto"
-            >
+            <button
+            onClick={onConnectBank}
+            className="text-sm text-[#14ad9f] hover:text-[#129a8f] font-medium flex items-center gap-2 transition-colors ml-auto">
+
               Bankkonto verknüpfen
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path d="M14.3322 5.83209L19.8751 11.375C20.2656 11.7655 20.2656 12.3987 19.8751 12.7892L14.3322 18.3321M19.3322 12.0821H3.83218" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -650,7 +650,7 @@ export default function BankAccountCard({
             </button>
           </div>
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }

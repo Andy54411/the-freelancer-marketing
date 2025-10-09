@@ -24,11 +24,11 @@ interface ExpenseData {
 }
 
 const EXPENSE_COLORS = [
-  '#FB523B', // Rot
-  '#FF736B', // Helles Rot
-  '#FF948F', // Rosa
-  '#FFC6C4', // Hellrosa
-  '#FFE9E9'  // Sehr hellrosa
+'#FB523B', // Rot
+'#FF736B', // Helles Rot
+'#FF948F', // Rosa
+'#FFC6C4', // Hellrosa
+'#FFE9E9' // Sehr hellrosa
 ];
 
 export default function TopExpensesCard() {
@@ -49,11 +49,11 @@ export default function TopExpensesCard() {
 
   const fetchExpenses = async () => {
     if (!user?.uid) return;
-    
+
     setIsLoading(true);
     try {
-      console.log('🔍 Loading expenses for company:', user.uid);
-      
+
+
       // Lade ALLE Ausgaben erst einmal ohne Datum-Filter
       const expensesQuery = query(
         collection(db, 'companies', user.uid, 'expenses'),
@@ -63,18 +63,18 @@ export default function TopExpensesCard() {
       const querySnapshot = await getDocs(expensesQuery);
       const allExpenses: Expense[] = [];
 
-      console.log(`📋 Found ${querySnapshot.size} expense documents`);
+
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        console.log('💰 Expense data:', {
-          id: doc.id,
-          amount: data.amount,
-          category: data.category,
-          title: data.title,
-          date: data.date,
-          createdAt: data.createdAt
-        });
+
+
+
+
+
+
+
+
 
         if (data.amount && data.amount > 0) {
           // Parse das Datum flexibler
@@ -93,37 +93,37 @@ export default function TopExpensesCard() {
             description: data.description || '',
             amount: data.amount,
             category: data.category || 'Sonstiges',
-            date: expenseDate,
+            date: expenseDate
           });
         }
       });
 
-      console.log(`✅ Processed ${allExpenses.length} valid expenses`);
+
 
       // Filter für letzte 3 Monate (nach dem Laden)
       const threeMonthsAgo = new Date();
       threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-      
-      const recentExpenses = allExpenses.filter(expense => {
+
+      const recentExpenses = allExpenses.filter((expense) => {
         const expenseDate = new Date(expense.date);
         return expenseDate >= threeMonthsAgo;
       });
 
-      console.log(`📅 Recent expenses (last 3 months): ${recentExpenses.length}`);
+
 
       // Gruppiere nach Kategorie und summiere Beträge
       const categoryTotals = new Map<string, number>();
-      recentExpenses.forEach(expense => {
+      recentExpenses.forEach((expense) => {
         const current = categoryTotals.get(expense.category) || 0;
         categoryTotals.set(expense.category, current + expense.amount);
       });
 
       // Sortiere nach Betrag und nimm Top 5
-      const sortedCategories = Array.from(categoryTotals.entries())
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 5);
+      const sortedCategories = Array.from(categoryTotals.entries()).
+      sort(([, a], [, b]) => b - a).
+      slice(0, 5);
 
-      console.log('📊 Top categories:', sortedCategories);
+
 
       // Erstelle Chart-Daten
       const chartExpenses: ExpenseData[] = sortedCategories.map(([category, amount], index) => ({
@@ -151,19 +151,19 @@ export default function TopExpensesCard() {
   const renderCenterText = () => {
     const text = formatAmount(totalAmount);
     const textLength = text.length;
-    
+
     // Dynamische Schriftgröße basierend auf Textlänge
     let fontSize = 24;
-    if (textLength > 12) fontSize = 16;
-    else if (textLength > 10) fontSize = 18;
-    else if (textLength > 8) fontSize = 20;
-    
+    if (textLength > 12) fontSize = 16;else
+    if (textLength > 10) fontSize = 18;else
+    if (textLength > 8) fontSize = 20;
+
     // Bei sehr langen Zahlen: aufteilen in zwei Zeilen
     if (textLength > 12) {
       const parts = text.split('\u00A0'); // Split bei Non-Breaking Space vor €
       const number = parts[0];
       const currency = parts[1] || '€';
-      
+
       return (
         <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
           <tspan
@@ -173,8 +173,8 @@ export default function TopExpensesCard() {
               fontWeight: 600,
               fontSize: `${fontSize}px`,
               fill: 'rgb(16, 11, 45)'
-            }}
-          >
+            }}>
+
             {number}
           </tspan>
           <tspan
@@ -184,14 +184,14 @@ export default function TopExpensesCard() {
               fontWeight: 600,
               fontSize: `${fontSize - 2}px`,
               fill: 'rgb(16, 11, 45)'
-            }}
-          >
+            }}>
+
             {currency}
           </tspan>
-        </text>
-      );
+        </text>);
+
     }
-    
+
     return (
       <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
         <tspan
@@ -201,12 +201,12 @@ export default function TopExpensesCard() {
             fontWeight: 600,
             fontSize: `${fontSize}px`,
             fill: 'rgb(16, 11, 45)'
-          }}
-        >
+          }}>
+
           {text}
         </tspan>
-      </text>
-    );
+      </text>);
+
   };
 
   if (isLoading) {
@@ -218,8 +218,8 @@ export default function TopExpensesCard() {
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-[#14ad9f]" />
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -229,25 +229,25 @@ export default function TopExpensesCard() {
           <h3 className="text-lg font-semibold text-gray-900">Top 5 Ausgaben</h3>
         </div>
 
-        {chartData.length > 0 ? (
-          <div className="h-64 flex">
+        {chartData.length > 0 ?
+        <div className="h-64 flex">
             <div className="flex-1">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={80}
-                    outerRadius={120}
-                    paddingAngle={2}
-                    dataKey="value"
-                    stroke="#fff"
-                    strokeWidth={2}
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={80}
+                  outerRadius={120}
+                  paddingAngle={2}
+                  dataKey="value"
+                  stroke="#fff"
+                  strokeWidth={2}>
+
+                    {chartData.map((entry, index) =>
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                  )}
                   </Pie>
                   {renderCenterText()}
                 </PieChart>
@@ -255,23 +255,23 @@ export default function TopExpensesCard() {
             </div>
             <div className="w-40 flex items-center">
               <div className="space-y-2">
-                {chartData.map((entry, index) => (
-                  <div key={`legend-${index}`} className="flex items-center gap-2 text-sm">
-                    <div 
-                      className="w-3 h-3 rounded-sm flex-shrink-0"
-                      style={{ backgroundColor: entry.color }}
-                    />
+                {chartData.map((entry, index) =>
+              <div key={`legend-${index}`} className="flex items-center gap-2 text-sm">
+                    <div
+                  className="w-3 h-3 rounded-sm flex-shrink-0"
+                  style={{ backgroundColor: entry.color }} />
+
                     <span className="text-gray-600 font-medium truncate">{entry.name}</span>
                   </div>
-                ))}
+              )}
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="h-64 flex items-center justify-center text-gray-500">
+          </div> :
+
+        <div className="h-64 flex items-center justify-center text-gray-500">
             Keine Ausgabendaten verfügbar
           </div>
-        )}
+        }
       </div>
 
       <div className="border-t bg-gray-50 px-6 py-4 rounded-b-lg">
@@ -281,13 +281,13 @@ export default function TopExpensesCard() {
           </div>
           <Link
             href={`/dashboard/company/${user?.uid}/finance/expenses`}
-            className="inline-flex items-center text-sm font-medium text-[#14ad9f] hover:text-[#129488] transition-colors"
-          >
+            className="inline-flex items-center text-sm font-medium text-[#14ad9f] hover:text-[#129488] transition-colors">
+
             Ausgabe erfassen
             <ArrowRight className="ml-1 h-4 w-4" />
           </Link>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }

@@ -1,17 +1,17 @@
-import { 
-  doc, 
-  getDoc, 
-  setDoc, 
-  runTransaction, 
-  collection, 
+import {
+  doc,
+  getDoc,
+  setDoc,
+  runTransaction,
+  collection,
   addDoc,
   getDocs,
   query,
   where,
   updateDoc,
   Timestamp,
-  serverTimestamp 
-} from 'firebase/firestore';
+  serverTimestamp } from
+'firebase/firestore';
 import { db } from '@/firebase/clients';
 
 export interface NumberSequence {
@@ -37,9 +37,9 @@ export class NumberSequenceService {
    * ✅ SYNC MIT ECHTEN DATEN - Prüft automatisch existierende Datensätze
    */
   static async getNextNumberForType(
-    companyId: string,
-    type: string
-  ): Promise<{
+  companyId: string,
+  type: string)
+  : Promise<{
     number: number;
     formattedNumber: string;
     format: string;
@@ -53,17 +53,17 @@ export class NumberSequenceService {
       // ✅ Verwende deterministische Document ID um Duplikate zu vermeiden
       const docId = `${companyId}_${type}`;
       const sequenceDocRef = doc(db, 'numberSequences', docId);
-      
-      console.log(`🔢 NumberSequence Debug - docId: ${docId}, companyId: ${companyId}, type: ${type}`);
+
+
 
       // 🔥 CRITICAL DEBUG: Check document state BEFORE transaction
       const preCheckDoc = await getDoc(sequenceDocRef);
-      console.log('🔥 PRE-TRANSACTION DEBUG:', {
-        docExists: preCheckDoc.exists(),
-        currentData: preCheckDoc.exists() ? preCheckDoc.data() : null,
-        docId,
-        timestamp: new Date().toISOString()
-      });
+
+
+
+
+
+
 
       // 🔥 KRITISCHER FIX: Implementiere Distributed Lock mit Server-Timestamp
       // Verhindert Race Conditions bei gleichzeitigen Rechnungserstellungen
@@ -73,18 +73,18 @@ export class NumberSequenceService {
 
       while (attempt < maxAttempts) {
         try {
-          const transactionResult = await runTransaction(db, async transaction => {
+          const transactionResult = await runTransaction(db, async (transaction) => {
             const sequenceDoc = await transaction.get(sequenceDocRef);
 
             if (!sequenceDoc.exists()) {
               // ✅ Erstelle das Dokument mit Standard-Daten
               const newSequenceData = this.getDefaultSequenceData(companyId, type);
-              
-              console.log('📄 Erstelle neues NumberSequence-Dokument:', { docId, data: newSequenceData });
-              
+
+
+
               // Setze das neue Dokument
               transaction.set(sequenceDocRef, newSequenceData);
-              
+
               // Return erste Nummer
               return this.getFirstNumberForType(type, newSequenceData.format);
             }
@@ -93,12 +93,12 @@ export class NumberSequenceService {
             const sequenceData = sequenceDoc.data() as NumberSequence;
             const currentNumber = sequenceData.nextNumber;
             const format = sequenceData.format;
-            
+
             // 🔐 RACE CONDITION CHECK: Prüfe ob das Dokument gerade von jemand anderem bearbeitet wird
             const now = Date.now();
             const lastUpdate = sequenceData.updatedAt?.getTime ? sequenceData.updatedAt.getTime() : 0;
             const timeSinceUpdate = now - lastUpdate;
-            
+
             // Wenn das letzte Update weniger als 50ms her ist, warte etwas
             if (timeSinceUpdate < 50) {
               throw new Error('RACE_CONDITION_DETECTED');
@@ -109,66 +109,66 @@ export class NumberSequenceService {
             // Dann aktualisieren wir nextNumber auf 1001 für die nächste Rechnung
             const numberToUse = currentNumber;
             const formattedNumberToUse = this.formatNumber(numberToUse, format);
-            
+
             // Inkrementiere für das nächste Mal
             const newNextNumber = currentNumber + 1;
 
-            console.log('🔢 Transaction Update:', {
-              attempt,
-              numberToUse,
-              formattedNumberToUse,
-              newNextNumber,
-              docId,
-              timeSinceUpdate,
-              existingData: sequenceData
-            });
+
+
+
+
+
+
+
+
+
 
             // 🔥 CRITICAL DEBUG: Log what we're about to update
-            console.log('🔥 ABOUT TO UPDATE:', {
-              docId,
-              currentNextNumber: sequenceData.nextNumber,
-              newNextNumber,
-              willReturnNumber: numberToUse,
-              willReturnFormatted: formattedNumberToUse
-            });
+
+
+
+
+
+
+
 
             // ✅ Update mit Transaction + Server Timestamp für Lock
             transaction.update(sequenceDocRef, {
               nextNumber: newNextNumber,
               nextFormatted: this.formatNumber(newNextNumber, format),
               updatedAt: serverTimestamp(), // Server timestamp für genaue Zeitmessung
-              lastUsedBy: companyId, // Tracking für Debugging
+              lastUsedBy: companyId // Tracking für Debugging
             });
 
             const result = {
               number: numberToUse,
               formattedNumber: formattedNumberToUse,
-              format,
+              format
             };
 
-            console.log('🔥 TRANSACTION SUCCESS - RETURNING:', {
-              docId,
-              result,
-              updatedNextNumber: newNextNumber,
-              timestamp: new Date().toISOString()
-            });
+
+
+
+
+
+
 
             return result;
           });
 
           // 🔥 POST-SUCCESS VERIFICATION: Check if document was actually updated
           const postSuccessDoc = await getDoc(sequenceDocRef);
-          console.log('🔥 POST-SUCCESS VERIFICATION:', {
-            docExists: postSuccessDoc.exists(),
-            updatedData: postSuccessDoc.exists() ? postSuccessDoc.data() : null,
-            returnedResult: transactionResult,
-            docId
-          });
+
+
+
+
+
+
 
           return transactionResult;
         } catch (transactionError: any) {
           attempt++;
-          
+
           console.warn(`⚠️ NumberSequence Transaction Fehler (Versuch ${attempt}/${maxAttempts}):`, {
             error: transactionError.message,
             docId,
@@ -178,43 +178,43 @@ export class NumberSequenceService {
 
           // 🔥 POST-ERROR DEBUG: Check document state after failed transaction
           const postErrorDoc = await getDoc(sequenceDocRef);
-          console.log('🔥 POST-ERROR DOCUMENT STATE:', {
-            docExists: postErrorDoc.exists(),
-            currentData: postErrorDoc.exists() ? postErrorDoc.data() : null,
-            error: transactionError.message,
-            attempt
-          });
-          
+
+
+
+
+
+
+
           // Bei Race Condition: Exponential backoff
-          if (transactionError.message.includes('RACE_CONDITION') || 
-              transactionError.code === 'aborted' || 
-              transactionError.code === 'failed-precondition') {
-            
+          if (transactionError.message.includes('RACE_CONDITION') ||
+          transactionError.code === 'aborted' ||
+          transactionError.code === 'failed-precondition') {
+
             const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 50;
-            console.log(`🔄 Retry in ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
+
+            await new Promise((resolve) => setTimeout(resolve, delay));
             continue;
           }
-          
+
           // Bei anderen Fehlern: Sofort neu werfen
           throw transactionError;
         }
       }
-      
+
       // Fallback falls alle Versuche fehlschlagen
       throw new Error(`NumberSequence konnte nach ${maxAttempts} Versuchen nicht aktualisiert werden für ${type} in Company ${companyId}`);
-      
+
     } catch (error) {
       console.error('❌ Fehler beim Abrufen der nächsten Nummer:', error);
-      
+
       // ✅ GRACEFUL FALLBACK: Verwende temporäre Nummer wenn DB fehlschlägt
       const fallbackFormat = this.getDefaultFormatForType(type);
       const fallbackNumber = Date.now() % 10000; // Temporäre Nummer basierend auf Timestamp
-      
+
       return {
         number: fallbackNumber,
         formattedNumber: this.formatNumber(fallbackNumber, fallbackFormat),
-        format: fallbackFormat,
+        format: fallbackFormat
       };
     }
   }
@@ -228,7 +228,7 @@ export class NumberSequenceService {
     formattedNumber: string;
     format: string;
   }> {
-    console.log('🔥 INVOICE SUBCOLLECTION CHECK - START:', { companyId });
+
 
     try {
       // 1. Prüfe alle vorhandenen Rechnungen in der Subcollection
@@ -240,13 +240,13 @@ export class NumberSequenceService {
       const invoicesSnapshot = await getDocs(invoicesQuery);
       const invoiceNumbers: number[] = [];
 
-      console.log(`📊 Gefundene Rechnungen in Subcollection: ${invoicesSnapshot.size}`);
+
 
       // 2. Extrahiere alle RE-Nummern
       invoicesSnapshot.forEach((doc) => {
         const data = doc.data();
         const invoiceNumber = data.invoiceNumber || data.number;
-        
+
         if (invoiceNumber && typeof invoiceNumber === 'string') {
           // Extrahiere Nummer aus RE-1077 Format
           const match = invoiceNumber.match(/^RE-(\d+)$/);
@@ -259,32 +259,32 @@ export class NumberSequenceService {
         }
       });
 
-      console.log('🔢 Extrahierte Rechnungsnummern:', invoiceNumbers.slice(0, 10), invoiceNumbers.length > 10 ? `... (${invoiceNumbers.length} total)` : '');
+
 
       // 3. Bestimme nächste Nummer
       let nextNumber = 1000; // Standardstart
-      
+
       if (invoiceNumbers.length > 0) {
         const highestNumber = Math.max(...invoiceNumbers);
         nextNumber = highestNumber + 1;
-        console.log(`📈 Höchste gefundene Nummer: ${highestNumber} -> Nächste: ${nextNumber}`);
+
       } else {
-        console.log('ℹ️ Keine vorhandenen Rechnungen gefunden - verwende Standard: 1000');
+
       }
 
       // 4. Synchronisiere NumberSequence (optional - falls es existiert)
       const docId = `${companyId}_Rechnung`;
       const sequenceDocRef = doc(db, 'numberSequences', docId);
-      
+
       try {
         const sequenceDoc = await getDoc(sequenceDocRef);
         if (sequenceDoc.exists()) {
           const sequenceData = sequenceDoc.data() as NumberSequence;
-          
+
           // Nur aktualisieren wenn unsere Nummer höher ist
           if (nextNumber > sequenceData.nextNumber) {
-            console.log(`🔄 Synchronisiere NumberSequence: ${sequenceData.nextNumber} -> ${nextNumber}`);
-            
+
+
             await runTransaction(db, async (transaction) => {
               transaction.update(sequenceDocRef, {
                 nextNumber: nextNumber + 1, // Für die nächste nach dieser
@@ -306,14 +306,14 @@ export class NumberSequenceService {
         format: 'RE-{number}'
       };
 
-      console.log('🔥 SUBCOLLECTION RESULT:', result);
+
       return result;
 
     } catch (error) {
       console.error('❌ Fehler bei Subcollection-Prüfung:', error);
-      
+
       // Fallback zu Standard-Logik
-      console.log('🚨 FALLBACK zu NumberSequence...');
+
       return await this.getNextInvoiceNumberFallback(companyId);
     }
   }
@@ -328,7 +328,7 @@ export class NumberSequenceService {
   }> {
     const docId = `${companyId}_Rechnung`;
     const sequenceDocRef = doc(db, 'numberSequences', docId);
-    
+
     try {
       return await runTransaction(db, async (transaction) => {
         const sequenceDoc = await transaction.get(sequenceDocRef);
@@ -337,7 +337,7 @@ export class NumberSequenceService {
           // Erstelle Standard NumberSequence
           const newSequenceData = this.getDefaultSequenceData(companyId, 'Rechnung');
           transaction.set(sequenceDocRef, newSequenceData);
-          
+
           return {
             number: 1000,
             formattedNumber: 'RE-1000',
@@ -351,7 +351,7 @@ export class NumberSequenceService {
 
         transaction.update(sequenceDocRef, {
           nextNumber: newNextNumber,
-          updatedAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
         });
 
         return {
@@ -362,7 +362,7 @@ export class NumberSequenceService {
       });
     } catch (error) {
       console.error('❌ Auch Fallback fehlgeschlagen:', error);
-      
+
       // Letzter Notfall-Fallback
       const emergencyNumber = Date.now() % 10000;
       return {
@@ -568,10 +568,10 @@ export class NumberSequenceService {
         collection(db, 'numberSequences'),
         where('companyId', '==', companyId)
       );
-      
+
       const querySnapshot = await getDocs(q);
       const sequences: NumberSequence[] = [];
-      
+
       querySnapshot.forEach((doc) => {
         const data = doc.data();
         sequences.push({
@@ -588,7 +588,7 @@ export class NumberSequenceService {
           updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt)
         });
       });
-      
+
       return sequences.sort((a, b) => a.type.localeCompare(b.type));
     } catch (error) {
       console.error('❌ Fehler beim Abrufen der Nummerkreise:', error);
@@ -600,26 +600,26 @@ export class NumberSequenceService {
    * Aktualisiert einen spezifischen Nummerkreis
    */
   static async updateNumberSequence(
-    companyId: string,
-    sequenceId: string,
-    updates: Partial<NumberSequence>
-  ): Promise<void> {
+  companyId: string,
+  sequenceId: string,
+  updates: Partial<NumberSequence>)
+  : Promise<void> {
     try {
       const docRef = doc(db, 'numberSequences', sequenceId);
-      
+
       const updateData = {
         ...updates,
         updatedAt: new Date()
       };
-      
+
       // Wenn nextNumber aktualisiert wird, auch nextFormatted berechnen
       if (updates.nextNumber !== undefined && updates.format) {
         updateData.nextFormatted = this.formatNumber(updates.nextNumber, updates.format);
       }
-      
+
       await updateDoc(docRef, updateData);
-      
-      console.log(`✅ Nummerkreis ${sequenceId} erfolgreich aktualisiert`);
+
+
     } catch (error) {
       // Fehler wird vom Aufrufer behandelt
       throw error;
@@ -633,35 +633,35 @@ export class NumberSequenceService {
     try {
       // Nur für bestimmte Typen unterstützen
       if (!['Kunde', 'Lieferant', 'Partner', 'Interessenten'].includes(type)) {
-        console.log(`ℹ️ ${type} wird nicht synchronisiert - nur Kontakt-Typen`);
+
         return;
       }
-      
+
       // Importiere CustomerService dynamisch um zirkuläre Abhängigkeiten zu vermeiden
       const { CustomerService } = await import('@/services/customerService');
-      
+
       // Lade alle Kontakte
       const customers = await CustomerService.getCustomers(companyId);
-      
+
       // Filtere nach Typ basierend auf customerNumber Prefix
       let relevantContacts = customers;
       if (type === 'Kunde') {
-        relevantContacts = customers.filter(c => c.customerNumber.startsWith('KD-'));
+        relevantContacts = customers.filter((c) => c.customerNumber.startsWith('KD-'));
       } else if (type === 'Lieferant') {
-        relevantContacts = customers.filter(c => c.customerNumber.startsWith('LF-'));
+        relevantContacts = customers.filter((c) => c.customerNumber.startsWith('LF-'));
       } else if (type === 'Partner') {
-        relevantContacts = customers.filter(c => c.customerNumber.startsWith('PA-'));
+        relevantContacts = customers.filter((c) => c.customerNumber.startsWith('PA-'));
       } else if (type === 'Interessenten') {
-        relevantContacts = customers.filter(c => c.customerNumber.startsWith('IN-'));
+        relevantContacts = customers.filter((c) => c.customerNumber.startsWith('IN-'));
       }
-      
-      console.log(`📊 Gefundene ${type}: ${relevantContacts.length}`);
-      
+
+
+
       if (relevantContacts.length === 0) {
-        console.log(`ℹ️ Keine ${type} gefunden - verwende Standard-Nummernkreis`);
+
         return;
       }
-      
+
       // Extrahiere Nummern basierend auf Typ
       const numbers: number[] = [];
       const prefixes = {
@@ -670,10 +670,10 @@ export class NumberSequenceService {
         'Partner': 'PA-',
         'Interessenten': 'IN-'
       };
-      
+
       const prefix = prefixes[type as keyof typeof prefixes];
-      
-      relevantContacts.forEach(contact => {
+
+      relevantContacts.forEach((contact) => {
         const match = contact.customerNumber.match(new RegExp(`^${prefix.replace('-', '')}-(\\d+)$`));
         if (match && match[1]) {
           const num = parseInt(match[1], 10);
@@ -682,21 +682,21 @@ export class NumberSequenceService {
           }
         }
       });
-      
+
       if (numbers.length === 0) {
-        console.log(`ℹ️ Keine gültigen ${type}-Nummern gefunden`);
+
         return;
       }
-      
+
       // Berechne nächste Nummer
       const highestNumber = Math.max(...numbers);
       const nextNumber = highestNumber + 1;
-      
-      console.log(`📈 Höchste ${type}-Nummer: ${highestNumber} -> Nächste: ${nextNumber}`);
-      
+
+
+
       // Update Nummernkreis
       const docId = `${companyId}_${type}`;
-      
+
       try {
         await this.updateNumberSequence(companyId, docId, {
           nextNumber,
@@ -704,9 +704,9 @@ export class NumberSequenceService {
         });
         // Erfolg wird bereits in updateNumberSequence geloggt
       } catch (updateError) {
+
         // Berechtigungsfehler sind in Development normal - nicht störend loggen
       }
-      
     } catch (error) {
       console.error(`❌ Fehler beim Synchronisieren des ${type}-Nummernkreises:`, error);
       // Fehler nicht weiterwerfen - Synchronisation ist optional
@@ -718,26 +718,26 @@ export class NumberSequenceService {
    */
   static async debugNumberSequences(companyId: string): Promise<void> {
     try {
-      console.log(`\n📊 === NUMMERNKREISE DEBUG für Company: ${companyId} ===`);
-      
+
+
       const sequences = await this.getNumberSequences(companyId);
-      
+
       if (sequences.length === 0) {
-        console.log('❌ Keine Nummernkreise gefunden!');
+
         return;
       }
-      
-      sequences.forEach(seq => {
-        console.log(`\n🔢 ${seq.type}:`);
-        console.log(`   ID: ${seq.id}`);
-        console.log(`   Format: ${seq.format}`);
-        console.log(`   Nächste Nummer: ${seq.nextNumber}`);
-        console.log(`   Nächste Formatiert: ${seq.nextFormatted || 'N/A'}`);
-        console.log(`   Erstellt: ${seq.createdAt}`);
-        console.log(`   Aktualisiert: ${seq.updatedAt}`);
+
+      sequences.forEach((seq) => {
+
+
+
+
+
+
+
       });
-      
-      console.log(`\n✅ === DEBUG ENDE ===\n`);
+
+
     } catch (error) {
       console.error('❌ Fehler beim Debug der Nummernkreise:', error);
     }
@@ -748,15 +748,15 @@ export class NumberSequenceService {
    */
   static async repairCustomerNumberSequence(companyId: string): Promise<void> {
     try {
-      console.log(`\n🔧 === REPARIERE KUNDEN-NUMMERNKREIS ===`);
-      
+
+
       // Importiere CustomerService dynamisch um zirkuläre Abhängigkeiten zu vermeiden
       const { CustomerService } = await import('@/services/customerService');
-      
+
       // Führe die Synchronisation durch
       await CustomerService.syncCustomerNumberSequence(companyId);
-      
-      console.log(`✅ === REPARATUR ABGESCHLOSSEN ===\n`);
+
+
     } catch (error) {
       console.error('❌ Fehler bei der Reparatur:', error);
       throw error;
@@ -769,25 +769,25 @@ export class NumberSequenceService {
   static async createDefaultSequences(companyId: string): Promise<NumberSequence[]> {
     try {
       const defaultTypes = [
-        { type: 'Rechnung', format: 'RE-%NUMBER', nextNumber: 1000, prefix: 'RE-' },
-        { type: 'Angebot', format: 'AN-%NUMBER', nextNumber: 1000, prefix: 'AN-' },
-        { type: 'Kunde', format: 'KD-%NUMBER', nextNumber: 1000, prefix: 'KD-' },
-        { type: 'Lieferschein', format: 'LI-%NUMBER', nextNumber: 1000, prefix: 'LI-' },
-        { type: 'Gutschrift', format: 'GU-%NUMBER', nextNumber: 1000, prefix: 'GU-' },
-        { type: 'Auftragsbestätigung', format: 'AB-%NUMBER', nextNumber: 1000, prefix: 'AB-' },
-        { type: 'Debitor', format: '%NUMBER', nextNumber: 10000 },
-        { type: 'Kreditor', format: '%NUMBER', nextNumber: 70000 },
-        { type: 'Produkt', format: '%NUMBER', nextNumber: 1001 },
-        { type: 'Inventar', format: '%NUMBER', nextNumber: 1000 },
-        { type: 'Kontakt', format: '%NUMBER', nextNumber: 1000 }
-      ];
+      { type: 'Rechnung', format: 'RE-%NUMBER', nextNumber: 1000, prefix: 'RE-' },
+      { type: 'Angebot', format: 'AN-%NUMBER', nextNumber: 1000, prefix: 'AN-' },
+      { type: 'Kunde', format: 'KD-%NUMBER', nextNumber: 1000, prefix: 'KD-' },
+      { type: 'Lieferschein', format: 'LI-%NUMBER', nextNumber: 1000, prefix: 'LI-' },
+      { type: 'Gutschrift', format: 'GU-%NUMBER', nextNumber: 1000, prefix: 'GU-' },
+      { type: 'Auftragsbestätigung', format: 'AB-%NUMBER', nextNumber: 1000, prefix: 'AB-' },
+      { type: 'Debitor', format: '%NUMBER', nextNumber: 10000 },
+      { type: 'Kreditor', format: '%NUMBER', nextNumber: 70000 },
+      { type: 'Produkt', format: '%NUMBER', nextNumber: 1001 },
+      { type: 'Inventar', format: '%NUMBER', nextNumber: 1000 },
+      { type: 'Kontakt', format: '%NUMBER', nextNumber: 1000 }];
+
 
       const createdSequences: NumberSequence[] = [];
 
       for (const template of defaultTypes) {
         const docId = `${companyId}_${template.type}`;
         const docRef = doc(db, 'numberSequences', docId);
-        
+
         // Prüfe ob bereits existiert
         const existingDoc = await getDoc(docRef);
         if (existingDoc.exists()) {
@@ -819,7 +819,7 @@ export class NumberSequenceService {
           canEdit: true,
           canDelete: false,
           createdAt: new Date(),
-          updatedAt: new Date(),
+          updatedAt: new Date()
         };
 
         await setDoc(docRef, sequenceData);

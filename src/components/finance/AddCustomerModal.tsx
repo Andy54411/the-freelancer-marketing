@@ -61,7 +61,7 @@ interface AddCustomerModalProps {
   nextSupplierNumber?: string; // Neue Prop für Lieferantennummer
 }
 
-export function AddCustomerModal({ onAddCustomer, nextCustomerNumber, nextSupplierNumber = 'LF-001' }: AddCustomerModalProps) {
+function AddCustomerModal({ onAddCustomer, nextCustomerNumber, nextSupplierNumber = 'LF-001' }: AddCustomerModalProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [contactType, setContactType] = useState<'customer' | 'supplier'>('customer');
@@ -949,3 +949,5 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber, nextSuppli
     </Dialog>
   );
 }
+
+export default AddCustomerModal;

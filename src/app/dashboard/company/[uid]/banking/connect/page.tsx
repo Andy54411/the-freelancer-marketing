@@ -22,18 +22,18 @@ export default function ConnectBankPage() {
   const location = searchParams?.get('location') || '';
   const isTestBank = searchParams?.get('isTestBank') === 'true';
   const uid = params?.uid as string;
-  
+
   const [startDate, setStartDate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isWebFormModalOpen, setIsWebFormModalOpen] = useState(false);
   const [webFormUrl, setWebFormUrl] = useState<string>('');
   const [webFormBankName, setWebFormBankName] = useState<string>('');
-  
+
   const credentialType = getFinAPICredentialType();
 
   // Function to get the correct bank logo filename
   const getBankLogoPath = (name: string): string => {
-    const bankMappings: { [key: string]: string } = {
+    const bankMappings: {[key: string]: string;} = {
       'sparkasse': 'Sparkasse.png',
       'deutsche bank': 'Deutsche_Bank.png',
       'commerzbank': 'Commerzbank.png',
@@ -42,12 +42,12 @@ export default function ConnectBankPage() {
       'paypal': 'Paypal.png',
       'qonto': 'Qonto.png',
       'fyrst': 'Fyrst.png',
-      'norisbank': 'Deutsche_Bank.png',
+      'norisbank': 'Deutsche_Bank.png'
     };
-    
+
     const normalizedName = name.toLowerCase();
     const logoFile = bankMappings[normalizedName];
-    
+
     return logoFile ? `/images/banks/${logoFile}` : '/images/banks/default-bank-logo.svg';
   };
 
@@ -57,13 +57,13 @@ export default function ConnectBankPage() {
 
   const handleContinue = async () => {
     setIsLoading(true);
-    
+
     try {
       // FinAPI Sandbox Test: Erstelle WebForm für Bankverbindung
       const response = await fetch('/api/finapi/webform', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           bankId: finapiId || mapBankNameToBankId(bankName), // Use echte FinAPI ID oder Fallback
@@ -71,8 +71,8 @@ export default function ConnectBankPage() {
           credentialType: credentialType,
           bankName: bankName,
           companyId: uid,
-          startDate: startDate,
-        }),
+          startDate: startDate
+        })
       });
 
       const data = await response.json();
@@ -82,7 +82,7 @@ export default function ConnectBankPage() {
         setWebFormUrl(data.webFormUrl);
         setWebFormBankName(data.bankName || bankName);
         setIsWebFormModalOpen(true);
-        console.log('✅ FinAPI WebForm erstellt:', data);
+
       } else {
         // Fehler beim Erstellen der WebForm
         console.error('❌ FinAPI WebForm Fehler:', data);
@@ -98,18 +98,18 @@ export default function ConnectBankPage() {
 
   // Map bank names to finAPI bank IDs (Sandbox Test-Bank IDs)
   const mapBankNameToBankId = (name: string): number => {
-    const bankIdMappings: { [key: string]: number } = {
+    const bankIdMappings: {[key: string]: number;} = {
       'sparkasse': 277672, // finAPI Sandbox Test Bank ID
-      'deutsche bank': 277672, 
+      'deutsche bank': 277672,
       'commerzbank': 277672,
       'volksbank': 277672,
       'n26': 277672,
       'paypal': 277672,
       'qonto': 277672,
       'fyrst': 277672,
-      'norisbank': 277672,
+      'norisbank': 277672
     };
-    
+
     const normalizedName = name.toLowerCase();
     return bankIdMappings[normalizedName] || 277672; // Fallback to test bank
   };
@@ -145,8 +145,8 @@ export default function ConnectBankPage() {
                 variant="ghost"
                 size="sm"
                 onClick={handleBack}
-                className="p-2"
-              >
+                className="p-2">
+
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <h1 className="text-xl font-semibold text-gray-900">
@@ -167,8 +167,8 @@ export default function ConnectBankPage() {
                 {/* Bank Info */}
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <img 
-                      src={getBankLogoPath(bankName)} 
+                    <img
+                      src={getBankLogoPath(bankName)}
                       alt={bankName}
                       className="w-8 h-8 object-contain"
                       onError={(e) => {
@@ -178,30 +178,30 @@ export default function ConnectBankPage() {
                         if (sibling) {
                           sibling.style.display = 'block';
                         }
-                      }}
-                    />
-                    <div className="w-8 h-8 bg-[#14ad9f] rounded flex items-center justify-center text-white font-semibold text-sm" style={{display: 'none'}}>
+                      }} />
+
+                    <div className="w-8 h-8 bg-[#14ad9f] rounded flex items-center justify-center text-white font-semibold text-sm" style={{ display: 'none' }}>
                       {bankName.charAt(0).toUpperCase()}
                     </div>
                   </div>
                   <div>
                     <div className="flex items-center space-x-2">
                       <h3 className="text-lg font-semibold text-gray-900">{bankName}</h3>
-                      {isTestBank && (
-                        <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
+                      {isTestBank &&
+                      <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
                           Sandbox
                         </span>
-                      )}
+                      }
                     </div>
                     <p className="text-sm text-gray-500">
                       BIC: {bic} · BLZ: {blz}
                       {location && ` · ${location}`}
                     </p>
-                    {finapiId && (
-                      <p className="text-xs text-gray-400">
+                    {finapiId &&
+                    <p className="text-xs text-gray-400">
                         FinAPI ID: {finapiId}
                       </p>
-                    )}
+                    }
                   </div>
                 </div>
 
@@ -218,8 +218,8 @@ export default function ConnectBankPage() {
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
                         placeholder="TT.MM.JJJJ"
-                        className="pr-10"
-                      />
+                        className="pr-10" />
+
                       <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     </div>
                   </div>
@@ -232,18 +232,18 @@ export default function ConnectBankPage() {
 
                 {/* Action Buttons */}
                 <div className="flex justify-end space-x-4 pt-4">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={handleCancel}
-                    disabled={isLoading}
-                  >
+                    disabled={isLoading}>
+
                     Abbrechen
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleContinue}
                     disabled={isLoading}
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                  >
+                    className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+
                     {isLoading ? 'Erstelle FinAPI WebForm...' : 'Mit Bank verbinden'}
                   </Button>
                 </div>
@@ -265,7 +265,7 @@ export default function ConnectBankPage() {
                 </div>
                 <div className="flex-shrink-0 relative">
                   <div className="w-24 h-24 bg-white rounded-lg shadow-sm flex items-center justify-center p-2">
-                    <img 
+                    <img
                       src="/images/banks/finAPI_Logo.png.webp"
                       alt="finAPI Logo"
                       className="max-w-full max-h-full object-contain"
@@ -276,8 +276,8 @@ export default function ConnectBankPage() {
                         const fallback = document.createElement('div');
                         fallback.innerHTML = '<svg class="h-8 w-8 text-[#14ad9f]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>';
                         target.parentElement?.appendChild(fallback);
-                      }}
-                    />
+                      }} />
+
                   </div>
                   <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                     <CheckCircle className="h-4 w-4 text-white" />
@@ -296,8 +296,8 @@ export default function ConnectBankPage() {
         onSuccess={handleWebFormSuccess}
         onError={handleWebFormError}
         webFormUrl={webFormUrl}
-        bankName={webFormBankName}
-      />
-    </div>
-  );
+        bankName={webFormBankName} />
+
+    </div>);
+
 }

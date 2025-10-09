@@ -37,7 +37,7 @@ export default function OutstandingInvoicesCard() {
     openCount: 0,
     openAmount: 0,
     partiallyPaidCount: 0,
-    partiallyPaidAmount: 0,
+    partiallyPaidAmount: 0
   });
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
@@ -59,14 +59,14 @@ export default function OutstandingInvoicesCard() {
 
     try {
       setIsLoading(true);
-      console.log('🔄 Loading outstanding invoices for company:', user.uid);
+
 
       const invoicesRef = collection(db, 'companies', user.uid, 'invoices');
       const invoicesQuery = query(
         invoicesRef,
         where('status', '!=', 'paid') // Alle nicht bezahlten Rechnungen
       );
-      
+
       const snapshot = await getDocs(invoicesQuery);
       const invoices: Invoice[] = [];
 
@@ -81,11 +81,11 @@ export default function OutstandingInvoicesCard() {
           issueDate: data.issueDate || data.date || '',
           customerName: data.customerName || 'Unbekannt',
           amount: data.amount || data.total || 0,
-          tax: data.tax || 0,
+          tax: data.tax || 0
         });
       });
 
-      console.log('📊 Loaded invoices:', invoices.length, 'invoices');
+
 
       // Berechne Statistiken
       let totalAmount = 0;
@@ -98,7 +98,7 @@ export default function OutstandingInvoicesCard() {
 
       invoices.forEach((invoice) => {
         const amount = invoice.total || invoice.amount || 0;
-        
+
         // Bestimme Status
         if (invoice.status === 'partially_paid') {
           partiallyPaidCount++;
@@ -121,18 +121,18 @@ export default function OutstandingInvoicesCard() {
         openCount,
         openAmount,
         partiallyPaidCount,
-        partiallyPaidAmount,
+        partiallyPaidAmount
       });
 
-      console.log('✅ Invoice stats calculated:', {
-        totalAmount,
-        overdueCount,
-        overdueAmount,
-        openCount,
-        openAmount,
-        partiallyPaidCount,
-        partiallyPaidAmount,
-      });
+
+
+
+
+
+
+
+
+
 
     } catch (error) {
       console.error('❌ Error loading invoice data:', error);
@@ -152,8 +152,8 @@ export default function OutstandingInvoicesCard() {
           <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           <span className="ml-2 text-gray-500">Lade Rechnungsdaten...</span>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -175,8 +175,8 @@ export default function OutstandingInvoicesCard() {
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    invoiceStats.overdueCount > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
+                  invoiceStats.overdueCount > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`
+                  }>
                     {invoiceStats.overdueCount}
                   </span>
                   <span className="text-sm font-medium text-gray-900">Fällig</span>
@@ -194,8 +194,8 @@ export default function OutstandingInvoicesCard() {
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    invoiceStats.openCount > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
+                  invoiceStats.openCount > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`
+                  }>
                     {invoiceStats.openCount}
                   </span>
                   <span className="text-sm font-medium text-gray-900">Offen</span>
@@ -213,8 +213,8 @@ export default function OutstandingInvoicesCard() {
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    invoiceStats.partiallyPaidCount > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
+                  invoiceStats.partiallyPaidCount > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`
+                  }>
                     {invoiceStats.partiallyPaidCount}
                   </span>
                   <span className="text-sm font-medium text-gray-900">Teilbezahlt</span>
@@ -238,6 +238,6 @@ export default function OutstandingInvoicesCard() {
           </svg>
         </Link>
       </div>
-    </div>
-  );
+    </div>);
+
 }

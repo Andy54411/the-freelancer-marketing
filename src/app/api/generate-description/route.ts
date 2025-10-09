@@ -7,7 +7,7 @@ import {
 } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
-const MODEL_NAME = 'models/gemini-2.5-flash';
+const MODEL_NAME = 'models/gemini-2.0-flash-exp'; // ✅ Aktuelles, stabiles Modell
 
 export async function POST(request: Request) {
   try {

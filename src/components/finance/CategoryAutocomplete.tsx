@@ -27,7 +27,7 @@ export default function CategoryAutocomplete({
   onCategorySelect,
   onOpenAdvancedSearch,
   placeholder = 'Suche nach Stichwort, Kategorie oder Buchhaltungskonto',
-  required = false,
+  required = false
 }: CategoryAutocompleteProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -36,29 +36,29 @@ export default function CategoryAutocomplete({
 
   // Alle DATEV-Kategorien laden - nach Kategorien gruppiert
   const datevCategories = React.useMemo(() => {
-    const allCards = DatevCardService.getAllCards()
-      .filter(card => card.type === 'EXPENSE')
-      .map(card => ({
-        id: card.id,
-        name: DatevCardService.getDisplayName(card),
-        code: card.code,
-        description: card.description || '',
-        category: card.category,
-        icon: <Building2 className="h-5 w-5" />,
-      }));
+    const allCards = DatevCardService.getAllCards().
+    filter((card) => card.type === 'EXPENSE').
+    map((card) => ({
+      id: card.id,
+      name: DatevCardService.getDisplayName(card),
+      code: card.code,
+      description: card.description || '',
+      category: card.category,
+      icon: <Building2 className="h-5 w-5" />
+    }));
 
     // Debug: Suche nach "Sonstiges" Einträgen
     const sonstigeCards = allCards.filter(
-      card =>
-        card.name.toLowerCase().includes('sonstig') ||
-        card.description.toLowerCase().includes('sonstig') ||
-        card.code.includes('6850')
+      (card) =>
+      card.name.toLowerCase().includes('sonstig') ||
+      card.description.toLowerCase().includes('sonstig') ||
+      card.code.includes('6850')
     );
-    console.log('🔍 Found "Sonstige" cards:', sonstigeCards);
+
 
     // Gruppiere nach Kategorien für bessere Organisation
     const grouped = new Map<string, typeof allCards>();
-    allCards.forEach(card => {
+    allCards.forEach((card) => {
       if (!grouped.has(card.category)) {
         grouped.set(card.category, []);
       }
@@ -71,7 +71,7 @@ export default function CategoryAutocomplete({
   // Filter categories based on search term - ZEIGE ALLE KATEGORIEN wenn leer!
   const filteredCategories = React.useMemo(() => {
     const searchTerm = value.toLowerCase().trim();
-    console.log('🔍 Searching for:', searchTerm);
+
 
     if (searchTerm.length === 0) {
       // Zeige Top-Kategorien aus jeder Gruppe (ca. 50-80 wichtigste)
@@ -79,112 +79,112 @@ export default function CategoryAutocomplete({
 
       // Wichtigste Kategorien zuerst
       const priorityOrder = [
-        'Büro & Verwaltung',
-        'Betriebsausgaben',
-        'Fahrzeugkosten',
-        'Raumkosten',
-        'Personalkosten',
-        'Material & Waren',
-        'Dienstleistung & Beratung',
-        'Werbung & Marketing',
-        'Versicherungen & Beiträge',
-        'Zinsen',
-        'Steuern & Abgaben',
-      ];
+      'Büro & Verwaltung',
+      'Betriebsausgaben',
+      'Fahrzeugkosten',
+      'Raumkosten',
+      'Personalkosten',
+      'Material & Waren',
+      'Dienstleistung & Beratung',
+      'Werbung & Marketing',
+      'Versicherungen & Beiträge',
+      'Zinsen',
+      'Steuern & Abgaben'];
+
 
       // Füge Top-Einträge aus jeder wichtigen Kategorie hinzu
-      priorityOrder.forEach(category => {
+      priorityOrder.forEach((category) => {
         const categoryCards = datevCategories.grouped.get(category) || [];
         topCategories.push(...categoryCards.slice(0, 8)); // Top 8 je Kategorie
       });
 
       // Füge auch andere wichtige Einzelkonten hinzu
       const otherImportant = datevCategories.all.filter(
-        card =>
-          card.name.includes('Sonstige') ||
-          card.name.includes('sonstige') ||
-          card.code.includes('6850') ||
-          card.code.includes('6090') ||
-          card.code.includes('6640')
+        (card) =>
+        card.name.includes('Sonstige') ||
+        card.name.includes('sonstige') ||
+        card.code.includes('6850') ||
+        card.code.includes('6090') ||
+        card.code.includes('6640')
       );
 
       topCategories.push(...otherImportant);
 
       // Entferne Duplikate und limitiere
       const uniqueCategories = Array.from(
-        new Map(topCategories.map(cat => [cat.id, cat])).values()
+        new Map(topCategories.map((cat) => [cat.id, cat])).values()
       ).slice(0, 100); // Top 100 wichtigste
 
-      console.log('🎯 Showing', uniqueCategories.length, 'categories when empty');
+
       return uniqueCategories;
     }
 
     // Such-Filterung für alle Kategorien - ERWEITERTE DEBUG-VERSION
-    console.log('🔍 Total available categories:', datevCategories.all.length);
-    console.log(
-      '🔍 Sample categories:',
-      datevCategories.all
-        .slice(0, 5)
-        .map(c => ({ name: c.name, category: c.category, code: c.code }))
-    );
 
-    const filtered = datevCategories.all.filter(category => {
+
+
+
+
+
+
+
+    const filtered = datevCategories.all.filter((category) => {
       // Erweiterte Suchlogik für bessere Treffer
       const nameMatch = category.name && category.name.toLowerCase().includes(searchTerm);
       const descMatch =
-        category.description && category.description.toLowerCase().includes(searchTerm);
+      category.description && category.description.toLowerCase().includes(searchTerm);
       const codeMatch = category.code && category.code.toLowerCase().includes(searchTerm);
       const categoryMatch =
-        category.category && category.category.toLowerCase().includes(searchTerm);
+      category.category && category.category.toLowerCase().includes(searchTerm);
 
       // Spezielle Behandlung für "Sonstiges" - auch nach einzelnen Worten suchen
       let sonstigesMatch = false;
       if (searchTerm.includes('sonstig')) {
         sonstigesMatch =
-          !!(category.name && category.name.toLowerCase().includes('sonstig')) ||
-          !!(category.description && category.description.toLowerCase().includes('sonstig')) ||
-          !!(category.category && category.category.toLowerCase().includes('sonstig'));
+        !!(category.name && category.name.toLowerCase().includes('sonstig')) ||
+        !!(category.description && category.description.toLowerCase().includes('sonstig')) ||
+        !!(category.category && category.category.toLowerCase().includes('sonstig'));
       }
 
       // Debug-Output für "Sonstiges" Suche
       if (searchTerm.includes('sonstig')) {
-        console.log('🔍 Testing category:', {
-          name: category.name,
-          category: category.category,
-          code: category.code,
-          matches: { nameMatch, descMatch, codeMatch, categoryMatch, sonstigesMatch },
-        });
+
+
+
+
+
+
       }
 
       return nameMatch || descMatch || codeMatch || categoryMatch || sonstigesMatch;
     });
 
     // Sortiere Ergebnisse: Exakte Matches zuerst, dann Code-Matches, dann Rest
-    const sortedFiltered = filtered
-      .sort((a, b) => {
-        const aExactName = a.name && a.name.toLowerCase() === searchTerm;
-        const bExactName = b.name && b.name.toLowerCase() === searchTerm;
-        if (aExactName !== bExactName) return aExactName ? -1 : 1;
+    const sortedFiltered = filtered.
+    sort((a, b) => {
+      const aExactName = a.name && a.name.toLowerCase() === searchTerm;
+      const bExactName = b.name && b.name.toLowerCase() === searchTerm;
+      if (aExactName !== bExactName) return aExactName ? -1 : 1;
 
-        const aCodeMatch = a.code && a.code.toLowerCase().includes(searchTerm);
-        const bCodeMatch = b.code && b.code.toLowerCase().includes(searchTerm);
-        if (aCodeMatch !== bCodeMatch) return aCodeMatch ? -1 : 1;
+      const aCodeMatch = a.code && a.code.toLowerCase().includes(searchTerm);
+      const bCodeMatch = b.code && b.code.toLowerCase().includes(searchTerm);
+      if (aCodeMatch !== bCodeMatch) return aCodeMatch ? -1 : 1;
 
-        return 0;
-      })
-      .slice(0, 50); // Max 50 Ergebnisse bei Suche
+      return 0;
+    }).
+    slice(0, 50); // Max 50 Ergebnisse bei Suche
 
-    console.log('🔍 Filtered results:', sortedFiltered.length);
-    console.log(
-      '🔍 First 3 results:',
-      sortedFiltered.slice(0, 3).map(c => c.name)
-    );
+
+
+
+
+
     return sortedFiltered;
   }, [value, datevCategories]);
 
   // Handle input focus
   const handleInputFocus = () => {
-    console.log('🎯 Input focused, opening dropdown with', filteredCategories.length, 'categories');
+
     setIsOpen(true);
     setActiveIndex(0);
   };
@@ -209,7 +209,7 @@ export default function CategoryAutocomplete({
 
   // Handle category selection
   const handleCategoryClick = (category: Category) => {
-    console.log('🎯 Category selected:', category);
+
     // Set the display value in the input field
     const displayValue = `${category.code} - ${category.name}`;
     onChange(displayValue);
@@ -232,11 +232,11 @@ export default function CategoryAutocomplete({
 
     switch (e.key) {
       case 'ArrowDown':
-        setActiveIndex(prev => (prev + 1) % totalItems);
+        setActiveIndex((prev) => (prev + 1) % totalItems);
         e.preventDefault();
         break;
       case 'ArrowUp':
-        setActiveIndex(prev => (prev - 1 + totalItems) % totalItems);
+        setActiveIndex((prev) => (prev - 1 + totalItems) % totalItems);
         e.preventDefault();
         break;
       case 'Enter':
@@ -291,44 +291,44 @@ export default function CategoryAutocomplete({
           aria-expanded={isOpen}
           aria-autocomplete="list"
           aria-activedescendant={isOpen ? `category-${activeIndex}` : undefined}
-          autoComplete="off"
-        />
+          autoComplete="off" />
+
       </div>
 
       {/* Dropdown/Popover */}
-      {isOpen && (
-        <div
-          className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-md shadow-xl overflow-hidden"
-          style={{ minWidth: '400px' }}
-          role="listbox"
-        >
+      {isOpen &&
+      <div
+        className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-md shadow-xl overflow-hidden"
+        style={{ minWidth: '400px' }}
+        role="listbox">
+
           {/* Scrollable Content */}
           <div className="max-h-80 overflow-y-auto">
             {/* Favorites Group */}
-            {filteredCategories.length > 0 && (
-              <div>
+            {filteredCategories.length > 0 &&
+          <div>
                 <h6
-                  className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100"
-                  role="presentation"
-                  id="DeineFavoriten"
-                >
+              className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100"
+              role="presentation"
+              id="DeineFavoriten">
+
                   Deine Favoriten
                 </h6>
                 <ul role="group" aria-labelledby="DeineFavoriten">
-                  {filteredCategories.map((category, index) => (
-                    <li
-                      key={category.id}
-                      id={`category-${index}`}
-                      className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors ${
-                        index === activeIndex
-                          ? 'bg-[#14ad9f]/10 text-[#14ad9f]'
-                          : 'hover:bg-gray-50 text-gray-900'
-                      }`}
-                      role="option"
-                      aria-selected={index === activeIndex}
-                      onClick={() => handleCategoryClick(category)}
-                      onMouseEnter={() => setActiveIndex(index)}
-                    >
+                  {filteredCategories.map((category, index) =>
+              <li
+                key={category.id}
+                id={`category-${index}`}
+                className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors ${
+                index === activeIndex ?
+                'bg-[#14ad9f]/10 text-[#14ad9f]' :
+                'hover:bg-gray-50 text-gray-900'}`
+                }
+                role="option"
+                aria-selected={index === activeIndex}
+                onClick={() => handleCategoryClick(category)}
+                onMouseEnter={() => setActiveIndex(index)}>
+
                       {/* Icon */}
                       <div className="flex-shrink-0 mt-0.5 text-gray-400">{category.icon}</div>
 
@@ -342,17 +342,17 @@ export default function CategoryAutocomplete({
                         </div>
                       </div>
                     </li>
-                  ))}
+              )}
                 </ul>
               </div>
-            )}
+          }
 
             {/* No Results */}
-            {filteredCategories.length === 0 && value.length > 0 && (
-              <div className="px-4 py-8 text-center text-gray-500 text-sm">
+            {filteredCategories.length === 0 && value.length > 0 &&
+          <div className="px-4 py-8 text-center text-gray-500 text-sm">
                 Keine Kategorien gefunden für &quot;{value}&quot;
               </div>
-            )}
+          }
           </div>
 
           {/* Action Container */}
@@ -360,25 +360,25 @@ export default function CategoryAutocomplete({
             <ul role="menu">
               <li>
                 <button
-                  className={`w-full px-4 py-3 text-left text-sm font-medium transition-colors ${
-                    activeIndex === filteredCategories.length
-                      ? 'bg-[#14ad9f]/10 text-[#14ad9f]'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                  role="menuitem"
-                  onClick={() => {
-                    onOpenAdvancedSearch();
-                    setIsOpen(false);
-                  }}
-                  onMouseEnter={() => setActiveIndex(filteredCategories.length)}
-                >
+                className={`w-full px-4 py-3 text-left text-sm font-medium transition-colors ${
+                activeIndex === filteredCategories.length ?
+                'bg-[#14ad9f]/10 text-[#14ad9f]' :
+                'text-gray-700 hover:bg-gray-100'}`
+                }
+                role="menuitem"
+                onClick={() => {
+                  onOpenAdvancedSearch();
+                  setIsOpen(false);
+                }}
+                onMouseEnter={() => setActiveIndex(filteredCategories.length)}>
+
                   Erweiterte Suche
                 </button>
               </li>
             </ul>
           </div>
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }

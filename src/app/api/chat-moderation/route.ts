@@ -8,7 +8,7 @@ import {
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 
-const MODEL_NAME = 'models/gemini-2.5-flash';
+const MODEL_NAME = 'models/gemini-2.0-flash-exp'; // ✅ Aktuelles, stabiles Modell
 
 // Standard Moderation Rules (können über AI-Config überschrieben werden)
 const DEFAULT_MODERATION_RULES = [

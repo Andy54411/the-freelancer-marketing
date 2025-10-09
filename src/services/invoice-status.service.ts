@@ -15,19 +15,19 @@ export class InvoiceStatusService {
    * Aktualisiert den Status einer Rechnung
    */
   static async updateStatus(
-    companyId: string,
-    invoiceId: string,
-    statusUpdate: InvoiceStatusUpdate
-  ): Promise<{ success: boolean; error?: string }> {
+  companyId: string,
+  invoiceId: string,
+  statusUpdate: InvoiceStatusUpdate)
+  : Promise<{success: boolean;error?: string;}> {
     try {
       if (!companyId || !invoiceId) {
         throw new Error('Company ID und Invoice ID sind erforderlich');
       }
 
-      console.log(`🔄 Aktualisiere Rechnung ${invoiceId} Status zu "${statusUpdate.status}"`);
+
 
       const invoiceRef = doc(db, 'companies', companyId, 'invoices', invoiceId);
-      
+
       const updateData: any = {
         status: statusUpdate.status,
         updatedAt: serverTimestamp()
@@ -59,7 +59,7 @@ export class InvoiceStatusService {
 
       await updateDoc(invoiceRef, updateData);
 
-      console.log(`✅ Rechnung ${invoiceId} erfolgreich aktualisiert:`, statusUpdate);
+
 
       return { success: true };
 
@@ -76,12 +76,12 @@ export class InvoiceStatusService {
    * Markiert eine Rechnung als bezahlt
    */
   static async markAsPaid(
-    companyId: string,
-    invoiceId: string,
-    paidAmount: number,
-    transactionId?: string,
-    paymentMethod: string = 'Banküberweisung'
-  ): Promise<{ success: boolean; error?: string }> {
+  companyId: string,
+  invoiceId: string,
+  paidAmount: number,
+  transactionId?: string,
+  paymentMethod: string = 'Banküberweisung')
+  : Promise<{success: boolean;error?: string;}> {
     return this.updateStatus(companyId, invoiceId, {
       status: 'paid',
       paidAmount,
@@ -95,9 +95,9 @@ export class InvoiceStatusService {
    * Markiert eine Rechnung als offen
    */
   static async markAsOpen(
-    companyId: string,
-    invoiceId: string
-  ): Promise<{ success: boolean; error?: string }> {
+  companyId: string,
+  invoiceId: string)
+  : Promise<{success: boolean;error?: string;}> {
     return this.updateStatus(companyId, invoiceId, {
       status: 'open'
     });
@@ -107,9 +107,9 @@ export class InvoiceStatusService {
    * Markiert eine Rechnung als überfällig
    */
   static async markAsOverdue(
-    companyId: string,
-    invoiceId: string
-  ): Promise<{ success: boolean; error?: string }> {
+  companyId: string,
+  invoiceId: string)
+  : Promise<{success: boolean;error?: string;}> {
     return this.updateStatus(companyId, invoiceId, {
       status: 'overdue'
     });

@@ -16,21 +16,21 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+  CardTitle } from
+'@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
+  ChartTooltipContent } from
+'@/components/ui/chart';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue } from
+'@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 export const description = 'Ein interaktiver Flächenchart, der Umsatz und Ausgaben anzeigt';
@@ -38,13 +38,13 @@ export const description = 'Ein interaktiver Flächenchart, der Umsatz und Ausga
 // Typ für die Rohdaten, die wir von der Funktion erwarten
 type OrderData = {
   id: string;
-  orderDate?: 
-    | Date
-    | string
-    | { _seconds: number; _nanoseconds: number }
-    | { seconds: number; nanoseconds: number }
-    | { toDate: () => Date }
-    | any;
+  orderDate?:
+  Date |
+  string |
+  {_seconds: number;_nanoseconds: number;} |
+  {seconds: number;nanoseconds: number;} |
+  {toDate: () => Date;} |
+  any;
   totalAmountPaidByBuyer: number;
   status: string;
 };
@@ -54,16 +54,16 @@ type ExpenseData = {
   id: string;
   amount: number;
   date:
-    | Date
-    | { seconds: number; nanoseconds: number }
-    | { _seconds: number; _nanoseconds: number }
-    | string;
+  Date |
+  {seconds: number;nanoseconds: number;} |
+  {_seconds: number;_nanoseconds: number;} |
+  string;
   createdAt?:
-    | Date
-    | { seconds: number; nanoseconds: number }
-    | { _seconds: number; _nanoseconds: number }
-    | string
-    | any;
+  Date |
+  {seconds: number;nanoseconds: number;} |
+  {_seconds: number;_nanoseconds: number;} |
+  string |
+  any;
 };
 
 // Typ für Angebote
@@ -72,13 +72,13 @@ type QuoteData = {
   totalAmount: number;
   status: string;
   createdAt: any;
-  acceptedAt?: 
-    | Date
-    | string
-    | { seconds: number; nanoseconds: number }
-    | { _seconds: number; _nanoseconds: number }
-    | { toDate: () => Date }
-    | any;
+  acceptedAt?:
+  Date |
+  string |
+  {seconds: number;nanoseconds: number;} |
+  {_seconds: number;_nanoseconds: number;} |
+  {toDate: () => Date;} |
+  any;
 };
 
 // Typ für Rechnungen
@@ -87,20 +87,20 @@ type InvoiceData = {
   totalAmount: number;
   total?: number; // Alternative amount field
   status: string;
-  createdAt: 
-    | Date
-    | string
-    | { seconds: number; nanoseconds: number }
-    | { _seconds: number; _nanoseconds: number }
-    | { toDate: () => Date }
-    | any;
-  paidAt?: 
-    | Date
-    | string
-    | { seconds: number; nanoseconds: number }
-    | { _seconds: number; _nanoseconds: number }
-    | { toDate: () => Date }
-    | any;
+  createdAt:
+  Date |
+  string |
+  {seconds: number;nanoseconds: number;} |
+  {_seconds: number;_nanoseconds: number;} |
+  {toDate: () => Date;} |
+  any;
+  paidAt?:
+  Date |
+  string |
+  {seconds: number;nanoseconds: number;} |
+  {_seconds: number;_nanoseconds: number;} |
+  {toDate: () => Date;} |
+  any;
   isStorno?: boolean;
   dueDate?: string; // Fälligkeitsdatum
   validUntil?: string; // Alternative Fälligkeit
@@ -110,43 +110,43 @@ type InvoiceData = {
 const chartConfigStatic = {
   umsatz: {
     label: 'Umsatz (Aufträge)',
-    color: 'var(--primary)',
+    color: 'var(--primary)'
   },
   rechnungen: {
     label: 'Rechnungen',
-    color: '#14ad9f', // Taskilo Grün
+    color: '#14ad9f' // Taskilo Grün
   },
   angebote: {
     label: 'Angebote (angenommen)',
-    color: '#3b82f6', // Blau
+    color: '#3b82f6' // Blau
   },
   ausgaben: {
     label: 'Ausgaben',
-    color: '#ef4444', // Rot für Ausgaben
+    color: '#ef4444' // Rot für Ausgaben
   },
   stornos: {
     label: 'Stornos',
-    color: '#f97316', // Orange für Stornos
+    color: '#f97316' // Orange für Stornos
   },
   rueckerstattungen: {
     label: 'Rückerstattungen',
-    color: '#dc2626', // Dunkelrot für Rückerstattungen
-  },
+    color: '#dc2626' // Dunkelrot für Rückerstattungen
+  }
 } satisfies ChartConfig;
 
-export function ChartAreaInteractive({ 
+export function ChartAreaInteractive({
   companyUid,
   onFinancialDataChange
-}: { 
-  companyUid: string;
-  onFinancialDataChange?: (data: { 
-    totalRevenue: number; 
-    totalExpenses: number;
-    netRevenue: number;
-    grossProfitBeforeTax: number;
-    vatAmount: number;
-  }) => void;
-}) {
+
+
+
+
+
+
+
+
+
+}: {companyUid: string;onFinancialDataChange?: (data: {totalRevenue: number;totalExpenses: number;netRevenue: number;grossProfitBeforeTax: number;vatAmount: number;}) => void;}) {
   const isMobile = useIsMobile();
   const { user, loading: authLoading } = useAuth();
   const [timeRange, setTimeRange] = React.useState('90d');
@@ -165,19 +165,19 @@ export function ChartAreaInteractive({
     ausgaben: true,
     stornos: false,
     rueckerstattungen: false,
-    negativeWerte: false, // Kombinierter Button
+    negativeWerte: false // Kombinierter Button
   });
 
   // Filter für Rechnungs-Status
   const [invoiceStatusFilter, setInvoiceStatusFilter] = React.useState<'alle' | 'entwurf' | 'versendet' | 'bezahlt' | 'ueberfaellig'>('alle');
   const [showInvoiceDropdown, setShowInvoiceDropdown] = React.useState(false);
-  
+
   // Filter für Negative Werte Dropdown
   const [showNegativeDropdown, setShowNegativeDropdown] = React.useState(false);
   const [negativeFilter, setNegativeFilter] = React.useState<'keine' | 'stornos' | 'rueckerstattungen' | 'beide'>('keine');
   const [lastUpdateTime, setLastUpdateTime] = React.useState<Date>(new Date());
   const [isUpdating, setIsUpdating] = React.useState(false);
-  
+
   // Debounced Update-Funktion für Performance
   const updateIndicator = React.useCallback(
     React.useMemo(() => {
@@ -185,10 +185,10 @@ export function ChartAreaInteractive({
       return () => {
         setIsUpdating(true);
         setLastUpdateTime(new Date());
-        
+
         // Clear previous timeout
         if (timeoutId) clearTimeout(timeoutId);
-        
+
         // Set new timeout
         timeoutId = setTimeout(() => {
           setIsUpdating(false);
@@ -200,9 +200,9 @@ export function ChartAreaInteractive({
 
   // Toggle-Funktion für Kategorien
   const toggleCategory = React.useCallback((category: keyof typeof activeCategories) => {
-    setActiveCategories(prev => ({
+    setActiveCategories((prev) => ({
       ...prev,
-      [category]: !prev[category],
+      [category]: !prev[category]
     }));
   }, []);
 
@@ -239,39 +239,39 @@ export function ChartAreaInteractive({
       ausgaben: newState,
       stornos: newState,
       rueckerstattungen: newState,
-      negativeWerte: newState,
+      negativeWerte: newState
     });
   }, [activeCategories]);
 
   // Chart-Konfiguration mit übersetzten Labels
   const chartConfig = React.useMemo(
     () =>
-      ({
-        umsatz: {
-          label: 'Umsatz (Aufträge)',
-          color: 'var(--primary)',
-        },
-        rechnungen: {
-          label: 'Rechnungen',
-          color: '#14ad9f',
-        },
-        angebote: {
-          label: 'Angebote (angenommen)',
-          color: '#3b82f6',
-        },
-        ausgaben: {
-          label: 'Ausgaben',
-          color: '#ef4444',
-        },
-        stornos: {
-          label: 'Stornos',
-          color: '#f97316',
-        },
-        rueckerstattungen: {
-          label: 'Rückerstattungen',
-          color: '#dc2626',
-        },
-      }) satisfies ChartConfig,
+    ({
+      umsatz: {
+        label: 'Umsatz (Aufträge)',
+        color: 'var(--primary)'
+      },
+      rechnungen: {
+        label: 'Rechnungen',
+        color: '#14ad9f'
+      },
+      angebote: {
+        label: 'Angebote (angenommen)',
+        color: '#3b82f6'
+      },
+      ausgaben: {
+        label: 'Ausgaben',
+        color: '#ef4444'
+      },
+      stornos: {
+        label: 'Stornos',
+        color: '#f97316'
+      },
+      rueckerstattungen: {
+        label: 'Rückerstattungen',
+        color: '#dc2626'
+      }
+    }) satisfies ChartConfig,
     []
   );
 
@@ -302,31 +302,31 @@ export function ChartAreaInteractive({
         const unsubscribe = onSnapshot(
           ordersQuery,
           async (ordersSnapshot) => {
-            console.log('Firestore auftraege snapshot size:', ordersSnapshot.size);
+
             const orderData: OrderData[] = [];
-            
-            ordersSnapshot.forEach(doc => {
+
+            ordersSnapshot.forEach((doc) => {
               const order = doc.data();
-              console.log('Raw order from Firestore:', { id: doc.id, ...order });
-              
+
+
               orderData.push({
                 id: doc.id,
                 orderDate: order.orderDate || order.createdAt,
                 totalAmountPaidByBuyer: order.totalAmountPaidByBuyer || 0,
-                status: order.status || 'AKTIV',
+                status: order.status || 'AKTIV'
               });
             });
-            
+
             // Fallback zur HTTP-Funktion wenn keine Firestore-Daten
             if (orderData.length === 0) {
-              console.log('No Firestore orders found, falling back to HTTP function...');
+
               try {
                 const result = await callHttpsFunction(
                   'getProviderOrders',
                   { providerId: companyUid },
                   'GET'
                 );
-                console.log('HTTP function result:', result);
+
                 if (result.orders && result.orders.length > 0) {
                   setOrders(result.orders);
                 } else {
@@ -339,13 +339,13 @@ export function ChartAreaInteractive({
             } else {
               setOrders(orderData);
             }
-            
+
             updateIndicator();
             setLoading(false); // Loading nur nach erstem Laden beenden
           },
           (error) => {
             console.error('Orders Firestore error, falling back to HTTP:', error);
-            
+
             // Fallback zur HTTP-Funktion bei Firestore-Fehler
             const fallbackToHttp = async () => {
               try {
@@ -363,7 +363,7 @@ export function ChartAreaInteractive({
                 setLoading(false);
               }
             };
-            
+
             fallbackToHttp();
           }
         );
@@ -371,7 +371,7 @@ export function ChartAreaInteractive({
         return unsubscribe;
       } catch (err) {
         console.error('Fehler beim Setup der Aufträge-Listener:', err);
-        
+
         // Direkter Fallback zur HTTP-Funktion
         const fallbackToHttp = async () => {
           try {
@@ -389,7 +389,7 @@ export function ChartAreaInteractive({
             setLoading(false);
           }
         };
-        
+
         fallbackToHttp();
         return () => {};
       }
@@ -404,11 +404,11 @@ export function ChartAreaInteractive({
         );
 
         // Real-time listener für Ausgaben - dieselbe Logik wie SectionCards
-        const unsubscribe = onSnapshot(expensesQuery, expensesSnapshot => {
+        const unsubscribe = onSnapshot(expensesQuery, (expensesSnapshot) => {
           const expenseData: ExpenseData[] = [];
           let totalAmount = 0;
 
-          expensesSnapshot.forEach(doc => {
+          expensesSnapshot.forEach((doc) => {
             const supplier = doc.data();
             if (supplier.totalAmount && supplier.totalAmount > 0) {
               totalAmount += supplier.totalAmount;
@@ -421,7 +421,7 @@ export function ChartAreaInteractive({
               id: 'total-expenses',
               amount: totalAmount,
               date: new Date(), // Immer heute
-              createdAt: new Date(),
+              createdAt: new Date()
             });
           }
 
@@ -442,29 +442,29 @@ export function ChartAreaInteractive({
           orderBy('createdAt', 'desc')
         );
 
-        const unsubscribe = onSnapshot(quotesQuery, quotesSnapshot => {
+        const unsubscribe = onSnapshot(quotesQuery, (quotesSnapshot) => {
           const quoteData: QuoteData[] = [];
-          console.log(`🎯 Quotes loaded: ${quotesSnapshot.docs.length} total quotes from subcollection`);
-          
-          quotesSnapshot.forEach(doc => {
+
+
+          quotesSnapshot.forEach((doc) => {
             const quote = doc.data();
-            console.log(`📝 Quote ${doc.id}:`, {
-              status: quote.status,
-              totalAmount: quote.totalAmount,
-              acceptedAt: quote.acceptedAt,
-              createdAt: quote.createdAt
-            });
-            
+
+
+
+
+
+
+
             quoteData.push({
               id: doc.id,
               totalAmount: quote.totalAmount || 0,
               status: quote.status || 'ENTWURF',
               createdAt: quote.createdAt,
-              acceptedAt: quote.acceptedAt,
+              acceptedAt: quote.acceptedAt
             });
           });
-          
-          console.log(`✅ Quotes processed: ${quoteData.length} quotes saved to state`);
+
+
           setQuotes(quoteData);
           updateIndicator();
         });
@@ -483,29 +483,29 @@ export function ChartAreaInteractive({
         );
 
         const unsubscribe = onSnapshot(
-          invoicesQuery, 
+          invoicesQuery,
           (invoicesSnapshot) => {
             const invoiceData: InvoiceData[] = [];
-            
-            console.log(`📋 Firestore invoices found: ${invoicesSnapshot.size} documents`);
-            
-            invoicesSnapshot.forEach(doc => {
+
+
+
+            invoicesSnapshot.forEach((doc) => {
               const invoice = doc.data();
-              
+
               // Debug: Log alle Invoice-IDs und RE-Nummern
               const amount = invoice.totalAmount || invoice.total || 0;
               const invoiceNumber = invoice.invoiceNumber || invoice.number || 'no-number';
-              
+
               // Debug: Log große Rechnungen ODER RE-1000
               if (amount > 5000 || invoiceNumber.includes('RE-1000') || doc.id.includes('RE-1000')) {
-                console.log(`🔍 Large/RE-1000 invoice found: ID=${doc.id}, number=${invoiceNumber}, amount=${amount}, status=${invoice.status}`);
+
               }
-              
+
               // Debug: Log erste 10 Rechnungen um Pattern zu sehen
               if (invoicesSnapshot.docs.indexOf(doc) < 10) {
-                console.log(`📄 Invoice ${invoicesSnapshot.docs.indexOf(doc)}: ID=${doc.id}, number=${invoiceNumber}, amount=${amount}`);
+
               }
-              
+
               invoiceData.push({
                 id: doc.id,
                 totalAmount: invoice.totalAmount || invoice.total || 0,
@@ -514,10 +514,10 @@ export function ChartAreaInteractive({
                 paidAt: invoice.paidAt,
                 isStorno: invoice.isStorno || false,
                 dueDate: invoice.dueDate,
-                validUntil: invoice.validUntil,
+                validUntil: invoice.validUntil
               });
             });
-            
+
             setInvoices(invoiceData);
             updateIndicator();
           },
@@ -558,64 +558,64 @@ export function ChartAreaInteractive({
 
   const { chartData, totalRevenue, totalExpenses, netRevenue, grossProfitBeforeTax, vatAmount } = React.useMemo(() => {
     if (!orders.length && !expenses.length && !quotes.length && !invoices.length)
-      return { 
-        chartData: [], 
-        totalRevenue: 0, 
-        totalExpenses: 0,
-        netRevenue: 0,
-        grossProfitBeforeTax: 0,
-        vatAmount: 0
-      };
+    return {
+      chartData: [],
+      totalRevenue: 0,
+      totalExpenses: 0,
+      netRevenue: 0,
+      grossProfitBeforeTax: 0,
+      vatAmount: 0
+    };
 
     const referenceDate = new Date();
     let daysToSubtract = 90;
-    if (timeRange === '30d') daysToSubtract = 30;
-    else if (timeRange === '7d') daysToSubtract = 7;
-    else if (timeRange === '365d') daysToSubtract = 365;
+    if (timeRange === '30d') daysToSubtract = 30;else
+    if (timeRange === '7d') daysToSubtract = 7;else
+    if (timeRange === '365d') daysToSubtract = 365;
     const startDate = new Date(referenceDate);
     startDate.setDate(startDate.getDate() - daysToSubtract);
     startDate.setHours(0, 0, 0, 0); // Auf Beginn des Tages setzen
 
-    const dailyRevenue: { [key: string]: number } = {};
-    const dailyExpenses: { [key: string]: number } = {};
-    const dailyInvoices: { [key: string]: number } = {};
-    const dailyQuotes: { [key: string]: number } = {};
-    const dailyStornos: { [key: string]: number } = {};
-    const dailyRefunds: { [key: string]: number } = {};
+    const dailyRevenue: {[key: string]: number;} = {};
+    const dailyExpenses: {[key: string]: number;} = {};
+    const dailyInvoices: {[key: string]: number;} = {};
+    const dailyQuotes: {[key: string]: number;} = {};
+    const dailyStornos: {[key: string]: number;} = {};
+    const dailyRefunds: {[key: string]: number;} = {};
     let currentTotalRevenue = 0;
     let currentTotalExpenses = 0;
 
     // Umsatz verarbeiten
-    orders.forEach(order => {
-      console.log(`Processing order ${order.id}:`, {
-        orderDate: order.orderDate,
-        totalAmountPaidByBuyer: order.totalAmountPaidByBuyer,
-        status: order.status
-      });
+    orders.forEach((order) => {
+
+
+
+
+
 
       if (!order.orderDate) {
-        console.log(`❌ Order ${order.id}: No orderDate`);
+
         return;
       }
 
       // Zeige alle Aufträge mit Umsatz an (nicht nur ABGESCHLOSSEN/BEZAHLT)
       // da auch AKTIVE Aufträge bereits Umsatz generiert haben können
       if (!order.totalAmountPaidByBuyer) {
-        console.log(`❌ Order ${order.id}: No totalAmountPaidByBuyer`);
+
         return;
       }
-      
 
-        if (order.totalAmountPaidByBuyer < 0) {
-          console.log(`� RÜCKERSTATTUNG gefunden! Order ${order.id}: €${order.totalAmountPaidByBuyer / 100}`);
-          // orderDate ist hier noch nicht verfügbar - muss später verarbeitet werden
-          const refundAmount = Math.abs(order.totalAmountPaidByBuyer / 100); // Positiver Betrag für Rückerstattungen
-          // Rückerstattung - wird später nach orderDate-Verarbeitung behandelt
-          return;
-        }
-        
 
-      
+      if (order.totalAmountPaidByBuyer < 0) {
+
+        // orderDate ist hier noch nicht verfügbar - muss später verarbeitet werden
+        const refundAmount = Math.abs(order.totalAmountPaidByBuyer / 100); // Positiver Betrag für Rückerstattungen
+        // Rückerstattung - wird später nach orderDate-Verarbeitung behandelt
+        return;
+      }
+
+
+
       let orderDate: Date;
       try {
         if (typeof order.orderDate === 'string') {
@@ -635,21 +635,21 @@ export function ChartAreaInteractive({
           throw new Error('Invalid orderDate');
         }
       } catch (err) {
-        console.log(`❌ Order ${order.id}: Invalid date format:`, order.orderDate);
+
         return;
       }
 
       if (orderDate >= startDate) {
         const dateString = orderDate.toISOString().split('T')[0]; // YYYY-MM-DD
         const euroAmount = order.totalAmountPaidByBuyer / 100; // In Euro umrechnen
-        
+
         if (euroAmount < 0) {
           // NEGATIVE WERTE = RÜCKERSTATTUNGEN
           if (!dailyRefunds[dateString]) {
             dailyRefunds[dateString] = 0;
           }
           dailyRefunds[dateString] += Math.abs(euroAmount); // Als positive Rückerstattung
-          console.log(`🔴 Refund added ${order.id}: €${Math.abs(euroAmount)} on ${dateString}`);
+
         } else {
           // POSITIVE WERTE = UMSATZ
           if (!dailyRevenue[dateString]) {
@@ -657,15 +657,15 @@ export function ChartAreaInteractive({
           }
           dailyRevenue[dateString] += euroAmount;
           currentTotalRevenue += euroAmount;
-          console.log(`✅ Revenue added ${order.id}: €${euroAmount} on ${dateString}`);
+
         }
       } else {
-        console.log(`❌ Order ${order.id}: Outside date range (${orderDate.toISOString().split('T')[0]} < ${startDate.toISOString().split('T')[0]})`);
+
       }
     });
 
     // Ausgaben verarbeiten - vereinfachte Logik da alle Ausgaben aktuelles Datum haben
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       // Konvertiere expense.date zu einem Date-Objekt
       let expenseDate: Date;
 
@@ -698,27 +698,27 @@ export function ChartAreaInteractive({
     });
 
     // Angebote verarbeiten - FIXED: Use available data
-    console.log(`🎯 Processing quotes: ${quotes.length} quotes to analyze`);
-    quotes.forEach(quote => {
-      console.log(`📝 Processing quote ${quote.id}:`, {
-        status: quote.status,
-        acceptedAt: quote.acceptedAt,
-        totalAmount: quote.totalAmount,
-        hasAcceptedAt: !!quote.acceptedAt,
-        hasAmount: !!quote.totalAmount,
-        amountValue: quote.totalAmount,
-        createdAt: quote.createdAt
-      });
+
+    quotes.forEach((quote) => {
+
+
+
+
+
+
+
+
+
 
       // Since acceptedAt and totalAmount are missing, use finalized quotes with createdAt
       if (quote.status !== 'finalized' || !quote.createdAt) {
-        console.log(`❌ Quote ${quote.id} skipped: status=${quote.status}, hasCreatedAt=${!!quote.createdAt}`);
+
         return;
       }
-      
+
       // Use fallback amount for quotes (should be fixed in data structure later)
       const quoteAmount = quote.totalAmount || 250; // Reasonable fallback
-      console.log(`✅ Quote ${quote.id} processing with fallback amount: €${quoteAmount}`);
+
 
       // Use createdAt since acceptedAt is missing
       let quoteDate: Date;
@@ -738,7 +738,7 @@ export function ChartAreaInteractive({
           throw new Error('Invalid createdAt');
         }
       } catch (err) {
-        console.log(`❌ Quote ${quote.id}: Invalid date format, skipping`);
+
         return; // Skip quote mit ungültigem Datum
       }
 
@@ -752,50 +752,50 @@ export function ChartAreaInteractive({
         dailyQuotes[dateString] += euroAmount;
         // WICHTIG: Auch zur Gesamt-Einnahmen hinzufügen
         currentTotalRevenue += euroAmount;
-        console.log(`✅ Quote added ${quote.id}: €${euroAmount} on ${dateString} (using createdAt)`);
+
       } else {
-        console.log(`📅 Quote ${quote.id} outside date range: ${quoteDate.toISOString().split('T')[0]} < ${startDate.toISOString().split('T')[0]}`);
+
       }
     });
 
     // Debug: Status-Informationen (kompakt)
-    console.log('Chart data processing:', {
-      ordersCount: orders.length,
-      invoicesCount: invoices.length,
-      timeRange,
-      statusFilter: invoiceStatusFilter
-    });
+
+
+
+
+
+
 
     // Debug Orders speziell
     if (orders.length > 0) {
-      console.log('Orders sample:', orders.slice(0, 3).map(o => ({
-        id: o.id,
-        orderDate: o.orderDate,
-        totalAmountPaidByBuyer: o.totalAmountPaidByBuyer,
-        status: o.status
-      })));
+
+
+
+
+
+
     }
 
     // Rechnungen verarbeiten (alle erstellten Rechnungen und Stornos)
-    invoices.forEach(invoice => {
+    invoices.forEach((invoice) => {
       // Prüfe ob totalAmount existiert - sowohl als Number als auch als total
       const amount = invoice.totalAmount || invoice.total || 0;
-      
-      console.log(`Processing invoice ${invoice.id || 'unknown'}: amount=${amount}, isStorno=${invoice.isStorno}`);
-      
+
+
+
       // Special debug for RE-1000
       if (invoice.id && invoice.id.includes('RE-1000')) {
-        console.log(`🔎 SPECIAL DEBUG RE-1000:`, {
-          id: invoice.id,
-          amount,
-          status: invoice.status,
-          createdAt: invoice.createdAt,
-          isStorno: invoice.isStorno
-        });
+
+
+
+
+
+
+
       }
-      
+
       if (!amount || amount === 0) {
-        console.log(`❌ Invoice ${invoice.id}: Skipped (amount is 0 or invalid)`);
+
         return;
       }
 
@@ -833,7 +833,7 @@ export function ChartAreaInteractive({
       }
 
       const dateString = invoiceDate; // Verwende bereits berechneten invoiceDate
-      
+
       // Intelligente Cent-zu-Euro-Konvertierung
       let euroAmount = amount;
       // Nur konvertieren wenn der Wert sehr groß ist (wahrscheinlich Cent)
@@ -842,9 +842,9 @@ export function ChartAreaInteractive({
       if (Math.abs(amount) >= 50000 && Number.isInteger(amount)) {
         // Wahrscheinlich Cent-Wert - konvertiere zu Euro (auch negative Werte)
         euroAmount = amount / 100;
-        console.log(`🔄 Cent conversion: ${amount} cents → €${euroAmount}`);
+
       } else {
-        console.log(`💰 Euro value kept: €${amount}`);
+
       }
 
       if (invoice.isStorno || euroAmount < 0) {
@@ -853,42 +853,42 @@ export function ChartAreaInteractive({
           dailyStornos[dateString] = 0;
         }
         dailyStornos[dateString] += Math.abs(euroAmount); // Immer als positive Storno-Werte
-        console.log(`🔴 Storno/Negative invoice ${invoice.id}: €${Math.abs(euroAmount)} on ${dateString}`);
+
       } else {
         // Prüfe ob Rechnung überfällig ist (basierend auf Fälligkeitsdatum)
         const isOverdue = () => {
           if (!invoice.dueDate && !invoice.validUntil) return false;
-          
+
           const dueDateStr = invoice.dueDate || invoice.validUntil;
           if (!dueDateStr) return false;
-          
+
           const dueDate = new Date(dueDateStr);
           if (isNaN(dueDate.getTime())) return false; // Ungültiges Datum
-          
+
           const today = new Date();
           today.setHours(0, 0, 0, 0); // Setze auf Tagesbeginn für korrekte Vergleiche
-          
+
           const isPaid = invoice.status === 'BEZAHLT' || invoice.status === 'paid';
           const isOverdueDate = dueDate < today;
-          
+
           return isOverdueDate && !isPaid;
         };
 
         // Prüfe Status-Filter für normale Rechnungen
-        const shouldIncludeInvoice = invoiceStatusFilter === 'alle' || 
-          (invoiceStatusFilter === 'entwurf' && (
-            invoice.status === 'ENTWURF' || 
-            invoice.status === 'draft' || 
-            invoice.status === 'finalized' ||
-            !invoice.status // Keine Status = Entwurf
-          )) ||
-          (invoiceStatusFilter === 'versendet' && (invoice.status === 'VERSENDET' || invoice.status === 'sent')) ||
-          (invoiceStatusFilter === 'bezahlt' && (invoice.status === 'BEZAHLT' || invoice.status === 'paid')) ||
-          (invoiceStatusFilter === 'ueberfaellig' && (
-            invoice.status === 'ÜBERFÄLLIG' || 
-            invoice.status === 'overdue' ||
-            isOverdue() // Berechne Überfälligkeit basierend auf Datum
-          ));
+        const shouldIncludeInvoice = invoiceStatusFilter === 'alle' ||
+        invoiceStatusFilter === 'entwurf' && (
+        invoice.status === 'ENTWURF' ||
+        invoice.status === 'draft' ||
+        invoice.status === 'finalized' ||
+        !invoice.status // Keine Status = Entwurf
+        ) ||
+        invoiceStatusFilter === 'versendet' && (invoice.status === 'VERSENDET' || invoice.status === 'sent') ||
+        invoiceStatusFilter === 'bezahlt' && (invoice.status === 'BEZAHLT' || invoice.status === 'paid') ||
+        invoiceStatusFilter === 'ueberfaellig' && (
+        invoice.status === 'ÜBERFÄLLIG' ||
+        invoice.status === 'overdue' ||
+        isOverdue() // Berechne Überfälligkeit basierend auf Datum
+        );
 
         if (shouldIncludeInvoice) {
           if (euroAmount > 0) {
@@ -897,19 +897,19 @@ export function ChartAreaInteractive({
               dailyInvoices[dateString] = 0;
             }
             dailyInvoices[dateString] += euroAmount;
-            
+
             // Deutsche Steuerberechnung basierend auf tatsächlichem vatRate
             const vatRate = invoice.vatRate || 19; // Fallback auf 19%
             const vatDecimal = vatRate / 100;
-            
+
             // Bestimme ob Betrag Brutto oder Netto ist basierend auf priceInput
             // Aus Company-Settings: priceInput: "netto" 
             const isNettoInput = true; // Meistens Netto-Eingabe in Business-Software
-            
+
             let nettoAmount: number;
             let vatAmount: number;
             let bruttoAmount: number;
-            
+
             if (isNettoInput) {
               // Betrag ist Netto → Brutto berechnen
               nettoAmount = euroAmount;
@@ -921,12 +921,12 @@ export function ChartAreaInteractive({
               nettoAmount = bruttoAmount / (1 + vatDecimal);
               vatAmount = bruttoAmount - nettoAmount;
             }
-            
+
             // Zur Gesamt-Einnahmen hinzufügen (als Brutto für Gewinn-Berechnung)
             currentTotalRevenue += bruttoAmount;
-            console.log(`✅ Invoice added ${invoice.id}: €${euroAmount} (${vatRate}% USt) → Netto: €${nettoAmount.toFixed(2)}, Brutto: €${bruttoAmount.toFixed(2)} on ${dateString}`);
+
           } else {
-            console.log(`❌ Invoice ${invoice.id}: Negative amount €${euroAmount} - should be handled as Storno`);
+
           }
         }
       }
@@ -934,106 +934,106 @@ export function ChartAreaInteractive({
 
     // Alle Daten sammeln und Chart-Daten erstellen
     const allDates = new Set([
-      ...Object.keys(dailyRevenue), 
-      ...Object.keys(dailyExpenses),
-      ...Object.keys(dailyInvoices),
-      ...Object.keys(dailyQuotes),
-      ...Object.keys(dailyStornos),
-      ...Object.keys(dailyRefunds)
-    ]);
+    ...Object.keys(dailyRevenue),
+    ...Object.keys(dailyExpenses),
+    ...Object.keys(dailyInvoices),
+    ...Object.keys(dailyQuotes),
+    ...Object.keys(dailyStornos),
+    ...Object.keys(dailyRefunds)]
+    );
 
-    const finalChartData = Array.from(allDates)
-      .map(date => {
-        const umsatzValue = dailyRevenue[date] || 0;
-        const rechnungenValue = dailyInvoices[date] || 0;
-        const angeboteValue = dailyQuotes[date] || 0;
-        const ausgabenValue = dailyExpenses[date] || 0;
-        const stornosValue = dailyStornos[date] || 0;
-        const rueckerstattungenValue = dailyRefunds[date] || 0;
-        
-        // Debug: Zeige alle Werte für problematische Daten
-        if (umsatzValue < 0 || rechnungenValue < 0 || angeboteValue < 0) {
-          console.log(`🚨 NEGATIVE WERTE am ${date}:`, {
-            umsatz: umsatzValue,
-            rechnungen: rechnungenValue,
-            angebote: angeboteValue,
-            ausgaben: ausgabenValue,
-            stornos: stornosValue,
-            rueckerstattungen: rueckerstattungenValue
-          });
-        }
-        
-        return {
-          date,
-          umsatz: Math.max(0, umsatzValue), // Erzwinge positive Werte
-          rechnungen: Math.max(0, rechnungenValue),
-          angebote: Math.max(0, angeboteValue),
-          ausgaben: Math.max(0, ausgabenValue),
-          stornos: Math.max(0, stornosValue),
-          rueckerstattungen: Math.max(0, rueckerstattungenValue),
-        };
-      })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const finalChartData = Array.from(allDates).
+    map((date) => {
+      const umsatzValue = dailyRevenue[date] || 0;
+      const rechnungenValue = dailyInvoices[date] || 0;
+      const angeboteValue = dailyQuotes[date] || 0;
+      const ausgabenValue = dailyExpenses[date] || 0;
+      const stornosValue = dailyStornos[date] || 0;
+      const rueckerstattungenValue = dailyRefunds[date] || 0;
+
+      // Debug: Zeige alle Werte für problematische Daten
+      if (umsatzValue < 0 || rechnungenValue < 0 || angeboteValue < 0) {
+
+
+
+
+
+
+
+
+      }
+
+      return {
+        date,
+        umsatz: Math.max(0, umsatzValue), // Erzwinge positive Werte
+        rechnungen: Math.max(0, rechnungenValue),
+        angebote: Math.max(0, angeboteValue),
+        ausgaben: Math.max(0, ausgabenValue),
+        stornos: Math.max(0, stornosValue),
+        rueckerstattungen: Math.max(0, rueckerstattungenValue)
+      };
+    }).
+    sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     // DEBUG: Zeige alle Rohdaten vor Math.max
-    Object.keys(dailyRevenue).forEach(date => {
+    Object.keys(dailyRevenue).forEach((date) => {
       if (dailyRevenue[date] < 0) {
-        console.log(`🚨 NEGATIVER UMSATZ gefunden: ${date} = €${dailyRevenue[date]}`);
+
       }
     });
 
     // Kompakte Debug-Info für finale Chart-Daten
     if (finalChartData.length > 0) {
       const totalInvoices = Object.keys(dailyInvoices).reduce((sum, date) => sum + dailyInvoices[date], 0);
-      console.log(`Chart ready: ${finalChartData.length} days, €${totalInvoices.toFixed(2)} invoices total`);
-      
+
+
       // DEBUG: Zeige ein paar finale Datenpunkte
-      console.log('Final chart data sample:', JSON.stringify(finalChartData.slice(0, 5).map(d => ({
-        date: d.date,
-        umsatz: d.umsatz,
-        rechnungen: d.rechnungen,
-        angebote: d.angebote,
-        ausgaben: d.ausgaben,
-        stornos: d.stornos,
-        rueckerstattungen: d.rueckerstattungen
-      })), null, 2));
+
+
+
+
+
+
+
+
+
     }
 
     // Deutsche Buchhaltung: Präzise Berechnung mit tatsächlichen Steuersätzen
     // currentTotalRevenue enthält bereits die korrekt berechneten Brutto-Beträge
-    
+
     // Sammle alle Steuerbeträge (wurde bereits in der Invoice-Verarbeitung berechnet)
     let totalNetRevenue = 0;
     let totalVatAmount = 0;
-    
+
     // Neuberechnung basierend auf individuellen Rechnungen für präzise Steuer-Aufschlüsselung
-    invoices.forEach(invoice => {
+    invoices.forEach((invoice) => {
       if (invoice.totalAmount && invoice.totalAmount > 0) {
         const euroAmount = invoice.totalAmount >= 50000 ? invoice.totalAmount / 100 : invoice.totalAmount;
         const vatRate = invoice.vatRate || 19;
         const vatDecimal = vatRate / 100;
-        
+
         // Annahme: Netto-Eingabe (wie in Company-Settings)
         const nettoAmount = euroAmount;
         const vatAmount = nettoAmount * vatDecimal;
-        
+
         totalNetRevenue += nettoAmount;
         totalVatAmount += vatAmount;
       }
     });
-    
+
     const grossProfitBeforeTax = currentTotalRevenue - currentTotalExpenses; // Gewinn vor Steuern (brutto)
 
     // Debug: Deutsche Buchhaltung mit präzisen Steuersätzen
-    console.log('🎯 DEUTSCHE BUCHHALTUNG (präzise):', {
-      bruttoEinnahmen: currentTotalRevenue,
-      nettoEinnahmen: totalNetRevenue,
-      gesamtUmsatzsteuer: totalVatAmount,
-      ausgaben: currentTotalExpenses,
-      gewinnVorSteuern: grossProfitBeforeTax,
-      rechnungsAnzahl: invoices.length,
-      chartDataPoints: finalChartData.length
-    });
+
+
+
+
+
+
+
+
+
 
     return {
       chartData: finalChartData,
@@ -1041,7 +1041,7 @@ export function ChartAreaInteractive({
       totalExpenses: currentTotalExpenses,
       netRevenue: totalNetRevenue, // Präzise Netto-Einnahmen (für "Einnahmen" Anzeige)
       grossProfitBeforeTax: grossProfitBeforeTax, // Gewinn vor Steuern (brutto)
-      vatAmount: totalVatAmount, // Präziser USt-Betrag
+      vatAmount: totalVatAmount // Präziser USt-Betrag
     };
   }, [orders, expenses, quotes, invoices, timeRange, invoiceStatusFilter]);
 
@@ -1063,8 +1063,8 @@ export function ChartAreaInteractive({
       <Card className="flex h-[350px] w-full items-center justify-center">
         <FiLoader className="h-8 w-8 animate-spin text-muted-foreground" />
         <span className="ml-2 text-muted-foreground">Lade Daten...</span>
-      </Card>
-    );
+      </Card>);
+
   }
 
   if (error) {
@@ -1072,8 +1072,8 @@ export function ChartAreaInteractive({
       <Card className="flex h-[350px] w-full flex-col items-center justify-center">
         <FiAlertCircle className="mb-2 h-8 w-8 text-destructive" />
         <p className="text-destructive">{error}</p>
-      </Card>
-    );
+      </Card>);
+
   }
 
   if (chartData.length === 0) {
@@ -1081,8 +1081,8 @@ export function ChartAreaInteractive({
       <Card className="flex h-[350px] w-full flex-col items-center justify-center">
         <FiAlertCircle className="mb-2 h-8 w-8 text-muted-foreground" />
         <p className="text-muted-foreground">Keine Daten verfügbar</p>
-      </Card>
-    );
+      </Card>);
+
   }
 
   return (
@@ -1116,12 +1116,12 @@ export function ChartAreaInteractive({
           <ToggleGroup
             type="single"
             value={timeRange}
-            onValueChange={value => {
+            onValueChange={(value) => {
               if (value) setTimeRange(value);
             }}
             variant="outline"
-            className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
-          >
+            className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex">
+
             <ToggleGroupItem value="365d">1 Jahr</ToggleGroupItem>
             <ToggleGroupItem value="90d">90 Tage</ToggleGroupItem>
             <ToggleGroupItem value="30d">30 Tage</ToggleGroupItem>
@@ -1129,15 +1129,15 @@ export function ChartAreaInteractive({
           </ToggleGroup>
           <Select
             value={timeRange}
-            onValueChange={value => {
+            onValueChange={(value) => {
               if (value) setTimeRange(value);
-            }}
-          >
+            }}>
+
             <SelectTrigger
               className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
               size="sm"
-              aria-label="Zeitraum auswählen"
-            >
+              aria-label="Zeitraum auswählen">
+
               <SelectValue placeholder="90 Tage" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
@@ -1194,40 +1194,40 @@ export function ChartAreaInteractive({
               tickMargin={8}
               minTickGap={timeRange === '7d' ? 50 : timeRange === '30d' ? 60 : timeRange === '90d' ? 80 : 100}
               interval={timeRange === '7d' ? 0 : timeRange === '30d' ? 2 : timeRange === '90d' ? 7 : 14}
-              tickFormatter={value => {
+              tickFormatter={(value) => {
                 const date = new Date(value + 'T00:00:00'); // Verhindert Zeitzonenprobleme
-                
+
                 // Dynamische Formatierung je nach Zeitraum
                 if (timeRange === '7d') {
                   return date.toLocaleDateString('de-DE', {
                     weekday: 'short',
-                    day: 'numeric',
+                    day: 'numeric'
                   });
                 } else if (timeRange === '30d') {
                   return date.toLocaleDateString('de-DE', {
                     day: 'numeric',
-                    month: 'short',
+                    month: 'short'
                   });
                 } else if (timeRange === '90d') {
                   return date.toLocaleDateString('de-DE', {
                     day: 'numeric',
-                    month: 'short',
+                    month: 'short'
                   });
                 } else {
                   // 365d - Nur Monat anzeigen
                   return date.toLocaleDateString('de-DE', {
-                    month: 'short',
+                    month: 'short'
                   });
                 }
-              }}
-            />
+              }} />
+
             <YAxis
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={value => `${Number(value).toFixed(0)}€`}
-              domain={[0, 'dataMax']}
-            />
+              tickFormatter={(value) => `${Number(value).toFixed(0)}€`}
+              domain={[0, 'dataMax']} />
+
 
             <ChartTooltip
               cursor={false}
@@ -1250,7 +1250,7 @@ export function ChartAreaInteractive({
                             {new Date(label + 'T00:00:00').toLocaleDateString('de-DE', {
                               weekday: 'long',
                               month: 'long',
-                              day: 'numeric',
+                              day: 'numeric'
                             })}
                           </span>
                         </div>
@@ -1262,9 +1262,9 @@ export function ChartAreaInteractive({
                                 <div
                                   className="h-2.5 w-2.5 shrink-0 rounded-[2px] bg-[--color-bg]"
                                   style={{
-                                    '--color-bg': entry.color,
-                                  } as React.CSSProperties}
-                                />
+                                    '--color-bg': entry.color
+                                  } as React.CSSProperties} />
+
                                 <span className="text-sm font-medium">
                                   {categoryLabels[entry.dataKey] || entry.dataKey}
                                 </span>
@@ -1272,70 +1272,70 @@ export function ChartAreaInteractive({
                               <span className="text-sm font-mono text-right">
                                 {Number(entry.value).toFixed(2)} €
                               </span>
-                            </div>
-                          );
+                            </div>);
+
                         })}
                       </div>
-                    </div>
-                  );
+                    </div>);
+
                 }
                 return null;
-              }}
-            />
+              }} />
 
-            {activeCategories.umsatz && (
-              <Area
-                dataKey="umsatz"
-                type="monotone"
-                fill="url(#fillUmsatz)"
-                stroke="var(--color-umsatz)"
-              />
-            )}
 
-            {activeCategories.rechnungen && (
-              <Area
-                dataKey="rechnungen"
-                type="monotone"
-                fill="url(#fillRechnungen)"
-                stroke="var(--color-rechnungen)"
-              />
-            )}
+            {activeCategories.umsatz &&
+            <Area
+              dataKey="umsatz"
+              type="monotone"
+              fill="url(#fillUmsatz)"
+              stroke="var(--color-umsatz)" />
 
-            {activeCategories.angebote && (
-              <Area
-                dataKey="angebote"
-                type="monotone"
-                fill="url(#fillAngebote)"
-                stroke="var(--color-angebote)"
-              />
-            )}
+            }
 
-            {activeCategories.ausgaben && (
-              <Area
-                dataKey="ausgaben"
-                type="monotone"
-                fill="url(#fillAusgaben)"
-                stroke="var(--color-ausgaben)"
-              />
-            )}
+            {activeCategories.rechnungen &&
+            <Area
+              dataKey="rechnungen"
+              type="monotone"
+              fill="url(#fillRechnungen)"
+              stroke="var(--color-rechnungen)" />
 
-            {activeCategories.stornos && (
-              <Area
-                dataKey="stornos"
-                type="monotone"
-                fill="url(#fillStornos)"
-                stroke="var(--color-stornos)"
-              />
-            )}
+            }
 
-            {activeCategories.rueckerstattungen && (
-              <Area
-                dataKey="rueckerstattungen"
-                type="monotone"
-                fill="url(#fillRueckerstattungen)"
-                stroke="var(--color-rueckerstattungen)"
-              />
-            )}
+            {activeCategories.angebote &&
+            <Area
+              dataKey="angebote"
+              type="monotone"
+              fill="url(#fillAngebote)"
+              stroke="var(--color-angebote)" />
+
+            }
+
+            {activeCategories.ausgaben &&
+            <Area
+              dataKey="ausgaben"
+              type="monotone"
+              fill="url(#fillAusgaben)"
+              stroke="var(--color-ausgaben)" />
+
+            }
+
+            {activeCategories.stornos &&
+            <Area
+              dataKey="stornos"
+              type="monotone"
+              fill="url(#fillStornos)"
+              stroke="var(--color-stornos)" />
+
+            }
+
+            {activeCategories.rueckerstattungen &&
+            <Area
+              dataKey="rueckerstattungen"
+              type="monotone"
+              fill="url(#fillRueckerstattungen)"
+              stroke="var(--color-rueckerstattungen)" />
+
+            }
           </AreaChart>
         </ChartContainer>
         
@@ -1351,22 +1351,22 @@ export function ChartAreaInteractive({
             </div>
             <button
               onClick={toggleAllCategories}
-              className="group inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-[#14ad9f] bg-gray-50 hover:bg-[#14ad9f]/5 border border-gray-200 hover:border-[#14ad9f]/20 rounded-lg transition-all duration-200 whitespace-nowrap"
-            >
+              className="group inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-[#14ad9f] bg-gray-50 hover:bg-[#14ad9f]/5 border border-gray-200 hover:border-[#14ad9f]/20 rounded-lg transition-all duration-200 whitespace-nowrap">
+
               {Object.values(activeCategories).every(Boolean) ? 'Alle aus' : 'Alle an'}
             </button>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
-            {Object.entries(chartConfig)
-              .filter(([key]) => key !== 'stornos' && key !== 'rueckerstattungen') // Filter die separaten Buttons heraus
-              .map(([key, config]) => {
+            {Object.entries(chartConfig).
+            filter(([key]) => key !== 'stornos' && key !== 'rueckerstattungen') // Filter die separaten Buttons heraus
+            .map(([key, config]) => {
               const isActive = activeCategories[key as keyof typeof activeCategories];
               // Verkürzte Labels für mobile Ansicht
               const getShortLabel = (label: string) => {
-                const shortLabels: { [key: string]: string } = {
+                const shortLabels: {[key: string]: string;} = {
                   'Umsatz (Aufträge)': 'Umsatz',
-                  'Rechnungen': 'Rechnungen', 
+                  'Rechnungen': 'Rechnungen',
                   'Angebote (angenommen)': 'Angebote',
                   'Ausgaben': 'Ausgaben',
                   'Stornos': 'Stornos',
@@ -1374,7 +1374,7 @@ export function ChartAreaInteractive({
                 };
                 return shortLabels[label] || label.split(' (')[0];
               };
-              
+
               return (
                 <div key={key} className="relative" ref={key === 'rechnungen' ? dropdownRef : undefined}>
                   <button
@@ -1386,89 +1386,89 @@ export function ChartAreaInteractive({
                       }
                     }}
                     className={`group relative flex items-center gap-2 p-2.5 rounded-lg text-left transition-all duration-200 border-2 min-h-[3rem] w-full ${
-                      isActive
-                        ? 'bg-white shadow-md border-gray-200 hover:shadow-lg'
-                        : 'bg-gray-50/50 border-gray-100 hover:bg-gray-100 hover:border-gray-200'
-                    }`}
-                  >
+                    isActive ?
+                    'bg-white shadow-md border-gray-200 hover:shadow-lg' :
+                    'bg-gray-50/50 border-gray-100 hover:bg-gray-100 hover:border-gray-200'}`
+                    }>
+
                     <div className="flex-shrink-0">
                       <div
                         className={`w-3.5 h-3.5 rounded-full border-2 transition-all ${
-                          isActive ? 'border-white shadow-sm' : 'border-gray-300'
-                        }`}
-                        style={{ backgroundColor: isActive ? config.color : '#e5e7eb' }}
-                      />
+                        isActive ? 'border-white shadow-sm' : 'border-gray-300'}`
+                        }
+                        style={{ backgroundColor: isActive ? config.color : '#e5e7eb' }} />
+
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className={`text-sm font-medium leading-tight transition-colors ${
-                        isActive ? 'text-gray-900' : 'text-gray-500'
-                      }`}>
+                      isActive ? 'text-gray-900' : 'text-gray-500'}`
+                      }>
                         {getShortLabel(config.label)}
-                        {key === 'rechnungen' && invoiceStatusFilter !== 'alle' && (
-                          <span className="ml-1 text-xs text-[#14ad9f]">
-                            ({invoiceStatusFilter === 'entwurf' ? 'E' : 
-                              invoiceStatusFilter === 'versendet' ? 'V' : 
-                              invoiceStatusFilter === 'bezahlt' ? 'B' : 
-                              invoiceStatusFilter === 'ueberfaellig' ? 'Ü' : 
-                              invoiceStatusFilter})
+                        {key === 'rechnungen' && invoiceStatusFilter !== 'alle' &&
+                        <span className="ml-1 text-xs text-[#14ad9f]">
+                            ({invoiceStatusFilter === 'entwurf' ? 'E' :
+                          invoiceStatusFilter === 'versendet' ? 'V' :
+                          invoiceStatusFilter === 'bezahlt' ? 'B' :
+                          invoiceStatusFilter === 'ueberfaellig' ? 'Ü' :
+                          invoiceStatusFilter})
                           </span>
-                        )}
+                        }
                       </div>
                     </div>
-                    {key === 'rechnungen' && (
-                      <div className="flex-shrink-0">
+                    {key === 'rechnungen' &&
+                    <div className="flex-shrink-0">
                         <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
-                    )}
+                    }
                   </button>
                   
                   {/* Status-Dropdown für Rechnungen */}
-                  {key === 'rechnungen' && showInvoiceDropdown && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  {key === 'rechnungen' && showInvoiceDropdown &&
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                       <div className="p-2 space-y-1">
                         {[
-                          { value: 'ausblenden', label: 'Ausblenden' },
-                          { value: 'alle', label: 'Alle Rechnungen' },
-                          { value: 'entwurf', label: 'Entwürfe' },
-                          { value: 'versendet', label: 'Versendet' },
-                          { value: 'bezahlt', label: 'Bezahlt' },
-                          { value: 'ueberfaellig', label: 'Überfällig' }
-                        ].map(option => (
-                          <button
-                            key={option.value}
-                            onClick={() => {
-                              if (option.value === 'ausblenden') {
-                                // Deaktiviere Rechnungen-Kategorie
-                                if (activeCategories.rechnungen) {
-                                  toggleCategory('rechnungen');
-                                }
-                                setShowInvoiceDropdown(false);
-                              } else {
-                                setInvoiceStatusFilter(option.value as any);
-                                setShowInvoiceDropdown(false);
-                                // Aktiviere Rechnungen-Kategorie wenn sie deaktiviert ist
-                                if (!activeCategories.rechnungen) {
-                                  toggleCategory('rechnungen');
-                                }
-                              }
-                            }}
-                            className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
-                              (option.value === 'ausblenden' && !activeCategories.rechnungen) ||
-                              (option.value !== 'ausblenden' && invoiceStatusFilter === option.value && activeCategories.rechnungen)
-                                ? 'bg-[#14ad9f] text-white'
-                                : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                          >
+                      { value: 'ausblenden', label: 'Ausblenden' },
+                      { value: 'alle', label: 'Alle Rechnungen' },
+                      { value: 'entwurf', label: 'Entwürfe' },
+                      { value: 'versendet', label: 'Versendet' },
+                      { value: 'bezahlt', label: 'Bezahlt' },
+                      { value: 'ueberfaellig', label: 'Überfällig' }].
+                      map((option) =>
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          if (option.value === 'ausblenden') {
+                            // Deaktiviere Rechnungen-Kategorie
+                            if (activeCategories.rechnungen) {
+                              toggleCategory('rechnungen');
+                            }
+                            setShowInvoiceDropdown(false);
+                          } else {
+                            setInvoiceStatusFilter(option.value as any);
+                            setShowInvoiceDropdown(false);
+                            // Aktiviere Rechnungen-Kategorie wenn sie deaktiviert ist
+                            if (!activeCategories.rechnungen) {
+                              toggleCategory('rechnungen');
+                            }
+                          }
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
+                        option.value === 'ausblenden' && !activeCategories.rechnungen ||
+                        option.value !== 'ausblenden' && invoiceStatusFilter === option.value && activeCategories.rechnungen ?
+                        'bg-[#14ad9f] text-white' :
+                        'text-gray-700 hover:bg-gray-100'}`
+                        }>
+
                             {option.label}
                           </button>
-                        ))}
+                      )}
                       </div>
                     </div>
-                  )}
-                </div>
-              );
+                  }
+                </div>);
+
             })}
             
             {/* Kombinierter Stornos & Rückerstattungen Button */}
@@ -1476,31 +1476,31 @@ export function ChartAreaInteractive({
               <button
                 onClick={() => setShowNegativeDropdown(!showNegativeDropdown)}
                 className={`group relative flex items-center gap-2 p-2.5 rounded-lg text-left transition-all duration-200 border-2 min-h-[3rem] w-full ${
-                  activeCategories.stornos || activeCategories.rueckerstattungen
-                    ? 'bg-white shadow-md border-gray-200 hover:shadow-lg'
-                    : 'bg-gray-50/50 border-gray-100 hover:bg-gray-100 hover:border-gray-200'
-                }`}
-              >
+                activeCategories.stornos || activeCategories.rueckerstattungen ?
+                'bg-white shadow-md border-gray-200 hover:shadow-lg' :
+                'bg-gray-50/50 border-gray-100 hover:bg-gray-100 hover:border-gray-200'}`
+                }>
+
                 <div className="flex-shrink-0">
                   <div
                     className={`w-3.5 h-3.5 rounded-full border-2 transition-all ${
-                      activeCategories.stornos || activeCategories.rueckerstattungen ? 'border-white shadow-sm' : 'border-gray-300'
-                    }`}
-                    style={{ backgroundColor: activeCategories.stornos || activeCategories.rueckerstattungen ? '#ef4444' : '#e5e7eb' }}
-                  />
+                    activeCategories.stornos || activeCategories.rueckerstattungen ? 'border-white shadow-sm' : 'border-gray-300'}`
+                    }
+                    style={{ backgroundColor: activeCategories.stornos || activeCategories.rueckerstattungen ? '#ef4444' : '#e5e7eb' }} />
+
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className={`text-sm font-medium leading-tight transition-colors ${
-                    activeCategories.stornos || activeCategories.rueckerstattungen ? 'text-gray-900' : 'text-gray-500'
-                  }`}>
+                  activeCategories.stornos || activeCategories.rueckerstattungen ? 'text-gray-900' : 'text-gray-500'}`
+                  }>
                     Stornos/Refunds
-                    {(activeCategories.stornos || activeCategories.rueckerstattungen) && (
-                      <span className="ml-1 text-xs text-[#14ad9f]">
-                        ({negativeFilter === 'stornos' ? 'S' : 
-                          negativeFilter === 'rueckerstattungen' ? 'R' : 
-                          negativeFilter === 'beide' ? 'S+R' : ''})
+                    {(activeCategories.stornos || activeCategories.rueckerstattungen) &&
+                    <span className="ml-1 text-xs text-[#14ad9f]">
+                        ({negativeFilter === 'stornos' ? 'S' :
+                      negativeFilter === 'rueckerstattungen' ? 'R' :
+                      negativeFilter === 'beide' ? 'S+R' : ''})
                       </span>
-                    )}
+                    }
                   </div>
                 </div>
                 <div className="flex-shrink-0">
@@ -1511,49 +1511,49 @@ export function ChartAreaInteractive({
               </button>
               
               {/* Dropdown */}
-              {showNegativeDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              {showNegativeDropdown &&
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                   <div className="p-2 space-y-1">
                     {[
-                      { value: 'keine', label: 'Ausblenden' },
-                      { value: 'stornos', label: 'Nur Stornos' },
-                      { value: 'rueckerstattungen', label: 'Nur Rückerstattungen' },
-                      { value: 'beide', label: 'Beide anzeigen' }
-                    ].map(option => (
-                      <button
-                        key={option.value}
-                        onClick={() => {
-                          setNegativeFilter(option.value as any);
-                          
-                          // Setze entsprechende Kategorien
-                          if (option.value === 'keine') {
-                            if (activeCategories.stornos) toggleCategory('stornos');
-                            if (activeCategories.rueckerstattungen) toggleCategory('rueckerstattungen');
-                          } else if (option.value === 'stornos') {
-                            if (!activeCategories.stornos) toggleCategory('stornos');
-                            if (activeCategories.rueckerstattungen) toggleCategory('rueckerstattungen');
-                          } else if (option.value === 'rueckerstattungen') {
-                            if (activeCategories.stornos) toggleCategory('stornos');
-                            if (!activeCategories.rueckerstattungen) toggleCategory('rueckerstattungen');
-                          } else if (option.value === 'beide') {
-                            if (!activeCategories.stornos) toggleCategory('stornos');
-                            if (!activeCategories.rueckerstattungen) toggleCategory('rueckerstattungen');
-                          }
-                          
-                          setShowNegativeDropdown(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
-                          negativeFilter === option.value
-                            ? 'bg-[#14ad9f] text-white'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
+                  { value: 'keine', label: 'Ausblenden' },
+                  { value: 'stornos', label: 'Nur Stornos' },
+                  { value: 'rueckerstattungen', label: 'Nur Rückerstattungen' },
+                  { value: 'beide', label: 'Beide anzeigen' }].
+                  map((option) =>
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setNegativeFilter(option.value as any);
+
+                      // Setze entsprechende Kategorien
+                      if (option.value === 'keine') {
+                        if (activeCategories.stornos) toggleCategory('stornos');
+                        if (activeCategories.rueckerstattungen) toggleCategory('rueckerstattungen');
+                      } else if (option.value === 'stornos') {
+                        if (!activeCategories.stornos) toggleCategory('stornos');
+                        if (activeCategories.rueckerstattungen) toggleCategory('rueckerstattungen');
+                      } else if (option.value === 'rueckerstattungen') {
+                        if (activeCategories.stornos) toggleCategory('stornos');
+                        if (!activeCategories.rueckerstattungen) toggleCategory('rueckerstattungen');
+                      } else if (option.value === 'beide') {
+                        if (!activeCategories.stornos) toggleCategory('stornos');
+                        if (!activeCategories.rueckerstattungen) toggleCategory('rueckerstattungen');
+                      }
+
+                      setShowNegativeDropdown(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
+                    negativeFilter === option.value ?
+                    'bg-[#14ad9f] text-white' :
+                    'text-gray-700 hover:bg-gray-100'}`
+                    }>
+
                         {option.label}
                       </button>
-                    ))}
+                  )}
                   </div>
                 </div>
-              )}
+              }
             </div>
 
           </div>
@@ -1563,32 +1563,32 @@ export function ChartAreaInteractive({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 onClick={() => setActiveCategories({ umsatz: true, rechnungen: true, angebote: true, ausgaben: false, stornos: false, rueckerstattungen: false, negativeWerte: false })}
-                className="flex items-center justify-center px-3 py-2 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
-              >
+                className="flex items-center justify-center px-3 py-2 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors">
+
                 <span className="whitespace-nowrap">Einnahmen</span>
               </button>
               <button
                 onClick={() => setActiveCategories({ umsatz: false, rechnungen: false, angebote: false, ausgaben: true, stornos: false, rueckerstattungen: false, negativeWerte: false })}
-                className="flex items-center justify-center px-3 py-2 text-xs font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition-colors"
-              >
+                className="flex items-center justify-center px-3 py-2 text-xs font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition-colors">
+
                 <span className="whitespace-nowrap">Ausgaben</span>
               </button>
               <button
                 onClick={() => setActiveCategories({ umsatz: false, rechnungen: true, angebote: false, ausgaben: false, stornos: false, rueckerstattungen: false, negativeWerte: false })}
-                className="flex items-center justify-center px-3 py-2 text-xs font-medium text-[#14ad9f] bg-[#14ad9f]/5 hover:bg-[#14ad9f]/10 border border-[#14ad9f]/20 rounded-lg transition-colors"
-              >
+                className="flex items-center justify-center px-3 py-2 text-xs font-medium text-[#14ad9f] bg-[#14ad9f]/5 hover:bg-[#14ad9f]/10 border border-[#14ad9f]/20 rounded-lg transition-colors">
+
                 <span className="whitespace-nowrap">Rechnungen</span>
               </button>
               <button
                 onClick={() => setActiveCategories({ umsatz: false, rechnungen: false, angebote: false, ausgaben: false, stornos: true, rueckerstattungen: true, negativeWerte: false })}
-                className="flex items-center justify-center px-3 py-2 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
-              >
+                className="flex items-center justify-center px-3 py-2 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors">
+
                 <span className="whitespace-nowrap">Negative</span>
               </button>
             </div>
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>);
+
 }

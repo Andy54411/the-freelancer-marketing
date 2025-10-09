@@ -16,24 +16,24 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { 
-  X, 
-  Send, 
-  FileText, 
-  Plus, 
-  Loader2, 
-  AlertTriangle, 
-  Mail, 
-  User, 
+  SelectValue } from
+'@/components/ui/select';
+import {
+  X,
+  Send,
+  FileText,
+  Plus,
+  Loader2,
+  AlertTriangle,
+  Mail,
+  User,
   MessageSquare,
   Paperclip,
   Eye,
   ChevronDown,
   Upload,
-  Trash2
-} from 'lucide-react';
+  Trash2 } from
+'lucide-react';
 import { toast } from 'sonner';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { useAuth } from '@/contexts/AuthContext';
@@ -49,15 +49,15 @@ interface EmailSendModalProps {
   onClose: () => void;
   document: InvoiceData | any;
   documentType:
-    | 'invoice'
-    | 'quote'
-    | 'delivery'
-    | 'order'
-    | 'reminder'
-    | 'credit-note'
-    | 'cancellation'
-    | 'contract'
-    | 'receipt';
+  'invoice' |
+  'quote' |
+  'delivery' |
+  'order' |
+  'reminder' |
+  'credit-note' |
+  'cancellation' |
+  'contract' |
+  'receipt';
   companyId: string;
   // Props from LivePreviewModal - direct template rendering
   selectedLayout: string;
@@ -120,7 +120,7 @@ export function EmailSendModalNormal({
   userData,
   onSend,
   companyData,
-  defaultRecipients = [],
+  defaultRecipients = []
 }: EmailSendModalProps) {
   const [sending, setSending] = useState(false);
   const initializedRef = useRef<string | null>(null);
@@ -158,17 +158,17 @@ export function EmailSendModalNormal({
     'credit-note': 'Gutschrift',
     cancellation: 'Storno',
     contract: 'Vertrag',
-    receipt: 'Quittung',
+    receipt: 'Quittung'
   }), []);
 
-  const documentLabel = useMemo(() => 
-    documentLabels[documentType as keyof typeof documentLabels] || 'Dokument',
-    [documentLabels, documentType]
+  const documentLabel = useMemo(() =>
+  documentLabels[documentType as keyof typeof documentLabels] || 'Dokument',
+  [documentLabels, documentType]
   );
-  
-  const documentNumber = useMemo(() => 
-    document?.invoiceNumber || document?.number || document?.id || 'Unbekannt',
-    [document?.invoiceNumber, document?.number, document?.id]
+
+  const documentNumber = useMemo(() =>
+  document?.invoiceNumber || document?.number || document?.id || 'Unbekannt',
+  [document?.invoiceNumber, document?.number, document?.id]
   );
 
   // Initialize default values - Optimized to prevent infinite loops
@@ -177,14 +177,14 @@ export function EmailSendModalNormal({
       // Calculate values inside useEffect to avoid dependency issues
       const currentDocumentNumber = document.invoiceNumber || document.number || document.id || 'Unbekannt';
       const currentDocumentLabel = documentLabels[documentType as keyof typeof documentLabels] || 'Dokument';
-      
+
       // Prevent multiple initializations for the same document
       const documentKey = `${document.id}-${documentType}`;
       if (initializedRef.current === documentKey) {
         return;
       }
       initializedRef.current = documentKey;
-      
+
       // Reset all fields first
       setRecipients([]);
       setCcRecipients([]);
@@ -199,22 +199,22 @@ export function EmailSendModalNormal({
 
       // Set default recipients from multiple sources
       const recipientsList: EmailRecipient[] = [];
-      
+
       // Add customer email if available
       if (document.customerEmail) {
-        recipientsList.push({ 
-          email: document.customerEmail, 
-          name: document.customerName || document.customer?.name 
+        recipientsList.push({
+          email: document.customerEmail,
+          name: document.customerName || document.customer?.name
         });
       }
-      
+
       // Add default recipients if provided
-      defaultRecipients.forEach(email => {
-        if (email && !recipientsList.find(r => r.email === email)) {
+      defaultRecipients.forEach((email) => {
+        if (email && !recipientsList.find((r) => r.email === email)) {
           recipientsList.push({ email });
         }
       });
-      
+
       setRecipients(recipientsList);
 
       // Set dynamic subject based on document type
@@ -227,9 +227,9 @@ export function EmailSendModalNormal({
         'credit-note': `Gutschrift ${currentDocumentNumber}`,
         cancellation: `Storno - Rechnung ${currentDocumentNumber}`,
         contract: `Vertrag ${currentDocumentNumber}`,
-        receipt: `Quittung ${currentDocumentNumber}`,
+        receipt: `Quittung ${currentDocumentNumber}`
       };
-      
+
       setSubject(subjectTemplates[documentType as keyof typeof subjectTemplates] || `${currentDocumentLabel} ${currentDocumentNumber}`);
 
       // Set dynamic message based on document type
@@ -237,14 +237,14 @@ export function EmailSendModalNormal({
         invoice: `Sehr geehrte Damen und Herren,\n\nhiermit erhalten Sie unsere Rechnung ${currentDocumentNumber}.\n\nWir bitten um Begleichung innerhalb der angegebenen Zahlungsfrist.\n\nVielen Dank für Ihr Vertrauen.\n\nMit freundlichen Grüßen`,
         quote: `Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unser Angebot ${currentDocumentNumber}.\n\nWir freuen uns auf Ihre Rückmeldung und stehen für Rückfragen gerne zur Verfügung.\n\nMit freundlichen Grüßen`,
         reminder: `Sehr geehrte Damen und Herren,\n\nwir möchten Sie freundlich an die Begleichung der Rechnung ${currentDocumentNumber} erinnern.\n\nSollten Sie diese bereits beglichen haben, betrachten Sie diese Nachricht als gegenstandslos.\n\nMit freundlichen Grüßen`,
-        delivery: `Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie den Lieferschein ${currentDocumentNumber} zu Ihrer Bestellung.\n\nMit freundlichen Grüßen`,
+        delivery: `Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie den Lieferschein ${currentDocumentNumber} zu Ihrer Bestellung.\n\nMit freundlichen Grüßen`
       };
-      
-      const defaultMessage = messageTemplates[documentType as keyof typeof messageTemplates] || 
-        `Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie das gewünschte Dokument.\n\nMit freundlichen Grüßen`;
-      
+
+      const defaultMessage = messageTemplates[documentType as keyof typeof messageTemplates] ||
+      `Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie das gewünschte Dokument.\n\nMit freundlichen Grüßen`;
+
       setMessage(defaultMessage);
-      
+
       // Set company signature if available
       if (companyData?.signature) {
         setSignature(companyData.signature);
@@ -269,19 +269,19 @@ export function EmailSendModalNormal({
 
     switch (type) {
       case 'to':
-        if (!recipients.find(r => r.email === email.trim())) {
+        if (!recipients.find((r) => r.email === email.trim())) {
           setRecipients([...recipients, newRecipient]);
         }
         setCurrentRecipient('');
         break;
       case 'cc':
-        if (!ccRecipients.find(r => r.email === email.trim())) {
+        if (!ccRecipients.find((r) => r.email === email.trim())) {
           setCcRecipients([...ccRecipients, newRecipient]);
         }
         setCurrentCC('');
         break;
       case 'bcc':
-        if (!bccRecipients.find(r => r.email === email.trim())) {
+        if (!bccRecipients.find((r) => r.email === email.trim())) {
           setBccRecipients([...bccRecipients, newRecipient]);
         }
         setCurrentBCC('');
@@ -327,35 +327,35 @@ export function EmailSendModalNormal({
     if (!files || files.length === 0) return;
 
     setUploadingFile(true);
-    
+
     try {
       const newAttachments: EmailAttachment[] = [];
-      
+
       for (const file of Array.from(files)) {
         // Check file size (max 10MB)
         if (file.size > 10 * 1024 * 1024) {
           toast.error(`Datei "${file.name}" ist zu groß (max. 10MB)`);
           continue;
         }
-        
+
         // Check file type
         const allowedTypes = [
-          'application/pdf',
-          'image/jpeg',
-          'image/png',
-          'image/gif',
-          'text/plain',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        ];
-        
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'text/plain',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+
+
         if (!allowedTypes.includes(file.type)) {
           toast.error(`Dateityp "${file.type}" wird nicht unterstützt`);
           continue;
         }
-        
+
         // Convert to base64
         const base64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
@@ -367,7 +367,7 @@ export function EmailSendModalNormal({
           reader.onerror = reject;
           reader.readAsDataURL(file);
         });
-        
+
         const attachment: EmailAttachment = {
           id: `attachment-${Date.now()}-${Math.random()}`,
           name: file.name,
@@ -375,12 +375,12 @@ export function EmailSendModalNormal({
           type: file.type,
           base64
         };
-        
+
         newAttachments.push(attachment);
       }
-      
-      setAdditionalAttachments(prev => [...prev, ...newAttachments]);
-      
+
+      setAdditionalAttachments((prev) => [...prev, ...newAttachments]);
+
       if (newAttachments.length > 0) {
         toast.success(`${newAttachments.length} Datei(en) hinzugefügt`);
       }
@@ -396,7 +396,7 @@ export function EmailSendModalNormal({
 
   // Remove attachment
   const removeAttachment = (attachmentId: string) => {
-    setAdditionalAttachments(prev => prev.filter(att => att.id !== attachmentId));
+    setAdditionalAttachments((prev) => prev.filter((att) => att.id !== attachmentId));
     toast.success('Anhang entfernt');
   };
 
@@ -423,13 +423,13 @@ export function EmailSendModalNormal({
     try {
       // First try: Extract HTML from existing preview (with all CSS styles) - like invoice detail page
       const templateElement = window.document.querySelector('[data-pdf-template]') as HTMLElement;
-      
+
       if (templateElement) {
-        console.log('📄 Using HTML extraction from existing preview (with styles)');
-        
+
+
         // Clone the template element to avoid modifying original
         const clonedElement = templateElement.cloneNode(true) as HTMLElement;
-        
+
         // Remove preview-only transform styles
         const removePreviewStyles = (element: HTMLElement) => {
           if (element.style) {
@@ -469,9 +469,9 @@ export function EmailSendModalNormal({
               allStyles.push(css);
             }
           } catch (e) {
+
             // Ignore CORS errors for external stylesheets
-          }
-        });
+          }});
 
         // Create complete HTML with ALL styles
         const htmlContent = `<!DOCTYPE html>
@@ -504,14 +504,14 @@ export function EmailSendModalNormal({
 
         return await sendToApi(htmlContent);
       }
-      
+
       // Second try: Generate with LivePreviewModal rendering logic (exactly like LivePreviewModal.tsx)
-      console.log('📄 Using LivePreviewModal template rendering logic');
-      
+
+
       const [{ default: ReactDOMServer }, { default: PDFTemplate }] = await Promise.all([
-        import('react-dom/server'),
-        import('./PDFTemplates')
-      ]);
+      import('react-dom/server'),
+      import('./PDFTemplates')]
+      );
 
       const finalDoc = {
         ...document,
@@ -519,34 +519,34 @@ export function EmailSendModalNormal({
       };
 
       // Create the exact same element structure as LivePreviewModal
-      const element = (
-        <div data-pdf-template>
+      const element =
+      <div data-pdf-template>
           <PDFTemplate
-            document={finalDoc}
-            template={selectedLayout}
-            color={selectedColor}
-            logoUrl={logoUrl}
-            logoSize={logoSize}
-            documentType={documentType as DocumentType}
-            pageMode={pageMode}
-            documentSettings={{
-              ...documentSettings,
-              qrCodeUrl: undefined,
-              epcQrCodeUrl: undefined
-            }}
-            userData={userData ? {
-              firstName: userData.firstName,
-              lastName: userData.lastName,
-              email: userData.email,
-              phone: userData.phone
-            } : undefined}
-          />
-        </div>
-      );
+          document={finalDoc}
+          template={selectedLayout}
+          color={selectedColor}
+          logoUrl={logoUrl}
+          logoSize={logoSize}
+          documentType={documentType as DocumentType}
+          pageMode={pageMode}
+          documentSettings={{
+            ...documentSettings,
+            qrCodeUrl: undefined,
+            epcQrCodeUrl: undefined
+          }}
+          userData={userData ? {
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            email: userData.email,
+            phone: userData.phone
+          } : undefined} />
+
+        </div>;
+
 
       // Render to HTML with styles
       const renderedHTML = ReactDOMServer.renderToStaticMarkup(element);
-      
+
       // Add minimal HTML structure for better PDF rendering
       const htmlContent = `<!DOCTYPE html>
 <html lang="de">
@@ -571,7 +571,7 @@ export function EmailSendModalNormal({
   ${renderedHTML}
 </body>
 </html>`;
-      
+
       return await sendToApi(htmlContent);
     } catch (error) {
       console.error('PDF generation failed:', error);
@@ -584,27 +584,27 @@ export function EmailSendModalNormal({
     // 🤖 SMART API SELECTION: Auto-detect based on items count
     const itemsCount = document?.items?.length || 0;
     const shouldUseSingle = itemsCount < 3; // 1-2 items = single, 3+ items = multi
-    const smartApiEndpoint = shouldUseSingle
-      ? '/api/generate-pdf-single'
-      : '/api/generate-pdf-multi';
+    const smartApiEndpoint = shouldUseSingle ?
+    '/api/generate-pdf-single' :
+    '/api/generate-pdf-multi';
 
     // Use smart detection OR manual pageMode (if user explicitly set it)
     const finalApiEndpoint =
-      pageMode === 'single'
-        ? '/api/generate-pdf-single'
-        : pageMode === 'multi'
-          ? '/api/generate-pdf-multi'
-          : smartApiEndpoint;
+    pageMode === 'single' ?
+    '/api/generate-pdf-single' :
+    pageMode === 'multi' ?
+    '/api/generate-pdf-multi' :
+    smartApiEndpoint;
 
     const response = await fetch(finalApiEndpoint, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         htmlContent: htmlContent,
         template: selectedLayout
-      }),
+      })
     });
 
     if (!response.ok) {
@@ -658,57 +658,57 @@ export function EmailSendModalNormal({
       toast.message('E-Mail wird versendet...');
 
       // Get company slug for email sender
-      const companySlug = ((document as any).companyName || 'taskilo')
-        .normalize('NFKD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '');
+      const companySlug = ((document as any).companyName || 'taskilo').
+      normalize('NFKD').
+      replace(/[\u0300-\u036f]/g, '').
+      toLowerCase().
+      replace(/[^a-z0-9]+/g, '');
 
       // Send email via API
       const response = await fetch('/api/email/send-document', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          to: recipients.map(r => r.email),
-          cc: ccRecipients.length > 0 ? ccRecipients.map(r => r.email) : undefined,
-          bcc: bccRecipients.length > 0 ? bccRecipients.map(r => r.email) : undefined,
+          to: recipients.map((r) => r.email),
+          cc: ccRecipients.length > 0 ? ccRecipients.map((r) => r.email) : undefined,
+          bcc: bccRecipients.length > 0 ? bccRecipients.map((r) => r.email) : undefined,
           subject: subject.trim(),
           message: message.trim(),
           signature: signature.trim() || undefined,
           sendCopy,
           attachments: [
-            {
-              filename: `${documentNumber}.pdf`,
-              contentBase64: pdfBase64,
-            },
-            // Add additional attachments
-            ...additionalAttachments.map(att => ({
-              filename: att.name,
-              contentBase64: att.base64,
-            })),
-          ],
+          {
+            filename: `${documentNumber}.pdf`,
+            contentBase64: pdfBase64
+          },
+          // Add additional attachments
+          ...additionalAttachments.map((att) => ({
+            filename: att.name,
+            contentBase64: att.base64
+          }))],
+
           companySlug,
           documentType,
           meta: {
             companyId,
             documentId: (document as any).id,
-            source: 'email-send-modal',
-          },
-        }),
+            source: 'email-send-modal'
+          }
+        })
       });
 
       const result = await response.json();
 
       if (response.ok && result.success) {
         toast.success('E-Mail wurde erfolgreich versendet');
-        
+
         // Call optional onSend callback
         if (onSend) {
           await onSend('email', { recipients, subject, message });
         }
-        
+
         onClose();
       } else {
         throw new Error(result.error || 'E-Mail konnte nicht versendet werden');
@@ -745,12 +745,12 @@ export function EmailSendModalNormal({
                 </p>
               </div>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onClose} 
-              className="h-9 w-9 p-0 text-white hover:bg-white/20 hover:text-white"
-            >
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="h-9 w-9 p-0 text-white hover:bg-white/20 hover:text-white">
+
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -770,28 +770,28 @@ export function EmailSendModalNormal({
                     <CardTitle className="text-base">Empfänger</CardTitle>
                   </div>
                   <div className="flex gap-2">
-                    {!showCC && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowCC(true)}
-                        className="text-[#14ad9f] hover:text-[#129488] h-7 px-2"
-                      >
+                    {!showCC &&
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowCC(true)}
+                      className="text-[#14ad9f] hover:text-[#129488] h-7 px-2">
+
                         + CC
                       </Button>
-                    )}
-                    {!showBCC && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowBCC(true)}
-                        className="text-[#14ad9f] hover:text-[#129488] h-7 px-2"
-                      >
+                    }
+                    {!showBCC &&
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowBCC(true)}
+                      className="text-[#14ad9f] hover:text-[#129488] h-7 px-2">
+
                         + BCC
                       </Button>
-                    )}
+                    }
                   </div>
                 </div>
               </CardHeader>
@@ -803,137 +803,137 @@ export function EmailSendModalNormal({
                   </Label>
 
                   <div className="flex flex-wrap items-center gap-2 p-3 border rounded-lg min-h-[50px] focus-within:ring-2 focus-within:ring-[#14ad9f] bg-gray-50/50">
-                    {recipients.map((recipient, index) => (
-                      <Badge
-                        key={index}
-                        className="flex items-center gap-1 px-3 py-1 bg-[#14ad9f]/10 text-[#14ad9f] border-[#14ad9f]/20 hover:bg-[#14ad9f]/20"
-                      >
+                    {recipients.map((recipient, index) =>
+                    <Badge
+                      key={index}
+                      className="flex items-center gap-1 px-3 py-1 bg-[#14ad9f]/10 text-[#14ad9f] border-[#14ad9f]/20 hover:bg-[#14ad9f]/20">
+
                         <Mail className="h-3 w-3" />
                         <span className="font-medium">{recipient.name || recipient.email}</span>
-                        {recipient.name && (
-                          <span className="text-xs opacity-70">({recipient.email})</span>
-                        )}
+                        {recipient.name &&
+                      <span className="text-xs opacity-70">({recipient.email})</span>
+                      }
                         <button
-                          type="button"
-                          onClick={() => removeRecipient(index, 'to')}
-                          className="ml-1 hover:text-red-600 transition-colors"
-                        >
+                        type="button"
+                        onClick={() => removeRecipient(index, 'to')}
+                        className="ml-1 hover:text-red-600 transition-colors">
+
                           <X className="h-3 w-3" />
                         </button>
                       </Badge>
-                    ))}
+                    )}
                     <Input
                       value={currentRecipient}
-                      onChange={e => setCurrentRecipient(e.target.value)}
-                      onKeyDown={e => handleRecipientKeyPress(e, 'to')}
+                      onChange={(e) => setCurrentRecipient(e.target.value)}
+                      onKeyDown={(e) => handleRecipientKeyPress(e, 'to')}
                       onBlur={() => handleRecipientBlur('to')}
                       placeholder="empfaenger@beispiel.de"
-                      className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0 bg-transparent"
-                    />
+                      className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0 bg-transparent" />
+
                   </div>
                 </div>
 
                 {/* CC Field */}
-                {showCC && (
-                  <div className="space-y-2">
+                {showCC &&
+                <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">CC</Label>
                       <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setShowCC(false);
-                          setCcRecipients([]);
-                          setCurrentCC('');
-                        }}
-                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                      >
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShowCC(false);
+                        setCcRecipients([]);
+                        setCurrentCC('');
+                      }}
+                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600">
+
                         <X className="h-3 w-3" />
                       </Button>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 p-3 border rounded-lg min-h-[50px] focus-within:ring-2 focus-within:ring-[#14ad9f] bg-gray-50/50">
-                      {ccRecipients.map((recipient, index) => (
-                        <Badge
-                          key={index}
-                          className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 border-blue-200"
-                        >
+                      {ccRecipients.map((recipient, index) =>
+                    <Badge
+                      key={index}
+                      className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 border-blue-200">
+
                           <Mail className="h-3 w-3" />
                           <span className="font-medium">{recipient.name || recipient.email}</span>
-                          {recipient.name && (
-                            <span className="text-xs opacity-70">({recipient.email})</span>
-                          )}
+                          {recipient.name &&
+                      <span className="text-xs opacity-70">({recipient.email})</span>
+                      }
                           <button
-                            type="button"
-                            onClick={() => removeRecipient(index, 'cc')}
-                            className="ml-1 hover:text-red-600 transition-colors"
-                          >
+                        type="button"
+                        onClick={() => removeRecipient(index, 'cc')}
+                        className="ml-1 hover:text-red-600 transition-colors">
+
                             <X className="h-3 w-3" />
                           </button>
                         </Badge>
-                      ))}
+                    )}
                       <Input
-                        value={currentCC}
-                        onChange={e => setCurrentCC(e.target.value)}
-                        onKeyDown={e => handleRecipientKeyPress(e, 'cc')}
-                        onBlur={() => handleRecipientBlur('cc')}
-                        placeholder="cc@beispiel.de"
-                        className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0 bg-transparent"
-                      />
+                      value={currentCC}
+                      onChange={(e) => setCurrentCC(e.target.value)}
+                      onKeyDown={(e) => handleRecipientKeyPress(e, 'cc')}
+                      onBlur={() => handleRecipientBlur('cc')}
+                      placeholder="cc@beispiel.de"
+                      className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0 bg-transparent" />
+
                     </div>
                   </div>
-                )}
+                }
 
                 {/* BCC Field */}
-                {showBCC && (
-                  <div className="space-y-2">
+                {showBCC &&
+                <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">BCC</Label>
                       <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setShowBCC(false);
-                          setBccRecipients([]);
-                          setCurrentBCC('');
-                        }}
-                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                      >
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShowBCC(false);
+                        setBccRecipients([]);
+                        setCurrentBCC('');
+                      }}
+                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600">
+
                         <X className="h-3 w-3" />
                       </Button>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 p-3 border rounded-lg min-h-[50px] focus-within:ring-2 focus-within:ring-[#14ad9f] bg-gray-50/50">
-                      {bccRecipients.map((recipient, index) => (
-                        <Badge
-                          key={index}
-                          className="flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 border-purple-200"
-                        >
+                      {bccRecipients.map((recipient, index) =>
+                    <Badge
+                      key={index}
+                      className="flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 border-purple-200">
+
                           <Mail className="h-3 w-3" />
                           <span className="font-medium">{recipient.name || recipient.email}</span>
-                          {recipient.name && (
-                            <span className="text-xs opacity-70">({recipient.email})</span>
-                          )}
+                          {recipient.name &&
+                      <span className="text-xs opacity-70">({recipient.email})</span>
+                      }
                           <button
-                            type="button"
-                            onClick={() => removeRecipient(index, 'bcc')}
-                            className="ml-1 hover:text-red-600 transition-colors"
-                          >
+                        type="button"
+                        onClick={() => removeRecipient(index, 'bcc')}
+                        className="ml-1 hover:text-red-600 transition-colors">
+
                             <X className="h-3 w-3" />
                           </button>
                         </Badge>
-                      ))}
+                    )}
                       <Input
-                        value={currentBCC}
-                        onChange={e => setCurrentBCC(e.target.value)}
-                        onKeyDown={e => handleRecipientKeyPress(e, 'bcc')}
-                        onBlur={() => handleRecipientBlur('bcc')}
-                        placeholder="bcc@beispiel.de"
-                        className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0 bg-transparent"
-                      />
+                      value={currentBCC}
+                      onChange={(e) => setCurrentBCC(e.target.value)}
+                      onKeyDown={(e) => handleRecipientKeyPress(e, 'bcc')}
+                      onBlur={() => handleRecipientBlur('bcc')}
+                      placeholder="bcc@beispiel.de"
+                      className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 p-0 bg-transparent" />
+
                     </div>
                   </div>
-                )}
+                }
               </CardContent>
             </Card>
 
@@ -949,14 +949,14 @@ export function EmailSendModalNormal({
                 <Input
                   id="subject"
                   value={subject}
-                  onChange={e => setSubject(e.target.value)}
+                  onChange={(e) => setSubject(e.target.value)}
                   placeholder="Betreff eingeben"
                   required
-                  className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                />
-                {!subject.trim() && (
-                  <p className="text-xs text-red-500 mt-1">Betreff ist erforderlich</p>
-                )}
+                  className="focus:ring-[#14ad9f] focus:border-[#14ad9f]" />
+
+                {!subject.trim() &&
+                <p className="text-xs text-red-500 mt-1">Betreff ist erforderlich</p>
+                }
               </CardContent>
             </Card>
 
@@ -972,11 +972,11 @@ export function EmailSendModalNormal({
                 <Textarea
                   id="message"
                   value={message}
-                  onChange={e => setMessage(e.target.value)}
+                  onChange={(e) => setMessage(e.target.value)}
                   placeholder="Nachricht eingeben..."
                   rows={8}
-                  className="min-h-[200px] resize-none focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                />
+                  className="min-h-[200px] resize-none focus:ring-[#14ad9f] focus:border-[#14ad9f]" />
+
                 <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
                   <span>{message.length} Zeichen</span>
                   <span>Tipp: Verwenden Sie eine professionelle Anrede</span>
@@ -996,11 +996,11 @@ export function EmailSendModalNormal({
                 <Textarea
                   id="signature"
                   value={signature}
-                  onChange={e => setSignature(e.target.value)}
+                  onChange={(e) => setSignature(e.target.value)}
                   placeholder="Signatur eingeben (optional)..."
                   rows={4}
-                  className="resize-none focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                />
+                  className="resize-none focus:ring-[#14ad9f] focus:border-[#14ad9f]" />
+
               </CardContent>
             </Card>
 
@@ -1036,8 +1036,8 @@ export function EmailSendModalNormal({
                   </div>
                   
                   {/* Additional attachments */}
-                  {additionalAttachments.map((attachment) => (
-                    <div key={attachment.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  {additionalAttachments.map((attachment) =>
+                  <div key={attachment.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="p-2 bg-gray-100 rounded text-lg">
                           {getFileIcon(attachment.type)}
@@ -1052,17 +1052,17 @@ export function EmailSendModalNormal({
                         </div>
                       </div>
                       <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeAttachment(attachment.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
-                        title="Anhang entfernen"
-                      >
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeAttachment(attachment.id)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                      title="Anhang entfernen">
+
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                  ))}
+                  )}
                   
                   {/* File upload */}
                   <div className="space-y-2">
@@ -1073,26 +1073,26 @@ export function EmailSendModalNormal({
                       accept=".pdf,.jpg,.jpeg,.png,.gif,.txt,.doc,.docx,.xls,.xlsx"
                       onChange={handleFileUpload}
                       className="hidden"
-                      disabled={uploadingFile}
-                    />
+                      disabled={uploadingFile} />
+
                     <Button
                       type="button"
                       variant="outline"
                       className="w-full border-dashed border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f]/5"
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingFile}
-                    >
-                      {uploadingFile ? (
-                        <>
+                      disabled={uploadingFile}>
+
+                      {uploadingFile ?
+                      <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                           Lade hoch...
-                        </>
-                      ) : (
-                        <>
+                        </> :
+
+                      <>
                           <Upload className="h-4 w-4 mr-2" />
                           Weitere Anhänge hinzufügen
                         </>
-                      )}
+                      }
                     </Button>
                     <p className="text-xs text-gray-500 text-center">
                       PDF, Bilder, Word, Excel • Max. 10MB pro Datei
@@ -1114,9 +1114,9 @@ export function EmailSendModalNormal({
                   <Checkbox
                     id="send-copy"
                     checked={sendCopy}
-                    onCheckedChange={checked => setSendCopy(checked === true)}
-                    className="data-[state=checked]:bg-[#14ad9f] data-[state=checked]:border-[#14ad9f]"
-                  />
+                    onCheckedChange={(checked) => setSendCopy(checked === true)}
+                    className="data-[state=checked]:bg-[#14ad9f] data-[state=checked]:border-[#14ad9f]" />
+
                   <Label htmlFor="send-copy" className="text-sm font-medium">
                     Kopie an mich selbst
                   </Label>
@@ -1138,46 +1138,46 @@ export function EmailSendModalNormal({
             
             {/* Action buttons */}
             <div className="flex justify-end gap-3">
-              <Button 
-                variant="outline" 
-                onClick={handleCancel} 
+              <Button
+                variant="outline"
+                onClick={handleCancel}
                 disabled={sending}
-                className="px-6"
-              >
+                className="px-6">
+
                 Abbrechen
               </Button>
               <Button
                 onClick={handleSend}
                 disabled={sending || recipients.length === 0 || !subject.trim()}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white px-8 shadow-lg"
-              >
-                {sending ? (
-                  <>
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white px-8 shadow-lg">
+
+                {sending ?
+                <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Wird versendet...
-                  </>
-                ) : (
-                  <>
+                  </> :
+
+                <>
                     <Send className="w-4 h-4 mr-2" />
                     E-Mail versenden
                   </>
-                )}
+                }
               </Button>
             </div>
             
             {/* Help text */}
-            {(recipients.length === 0 || !subject.trim()) && (
-              <div className="mt-3 text-xs text-gray-500">
+            {(recipients.length === 0 || !subject.trim()) &&
+            <div className="mt-3 text-xs text-gray-500">
                 {recipients.length === 0 && '• Fügen Sie mindestens einen Empfänger hinzu'}
                 {!subject.trim() && '• Geben Sie einen Betreff ein'}
               </div>
-            )}
+            }
           </div>
         </div>
       </DialogContent>
 
-    </Dialog>
-  );
+    </Dialog>);
+
 }
 
 export default EmailSendModalNormal;

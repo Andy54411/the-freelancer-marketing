@@ -14,7 +14,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useOnboarding } from '@/contexts/OnboardingContext';
-import { MapPin, Clock, Car } from 'lucide-react';
+import { MapPin, Clock, Car, AlertCircle } from 'lucide-react';
+import { RequiredFieldLabel, RequiredFieldIndicator } from '@/components/onboarding/RequiredFieldLabel';
 
 // Harmonisierte Step4Data Interface
 interface Step4Data {
@@ -75,14 +76,34 @@ export default function OnboardingStep4({ companyUid }: OnboardingStep4Props) {
     goToNextStep();
   };
 
-  const isValid =
-    step4Data.availabilityType &&
-    step4Data.advanceBookingHours > 0 &&
-    step4Data.maxTravelDistance > 0 &&
-    (!step4Data.travelCosts ||
-      (step4Data.travelCosts &&
-        typeof step4Data.travelCostPerKm === 'number' &&
-        step4Data.travelCostPerKm >= 0));
+  // Validierungsstatus prüfen
+  const isValidForNext = () => {
+    return step4Data.availabilityType &&
+           step4Data.advanceBookingHours > 0 &&
+           step4Data.maxTravelDistance > 0 &&
+           typeof step4Data.travelCosts === 'boolean' &&
+           (!step4Data.travelCosts ||
+            (step4Data.travelCosts &&
+             typeof step4Data.travelCostPerKm === 'number' &&
+             step4Data.travelCostPerKm >= 0));
+  };
+
+  const getValidationMessage = () => {
+    const missing: string[] = [];
+    
+    if (!step4Data.availabilityType) missing.push('Verfügbarkeitstyp');
+    if (!step4Data.advanceBookingHours || step4Data.advanceBookingHours <= 0) missing.push('Vorlaufzeit für Buchungen');
+    if (!step4Data.maxTravelDistance || step4Data.maxTravelDistance <= 0) missing.push('Maximale Reiseentfernung');
+    if (typeof step4Data.travelCosts !== 'boolean') missing.push('Reisekosten-Einstellung');
+    if (step4Data.travelCosts && (!step4Data.travelCostPerKm || step4Data.travelCostPerKm < 0)) {
+      missing.push('Kosten pro Kilometer');
+    }
+    
+    if (missing.length > 0) {
+      return `Erforderliche Felder: ${missing.join(', ')}`;
+    }
+    return null;
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
@@ -91,13 +112,21 @@ export default function OnboardingStep4({ companyUid }: OnboardingStep4Props) {
         <p className="text-gray-600">Definieren Sie Ihren Service-Bereich und Ihre Verfügbarkeit</p>
       </div>
 
+      {/* Required Fields Indicator */}
+      <RequiredFieldIndicator />
+
       <div className="space-y-6">
         {/* Service-Bereich */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              Service-Gebiete
+              <RequiredFieldLabel 
+                required={false}
+                tooltip="Optional: Spezifische Städte oder Gebiete wo Sie tätig sind"
+              >
+                Service-Gebiete
+              </RequiredFieldLabel>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -130,7 +159,7 @@ export default function OnboardingStep4({ companyUid }: OnboardingStep4Props) {
                   {area}
                   <button
                     onClick={() => removeServiceArea(index)}
-                    className="ml-2 hover:text-red-200"
+                    className="ml-2 hover:text-gray-400"
                   >
                     ×
                   </button>
@@ -150,7 +179,12 @@ export default function OnboardingStep4({ companyUid }: OnboardingStep4Props) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="availabilityType">Verfügbarkeitstyp *</Label>
+              <RequiredFieldLabel 
+                required={true}
+                tooltip="Flexible = nach Absprache, Fixed = feste Zeiten, On-Demand = sofort verfügbar"
+              >
+                Verfügbarkeitstyp
+              </RequiredFieldLabel>
               <Select
                 value={step4Data.availabilityType}
                 onValueChange={(value: 'flexible' | 'fixed' | 'on-demand') =>
@@ -184,7 +218,12 @@ export default function OnboardingStep4({ companyUid }: OnboardingStep4Props) {
             </div>
 
             <div>
-              <Label htmlFor="advanceBookingHours">Vorlaufzeit für Buchungen (Stunden) *</Label>
+              <RequiredFieldLabel 
+                required={true}
+                tooltip="Mindestvorlaufzeit in Stunden - wie früh müssen Kunden buchen?"
+              >
+                Vorlaufzeit für Buchungen (Stunden)
+              </RequiredFieldLabel>
               <Input
                 id="advanceBookingHours"
                 type="number"
@@ -216,12 +255,22 @@ export default function OnboardingStep4({ companyUid }: OnboardingStep4Props) {
                 checked={step4Data.travelCosts}
                 onCheckedChange={checked => updateField('travelCosts', checked)}
               />
-              <Label htmlFor="travelCosts">Reisekosten berechnen *</Label>
+              <RequiredFieldLabel 
+                required={true}
+                tooltip="Ob Sie Anfahrtskosten berechnen - wichtig für Kostenkalkulationen"
+              >
+                Reisekosten berechnen
+              </RequiredFieldLabel>
             </div>
 
             {step4Data.travelCosts && (
               <div>
-                <Label htmlFor="travelCostPerKm">Kosten pro Kilometer (€) *</Label>
+                <RequiredFieldLabel 
+                  required={true}
+                  tooltip="Preis pro Kilometer Anfahrt - üblich sind 0,30-0,70€"
+                >
+                  Kosten pro Kilometer (€)
+                </RequiredFieldLabel>
                 <Input
                   id="travelCostPerKm"
                   type="number"
@@ -242,7 +291,12 @@ export default function OnboardingStep4({ companyUid }: OnboardingStep4Props) {
             )}
 
             <div>
-              <Label htmlFor="maxTravelDistance">Maximale Reiseentfernung (km) *</Label>
+              <RequiredFieldLabel 
+                required={true}
+                tooltip="Maximaler Radius in Kilometern für Ihre Dienstleistungen"
+              >
+                Maximale Reiseentfernung (km)
+              </RequiredFieldLabel>
               <Input
                 id="maxTravelDistance"
                 type="number"
@@ -308,6 +362,17 @@ export default function OnboardingStep4({ companyUid }: OnboardingStep4Props) {
         </Card>
       </div>
 
+      {/* Validation Message */}
+      {!isValidForNext() && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-gray-700">
+            <AlertCircle className="h-5 w-5 text-[#14ad9f]" />
+            <span className="font-medium">Erforderliche Felder fehlen:</span>
+          </div>
+          <p className="mt-1 text-sm text-gray-600">{getValidationMessage()}</p>
+        </div>
+      )}
+
       {/* Navigation */}
       <div className="flex justify-between pt-6">
         <Button variant="outline" onClick={goToPreviousStep} className="px-6">
@@ -315,7 +380,7 @@ export default function OnboardingStep4({ companyUid }: OnboardingStep4Props) {
         </Button>
         <Button
           onClick={handleNext}
-          disabled={!isValid}
+          disabled={!isValidForNext()}
           className="px-6 bg-[#14ad9f] hover:bg-[#129488] text-white disabled:bg-gray-300"
         >
           Weiter

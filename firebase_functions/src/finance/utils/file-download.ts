@@ -66,7 +66,13 @@ export async function getFileBufferFromPath(
 
         // Priority 1: AWS S3 path (s3://) - Native Lambda environment
         if (s3Path) {
-            return await downloadFromS3(s3Path);
+            // Check if this is a simulated S3 path (development environment)
+            if (s3Path.includes('taskilo-file-storage') && !process.env.AWS_ACCESS_KEY_ID) {
+                logger.warn('[FILE DOWNLOAD] Detected simulated S3 path in development mode, skipping S3 download');
+                // Continue to other methods instead of failing
+            } else {
+                return await downloadFromS3(s3Path);
+            }
         }
 
         // Priority 2: Google Cloud Storage path (gs://)

@@ -14,20 +14,20 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  DialogTitle } from
+'@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Users, 
+  SelectValue } from
+'@/components/ui/select';
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
   FileText,
   Upload,
   Download,
@@ -44,29 +44,29 @@ import {
   User,
   Building2,
   Phone,
-  Mail
-} from 'lucide-react';
+  Mail } from
+'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  collection, 
+import {
+  collection,
   doc,
-  addDoc, 
+  addDoc,
   updateDoc,
   deleteDoc,
   serverTimestamp,
   onSnapshot,
   query,
   orderBy,
-  where
-} from 'firebase/firestore';
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL, 
+  where } from
+'firebase/firestore';
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
   deleteObject,
-  listAll 
-} from 'firebase/storage';
+  listAll } from
+'firebase/storage';
 import { db, storage } from '@/firebase/clients';
 
 // Types
@@ -123,27 +123,27 @@ interface CalendarEventModalProps {
   onEventDeleted?: (eventId: string) => void;
 }
 
-export function CalendarEventModal({ 
-  open, 
-  onClose, 
-  event, 
+export function CalendarEventModal({
+  open,
+  onClose,
+  event,
   selectedDate,
   companyId,
   customerId,
   onEventSaved,
-  onEventDeleted 
+  onEventDeleted
 }: CalendarEventModalProps) {
   const { user } = useAuth();
-  
+
   // Sichere Datums-Konvertierung
   const safeToDateString = (date: any): string => {
     if (!date) return new Date().toISOString().split('T')[0];
-    
+
     const dateObj = date instanceof Date ? date : new Date(date);
     if (isNaN(dateObj.getTime())) {
       return new Date().toISOString().split('T')[0];
     }
-    
+
     return dateObj.toISOString().split('T')[0];
   };
 
@@ -162,7 +162,7 @@ export function CalendarEventModal({
     participants: [],
     customerId,
     companyId,
-    createdBy: user?.uid || '',
+    createdBy: user?.uid || ''
   });
 
   // Component State
@@ -180,13 +180,13 @@ export function CalendarEventModal({
       // Check if this is a FullCalendar EventClickArg object
       if ('jsEvent' in event && 'event' in event) {
         const fcEvent = (event as any).event;
-        
+
         // Extract the real calendar event ID from FullCalendar event ID
         let actualEventId = fcEvent.id;
         if (fcEvent.id && fcEvent.id.startsWith('calendar-')) {
           actualEventId = fcEvent.id.replace('calendar-', '');
         }
-        
+
         const updatedFormData = {
           id: actualEventId,
           title: fcEvent.title || '',
@@ -204,11 +204,11 @@ export function CalendarEventModal({
           companyId,
           createdBy: fcEvent.extendedProps?.createdBy || user?.uid || '',
           createdAt: fcEvent.extendedProps?.createdAt,
-          updatedAt: fcEvent.extendedProps?.updatedAt,
+          updatedAt: fcEvent.extendedProps?.updatedAt
         };
-        
+
         setFormData(updatedFormData);
-        
+
         if (actualEventId) {
           loadEventNotes(actualEventId);
           loadEventFiles(actualEventId);
@@ -221,19 +221,19 @@ export function CalendarEventModal({
           description: event.description || '',
           startDate: safeToDateString(event.startDate),
           endDate: safeToDateString(event.endDate),
-          id: event.id, // Ensure the ID is properly set
+          id: event.id // Ensure the ID is properly set
         };
-        
+
         setFormData(updatedFormData);
       }
-      
+
       if (event.id) {
         loadEventNotes(event.id);
         loadEventFiles(event.id);
       }
-      
+
       if (event.id) {
-        console.log('Loading notes and files for event ID:', event.id);
+
         loadEventNotes(event.id);
         loadEventFiles(event.id);
       }
@@ -254,9 +254,9 @@ export function CalendarEventModal({
         participants: [],
         customerId,
         companyId,
-        createdBy: user?.uid || '',
+        createdBy: user?.uid || ''
       };
-      
+
       setFormData(newFormData);
       setNotes([]);
       setFiles([]);
@@ -267,16 +267,16 @@ export function CalendarEventModal({
   // Load event notes
   const loadEventNotes = (eventId: string) => {
     if (!eventId) return;
-    
+
     const notesRef = collection(db, 'companies', companyId, 'calendar_events', eventId, 'notes');
     const q = query(notesRef, orderBy('createdAt', 'desc'));
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const loadedNotes: EventNote[] = [];
       snapshot.forEach((doc) => {
         loadedNotes.push({
           id: doc.id,
-          ...doc.data(),
+          ...doc.data()
         } as EventNote);
       });
       setNotes(loadedNotes);
@@ -288,16 +288,16 @@ export function CalendarEventModal({
   // Load event files
   const loadEventFiles = (eventId: string) => {
     if (!eventId) return;
-    
+
     const filesRef = collection(db, 'companies', companyId, 'calendar_events', eventId, 'files');
     const q = query(filesRef, orderBy('uploadedAt', 'desc'));
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const loadedFiles: EventFile[] = [];
       snapshot.forEach((doc) => {
         loadedFiles.push({
           id: doc.id,
-          ...doc.data(),
+          ...doc.data()
         } as EventFile);
       });
       setFiles(loadedFiles);
@@ -328,7 +328,7 @@ export function CalendarEventModal({
         ...formData,
         startDate: safeToISOString(formData.startDate),
         endDate: safeToISOString(formData.endDate),
-        updatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       };
 
       // Filter out undefined values for Firestore
@@ -340,12 +340,12 @@ export function CalendarEventModal({
       }, {} as any);
 
       const existingEventId = event?.id || formData.id;
-      
+
       if (existingEventId) {
         // Update existing event
         const eventRef = doc(db, 'companies', companyId, 'calendar_events', existingEventId);
         await updateDoc(eventRef, cleanEventData);
-        
+
         // Create activity entry for the updated calendar event
         if (customerId) {
           try {
@@ -360,14 +360,14 @@ export function CalendarEventModal({
               metadata: {
                 eventId: existingEventId,
                 eventType: eventData.eventType,
-                startDate: eventData.startDate,
+                startDate: eventData.startDate
               }
             });
           } catch (activityError) {
             console.error('Error creating activity:', activityError);
           }
         }
-        
+
         toast.success('Termin wurde aktualisiert');
         onEventSaved?.({ ...eventData, id: existingEventId });
         onClose();
@@ -376,9 +376,9 @@ export function CalendarEventModal({
         const eventsRef = collection(db, 'companies', companyId, 'calendar_events');
         const docRef = await addDoc(eventsRef, {
           ...cleanEventData,
-          createdAt: serverTimestamp(),
+          createdAt: serverTimestamp()
         });
-        
+
         // Create activity entry for the calendar event
         if (customerId) {
           try {
@@ -393,7 +393,7 @@ export function CalendarEventModal({
               metadata: {
                 eventId: docRef.id,
                 eventType: eventData.eventType,
-                startDate: eventData.startDate,
+                startDate: eventData.startDate
               }
             });
           } catch (activityError) {
@@ -401,19 +401,19 @@ export function CalendarEventModal({
             // Don't fail the whole operation if activity creation fails
           }
         }
-        
+
         toast.success('Termin wurde erstellt');
-        
+
         // Update formData with the new event ID to enable notes/files functionality
-        setFormData(prev => ({ ...prev, id: docRef.id }));
-        
+        setFormData((prev) => ({ ...prev, id: docRef.id }));
+
         // Load notes and files for the newly created event
         loadEventNotes(docRef.id);
         loadEventFiles(docRef.id);
-        
+
         // Call onEventSaved with the complete event data including ID
         onEventSaved?.({ ...eventData, id: docRef.id });
-        
+
         // Don't close the modal - let user add notes/files to the newly created event
       }
     } catch (error) {
@@ -436,13 +436,13 @@ export function CalendarEventModal({
       // Delete all files from storage
       if (files.length > 0) {
         await Promise.all(
-          files.map(file => deleteObject(ref(storage, file.storagePath)))
+          files.map((file) => deleteObject(ref(storage, file.storagePath)))
         );
       }
 
       // Delete event document (subcollections will be deleted automatically)
       await deleteDoc(doc(db, 'companies', companyId, 'calendar_events', currentEventId));
-      
+
       // Create activity entry for the deleted calendar event
       if (customerId) {
         try {
@@ -450,20 +450,20 @@ export function CalendarEventModal({
           await addDoc(activitiesRef, {
             type: 'system',
             title: 'Termin gelöscht',
-            description: `Termin "${(event?.title || formData.title)}" wurde gelöscht`,
+            description: `Termin "${event?.title || formData.title}" wurde gelöscht`,
             timestamp: serverTimestamp(),
             userId: user?.uid || '',
             user: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'System',
             metadata: {
               deletedEventId: currentEventId,
-              eventType: event?.eventType || formData.eventType,
+              eventType: event?.eventType || formData.eventType
             }
           });
         } catch (activityError) {
           console.error('Error creating delete activity:', activityError);
         }
       }
-      
+
       toast.success('Termin wurde gelöscht');
       if (currentEventId) {
         onEventDeleted?.(currentEventId);
@@ -492,7 +492,7 @@ export function CalendarEventModal({
         content: newNote.trim(),
         createdBy: user.uid,
         createdByName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unbekannt',
-        createdAt: serverTimestamp(),
+        createdAt: serverTimestamp()
       });
 
       setNewNote('');
@@ -532,12 +532,12 @@ export function CalendarEventModal({
 
     const maxSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'application/pdf', 'text/plain',
-      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-    ];
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'application/pdf', 'text/plain',
+    'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
+
 
     Array.from(files).forEach(async (file) => {
       if (file.size > maxSize) {
@@ -551,7 +551,7 @@ export function CalendarEventModal({
       }
 
       const fileId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      setUploadingFiles(prev => [...prev, fileId]);
+      setUploadingFiles((prev) => [...prev, fileId]);
 
       try {
         // Upload to Firebase Storage
@@ -571,7 +571,7 @@ export function CalendarEventModal({
           storagePath: storagePath,
           uploadedBy: user.uid,
           uploadedByName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unbekannt',
-          uploadedAt: serverTimestamp(),
+          uploadedAt: serverTimestamp()
         });
 
         toast.success(`${file.name} wurde hochgeladen`);
@@ -579,7 +579,7 @@ export function CalendarEventModal({
         console.error('Error uploading file:', error);
         toast.error(`Fehler beim Hochladen von ${file.name}`);
       } finally {
-        setUploadingFiles(prev => prev.filter(id => id !== fileId));
+        setUploadingFiles((prev) => prev.filter((id) => id !== fileId));
       }
     });
   };
@@ -591,14 +591,14 @@ export function CalendarEventModal({
       toast.error('Termin-ID nicht gefunden');
       return;
     }
-    
+
     try {
       // Delete from storage
       await deleteObject(ref(storage, file.storagePath));
-      
+
       // Delete from Firestore
       await deleteDoc(doc(db, 'companies', companyId, 'calendar_events', currentEventId, 'files', file.id));
-      
+
       toast.success('Datei wurde gelöscht');
     } catch (error) {
       console.error('Error deleting file:', error);
@@ -616,12 +616,12 @@ export function CalendarEventModal({
   // Get event type color
   const getEventTypeColor = (type: string) => {
     switch (type) {
-      case 'meeting': return 'bg-blue-500';
-      case 'appointment': return 'bg-green-500';
-      case 'task': return 'bg-orange-500';
-      case 'reminder': return 'bg-yellow-500';
-      case 'call': return 'bg-purple-500';
-      default: return 'bg-gray-500';
+      case 'meeting':return 'bg-blue-500';
+      case 'appointment':return 'bg-green-500';
+      case 'task':return 'bg-orange-500';
+      case 'reminder':return 'bg-yellow-500';
+      case 'call':return 'bg-purple-500';
+      default:return 'bg-gray-500';
     }
   };
 
@@ -640,10 +640,10 @@ export function CalendarEventModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-[#14ad9f]" />
-            {(event || formData.id) ? 'Termin bearbeiten' : 'Neuen Termin erstellen'}
+            {event || formData.id ? 'Termin bearbeiten' : 'Neuen Termin erstellen'}
           </DialogTitle>
           <DialogDescription>
-            {(event || formData.id) ? 'Bearbeiten Sie die Termindetails, fügen Sie Notizen hinzu oder laden Sie Dateien hoch.' : 'Erstellen Sie einen neuen Termin mit allen wichtigen Details.'}
+            {event || formData.id ? 'Bearbeiten Sie die Termindetails, fügen Sie Notizen hinzu oder laden Sie Dateien hoch.' : 'Erstellen Sie einen neuen Termin mit allen wichtigen Details.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -672,8 +672,8 @@ export function CalendarEventModal({
                     id="title"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="z.B. Kundentermin"
-                  />
+                    placeholder="z.B. Kundentermin" />
+
                 </div>
 
                 <div>
@@ -683,8 +683,8 @@ export function CalendarEventModal({
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Zusätzliche Details..."
-                    rows={3}
-                  />
+                    rows={3} />
+
                 </div>
 
                 <div>
@@ -693,8 +693,8 @@ export function CalendarEventModal({
                     id="location"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="z.B. Büro, Online, Kundenstandort"
-                  />
+                    placeholder="z.B. Büro, Online, Kundenstandort" />
+
                 </div>
               </div>
 
@@ -706,8 +706,8 @@ export function CalendarEventModal({
                       id="startDate"
                       type="date"
                       value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    />
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} />
+
                   </div>
                   <div>
                     <Label htmlFor="endDate">Enddatum</Label>
@@ -715,8 +715,8 @@ export function CalendarEventModal({
                       id="endDate"
                       type="date"
                       value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    />
+                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
+
                   </div>
                 </div>
 
@@ -727,8 +727,8 @@ export function CalendarEventModal({
                       id="startTime"
                       type="time"
                       value={formData.startTime}
-                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                    />
+                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })} />
+
                   </div>
                   <div>
                     <Label htmlFor="endTime">Endzeit</Label>
@@ -736,8 +736,8 @@ export function CalendarEventModal({
                       id="endTime"
                       type="time"
                       value={formData.endTime}
-                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                    />
+                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value })} />
+
                   </div>
                 </div>
 
@@ -794,8 +794,8 @@ export function CalendarEventModal({
           <TabsContent value="notes" className="mt-6">
             <div className="space-y-6">
               {(() => {
-              const hasEventId = !!(event?.id || formData.id);
-              return !hasEventId ? (
+                const hasEventId = !!(event?.id || formData.id);
+                return !hasEventId ?
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                   <div className="flex items-center gap-2 text-blue-800">
                     <MessageSquare className="h-5 w-5" />
@@ -806,9 +806,9 @@ export function CalendarEventModal({
                     <br />
                     <small>Debug: event?.id={String(event?.id)}, formData.id={String(formData.id)}</small>
                   </p>
-                </div>
-              ) : null;
-            })()}
+                </div> :
+                null;
+              })()}
               
               {/* Add new note */}
               <Card>
@@ -826,15 +826,15 @@ export function CalendarEventModal({
                       placeholder={(() => {
                         const hasId = !!(event?.id || formData.id);
                         return hasId ? "Schreiben Sie eine Notiz..." : "Speichern Sie zuerst den Termin";
-                      })()} 
+                      })()}
                       rows={3}
-                      disabled={!!(!(event?.id || formData.id))}
-                    />
-                    <Button 
+                      disabled={!!!(event?.id || formData.id)} />
+
+                    <Button
                       onClick={handleAddNote}
                       disabled={!newNote.trim() || addingNote || !(event?.id || formData.id)}
-                      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                    >
+                      className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+
                       {addingNote && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                       Notiz hinzufügen
                     </Button>
@@ -844,8 +844,8 @@ export function CalendarEventModal({
 
               {/* Notes list */}
               <div className="space-y-4">
-                {notes.map((note) => (
-                  <Card key={note.id}>
+                {notes.map((note) =>
+                <Card key={note.id}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -858,25 +858,25 @@ export function CalendarEventModal({
                           </div>
                         </div>
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteNote(note.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteNote(note.id)}
+                        className="text-red-500 hover:text-red-700">
+
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                )}
 
-                {notes.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
+                {notes.length === 0 &&
+                <div className="text-center py-8 text-gray-500">
                     <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                     <h3 className="text-lg font-medium text-gray-900 mb-1">Noch keine Notizen</h3>
                     <p className="text-sm">Fügen Sie die erste Notiz zu diesem Termin hinzu</p>
                   </div>
-                )}
+                }
               </div>
             </div>
           </TabsContent>
@@ -885,8 +885,8 @@ export function CalendarEventModal({
             <div className="space-y-6">
               {(() => {
                 const hasEventId = !!(event?.id || formData.id);
-                return !hasEventId ? (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                return !hasEventId ?
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <div className="flex items-center gap-2 text-blue-800">
                       <FileText className="h-5 w-5" />
                       <h3 className="font-medium">Dateien nach Erstellung verfügbar</h3>
@@ -896,8 +896,8 @@ export function CalendarEventModal({
                       <br />
                       <small>Debug: event?.id={String(event?.id)}, formData.id={String(formData.id)}</small>
                     </p>
-                  </div>
-                ) : null;
+                  </div> :
+                null;
               })()}
               
               {/* File upload */}
@@ -921,13 +921,13 @@ export function CalendarEventModal({
                       className="hidden"
                       id="file-upload"
                       accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
-                      disabled={!(event?.id || formData.id)}
-                    />
+                      disabled={!(event?.id || formData.id)} />
+
                     <Button
                       onClick={() => document.getElementById('file-upload')?.click()}
                       variant="outline"
-                      disabled={!(event?.id || formData.id)}
-                    >
+                      disabled={!(event?.id || formData.id)}>
+
                       {(() => {
                         const hasId = !!(event?.id || formData.id);
                         return hasId ? 'Dateien auswählen' : 'Termin zuerst speichern';
@@ -942,8 +942,8 @@ export function CalendarEventModal({
 
               {/* Files list */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {files.map((file) => (
-                  <Card key={file.id}>
+                {files.map((file) =>
+                <Card key={file.id}>
                     <CardContent className="p-4">
                       {/* File info */}
                       <div className="flex items-start gap-2 mb-3">
@@ -956,29 +956,29 @@ export function CalendarEventModal({
                       {/* Action buttons */}
                       <div className="flex justify-end gap-1">
                           <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.open(file.url, '_blank')}
-                          >
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.open(file.url, '_blank')}>
+
                             <Download className="h-4 w-4" />
                           </Button>
                           <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteFile(file)}
-                            className="text-red-500 hover:text-red-700"
-                          >
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteFile(file)}
+                        className="text-red-500 hover:text-red-700">
+
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       
-                      {file.type.startsWith('image/') && (
-                        <img 
-                          src={file.url} 
-                          alt={file.originalName}
-                          className="w-full h-24 object-cover rounded"
-                        />
-                      )}
+                      {file.type.startsWith('image/') &&
+                    <img
+                      src={file.url}
+                      alt={file.originalName}
+                      className="w-full h-24 object-cover rounded" />
+
+                    }
                       
                       <div className="flex items-center gap-1 text-xs text-gray-500 mt-2">
                         <User className="h-3 w-3" />
@@ -986,10 +986,10 @@ export function CalendarEventModal({
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                )}
 
-                {uploadingFiles.map((fileId) => (
-                  <Card key={fileId}>
+                {uploadingFiles.map((fileId) =>
+                <Card key={fileId}>
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -997,16 +997,16 @@ export function CalendarEventModal({
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                )}
               </div>
 
-              {files.length === 0 && uploadingFiles.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
+              {files.length === 0 && uploadingFiles.length === 0 &&
+              <div className="text-center py-8 text-gray-500">
                   <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                   <h3 className="text-lg font-medium text-gray-900 mb-1">Noch keine Dateien</h3>
                   <p className="text-sm">Laden Sie die erste Datei zu diesem Termin hoch</p>
                 </div>
-              )}
+              }
             </div>
           </TabsContent>
         </Tabs>
@@ -1014,17 +1014,17 @@ export function CalendarEventModal({
         <DialogFooter>
           <div className="flex items-center justify-between w-full">
             <div>
-              {(event || formData.id) && (
-                <Button
-                  variant="destructive"
-                  onClick={handleDeleteEvent}
-                  disabled={loading}
-                >
+              {(event || formData.id) &&
+              <Button
+                variant="destructive"
+                onClick={handleDeleteEvent}
+                disabled={loading}>
+
                   {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   <Trash2 className="h-4 w-4 mr-2" />
                   Löschen
                 </Button>
-              )}
+              }
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={onClose}>
@@ -1033,16 +1033,16 @@ export function CalendarEventModal({
               <Button
                 onClick={handleSaveEvent}
                 disabled={loading || !formData.title?.trim()}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-              >
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+
                 {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                 <Save className="h-4 w-4 mr-2" />
-                {(event || formData.id) ? 'Aktualisieren' : 'Erstellen'}
+                {event || formData.id ? 'Aktualisieren' : 'Erstellen'}
               </Button>
             </div>
           </div>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>);
+
 }

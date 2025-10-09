@@ -266,17 +266,17 @@ export default function CreateQuotePage() {
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
   const { nextNumber: nextInvoiceNumber, isLoading: nextNumberLoading, error: nextNumberError, refresh: refreshNextNumber } = useNextInvoiceNumber(uid);
-  
+
   // 🔍 DEBUG: Hook-Status loggen
   React.useEffect(() => {
-    console.log('🔍 Hook Status:', {
-      nextInvoiceNumber,
-      nextNumberLoading,
-      nextNumberError,
-      uid
-    });
+
+
+
+
+
+
   }, [nextInvoiceNumber, nextNumberLoading, nextNumberError, uid]);
-  
+
   const [selectedTemplate, setSelectedTemplate] =
   useState<ImportedInvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
 
@@ -768,9 +768,9 @@ export default function CreateQuotePage() {
           });
         } catch (_) {
 
+
           // ignoriere Fehler in der Auto-Suche
-        }})();
-    }, 2000); // 2 Sekunden Delay - weniger aufdringlich
+        }})();}, 2000); // 2 Sekunden Delay - weniger aufdringlich
     timers.set(id, t);
   };
 
@@ -909,19 +909,19 @@ export default function CreateQuotePage() {
       if (!uid || !user || user.uid !== uid) return;
       try {
         setLoadingCustomers(true);
-        
+
         // Lade Kunden direkt aus der Subcollection companies/{uid}/customers
         const customersQuery = query(
           collection(db, 'companies', uid, 'customers'),
           orderBy('createdAt', 'desc')
         );
-        
+
         const querySnapshot = await getDocs(customersQuery);
         const loadedCustomers: CustomerType[] = [];
-        
+
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          
+
           // Lade ALLE Kunden: echte Kunden, Lieferanten (LF-), und Partner
           loadedCustomers.push({
             id: doc.id,
@@ -942,11 +942,11 @@ export default function CreateQuotePage() {
             totalAmount: data.totalAmount || 0,
             createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
             contactPersons: data.contactPersons || [],
-            companyId: uid,
+            companyId: uid
           });
         });
-        
-        console.log(`🔍 Geladene Kunden (${loadedCustomers.length}):`, loadedCustomers);
+
+
         setCustomers(loadedCustomers);
       } catch (e) {
         console.error('Fehler beim Laden der Kunden:', e);
@@ -1025,9 +1025,9 @@ export default function CreateQuotePage() {
         }
       } catch (e) {
 
+
         // still render, but without company info
-      }};
-    loadCompany();
+      }};loadCompany();
   }, [uid, user, settings]); // settings als Dependency hinzugefügt für automatische Template-Updates
 
   // Nummernkreis-Einstellungen laden (ohne sofortige Nummer-Anzeige)
@@ -1039,12 +1039,12 @@ export default function CreateQuotePage() {
         // 🚨 KRITISCHER FIX: Lade nur Format-Einstellungen, NICHT die nächste Nummer!
         // Die nächste Nummer wird erst beim Speichern atomisch generiert
         const result = await NumberSequenceService.getNumberSequences(uid);
-        const invoiceSequence = result.find(seq => seq.type === 'Rechnung');
-        
+        const invoiceSequence = result.find((seq) => seq.type === 'Rechnung');
+
         if (invoiceSequence) {
           setNumberingFormat(invoiceSequence.format || 'RE-{number}');
           setNextNumber(invoiceSequence.nextNumber || 1);
-          
+
           // ✅ ZEIGE NUR PLATZHALTER an, NICHT die echte nächste Nummer!
           // Die echte Nummer wird erst beim Speichern vergeben
           setFormData((prev) => ({
@@ -2264,22 +2264,22 @@ export default function CreateQuotePage() {
 
       // � KRITISCHER FIX: Generiere Rechnungsnummer DYNAMISCH beim Speichern!
       // Verhindert Race Conditions bei gleichzeitiger Rechnungserstellung
-      
+
       let finalInvoiceNumber = '';
       let finalSequentialNumber = 1;
-      
-      console.log('🔥 INVOICE CREATION DEBUG - START:', {
-        uid,
-        timestamp: new Date().toISOString(),
-        step: 'about_to_generate_number'
-      });
-      
+
+
+
+
+
+
+
       try {
-        console.log('🔢 Generiere neue Rechnungsnummer atomisch...', { uid });
+
         const numberResult = await InvoiceService.getNextInvoiceNumber(uid);
         finalInvoiceNumber = numberResult.formattedNumber;
         finalSequentialNumber = numberResult.sequentialNumber;
-        console.log('✅ Neue Rechnungsnummer generiert:', { finalInvoiceNumber, finalSequentialNumber, uid });
+
       } catch (numberError) {
         console.error('❌ Fehler bei Rechnungsnummer-Generierung:', {
           error: numberError,
@@ -2290,15 +2290,15 @@ export default function CreateQuotePage() {
         // Fallback nur im Notfall
         finalInvoiceNumber = `RE-${Date.now().toString().slice(-4)}`;
         finalSequentialNumber = Date.now() % 1000;
-        console.log('🚨 USING FALLBACK NUMBER:', { finalInvoiceNumber, finalSequentialNumber });
+
       }
-      
-      console.log('🔥 FINAL NUMBER RESULT:', {
-        finalInvoiceNumber,
-        finalSequentialNumber,
-        uid,
-        timestamp: new Date().toISOString()
-      });
+
+
+
+
+
+
+
 
       // �🚨 COMPLETE INVOICE DATA OBJECT - **EVERY SINGLE FIELD** FROM THE FORM!
       // This object must contain ALL form fields to ensure complete data persistence
@@ -3734,19 +3734,19 @@ export default function CreateQuotePage() {
                     <div className="relative">
                       <Input
                           placeholder={
-                            nextNumberLoading 
-                              ? "Lädt nächste Rechnungsnummer..." 
-                              : nextNumberError 
-                                ? `Fehler beim Laden: ${nextNumberError}` 
-                                : nextInvoiceNumber
-                                  ? `${nextInvoiceNumber}`
-                                  : "Wird beim Speichern automatisch vergeben"
+                          nextNumberLoading ?
+                          "Lädt nächste Rechnungsnummer..." :
+                          nextNumberError ?
+                          `Fehler beim Laden: ${nextNumberError}` :
+                          nextInvoiceNumber ?
+                          `${nextInvoiceNumber}` :
+                          "Wird beim Speichern automatisch vergeben"
                           }
                           value={
-                            formData.title || 
-                            (nextInvoiceNumber && !nextNumberLoading && !nextNumberError 
-                              ? nextInvoiceNumber 
-                              : '')
+                          formData.title || (
+                          nextInvoiceNumber && !nextNumberLoading && !nextNumberError ?
+                          nextInvoiceNumber :
+                          '')
                           }
                           onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
                           className="pr-10 bg-gray-50 text-gray-600"
@@ -4693,12 +4693,12 @@ export default function CreateQuotePage() {
 
       {/* Live-Vorschau Komponente - Removed: Using PDF-only system now */}
       {/* <LivePreviewComponent
-            isVisible={previewOpen}
-            onClose={() => setPreviewOpen(false)}
-            selectedTemplate={selectedTemplate}
-            buildPreviewData={buildPreviewData}
-            loadingTemplate={loadingTemplate}
-           /> */}
+               isVisible={previewOpen}
+               onClose={() => setPreviewOpen(false)}
+               selectedTemplate={selectedTemplate}
+               buildPreviewData={buildPreviewData}
+               loadingTemplate={loadingTemplate}
+              /> */}
 
       {/* Modal: Neues Produkt */}
       <NewProductModal
@@ -4951,22 +4951,22 @@ export default function CreateQuotePage() {
                 collection(db, 'companies', uid, 'customers'),
                 orderBy('createdAt', 'desc')
               );
-              
+
               const querySnapshot = await getDocs(customersQuery);
               const loadedCustomers: CustomerType[] = [];
-              
+
               querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                
+
                 // Filter: Nur echte Kunden, keine Lieferanten
                 const isSupplier = data.isSupplier === true;
                 const customerNumber = data.customerNumber || '';
                 const isLieferantNumber = customerNumber.startsWith('LF-');
-                
+
                 if (isSupplier || isLieferantNumber) {
                   return;
                 }
-                
+
                 loadedCustomers.push({
                   id: doc.id,
                   customerNumber: data.customerNumber || '',
@@ -4986,10 +4986,10 @@ export default function CreateQuotePage() {
                   totalAmount: data.totalAmount || 0,
                   createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
                   contactPersons: data.contactPersons || [],
-                  companyId: uid,
+                  companyId: uid
                 });
               });
-              
+
               setCustomers(loadedCustomers);
               toast.success('Kunde erfolgreich erstellt');
             } catch (error) {

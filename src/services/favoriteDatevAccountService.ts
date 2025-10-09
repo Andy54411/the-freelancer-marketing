@@ -1,15 +1,15 @@
 // Service für DATEV-Favoriten-Management
-import { 
-  doc, 
-  setDoc, 
-  deleteDoc, 
-  collection, 
-  getDocs, 
-  query, 
+import {
+  doc,
+  setDoc,
+  deleteDoc,
+  collection,
+  getDocs,
+  query,
   orderBy,
   serverTimestamp,
-  DocumentData 
-} from 'firebase/firestore';
+  DocumentData } from
+'firebase/firestore';
 import { db } from '@/firebase/clients';
 
 export interface FavoriteDatevAccount {
@@ -27,14 +27,14 @@ export class FavoriteDatevAccountService {
    * Fügt ein DATEV-Konto zu den Favoriten hinzu
    */
   static async addToFavorites(
-    companyId: string, 
-    accountCode: string, 
-    accountName: string, 
-    category: string
-  ): Promise<void> {
+  companyId: string,
+  accountCode: string,
+  accountName: string,
+  category: string)
+  : Promise<void> {
     try {
       const favoriteRef = doc(db, 'companies', companyId, 'bookingAccounts', accountCode);
-      
+
       await setDoc(favoriteRef, {
         id: `datev-${accountCode}`,
         code: accountCode,
@@ -43,8 +43,8 @@ export class FavoriteDatevAccountService {
         addedAt: serverTimestamp(),
         usageCount: 1
       });
-      
-      console.log(`✅ DATEV-Konto ${accountCode} zu Favoriten hinzugefügt`);
+
+
     } catch (error) {
       console.error('❌ Fehler beim Hinzufügen zu Favoriten:', error);
       throw error;
@@ -58,8 +58,8 @@ export class FavoriteDatevAccountService {
     try {
       const favoriteRef = doc(db, 'companies', companyId, 'bookingAccounts', accountCode);
       await deleteDoc(favoriteRef);
-      
-      console.log(`✅ DATEV-Konto ${accountCode} aus Favoriten entfernt`);
+
+
     } catch (error) {
       console.error('❌ Fehler beim Entfernen aus Favoriten:', error);
       throw error;
@@ -73,9 +73,9 @@ export class FavoriteDatevAccountService {
     try {
       const favoritesRef = collection(db, 'companies', companyId, 'bookingAccounts');
       const q = query(favoritesRef, orderBy('lastUsed', 'desc'), orderBy('usageCount', 'desc'));
-      
+
       const snapshot = await getDocs(q);
-      
+
       const favorites: FavoriteDatevAccount[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data() as DocumentData;
@@ -89,8 +89,8 @@ export class FavoriteDatevAccountService {
           usageCount: data.usageCount || 0
         });
       });
-      
-      console.log(`✅ ${favorites.length} Favoriten-DATEV-Konten geladen`);
+
+
       return favorites;
     } catch (error) {
       console.error('❌ Fehler beim Laden der Favoriten:', error);
@@ -104,7 +104,7 @@ export class FavoriteDatevAccountService {
   static async isFavorite(companyId: string, accountCode: string): Promise<boolean> {
     try {
       const favorites = await this.getFavorites(companyId);
-      return favorites.some(fav => fav.code === accountCode);
+      return favorites.some((fav) => fav.code === accountCode);
     } catch (error) {
       console.error('❌ Fehler beim Prüfen der Favoriten:', error);
       return false;
@@ -117,15 +117,15 @@ export class FavoriteDatevAccountService {
   static async updateUsageStats(companyId: string, accountCode: string): Promise<void> {
     try {
       const favoriteRef = doc(db, 'companies', companyId, 'bookingAccounts', accountCode);
-      
+
       // Erhöhe usageCount und aktualisiere lastUsed
       await setDoc(favoriteRef, {
         lastUsed: serverTimestamp(),
-        usageCount: (await this.getFavorites(companyId))
-          .find(fav => fav.code === accountCode)?.usageCount || 0 + 1
+        usageCount: (await this.getFavorites(companyId)).
+        find((fav) => fav.code === accountCode)?.usageCount || 0 + 1
       }, { merge: true });
-      
-      console.log(`✅ Nutzungsstatistiken für ${accountCode} aktualisiert`);
+
+
     } catch (error) {
       console.error('❌ Fehler beim Aktualisieren der Nutzungsstatistiken:', error);
     }
@@ -137,9 +137,9 @@ export class FavoriteDatevAccountService {
   static async getTopFavorites(companyId: string, limit: number = 5): Promise<FavoriteDatevAccount[]> {
     try {
       const favorites = await this.getFavorites(companyId);
-      return favorites
-        .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
-        .slice(0, limit);
+      return favorites.
+      sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0)).
+      slice(0, limit);
     } catch (error) {
       console.error('❌ Fehler beim Laden der Top-Favoriten:', error);
       return [];

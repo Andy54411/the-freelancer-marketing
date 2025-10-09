@@ -380,11 +380,36 @@ export const createStripeAccountIfComplete = onCall(
     }
     loggerV2.info('[DEBUG] Validierung OK: dateOfBirth existiert.');
 
-    const [yearDob, monthDob, dayDob] = (payloadFromClient.dateOfBirth || '').split('-').map(Number);
+    // Parse dateOfBirth (format: YYYY-MM-DD)
+    const dateOfBirthStr = payloadFromClient.dateOfBirth || '';
+    loggerV2.info(`[DEBUG] DOB Input: "${dateOfBirthStr}"`);
+    
+    if (!dateOfBirthStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      loggerV2.error(`FEHLER: Ungültiges Datumsformat: "${dateOfBirthStr}"`);
+      throw new HttpsError("invalid-argument", "Ungültiges Geburtsdatum-Format. Erwartet: YYYY-MM-DD");
+    }
+    
+    const [yearDob, monthDob, dayDob] = dateOfBirthStr.split('-').map(Number);
     const dobDate = new Date(Date.UTC(yearDob, monthDob - 1, dayDob));
-    if (!(dobDate.getUTCFullYear() === yearDob && dobDate.getUTCMonth() === monthDob - 1 && dobDate.getUTCDate() === dayDob && yearDob > 1900 && yearDob < (new Date().getFullYear() - 17))) {
-      loggerV2.error(`FEHLER bei DOB-Validierung: Jahr=${yearDob}, Monat=${monthDob}, Tag=${dayDob}`);
-      throw new HttpsError("invalid-argument", "Ungültiges Geburtsdatum oder Person zu jung.");
+    const currentYear = new Date().getFullYear();
+    const age = currentYear - yearDob;
+    
+    loggerV2.info(`[DEBUG] DOB Parsing: Jahr=${yearDob}, Monat=${monthDob}, Tag=${dayDob}, Alter=${age}`);
+    
+    // Check if date is valid
+    const isValidDate = dobDate.getUTCFullYear() === yearDob && 
+                       dobDate.getUTCMonth() === monthDob - 1 && 
+                       dobDate.getUTCDate() === dayDob;
+    
+    // Check age requirements (minimum 18 years old)
+    const isOldEnough = age >= 18;
+    const isReasonableYear = yearDob > 1900 && yearDob <= currentYear;
+    
+    loggerV2.info(`[DEBUG] Validierungen: isValidDate=${isValidDate}, isOldEnough=${isOldEnough}, isReasonableYear=${isReasonableYear}`);
+    
+    if (!isValidDate || !isOldEnough || !isReasonableYear) {
+      loggerV2.error(`FEHLER bei DOB-Validierung: Jahr=${yearDob}, Alter=${age}, validDate=${isValidDate}, oldEnough=${isOldEnough}, reasonableYear=${isReasonableYear}`);
+      throw new HttpsError("invalid-argument", "Ungültiges Geburtsdatum oder Person zu jung (min. 18 Jahre).");
     }
     loggerV2.info('[DEBUG] Validierung OK: dateOfBirth ist gültiges Format und Alter.');
 

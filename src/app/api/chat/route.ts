@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/firebase/server'; // Korrekt: Server-Instanz für API-Routen verwenden
 import { getSystemInstruction } from '@/shared/chatbot-utils';
 
-const MODEL_NAME = 'models/gemini-2.5-flash';
+const MODEL_NAME = 'models/gemini-2.0-flash-exp'; // ✅ Aktuelles, stabiles Modell
 
 export async function POST(request: Request) {
   try {

@@ -5,7 +5,8 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { Calculator, Percent, CreditCard, CheckCircle } from 'lucide-react';
+import { Calculator, Percent, CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
+import { RequiredFieldLabel, RequiredFieldIndicator } from '@/components/onboarding/RequiredFieldLabel';
 
 interface OnboardingStep2Props {
   companyUid: string;
@@ -82,6 +83,19 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
 
   const isFormValid = validateForm().length === 0;
 
+  // Validierungsstatus prüfen
+  const isValidForNext = () => {
+    return formData.kleinunternehmer && formData.profitMethod && formData.priceInput && formData.taxRate;
+  };
+
+  const getValidationMessage = () => {
+    const missing = validateForm();
+    if (missing.length > 0) {
+      return `Erforderliche Felder: ${missing.join(', ')}`;
+    }
+    return null;
+  };
+
   // Speichern und weiter
   const [isSaving, setIsSaving] = useState(false);
 
@@ -92,8 +106,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
 
     const missingFields = validateForm();
     if (missingFields.length > 0) {
-      alert(`Bitte füllen Sie folgende Pflichtfelder aus: ${missingFields.join(', ')}`);
-      return;
+      return; // Button ist bereits disabled
     }
 
     setIsSaving(true);
@@ -140,6 +153,9 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
           </p>
         </div>
 
+        {/* Required Fields Indicator */}
+        <RequiredFieldIndicator />
+
         {/* Main Form */}
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="grid gap-8">
@@ -147,9 +163,12 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Calculator className="h-5 w-5 text-[#14ad9f]" />
-                <label className="text-lg font-semibold text-gray-900">
-                  Kleinunternehmerregelung *
-                </label>
+                <RequiredFieldLabel 
+                  required={true}
+                  tooltip="Wichtig: Bestimmt Ihre Umsatzsteuerpflicht - bis 22.000€ Jahresumsatz keine Umsatzsteuer"
+                >
+                  Kleinunternehmerregelung
+                </RequiredFieldLabel>
               </div>
               <p className="text-sm text-gray-600 mb-4">
                 Nutzen Sie die Kleinunternehmerregelung nach §19 UStG? (bis 22.000€ Jahresumsatz)
@@ -199,9 +218,12 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-[#14ad9f]" />
-                <label className="text-lg font-semibold text-gray-900">
-                  Gewinnermittlungsart *
-                </label>
+                <RequiredFieldLabel 
+                  required={true}
+                  tooltip="EÜR für kleine Unternehmen, Bilanz für größere - bestimmt Ihre Buchführungspflicht"
+                >
+                  Gewinnermittlungsart
+                </RequiredFieldLabel>
               </div>
               <p className="text-sm text-gray-600 mb-4">
                 Wie ermitteln Sie Ihren Gewinn für die Steuererklärung?
@@ -251,7 +273,12 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Percent className="h-5 w-5 text-[#14ad9f]" />
-                <label className="text-lg font-semibold text-gray-900">Preiseingabe-Modus *</label>
+                <RequiredFieldLabel 
+                  required={true}
+                  tooltip="Brutto = mit Mehrwertsteuer, Netto = ohne Mehrwertsteuer"
+                >
+                  Preiseingabe-Modus
+                </RequiredFieldLabel>
               </div>
               <p className="text-sm text-gray-600 mb-4">
                 Wie möchten Sie Ihre Preise eingeben und anzeigen?
@@ -297,9 +324,12 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Percent className="h-5 w-5 text-[#14ad9f]" />
-                <label className="text-lg font-semibold text-gray-900">
-                  Standard-Steuersatz (%) *
-                </label>
+                <RequiredFieldLabel 
+                  required={true}
+                  tooltip="19% Regelsteuersatz, 7% ermäßigt, 0% für Kleinunternehmer"
+                >
+                  Standard-Steuersatz (%)
+                </RequiredFieldLabel>
               </div>
               <select
                 value={formData.taxRate}
@@ -329,10 +359,9 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
             <button
               type="button"
               onClick={handleNext}
-              disabled={!isFormValid || isSaving}
-              style={{ pointerEvents: !isFormValid || isSaving ? 'none' : 'auto' }}
+              disabled={!isValidForNext() || isSaving}
               className={`px-6 py-2 text-white rounded-lg transition-colors flex items-center gap-2 ${
-                isFormValid && !isSaving
+                isValidForNext() && !isSaving
                   ? 'bg-[#14ad9f] hover:bg-[#129488] cursor-pointer'
                   : 'bg-gray-300 cursor-not-allowed'
               }`}
@@ -343,12 +372,23 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
               {isSaving ? 'Speichert...' : 'Weiter'}
             </button>
           </div>
+
+          {/* Validation Message */}
+          {!isValidForNext() && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6">
+              <div className="flex items-center gap-2 text-gray-700">
+                <AlertCircle className="h-5 w-5 text-[#14ad9f]" />
+                <span className="font-medium">Erforderliche Felder fehlen:</span>
+              </div>
+              <p className="mt-1 text-sm text-gray-600">{getValidationMessage()}</p>
+            </div>
+          )}
         </div>
 
         {/* Info Box */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>💡 Hinweis:</strong> Steuernummer und USt-IdNr. wurden bereits bei der
+        <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <p className="text-sm text-gray-700">
+            <strong className="text-[#14ad9f]">💡 Hinweis:</strong> Steuernummer und USt-IdNr. wurden bereits bei der
             Registrierung erfasst. Bankdaten (IBAN, Kontoinhaber) sind ebenfalls bereits hinterlegt.
             Hier konfigurieren Sie nur die grundlegenden steuerlichen Einstellungen für Ihr
             Geschäft.

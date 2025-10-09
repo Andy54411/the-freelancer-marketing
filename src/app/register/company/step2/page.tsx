@@ -252,7 +252,13 @@ export default function Step2CompanyPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-blue-100 to-teal-200 p-6">
-      <div className="w-full max-w-7xl mb-6 flex justify-end px-6">
+      <div className="w-full max-w-7xl mb-6 flex justify-between px-6">
+        <button
+          onClick={() => router.push('/register/company')}
+          className="text-[#14ad9f] text-lg flex items-center hover:text-[#129488]"
+        >
+          <span className="mr-2">← Zurück zu Schritt 1</span>
+        </button>
         <button
           onClick={() => router.push('/')}
           className="text-[#14ad9f] text-lg flex items-center"

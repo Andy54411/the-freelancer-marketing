@@ -16,8 +16,8 @@ import {
   onSnapshot,
   serverTimestamp,
   increment,
-  Timestamp,
-} from 'firebase/firestore';
+  Timestamp } from
+'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { InventoryService } from './inventoryService';
 import { NumberSequenceService } from './numberSequenceService';
@@ -149,18 +149,18 @@ export class QuoteService {
       const q = query(quotesRef, orderBy('date', 'desc'));
       const snapshot = await getDocs(q);
 
-      const quotes = snapshot.docs.map(doc => {
+      const quotes = snapshot.docs.map((doc) => {
         const data = doc.data();
-        
+
         // Debug logging to see what's happening
-        console.log('🔍 Processing quote document:', {
-          docId: doc.id,
-          dataId: data.id,
-          docExists: doc.exists(),
-          dataKeys: Object.keys(data),
-          hasEmptyId: data.id === ''
-        });
-        
+
+
+
+
+
+
+
+
         // CRITICAL FIX: Always use Firestore document ID, ignore any id field in data
         const quote = {
           ...data,
@@ -174,22 +174,22 @@ export class QuoteService {
           acceptedAt: data.acceptedAt?.toDate(),
           rejectedAt: data.rejectedAt?.toDate(),
           convertedAt: data.convertedAt?.toDate(),
-          cancelledAt: data.cancelledAt?.toDate(),
+          cancelledAt: data.cancelledAt?.toDate()
         } as Quote;
-        
+
         // Force ID to be the document ID - this fixes existing data
         quote.id = doc.id;
-        
-        console.log('🔧 Fixed quote ID:', {
-          docId: doc.id,
-          finalId: quote.id,
-          customerName: quote.customerName
-        });
-        
+
+
+
+
+
+
+
         return quote;
       });
-      
-      console.log('🔍 Loaded quotes:', quotes.map(q => ({ id: q.id, customerName: q.customerName })));
+
+
       return quotes;
     } catch (error) {
       throw error;
@@ -209,7 +209,7 @@ export class QuoteService {
       }
 
       const data = snapshot.data();
-      
+
       // CRITICAL FIX: Always use Firestore document ID, ignore any id field in data
       const quote = {
         ...data,
@@ -223,18 +223,18 @@ export class QuoteService {
         acceptedAt: data.acceptedAt?.toDate(),
         rejectedAt: data.rejectedAt?.toDate(),
         convertedAt: data.convertedAt?.toDate(),
-        cancelledAt: data.cancelledAt?.toDate(),
+        cancelledAt: data.cancelledAt?.toDate()
       } as Quote;
-      
+
       // Force ID to be the document ID - this fixes existing data
       quote.id = snapshot.id;
-      
-      console.log('🔧 Fixed single quote ID:', {
-        docId: snapshot.id,
-        finalId: quote.id,
-        customerName: quote.customerName
-      });
-      
+
+
+
+
+
+
+
       return quote;
     } catch (error) {
       throw error;
@@ -245,21 +245,21 @@ export class QuoteService {
    * Neues Angebot erstellen
    */
   static async createQuote(
-    companyId: string,
-    quoteData: Omit<Quote, 'id' | 'number' | 'createdAt' | 'updatedAt'>
-  ): Promise<string> {
+  companyId: string,
+  quoteData: Omit<Quote, 'id' | 'number' | 'createdAt' | 'updatedAt'>)
+  : Promise<string> {
     try {
       // Angebotsnummer generieren
       const number = await this.generateQuoteNumber(companyId);
 
       // CRITICAL FIX: Remove 'id' field from quoteData to prevent empty ID from being saved
       const { id, ...cleanQuoteData } = quoteData as any;
-      
-      console.log('🔍 Creating quote with ID removed:', {
-        hadIdField: 'id' in quoteData,
-        removedId: id,
-        cleanDataHasId: 'id' in cleanQuoteData
-      });
+
+
+
+
+
+
 
       const quotesRef = collection(db, 'companies', companyId, 'quotes');
       const payload: Record<string, any> = {
@@ -270,15 +270,15 @@ export class QuoteService {
         updatedAt: serverTimestamp(),
         date: Timestamp.fromDate(cleanQuoteData.date instanceof Date ? cleanQuoteData.date : new Date(cleanQuoteData.date)),
         validUntil: Timestamp.fromDate(cleanQuoteData.validUntil instanceof Date ? cleanQuoteData.validUntil : new Date(cleanQuoteData.validUntil)),
-        deliveryDate: cleanQuoteData.deliveryDate ? Timestamp.fromDate(cleanQuoteData.deliveryDate instanceof Date ? cleanQuoteData.deliveryDate : new Date(cleanQuoteData.deliveryDate)) : null,
+        deliveryDate: cleanQuoteData.deliveryDate ? Timestamp.fromDate(cleanQuoteData.deliveryDate instanceof Date ? cleanQuoteData.deliveryDate : new Date(cleanQuoteData.deliveryDate)) : null
       };
-      
+
       const cleanedPayload = Object.fromEntries(
         Object.entries(payload).filter(([key, value]) => value !== undefined && key !== 'id') // Also filter out any id field
       );
-      
-      console.log('🔍 Final payload has ID field:', 'id' in cleanedPayload);
-      
+
+
+
       const docRef = await addDoc(quotesRef, cleanedPayload);
 
       // Automatisch Aktivität in Kundenhistorie erstellen
@@ -311,16 +311,16 @@ export class QuoteService {
    * Angebot aktualisieren
    */
   static async updateQuote(
-    companyId: string,
-    quoteId: string,
-    updates: Partial<Quote>
-  ): Promise<void> {
+  companyId: string,
+  quoteId: string,
+  updates: Partial<Quote>)
+  : Promise<void> {
     try {
       const quoteRef = doc(db, 'companies', companyId, 'quotes', quoteId);
 
       const updateData: any = {
         ...updates,
-        updatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       };
 
       // Datum-Felder konvertieren
@@ -345,7 +345,7 @@ export class QuoteService {
           const quoteSnapshot = await getDoc(quoteRef);
           if (quoteSnapshot.exists()) {
             const quoteData = quoteSnapshot.data();
-            
+
             await this.createCustomerActivity(
               companyId,
               updates.customerId || updates.customerName || quoteData.customerId || quoteData.customerName,
@@ -376,12 +376,12 @@ export class QuoteService {
     try {
       // Vor dem Löschen: Angebotsdaten für Aktivität speichern
       const quote = await this.getQuote(companyId, quoteId);
-      
+
       // Evtl. bestehende Reservierungen freigeben
       if (quote && (quote.status === 'draft' || quote.status === 'sent')) {
-        const inventoryItems = (quote.items || [])
-          .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
-          .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
+        const inventoryItems = (quote.items || []).
+        filter((it) => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount').
+        map((it) => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
         if (inventoryItems.length > 0) {
           await InventoryService.releaseReservationForQuote(companyId, quoteId, inventoryItems);
         }
@@ -422,19 +422,19 @@ export class QuoteService {
   static async sendQuote(companyId: string, quoteId: string): Promise<void> {
     try {
       const quoteRef = doc(db, 'companies', companyId, 'quotes', quoteId);
-      
+
       // Lade das Angebot für Kundenaktivität
       const quoteSnapshot = await getDoc(quoteRef);
       if (!quoteSnapshot.exists()) {
         throw new Error('Quote not found');
       }
-      
+
       const quoteData = quoteSnapshot.data();
-      
+
       await updateDoc(quoteRef, {
         status: 'sent',
         sentAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
 
       // Automatisch Aktivität in Kundenhistorie erstellen
@@ -471,13 +471,13 @@ export class QuoteService {
       await updateDoc(quoteRef, {
         status: 'accepted',
         acceptedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
 
       // Reservierte Artikel als verkauft markieren
-      const inventoryItems = (quote?.items || [])
-        .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
-        .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
+      const inventoryItems = (quote?.items || []).
+      filter((it) => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount').
+      map((it) => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
       if (inventoryItems.length > 0) {
         await InventoryService.sellReservedItems(companyId, quoteId, inventoryItems);
       }
@@ -519,13 +519,13 @@ export class QuoteService {
         status: 'rejected',
         rejectedAt: serverTimestamp(),
         rejectionReason: reason || '',
-        updatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
 
       // Reservierungen freigeben
-      const inventoryItems = (quote?.items || [])
-        .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
-        .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
+      const inventoryItems = (quote?.items || []).
+      filter((it) => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount').
+      map((it) => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
       if (inventoryItems.length > 0) {
         await InventoryService.releaseReservationForQuote(companyId, quoteId, inventoryItems);
       }
@@ -533,10 +533,10 @@ export class QuoteService {
       // Automatisch Aktivität in Kundenhistorie erstellen
       if (quote?.customerId || quote?.customerName) {
         try {
-          const description = reason 
-            ? `Das Angebot wurde abgelehnt. Grund: ${reason}`
-            : 'Das Angebot wurde vom Kunden abgelehnt.';
-          
+          const description = reason ?
+          `Das Angebot wurde abgelehnt. Grund: ${reason}` :
+          'Das Angebot wurde vom Kunden abgelehnt.';
+
           await this.createCustomerActivity(
             companyId,
             (quote.customerId || quote.customerName) as string,
@@ -571,13 +571,13 @@ export class QuoteService {
       await updateDoc(quoteRef, {
         status: 'cancelled',
         cancelledAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
 
       // Reservierungen freigeben (falls vorhanden)
-      const inventoryItems = (quote?.items || [])
-        .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
-        .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
+      const inventoryItems = (quote?.items || []).
+      filter((it) => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount').
+      map((it) => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
       if (inventoryItems.length > 0) {
         await InventoryService.releaseReservationForQuote(companyId, quoteId, inventoryItems);
       }
@@ -609,7 +609,7 @@ export class QuoteService {
         convertedToInvoice: true,
         // invoiceId,
         convertedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
 
       return 'temp-invoice-id'; // TODO: Echte Invoice-ID zurückgeben
@@ -654,7 +654,7 @@ export class QuoteService {
           emailSubject: 'Angebot {NUMBER}',
           autoSend: false,
           autoConvertToInvoice: false,
-          reminderDays: [7, 3, 1],
+          reminderDays: [7, 3, 1]
         };
 
         await this.updateQuoteSettings(companyId, defaultSettings);
@@ -671,14 +671,14 @@ export class QuoteService {
    * Angebots-Einstellungen aktualisieren
    */
   static async updateQuoteSettings(
-    companyId: string,
-    settings: Partial<QuoteSettings>
-  ): Promise<void> {
+  companyId: string,
+  settings: Partial<QuoteSettings>)
+  : Promise<void> {
     try {
       const settingsRef = doc(db, 'companies', companyId, 'settings', 'quotes');
       await updateDoc(settingsRef, {
         ...settings,
-        updatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
     } catch (error) {
       throw error;
@@ -703,15 +703,15 @@ export class QuoteService {
 
       const stats = {
         total: quotes.length,
-        draft: quotes.filter(q => q.status === 'draft').length,
-        sent: quotes.filter(q => q.status === 'sent').length,
-        accepted: quotes.filter(q => q.status === 'accepted').length,
-        rejected: quotes.filter(q => q.status === 'rejected').length,
-        expired: quotes.filter(q => q.status === 'expired').length,
+        draft: quotes.filter((q) => q.status === 'draft').length,
+        sent: quotes.filter((q) => q.status === 'sent').length,
+        accepted: quotes.filter((q) => q.status === 'accepted').length,
+        rejected: quotes.filter((q) => q.status === 'rejected').length,
+        expired: quotes.filter((q) => q.status === 'expired').length,
         totalValue: quotes.reduce((sum, q) => sum + q.total, 0),
-        acceptedValue: quotes
-          .filter(q => q.status === 'accepted')
-          .reduce((sum, q) => sum + q.total, 0),
+        acceptedValue: quotes.
+        filter((q) => q.status === 'accepted').
+        reduce((sum, q) => sum + q.total, 0)
       };
 
       return stats;
@@ -727,10 +727,10 @@ export class QuoteService {
     const quotesRef = collection(db, 'companies', companyId, 'quotes');
     const q = query(quotesRef, orderBy('date', 'desc'));
 
-    return onSnapshot(q, snapshot => {
-      const quotes = snapshot.docs.map(doc => {
+    return onSnapshot(q, (snapshot) => {
+      const quotes = snapshot.docs.map((doc) => {
         const data = doc.data();
-        
+
         // CRITICAL FIX: Always use Firestore document ID, ignore any id field in data
         const quote = {
           ...data,
@@ -743,12 +743,12 @@ export class QuoteService {
           sentAt: data.sentAt?.toDate(),
           acceptedAt: data.acceptedAt?.toDate(),
           rejectedAt: data.rejectedAt?.toDate(),
-          convertedAt: data.convertedAt?.toDate(),
+          convertedAt: data.convertedAt?.toDate()
         } as Quote;
-        
+
         // Force ID to be the document ID - this fixes existing data
         quote.id = doc.id;
-        
+
         return quote;
       });
 
@@ -760,23 +760,23 @@ export class QuoteService {
    * Aktivität in der Kundenhistorie erstellen
    */
   static async createCustomerActivity(
-    companyId: string,
-    customerIdOrName: string,
-    type: 'call' | 'email' | 'meeting' | 'document' | 'system' | 'invoice' | 'note',
-    title: string,
-    description: string,
-    metadata?: any
-  ): Promise<void> {
+  companyId: string,
+  customerIdOrName: string,
+  type: 'call' | 'email' | 'meeting' | 'document' | 'system' | 'invoice' | 'note',
+  title: string,
+  description: string,
+  metadata?: any)
+  : Promise<void> {
     try {
       // Versuche zuerst den Kunden anhand der ID zu finden
       let customerId = customerIdOrName;
-      
+
       // Falls customerIdOrName ein Name ist, suche die entsprechende Kunden-ID
       if (customerIdOrName && !customerIdOrName.includes('customer_')) {
         const customersRef = collection(db, 'companies', companyId, 'customers');
         const customerQuery = query(customersRef, where('name', '==', customerIdOrName));
         const customerSnapshot = await getDocs(customerQuery);
-        
+
         if (!customerSnapshot.empty) {
           customerId = customerSnapshot.docs[0].id;
         } else {
@@ -805,7 +805,7 @@ export class QuoteService {
         metadata: metadata || {}
       });
 
-      console.log(`✅ Kundenaktivität erstellt: ${title} für Kunde ${customerId}`);
+
     } catch (error) {
       console.error('Fehler beim Erstellen der Kundenaktivität:', error);
       throw error;

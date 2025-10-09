@@ -10,8 +10,8 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue } from
+'@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
@@ -19,14 +19,14 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  TableRow } from
+'@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  DropdownMenuTrigger } from
+'@/components/ui/dropdown-menu';
 import {
   Eye,
   Edit,
@@ -41,8 +41,8 @@ import {
   DollarSign,
   Tag,
   FileText,
-  Copy,
-} from 'lucide-react';
+  Copy } from
+'lucide-react';
 import { Quote } from '@/services/quoteService';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -64,7 +64,7 @@ export function QuoteListView({
   activeTab,
   setActiveTab,
   showFilters,
-  setShowFilters,
+  setShowFilters
 }: QuoteListViewProps) {
   const [quotes, _setQuotes] = useState<Quote[]>(initialQuotes);
   const [searchTerm, setSearchTerm] = useState('');
@@ -79,16 +79,16 @@ export function QuoteListView({
 
   // Debug: Log incoming quotes and fix any with empty IDs
   useEffect(() => {
-    console.log('🔍 QuoteListView received quotes:', initialQuotes.map(q => ({
-      id: q.id,
-      customerName: q.customerName,
-      hasValidId: !!q.id && q.id.trim() !== '',
-      idType: typeof q.id,
-      idLength: q.id ? q.id.length : 0
-    })));
+
+
+
+
+
+
+
 
     // CRITICAL FIX: If we still receive quotes with empty IDs, warn the user
-    const quotesWithEmptyId = initialQuotes.filter(q => !q.id || q.id.trim() === '');
+    const quotesWithEmptyId = initialQuotes.filter((q) => !q.id || q.id.trim() === '');
     if (quotesWithEmptyId.length > 0) {
       console.error('❌ Still receiving quotes with empty IDs:', quotesWithEmptyId);
       toast.error(`⚠️ ${quotesWithEmptyId.length} Angebote haben keine gültige ID. Bitte kontaktieren Sie den Support.`);
@@ -165,19 +165,19 @@ export function QuoteListView({
     // Tab-based filtering
     switch (tab) {
       case 'draft':
-        filtered = quotes.filter(q => q.status === 'draft');
+        filtered = quotes.filter((q) => q.status === 'draft');
         break;
       case 'sent':
-        filtered = quotes.filter(q => q.status === 'sent');
+        filtered = quotes.filter((q) => q.status === 'sent');
         break;
       case 'accepted':
-        filtered = quotes.filter(q => q.status === 'accepted');
+        filtered = quotes.filter((q) => q.status === 'accepted');
         break;
       case 'expired':
-        filtered = quotes.filter(q => isExpired(q));
+        filtered = quotes.filter((q) => isExpired(q));
         break;
       case 'cancelled':
-        filtered = quotes.filter(q => q.status === 'cancelled');
+        filtered = quotes.filter((q) => q.status === 'cancelled');
         break;
       default:
         // 'all' tab shows all quotes
@@ -187,33 +187,33 @@ export function QuoteListView({
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(
-        quote =>
-          quote.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          quote.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          quote.title?.toLowerCase().includes(searchTerm.toLowerCase())
+        (quote) =>
+        quote.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        quote.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        quote.title?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Amount filter
     if (minAmount) {
-      filtered = filtered.filter(quote => quote.total >= parseFloat(minAmount));
+      filtered = filtered.filter((quote) => quote.total >= parseFloat(minAmount));
     }
     if (maxAmount) {
-      filtered = filtered.filter(quote => quote.total <= parseFloat(maxAmount));
+      filtered = filtered.filter((quote) => quote.total <= parseFloat(maxAmount));
     }
 
     // Date filter
     if (startDate) {
-      filtered = filtered.filter(quote => new Date(quote.date) >= new Date(startDate));
+      filtered = filtered.filter((quote) => new Date(quote.date) >= new Date(startDate));
     }
     if (endDate) {
-      filtered = filtered.filter(quote => new Date(quote.date) <= new Date(endDate));
+      filtered = filtered.filter((quote) => new Date(quote.date) <= new Date(endDate));
     }
 
     // Contact filter
     if (selectedContact) {
-      filtered = filtered.filter(quote =>
-        quote.customerName?.toLowerCase().includes(selectedContact.toLowerCase())
+      filtered = filtered.filter((quote) =>
+      quote.customerName?.toLowerCase().includes(selectedContact.toLowerCase())
       );
     }
 
@@ -264,7 +264,7 @@ export function QuoteListView({
     if (quote.id && quote.id.trim() !== '') {
       return quote.id;
     }
-    
+
     // If quote has a number, try to find it by number in the company's quotes
     // This is a fallback for when we know the quote exists but has empty ID
     if (quote.number) {
@@ -272,32 +272,32 @@ export function QuoteListView({
       // For now, return null to trigger error - we need the actual Firestore doc ID
       return null;
     }
-    
+
     return null;
   };
 
   const handleView = (quote: Quote, index?: number) => {
     const reliableId = getReliableQuoteId(quote, index || 0);
-    
-    console.log('🔍 Navigating to quote detail:', {
-      id: quote.id,
-      reliableId,
-      hasId: !!quote.id,
-      idLength: quote.id ? quote.id.length : 0,
-      idType: typeof quote.id,
-      number: quote.number,
-      customerName: quote.customerName
-    });
-    
+
+
+
+
+
+
+
+
+
+
+
     if (!reliableId) {
       console.error('❌ Quote has no reliable ID!', {
         quote,
-        allQuotes: initialQuotes.map(q => ({ id: q.id, number: q.number, customerName: q.customerName }))
+        allQuotes: initialQuotes.map((q) => ({ id: q.id, number: q.number, customerName: q.customerName }))
       });
       toast.error('Fehler: Angebot hat keine gültige ID. Das ist ein Datenintegritätsproblem. Bitte kontaktieren Sie den Support.');
       return;
     }
-    
+
     router.push(`/dashboard/company/${companyId}/finance/quotes/${reliableId}`);
   };
 
@@ -330,11 +330,11 @@ export function QuoteListView({
 
   const getTabCounts = () => {
     const all = quotes.length;
-    const draft = quotes.filter(q => q.status === 'draft').length;
-    const sent = quotes.filter(q => q.status === 'sent').length;
-    const accepted = quotes.filter(q => q.status === 'accepted').length;
-    const expired = quotes.filter(q => isExpired(q)).length;
-    const cancelled = quotes.filter(q => q.status === 'cancelled').length;
+    const draft = quotes.filter((q) => q.status === 'draft').length;
+    const sent = quotes.filter((q) => q.status === 'sent').length;
+    const accepted = quotes.filter((q) => q.status === 'accepted').length;
+    const expired = quotes.filter((q) => isExpired(q)).length;
+    const cancelled = quotes.filter((q) => q.status === 'cancelled').length;
 
     return { all, draft, sent, accepted, expired, cancelled };
   };
@@ -354,16 +354,16 @@ export function QuoteListView({
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2"
-          >
+            className="flex items-center gap-2">
+
             <Filter className="h-4 w-4" />
             Filter
             {showFilters && <X className="h-4 w-4" />}
           </Button>
           <Button
             onClick={() => router.push(`/dashboard/company/${companyId}/finance/quotes/create`)}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-          >
+            className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+
             <FileText className="h-4 w-4 mr-2" />
             Neues Angebot
           </Button>
@@ -371,8 +371,8 @@ export function QuoteListView({
       </div>
 
       {/* Filters */}
-      {showFilters && (
-        <div className="bg-white p-4 rounded-lg border space-y-4">
+      {showFilters &&
+      <div className="bg-white p-4 rounded-lg border space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium">Filter</h3>
             <Button variant="ghost" size="sm" onClick={clearFilters}>
@@ -386,21 +386,21 @@ export function QuoteListView({
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Angebotsnummer, Kunde..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+                placeholder="Angebotsnummer, Kunde..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10" />
+
               </div>
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Kunde</label>
               <Input
-                placeholder="Kundenname"
-                value={selectedContact}
-                onChange={(e) => setSelectedContact(e.target.value)}
-              />
+              placeholder="Kundenname"
+              value={selectedContact}
+              onChange={(e) => setSelectedContact(e.target.value)} />
+
             </div>
             
             <div>
@@ -408,12 +408,12 @@ export function QuoteListView({
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  type="number"
-                  placeholder="0,00"
-                  value={minAmount}
-                  onChange={(e) => setMinAmount(e.target.value)}
-                  className="pl-10"
-                />
+                type="number"
+                placeholder="0,00"
+                value={minAmount}
+                onChange={(e) => setMinAmount(e.target.value)}
+                className="pl-10" />
+
               </div>
             </div>
             
@@ -422,12 +422,12 @@ export function QuoteListView({
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  type="number"
-                  placeholder="0,00"
-                  value={maxAmount}
-                  onChange={(e) => setMaxAmount(e.target.value)}
-                  className="pl-10"
-                />
+                type="number"
+                placeholder="0,00"
+                value={maxAmount}
+                onChange={(e) => setMaxAmount(e.target.value)}
+                className="pl-10" />
+
               </div>
             </div>
             
@@ -436,11 +436,11 @@ export function QuoteListView({
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="pl-10"
-                />
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="pl-10" />
+
               </div>
             </div>
             
@@ -449,16 +449,16 @@ export function QuoteListView({
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="pl-10"
-                />
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="pl-10" />
+
               </div>
             </div>
           </div>
         </div>
-      )}
+      }
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -489,49 +489,49 @@ export function QuoteListView({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead 
+                  <TableHead
                     className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort('number')}
-                  >
+                    onClick={() => handleSort('number')}>
+
                     <div className="flex items-center gap-2">
                       Angebotsnummer
-                      {sortField === 'number' && (
-                        <span className="text-xs">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                      )}
+                      {sortField === 'number' &&
+                      <span className="text-xs">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                      }
                     </div>
                   </TableHead>
                   <TableHead>Kunde</TableHead>
-                  <TableHead 
+                  <TableHead
                     className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort('date')}
-                  >
+                    onClick={() => handleSort('date')}>
+
                     <div className="flex items-center gap-2">
                       Angebotsdatum
-                      {sortField === 'date' && (
-                        <span className="text-xs">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                      )}
+                      {sortField === 'date' &&
+                      <span className="text-xs">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                      }
                     </div>
                   </TableHead>
-                  <TableHead 
+                  <TableHead
                     className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort('validUntil')}
-                  >
+                    onClick={() => handleSort('validUntil')}>
+
                     <div className="flex items-center gap-2">
                       Gültig bis
-                      {sortField === 'validUntil' && (
-                        <span className="text-xs">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                      )}
+                      {sortField === 'validUntil' &&
+                      <span className="text-xs">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                      }
                     </div>
                   </TableHead>
-                  <TableHead 
+                  <TableHead
                     className="cursor-pointer hover:bg-gray-50 text-right"
-                    onClick={() => handleSort('total')}
-                  >
+                    onClick={() => handleSort('total')}>
+
                     <div className="flex items-center justify-end gap-2">
                       Gesamtbetrag
-                      {sortField === 'total' && (
-                        <span className="text-xs">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                      )}
+                      {sortField === 'total' &&
+                      <span className="text-xs">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                      }
                     </div>
                   </TableHead>
                   <TableHead>Status</TableHead>
@@ -539,19 +539,19 @@ export function QuoteListView({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredQuotes.length === 0 ? (
-                  <TableRow>
+                {filteredQuotes.length === 0 ?
+                <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                       Keine Angebote gefunden
                     </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredQuotes.map((quote, index) => (
-                    <TableRow 
-                      key={quote.id || `quote-${index}-${quote.number || ''}`} 
-                      className="hover:bg-gray-50 cursor-pointer"
-                      onClick={() => handleView(quote, index)}
-                    >
+                  </TableRow> :
+
+                filteredQuotes.map((quote, index) =>
+                <TableRow
+                  key={quote.id || `quote-${index}-${quote.number || ''}`}
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => handleView(quote, index)}>
+
                       <TableCell className="font-medium">
                         {quote.number || 'Ohne Nummer'}
                       </TableCell>
@@ -566,10 +566,10 @@ export function QuoteListView({
                         {formatCurrency(quote.total || 0)}
                       </TableCell>
                       <TableCell>
-                        <Badge 
-                          variant="outline" 
-                          className={getStatusColor(quote.status || 'draft', quote)}
-                        >
+                        <Badge
+                      variant="outline"
+                      className={getStatusColor(quote.status || 'draft', quote)}>
+
                           {getStatusText(quote.status || 'draft', quote)}
                         </Badge>
                       </TableCell>
@@ -582,46 +582,46 @@ export function QuoteListView({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={(e) => {
-                              e.stopPropagation();
-                              handleView(quote, index);
-                            }}>
+                          e.stopPropagation();
+                          handleView(quote, index);
+                        }}>
                               <Eye className="mr-2 h-4 w-4" />
                               Anzeigen
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(quote, index);
-                            }}>
+                          e.stopPropagation();
+                          handleEdit(quote, index);
+                        }}>
                               <Edit className="mr-2 h-4 w-4" />
                               Bearbeiten
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={(e) => {
-                              e.stopPropagation();
-                              handleDuplicate(quote, index);
-                            }}>
+                          e.stopPropagation();
+                          handleDuplicate(quote, index);
+                        }}>
                               <Copy className="mr-2 h-4 w-4" />
                               Duplizieren
                             </DropdownMenuItem>
-                            {(quote.status === 'accepted') && (
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                handleConvertToInvoice(quote, index);
-                              }}>
+                            {quote.status === 'accepted' &&
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          handleConvertToInvoice(quote, index);
+                        }}>
                                 <FileText className="mr-2 h-4 w-4" />
                                 Zu Rechnung umwandeln
                               </DropdownMenuItem>
-                            )}
+                        }
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
+                )
+                }
               </TableBody>
             </Table>
           </div>
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </div>);
+
 }

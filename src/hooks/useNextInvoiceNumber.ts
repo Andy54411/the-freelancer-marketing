@@ -20,20 +20,20 @@ export function useNextInvoiceNumber(companyId: string | null) {
     const loadNextNumber = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       try {
-        console.log('🔢 Loading next invoice number for preview...', { companyId });
-        
+
+
         const result = await FirestoreInvoiceService.getNextInvoiceNumber(companyId);
         const previewNumber = result.formattedNumber;
-        
-        console.log('✅ Next invoice number loaded for preview:', previewNumber);
+
+
         setNextNumber(previewNumber);
-        
+
       } catch (err) {
         console.error('❌ Error loading next invoice number:', err);
         setError(err instanceof Error ? err.message : 'Fehler beim Laden der Nummer');
-        
+
         // Fallback für Platzhalter
         setNextNumber('RE-XXXX');
       } finally {

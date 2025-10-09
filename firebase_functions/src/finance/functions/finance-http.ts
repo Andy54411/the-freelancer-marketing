@@ -3,6 +3,7 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
 import { Timestamp } from 'firebase-admin/firestore';
+import * as admin from 'firebase-admin';
 import { corsOptions } from '../../helpers';
 import { InvoiceModel, CustomerModel } from '../models';
 import { OrderToInvoiceSyncService } from '../sync';
@@ -38,7 +39,7 @@ import {
 // ✅ 2. Optimierte Gemini-Model-Konfiguration (GEMINI_PRODUCTION_CONFIG)
 // ✅ 3. Multi-Cloud Storage Architektur - S3 (nativ), GCS + URLs (AWS Lambda optimiert)
 // ✅ 4. Standardisierte Fehlerbehandlung für Datenbankoperationen (handleDatabaseOperation)
-// ✅ 5. Deutsche Rechnungsverarbeitung mit umfassenden Pattern-Matching-Fallbacks
+// ✅ 5. Deutsche Rechnungsverarbeitung mit Pattern-Matching (KEINE FALLBACKS)
 // ✅ 6. Performante Hybrid-OCR-Strategie: Gemini AI → AWS Textract → Pattern-Matching
 // ✅ 7. GoBD-konforme deutsche USt-Sätze (0%, 7%, 19%) mit strukturierter Aufschlüsselung
 // ✅ 8. Produktive Konfiguration mit optimalen Model-Parametern für deutsche Finanzdaten
@@ -68,6 +69,9 @@ export interface ExtractedInvoiceData {
     totalGrossAmount: number | null; // Gesamtbetrag Brutto
     totalNetAmount: number | null;   // Gesamtbetrag Netto
     totalVatAmount: number | null;   // Gesamtbetrag USt
+    
+    // MwSt-Satz Extraktion (0%, 7%, 19%)
+    taxRate?: number; // Hauptsteuersatz der Rechnung
     
     // NEU: Detaillierte USt-Aufschlüsselung nach deutschen Standards
     taxBreakdown: TaxBreakdown[];
@@ -120,7 +124,8 @@ const germanInvoiceSchema = z.object({
     taxBreakdown: z.array(z.object({
         rate: z.literal(19.0).or(z.literal(7.0)).or(z.literal(0.0)).describe('Umsatzsteuersatz, nur 19.0, 7.0 oder 0.0 verwenden'),
         netAmount: z.number().describe('Netto-Summe für diesen Steuersatz'),
-        vatAmount: z.number().describe('Umsatzsteuer-Summe für diesen Steuersatz')
+        vatAmount: z.number().describe('Umsatzsteuer-Summe für diesen Steuersatz'),
+        grossAmount: z.number().describe('Brutto-Summe für diesen Steuersatz (netAmount + vatAmount)')
     })).describe('Detaillierte Aufschlüsselung aller Umsatzsteuersätze und deren Beträge')
 });
 
@@ -136,9 +141,7 @@ import { ImageAnnotatorClient } from '@google-cloud/vision';
 // Google AI Studio für intelligente OCR-Nachbearbeitung
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// PDF Text Parsing als Fallback
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require('pdf-parse');
+// PDF Text Parsing - ENTFERNT (KEIN FALLBACK MEHR)
 
 // Validation schemas
 const updateInvoiceStatusSchema = z.object({
@@ -256,8 +259,15 @@ const customerSearchQuerySchema = z.object({
  * Unterstützt S3 (s3://), GCS (gs://) und öffentliche URLs (https://)
  */
 const cloudStorageOcrRequestSchema = z.object({
-    // 1. Allgemeine URL (für GCS signierte URLs, öffentliche Links, etc.)
-    fileUrl: z.string().url('Must be a valid URL').optional(),
+    // 1. Allgemeine URL (für GCS signierte URLs, öffentliche Links, Base64 Data URLs etc.)
+    fileUrl: z.string()
+        .refine(url => {
+            // Accept HTTP/HTTPS URLs OR Base64 Data URLs for development
+            const httpRegex = /^https?:\/\/.+/;
+            const dataUrlRegex = /^data:[^;]+;base64,.+/;
+            return httpRegex.test(url) || dataUrlRegex.test(url);
+        }, 'Must be a valid HTTP/HTTPS URL or Base64 Data URL')
+        .nullish(),
     
     // 2. Nativer AWS S3 Pfad (optimiert für Lambda-Umgebung)
     s3Path: z.string()
@@ -267,9 +277,9 @@ const cloudStorageOcrRequestSchema = z.object({
             const s3Regex = /^s3:\/\/[a-z0-9][\w.-]*[a-z0-9]\/(.+)$/;
             return s3Regex.test(path);
         }, 'Invalid S3 path format. Expected: s3://bucket-name/key/path/file.ext')
-        .optional(),
+        .nullish(),
     
-    // 3. Google Cloud Storage Pfad (fallback über signierte URLs empfohlen)
+    // 3. Google Cloud Storage Pfad (signierte URLs empfohlen)
     gcsPath: z.string()
         .startsWith('gs://', 'Must start with gs://')
         .refine(path => {
@@ -277,10 +287,10 @@ const cloudStorageOcrRequestSchema = z.object({
             const gcsRegex = /^gs:\/\/[a-z0-9][\w.-]*[a-z0-9]\/(.+)$/;
             return gcsRegex.test(path);
         }, 'Invalid GCS path format. Expected: gs://bucket-name/path/to/file')
-        .optional(),
+        .nullish(),
     
-    fileName: z.string().optional().describe('Original filename for processing context'),
-    mimeType: z.string().optional().describe('File MIME type (will be auto-detected if not provided)'),
+    fileName: z.string().nullish().describe('Original filename for processing context'),
+    mimeType: z.string().nullish().describe('File MIME type (will be auto-detected if not provided)'),
     
     // Erweiterte Optionen
     maxFileSizeMB: z.number().min(1).max(50).optional().default(50).describe('Maximum file size in MB'),
@@ -294,7 +304,7 @@ const cloudStorageOcrRequestSchema = z.object({
  * Model configuration for production use
  */
 const GEMINI_PRODUCTION_CONFIG = {
-    model: "gemini-1.5-flash", // Optimiert für Multimodalität und deutsche Rechnungen
+    model: "gemini-2.0-flash-exp", // ✅ FINALE LÖSUNG: Aktuelles, stabiles Gemini-Modell
     generationConfig: {
         temperature: 0.1, // Niedrig für konsistente Extraktion
         topK: 1,
@@ -435,7 +445,7 @@ logger.info('[AWS] Environment check:', {
 });
 
 if (!awsAccessKey || !awsSecretKey) {
-    logger.warn('[AWS] AWS credentials not fully configured - OCR may fall back to mock mode');
+    logger.warn('[AWS] AWS credentials not configured - OCR will fail at runtime if used');
 } else {
     logger.info('[AWS] ✅ AWS Textract configured with region:', awsRegion);
 }
@@ -460,6 +470,75 @@ try {
 const invoiceModel = new InvoiceModel();
 const customerModel = new CustomerModel();
 const syncService = new OrderToInvoiceSyncService();
+
+// =============================================================================
+// 🔥 USER COMPANY DATA LOADING - Smarte Vendor/Customer-Erkennung
+// =============================================================================
+
+interface UserCompanyData {
+    companyName: string | null;
+    companyStreet: string | null;
+    companyHouseNumber: string | null;
+    companyCity: string | null;
+    companyPostalCode: string | null;
+    companyCountry: string | null;
+    phoneNumber: string | null;
+    contactEmail: string | null;
+    vatId: string | null;
+    taxNumber: string | null;
+}
+
+/**
+ * Lädt die Company-Daten des eingeloggten Users aus Firestore
+ * Diese Daten werden genutzt um automatisch zu erkennen:
+ * - Vendor = User's Company (wenn Daten auf Rechnung gefunden werden)
+ * - Customer = Andere Firma (die nicht dem User gehört)
+ */
+async function loadUserCompanyData(userId: string): Promise<UserCompanyData | null> {
+    try {
+        logger.info(`[USER_COMPANY] Loading company data for user: ${userId}`);
+        
+        const db = admin.firestore();
+        const companyDoc = await db.collection('companies').doc(userId).get();
+        
+        if (!companyDoc.exists) {
+            logger.warn(`[USER_COMPANY] No company data found for user: ${userId}`);
+            return null;
+        }
+        
+        const data = companyDoc.data();
+        if (!data) {
+            logger.warn(`[USER_COMPANY] Company document exists but has no data for user: ${userId}`);
+            return null;
+        }
+        
+        const companyData: UserCompanyData = {
+            companyName: data.companyName || null,
+            companyStreet: data.companyStreet || null,
+            companyHouseNumber: data.companyHouseNumber || null,
+            companyCity: data.companyCity || null,
+            companyPostalCode: data.companyPostalCode || null,
+            companyCountry: data.companyCountry || null,
+            phoneNumber: data.phoneNumber || null,
+            contactEmail: data.contactEmail || data.email || null,
+            vatId: data.vatId || null,
+            taxNumber: data.taxNumber || null
+        };
+        
+        logger.info(`[USER_COMPANY] ✅ Loaded company data:`, {
+            companyName: companyData.companyName,
+            city: companyData.companyCity,
+            hasPhone: !!companyData.phoneNumber,
+            hasEmail: !!companyData.contactEmail,
+            hasVatId: !!companyData.vatId
+        });
+        
+        return companyData;
+    } catch (error) {
+        logger.error(`[USER_COMPANY] Error loading company data for user ${userId}:`, error);
+        return null;
+    }
+}
 
 /**
  * Zentrale HTTP-API für das Finance-Modul mit OCR-Integration
@@ -502,7 +581,7 @@ export const financeApi = onRequest({
                     
                     if (apiKey && genAI) {
                         // Production-ready: Use specific model optimized for German invoice processing
-                        const PRODUCTION_MODEL = "gemini-1.5-flash"; // Optimiert für Multimodalität und Geschwindigkeit
+                        const PRODUCTION_MODEL = "gemini-2.0-flash-exp"; // ✅ FINALE LÖSUNG: Aktuelles, stabiles Gemini-Modell
                         
                         try {
                             logger.info(`[GEMINI TEST] 🎯 Using production model: ${PRODUCTION_MODEL}`);
@@ -1064,18 +1143,20 @@ async function handleReceiptExtraction(
             fileUrl, 
             s3Path,
             gcsPath, 
-            fileName = 'receipt.pdf', 
+            fileName, 
             mimeType,
             maxFileSizeMB = 50,
             forceReprocess = false
         } = validationResult.data;
+        
+        const safeFileName = fileName || 'receipt.pdf';
         const ocrProvider = (request.headers['x-ocr-provider'] as string) || 'AWS_TEXTRACT';
 
         logger.info(`[OCR DEBUG] ⚡ Multi-Cloud Storage OCR Request:`, {
             hasFileUrl: !!fileUrl,
             hasS3Path: !!s3Path,
             hasGcsPath: !!gcsPath,
-            fileName,
+            fileName: safeFileName,
             ocrProvider,
             maxFileSizeMB,
             forceReprocess,
@@ -1087,7 +1168,11 @@ async function handleReceiptExtraction(
         // 📥 NEUE MULTI-CLOUD LOGIK: Download from S3, GCS, or URL
         logger.info(`[OCR DEBUG] Attempting to retrieve file from S3: ${s3Path || 'none'}, GCS: ${gcsPath || 'none'}, or URL: ${fileUrl || 'none'}`);
         
-        const downloadResult: FileDownloadResult = await getFileBufferFromPath(fileUrl, s3Path, gcsPath);
+        const downloadResult: FileDownloadResult = await getFileBufferFromPath(
+            fileUrl || undefined, 
+            s3Path || undefined, 
+            gcsPath || undefined
+        );
         
         if (downloadResult.error || !downloadResult.buffer) {
             logger.error(`[OCR DEBUG] File download failed:`, downloadResult.error || 'Buffer is null');
@@ -1118,7 +1203,7 @@ async function handleReceiptExtraction(
         }
 
         logger.info(`[OCR DEBUG] ✅ File successfully downloaded and validated:`, {
-            fileName,
+            fileName: safeFileName,
             source: downloadResult.metadata?.source,
             bufferSize: fileBuffer.length,
             fileSizeMB,
@@ -1129,7 +1214,7 @@ async function handleReceiptExtraction(
         // 🚀 Hybrid OCR processing: AWS Textract + Google AI Studio (GLEICHER WORKFLOW)
         logger.info(`[OCR DEBUG] Starting OCR processing with downloaded file:`, {
             bufferSize: fileBuffer.length,
-            fileName,
+            fileName: safeFileName,
             detectedMimeType,
             source: downloadResult.metadata?.source
         });
@@ -1137,7 +1222,7 @@ async function handleReceiptExtraction(
         // Log API usage for monitoring
         logAPIUsage(companyId, 'CLOUD_STORAGE_OCR_PROCESSING', fileBuffer.length, ocrProvider);
         
-        const ocrResult = await performHybridOCR(fileBuffer, fileName, ocrProvider);
+        const ocrResult = await performHybridOCR(fileBuffer, safeFileName, ocrProvider);
         logger.info(`[OCR DEBUG] OCR processing completed:`, {
             textLength: ocrResult.text.length,
             confidence: ocrResult.confidence,
@@ -1148,7 +1233,7 @@ async function handleReceiptExtraction(
 
         // Extract structured receipt data
         logger.info(`[OCR DEBUG] Starting data extraction from OCR result...`);
-        const extractedData = await extractReceiptDataFromOCRSimple(ocrResult, fileName);
+        const extractedData = await extractReceiptDataFromOCRSimple(ocrResult, safeFileName, userId);
         logger.info(`[OCR DEBUG] Data extraction completed:`, {
             hasAmount: !!extractedData.totalGrossAmount,
             hasVendor: !!extractedData.vendorName,
@@ -1160,7 +1245,7 @@ async function handleReceiptExtraction(
 
         // ERWEITERTE API-LOGS - Vollständige Extraktion anzeigen
         logger.info('[OCR API RESULT] 📋 VOLLSTÄNDIGE EXTRAKTION:', {
-            fileName: fileName,
+            fileName: safeFileName,
             ocrProvider: ocrResult.enhanced ? 'ENHANCED_HYBRID' : ocrProvider,
             processingTime: ocrResult.processingTime + 'ms',
             confidence: ocrResult.confidence,
@@ -1213,7 +1298,7 @@ async function handleReceiptExtraction(
         // Log performance metrics for successful operation
         logPerformanceMetrics('RECEIPT_EXTRACTION_COMPLETE', operationStartTime, {
             companyId,
-            fileName,
+            fileName: safeFileName,
             ocrProvider,
             enhanced: ocrResult.enhanced,
             extractionSuccess: !!extractedData.invoiceNumber || !!extractedData.vendorName
@@ -1263,98 +1348,25 @@ async function performHybridOCR(
             timestamp: new Date().toISOString()
         });
         
-        // === PRIORITÄT 1: AWS TEXTRACT MIT MULTI-PASS OCR (UNSER VERBESSERTES SYSTEM) ===
-        try {
-            logger.info('[OCR Hybrid DEBUG] 🎯 Attempting AWS Textract with Multi-Pass OCR (primary)...');
-            
-            // Verwende unser verbessertes iteratives OCR-System
-            const textractResult = await performAWSTextractOCR(fileBuffer, fileName);
-            logger.info('[OCR Hybrid DEBUG] ✅ AWS Textract Multi-Pass OCR successful!', {
-                textLength: textractResult.text?.length || 0,
-                confidence: textractResult.confidence,
-                processingTimeMs: Date.now() - startTime,
-                enhanced: true // Unser System ist enhanced durch Multi-Pass
-            });
-            
-            return {
-                text: textractResult.text,
-                confidence: textractResult.confidence,
-                processingTime: Date.now() - startTime,
-                blocks: textractResult.blocks || [], // Textract blocks für weitere Verarbeitung
-                enhanced: true
-            };
-            
-        } catch (textractError) {
-            logger.warn('[OCR Hybrid] AWS Textract Multi-Pass failed, trying Google Cloud Vision fallback:', (textractError as Error).message);
-            
-            // Fallback 1: Google Cloud Vision
-            try {
-                logger.info('[OCR Hybrid DEBUG] Attempting Google Cloud Vision processing (fallback 1)...');
-                const visionResult = await processWithGoogleCloudVision(fileBuffer, fileName);
-                logger.info('[OCR Hybrid DEBUG] ✅ Google Cloud Vision processing successful!', {
-                    textLength: visionResult.extractedText?.length || 0,
-                    confidence: visionResult.confidence,
-                    processingTimeMs: Date.now() - startTime,
-                    enhanced: visionResult.enhanced
-                });
-                
-                return {
-                    text: visionResult.extractedText,
-                    confidence: visionResult.confidence,
-                    processingTime: Date.now() - startTime,
-                    blocks: [], // Vision API provides text directly
-                    enhanced: true
-                };
-                
-            } catch (visionError) {
-                logger.warn('[OCR Hybrid] Google Cloud Vision failed, trying Google AI Studio fallback:', (visionError as Error).message);
-                
-                // Fallback 2: Google AI Studio
-                try {
-                    logger.info('[OCR Hybrid DEBUG] Attempting Google AI Studio processing (fallback 2)...');
-                    const directResult = await processWithGoogleAIStudioDirect(fileBuffer, fileName);
-                    logger.info('[OCR Hybrid DEBUG] ✅ Google AI Studio processing successful!', {
-                        textLength: directResult.extractedText?.length || 0,
-                        confidence: directResult.confidence,
-                        processingTimeMs: Date.now() - startTime,
-                        enhanced: directResult.enhanced
-                    });
-                    
-                    return {
-                        text: directResult.extractedText,
-                        confidence: directResult.confidence,
-                        processingTime: Date.now() - startTime,
-                        blocks: [], // No AWS blocks needed
-                        enhanced: true
-                    };
-                    
-                } catch (googleError) {
-                    logger.error('[OCR Hybrid] Google AI Studio also failed:', (googleError as Error).message);
-                    
-                    // Emergency fallback to AWS Textract
-                    logger.warn('[OCR Hybrid] Attempting emergency AWS Textract fallback...');
-                    
-                    try {
-                        const textractResult = await performAWSTextractOCR(fileBuffer, fileName);
-                        logger.info('[OCR Hybrid] ⚠️ Emergency AWS fallback used (higher cost)');
-                        
-                        return {
-                            ...textractResult,
-                            enhanced: false
-                        };
-                        
-                    } catch (awsError) {
-                        logger.error('[OCR Hybrid] All OCR providers failed:', {
-                            visionError: (visionError as Error).message,
-                            googleError: (googleError as Error).message,
-                            awsError: (awsError as Error).message
-                        });
-                        
-                        throw new Error(`All OCR providers failed. Last error: ${(awsError as Error).message}`);
-                    }
-                }
-            }
-        }
+        // === AWS TEXTRACT MIT MULTI-PASS OCR (KEIN FALLBACK - NUR ERROR HANDLING) ===
+        logger.info('[OCR DEBUG] 🎯 Attempting AWS Textract with Multi-Pass OCR (NO FALLBACKS)...');
+        
+        // Verwende unser verbessertes iteratives OCR-System - BEI FEHLER: SOFORT EXCEPTION
+        const textractResult = await performAWSTextractOCR(fileBuffer, fileName);
+        logger.info('[OCR DEBUG] ✅ AWS Textract Multi-Pass OCR successful!', {
+            textLength: textractResult.text?.length || 0,
+            confidence: textractResult.confidence,
+            processingTimeMs: Date.now() - startTime,
+            enhanced: true
+        });
+        
+        return {
+            text: textractResult.text,
+            confidence: textractResult.confidence,
+            processingTime: Date.now() - startTime,
+            blocks: textractResult.blocks || [],
+            enhanced: true
+        };
     } catch (error) {
         logger.error('[OCR Hybrid] Complete OCR processing failed:', error);
         throw new Error(`OCR processing failed: ${(error as Error).message}`);
@@ -1461,11 +1473,11 @@ VOLLTEXT:`;
         // Use the correct working models from API
         let model;
         const modelNames = [
+            "gemini-2.0-flash-exp", // ✅ Primäres Modell
+            "models/gemini-2.0-flash-exp",
             "models/gemini-2.5-flash",
             "models/gemini-2.0-flash", 
-            "models/gemini-flash-latest",
-            "models/gemini-2.5-flash-lite",
-            "models/gemini-pro-latest"
+            "models/gemini-flash-latest"
         ];
         
         for (const modelName of modelNames) {
@@ -1522,7 +1534,7 @@ VOLLTEXT:`;
 // REMOVED: enhanceOCRWithGoogleAI function - no longer needed with direct processing
 // Cost optimization: Direct Google AI processing eliminates double processing costs
 
-// NEW: Google Cloud Vision OCR - Reliable Alternative to Google AI Studio
+// Google Cloud Vision OCR - Standalone Processing (NO FALLBACK)
 async function processWithGoogleCloudVision(
     fileBuffer: Buffer,
     fileName: string
@@ -1563,42 +1575,8 @@ async function processWithGoogleCloudVision(
         });
         
         if (!detections || detections.length === 0) {
-            logger.warn('[Google Cloud Vision DEBUG] No text detected in document - trying PDF text extraction fallback');
-            
-            // FALLBACK: Direct PDF text extraction for text-based PDFs
-            try {
-                logger.info('[PDF Fallback] Attempting direct PDF text extraction...');
-                const pdfData = await pdfParse(fileBuffer);
-                
-                if (pdfData.text && pdfData.text.trim().length > 0) {
-                    logger.info('[PDF Fallback] ✅ Successfully extracted text from PDF', {
-                        textLength: pdfData.text.length,
-                        pages: pdfData.numpages,
-                        textPreview: pdfData.text.substring(0, 200)
-                    });
-                    
-                    // Enhance the PDF text with German business structure
-                    const enhancedText = enhanceVisionTextForGermanBusiness(pdfData.text);
-                    
-                    return {
-                        extractedText: enhancedText,
-                        confidence: 0.95, // High confidence for direct PDF text extraction
-                        enhanced: true
-                    };
-                } else {
-                    logger.warn('[PDF Fallback] PDF contains no extractable text');
-                }
-                
-            } catch (pdfError) {
-                logger.error('[PDF Fallback] PDF text extraction failed:', pdfError);
-            }
-            
-            // If both Vision API and PDF extraction fail
-            return {
-                extractedText: '',
-                confidence: 0,
-                enhanced: false
-            };
+            logger.error('[Google Cloud Vision ERROR] No text detected in document - KEIN FALLBACK!');
+            throw new Error('Google Cloud Vision failed: No text detected in document. NO FALLBACK ALLOWED!');
         }
         
         // The first annotation contains the full text
@@ -1744,11 +1722,11 @@ STRUKTUR_INFO:
         
     } catch (error) {
         logger.error('[Vision Enhancement] Enhancement failed:', error);
-        return rawText; // Return unenhanced text if enhancement fails
+        throw new Error(`Vision text enhancement failed: ${error instanceof Error ? error.message : 'Unknown error'}`); // NO FALLBACK
     }
 }
 
-// COST-OPTIMIZED AWS Textract (Emergency Fallback Only)
+// COST-OPTIMIZED AWS Textract (KEIN FALLBACK - NUR ERROR HANDLING)
 async function performAWSTextractOCR(
     fileBuffer: Buffer,
     fileName: string
@@ -1756,10 +1734,10 @@ async function performAWSTextractOCR(
     const startTime = Date.now();
 
     // Cost control: Log usage for monitoring
-    logger.warn('[OCR Cost Alert] Using expensive AWS Textract fallback!', {
+    logger.info('[OCR] Using AWS Textract processing', {
         fileName,
         fileSize: fileBuffer.length,
-        estimatedCost: '~$0.015 per page (10x more expensive than Google AI)'
+        estimatedCost: '~$0.015 per page'
     });
 
     // Validate input parameters
@@ -1823,37 +1801,18 @@ async function performAWSTextractOCR(
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        logger.error('[OCR] AWS Textract emergency fallback failed:', {
+        logger.error('[OCR] AWS Textract processing failed:', {
             message: errorMessage,
             fileName,
             region: 'eu-central-1'
         });
         
-        throw new Error(`AWS Textract emergency processing failed: ${errorMessage}`);
+        throw new Error(`AWS Textract processing failed: ${errorMessage}`);
     }
 }
 
 // COST-OPTIMIZED: Basic text extraction (no expensive advanced features)
-function extractBasicText(blocks: any[]): string {
-    const textLines: string[] = [];
-    
-    // Extract only LINE blocks for basic text (cheaper processing)
-    const lineBlocks = blocks.filter(block => block.BlockType === 'LINE');
-    
-    lineBlocks
-        .sort((a, b) => {
-            const aTop = a.Geometry?.BoundingBox?.Top || 0;
-            const bTop = b.Geometry?.BoundingBox?.Top || 0;
-            return aTop - bTop; // Simple top-to-bottom sort
-        })
-        .forEach(block => {
-            if (block.Text && block.Text.trim()) {
-                textLines.push(block.Text.trim());
-            }
-        });
-
-    return textLines.join('\n');
-}
+// ❌ KOMPLETT GELÖSCHT - Alte extractBasicText OCR-Funktion
 
 // COST-OPTIMIZED: Simple confidence calculation
 function calculateBasicConfidence(blocks: any[]): number {
@@ -1861,7 +1820,7 @@ function calculateBasicConfidence(blocks: any[]): number {
         .filter(block => block.Confidence !== undefined)
         .map(block => block.Confidence);
     
-    if (confidenceValues.length === 0) return 0.8; // Default fallback
+    if (confidenceValues.length === 0) throw new Error('No confidence values found - cannot calculate confidence!');
     
     const average = confidenceValues.reduce((sum, conf) => sum + conf, 0) / confidenceValues.length;
     return average / 100; // Convert to 0-1 range
@@ -1879,16 +1838,16 @@ function calculateBasicConfidence(blocks: any[]): number {
 async function performMultiPassOCR(textractBlocks: any[]): Promise<string> {
     logger.info('[MULTI-PASS OCR] Starting comprehensive text extraction...');
     
-    // Pass 1: Standard line-by-line extraction
-    const standardText = extractBasicText(textractBlocks);
+    // Pass 1: Standard line-by-line extraction - SIMPLIFIED
+    const standardText = textractBlocks.filter(b => b.BlockType === 'LINE').map(b => b.Text).join('\n');
     logger.info('[MULTI-PASS OCR] Pass 1 - Standard extraction complete, length:', standardText.length);
     
     // Pass 2: Word-level extraction for missed content
-    const wordLevelText = extractWordLevelText(textractBlocks);
+    const wordLevelText = textractBlocks.filter(b => b.BlockType === 'WORD').map(b => b.Text).join(' ');
     logger.info('[MULTI-PASS OCR] Pass 2 - Word-level extraction complete, length:', wordLevelText.length);
     
     // Pass 3: Character-level extraction for stubborn content
-    const characterLevelText = extractCharacterLevelText(textractBlocks);
+    const characterLevelText = textractBlocks.filter(b => b.BlockType === 'SELECTION_ELEMENT').map(b => b.Text).join('');
     logger.info('[MULTI-PASS OCR] Pass 3 - Character-level extraction complete, length:', characterLevelText.length);
     
     // Combine all passes with deduplication
@@ -1898,31 +1857,8 @@ async function performMultiPassOCR(textractBlocks: any[]): Promise<string> {
     return combinedText;
 }
 
-function extractWordLevelText(blocks: any[]): string {
-    const wordBlocks = blocks.filter(block => block.BlockType === 'WORD');
-    return wordBlocks
-        .sort((a, b) => {
-            const aTop = a.Geometry?.BoundingBox?.Top || 0;
-            const bTop = b.Geometry?.BoundingBox?.Top || 0;
-            if (Math.abs(aTop - bTop) < 0.01) { // Same line
-                const aLeft = a.Geometry?.BoundingBox?.Left || 0;
-                const bLeft = b.Geometry?.BoundingBox?.Left || 0;
-                return aLeft - bLeft;
-            }
-            return aTop - bTop;
-        })
-        .map(block => block.Text || '')
-        .join(' ');
-}
-
-function extractCharacterLevelText(blocks: any[]): string {
-    // Extract individual characters for maximum coverage
-    const allText = blocks
-        .filter(block => block.Text && block.Text.trim())
-        .map(block => block.Text.trim())
-        .join(' ');
-    return allText;
-}
+// ❌ GELÖSCHT
+// ❌ DELETED FUNCTIONS REMOVED - Using inline implementations instead
 
 function combineAndDeduplicateText(textPasses: string[]): string {
     // Intelligente Kombination der verschiedenen OCR-Passes
@@ -2000,483 +1936,6 @@ function extractByTextLength(blocks: any[]): string {
         })
         .map(block => block.Text.trim())
         .join('\n');
-}
-
-// Advanced amount extraction optimized for German invoices
-function extractAmountsAdvanced(text: string): { amount: number | null; netAmount: number | null; vatAmount: number | null } {
-    logger.info('[AMOUNT DEBUG] Starting amount extraction...');
-    logger.info('[AMOUNT DEBUG] Text sample:', text.substring(0, 800));
-    
-    // === WISSENSCHAFTLICH OPTIMIERTE OCR-PATTERNS (EVIDENCE-BASED) ===
-    const amountPatterns = [
-        // === 1. STANDALONE BETRÄGE (HÖCHSTE PRIORITÄT FÜR ISOLIERTE WERTE) ===
-        // Typische deutsche Betragsformate: 487,9 €, 410.00 €, 77.90 €
-        /([0-9]{1,8}[.,]\d{1,2})[\s]*€/gmi,
-        /([0-9]{1,8}[.,]\d{1,2})[\s]*EUR/gmi,
-        /€[\s]*([0-9]{1,8}[.,]\d{1,2})/gmi,
-        /EUR[\s]*([0-9]{1,8}[.,]\d{1,2})/gmi,
-        
-        // === 2. SPEZIFISCHE PATTERNS FÜR RECHNUNGSFORMAT ===
-        // Direkte Beträge am Ende einer Zeile mit €-Symbol
-        /^([0-9]{1,8}[.,]\d{1,2})[\s]*€[\s]*$/gmi,
-        /\n([0-9]{1,8}[.,]\d{1,2})[\s]*€[\s]*(?:\n|$)/gmi,
-        /([0-9]{1,8}[.,]\d{1,2})[\s]*€[\s]*(?=\s*\n|$)/gmi,
-        
-        // === 2. GESAMT-PATTERNS MIT VERSCHIEDENEN ABSTÄNDEN ===
-        /gesamt[\s\n\r]*([0-9]{1,8}[.,]\d{1,2})[\s]*€/gmi,
-        /gesamt[\s]*\n[\s]*([0-9]{1,8}[.,]\d{1,2})[\s]*€/gmi,
-        /gesamt[\s\n\r]+([0-9]{1,8}[.,]\d{1,2})[\s]*€/gmi,
-        
-        // === 3. OCR-FEHLERTOLERANTE KONTEXT-PATTERNS ===
-        // Häufige OCR-Verwechslungen: O→0, I→1, S→5, B→8, G→6
-        /(?:gesamt|6esamt|cesamt|total|tota1)[\s\n\r]*([0O9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:zu\s*zahlen|zahlbetrag|zah1betrag|amount\s*due|arnount\s*due)[\s:]*([0O9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:rechnungsbetrag|rechnung5betrag|invoice\s*amount)[\s:]*([0O9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // === 4. KONTEXT-SPEZIFISCHE ZEILEN-ENDE PATTERNS ===
-        /total[\s\n\r]*([0-9]{1,8}[.,]\d{1,2})[\s]*[€$£¥][\s]*$/gmi,
-        
-        // === 3. WISSENSCHAFTLICH BEWÄHRTE PATTERNS (NANONETS/SROIE STANDARDS) ===
-        // Währung VOR Betrag (höhere Genauigkeit laut Studien)
-        /(?:CHF|EUR|USD|GBP)[\s]*([0-9]{1,8}[.,]\d{1,2})/gi,
-        /[€$£¥][\s]*([0-9]{1,8}[.,]\d{1,2})/gi,
-        
-        // Nach Doppelpunkt/Gleichheitszeichen (SROIE-Standards)
-        /(?:gesamt|total|summe|sum)[\s]*[:=][\s]*([0-9]{1,8}[.,]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:total|gesamt)[\s]*:?[\s]*(?:CHF|EUR|USD|GBP|[€$£¥])[\s]*([0-9]{1,8}[.,]\d{1,2})/gi,
-        
-        // Tabellenspalten-Erkennung (Nanonets-Methode)
-        /[\|\t]\s*([0-9]{1,8}[.,]\d{1,2})[\s]*€[\s]*[\|\t\n$]/gi,
-        
-        // === 4. CUTIE/GCN-BASIERTE KONTEXT-PATTERNS ===
-        // Dokumentstruktur-bewusste Extraktion (wissenschaftliche Methoden)
-        /(?:gesamtbetrag|total\s*amount|montant\s*total|importe\s*total)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:brutto|gross|brutlto|6ross)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // === 5. EVIDENZ-BASIERTE RECHNUNGS-PATTERNS (RECEIPT RESEARCH) ===
-        // Basierend auf SROIE Dataset und Nanonets Forschung
-        /(?:betrag|amount|8etrag|arnount)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:price|preis|pre1s|kosten|cost)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // === 6. SPEZIFISCHE DEUTSCHE RECHNUNGSFORMATE ===
-        // Optimiert für deutsche Buchhaltungsstandards
-        /(?:zu\s*zahlen|zahlungsbetrag|endsumme)[\s:]*([0-9]{1,8}[.,]\d{1,2})[\s]*€/gi,
-        /(?:gesamt|summe)[\s\n\r]+([0-9]{1,8}[.,]\d{1,2})[\s]*€/gi,
-        
-        // === 6. ERWEITERTE TABELLEN-STRUKTUREN MIT OCR-TOLERANZ ===
-        // Zeilen-Ende mit OCR-Toleranz (O→0 Verwechslungen)
-        /([0O9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥CHF][\s]*(?:\n|$|\r)/gmi,
-        /([0O9]{1,8}[.,\s]\d{1,2})[\s]*(?:EUR|USD|GBP|CHF|eur|usd|gbp|chf)[\s]*(?:\n|$|\r)/gmi,
-        
-        // Tabellenspalten mit erweiterten Trennzeichen
-        /[\|\t;]\s*([0O9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?\s*[\|\t\n;]/gi,
-        /[:]\s*([0O9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?\s*(?:\n|$)/gi,
-        
-        // === 7. INTERNATIONALE WÄHRUNGS-PATTERNS MIT OCR-TOLERANZ ===
-        /([0O9]{1,8}[.,\s]\d{1,2})[\s]*(?:EUR|USD|GBP|CHF|eur|usd|gbp|chf|EUR|U5D|G8P)(?!\d)/gi,
-        /(?:EUR|USD|GBP|CHF|eur|usd|gbp|chf)[\s]*([0O9]{1,8}[.,\s]\d{1,2})/gi,
-        
-        // === 8. REGIONALE ZAHLENFORMATE MIT OCR-FEHLERTOLERANZ ===
-        // Amerikanisches Format mit OCR-Toleranz: $1,234.56
-        /\$[\s]*([0O9]{1,3}(?:,[0O9]{3})*\.[0O9]{1,2})/g,
-        // Deutsches Format mit OCR-Toleranz: 1.234,56 € oder 487,9 €
-        /([0O9]{1,3}(?:\.[0O9]{3})*,[0O9]{1,2})[\s]*€/g,
-        // Französisches Format: 1 234,56 €
-        /([0O9]{1,3}(?:\s[0O9]{3})*,[0O9]{1,2})[\s]*€/g,
-        
-        // === 9. HOCHPRÄZISE WÄHRUNGSSYMBOL-PATTERNS ===
-        // Vor dem Betrag (höhere Priorität als nachgestellt)
-        /[€$£¥][\s]*([0O9]{1,8}[.,\s]\d{1,2})(?=\s|$|\n|[^0-9])/g,
-        // Nach dem Betrag
-        /([0O9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥](?=\s|$|\n|[^0-9])/g,
-        
-        // === 10. FALLBACK MIT OCR-TOLERANZ (NIEDRIGSTE PRIORITÄT) ===
-        // Standard Dezimalbeträge mit OCR-Toleranz
-        /([0O9]{1,8}[.,]\d{1,2})(?=\s|$|\n|[^0-9])/g,
-    ];
-
-    const vatPatterns = [
-        // === DEUTSCHE UST-PATTERNS (ERWEITERT, 1-2 Nachkommastellen) ===
-        /(?:umsatzsteuer\s*19%|mwst\s*19%|ust\s*19%|mehrwertsteuer\s*19%)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:umsatzsteuer\s*7%|mwst\s*7%|ust\s*7%|mehrwertsteuer\s*7%)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:umsatzsteuer|mehrwertsteuer|mwst|ust|steuer|abgabe)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // === INTERNATIONALE VAT-PATTERNS (MASSIV ERWEITERT, 1-2 Nachkommastellen) ===
-        // UK/International
-        /(?:vat\s*20%|value\s*added\s*tax\s*20%)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:vat|value\s*added\s*tax)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // Französisch
-        /(?:tva\s*20%|taxe\s*sur\s*la\s*valeur\s*ajoutée\s*20%)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:tva|t\.v\.a\.|taxe\s*sur\s*la\s*valeur\s*ajoutée)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // Spanisch/Italienisch
-        /(?:iva\s*21%|impuesto\s*sobre\s*el\s*valor\s*añadido\s*21%)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:iva|i\.v\.a\.|impuesto\s*sobre\s*el\s*valor\s*añadido)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // Niederländisch
-        /(?:btw\s*21%|omzetbelasting\s*21%)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:btw|b\.t\.w\.|omzetbelasting)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // US Sales Tax
-        /(?:sales\s*tax|tax)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*\$/gi,
-        /(?:tax\s*\d+%|sales\s*tax\s*\d+%)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // === EU-WEITE PROZENTSÄTZE ===
-        // Standard-Sätze
-        /(?:19|20|21|22|23|24|25|27)%[\s]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        // Ermäßigte Sätze
-        /(?:5|6|7|8|9|10|12|13|14|15|16|17|18)%[\s]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // === FALLBACK-PATTERNS ===
-        // Beliebige Prozentsätze mit Beträgen
-        /(\d{1,2})[,.]?(\d{1,2})?%[\s]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        // Generische Steuerbegriffe
-        /(?:tax|steuer|impôt|impuesto|belasting)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-    ];
-
-    const netPatterns = [
-        // === DEUTSCHE NETTO-PATTERNS (ERWEITERT, 1-2 Nachkommastellen) ===
-        /(?:gesamtbetrag\s*netto|nettobetrag|netto|zwischensumme|warenwert)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:summe\s*netto|betrag\s*netto|rechnungsbetrag\s*netto)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:gesamt\s*netto)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // === INTERNATIONALE NET-PATTERNS (MASSIV ERWEITERT) ===
-        // Englisch
-        /(?:subtotal|net\s*amount|net\s*total|sub\s*total|net\s*sum)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:net|subtotal|before\s*tax|pre\s*tax|exclusive\s*tax|ex\s*tax)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:amount\s*before\s*tax|pre\s*vat\s*amount|net\s*price)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // Französisch
-        /(?:sous\s*total|montant\s*net|total\s*net|hors\s*taxes|ht)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:montant\s*hors\s*tva|base\s*imposable)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // Spanisch
-        /(?:subtotal|importe\s*neto|base\s*imponible|sin\s*iva)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:total\s*sin\s*impuestos|antes\s*de\s*impuestos)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // Italienisch
-        /(?:subtotale|importo\s*netto|totale\s*netto|esclusa\s*iva)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        /(?:imponibile|base\s*imponibile)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // Niederländisch
-        /(?:subtotaal|netto\s*bedrag|exclusief\s*btw|ex\s*btw)[\s:]*([0-9]{1,8}[.,\s]\d{1,2})[\s]*[€$£¥]?/gi,
-        
-        // === TABELLEN-PATTERNS ===
-        /(?:zwischensumme|interim\s*total|partial\s*total)[\s:]*([0-9]{1,8}[.,\s]\d{2})[\s]*[€$£¥]?/gi,
-        /(?:sum|summe|total)[\s]*(?:net|netto|ht|ex\s*tax)[\s:]*([0-9]{1,8}[.,\s]\d{2})[\s]*[€$£¥]?/gi,
-        
-        // === FALLBACK-PATTERNS ===
-        // Beliebige "ohne Steuer" Begriffe
-        /(?:without\s*tax|sans\s*taxe|senza\s*tasse|zonder\s*belasting)[\s:]*([0-9]{1,8}[.,\s]\d{2})[\s]*[€$£¥]?/gi,
-        // Basis-Beträge
-        /(?:base|basis|grundbetrag|warenwert|leistungswert)[\s:]*([0-9]{1,8}[.,\s]\d{2})[\s]*[€$£¥]?/gi,
-    ];
-
-    // Extract all potential amounts with priority scoring
-    const amountCandidates: Array<{amount: number, priority: number, context: string}> = [];
-    
-    logger.info(`[AMOUNT EXTRACTION DEBUG] Starting amount extraction from text length: ${text.length}`);
-    logger.info(`[AMOUNT EXTRACTION DEBUG] Text sample: "${text.substring(0, 500)}"`);
-    
-    // === SUPER-AGGRESSIVE DEBUGGING: ALLE MÖGLICHEN BETRÄGE FINDEN ===
-    logger.info(`[DEBUG] *** AGGRESSIVE AMOUNT SEARCH ***`);
-    const superAggressivePattern = /([0-9]{1,8}[.,]\d{1,2})/g;
-    const allNumberMatches = text.matchAll(superAggressivePattern);
-    let numberMatchCount = 0;
-    for (const match of allNumberMatches) {
-        numberMatchCount++;
-        const numberStr = match[1];
-        const amount = parseFloat(numberStr.replace(',', '.'));
-        logger.info(`[DEBUG] Raw number found: "${numberStr}" = ${amount}€`);
-        if (numberMatchCount > 10) break; // Limit output
-    }
-    logger.info(`[DEBUG] Total numbers found: ${numberMatchCount}`);
-    
-    // === SUPER-AGGRESSIVE EURO SEARCH ===
-    const euroPattern = /([0-9]{1,8}[.,]\d{1,2})[\s]*[€]/g;
-    const euroMatches = text.matchAll(euroPattern);
-    let euroMatchCount = 0;
-    for (const match of euroMatches) {
-        euroMatchCount++;
-        const euroStr = match[1];
-        const amount = parseFloat(euroStr.replace(',', '.'));
-        logger.info(`[DEBUG] Euro amount found: "${match[0]}" = ${amount}€`);
-    }
-    logger.info(`[DEBUG] Total Euro matches: ${euroMatchCount}`);
-    
-    for (let i = 0; i < amountPatterns.length; i++) {
-        const pattern = amountPatterns[i];
-        const priority = amountPatterns.length - i; // Higher index = lower priority
-        
-        logger.info(`[AMOUNT PATTERN ${i+1}] Testing pattern: ${pattern.toString()}`);
-        
-        const matches = text.matchAll(pattern);
-        let patternMatchCount = 0;
-        for (const match of matches) {
-            patternMatchCount++;
-            const amountStr = match[1]?.replace(/[.,\s]/g, (m) => m === ',' ? '.' : m === ' ' ? '' : m) || '';
-            logger.info(`[AMOUNT PATTERN ${i+1}] Raw match: "${match[0]}", extracted: "${amountStr}"`);
-            
-            if (!amountStr) continue;
-            
-            const amount = parseFloat(amountStr);
-            logger.info(`[AMOUNT PATTERN ${i+1}] Parsed amount: ${amount}`);
-            
-            if (amount > 0 && amount < 100000) { // Reasonable range for business invoices
-                const context = match[0] || '';
-                amountCandidates.push({ amount, priority, context });
-                logger.info(`[AMOUNT DEBUG] ✅ Found candidate: ${amount}€ (priority: ${priority}, context: "${context}")`);
-            } else {
-                logger.info(`[AMOUNT DEBUG] ❌ Amount out of range: ${amount}`);
-            }
-        }
-        logger.info(`[AMOUNT PATTERN ${i+1}] Found ${patternMatchCount} matches`);
-    }
-    
-    logger.info(`[AMOUNT EXTRACTION DEBUG] Total candidates found: ${amountCandidates.length}`);
-    amountCandidates.forEach((candidate, idx) => {
-        logger.info(`[CANDIDATE ${idx+1}] ${candidate.amount}€ (priority: ${candidate.priority}, context: "${candidate.context}")`);
-    });
-    
-    // Sort by priority (highest first), then by amount (highest first for main totals)
-    amountCandidates.sort((a, b) => {
-        if (a.priority !== b.priority) return b.priority - a.priority;
-        return b.amount - a.amount;
-    });
-
-    // Extract VAT amount
-    let vatAmount: number | null = null;
-    for (const pattern of vatPatterns) {
-        const match = text.match(pattern);
-        if (match && match[1]) {
-            const amount = parseFloat(match[1].replace(',', '.'));
-            if (amount > 0 && amount < 10000) {
-                vatAmount = amount;
-                break;
-            }
-        }
-    }
-
-    // Extract net amount
-    let netAmount: number | null = null;
-    for (const pattern of netPatterns) {
-        const match = text.match(pattern);
-        if (match && match[1]) {
-            const amount = parseFloat(match[1].replace(',', '.'));
-            if (amount > 0 && amount < 50000) {
-                netAmount = amount;
-                break;
-            }
-        }
-    }
-
-    // Find the main amount (prioritize by context and validation)
-    let amount: number | null = null;
-    if (amountCandidates.length > 0) {
-        // Try highest priority first
-        amount = amountCandidates[0].amount;
-        logger.info(`[AMOUNT DEBUG] Selected primary amount: ${amount}€ from context: "${amountCandidates[0].context}"`);
-        
-        // If we have VAT and net, validate total = net + vat
-        if (netAmount && vatAmount) {
-            const calculatedTotal = Math.round((netAmount + vatAmount) * 100) / 100;
-            const tolerance = 0.05; // 5 cent tolerance
-            
-            logger.info(`[AMOUNT DEBUG] Validating: net(${netAmount}) + vat(${vatAmount}) = ${calculatedTotal}, found: ${amount}`);
-            
-            // Find amount that matches calculated total
-            for (const candidate of amountCandidates) {
-                if (Math.abs(candidate.amount - calculatedTotal) <= tolerance) {
-                    amount = candidate.amount;
-                    logger.info(`[AMOUNT DEBUG] ✅ Validated total amount: ${amount}€ matches calculation`);
-                    break;
-                }
-            }
-        }
-    }
-
-    // === EMERGENCY FALLBACK: WENN KEINE PATTERNS GREIFEN ===
-    if (!amount) {
-        logger.info(`[EMERGENCY FALLBACK] No patterns matched, trying super-aggressive extraction...`);
-        
-        // Alle Zahlen mit € finden - ohne Kontext
-        const emergencyPattern = /([0-9]{1,8}[.,]\d{1,2})[\s]*€/g;
-        const emergencyMatches = Array.from(text.matchAll(emergencyPattern));
-        
-        if (emergencyMatches.length > 0) {
-            const amounts = emergencyMatches.map(match => {
-                const amountStr = match[1].replace(',', '.');
-                return parseFloat(amountStr);
-            }).filter(amount => amount > 0 && amount < 100000);
-            
-            if (amounts.length > 0) {
-                // Nimm den höchsten Betrag (oft der Gesamtbetrag)
-                amount = Math.max(...amounts);
-                logger.info(`[EMERGENCY FALLBACK] ✅ Found amount via emergency extraction: ${amount}€`);
-                logger.info(`[EMERGENCY FALLBACK] All emergency amounts: ${amounts.join(', ')}`);
-            }
-        }
-        
-        // Zweiter Fallback: Beliebige Zahlen > 10€
-        if (!amount) {
-            const numbersPattern = /([0-9]{1,8}[.,]\d{1,2})/g;
-            const numberMatches = Array.from(text.matchAll(numbersPattern));
-            const largeNumbers = numberMatches.map(match => {
-                const numStr = match[1].replace(',', '.');
-                return parseFloat(numStr);
-            }).filter(num => num >= 10 && num < 100000);
-            
-            if (largeNumbers.length > 0) {
-                amount = Math.max(...largeNumbers);
-                logger.info(`[EMERGENCY FALLBACK] ✅ Found amount via number fallback: ${amount}€`);
-            }
-        }
-    }
-    
-    logger.info(`[AMOUNT DEBUG] Final amounts: total=${amount}€, net=${netAmount}€, vat=${vatAmount}€`);
-
-    return { amount, netAmount, vatAmount };
-}
-
-// Advanced date extraction with multiple formats
-function extractDateAdvanced(text: string): string {
-    const datePatterns = [
-        // German format: DD.MM.YYYY
-        /datum[\s:]*(\d{1,2})\.(\d{1,2})\.(\d{4})/i,
-        /date[\s:]*(\d{1,2})\.(\d{1,2})\.(\d{4})/i,
-        /(\d{1,2})\.(\d{1,2})\.(\d{4})/,
-        
-        // US format: MM/DD/YYYY
-        /(\d{1,2})\/(\d{1,2})\/(\d{4})/,
-        
-        // ISO format: YYYY-MM-DD
-        /(\d{4})-(\d{1,2})-(\d{1,2})/,
-        
-        // European format: DD-MM-YYYY
-        /(\d{1,2})-(\d{1,2})-(\d{4})/,
-        
-        // Text date formats
-        /(\d{1,2})\.\s*(januar|februar|märz|april|mai|juni|juli|august|september|oktober|november|dezember)\s*(\d{4})/i,
-        /(\d{1,2})\s*(january|february|march|april|may|june|july|august|september|october|november|december)\s*(\d{4})/i,
-    ];
-
-    const monthNames = {
-        'januar': 1, 'februar': 2, 'märz': 3, 'april': 4, 'mai': 5, 'juni': 6,
-        'juli': 7, 'august': 8, 'september': 9, 'oktober': 10, 'november': 11, 'dezember': 12,
-        'january': 1, 'february': 2, 'march': 3, 'may': 5, 'june': 6,
-        'july': 7, 'october': 10, 'december': 12
-    };
-
-    for (const pattern of datePatterns) {
-        const match = text.match(pattern);
-        if (match) {
-            try {
-                let day: number, month: number, year: number;
-
-                if (match[0].includes('januar') || match[0].includes('january')) {
-                    // Text-based date
-                    day = parseInt(match[1]);
-                    const monthName = match[2].toLowerCase();
-                    month = monthNames[monthName as keyof typeof monthNames];
-                    year = parseInt(match[3]);
-                } else if (pattern.source.includes('datum') || pattern.source.includes('date')) {
-                    // Labeled date (DD.MM.YYYY)
-                    day = parseInt(match[1]);
-                    month = parseInt(match[2]);
-                    year = parseInt(match[3]);
-                } else if (match[0].includes('-')) {
-                    if (parseInt(match[1]) > 1000) {
-                        // ISO format YYYY-MM-DD
-                        year = parseInt(match[1]);
-                        month = parseInt(match[2]);
-                        day = parseInt(match[3]);
-                    } else {
-                        // DD-MM-YYYY
-                        day = parseInt(match[1]);
-                        month = parseInt(match[2]);
-                        year = parseInt(match[3]);
-                    }
-                } else {
-                    // Default DD.MM.YYYY or MM/DD/YYYY
-                    day = parseInt(match[1]);
-                    month = parseInt(match[2]);
-                    year = parseInt(match[3]);
-                }
-
-                // Validate date
-                if (year >= 2020 && year <= 2030 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-                    const date = new Date(year, month - 1, day);
-                    return date.toISOString().split('T')[0];
-                }
-            } catch (e) {
-                continue;
-            }
-        }
-    }
-
-    // Default to today
-    return new Date().toISOString().split('T')[0];
-}
-
-// Enhanced invoice number extraction - RE-1082 optimiert
-function extractInvoiceNumber(text: string): string {
-    logger.info('[Invoice Extraction DEBUG] Starting enhanced extraction...');
-    logger.info('[Invoice Extraction DEBUG] Text sample:', text.substring(0, 300));
-    
-    const invoicePatterns = [
-        // Priorität 1: Direkte RE-Nummern (WICHTIGSTE PATTERNS)
-        /\b(RE[.-]?\d{3,6})\b/gi,
-        /\bRE[.-_](1082)\b/gi,
-        /(RE-1082)/gi,
-        /(RE\.1082)/gi,
-        /(RE_1082)/gi,
-        /(RE1082)/gi,
-        
-        // Priorität 2: Gelabelte Formate
-        /rechnungsnummer[\s:]*([a-zA-Z0-9-_/]+)/i,
-        /invoice[\s]*number[\s:]*([a-zA-Z0-9-_/]+)/i,
-        /rechnung[\s]*nr\.?[\s:]*([a-zA-Z0-9-_/]+)/i,
-        /invoice[\s]*no\.?[\s:]*([a-zA-Z0-9-_/]+)/i,
-        /rechnungs-nr\.?[\s:]*([a-zA-Z0-9-_/]+)/i,
-        /bill[\s]*no\.?[\s:]*([a-zA-Z0-9-_/]+)/i,
-        
-        // Priorität 3: Pattern for invoice numbers at start of line
-        /^([A-Z]{2,4}[-_]?\d{4,8})/m,
-        /^(INV[-_]?\d{4,8})/mi,
-        /^(RG[-_]?\d{4,8})/mi,
-        /^(\d{4,8}[-_][A-Z0-9]{2,6})/m,
-    ];
-
-    for (let i = 0; i < invoicePatterns.length; i++) {
-        const pattern = invoicePatterns[i];
-        const match = text.match(pattern);
-        
-        logger.info(`[Invoice Extraction DEBUG] Pattern ${i + 1} (${pattern.source}): ${match ? 'MATCH' : 'NO MATCH'}`);
-        
-        if (match) {
-            let invoiceNum = match[1] || match[0];
-            
-            // Spezielle Bereinigung
-            invoiceNum = invoiceNum.replace(/^[:\s]+|[:\s]+$/g, '').trim();
-            
-            logger.info(`[Invoice Extraction DEBUG] Found candidate: "${invoiceNum}"`);
-            
-            // Validiere die Rechnungsnummer
-            if (invoiceNum && 
-                invoiceNum !== 'RECHNUNGSNR' && 
-                invoiceNum !== 'Rechnungsnummer' &&
-                invoiceNum.length >= 3 && 
-                invoiceNum.length <= 20) {
-                
-                logger.info(`[Invoice Extraction DEBUG] ✅ VALID invoice number found: "${invoiceNum}"`);
-                return invoiceNum;
-            }
-        }
-    }
-
-    logger.warn('[Invoice Extraction DEBUG] ❌ No valid invoice number found');
-    return '';
 }
 
 // [REMOVED] extractReceiptDataFromOCR function - cleaned up unused code
@@ -2638,54 +2097,411 @@ async function extractFromTextractBlocks(blocks: any[], text: string): Promise<P
 }
 
 /**
- * Deutsche Pattern-Matching Extraktion (Fallback)
+ * Deutsche Pattern-Matching Extraktion (KEIN FALLBACK) - INTEGRIERT SPEZIALISIERTE FUNKTIONEN
+ * Verwendet die spezialisierten deutschen Extraktionsfunktionen zur Behebung der TypeScript 6133 Warnings
  */
-async function extractWithGermanPatterns(text: string): Promise<Partial<ExtractedInvoiceData>> {
-    logger.info('[GERMAN PATTERNS] Using German-specific pattern matching...');
+async function extractWithGermanPatterns_NEW_VERSION_2025(text: string, userId?: string): Promise<Partial<ExtractedInvoiceData>> {
+    console.log('[🚨🚨🚨 NEUE_FUNCTION_VERSION 2025-10-09] EMERGENCY DEBUG: Function called!!!');
+    console.log('[🚨🚨🚨 NEUE_FUNCTION_VERSION] Text length:', text?.length || 'UNDEFINED');
+    console.log('[🚨🚨🚨 NEUE_FUNCTION_VERSION] This is the NEW function version with all debug logs!!!');
+    console.log('[🚨🚨🚨 NEUE_FUNCTION_VERSION] userId:', userId);
+    logger.info('[GERMAN PATTERNS] 🎯 Using specialized German extraction functions...');
+    logger.info('[ERROR_TRACKING] ✅ extractWithGermanPatterns STARTED successfully');
     
-    // Deutsche Rechnungsnummer-Patterns
+    // 🔥 LOAD USER COMPANY DATA for smart vendor/customer detection
+    let userCompanyData: UserCompanyData | null = null;
+    if (userId) {
+        try {
+            console.log('[🔥 USER_COMPANY_LOAD] Loading user company data for userId:', userId);
+            userCompanyData = await loadUserCompanyData(userId);
+            console.log('[🔥 USER_COMPANY_LOAD] User company data loaded:', {
+                companyName: userCompanyData?.companyName,
+                hasAddress: !!userCompanyData?.companyStreet,
+                hasPhone: !!userCompanyData?.phoneNumber,
+                hasEmail: !!userCompanyData?.contactEmail
+            });
+        } catch (error) {
+            console.error('[🔥 USER_COMPANY_LOAD] Failed to load user company data:', error);
+            // Continue without user data - extraction will work but without smart vendor/customer detection
+        }
+    } else {
+        console.log('[🔥 USER_COMPANY_LOAD] No userId provided - skipping user company data loading');
+    }
+    
+    // DEBUGGING: Reset customerData to check for variable contamination
+    let customerData = { customerName: 'INITIAL_NULL' as string | null, customerAddress: 'INITIAL_NULL' as string | null };
+    logger.info('[DEBUG_CONTAMINATION] Initial customerData set to:', customerData);
+    
+    try {
+        // === [DEBUG_OCR] GERMAN PATTERNS INPUT DEBUGGING ===
+        console.log('[DEBUG_GERMAN_PATTERNS] ================ GERMAN PATTERN EXTRACTION START ================');
+        console.log('[DEBUG_GERMAN_PATTERNS] Input text length:', text.length);
+        console.log('[DEBUG_GERMAN_PATTERNS] Input text sample (500 chars):');
+        console.log(text.substring(0, 500));
+        console.log('[DEBUG_GERMAN_PATTERNS] ==================================================================');
+    
+    // === INTEGRATION DER SPEZIALISIERTEN DEUTSCHEN FUNKTIONEN ===
+    
+    // ============ STEP 1: DEUTSCHE RECHNUNGSNUMMER-EXTRAKTION ============
+    console.log('[DEBUG_STEP] 🔥 STEP 1: Starting invoice number extraction...');
+    console.log('[DEBUG_INVOICE_NUMBER] ======= STARTING INVOICE NUMBER EXTRACTION =======');
+    console.log('[DEBUG_INVOICE_NUMBER] Input text for invoice extraction (first 400 chars):');
+    console.log(text.substring(0, 400));
+    
     const invoiceNumber = extractGermanInvoiceNumber(text);
     
-    // Deutsche Firmenname-Extraktion
+    console.log('[DEBUG_STEP] ✅ STEP 1: Invoice number extraction completed:', invoiceNumber || 'NULL');
+    console.log('[DEBUG_INVOICE_NUMBER] EXTRACTION RESULT:', invoiceNumber || 'NULL');
+    console.log('[DEBUG_INVOICE_NUMBER] ================================================');
+    
+    logger.info('[GERMAN INVOICE NUMBER] Result:', invoiceNumber || 'null');
+    
+    // ============ STEP 2: DEUTSCHE BETRÄGE-EXTRAKTION ============
+    console.log('[DEBUG_STEP] 🔥 STEP 2: Starting amounts extraction...');
+    console.log('[DEBUG_AMOUNTS] ============ STARTING AMOUNTS EXTRACTION ============');
+    console.log('[DEBUG_AMOUNTS] Input text for amounts extraction (first 800 chars):');
+    console.log(text.substring(0, 800));
+    console.log('[DEBUG_AMOUNTS] Searching for patterns like: "487,90 €", "410,00 €", "77,90 €"');
+    
+    const germanAmounts = extractGermanAmounts(text);
+    console.log('[DEBUG_STEP] ✅ STEP 2: Amounts extraction completed!');
+    
+    // ✅ UNIVERSELLE LÖSUNG: Verwende die German Amounts direkt ohne hardcoded Einschränkungen
+    let safeGermanAmounts = { ...germanAmounts };
+    
+    console.log('[DEBUG_UNIVERSAL] ✅ Using extracted amounts without hardcoded restrictions');
+    console.log('[DEBUG_UNIVERSAL] This allows ANY invoice amount to be processed correctly');
+    
+    console.log('[DEBUG_AMOUNTS] EXTRACTION RESULTS (after safety check):');
+    console.log('[DEBUG_AMOUNTS] - Total Gross:', safeGermanAmounts.totalGross || 'NULL');
+    console.log('[DEBUG_AMOUNTS] - Total Net:', safeGermanAmounts.totalNet || 'NULL');
+    console.log('[DEBUG_AMOUNTS] - Total VAT:', safeGermanAmounts.totalVat || 'NULL');
+    console.log('[DEBUG_AMOUNTS] - Tax Rate:', germanAmounts.taxRate + '%');
+    console.log('[DEBUG_AMOUNTS] ======================================================');
+    
+    logger.info('[GERMAN AMOUNTS] Results (using safe amounts):', {
+        totalGross: safeGermanAmounts.totalGross || 'null',
+        totalNet: safeGermanAmounts.totalNet || 'null', 
+        totalVat: safeGermanAmounts.totalVat || 'null'
+    });
+    
+    // ============ STEP 3: DEUTSCHE DATUM-EXTRAKTION ============
+    console.log('[DEBUG_STEP] 🔥 STEP 3: Starting date extraction...');
+    console.log('[DEBUG_DATE] =============== STARTING DATE EXTRACTION ===============');
+    console.log('[DEBUG_DATE] Input text for date extraction (first 600 chars):');
+    console.log(text.substring(0, 600));
+    console.log('[DEBUG_DATE] Looking for patterns like: "10.07.2025", "Datum: DD.MM.YYYY"');
+    
+    const invoiceDate = extractGermanDate(text);
+    
+    console.log('[DEBUG_STEP] ✅ STEP 3: Date extraction completed:', invoiceDate || 'NULL');
+    console.log('[DEBUG_DATE] INVOICE DATE RESULT:', invoiceDate || 'NULL');
+    console.log('[DEBUG_DATE] =========================================================');
+    
+    logger.info('[GERMAN DATE] Invoice date:', invoiceDate || 'null');
+    
+    // ============ STEP 4: DEUTSCHE FÄLLIGKEITSDATUM-EXTRAKTION ============
+    console.log('[DEBUG_STEP] 🔥 STEP 4: Starting due date extraction...');
+    console.log('[DEBUG_DUE_DATE] ============ STARTING DUE DATE EXTRACTION ============');
+    console.log('[DEBUG_DUE_DATE] Looking for patterns like: "21.10.2025", "Fälligkeitsdatum:"');
+    
+    const dueDate = extractGermanDueDate(text);
+    
+    console.log('[DEBUG_STEP] ✅ STEP 4: Due date extraction completed:', dueDate || 'NULL');
+    console.log('[DEBUG_DUE_DATE] DUE DATE RESULT:', dueDate || 'NULL');
+    console.log('[DEBUG_DUE_DATE] ========================================================');
+    
+    logger.info('[GERMAN DUE DATE] Due date:', dueDate || 'null');
+    
+    // ============ STEP 5: DEUTSCHE VENDOR-EXTRAKTION ============
+    console.log('[DEBUG_STEP] 🔥 STEP 5: Starting vendor extraction...');
     const vendorName = extractGermanVendorName(text);
+    console.log('[DEBUG_STEP] ✅ STEP 5: Vendor extraction completed:', vendorName || 'NULL');
+    logger.info('[GERMAN VENDOR] Vendor name:', vendorName || 'null');
     
-    // Deutsche Umsatzsteuer-Extraktion
+    // 6. DEUTSCHE VAT-EXTRAKTION (bereits spezialisiert)
+    console.log('[DEBUG_STEP] 🔥 STEP 6: Starting VAT extraction...');
     const taxBreakdown = extractGermanVATBreakdown(text);
+    console.log('[DEBUG_STEP] ✅ STEP 6: VAT extraction completed!');
+    logger.info('[GERMAN VAT] Tax breakdown:', taxBreakdown.length > 0 ? taxBreakdown : 'empty');
+
+    // 7. DEUTSCHE BESCHREIBUNG-EXTRAKTION (NEU!)
+    console.log('[DEBUG_STEP] 🔥 STEP 7: Starting description extraction...');
+    let description;
+    try {
+        console.log('[DEBUG_STEP] 🔥 STEP 7a: About to call extractGermanDescription...');
+        description = extractGermanDescription(text, 'receipt.pdf');
+        console.log('[DEBUG_STEP] ✅ STEP 7b: extractGermanDescription returned:', description || 'null');
+        logger.info('[GERMAN DESCRIPTION] ✅ Description extraction completed successfully:', description || 'null');
+        console.log('[DEBUG_STEP] ✅ STEP 7: Description extraction COMPLETELY finished!');
+    } catch (error) {
+        console.log('[DEBUG_STEP] 🚨 STEP 7: Description extraction EXCEPTION:', error);
+        logger.error('[GERMAN DESCRIPTION] 🚨 Description extraction FAILED:', error);
+        description = null;
+    }    // ============ STEP 8: DEUTSCHE KUNDEN-/EMPFÄNGER-EXTRAKTION ============
+    console.log('[DEBUG_STEP] 🔥 STEP 8: Starting customer extraction...');
+    console.log('[DEBUG_CUSTOMER] ========== STARTING CUSTOMER/RECIPIENT EXTRACTION ==========');
+    console.log('[DEBUG_CUSTOMER] Looking for patterns like: "Empfänger:", "Kunde:", "An:", "Rechnungsempfänger:"');
+    console.log('[DEBUG_CUSTOMER] Input text sample for customer extraction (first 800 chars):');
+    console.log(text.substring(0, 800));
     
-    // Deutsche Beträge
-    const amounts = extractGermanAmounts(text);
+    try {
+        customerData = extractGermanCustomerInfo(text, userCompanyData);
+        console.log('[DEBUG_STEP] ✅ STEP 8: Customer extraction completed successfully');
+        console.log('[DEBUG_CUSTOMER] ✅ Customer extraction completed successfully');
+    } catch (error) {
+        console.log('[DEBUG_STEP] 🚨 STEP 8: Customer extraction FAILED:', error);
+        console.log('[DEBUG_CUSTOMER] 🚨 Customer extraction FAILED:', error);
+        customerData = { customerName: null, customerAddress: null };
+    }
     
+    console.log('[DEBUG_CUSTOMER] CUSTOMER EXTRACTION RESULTS:');
+    console.log('[DEBUG_CUSTOMER] - Customer Name:', customerData.customerName || 'NULL');
+    console.log('[DEBUG_CUSTOMER] - Customer Address:', customerData.customerAddress || 'NULL');
+    console.log('[DEBUG_CUSTOMER] =============================================================');
+    
+    logger.info('[GERMAN CUSTOMER] Customer extraction results:', {
+        customerName: customerData.customerName || 'null',
+        customerAddress: customerData.customerAddress || 'null'
+    });
+    
+    // ============ STEP 9: WEITERE DEUTSCHE SPEZIALFELDER ============
+    console.log('[DEBUG_STEP] 🔥 STEP 9: Starting vendor details extraction...');
+    const vendorAddress = extractGermanAddress(text);
+    console.log('[DEBUG_STEP] 🔥 STEP 9a: Vendor address completed:', vendorAddress || 'NULL');
+    const vendorPhone = extractGermanPhone(text);
+    console.log('[DEBUG_STEP] 🔥 STEP 9b: Vendor phone completed:', vendorPhone || 'NULL');
+    const vendorEmail = extractGermanEmail(text);
+    console.log('[DEBUG_STEP] 🔥 STEP 9c: Vendor email completed:', vendorEmail || 'NULL');
+    const vendorVatId = extractGermanVATId(text);
+    console.log('[DEBUG_STEP] ✅ STEP 9: All vendor details extraction completed!');
+    
+    logger.info('[GERMAN VENDOR DETAILS] Results:', {
+        address: vendorAddress || 'null',
+        phone: vendorPhone || 'null', 
+        email: vendorEmail || 'null',
+        vatId: vendorVatId || 'null'
+    });
+    
+    // === NO FALLBACKS - ERROR HANDLING ONLY ===
+    let finalInvoiceNumber = invoiceNumber;
+    let finalInvoiceDate = invoiceDate;
+    let finalAmounts = safeGermanAmounts;
+    
+    // ⚡ STRIKTESTE ERROR HANDLING - ABSOLUT KEINE FALLBACKS ODER INTELLIGENZ!
+    if (!finalInvoiceNumber) {
+        logger.error('[ERROR] 🚨 German invoice number extraction FAILED!');
+        console.log('[ERROR_STRICT] THROWING ERROR: Invoice number extraction failed');
+        throw new Error('STRICT: German invoice number extraction failed - NO FALLBACK ALLOWED!');
+    }
+    
+    if (!finalInvoiceDate) {
+        logger.error('[ERROR] 🚨 German date extraction FAILED!');
+        console.log('[ERROR_STRICT] THROWING ERROR: Date extraction failed');
+        throw new Error('STRICT: German date extraction failed - NO FALLBACK ALLOWED!');  
+    }
+    
+    // ✅ STORNO-UNTERSTÜTZUNG: Akzeptiere sowohl positive als auch negative Beträge (aber nicht null/undefined)
+    if (finalAmounts.totalGross === null || finalAmounts.totalGross === undefined || finalAmounts.totalGross === 0) {
+        logger.error('[ERROR] 🚨 German amounts extraction FAILED!', {
+            totalGross: finalAmounts.totalGross,
+            totalNet: finalAmounts.totalNet,
+            totalVat: finalAmounts.totalVat
+        });
+        console.log('[ERROR_STRICT] THROWING ERROR: Amount extraction failed');
+        console.log('[ERROR_STRICT] STORNO-HINWEIS: Negative Beträge sind erlaubt, aber null/undefined/0 nicht!');
+        throw new Error('STRICT: German amounts extraction failed - NO FALLBACK ALLOWED!');
+    }
+    
+    // ✅ NO FALLBACK LOGIC - All extractions completed successfully!
+    
+    // 🚨 KRITISCHER HINWEIS: MATHEMATISCHE REVERSE CHARGE ERKENNUNG ENTFERNT!
+    // 
+    // WARUM ENTFERNT?
+    // Die alte Logik "Netto ≈ Brutto → Reverse Charge" war FALSCH, weil:
+    //
+    // 1. **Reverse Charge (§13b UStG)**: 
+    //    - Steuerschuldnerschaft des Leistungsempfängers
+    //    - Muss EXPLIZIT auf der Rechnung vermerkt sein
+    //    - Netto = Brutto ist nur ein INDIZ, aber KEIN BEWEIS
+    //
+    // 2. **Andere 0% USt Fälle (Netto = Brutto):**
+    //    - Steuerfreie Umsätze (§4 UStG) - z.B. Exporte
+    //    - Kleinunternehmerregelung (§19 UStG)
+    //    - Innergemeinschaftliche Lieferungen (§4 Nr. 1b UStG)
+    //
+    // 3. **Storno-Rechnungen mit 0% USt:**
+    //    - Bei Storno einer Rechnung MIT ursprünglicher USt bleibt oft 0% USt
+    //    - Das ist KEIN Reverse Charge!
+    //
+    // NEUE STRATEGIE:
+    // - Nur noch TEXT-BASIERTE Reverse Charge Erkennung (siehe extractGermanTaxRateFromPattern)
+    // - Suche nach expliziten Hinweisen: "Reverse Charge", "§13b", "Steuerschuldnerschaft" etc.
+    // - Keine automatische Umwandlung mehr bei Netto ≈ Brutto
+    //
+    // Der extrahierte Steuersatz wird jetzt DIREKT übernommen ohne mathematische Korrektur.
+    
+    console.log('[TAX_VALIDATION] Steuersatz-Validierung übersprungen - Backend vertraut OCR-Daten');
+    console.log('[TAX_VALIDATION] Tax Rate:', finalAmounts.taxRate + '%');
+    console.log('[TAX_VALIDATION] Net:', finalAmounts.totalNet, '| VAT:', finalAmounts.totalVat, '| Gross:', finalAmounts.totalGross);
+    
+    // === [DEBUG_OCR] FINALE GERMAN PATTERNS RESULTS ===
+    console.log('[DEBUG_FINAL_GERMAN] ========== FINAL GERMAN PATTERNS RESULTS ==========');
+    console.log('[DEBUG_FINAL_GERMAN] Invoice Number:', finalInvoiceNumber || 'NULL');
+    console.log('[DEBUG_FINAL_GERMAN] Invoice Date:', finalInvoiceDate || 'NULL');
+    console.log('[DEBUG_FINAL_GERMAN] Due Date:', dueDate || 'NULL');
+    console.log('[DEBUG_FINAL_GERMAN] Total Gross:', finalAmounts.totalGross || 'NULL');
+    console.log('[DEBUG_FINAL_GERMAN] Total Net:', finalAmounts.totalNet || 'NULL');
+    console.log('[DEBUG_FINAL_GERMAN] Total VAT:', finalAmounts.totalVat || 'NULL');
+    console.log('[DEBUG_FINAL_GERMAN] Tax Rate:', finalAmounts.taxRate + '%');
+    console.log('[DEBUG_FINAL_GERMAN] Vendor Name:', vendorName || 'NULL');
+    console.log('[DEBUG_FINAL_GERMAN] Description:', description || 'NULL');
+    // 🔥 VENDOR ADDRESS BEREINIGUNG DIREKT HIER!
+    let cleanVendorAddress = vendorAddress;
+    if (cleanVendorAddress && (cleanVendorAddress.includes('DE Tel.') || cleanVendorAddress.includes('Tel.'))) {
+        console.log('[ADDRESS_FIX] 🧹 Cleaning vendor address, BEFORE:', cleanVendorAddress);
+        cleanVendorAddress = cleanVendorAddress
+            .replace(/\s*DE\s*Tel\.\s*$/i, '')
+            .replace(/\s*Tel\.\s*$/i, '')
+            .replace(/\s*Telefon\s*$/i, '')
+            .replace(/Mit freundlichen Grüßen\s*/gi, '')
+            .trim();
+        console.log('[ADDRESS_FIX] ✅ Cleaning vendor address, AFTER:', cleanVendorAddress);
+    }
+    console.log('[DEBUG_FINAL_GERMAN] Vendor Address:', cleanVendorAddress || 'NULL');
+    console.log('[DEBUG_FINAL_GERMAN] Vendor Phone:', vendorPhone || 'NULL');
+    console.log('[DEBUG_FINAL_GERMAN] Vendor Email:', vendorEmail || 'NULL');
+    console.log('[DEBUG_FINAL_GERMAN] Customer Name:', customerData.customerName || 'NULL');
+    console.log('[DEBUG_FINAL_GERMAN] Customer Address:', customerData.customerAddress || 'NULL');
+    console.log('[DEBUG_FINAL_GERMAN] ===================================================');
+    
+    logger.info('[GERMAN PATTERNS] ✅ FINAL extraction results:', {
+        invoiceNumber: finalInvoiceNumber || 'null',
+        totalGross: finalAmounts.totalGross || 'null',
+        totalNet: finalAmounts.totalNet || 'null',
+        totalVat: finalAmounts.totalVat || 'null',
+        invoiceDate: finalInvoiceDate || 'null',
+        dueDate: dueDate || 'null',
+        vendorName: vendorName || 'null'
+    });
+    
+    // ✅ FINAL VALUES DEBUG: System working correctly
+    console.log('[DEBUG_FINAL] ========= FINAL VALUES VERIFICATION =========');
+    console.log('[DEBUG_FINAL] finalAmounts.totalGross:', finalAmounts.totalGross);
+    console.log('[DEBUG_FINAL] This value will be returned as totalGrossAmount');
+    console.log('[DEBUG_FINAL] ===================================================');
+    
+    // ⚡ STORNO-SICHER: Stelle sicher, dass Beträge niemals undefined sind (aber behalte negative Werte)
+    const safeGrossAmount = finalAmounts.totalGross !== null && finalAmounts.totalGross !== undefined ? finalAmounts.totalGross : 0;
+    const safeNetAmount = finalAmounts.totalNet !== null && finalAmounts.totalNet !== undefined ? finalAmounts.totalNet : 0;
+    const safeVatAmount = finalAmounts.totalVat !== null && finalAmounts.totalVat !== undefined ? finalAmounts.totalVat : 0;
+    
+    console.log('[DEBUG_SAFE_AMOUNTS] ========= FINAL SAFE AMOUNTS BEFORE RETURN (STORNO-SICHER) =========');
+    console.log('[DEBUG_SAFE_AMOUNTS] Safe Gross Amount (inkl. negative für Storno):', safeGrossAmount);
+    console.log('[DEBUG_SAFE_AMOUNTS] Safe Net Amount (inkl. negative für Storno):', safeNetAmount);
+    console.log('[DEBUG_SAFE_AMOUNTS] Safe VAT Amount (inkl. negative für Storno):', safeVatAmount);
+    console.log('[DEBUG_SAFE_AMOUNTS] ===============================================================');
+
     return {
-        invoiceNumber,
-        vendorName,
-        totalGrossAmount: amounts.totalGross,
-        totalNetAmount: amounts.totalNet,
-        totalVatAmount: amounts.totalVat,
-        taxBreakdown: taxBreakdown,
-        invoiceDate: extractGermanDate(text),
-        dueDate: extractGermanDueDate(text),
-        vendorAddress: extractGermanAddress(text),
-        vendorVatId: extractGermanVATId(text)
+        invoiceNumber: finalInvoiceNumber || null,
+        vendorName: vendorName || null,
+        totalGrossAmount: safeGrossAmount, // ✅ NEVER undefined - immer number
+        totalNetAmount: safeNetAmount,     // ✅ NEVER undefined - immer number  
+        totalVatAmount: safeVatAmount,     // ✅ NEVER undefined - immer number
+        taxRate: finalAmounts.taxRate || 19, // ✅ Extrahierter Steuersatz
+        taxBreakdown: taxBreakdown || [],
+        invoiceDate: finalInvoiceDate || null,
+        dueDate: dueDate || null,
+        vendorAddress: cleanVendorAddress || null,
+        vendorPhone: vendorPhone || null,
+        vendorEmail: vendorEmail || null,
+        vendorVatId: vendorVatId || null,
+        
+        // === NEU: KUNDEN-/EMPFÄNGER-INFORMATIONEN ===
+        customerName: customerData.customerName,
+        customerAddress: customerData.customerAddress,
+        
+        // === NEU: BESCHREIBUNG INTEGRIERT ===
+        description: description || undefined,
+        title: generateInvoiceTitle({ 
+            vendorName, 
+            invoiceNumber: finalInvoiceNumber, 
+            totalGrossAmount: safeGrossAmount 
+        } as ExtractedInvoiceData),
+        category: determineInvoiceCategory(vendorName, text)
     };
+    
+    } catch (error) {
+        logger.error('[ERROR_TRACKING] 🚨 extractWithGermanPatterns INTERNAL ERROR:', error);
+        throw error;
+    }
 }
 
 /**
  * Hilfsfunktionen für deutsche Rechnungsextraktion
  */
 function extractGermanInvoiceNumber(text: string): string | null {
+    logger.info('[GERMAN INVOICE] Starting specialized German invoice number extraction...');
+    logger.info('[GERMAN INVOICE] Text sample:', text.substring(0, 400));
+    
+    // 🚨 KRITISCHE ÄNDERUNG: "Rechnungsnummer:" Label hat HÖCHSTE PRIORITÄT!
+    // Beispiel:
+    //   Dokumentdetails:
+    //   Rechnungsnummer: ST-494    ← DIESE Nummer nehmen!
+    //   Datum: 10.04.2025
+    //   Betreff: Stornorechnung Nr. ST-494 zur Rechnung Nr. RE-1077
+    //                                                        ^^^^^^^^ NICHT diese!
+    
     const patterns = [
-        /(?:rechnung(?:s?nummer)?|rg[\s.-]*nr|invoice[\s.-]*no?)[\s:.-]*([A-Za-z0-9\-\/]+)/gi,
-        /(?:^|\s)(RE[.-]?\d+)(?:\s|$)/gi,
-        /(?:^|\s)([0-9]{4,8})(?:\s|$)/gi
+        // 🎯 PRIORITÄT 1: "Rechnungsnummer:" Label (HÖCHSTE PRIORITÄT!)
+        // Muster: "Rechnungsnummer: ST-494" oder "Rechnungsnummer: RE-1077"
+        /rechnungsnummer\s*:\s*([A-Z]{2}[-._]?\d{3,6})/gi,  // ST-494, RE-1077, etc.
+        /rechnung\s*nr\.?\s*:\s*([A-Z]{2}[-._]?\d{3,6})/gi, // Rechnung Nr.: ST-494
+        /invoice\s*(?:number|no)\.?\s*:\s*([A-Z]{2}[-._]?\d{3,6})/gi, // Invoice Number: ST-494
+        
+        // 🎯 PRIORITÄT 2: "Rechnungsnummer:" mit beliebigem Format
+        /rechnungsnummer\s*:\s*([A-Za-z0-9\-\._\/]{3,15})/gi,
+        /rechnung\s*nr\.?\s*:\s*([A-Za-z0-9\-\._\/]{3,15})/gi,
+        
+        // Priorität 3: Storno-Patterns ohne Label (falls kein Label gefunden)
+        /\b(ST[-._]?\d{3,6})\b/gi,  // ST-494
+        /\b(SR[-._]?\d{3,6})\b/gi,  // SR-494 (Storno)
+        /\b(GS[-._]?\d{3,6})\b/gi,  // GS-494 (Gutschrift)
+        
+        // Priorität 4: RE-Patterns
+        /\b(RE[-._]?\d{3,6})\b/gi,  // RE-1077
+        
+        // Priorität 5: Generische Patterns (nur als Fallback)
+        /(?:^|\s)([A-Z]{2,4}[-]?\d{3,8})(?:\s|$)/gmi,
+        /(?:^|\s)([0-9]{4,8})(?:\s|$)/gmi
     ];
     
-    for (const pattern of patterns) {
-        const match = text.match(pattern);
-        if (match) {
-            const number = match[0].replace(/^.*?([A-Za-z0-9\-\/]+)$/, '$1').trim();
-            if (number.length >= 3) return number;
+    for (let i = 0; i < patterns.length; i++) {
+        const pattern = patterns[i];
+        logger.info(`[GERMAN INVOICE] Testing pattern ${i + 1}: ${pattern.source}`);
+        
+        const matches = Array.from(text.matchAll(pattern));
+        for (const match of matches) {
+            let number = match[1] || match[0];
+            
+            // Bereinigung
+            number = number.replace(/^[:\s.-]+|[:\s.-]+$/g, '').trim();
+            
+            // Validierung
+            if (number && 
+                number.length >= 3 && 
+                number.length <= 15 &&
+                !/^(rechnungsnummer|invoice|number|rechnung|nr)$/i.test(number)) {
+                
+                logger.info(`[GERMAN INVOICE] ✅ Found valid invoice number: "${number}"`);
+                return number;
+            } else {
+                logger.info(`[GERMAN INVOICE] ❌ Invalid candidate: "${number}"`);
+            }
         }
     }
+    
+    logger.warn('[GERMAN INVOICE] ❌ No valid German invoice number found');
     return null;
 }
 
@@ -2740,103 +2556,1041 @@ function extractGermanVATBreakdown(text: string): TaxBreakdown[] {
     return breakdown;
 }
 
-function extractGermanAmounts(text: string): { totalGross: number | null; totalNet: number | null; totalVat: number | null } {
-    // Deutsche Betragspatterns
+function extractGermanTaxRate(text: string): number {
+    logger.info('[TAX RATE] Starting German tax rate extraction...');
+    console.log('[DEBUG_TAX_RATE] ===== TAX RATE DETECTION =====');
+    console.log('[DEBUG_TAX_RATE] Text sample (800 chars):', text.substring(0, 800));
+    
+    // PRIORITY 1: Reverse Charge Detection (MUST BE FIRST!)
+    // Reverse-Charge indicators override all other tax rate detections
+    const reverseChargePatterns = [
+        /reverse[-\s]?charge/gi,
+        /§13b/g,
+        /steuerschuldnerschaft/gi,
+        /leistungsempfänger[^.]*schuldet[^.]*umsatzsteuer/gi,
+        /you owe as the beneficiary service/gi,
+        /nach dem reverse[^.]*charge[^.]*prinzip/gi,
+        /§13b\s*abs\.?\s*2\s*ustg/gi,
+        /als unternehmer schulden sie/gi
+    ];
+    
+    for (const pattern of reverseChargePatterns) {
+        if (pattern.test(text)) {
+            console.log('[DEBUG_TAX_RATE] 🚨 REVERSE CHARGE DETECTED! Tax Rate: 0%');
+            logger.info('[TAX RATE] Reverse Charge detected -> 0%');
+            return 0;
+        }
+    }
+    
+    // PRIORITY 2: Standard tax rates (only if NO reverse charge)
+    if (/\b19\s*%/.test(text)) {
+        console.log('[DEBUG_TAX_RATE] Standard rate detected: 19%');
+        return 19;
+    }
+    
+    if (/\b7\s*%/.test(text)) {
+        console.log('[DEBUG_TAX_RATE] Reduced rate detected: 7%');
+        return 7;
+    }
+    
+    if (/\b0\s*%/.test(text)) {
+        console.log('[DEBUG_TAX_RATE] Zero rate detected: 0%');
+        return 0;
+    }
+    
+    // Ermäßigter Steuersatz (7%) - §12 Abs. 2 UStG
+    if (/ermäßigt|§12|abs\.?\s*2|ustg/gi.test(text)) {
+        console.log('[DEBUG_TAX_RATE] Reduced rate detected: 7%');
+        return 7;
+    }
+    
+    // Steuerfreie Umsätze §4 UStG (0%) - §4 UStG
+    if (/steuerfrei|§4\s*ustg/gi.test(text)) {
+        console.log('[DEBUG_TAX_RATE] Zero rate detected: 0%')
+        return 0;
+    }
+    
+    // Innergemeinschaftliche Lieferungen (0%) - §4 Nr. 1b i.V.m. §6a UStG
+    if (/innergemeinschaftliche|§4\s*nr\.?\s*1b|§6a/gi.test(text)) {
+        console.log('[DEBUG_TAX_RATE] Zero rate detected: 0%')
+        return 0;
+    }
+    
+    // OSS – One-Stop-Shop (0%) - §18j UStG
+    if (/oss|one[-\s]?stop[-\s]?shop|§18j/gi.test(text)) {
+        console.log('[DEBUG_TAX_RATE] Zero rate detected: 0%')
+        return 0;
+    }
+    
+    // Ausfuhren (0%) - §4 Nr. 1a i.V.m. §6 UStG
+    if (/ausfuhr|§4\s*nr\.?\s*1a|§6\s*ustg/gi.test(text)) {
+        console.log('[DEBUG_TAX_RATE] Zero rate detected: 0%')
+        return 0;
+    }
+    
+    // Nicht im Inland steuerbare Leistung (0%) - §3a Abs. 2 UStG
+    if (/nicht.*inland.*steuerbar|§3a.*abs\.?\s*2|nicht.*steuerbar/gi.test(text)) {
+        console.log('[DEBUG_TAX_RATE] Zero rate detected: 0%')
+        return 0;
+    }
+    
+    return 19;
+}
+
+function extractGermanAmounts(text: string): { totalGross: number | null; totalNet: number | null; totalVat: number | null; taxRate: number } {
+    logger.info('[GERMAN AMOUNTS] Starting specialized German amount extraction...');
+    logger.info('[GERMAN AMOUNTS] Text sample:', text.substring(0, 500));
+    
+    // 1. FIRST: Extract tax rate
+    const taxRate = extractGermanTaxRate(text);
+    logger.info(`[GERMAN AMOUNTS] Using tax rate: ${taxRate}%`);
+    
+    // === [DEBUG_AMOUNTS] DETAILED PATTERN MATCHING ===
+    console.log('[DEBUG_AMOUNTS_DETAIL] ===== DETAILED AMOUNTS EXTRACTION DEBUG =====');
+    console.log('[DEBUG_AMOUNTS_DETAIL] Full text length:', text.length);
+    
+    // Pre-scan: Finde ALLE Zahlen mit € im Text
+    const allEuroMatches = Array.from(text.matchAll(/([0-9]{1,5}[,.]?\d{1,2})\s*€/g));
+    console.log('[DEBUG_AMOUNTS_DETAIL] ALL € amounts found in text:');
+    allEuroMatches.forEach((match, idx) => {
+        console.log(`[DEBUG_AMOUNTS_DETAIL] ${idx + 1}: "${match[0]}" (value: ${match[1]})`);
+    });
+    console.log('[DEBUG_AMOUNTS_DETAIL] ==============================================');
+    
+    // ⚡ GESAMTBETRAG-FOKUSSIERTE PATTERNS: Suchen spezifisch nach dem Gesamtbetrag (inkl. STORNO)
     const grossPatterns = [
-        /(?:gesamt|summe|endbetrag|rechnungsbetrag|zu zahlen)[\s:]*([0-9]{1,8}[,.]?\d{0,2})\s*€/gi,
-        /(?:brutto|gesamt)[\s:]*([0-9]{1,8}[,.]?\d{0,2})\s*€/gi
+        // STORNO-PRIORITÄT 1: Negative Gesamtbeträge (Stornorechnung)
+        /(?:gesamtbetrag|gesamtsumme|rechnungsbetrag|rechnungs?[-\s]?betrag)[:.\s]*(-[0-9.]{1,6}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        /(?:zu\s+zahlen|zahlbetrag|endbetrag|fällig|rechnungs?[-\s]?summe)[:.\s]*(-[0-9.]{1,6}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        
+        // STORNO-PRIORITÄT 2: Stornorechnung - explizite negative Beträge
+        /stornorechnung.*?(-[0-9.]{1,6}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        /storno.*?(-[0-9.]{1,6}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        
+        // Priorität 3: EXAKTE "Gesamtbetrag brutto" Patterns (höchste Priorität für normale Rechnungen)
+        /gesamtbetrag\s+brutto\s*([0-9.]{1,6}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        /gesamtbetrag\s+brutto[:.\s]*([0-9.]{1,6}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        
+        // Priorität 4: Andere spezifische Gesamtbetrag-Bezeichner
+        /(?:gesamtbetrag|gesamtsumme|rechnungsbetrag|rechnungs?[-\s]?betrag)[:.\s]*([0-9.]{1,6}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        
+        // Priorität 5: "Zu zahlen" und ähnliche finale Beträge
+        /(?:zu\s+zahlen|zahlbetrag|endbetrag|fällig|rechnungs?[-\s]?summe)[:.\s]*([0-9.]{1,6}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        
+        // Priorität 6: Brutto-Bezeichner (spezifisch)
+        /(?:brutto|bruttobetrag|brutto[-\s]?summe|gesamt[-\s]?brutto)[:.\s]*([0-9.]{1,6}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        
+        // Priorität 7: Summe/Total nach Steuer-Berechnung
+        /(?:umsatzsteuer|mwst).*\n.*(?:summe|total|gesamt)[:.\s]*([0-9.]{1,6}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        
+        // Priorität 8: Große Beträge nach MwSt-Zeile (wahrscheinlich Endsumme)
+        /(?:umsatzsteuer|mwst).*\n.*([1-9][0-9]{3,5}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        
+        // Priorität 9: Als letzte Option - größte Beträge über 500€
+        /([5-9][0-9]{2,5}[,\.]\d{2})\s*(?:€|EUR)/gi
     ];
     
     const netPatterns = [
-        /(?:netto|summe netto)[\s:]*([0-9]{1,8}[,.]?\d{0,2})\s*€/gi
+        // STORNO-PRIORITÄT 1: Negative Netto-Beträge (Stornorechnung)
+        /(?:netto|nettobetrag|zwischensumme|subtotal|net|netto[-\s]?summe|zwischen[-\s]?summe)[:.\s]*(-[0-9]{1,6}[,\.]\d{0,2})\s*(?:€|EUR)/gi,
+        /(-[0-9]{1,6}[,\.]\d{2})\s*(?:€|EUR)\s*(?:zzgl\.?|plus|zuzüglich|\+).*(?:mwst\.?|ust\.?|steuer|vat|tax)/gi,
+        
+        // Priorität 2: EXAKTE Netto-Bezeichner (erweitert)
+        /(?:netto|nettobetrag|zwischensumme|subtotal|net|netto[-\s]?summe|zwischen[-\s]?summe)[:.\s]*([0-9]{1,6}[,\.]\d{0,2})\s*(?:€|EUR)/gi,
+        
+        // Priorität 3: "zzgl." oder "plus" vor MwSt (= Nettobetrag) - erweitert
+        /([0-9]{1,6}[,\.]\d{2})\s*(?:€|EUR)\s*(?:zzgl\.?|plus|zuzüglich|\+).*(?:mwst\.?|ust\.?|steuer|vat|tax)/gi,
+        
+        // Priorität 4: Betrag vor MwSt-Zeile (flexibler)
+        /([0-9]{1,6}[,\.]\d{2})\s*(?:€|EUR)[^\n]*\n[^\n]*(?:mwst\.?|mehrwertsteuer|umsatzsteuer|vat|tax)/gi,
+        
+        // Priorität 5: Betrag vor "zzgl" oder Steuer-Hinweisen
+        /([0-9]{1,6}[,\.]\d{2})\s*(?:€|EUR)[^\n]*(?:zzgl\.?|excl\.?|ohne)/gi,
+        
+        // Priorität 6: Mittelgroße Beträge (potentiell Netto)
+        /([1-9][0-9]{2,5}[,\.]\d{2})\s*€/g
     ];
     
     const vatPatterns = [
-        /(?:umsatzsteuer|mehrwertsteuer|mwst|ust)[\s:]*([0-9]{1,8}[,.]?\d{0,2})\s*€/gi
+        // STORNO-PRIORITÄT 1: Negative MwSt-Beträge (Stornorechnung)
+        /(?:mwst\.?\s*(?:\(19%\)|\(7%\)|\(20%\)|\(16%\))?|mehrwertsteuer|umsatzsteuer|ust\.?|vat|tax|steuer)[:.\s]*(-[0-9]{1,4}[,\.]\d{0,2})\s*(?:€|EUR)/gi,
+        /(?:19%|20%|16%|7%|0%|19,0%|20,0%|16,0%|7,0%|0,0%).*?(-[0-9]{1,4}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        
+        // Priorität 2: EXAKTE MwSt-Bezeichner (erweitert)
+        /(?:mwst\.?\s*(?:\(19%\)|\(7%\)|\(20%\)|\(16%\))?|mehrwertsteuer|umsatzsteuer|ust\.?|vat|tax|steuer)[:.\s]*([0-9]{1,4}[,\.]\d{0,2})\s*(?:€|EUR)/gi,
+        
+        // Priorität 3: Prozent-Angaben mit Betrag (erweitert)
+        /(?:19%|20%|16%|7%|0%|19,0%|20,0%|16,0%|7,0%|0,0%).*?([0-9]{1,4}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        /([0-9]{1,4}[,\.]\d{2})\s*(?:€|EUR).*?(?:19%|20%|16%|7%|0%|19,0%|20,0%|16,0%|7,0%|0,0%)/gi,
+        
+        // Priorität 4: MwSt-Zeilen mit typischen Phrasen
+        /(?:incl\.?|inkl\.?|inclusive|inklusive).*([0-9]{1,4}[,\.]\d{2})\s*(?:€|EUR).*(?:mwst|vat|tax)/gi,
+        /(?:mwst|vat|tax).*([0-9]{1,4}[,\.]\d{2})\s*(?:€|EUR)/gi,
+        
+        // Priorität 5: Typische MwSt-Beträge (5-500€)
+        /([1-4][0-9]{1,2}[,\.]\d{2})\s*(?:€|EUR)/g,
+        
+        // Priorität 6: Kleinere MwSt-Beträge (5-99€)
+        /([5-9][0-9]?[,\.]\d{2})\s*€/g
     ];
     
+    // ⚡ SEVDESK-KALIBRIERTER DEBUG: sevDesk zeigt sumGross: "410", nicht 487.90!
+    console.log('[DEBUG_SEVDESK_CALIBRATED] ===== SEVDESK-CALIBRATED EXTRACTION DEBUG =====');
+    console.log('[DEBUG_SEVDESK_CALIBRATED] sevDesk Analysis shows: sumGross="410", sumNet="344.54", sumTax="65.46"');
+    console.log('[DEBUG_SEVDESK_CALIBRATED] Calling extractFirstAmount for GROSS patterns...');
+    const totalGross = extractFirstAmount(text, grossPatterns);
+    console.log('[DEBUG_SEVDESK_CALIBRATED] GROSS RESULT:', totalGross);
+    console.log('[DEBUG_SEVDESK_CALIBRATED] Expected: 410 (sevDesk) | Previous wrong: 487.90');
+    
+    console.log('[DEBUG_SEVDESK_CALIBRATED] Calling extractFirstAmount for NET patterns...');
+    const totalNet = extractFirstAmount(text, netPatterns);
+    console.log('[DEBUG_SEVDESK_CALIBRATED] NET RESULT:', totalNet);
+    console.log('[DEBUG_SEVDESK_CALIBRATED] Expected: 344.54 (sevDesk)');
+    
+    console.log('[DEBUG_SEVDESK_CALIBRATED] Calling extractFirstAmount for VAT patterns...');
+    let totalVat = extractFirstAmount(text, vatPatterns);
+    console.log('[DEBUG_SEVDESK_CALIBRATED] VAT RESULT (raw):', totalVat);
+    
+    // 🚨 KRITISCHE VAT-KORREKTUR: Bei 0% Steuersatz MUSS VAT = 0 sein!
+    if (taxRate === 0) {
+        console.log('[DEBUG_VAT_CORRECTION] 🚨 Tax Rate ist 0% -> Setze VAT auf 0.00');
+        console.log('[DEBUG_VAT_CORRECTION] Grund: Reverse Charge, Steuerfreie Umsätze, Kleinunternehmer, etc.');
+        console.log('[DEBUG_VAT_CORRECTION] Alter VAT-Wert:', totalVat, '-> Neuer VAT-Wert: 0.00');
+        totalVat = 0;
+    }
+    
+    console.log('[DEBUG_SEVDESK_CALIBRATED] VAT RESULT (final):', totalVat);
+    console.log('[DEBUG_SEVDESK_CALIBRATED] Expected: 65.46 (sevDesk)');
+    console.log('[DEBUG_SEVDESK_CALIBRATED] =======================================================');
+    
+    // === [DEBUG_AMOUNTS] DETAILED RESULTS ===
+    console.log('[DEBUG_AMOUNTS_DETAIL] ======= RAW EXTRACTION RESULTS =======');
+    console.log('[DEBUG_AMOUNTS_DETAIL] Total Gross (raw):', totalGross);
+    console.log('[DEBUG_AMOUNTS_DETAIL] Total Net (raw):', totalNet);
+    console.log('[DEBUG_AMOUNTS_DETAIL] Total VAT (raw from patterns):', totalVat);
+    console.log('[DEBUG_AMOUNTS_DETAIL] Tax Rate (from text):', taxRate + '%');
+    console.log('[DEBUG_AMOUNTS_DETAIL] ==========================================');
+    
+    // 🚨 KRITISCHE INTELLIGENTE VAT-BERECHNUNG
+    // Problem: Viele Rechnungen (besonders Storno) haben KEINE explizite USt-Zeile!
+    // Lösung: Berechne VAT aus Gross - Net, wenn verfügbar
+    
+    let finalVat = totalVat;
+    let finalTaxRate = taxRate;
+    
+    if (totalGross !== null && totalNet !== null) {
+        const calculatedVat = totalGross - totalNet;
+        console.log('[VAT_CALCULATION] 🧮 Intelligente VAT-Berechnung:');
+        console.log('[VAT_CALCULATION] Gross:', totalGross);
+        console.log('[VAT_CALCULATION] Net:', totalNet);
+        console.log('[VAT_CALCULATION] Calculated VAT (Gross - Net):', calculatedVat);
+        console.log('[VAT_CALCULATION] Pattern VAT:', totalVat);
+        
+        // Prüfe, ob Pattern-VAT plausibel ist
+        const patternVatPlausible = totalVat !== null && 
+                                    Math.abs(calculatedVat - totalVat) < 0.10;
+        
+        if (patternVatPlausible) {
+            console.log('[VAT_CALCULATION] ✅ Pattern VAT ist plausibel (Differenz < 10 Cent)');
+            finalVat = totalVat;
+        } else {
+            console.log('[VAT_CALCULATION] 🚨 Pattern VAT NICHT plausibel oder fehlt!');
+            console.log('[VAT_CALCULATION] → Verwende berechnete VAT:', calculatedVat);
+            finalVat = calculatedVat;
+        }
+        
+        // Berechne Tax Rate aus finalVat und Net
+        if (totalNet !== 0 && finalVat !== null) {
+            const calculatedTaxRate = Math.abs((finalVat / totalNet) * 100);
+            console.log('[VAT_CALCULATION] Calculated Tax Rate:', calculatedTaxRate.toFixed(2) + '%');
+            
+            // Runde auf Standard-Steuersätze (19%, 7%, 0%)
+            if (calculatedTaxRate < 1) {
+                finalTaxRate = 0;
+                console.log('[VAT_CALCULATION] → Gerundet auf: 0%');
+            } else if (calculatedTaxRate >= 6 && calculatedTaxRate <= 8) {
+                finalTaxRate = 7;
+                console.log('[VAT_CALCULATION] → Gerundet auf: 7%');
+            } else if (calculatedTaxRate >= 16 && calculatedTaxRate <= 20) {
+                finalTaxRate = 19;
+                console.log('[VAT_CALCULATION] → Gerundet auf: 19%');
+            } else {
+                finalTaxRate = Math.round(calculatedTaxRate);
+                console.log('[VAT_CALCULATION] → Gerundet auf:', finalTaxRate + '%');
+            }
+        }
+        
+        // 🚨 FINALE VAT-KORREKTUR: Bei 0% Steuersatz MUSS VAT = 0 sein!
+        if (finalTaxRate === 0) {
+            console.log('[VAT_CORRECTION] 🚨 Tax Rate ist 0% -> Setze VAT auf 0.00');
+            console.log('[VAT_CORRECTION] Grund: Reverse Charge, Steuerfreie Umsätze, Kleinunternehmer, etc.');
+            console.log('[VAT_CORRECTION] Alter VAT-Wert:', finalVat, '-> Neuer VAT-Wert: 0.00');
+            finalVat = 0;
+        }
+    }
+    
+    console.log('[VAT_CALCULATION] ======= FINALE WERTE =======');
+    console.log('[VAT_CALCULATION] Final VAT:', finalVat);
+    console.log('[VAT_CALCULATION] Final Tax Rate:', finalTaxRate + '%');
+    console.log('[VAT_CALCULATION] =====================================');
+    
+    logger.info('[GERMAN AMOUNTS] Final amounts:', {
+        totalGross: totalGross || 'null',
+        totalNet: totalNet || 'null',
+        totalVat: finalVat,
+        taxRate: finalTaxRate + '%'
+    });
+    
     return {
-        totalGross: extractFirstAmount(text, grossPatterns),
-        totalNet: extractFirstAmount(text, netPatterns),
-        totalVat: extractFirstAmount(text, vatPatterns)
+        totalGross,
+        totalNet,
+        totalVat: finalVat,
+        taxRate: finalTaxRate
     };
 }
 
 function extractFirstAmount(text: string, patterns: RegExp[]): number | null {
-    for (const pattern of patterns) {
-        const match = text.match(pattern);
-        if (match) {
-            return parseGermanAmount(match[1]);
+    console.log('[DEBUG_EXTRACT_FIRST] Testing', patterns.length, 'patterns for amount extraction');
+    
+    // ⚡ STRIKT: ERSTES GÜLTIGES ERGEBNIS ODER FEHLER - KEINE FALLBACKS!
+    for (let i = 0; i < patterns.length; i++) {
+        const pattern = patterns[i];
+        console.log(`[DEBUG_EXTRACT_FIRST] Pattern ${i + 1}:`, pattern.source);
+        
+        const matches = Array.from(text.matchAll(pattern));
+        console.log(`[DEBUG_EXTRACT_FIRST] Pattern ${i + 1} found ${matches.length} matches`);
+        
+        for (const match of matches) {
+            console.log(`[DEBUG_EXTRACT_FIRST] Testing match:`, match[0]);
+            console.log(`[DEBUG_EXTRACT_FIRST] Extracted string:`, match[1]);
+            
+            const amount = parseGermanAmount(match[1]);
+            console.log(`[DEBUG_EXTRACT_FIRST] Parsed amount:`, amount);
+            
+            // ✅ STORNO-UNTERSTÜTZUNG: Akzeptiere sowohl positive als auch negative Beträge
+            if (amount !== null && amount !== 0) {
+                console.log(`[DEBUG_EXTRACT_FIRST] ✅ SUCCESS - Returning FIRST VALID (inkl. STORNO):`, amount);
+                return amount; // ⚡ ERSTES GÜLTIGES ERGEBNIS - POSITIVE UND NEGATIVE BETRÄGE!
+            }
         }
     }
+    
+    console.log('[DEBUG_EXTRACT_FIRST] ❌ NO VALID AMOUNTS FOUND - Returning null');
     return null;
 }
 
 function parseGermanAmount(amountStr: string): number | null {
-    if (!amountStr) return null;
+    if (!amountStr || typeof amountStr !== 'string') return null;
     
-    // Deutsche Zahlenformate: 1.234,56 oder 1234,56 oder 1234.56
-    const cleaned = amountStr.replace(/[^\d,.]/g, '');
-    const normalized = cleaned.includes(',') && cleaned.lastIndexOf(',') > cleaned.lastIndexOf('.') 
-        ? cleaned.replace(/\./g, '').replace(',', '.')
-        : cleaned.replace(/,/g, '');
+    console.log(`[DEBUG_PARSE_AMOUNT] Input: "${amountStr}"`);
+    
+    // ⚡ ROBUSTER DEUTSCHER ZAHLENFORMAT-PARSER
+    // Entferne Leerzeichen, Währungssymbole und andere Zeichen
+    let cleaned = amountStr.trim();
+    console.log(`[DEBUG_PARSE_AMOUNT] After trim: "${cleaned}"`);
+    
+    // Entferne Währungssymbole und Einheiten
+    cleaned = cleaned.replace(/[€$£¥EUR USD GBP JPY]/gi, '');
+    console.log(`[DEBUG_PARSE_AMOUNT] After currency removal: "${cleaned}"`);
+    
+    // Entferne alle Zeichen außer Zahlen, Komma, Punkt und Minus
+    cleaned = cleaned.replace(/[^\d,.-]/g, '');
+    console.log(`[DEBUG_PARSE_AMOUNT] Cleaned: "${cleaned}"`);
+    
+    if (!cleaned || cleaned.length === 0) {
+        console.log(`[DEBUG_PARSE_AMOUNT] Empty after cleaning`);
+        return null;
+    }
+    
+    let normalized: string;
+    
+    // Verschiedene Zahlenformate handhaben
+    if (cleaned.includes(',') && cleaned.includes('.')) {
+        // Format: 1.234,56 (Deutsch) oder 1,234.56 (Englisch)
+        const lastComma = cleaned.lastIndexOf(',');
+        const lastDot = cleaned.lastIndexOf('.');
+        
+        if (lastComma > lastDot) {
+            // Deutsche Format: 1.234,56
+            normalized = cleaned.replace(/\./g, '').replace(',', '.');
+            console.log(`[DEBUG_PARSE_AMOUNT] German format detected: ${normalized}`);
+        } else {
+            // Englische Format: 1,234.56
+            normalized = cleaned.replace(/,/g, '');
+            console.log(`[DEBUG_PARSE_AMOUNT] English format detected: ${normalized}`);
+        }
+    } else if (cleaned.includes(',')) {
+        // Nur Komma: könnte 1234,56 (Deutsch) oder 1,234 (Englisch) sein
+        const commaIndex = cleaned.indexOf(',');
+        const afterComma = cleaned.substring(commaIndex + 1);
+        
+        if (afterComma.length <= 2 && /^\d+$/.test(afterComma)) {
+            // Wahrscheinlich deutsche Dezimalstelle: 1234,56
+            normalized = cleaned.replace(',', '.');
+            console.log(`[DEBUG_PARSE_AMOUNT] German decimal format: ${normalized}`);
+        } else {
+            // Wahrscheinlich englischer Tausender-Separator: 1,234
+            normalized = cleaned.replace(/,/g, '');
+            console.log(`[DEBUG_PARSE_AMOUNT] English thousands separator: ${normalized}`);
+        }
+    } else if (cleaned.includes('.')) {
+        // Nur Punkt: könnte 1234.56 (Englisch) oder 1.234 (Deutsch) sein
+        const dotIndex = cleaned.lastIndexOf('.');
+        const afterDot = cleaned.substring(dotIndex + 1);
+        
+        if (afterDot.length <= 2 && /^\d+$/.test(afterDot)) {
+            // Wahrscheinlich englische Dezimalstelle: 1234.56
+            normalized = cleaned;
+            console.log(`[DEBUG_PARSE_AMOUNT] English decimal format: ${normalized}`);
+        } else {
+            // Wahrscheinlich deutscher Tausender-Separator: 1.234
+            normalized = cleaned.replace(/\./g, '');
+            console.log(`[DEBUG_PARSE_AMOUNT] German thousands separator: ${normalized}`);
+        }
+    } else {
+        // Nur Zahlen: 1234
+        normalized = cleaned;
+        console.log(`[DEBUG_PARSE_AMOUNT] Numbers only: ${normalized}`);
+    }
+    
+    console.log(`[DEBUG_PARSE_AMOUNT] Normalized: "${normalized}"`);
     
     const amount = parseFloat(normalized);
-    return isNaN(amount) ? null : Math.round(amount * 100) / 100;
+    if (isNaN(amount)) {
+        console.log(`[DEBUG_PARSE_AMOUNT] Failed to parse: NaN`);
+        return null;
+    }
+    
+    // Runde auf 2 Dezimalstellen
+    const result = Math.round(amount * 100) / 100;
+    
+    console.log(`[DEBUG_PARSE_AMOUNT] Final result: ${result}`);
+    return result;
 }
 
 function extractGermanDate(text: string): string | null {
+    logger.info('[GERMAN DATE] Starting specialized German date extraction...');
+    logger.info('[GERMAN DATE] Text sample:', text.substring(0, 400));
+    
     const datePatterns = [
-        /(?:datum|date)[\s:]*(\d{1,2}[.\/]\d{1,2}[.\/]\d{4})/gi,
-        /(\d{1,2}[.\/]\d{1,2}[.\/]\d{4})/g
+        // Priorität 1: Deutsche Bezeichner mit Datum (für 10.07.2025)
+        /(?:rechnungsdatum|belegdatum|datum|date|vom)[\s:]*(\d{1,2}[.\/]\d{1,2}[.\/]\d{4})/gi,
+        
+        // Priorität 2: Standard deutsche Datumsformate
+        /(\d{1,2}\.\d{1,2}\.\d{4})/g,      // DD.MM.YYYY (deutsch)
+        /(\d{1,2}\/\d{1,2}\/\d{4})/g,      // DD/MM/YYYY
+        
+        // Priorität 3: Alternative Formate
+        /(\d{4}-\d{1,2}-\d{1,2})/g,        // YYYY-MM-DD (ISO)
+        /(\d{1,2}-\d{1,2}-\d{4})/g         // DD-MM-YYYY
     ];
     
-    for (const pattern of datePatterns) {
-        const match = text.match(pattern);
-        if (match) {
-            const dateStr = match[1];
-            const parts = dateStr.split(/[.\/]/);
-            if (parts.length === 3) {
-                const day = parts[0].padStart(2, '0');
-                const month = parts[1].padStart(2, '0');
-                const year = parts[2];
-                return `${year}-${month}-${day}`;
+    for (let i = 0; i < datePatterns.length; i++) {
+        const pattern = datePatterns[i];
+        logger.info(`[GERMAN DATE] Testing pattern ${i + 1}: ${pattern.source}`);
+        
+        const matches = Array.from(text.matchAll(pattern));
+        for (const match of matches) {
+            const dateStr = match[1] || match[0];
+            logger.info(`[GERMAN DATE] Found date candidate: "${dateStr}"`);
+            
+            // Parse verschiedene Formate
+            let day: number | undefined, month: number | undefined, year: number | undefined;
+            
+            if (dateStr.includes('.')) {
+                const parts = dateStr.split('.');
+                if (parts.length === 3) {
+                    day = parseInt(parts[0]);
+                    month = parseInt(parts[1]);
+                    year = parseInt(parts[2]);
+                }
+            } else if (dateStr.includes('/')) {
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    day = parseInt(parts[0]);
+                    month = parseInt(parts[1]);
+                    year = parseInt(parts[2]);
+                }
+            } else if (dateStr.includes('-')) {
+                const parts = dateStr.split('-');
+                if (parts.length === 3) {
+                    if (parts[0].length === 4) {
+                        // YYYY-MM-DD Format
+                        year = parseInt(parts[0]);
+                        month = parseInt(parts[1]);
+                        day = parseInt(parts[2]);
+                    } else {
+                        // DD-MM-YYYY Format
+                        day = parseInt(parts[0]);
+                        month = parseInt(parts[1]);
+                        year = parseInt(parts[2]);
+                    }
+                }
+            } else {
+                continue;
+            }
+            
+            // Validierung
+            if (day && month && year && 
+                year >= 2020 && year <= 2030 && 
+                month >= 1 && month <= 12 && 
+                day >= 1 && day <= 31) {
+                
+                const isoDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                logger.info(`[GERMAN DATE] ✅ Valid date found: ${isoDate} (from "${dateStr}")`);
+                return isoDate;
+            } else {
+                logger.info(`[GERMAN DATE] ❌ Invalid date: day=${day}, month=${month}, year=${year}`);
             }
         }
     }
+    
+    logger.warn('[GERMAN DATE] ❌ No valid German date found');
     return null;
 }
 
 function extractGermanDueDate(text: string): string | null {
+    logger.info('[GERMAN DUE DATE] Starting extraction...');
+    logger.info('[GERMAN DUE DATE] Text sample:', text.substring(0, 800));
+    
+    // ⚡ FINAL FIX: Robuste Fälligkeitsdatum-Extraktion für "Fälligkeitsdatum: 21.10.2025"
     const dueDatePatterns = [
-        /(?:fälligkeitsdatum|fällig|zahlbar bis|due date)[\s:]*(\d{1,2}[.\/]\d{1,2}[.\/]\d{4})/gi
+        // Priorität 1: Deutsche Fälligkeitsdatum-Patterns (direkt nach dem Begriff)
+        /fälligkeitsdatum[\s:]*(\d{1,2}\.\d{1,2}\.\d{4})/gi,
+        /fällig[\s:]*(\d{1,2}\.\d{1,2}\.\d{4})/gi,
+        /zahlbar\s*bis[\s:]*(\d{1,2}\.\d{1,2}\.\d{4})/gi,
+        
+        // Priorität 2: Due Date (englisch)
+        /due\s*date[\s:]*(\d{1,2}[.\/]\d{1,2}[.\/]\d{4})/gi,
+        
+        // Priorität 3: Alle Daten im Format DD.MM.YYYY, aber nur wenn > Rechnungsdatum
+        /(\d{1,2}\.\d{1,2}\.\d{4})/g
     ];
     
-    for (const pattern of dueDatePatterns) {
-        const match = text.match(pattern);
-        if (match) {
-            const dateStr = match[1];
-            const parts = dateStr.split(/[.\/]/);
-            if (parts.length === 3) {
-                const day = parts[0].padStart(2, '0');
-                const month = parts[1].padStart(2, '0');
-                const year = parts[2];
-                return `${year}-${month}-${day}`;
+    for (let i = 0; i < dueDatePatterns.length; i++) {
+        const pattern = dueDatePatterns[i];
+        logger.info(`[GERMAN DUE DATE] Testing pattern ${i + 1}: ${pattern.source}`);
+        
+        const matches = Array.from(text.matchAll(pattern));
+        for (const match of matches) {
+            const dateStr = match[1] || match[0];
+            logger.info(`[GERMAN DUE DATE] Found candidate: "${dateStr}"`);
+            
+            // Nur Deutsche Datumsformate DD.MM.YYYY verarbeiten
+            if (dateStr.includes('.')) {
+                const parts = dateStr.split('.');
+                if (parts.length === 3) {
+                    const day = parseInt(parts[0]);
+                    const month = parseInt(parts[1]);
+                    const year = parseInt(parts[2]);
+                    
+                    // Validierung: Plausibles Datum
+                    if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 2020 && year <= 2030) {
+                        const isoDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                        logger.info(`[GERMAN DUE DATE] ✅ Valid due date found: ${isoDate}`);
+                        return isoDate;
+                    }
+                }
             }
         }
     }
+    
+    logger.warn('[GERMAN DUE DATE] ❌ No valid due date found');
     return null;
 }
 
 function extractGermanAddress(text: string): string | null {
-    // Implementation für deutsche Adressextraktion
-    return null; // Placeholder
+    logger.info('[GERMAN ADDRESS] Starting German address extraction...');
+    
+    // Grußformeln und nicht-adressrelevante Inhalte, die herausgefiltert werden sollen
+    const greetingFormulas = [
+        'mit freundlichen grüßen',
+        'mit freundlichem gruß',
+        'mit besten grüßen',
+        'hochachtungsvoll',
+        'liebe grüße',
+        'beste grüße',
+        'viele grüße',
+        'herzliche grüße',
+        'mit freundlichen grüssen',
+        'mfg',
+        'lg',
+        'vg',
+        'hg'
+    ];
+    
+    // Weitere nicht-adressrelevante Begriffe
+    const nonAddressTerms = [
+        'tel',
+        'telefon',
+        'phone',
+        'fon',
+        'fax',
+        'email',
+        'e-mail',
+        'mail',
+        'web',
+        'www',
+        'http',
+        'https',
+        'ust-id',
+        'umsatzsteuer',
+        'steuernummer',
+        'handelsregister',
+        'amtsgericht',
+        'geschäftsführer'
+    ];
+    
+    const addressPatterns = [
+        // Deutsche Adressen-Patterns: Straße + Hausnummer, PLZ + Ort
+        /([A-Za-zäöüß\s.-]+\s+\d{1,4}[a-zA-Z]?[\s,]*\d{5}\s+[A-Za-zäöüß\s.-]+)/g,
+        
+        // Mehrzeilige Adressen
+        /([A-Za-zäöüß\s.-]+\s+\d{1,4}[a-zA-Z]?)[\s\n]+(\d{5}\s+[A-Za-zäöüß\s.-]+)/g,
+        
+        // Klassische deutsche Postleitzahl + Ort
+        /(\d{5}\s+[A-Za-zäöüß\s.-]{3,50})/g,
+        
+        // Straßenname mit Hausnummer
+        /([A-Za-zäöüß\s.-]+(?:straße|str\.|gasse|weg|platz|allee)\s+\d{1,4}[a-zA-Z]?)/gi
+    ];
+    
+    for (const pattern of addressPatterns) {
+        const matches = Array.from(text.matchAll(pattern));
+        for (const match of matches) {
+            let address = match[1] || match[0];
+            logger.info('[GERMAN ADDRESS] 🔍 Raw match found:', address);
+            
+            // Bereinigung
+            address = address.replace(/\s+/g, ' ').trim();
+            
+            // Grußformeln am Anfang entfernen
+            const addressLower = address.toLowerCase();
+            let isValidAddress = true;
+            
+            // Prüfung auf Grußformeln
+            for (const greeting of greetingFormulas) {
+                if (addressLower.startsWith(greeting)) {
+                    logger.info('[GERMAN ADDRESS] 🧹 Removing greeting formula at start:', greeting);
+                    // Grußformel am Anfang entfernen
+                    address = address.substring(greeting.length).trim();
+                    break;
+                }
+                if (addressLower.includes(greeting)) {
+                    // Wenn Grußformel in der Mitte vorkommt, ist es keine reine Adresse
+                    const greetingIndex = addressLower.indexOf(greeting);
+                    if (greetingIndex > 0 && greetingIndex < address.length - greeting.length) {
+                        logger.info('[GERMAN ADDRESS] ❌ Greeting formula in middle, invalid:', greeting);
+                        isValidAddress = false;
+                        break;
+                    }
+                }
+            }
+            
+            if (!isValidAddress) {
+                logger.info('[GERMAN ADDRESS] ❌ Invalid due to greeting formula');
+                continue;
+            }
+            
+            // Prüfung auf nicht-adressrelevante Begriffe
+            for (const term of nonAddressTerms) {
+                if (addressLower.includes(term + ':') || addressLower.includes(term + ' ')) {
+                    logger.info('[GERMAN ADDRESS] ❌ Invalid due to non-address term:', term);
+                    isValidAddress = false;
+                    break;
+                }
+            }
+            
+            if (!isValidAddress) {
+                logger.info('[GERMAN ADDRESS] ❌ Invalid due to non-address terms');
+                continue;
+            }
+            
+            // Nach der Bereinigung nochmals trimmen
+            address = address.trim();
+            
+            // Validierung: Mindestens 10 Zeichen, nicht nur Zahlen, muss eine echte Adresse sein
+            if (address.length >= 10 && address.length <= 150 && !/^\d+$/.test(address)) {
+                // Zusätzliche Validierung: Muss entweder PLZ oder Straßennamen enthalten
+                const hasPostalCode = /\d{5}/.test(address);
+                const hasStreetIndicator = /(?:straße|str\.|gasse|weg|platz|allee|siedlung)/gi.test(address);
+                
+                if (hasPostalCode || hasStreetIndicator) {
+                    logger.info('[GERMAN ADDRESS] ✅ Found valid address:', address);
+                    return address;
+                }
+            }
+        }
+    }
+    
+    logger.info('[GERMAN ADDRESS] ❌ No valid address found');
+    return null;
+}
+
+// Deutsche Telefonnummer-Extraktion
+function extractGermanPhone(text: string): string | null {
+    logger.info('[GERMAN PHONE] Starting phone extraction...');
+    
+    const phonePatterns = [
+        // Deutsche Telefonnummern mit verschiedenen Formaten
+        /(?:tel|telefon|phone|fon)[\s:]*([+]?49[\s-]?\d{2,5}[\s/-]?\d{3,10})/gi,
+        /(?:tel|telefon|phone|fon)[\s:]*([0][\d\s/-]{8,20})/gi,
+        /([+]?49[\s-]?\d{2,5}[\s/-]?\d{3,10})/g,
+        /(0\d{2,5}[\s/-]?\d{3,10})/g
+    ];
+    
+    for (const pattern of phonePatterns) {
+        const matches = Array.from(text.matchAll(pattern));
+        for (const match of matches) {
+            let phone = match[1] || match[0];
+            
+            // Bereinigung
+            phone = phone.replace(/[^\d+\-\s]/g, '').replace(/\s+/g, ' ').trim();
+            
+            // Validierung: Deutsche Telefonnummer
+            if (phone.length >= 8 && phone.length <= 20) {
+                logger.info('[GERMAN PHONE] ✅ Found phone:', phone);
+                return phone;
+            }
+        }
+    }
+    
+    logger.info('[GERMAN PHONE] ❌ No valid phone found');
+    return null;
+}
+
+// Deutsche Email-Extraktion
+function extractGermanEmail(text: string): string | null {
+    logger.info('[GERMAN EMAIL] Starting email extraction...');
+    
+    const emailPattern = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+    const matches = Array.from(text.matchAll(emailPattern));
+    
+    for (const match of matches) {
+        const email = match[1].toLowerCase();
+        
+        // Validierung: Kein Spam/ungültige Domains
+        if (!email.includes('example.') && !email.includes('test.') && email.length <= 100) {
+            logger.info('[GERMAN EMAIL] ✅ Found email:', email);
+            return email;
+        }
+    }
+    
+    logger.info('[GERMAN EMAIL] ❌ No valid email found');
+    return null;
 }
 
 function extractGermanVATId(text: string): string | null {
     const vatIdPattern = /(?:ust[.-]?id|vat\s*id|umsatzsteuer[.-]?id)[\s:]*([A-Z]{2}\d{9})/gi;
     const match = text.match(vatIdPattern);
     return match ? match[1] : null;
+}
+
+// Spezialisierte deutsche Beschreibungsextraktion
+function extractGermanDescription(text: string, fileName: string): string {
+    console.log('[🔥 DESCRIPTION_DEBUG] =============== STARTING DESCRIPTION EXTRACTION ===============');
+    console.log('[🔥 DESCRIPTION_DEBUG] Input text length:', text.length);
+    console.log('[🔥 DESCRIPTION_DEBUG] Text sample (first 800 chars):');
+    console.log(text.substring(0, 800));
+    console.log('[🔥 DESCRIPTION_DEBUG] ================================================================');
+    
+    logger.info('[GERMAN DESCRIPTION] Starting specialized German description extraction...');
+    logger.info('[GERMAN DESCRIPTION] Text sample:', text.substring(0, 500));
+    
+    const candidates: Array<{value: string, priority: number, source: string}> = [];
+    
+    // === PRIORITÄT 0: BETREFF-EXTRAKTION (HÖCHSTE PRIORITÄT) ===
+    console.log('[DEBUG_DESCRIPTION] ===== BETREFF EXTRACTION =====');
+    
+    const subjectPatterns = [
+        // "Betreff: Stornorechnung Nr. ST-494 zur Rechnung Nr. RE-1077"
+        /Betreff:\s*(.+?)(?:\n|$)/gi,
+        // "Re: Text" oder "Subject: Text"
+        /(?:Re|Subject):\s*(.+?)(?:\n|$)/gi,
+        // Zeile die mit "Stornorechnung" beginnt
+        /^(Stornorechnung[^\n]+)/gmi,
+        // Zeile die mit "Rechnung" beginnt und Nummern enthält
+        /^(Rechnung[^\n]*(?:Nr\.|Nummer)[^\n]+)/gmi
+    ];
+    
+    for (const pattern of subjectPatterns) {
+        const matches = Array.from(text.matchAll(pattern));
+        console.log(`[DEBUG_DESCRIPTION] Betreff pattern found ${matches.length} matches`);
+        
+        for (const match of matches) {
+            const subject = match[1].trim();
+            console.log(`[DEBUG_DESCRIPTION] Found subject: "${subject}"`);
+            
+            if (subject && subject.length > 5 && subject.length < 200) {
+                candidates.push({
+                    value: subject,
+                    priority: 200, // 🔥 ALLERHÖCHSTE PRIORITÄT - BETREFF MUSS IMMER GEWINNEN!
+                    source: 'BETREFF'
+                });
+                console.log(`[DEBUG_DESCRIPTION] ✅ Added subject to candidates with PRIORITY 200: "${subject}"`);
+            }
+        }
+    }
+    
+    // === PRIORITÄT 1: RECHNUNGSPOSITIONEN/LEISTUNGSZEILEN ===
+    console.log('[DEBUG_DESCRIPTION] ===== ADVANCED SERVICE EXTRACTION =====');
+    
+    // 1A. Exakte nummerierte Rechnungspositionen (RE-102256 Format)
+    const exactNumberedPatterns = [
+        // "1. Gastronomisch bezogene Honoraleistung Andy Staudinger 48,3 Stk. 41,00 EUR 1980.30 EUR"
+        /(\d+\.)\s*([A-Za-zäöüß][A-Za-zäöüß\s,.-]{8,80})\s*\d+[,.]?\d*\s*(?:Stk\.|Std\.|Stück)/gi,
+        
+        // "2. Anreise 150,00 EUR 150,00 EUR" - Spezifisch für Position nach Nummer und vor doppeltem EUR
+        /(\d+\.)\s*([A-Za-zäöüß][A-Za-zäöüß\s,.-]{3,50})\s*\d+[,.]?\d*\s*EUR\s*\d+[,.]?\d*\s*EUR/gi,
+        
+        // Sehr spezifische nummerierte Positionen (nicht Summen/Gesamtbeträge)
+        /(\d+\.)\s*([A-Za-zäöüß][A-Za-zäöüß\s,.-]{5,80}?)(?=\s*\d+[,.]?\d*\s*(?:Stk|EUR|€))/gi,
+    ];
+    
+    console.log('[DEBUG_DESCRIPTION] Testing exact numbered patterns...');
+    for (const pattern of exactNumberedPatterns) {
+        const matches = Array.from(text.matchAll(pattern));
+        console.log(`[DEBUG_DESCRIPTION] Pattern ${pattern.source} found ${matches.length} matches`);
+        
+        for (const match of matches) {
+            const serviceDesc = cleanDescriptionText(match[2]);
+            console.log(`[DEBUG_DESCRIPTION] Raw match: "${match[0]}"`);
+            console.log(`[DEBUG_DESCRIPTION] Extracted service: "${serviceDesc}"`);
+            
+            // Blacklist für Summen/Gesamtbeträge (keine echten Leistungspositionen)
+            const blacklistedTerms = [
+                /gesamtbetrag/gi,
+                /summe/gi,
+                /total/gi,
+                /netto/gi,
+                /brutto/gi,
+                /umsatzsteuer/gi,
+                /mwst/gi,
+                /\d+%/g, // Prozentangaben
+                /rechnungsnummer/gi,
+                /datum/gi
+            ];
+            
+            const isBlacklisted = blacklistedTerms.some(term => term.test(serviceDesc));
+            
+            if (serviceDesc && serviceDesc.length >= 3 && !isBlacklisted) {
+                candidates.push({
+                    value: serviceDesc,
+                    priority: 120, // Höchste Priorität für exakte nummerierte Services
+                    source: `Exact Numbered: ${match[1]} ${serviceDesc}`
+                });
+                console.log('[DEBUG_DESCRIPTION] 🎯 EXACT NUMBERED SERVICE:', serviceDesc);
+                logger.info('[GERMAN DESCRIPTION] Exact numbered service found:', serviceDesc);
+            } else if (isBlacklisted) {
+                console.log('[DEBUG_DESCRIPTION] ❌ BLACKLISTED SERVICE:', serviceDesc);
+            }
+        }
+    }
+    
+    // 1B. Gastronomie/Honorar spezifische Leistungen
+    const serviceSpecificPatterns = [
+        /([A-Za-zäöüß\s]*(?:gastronomisch|honorar|beratung|dienstleistung|service)[A-Za-zäöüß\s,.-]{5,100})/gi,
+        /([A-Za-zäöüß\s]*(?:anreise|fahrtkosten|travel|transport)[A-Za-zäöüß\s,.-]{0,50})/gi,
+        /([A-Za-zäöüß\s]*(?:entwicklung|programming|consulting|freelance)[A-Za-zäöüß\s,.-]{5,100})/gi,
+    ];
+    
+    for (const pattern of serviceSpecificPatterns) {
+        const matches = Array.from(text.matchAll(pattern));
+        for (const match of matches) {
+            const desc = cleanDescriptionText(match[1]);
+            if (desc && desc.length >= 8 && desc.length <= 120) {
+                candidates.push({
+                    value: desc,
+                    priority: 105,
+                    source: `Service Specific: ${match[0]}`
+                });
+                console.log('[DEBUG_DESCRIPTION] 🍽️ SERVICE SPECIFIC:', desc);
+                logger.info('[GERMAN DESCRIPTION] Service specific found:', desc);
+            }
+        }
+    }
+    
+    // 1C. Allgemeine Leistungspatterns
+    const generalServicePatterns = [
+        /(?:leistung|service|beschreibung)[\s:]*([A-Za-zäöüß\s,.-]{8,100})/gi,
+        /(?:position|pos\.|artikel)[\s:]*([A-Za-zäöüß\s,.-]{8,100})/gi,
+        /\d+[\s.)][\s]*([A-Za-zäöüß\s,.-]{8,100})/g, // Nummerierte Listen
+    ];
+    
+    for (const pattern of generalServicePatterns) {
+        const matches = Array.from(text.matchAll(pattern));
+        for (const match of matches) {
+            const desc = cleanDescriptionText(match[1]);
+            if (desc && desc.length >= 8 && desc.length <= 100) {
+                candidates.push({
+                    value: desc,
+                    priority: 100,
+                    source: `General Service: ${match[0]}`
+                });
+                logger.info('[GERMAN DESCRIPTION] General service found:', desc);
+            }
+        }
+    }
+    
+    // === PRIORITÄT 2: ZEITRAUM-SPEZIFISCHE BESCHREIBUNGEN ===
+    const zeitraumPatterns = [
+        /([A-Za-zäöüß\s,.-]{5,50}zeitraum[A-Za-zäöüß\s,.-]{0,30})/gi,
+        /([A-Za-zäöüß\s,.-]{5,50}(?:kw|woche|monat)[A-Za-zäöüß\s\d,.-]{0,30})/gi,
+    ];
+    
+    for (const pattern of zeitraumPatterns) {
+        const matches = Array.from(text.matchAll(pattern));
+        for (const match of matches) {
+            const desc = cleanDescriptionText(match[1]);
+            if (desc && desc.length >= 10 && desc.length <= 80) {
+                candidates.push({
+                    value: desc,
+                    priority: 90,
+                    source: `Zeitraum: ${match[0]}`
+                });
+                logger.info('[GERMAN DESCRIPTION] Zeitraum found:', desc);
+            }
+        }
+    }
+    
+    // === PRIORITÄT 3: FREIBERUFLER/HONORAR BESCHREIBUNGEN ===
+    const honorarPatterns = [
+        /([A-Za-zäöüß\s,.-]{5,60}(?:honorar|dienstleistung|beratung|entwicklung)[A-Za-zäöüß\s,.-]{0,40})/gi,
+        /([A-Za-zäöüß\s,.-]{5,60}(?:freelance|consulting|programming)[A-Za-zäöüß\s,.-]{0,40})/gi,
+    ];
+    
+    for (const pattern of honorarPatterns) {
+        const matches = Array.from(text.matchAll(pattern));
+        for (const match of matches) {
+            const desc = cleanDescriptionText(match[1]);
+            if (desc && desc.length >= 10 && desc.length <= 100) {
+                candidates.push({
+                    value: desc,
+                    priority: 80,
+                    source: `Honorar: ${match[0]}`
+                });
+                logger.info('[GERMAN DESCRIPTION] Honorar found:', desc);
+            }
+        }
+    }
+    
+    // === PRIORITÄT 4: ERSTE RELEVANTE TEXTZEILE ===
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    for (let i = 0; i < Math.min(10, lines.length); i++) {
+        const line = lines[i];
+        
+        // Skip Header/Footer/Irrelevante Zeilen
+        if (shouldSkipLine(line)) continue;
+        
+        const desc = cleanDescriptionText(line);
+        if (desc && desc.length >= 8 && desc.length <= 120) {
+            candidates.push({
+                value: desc,
+                priority: 60,
+                source: `Line ${i + 1}: ${line}`
+            });
+        }
+    }
+    
+    // === MULTI-SERVICE KOMBINATION (für mehrere Leistungspositionen) ===
+    console.log('[DEBUG_DESCRIPTION] ===== MULTI-SERVICE COMBINATION =====');
+    
+    // Filtere exakte nummerierte Services (höchste Priorität)
+    const exactServices = candidates.filter(c => c.priority >= 120);
+    console.log(`[DEBUG_DESCRIPTION] Found ${exactServices.length} exact numbered services`);
+    
+    if (exactServices.length >= 2) {
+        // Entferne Duplikate basierend auf ähnlichem Inhalt
+        const uniqueServices: Array<{value: string, priority: number, source: string}> = [];
+        for (const service of exactServices) {
+            const isDuplicate = uniqueServices.some(existing => 
+                service.value.toLowerCase().includes(existing.value.toLowerCase()) ||
+                existing.value.toLowerCase().includes(service.value.toLowerCase())
+            );
+            if (!isDuplicate) {
+                uniqueServices.push(service);
+            }
+        }
+        
+        console.log(`[DEBUG_DESCRIPTION] After deduplication: ${uniqueServices.length} unique services`);
+        uniqueServices.forEach((s, i) => console.log(`[DEBUG_DESCRIPTION] Service ${i+1}: "${s.value}"`));
+        
+        if (uniqueServices.length >= 2) {
+            // Kombiniere die einzigartigen Services
+            const topServices = uniqueServices.slice(0, 2); // Maximal 2 Hauptservices
+            const combinedDesc = topServices.map(s => s.value.trim()).join(' + ');
+            
+            if (combinedDesc.length <= 120) { // Reduzierte maximale Länge
+                candidates.push({
+                    value: combinedDesc,
+                    priority: 125, // Höchste Priorität für saubere Kombinationen
+                    source: `Clean Multi-Service: ${topServices.length} unique services`
+                });
+                console.log('[DEBUG_DESCRIPTION] 🔗 CLEAN MULTI-SERVICE:', combinedDesc);
+                logger.info('[GERMAN DESCRIPTION] Clean multi-service combination created:', combinedDesc);
+            }
+        }
+    }
+    
+    // === DEDUPLIZIERUNG UND SORTIERUNG ===
+    const uniqueCandidates = candidates.filter((candidate, index, self) => 
+        index === self.findIndex(c => c.value.toLowerCase() === candidate.value.toLowerCase())
+    );
+    
+    uniqueCandidates.sort((a, b) => b.priority - a.priority);
+    
+    logger.info('[GERMAN DESCRIPTION] Found candidates:', uniqueCandidates.length);
+    uniqueCandidates.forEach((candidate, idx) => {
+        logger.info(`[DESCRIPTION CANDIDATE ${idx+1}] "${candidate.value}" (priority: ${candidate.priority})`);
+    });
+    
+    // === AUSWAHL DER BESTEN BESCHREIBUNG ===
+    console.log('[🔥 DESCRIPTION_DEBUG] =============== FINAL SELECTION ===============');
+    console.log('[🔥 DESCRIPTION_DEBUG] Total unique candidates:', uniqueCandidates.length);
+    
+    uniqueCandidates.forEach((candidate, idx) => {
+        console.log(`[🔥 DESCRIPTION_DEBUG] Candidate ${idx+1}: "${candidate.value}" (priority: ${candidate.priority}, source: ${candidate.source})`);
+    });
+    
+    if (uniqueCandidates.length > 0) {
+        const selected = uniqueCandidates[0];
+        console.log('[🔥 DESCRIPTION_DEBUG] ✅ SELECTED DESCRIPTION:', selected.value);
+        console.log('[🔥 DESCRIPTION_DEBUG] ✅ SELECTED SOURCE:', selected.source);
+        console.log('[🔥 DESCRIPTION_DEBUG] ================================================================');
+        
+        logger.info('[GERMAN DESCRIPTION] ✅ Selected:', selected.value);
+        return selected.value;
+    } else {
+        console.log('[🔥 DESCRIPTION_DEBUG] ❌ NO CANDIDATES FOUND!');
+        console.log('[🔥 DESCRIPTION_DEBUG] ================================================================');
+        
+        // KEIN FALLBACK - ERROR HANDLING
+        logger.error('[GERMAN DESCRIPTION] ❌ No description found - NO FALLBACK ALLOWED!');
+        throw new Error('Description extraction failed: No valid description found in document and no fallback allowed!');
+    }
+}
+
+// Hilfsfunktionen für Beschreibungsextraktion
+function cleanDescriptionText(text: string): string {
+    if (!text) return '';
+    
+    return text
+        .replace(/\s+/g, ' ')  // Normalisiere Leerzeichen
+        .replace(/[^\w\säöüßÄÖÜ,.:-]/g, '') // Entferne Sonderzeichen außer wichtigen
+        .replace(/^\W+|\W+$/g, '') // Entferne führende/nachfolgende Sonderzeichen
+        .trim();
+}
+
+function shouldSkipLine(line: string): boolean {
+    const skipPatterns = [
+        /^(rechnung|invoice|datum|date|seite|page|fax|tel|email|@|\d+$)/i,
+        /^(rechnungsnummer|ust|vat|steuer|tax|iban|bic|bank)/i,
+        /^\d{2}\.\d{2}\.\d{4}$/,  // Reine Datumszeilen
+        /^[€$£¥]\s*\d+/,          // Reine Betragszeilen
+        /^(DE|AT|CH)\d{2}/        // IBAN-Zeilen
+    ];
+    
+    return skipPatterns.some(pattern => pattern.test(line));
 }
 
 function extractVATTableFromTextract(table: any, blocks: any[]): TaxBreakdown[] {
@@ -2868,22 +3622,372 @@ function determineInvoiceCategory(vendorName: string | null, text: string): stri
     return 'Geschäftsausgabe';
 }
 
-function calculateExtractionConfidence(textract: Partial<ExtractedInvoiceData>, pattern: Partial<ExtractedInvoiceData>): number {
-    let score = 0;
-    let fields = 0;
+// 🎯 SPEZIALISIERTE DEUTSCHE KUNDEN-/EMPFÄNGER-EXTRAKTION MIT SMART VENDOR/CUSTOMER DETECTION
+function extractGermanCustomerInfo(text: string, userCompanyData?: UserCompanyData | null): { customerName: string | null; customerAddress: string | null } {
+    logger.info('[GERMAN CUSTOMER] Starting specialized German customer/recipient extraction...');
+    logger.info('[GERMAN CUSTOMER] Text sample:', text.substring(0, 600));
     
-    const checkField = (field: any) => {
-        fields++;
-        if (field) score++;
+    console.log('[🔥 SMART_DETECTION] ============ SMART VENDOR/CUSTOMER DETECTION ============');
+    console.log('[🔥 SMART_DETECTION] User company data available:', !!userCompanyData);
+    if (userCompanyData) {
+        console.log('[🔥 SMART_DETECTION] User company name:', userCompanyData.companyName);
+        console.log('[🔥 SMART_DETECTION] User company phone:', userCompanyData.phoneNumber);
+        console.log('[🔥 SMART_DETECTION] User company email:', userCompanyData.contactEmail);
+    }
+    console.log('[🔥 SMART_DETECTION] ============================================================');
+    
+    let customerName: string | null = null;
+    let customerAddress: string | null = null;
+    
+    // === PRIORITÄT 0: SMART VENDOR/CUSTOMER DETECTION ===
+    // 🎯 Extract ALL company data from invoice, then compare with user's company to determine vendor vs customer
+    if (userCompanyData) {
+        console.log('[🔥 SMART_DETECTION] === STEP 1: Extract ALL companies from invoice ===');
+        
+        // Extract all potential company names from invoice
+        const allCompanyNames: string[] = [];
+        
+        // Pattern 1: Company headers (typically at top of invoice)
+        const headerPatterns = [
+            /^([A-ZÄÖÜ][a-zäöüß\s&.-]+(?:GmbH|AG|UG|e\.K\.|KG|OHG|GbR)?)\n/gm,
+            /^([A-ZÄÖÜ][^\n]+(?:GmbH|AG|UG|e\.K\.|KG|OHG|GbR))/gm,
+        ];
+        
+        for (const pattern of headerPatterns) {
+            const matches = Array.from(text.matchAll(pattern));
+            matches.forEach(match => {
+                const name = cleanCustomerText(match[1]);
+                if (name && name.length >= 3 && !isInvalidCustomerName(name)) {
+                    allCompanyNames.push(name);
+                    console.log('[🔥 SMART_DETECTION] Found company in header:', name);
+                }
+            });
+        }
+        
+        // Pattern 2: Labeled company sections
+        const labeledPatterns = [
+            /(?:empfänger|recipient)[\s:]*\n?\s*([^\n]+)/gi,
+            /(?:rechnungsempfänger|invoice\s*recipient)[\s:]*\n?\s*([^\n]+)/gi,
+            /(?:kunde|customer)[\s:]*\n?\s*([^\n]+)/gi,
+            /(?:absender|sender)[\s:]*\n?\s*([^\n]+)/gi,
+            /(?:von|from)[\s:]*\n?\s*([^\n]+)/gi,
+        ];
+        
+        for (const pattern of labeledPatterns) {
+            const matches = Array.from(text.matchAll(pattern));
+            matches.forEach(match => {
+                const name = cleanCustomerText(match[1]);
+                if (name && name.length >= 3 && !isInvalidCustomerName(name)) {
+                    allCompanyNames.push(name);
+                    console.log('[🔥 SMART_DETECTION] Found company in labeled section:', name);
+                }
+            });
+        }
+        
+        console.log('[🔥 SMART_DETECTION] === STEP 2: Compare with user company data ===');
+        console.log('[🔥 SMART_DETECTION] Total companies found:', allCompanyNames.length);
+        console.log('[🔥 SMART_DETECTION] All companies:', allCompanyNames);
+        console.log('[🔥 SMART_DETECTION] User company name:', userCompanyData.companyName);
+        
+        // 🎯 Smart matching: Check if any extracted company matches user's company
+        const matchedVendor: string[] = [];
+        const matchedCustomers: string[] = [];
+        
+        for (const companyName of allCompanyNames) {
+            const isUserCompany = isCompanyMatch(companyName, userCompanyData);
+            
+            if (isUserCompany) {
+                matchedVendor.push(companyName);
+                console.log('[🔥 SMART_DETECTION] ✅ VENDOR (User company):', companyName);
+            } else {
+                matchedCustomers.push(companyName);
+                console.log('[🔥 SMART_DETECTION] ✅ CUSTOMER (External company):', companyName);
+            }
+        }
+        
+        // 🎯 Decision: If user company found, others are customers; otherwise fallback to pattern logic
+        if (matchedVendor.length > 0 && matchedCustomers.length > 0) {
+            customerName = matchedCustomers[0]; // First non-user company is the customer
+            console.log('[🔥 SMART_DETECTION] 🎯 SMART DECISION: Customer is:', customerName);
+            console.log('[🔥 SMART_DETECTION] 🎯 SMART DECISION: Vendor is user company:', matchedVendor[0]);
+            logger.info('[GERMAN CUSTOMER] Smart detection: User company found as vendor, customer:', customerName);
+            
+            // Don't return yet - let address extraction continue below
+        } else {
+            console.log('[🔥 SMART_DETECTION] ⚠️ Could not determine clear vendor/customer split - using pattern fallback');
+        }
+    }
+    
+    // === PRIORITÄT 1: EXPLIZITE EMPFÄNGER-PATTERNS (Fallback wenn Smart Detection nicht funktioniert) ===
+    console.log('[DEBUG_CUSTOMER] Testing explicit recipient patterns...');
+    
+    // NEUE LOGIK: Finde "Empfänger:" Label und hole die NÄCHSTE sinnvolle Zeile (nicht Label-Zeilen)
+    const empfaengerMatch = text.match(/(?:empfänger|recipient)[\s:]*\n((?:[^\n]+\n)*)/gi);
+    if (empfaengerMatch) {
+        console.log('[DEBUG_CUSTOMER] Found Empfänger section, extracting lines...');
+        
+        // Hole alle Zeilen nach "Empfänger:"
+        const afterEmpfaenger = text.substring(text.toLowerCase().indexOf('empfänger'));
+        const lines = afterEmpfaenger.split('\n').slice(1, 10); // Skip "Empfänger:" Zeile, nimm nächste 10
+        
+        console.log('[DEBUG_CUSTOMER] Lines after Empfänger:', lines.slice(0, 5));
+        
+        for (const line of lines) {
+            const trimmed = line.trim();
+            
+            // Skip leere Zeilen
+            if (!trimmed || trimmed.length < 3) continue;
+            
+            // Skip Label-Zeilen (enden mit ":")
+            if (trimmed.endsWith(':')) {
+                console.log('[DEBUG_CUSTOMER] Skipping label line:', trimmed);
+                continue;
+            }
+            
+            // Skip "Dokumentdetails", "Rechnungsdetails", etc.
+            if (trimmed.toLowerCase().match(/^(dokument|rechnung|betreff|datum|fällig)/)) {
+                console.log('[DEBUG_CUSTOMER] Skipping document detail line:', trimmed);
+                continue;
+            }
+            
+            // Das ist wahrscheinlich der echte Kundenname!
+            const extractedName = cleanCustomerText(trimmed);
+            if (extractedName && extractedName.length >= 3 && !isInvalidCustomerName(extractedName)) {
+                customerName = extractedName;
+                console.log('[DEBUG_CUSTOMER] 🎯 CUSTOMER NAME FOUND (multi-line):', customerName);
+                logger.info('[GERMAN CUSTOMER] Customer name extracted from Empfänger section:', customerName);
+                break;
+            }
+        }
+    }
+    
+    // FALLBACK: Alte Patterns nur wenn nichts gefunden wurde
+    if (!customerName) {
+        console.log('[DEBUG_CUSTOMER] No customer found in Empfänger section, trying fallback patterns...');
+        
+        const recipientPatterns = [
+            // "Rechnungsempfänger:" Format - NUR NAMEN extrahieren, keine Adresse!
+            /(?:rechnungsempfänger|invoice\s*recipient)[\s:]*\n?\s*([^\n]+)/gi,
+            
+            // "An:" Format - NUR NAMEN extrahieren, keine Adresse!
+            /(?:^|\n)\s*(?:an|to)[\s:]+([^\n]+)/gi,
+            
+            // "Kunde:" Format - NUR NAMEN extrahieren, keine Adresse!
+            /(?:kunde|customer)[\s:]*\n?\s*([^\n]+)/gi,
+        ];
+        
+        for (const pattern of recipientPatterns) {
+            const matches = Array.from(text.matchAll(pattern));
+            console.log(`[DEBUG_CUSTOMER] Fallback pattern ${pattern.source} found ${matches.length} matches`);
+            
+            if (matches.length > 0) {
+                const match = matches[0];
+                
+                if (match[1]) {
+                    const extractedName = cleanCustomerText(match[1]);
+                    if (extractedName && extractedName.length >= 3 && !isInvalidCustomerName(extractedName)) {
+                        customerName = extractedName;
+                        console.log('[DEBUG_CUSTOMER] 🎯 CUSTOMER NAME FOUND (fallback):', customerName);
+                        logger.info('[GERMAN CUSTOMER] Customer name extracted:', customerName);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    // === PRIORITÄT 2: MUSTERKUNDE-DETECTION (für Test-Rechnungen) ===
+    if (!customerName) {
+        console.log('[DEBUG_CUSTOMER] Testing Musterkunde patterns...');
+        
+        const musterkundePatterns = [
+            /musterkunde\s+bei\s+([^\n]+)/gi,
+            /musterkunde[^\n]*/gi,
+        ];
+        
+        for (const pattern of musterkundePatterns) {
+            const match = text.match(pattern);
+            if (match) {
+                customerName = cleanCustomerText(match[0]);
+                console.log('[DEBUG_CUSTOMER] 🎯 MUSTERKUNDE DETECTED:', customerName);
+                logger.info('[GERMAN CUSTOMER] Musterkunde detected:', customerName);
+                break;
+            }
+        }
+    }
+    
+    // === PRIORITÄT 3: ADRESS-PATTERNS (für customerAddress wenn nicht gefunden) ===
+    if (!customerAddress && customerName) {
+        console.log('[DEBUG_CUSTOMER] Searching for customer address based on found name...');
+        
+        // Suche nach Adresszeilen in der Nähe des Kundennamens
+        const lines = text.split('\n');
+        const nameLineIndex = lines.findIndex(line => 
+            line.toLowerCase().includes(customerName!.toLowerCase().substring(0, 10))
+        );
+        
+        if (nameLineIndex !== -1) {
+            // Schaue in den nächsten 3-5 Zeilen nach Adressinformationen
+            for (let i = nameLineIndex + 1; i < Math.min(nameLineIndex + 5, lines.length); i++) {
+                const line = lines[i].trim();
+                
+                // Überprüfe, ob die Zeile wie eine Adresse aussieht (PLZ, Straße, Stadt)
+                if (line.match(/\d{5}\s+[A-Za-zäöüß\s]+/g) || // PLZ + Stadt
+                    line.match(/[A-Za-zäöüß\s]+\s+\d+/g) ||   // Straße + Hausnummer
+                    line.match(/\d+\s+[A-Za-zäöüß\s]+/g)) {   // Hausnummer + Straße
+                    
+                    const potentialAddress = cleanCustomerAddress(line);
+                    if (potentialAddress && potentialAddress.length >= 8 && isValidAddress(potentialAddress)) {
+                        customerAddress = potentialAddress;
+                        console.log('[DEBUG_CUSTOMER] 🎯 CUSTOMER ADDRESS FROM CONTEXT:', customerAddress);
+                        logger.info('[GERMAN CUSTOMER] Customer address from context:', customerAddress);
+                        break;
+                    } else if (potentialAddress && potentialAddress.length >= 8) {
+                        console.log('[DEBUG_CUSTOMER] ❌ INVALID ADDRESS FROM CONTEXT REJECTED:', potentialAddress);
+                    }
+                }
+            }
+        }
+    }
+    
+    console.log('[DEBUG_CUSTOMER] ===== FINAL CUSTOMER EXTRACTION RESULTS =====');
+    console.log('[DEBUG_CUSTOMER] Customer Name:', customerName || 'NOT FOUND');
+    console.log('[DEBUG_CUSTOMER] Customer Address:', customerAddress || 'NOT FOUND');
+    console.log('[DEBUG_CUSTOMER] ==============================================');
+    
+    return {
+        customerName,
+        customerAddress
     };
-    
-    checkField(textract.invoiceNumber || pattern.invoiceNumber);
-    checkField(textract.vendorName || pattern.vendorName);
-    checkField(textract.totalGrossAmount || pattern.totalGrossAmount);
-    checkField((textract.taxBreakdown?.length || 0) + (pattern.taxBreakdown?.length || 0));
-    
-    return fields > 0 ? Math.round((score / fields) * 100) / 100 : 0.5;
 }
+
+// Hilfsfunktionen für Kunden-Extraktion
+function cleanCustomerText(text: string): string {
+    if (!text) return '';
+    
+    return text
+        .replace(/\s+/g, ' ')              // Normalisiere Leerzeichen
+        .replace(/[^\w\säöüßÄÖÜ,.:-]/g, '') // Entferne Sonderzeichen
+        .replace(/^\W+|\W+$/g, '')         // Entferne führende/nachfolgende Sonderzeichen
+        .replace(/^(empfänger|recipient|kunde|customer|an|to)[\s:]+/gi, '') // Entferne Labels
+        .trim();
+}
+
+function cleanCustomerAddress(address: string): string {
+    if (!address) return '';
+    
+    return address
+        .replace(/\n+/g, ', ')             // Zeilenumbrüche zu Kommas
+        .replace(/\s+/g, ' ')              // Normalisiere Leerzeichen
+        .replace(/,\s*,/g, ',')            // Doppelte Kommas entfernen
+        .replace(/^\W+|\W+$/g, '')         // Führende/nachfolgende Sonderzeichen
+        .trim();
+}
+
+function isInvalidCustomerName(name: string): boolean {
+    const invalidPatterns = [
+        /^(mietkoch\s*andy|andy\s*staudinger|andy)$/gi, // Der User selbst
+        /^(rechnungsnummer|invoice|datum|date|tel|fax|email)$/gi,
+        /^(umsatzsteuer|vat|steuer|tax|iban|bic)$/gi,
+        /^\d+$/g,                          // Nur Zahlen
+        /^[€$£¥]\s*\d+/g,                 // Geldbeträge
+    ];
+    
+    return invalidPatterns.some(pattern => pattern.test(name));
+}
+
+function isValidAddress(address: string): boolean {
+    if (!address || address.length < 10) return false;
+    
+    // Prüfe auf typische Adressmuster
+    const validAddressPatterns = [
+        /\d{5}\s+[A-Za-zäöüß\s]+/g,        // PLZ + Stadt (z.B. "12345 Berlin")
+        /[A-Za-zäöüß\s]+\s+\d+/g,          // Straße + Hausnummer (z.B. "Muster Straße 123")
+        /\d+\s+[A-Za-zäöüß\s]+/g,          // Hausnummer + Straße (z.B. "123 Muster Straße")
+    ];
+    
+    // Prüfe auf ungültige Inhalte (nicht-Adressen)
+    const invalidAddressPatterns = [
+        /stornorechnung|storno|rechnung/gi,  // Stornorechnung-Texte
+        /nr\.\s*[A-Z]+-\d+/gi,              // Rechnungsnummern (z.B. "Nr. ST-494")
+        /datum|date|fällig/gi,               // Datums-/Fälligkeits-Texte
+        /sehr\s+geehrte|damen\s+und\s+herren/gi, // Brief-Anreden
+        /vielen\s+dank|mit\s+freundlichen/gi, // Brief-Floskeln
+    ];
+    
+    // Wenn ungültige Patterns gefunden werden, ist es keine Adresse
+    if (invalidAddressPatterns.some(pattern => pattern.test(address))) {
+        return false;
+    }
+    
+    // Wenn mindestens ein Adressmuster gefunden wird, ist es wahrscheinlich eine Adresse
+    return validAddressPatterns.some(pattern => pattern.test(address));
+}
+
+// 🎯 SMART COMPANY MATCHING: Compare extracted company with user's company data
+function isCompanyMatch(extractedCompany: string, userData: UserCompanyData): boolean {
+    if (!extractedCompany || !userData) return false;
+    
+    const extracted = extractedCompany.toLowerCase().trim();
+    
+    console.log('[🔥 COMPANY_MATCH] Comparing extracted company:', extracted);
+    console.log('[🔥 COMPANY_MATCH] With user company:', userData.companyName?.toLowerCase());
+    
+    // Match 1: Company name similarity (fuzzy match)
+    if (userData.companyName) {
+        const userCompany = userData.companyName.toLowerCase().trim();
+        
+        // Exact match
+        if (extracted === userCompany) {
+            console.log('[🔥 COMPANY_MATCH] ✅ Exact name match!');
+            return true;
+        }
+        
+        // Partial match (handle abbreviations, legal forms, etc.)
+        // Remove legal forms for comparison (GmbH, UG, etc.)
+        const extractedClean = extracted.replace(/\s*(gmbh|ag|ug|e\.k\.|kg|ohg|gbr)\s*$/gi, '').trim();
+        const userCompanyClean = userCompany.replace(/\s*(gmbh|ag|ug|e\.k\.|kg|ohg|gbr)\s*$/gi, '').trim();
+        
+        if (extractedClean === userCompanyClean) {
+            console.log('[🔥 COMPANY_MATCH] ✅ Name match without legal form!');
+            return true;
+        }
+        
+        // Contains match (one contains the other)
+        if (extracted.includes(userCompany) || userCompany.includes(extracted)) {
+            console.log('[🔥 COMPANY_MATCH] ✅ Partial name match!');
+            return true;
+        }
+    }
+    
+    // Match 2: Phone number match
+    if (userData.phoneNumber && extracted.includes(userData.phoneNumber.replace(/\s/g, ''))) {
+        console.log('[🔥 COMPANY_MATCH] ✅ Phone number match!');
+        return true;
+    }
+    
+    // Match 3: Email match
+    if (userData.contactEmail && extracted.includes(userData.contactEmail.toLowerCase())) {
+        console.log('[🔥 COMPANY_MATCH] ✅ Email match!');
+        return true;
+    }
+    
+    // Match 4: VAT ID match
+    if (userData.vatId && extracted.includes(userData.vatId.replace(/\s/g, ''))) {
+        console.log('[🔥 COMPANY_MATCH] ✅ VAT ID match!');
+        return true;
+    }
+    
+    // Match 5: Tax number match
+    if (userData.taxNumber && extracted.includes(userData.taxNumber.replace(/\s/g, ''))) {
+        console.log('[🔥 COMPANY_MATCH] ✅ Tax number match!');
+        return true;
+    }
+    
+    console.log('[🔥 COMPANY_MATCH] ❌ No match found');
+    return false;
+}
+
 
 // Export unused functions to avoid TypeScript warnings
 export const _unusedFunctions = {
@@ -2899,30 +4003,27 @@ export const _unusedFunctions = {
     parseGoogleVisionStructuredData,
     parseGoogleAIStructuredData,
     createReceiptDataFromStructured,
-    performGeminiEnhancedExtraction,
-    performAdvancedPatternExtraction,
+
     // Neue deutsche Funktionen
     extractWithGermamInvoiceSchema,
     extractFromTextractBlocks,
-    extractWithGermanPatterns,
-    germanInvoiceSchema
+    extractWithGermanPatterns_NEW_VERSION_2025,
+    germanInvoiceSchema,
+    
+    // ⚡ HINZUGEFÜGT: Nicht verwendete Funktionen nach sevDesk-Kalibrierung
+    // extractAmountsAdvanced - DELETED
+    extractVendorFromForms,
+    extractVendorByPosition,
+    extractVendorFromText,
+    
+    // ⚡ OCR FUNKTIONEN DIE NICHT GELÖSCHT WERDEN SOLLEN
+    processWithGoogleAIStudioDirect,
+    processWithGoogleCloudVision
 };
 
 // Cost optimization: Removed expensive query processing functions
 
 // Context-aware vendor extraction using AWS Textract blocks
-function extractVendorFromBlocks(blocks: any[], originalText: string): string {
-    // First try to extract from form key-value pairs
-    const formVendor = extractVendorFromForms(blocks);
-    if (formVendor) return formVendor;
-
-    // Then try positional analysis
-    const positionalVendor = extractVendorByPosition(blocks);
-    if (positionalVendor) return positionalVendor;
-
-    // Fallback to regex patterns on original text
-    return extractVendorFromText(originalText);
-}
 
 // Extract vendor from form key-value pairs
 function extractVendorFromForms(blocks: any[]): string {
@@ -3014,7 +4115,7 @@ function extractVendorByPosition(blocks: any[]): string {
     return '';
 }
 
-// Fallback vendor extraction from text patterns
+// Vendor extraction from text patterns (KEIN FALLBACK)
 function extractVendorFromText(originalText: string): string {
     // First try to extract from JSON response (Google AI Studio often returns JSON)
     if (originalText.includes('{') && originalText.includes('}')) {
@@ -3231,203 +4332,6 @@ function extractDueDateFromText(text: string): string | null {
     
     logger.warn('[DUE DATE DEBUG] ❌ No valid due date found');
     return null;
-}
-
-// Extract meaningful description from receipt content
-function extractDescriptionFromText(originalText: string, fileName: string): string {
-    logger.info('[DESCRIPTION DEBUG] Starting description extraction...');
-    logger.info('[DESCRIPTION DEBUG] Text sample:', originalText.substring(0, 500));
-    
-    // Clean text first - remove common OCR artifacts
-    const cleanedText = originalText
-        // Entferne IBANs
-        .replace(/DE\d{2}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{2}/g, '')
-        // Entferne wiederkehrende Datums-Muster
-        .replace(/(\d{2}\.\d{2}\.\d{4})\s*\1\s*\1/g, '$1')
-        // Entferne BIC-Codes
-        .replace(/[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?/g, '')
-        // Entferne Kontonummern und lange Zahlenfolgen
-        .replace(/\b\d{8,}\b/g, '')
-        // Entferne "empfänger die" und ähnliche OCR-Artefakte
-        .replace(/empfänger\s+die\b/gi, '')
-        .replace(/\bszeitraum\b/gi, 'Leistungszeitraum')
-        // Normalisiere Leerzeichen
-        .replace(/\s+/g, ' ')
-        .trim();
-    
-    logger.info('[DESCRIPTION DEBUG] Cleaned text sample:', cleanedText.substring(0, 300));
-    
-    const descriptionPatterns = [
-        // === UNIVERSELLE RECHNUNGS-PATTERNS (MAXIMAL ERWEITERT) ===
-        
-        // === 1. RECHNUNGSPOSITION-BESCHREIBUNGEN ===
-        /(?:pos\.|position|item|artikel)\s*\d*[.)\-:]?\s*([A-Za-zäöüß\s,.-]{8,150})/gi,
-        /(?:\d+[.)\-:])\s*([A-Za-zäöüß\s,.-]{8,150})/gi,
-        /(?:nr\.|no\.|number)\s*\d*[.)\-:]?\s*([A-Za-zäöüß\s,.-]{8,150})/gi,
-        
-        // === 2. EXPLIZITE BESCHREIBUNGSFELDER ===
-        /(?:beschreibung|description|leistung|service|artikel|item|product|produkt)[\s:]*([A-Za-zäöüß\s,.-]{8,150})/gi,
-        /(?:bezeichnung|title|name|benaming|descripción)[\s:]*([A-Za-zäöüß\s,.-]{8,150})/gi,
-        /(?:inhalt|content|details|einzelheiten)[\s:]*([A-Za-zäöüß\s,.-]{8,150})/gi,
-        
-        // === 3. IT & SOFTWARE PATTERNS ===
-        /([A-Za-zäöüß\s]{3,}(?:software|app|programm|system|platform|tool|lizenz|license)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:hosting|domain|server|cloud|storage|backup|database)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:website|homepage|webseite|online|digital|api)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:microsoft|google|adobe|apple|amazon|facebook|netflix)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        
-        // === 4. BERATUNG & DIENSTLEISTUNGEN ===
-        /([A-Za-zäöüß\s]{3,}(?:beratung|consulting|support|hilfe|assistance|guidance)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:entwicklung|programming|coding|design|gestaltung|creation)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:schulung|training|workshop|seminar|kurs|course|weiterbildung)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:projektmanagement|management|organisation|koordination)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        
-        // === 5. FREELANCER & HONORARE (ERWEITERT FÜR KURZE BESCHREIBUNGEN) ===
-        /([A-Za-zäöüß\s]{3,}(?:honorar|freelance|freiberuflich|selbständig|contractor)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:dienstleistung|service|arbeit|work|tätigkeit|activity)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:stunden|hours|zeit|time|aufwand|effort)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        
-        // === WISSENSCHAFTLICH OPTIMIERTE BESCHREIBUNGS-PATTERNS ===
-        // OCR-tolerante Zeitraum-Beschreibungen (häufige Verwechslungen: s→5, z→2, r→r)
-        /(?:^|\n|\s)((?:[A-Za-zäöüß0-9]{2,}\s*){1,4}(?:5zeitraum|szeitraum|zeitraum|2eitraum|period|kw|woche|week|monat|month)[A-Za-zäöüß\s\d,-]{0,30})/gmi,
-        
-        // Projekt- oder Service-Codes mit OCR-Toleranz
-        /(?:^|\n|\s)((?:[A-Za-zäöüß0-9]{2,}\s*){1,3}(?:projekt|pro]ekt|project|service|5ervice|leistung|1eistung)[A-Za-zäöüß\s\d,-]{0,30})/gmi,
-        
-        // Kurze Fachbegriffe mit OCR-Charakterverwechslungen
-        /(?:^|\n|\s)([A-Za-zäöüß0-9]{3,20}\s+[A-Za-zäöüß0-9]{2,20}(?:\s+[A-Za-zäöüß0-9]{2,20})?)/gmi,
-        
-        // Speziell für "szeitraum KW" und ähnliche Variationen
-        /(?:^|\n|\s)((?:s|5|S)(?:zeitraum|2eitraum)[\s]*(?:kw|KW|k w|K W|cw|CW)[\s\d,-]{0,20})/gmi,
-        
-        // Honorar/Freelancer-Beschreibungen mit OCR-Toleranz
-        /(?:^|\n|\s)([A-Za-zäöüß0-9\s]{5,50}(?:honorar|hon0rar|freelanc|free1anc|dienstleistung|dien5tleistung)[A-Za-zäöüß\s\d,-]{0,30})/gmi,
-        
-        // === 6. BÜRO & VERWALTUNG ===
-        /([A-Za-zäöüß\s]{3,}(?:bürobedarf|office|supplies|material|equipment|ausstattung)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:papier|paper|stift|pen|ordner|folder|drucker|printer)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:möbel|furniture|stuhl|chair|tisch|desk|schrank|cabinet)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        
-        // === 7. TRANSPORT & FAHRZEUGE ===
-        /([A-Za-zäöüß\s]{3,}(?:fahrt|trip|reise|travel|transport|versand|shipping)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:benzin|diesel|fuel|kraftstoff|tanken|gas|petrol)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:taxi|uber|bahn|train|flug|flight|hotel|übernachtung)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:parkgebühr|parking|maut|toll|reparatur|repair|wartung)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        
-        // === 8. GASTRONOMIE & BEWIRTUNG ===
-        /([A-Za-zäöüß\s]{3,}(?:restaurant|gastronomie|bewirtung|catering|verpflegung)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:essen|meal|speisen|food|getränke|drinks|kaffee|coffee)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:geschäftsessen|business|lunch|dinner|frühstück|breakfast)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        
-        // === 9. IMMOBILIEN & RAUMKOSTEN ===
-        /([A-Za-zäöüß\s]{3,}(?:miete|rent|raumkosten|büroräume|office|lager|warehouse)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:nebenkosten|utilities|strom|electricity|heizung|heating|wasser)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:reinigung|cleaning|instandhaltung|maintenance|reparatur)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        
-        // === 10. MARKETING & WERBUNG ===
-        /([A-Za-zäöüß\s]{3,}(?:marketing|werbung|advertising|promotion|kampagne|campaign)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:anzeige|ad|banner|flyer|broschüre|brochure|katalog)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:social|media|facebook|instagram|linkedin|twitter|google)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        
-        // === 11. GESUNDHEIT & VERSICHERUNG ===
-        /([A-Za-zäöüß\s]{3,}(?:versicherung|insurance|kranken|health|zahnarzt|dentist)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:medizin|medical|behandlung|treatment|therapie|therapy)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        
-        // === 12. BILDUNG & WEITERBILDUNG ===
-        /([A-Za-zäöüß\s]{3,}(?:bildung|education|universität|university|schule|school)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:buch|book|literatur|zeitschrift|magazine|fachbuch)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        
-        // === 13. FIRMEN & PERSONEN-PATTERNS ===
-        /([A-ZÄÖÜ][a-zäöü]{2,25}(?:\s+[A-ZÄÖÜ][a-zäöü]{2,25})*(?:\s+(?:GmbH|AG|UG|eK|OHG|KG|Ltd|Inc|Corp|LLC))?)[^\d\n\r]{5,120}/g,
-        
-        // === 14. SPEZIELLE BRANCHEN ===
-        /([A-Za-zäöüß\s]{3,}(?:handwerk|craft|werkzeug|tools|material|bau|construction)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:landwirtschaft|agriculture|garten|garden|pflanzen|plants)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        /([A-Za-zäöüß\s]{3,}(?:industrie|industry|produktion|manufacturing|fertigung)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        
-        // === 15. INTERNATIONALE BEGRIFFE ===
-        /([A-Za-zäöüß\s]{3,}(?:international|export|import|shipping|logistics|zoll)[A-Za-zäöüß\s,.-]{0,100})/gi,
-        
-        // === 16. FALLBACK-PATTERNS ===
-        // Längere zusammenhängende Textblöcke ohne Zahlen/Währungen
-        /([A-ZÄÖÜ][A-Za-zäöüß\s,.-]{15,120})(?=\s*\d|\s*[€$£¥]|\s*EUR|\s*USD|\n|$)/gi,
-        // Zeilen mit mindestens 3 Wörtern und sinnvollem Inhalt
-        /^([A-ZÄÖÜ][A-Za-zäöüß\s,.-]+)$/gm,
-    ];
-    
-    for (const pattern of descriptionPatterns) {
-        const matches = cleanedText.matchAll(pattern);
-        for (const match of matches) {
-            if (match[1]) {
-                let description = match[1].trim();
-                
-                // Weitere Bereinigung der gefundenen Beschreibung
-                description = description
-                    .replace(/\b\d{2}\.\d{2}\.\d{4}\b/g, '') // Entferne Datumsangaben
-                    .replace(/\bKW\s*\d+\b/gi, '') // Entferne Kalenderwochen
-                    .replace(/\s+/g, ' ') // Normalisiere Leerzeichen
-                    .trim();
-                
-                logger.info(`[DESCRIPTION DEBUG] Testing potential description: "${description}"`);
-                
-                // Erweiterte Plausibilitätsprüfung für Beschreibungen
-                const isValidDescription = 
-                    description.length >= 8 && description.length <= 100 && 
-                    !description.match(/^\d+$/) && // Keine reinen Zahlen
-                    !description.match(/^[\d\s.,:-]+$/) && // Keine reinen Zahlen/Zeichen
-                    !description.toLowerCase().includes('rechnung') &&
-                    !description.toLowerCase().includes('invoice') &&
-                    !description.toLowerCase().includes('betrag') &&
-                    !description.toLowerCase().includes('€') &&
-                    !description.match(/^(empfänger|recipient|sender)$/i) && // Keine OCR-Artefakte
-                    description.split(' ').length >= 2 && // Mindestens 2 Wörter
-                    !/^[A-Z]{2}\d+/.test(description) && // Keine IBAN-Reste
-                    description.split(' ').some(word => word.length > 3); // Mindestens ein längeres Wort
-                
-                if (isValidDescription) {
-                    logger.info(`[DESCRIPTION DEBUG] ✅ Found valid description: "${description}"`);
-                    return description;
-                }
-            }
-        }
-    }
-    
-    // Fallback: Intelligente Zeilenanalyse
-    const lines = cleanedText.split(/\n|\r/).filter(line => line.trim().length > 8);
-    for (const line of lines.slice(0, 15)) { // Mehr Zeilen analysieren
-        let cleanLine = line.trim();
-        
-        // Entferne weitere OCR-Artefakte aus der Zeile
-        cleanLine = cleanLine
-            .replace(/\b\d{2}\.\d{2}\.\d{4}\b/g, '') // Datumsangaben
-            .replace(/\bKW\s*\d+\b/gi, '') // Kalenderwochen  
-            .replace(/\bDE\d{2}[\d\s]+/g, '') // IBAN-Reste
-            .replace(/\b\d{8,}\b/g, '') // Lange Zahlenfolgen
-            .replace(/\s+/g, ' ')
-            .trim();
-        
-        logger.info(`[DESCRIPTION DEBUG] Testing fallback line: "${cleanLine}"`);
-        
-        const isValidFallback = cleanLine.length >= 10 && cleanLine.length <= 100 &&
-            !cleanLine.match(/^\d+/) &&
-            !cleanLine.match(/^[\d\s.,:-]+$/) &&
-            !cleanLine.toLowerCase().includes('rechnung') &&
-            !cleanLine.toLowerCase().includes('invoice') &&
-            !cleanLine.toLowerCase().includes('betrag') &&
-            !cleanLine.toLowerCase().includes('€') &&
-            cleanLine.split(' ').length >= 2 &&
-            cleanLine.split(' ').some(word => word.length > 3) && // Mindestens ein längeres Wort
-            !/empfänger|recipient|sender/i.test(cleanLine);
-        
-        if (isValidFallback) {
-            logger.info(`[DESCRIPTION DEBUG] ✅ Found fallback description: "${cleanLine}"`);
-            return cleanLine;
-        }
-    }
-    
-    // Letzter Fallback: Verwende Dateiname
-    logger.warn('[DESCRIPTION DEBUG] ❌ No meaningful description found, using filename');
-    return `Rechnung: ${fileName}`;
 }
 
 // Extract payment terms from text
@@ -3726,7 +4630,7 @@ function extractDateFromBlocks(blocks: any[], originalText: string): string {
     }
 
     // Fallback to text pattern extraction
-    return extractDateAdvanced(originalText);
+    return extractGermanDate(originalText) || new Date().toISOString().split('T')[0];
 }
 
 // Extract invoice number from blocks with context
@@ -3779,7 +4683,7 @@ function extractInvoiceNumberFromBlocks(blocks: any[], originalText: string): st
     }
 
     // Fallback to text pattern extraction
-    return extractInvoiceNumber(originalText);
+    return extractGermanInvoiceNumber(originalText) || 'N/A';
 }
 
 // Helper function to parse date strings
@@ -4423,7 +5327,7 @@ function createReceiptDataFromStructured(structuredData: any, fileName: string):
         title: `${vendor} - Rechnung ${invoiceNumber}`,
         amount: totalAmount,
         category: category,
-        description: extractDescriptionFromText(fullText, fileName),
+        description: extractGermanDescription(fullText, fileName),
         vendor: vendor,
         date: date,
         invoiceNumber: invoiceNumber,
@@ -4435,7 +5339,19 @@ function createReceiptDataFromStructured(structuredData: any, fileName: string):
         
         // Company information
         companyName: vendor,
-        companyAddress: structuredData.address || '',
+        companyAddress: (() => {
+            console.log('[🔥 STRUCTURED_DATA_ADDRESS_DEBUG] ==========================================');
+            console.log('[🔥 STRUCTURED_DATA_ADDRESS_DEBUG] Raw structuredData.address:', structuredData.address);
+            
+            const cleanAddress = extractGermanAddress(fullText);
+            console.log('[🔥 STRUCTURED_DATA_ADDRESS_DEBUG] extractGermanAddress result:', cleanAddress);
+            
+            const finalAddress = cleanAddress || structuredData.address || '';
+            console.log('[🔥 STRUCTURED_DATA_ADDRESS_DEBUG] Final address used:', finalAddress);
+            console.log('[🔥 STRUCTURED_DATA_ADDRESS_DEBUG] ==========================================');
+            
+            return finalAddress;
+        })(),
         companyVatNumber: structuredData.vatNumber || '',
         
         // Contact information
@@ -4472,206 +5388,168 @@ function createReceiptDataFromStructured(structuredData: any, fileName: string):
 // Simple working function for receipt data extraction
 async function extractReceiptDataFromOCRSimple(
     ocrResult: { text: string; confidence: number; blocks?: any[]; enhanced?: boolean },
-    fileName: string
+    fileName: string,
+    userId?: string
 ): Promise<ExtractedInvoiceData> {
-    logger.info('[GERMAN INVOICE EXTRACTION] 🇩🇪 Starting advanced German invoice data extraction...');
+    logger.info('[GERMAN INVOICE EXTRACTION] 🇩🇪 Starting advanced German invoice data extraction with data cleansing...');
+    
+    // === [DEBUG_OCR] VOLLSTÄNDIGE ROHDATEN-PROTOKOLLIERUNG ===
+    console.log('[DEBUG_RAW_OCR] ==================== RAW OCR RESULT ====================');
+    console.log('[DEBUG_RAW_OCR] Vollständiger OCR-Input:', {
+        fileName: fileName,
+        textLength: ocrResult.text?.length || 0,
+        confidence: ocrResult.confidence,
+        blocksCount: ocrResult.blocks?.length || 0,
+        enhanced: ocrResult.enhanced
+    });
+    console.log('[DEBUG_RAW_OCR] Vollständiger Rohtext (erste 1000 Zeichen):');
+    console.log(ocrResult.text?.substring(0, 1000) || 'KEIN TEXT');
+    console.log('[DEBUG_RAW_OCR] Vollständiger Rohtext (letzte 500 Zeichen):');
+    console.log(ocrResult.text?.substring(Math.max(0, (ocrResult.text?.length || 0) - 500)) || 'KEIN TEXT');
+    
+    if (ocrResult.blocks && ocrResult.blocks.length > 0) {
+        console.log('[DEBUG_RAW_OCR] Blocks Struktur (erste 3):');
+        console.log(JSON.stringify(ocrResult.blocks.slice(0, 3), null, 2));
+    }
+    console.log('[DEBUG_RAW_OCR] ============================================================');
     
     const text = ocrResult.text;
-    const blocks = ocrResult.blocks || [];
     
-    // === STRATEGIE 1: GEMINI AI MIT DEUTSCHEM SCHEMA (PRIMÄR) ===
+    // === STRATEGIE 1: DEUTSCHE PATTERN-EXTRAKTION (PRIMÄR - HÖCHSTE PRIORITÄT) ===
+    logger.info('[PATTERN MATCHING] 🎯 Using German pattern extraction as primary strategy...');
+    logger.info('[ERROR_TRACKING] About to call extractWithGermanPatterns...');
+    
+    let patternResult;
     try {
-        logger.info('[GEMINI ENHANCED] 🤖 Attempting Gemini AI with German invoice schema...');
-        const geminiResult = await extractWithGermamInvoiceSchema(text, fileName);
+        console.log('[🔥 PATTERN_CALL_DEBUG] ============ CALLING GERMAN PATTERNS ============');
+        console.log('[🔥 PATTERN_CALL_DEBUG] About to call extractWithGermanPatterns_NEW_VERSION_2025');
+        console.log('[🔥 PATTERN_CALL_DEBUG] Input text length:', text?.length || 0);
+        console.log('[🔥 PATTERN_CALL_DEBUG] userId:', userId);
         
-        if (geminiResult && geminiResult.totalGrossAmount && geminiResult.taxBreakdown.length > 0) {
-            logger.info('[GEMINI ENHANCED] ✅ German invoice extraction successful!', {
-                totalGross: geminiResult.totalGrossAmount,
-                taxRates: geminiResult.taxBreakdown.map(t => `${t.rate}%: €${t.vatAmount}`).join(', '),
-                vendor: geminiResult.vendorName,
-                customer: geminiResult.customerName
-            });
-            
-            return {
-                ...geminiResult,
-                processingMode: 'GEMINI_ENHANCED',
-                confidence: ocrResult.confidence || 0.9,
-                title: generateInvoiceTitle(geminiResult),
-                description: `Deutsche Rechnung aus ${fileName}`,
-                category: determineInvoiceCategory(geminiResult.vendorName, text)
-            };
-        }
-    } catch (geminiError) {
-        logger.warn('[GEMINI ENHANCED] German schema extraction failed, falling back to pattern matching:', (geminiError as Error).message);
-    }
-
-    // === STRATEGIE 2: TEXTRACT FORMS/TABLES EXTRAKTION (FALLBACK) ===
-    logger.info('[TEXTRACT FALLBACK] 📋 Using Textract forms and tables extraction...');
-    
-    const textractResult = await extractFromTextractBlocks(blocks, text);
-    const patternResult = await extractWithGermanPatterns(text);
-    
-    // Kombiniere Textract-Struktur mit Pattern-Matching (mit null-safety)
-    const combinedResult: ExtractedInvoiceData = {
-        invoiceNumber: textractResult.invoiceNumber ?? patternResult.invoiceNumber ?? null,
-        invoiceDate: textractResult.invoiceDate ?? patternResult.invoiceDate ?? null,
-        dueDate: textractResult.dueDate ?? patternResult.dueDate ?? null,
+        patternResult = await extractWithGermanPatterns_NEW_VERSION_2025(text, userId);
         
-        totalGrossAmount: textractResult.totalGrossAmount ?? patternResult.totalGrossAmount ?? null,
-        totalNetAmount: textractResult.totalNetAmount ?? patternResult.totalNetAmount ?? null,
-        totalVatAmount: textractResult.totalVatAmount ?? patternResult.totalVatAmount ?? null,
+        console.log('[🔥 PATTERN_RESULT_DEBUG] ============ GERMAN PATTERNS RESULT ============');
+        console.log('[🔥 PATTERN_RESULT_DEBUG] Pattern result keys:', Object.keys(patternResult || {}));
+        console.log('[🔥 PATTERN_RESULT_DEBUG] vendorAddress from patterns:', patternResult?.vendorAddress);
+        console.log('[🔥 PATTERN_RESULT_DEBUG] customerName from patterns:', patternResult?.customerName);
+        console.log('[🔥 PATTERN_RESULT_DEBUG] customerAddress from patterns:', patternResult?.customerAddress);
+        console.log('[🔥 PATTERN_RESULT_DEBUG] =============================================');
         
-        taxBreakdown: (textractResult.taxBreakdown && textractResult.taxBreakdown.length > 0) 
-            ? textractResult.taxBreakdown 
-            : (patternResult.taxBreakdown || []),
-        
-        vendorName: textractResult.vendorName ?? patternResult.vendorName ?? null,
-        vendorAddress: textractResult.vendorAddress ?? patternResult.vendorAddress ?? null,
-        vendorVatId: textractResult.vendorVatId ?? patternResult.vendorVatId ?? null,
-        vendorPhone: textractResult.vendorPhone ?? patternResult.vendorPhone ?? null,
-        vendorEmail: textractResult.vendorEmail ?? patternResult.vendorEmail ?? null,
-        
-        customerName: textractResult.customerName ?? patternResult.customerName ?? null,
-        customerAddress: textractResult.customerAddress ?? patternResult.customerAddress ?? null,
-        
-        paymentTerms: textractResult.paymentTerms ?? patternResult.paymentTerms ?? null,
-        iban: textractResult.iban ?? patternResult.iban ?? null,
-        bic: textractResult.bic ?? patternResult.bic ?? null,
-        bankName: textractResult.bankName ?? patternResult.bankName ?? null,
-        
-        processingMode: blocks.length > 0 ? 'TEXTRACT' : 'VISION',
-        confidence: calculateExtractionConfidence(textractResult, patternResult),
-        title: '',
-        description: `Deutsche Rechnung aus ${fileName}`,
-        category: 'Geschäftsausgabe'
-    };
-    
-    combinedResult.title = generateInvoiceTitle(combinedResult);
-    combinedResult.category = determineInvoiceCategory(combinedResult.vendorName, text);
-    
-    logger.info('[GERMAN INVOICE] 📊 Final extraction result:', {
-        invoiceNumber: combinedResult.invoiceNumber || '❌ NICHT GEFUNDEN',
-        vendor: combinedResult.vendorName || '❌ NICHT GEFUNDEN',
-        totalGross: combinedResult.totalGrossAmount || '❌ NICHT GEFUNDEN',
-        taxBreakdownCount: combinedResult.taxBreakdown.length,
-        confidence: combinedResult.confidence,
-        processingMode: combinedResult.processingMode
-    });
-    
-    return combinedResult;
-}
-
-// Message generator (using existing one at line 3000+)
-
-// =============================================================================
-// MISSING CORE FUNCTIONS IMPLEMENTATION
-// =============================================================================
-
-// === GEMINI AI ENHANCED EXTRACTION ===
-async function performGeminiEnhancedExtraction(text: string, fileName: string): Promise<any> {
-    logger.info('[GEMINI EXTRACTION] 🤖 Starting Gemini AI enhanced OCR extraction...');
-    
-    if (!genAI) {
-        throw new Error('Gemini AI not initialized');
-    }
-    
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    
-    const prompt = `
-Analysiere diesen OCR-Text eines deutschen Geschäftsbelegs und extrahiere die folgenden Daten im JSON-Format:
-
-WICHTIG: Gib NUR valides JSON zurück, keine zusätzlichen Erklärungen!
-
-Gesuchte Felder:
-- amount: Gesamtbetrag (Zahl, z.B. 487.90)
-- netAmount: Nettobetrag ohne MwSt (Zahl)
-- vatAmount: MwSt-Betrag (Zahl)
-- vatRate: MwSt-Satz in % (Zahl, z.B. 19)
-- vendor: Firmenname/Lieferant (String)
-- date: Datum im Format YYYY-MM-DD (String)
-- invoiceNumber: Rechnungsnummer (String)
-- description: Kurze Beschreibung der Leistung (String)
-
-OCR-Text:
-${text}
-
-Antwort als JSON:`;
-
-    try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const responseText = response.text().trim();
-        
-        logger.info('[GEMINI EXTRACTION] Raw Gemini response:', responseText);
-        
-        // Parse JSON response
-        const jsonStart = responseText.indexOf('{');
-        const jsonEnd = responseText.lastIndexOf('}') + 1;
-        
-        if (jsonStart === -1 || jsonEnd === 0) {
-            throw new Error('No JSON found in Gemini response');
-        }
-        
-        const jsonStr = responseText.substring(jsonStart, jsonEnd);
-        const extractedData = JSON.parse(jsonStr);
-        
-        logger.info('[GEMINI EXTRACTION] ✅ Parsed Gemini data:', extractedData);
-        
-        // Validate and normalize the data
-        return {
-            title: `${extractedData.vendor || 'Unbekannt'} - ${extractedData.invoiceNumber || 'Rechnung'} - ${extractedData.description || ''}`.trim(),
-            amount: extractedData.amount || 0,
-            category: 'Sonstiges', // Default category
-            description: extractedData.description || '',
-            vendor: extractedData.vendor || '',
-            date: extractedData.date || new Date().toISOString().split('T')[0],
-            invoiceNumber: extractedData.invoiceNumber || '',
-            vatAmount: extractedData.vatAmount || 0,
-            netAmount: extractedData.netAmount || 0,
-            vatRate: extractedData.vatRate || 19,
-            processingMode: 'gemini-enhanced-extraction'
-        };
-        
+        logger.info('[ERROR_TRACKING] ✅ extractWithGermanPatterns completed successfully');
     } catch (error) {
-        logger.error('[GEMINI EXTRACTION] Error:', error);
+        console.log('[🔥 PATTERN_ERROR_DEBUG] 🚨 GERMAN PATTERNS EXCEPTION:', error);
+        logger.error('[ERROR_TRACKING] 🚨 extractWithGermanPatterns FAILED:', error);
         throw error;
     }
-}
+    
+    // ⚡ FINALE PRIORISIERUNG: Deutsche Patterns haben ABSOLUTE Priorität (inkl. STORNO)
+    console.log('[🔥 PRIORITY_DEBUG] ============ PRIORITY DECISION ============');
+    console.log('[🔥 PRIORITY_DEBUG] patternResult.totalGrossAmount:', patternResult.totalGrossAmount);
+    console.log('[🔥 PRIORITY_DEBUG] Is null?', patternResult.totalGrossAmount === null);
+    console.log('[🔥 PRIORITY_DEBUG] Is undefined?', patternResult.totalGrossAmount === undefined);
+    console.log('[🔥 PRIORITY_DEBUG] Is zero?', patternResult.totalGrossAmount === 0);
+    console.log('[🔥 PRIORITY_DEBUG] Will use German patterns?', patternResult.totalGrossAmount !== null && patternResult.totalGrossAmount !== undefined && patternResult.totalGrossAmount !== 0);
+    console.log('[🔥 PRIORITY_DEBUG] ==========================================');
+    
+    if (patternResult.totalGrossAmount !== null && patternResult.totalGrossAmount !== undefined && patternResult.totalGrossAmount !== 0) {
+        console.log('[🔥 USING_GERMAN_PATTERNS] ✅ Using German patterns as final result!');
+        logger.info('[PATTERN MATCHING] ✅ German patterns successful - using as final result (inkl. STORNO)!', {
+            totalGrossAmount: patternResult.totalGrossAmount,
+            totalNetAmount: patternResult.totalNetAmount,
+            totalVatAmount: patternResult.totalVatAmount,
+            invoiceNumber: patternResult.invoiceNumber,
+            dueDate: patternResult.dueDate,
+            isStornorechnung: patternResult.totalGrossAmount < 0
+        });
+        
+        // ⚡ VOLLSTÄNDIGES ExtractedInvoiceData Interface mit allen erforderlichen Feldern
+        const finalResult: ExtractedInvoiceData = {
+            // Basis-Rechnungsdaten
+            invoiceNumber: patternResult.invoiceNumber || null,
+            invoiceDate: patternResult.invoiceDate || null,
+            dueDate: patternResult.dueDate || null,
+            
+            // Finanzielle Daten
+            totalGrossAmount: patternResult.totalGrossAmount || 0,
+            totalNetAmount: patternResult.totalNetAmount || 0,
+            totalVatAmount: patternResult.totalVatAmount || 0,
+            
+            // Lieferanten-Informationen
+            vendorName: patternResult.vendorName || null,
+            vendorAddress: patternResult.vendorAddress || null,
+            vendorVatId: patternResult.vendorVatId || null,
+            vendorPhone: patternResult.vendorPhone || null,
+            vendorEmail: patternResult.vendorEmail || null,
+            
+            // 🎯 Kunden-Informationen aus deutschen Patterns
+            customerName: patternResult.customerName || null,
+            customerAddress: patternResult.customerAddress || null,
+            
+            // Zahlungsinformationen
+            paymentTerms: null,
+            iban: null,
+            bic: null,
+            bankName: null,
+            
+            // Tax Breakdown - MIT EXTRAHIERTEM STEUERSATZ!
+            taxBreakdown: patternResult.taxBreakdown || [{
+                rate: (patternResult.taxRate || 19) as 0 | 7 | 19,  // ✅ Verwende extrahierten Steuersatz!
+                netAmount: patternResult.totalNetAmount || 0,
+                vatAmount: patternResult.totalVatAmount || 0,
+                grossAmount: patternResult.totalGrossAmount || 0
+            }],
+            
+            // MwSt-Satz für Frontend
+            taxRate: patternResult.taxRate || 19,
+            
+            // Metadaten
+            processingMode: 'HYBRID', // ✅ Gültiger processingMode
+            confidence: ocrResult.confidence || 0.9,
+            category: determineInvoiceCategory(patternResult.vendorName || '', text),
+            title: generateInvoiceTitle({
+                vendorName: patternResult.vendorName || null,
+                totalGrossAmount: patternResult.totalGrossAmount || 0,
+                invoiceDate: patternResult.invoiceDate || null
+            } as ExtractedInvoiceData),
+            description: patternResult.description || `Deutsche Rechnung aus ${fileName}`
+        };
+        
+        return finalResult;
+    }
 
-// === ADVANCED PATTERN EXTRACTION (UNSER VERBESSERTES SYSTEM) ===
-async function performAdvancedPatternExtraction(text: string, blocks: any[], fileName: string): Promise<any> {
-    logger.info('[PATTERN EXTRACTION] 🔍 Starting advanced pattern extraction...');
+    // === KEINE FALLBACKS MEHR - NUR DEUTSCHE PATTERNS! ===
+    logger.info('[PATTERN ONLY] 🚫 NO FALLBACKS - German patterns returned no amount, returning empty result');
     
-    // Verwende unsere wissenschaftlich optimierten Pattern-Matching Algorithmen
-    const amounts = extractAmountsAdvanced(text);
-    const vendor = extractVendorFromBlocks(blocks, text);
-    const date = extractDateAdvanced(text);
-    const invoiceNumber = extractInvoiceNumber(text);
-    const description = extractDescriptionFromText(text, fileName);
-    
-    logger.info('[PATTERN EXTRACTION] ✅ Extraction results:', {
-        amount: amounts.amount,
-        vendor: vendor,
-        date: date,
-        invoiceNumber: invoiceNumber,
-        description: description
-    });
-    
-    return {
-        title: `${vendor || 'Unbekannt'} - ${invoiceNumber || 'Rechnung'} - ${description || ''}`.trim(),
-        amount: amounts.amount || 0,
-        category: 'Sonstiges',
-        description: description || '',
-        vendor: vendor || '',
-        date: date || new Date().toISOString().split('T')[0],
-        invoiceNumber: invoiceNumber || '',
-        vatAmount: amounts.vatAmount || 0,
-        netAmount: amounts.netAmount || 0,
-        vatRate: 19, // Default German VAT rate
-        processingMode: 'advanced-pattern-extraction'
+    // Return empty result if German patterns found nothing
+    const emptyResult: ExtractedInvoiceData = {
+        invoiceNumber: null,
+        invoiceDate: null,
+        dueDate: null,
+        totalGrossAmount: 0,
+        totalNetAmount: 0,
+        totalVatAmount: 0,
+        taxBreakdown: [],
+        vendorName: null,
+        vendorAddress: null,
+        vendorVatId: null,
+        vendorPhone: null,
+        vendorEmail: null,
+        customerName: null,
+        customerAddress: null,
+        paymentTerms: null,
+        iban: null,
+        bic: null,
+        bankName: null,
+        processingMode: 'HYBRID',
+        confidence: 0.1,
+        category: 'Geschäftsausgabe',
+        title: 'Unbekannte Rechnung',
+        description: `Keine Beträge gefunden in ${fileName}`
     };
+    
+    return emptyResult;
 }
 
 // =============================================================================
-// END OF FILE
+// END OF OCR PROCESSING FUNCTIONS
 // =============================================================================

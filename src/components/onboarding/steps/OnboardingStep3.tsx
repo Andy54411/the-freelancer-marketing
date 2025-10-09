@@ -8,7 +8,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useOnboarding } from '@/contexts/OnboardingContext';
-import { Camera, Upload, Plus, Trash2, Users, Star, MessageCircle } from 'lucide-react';
+import { Camera, Upload, Plus, Trash2, Users, Star, AlertCircle } from 'lucide-react';
+import { RequiredFieldLabel, RequiredFieldIndicator } from '@/components/onboarding/RequiredFieldLabel';
 
 // Harmonisierte Step3Data Interface
 interface Step3Data {
@@ -26,26 +27,7 @@ interface Step3Data {
     proficiency: string;
   }>;
 
-  // Service-Pakete
-  servicePackages?: Array<{
-    title: string;
-    description: string;
-    price: number;
-    duration: string;
-  }>;
 
-  // Portfolio
-  portfolio?: Array<{
-    title: string;
-    description: string;
-    imageUrl: string;
-  }>;
-
-  // FAQ
-  faqs?: Array<{
-    question: string;
-    answer: string;
-  }>;
 }
 
 interface OnboardingStep3Props {
@@ -121,74 +103,24 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
     );
   };
 
-  const addServicePackage = () => {
-    const currentPackages = step3Data.servicePackages || [];
-    updateField('servicePackages', [
-      ...currentPackages,
-      { title: '', description: '', price: 0, duration: '' },
-    ]);
-  };
 
-  const updateServicePackage = (index: number, field: string, value: any) => {
-    const currentPackages = step3Data.servicePackages || [];
-    const updatedPackages = currentPackages.map((pkg, i) =>
-      i === index ? { ...pkg, [field]: value } : pkg
-    );
-    updateField('servicePackages', updatedPackages);
-  };
-
-  const removeServicePackage = (index: number) => {
-    const currentPackages = step3Data.servicePackages || [];
-    updateField(
-      'servicePackages',
-      currentPackages.filter((_, i) => i !== index)
-    );
-  };
-
-  const addPortfolioItem = () => {
-    const currentPortfolio = step3Data.portfolio || [];
-    updateField('portfolio', [...currentPortfolio, { title: '', description: '', imageUrl: '' }]);
-  };
-
-  const updatePortfolioItem = (index: number, field: string, value: string) => {
-    const currentPortfolio = step3Data.portfolio || [];
-    const updatedPortfolio = currentPortfolio.map((item, i) =>
-      i === index ? { ...item, [field]: value } : item
-    );
-    updateField('portfolio', updatedPortfolio);
-  };
-
-  const removePortfolioItem = (index: number) => {
-    const currentPortfolio = step3Data.portfolio || [];
-    updateField(
-      'portfolio',
-      currentPortfolio.filter((_, i) => i !== index)
-    );
-  };
-
-  const addFAQ = () => {
-    const currentFAQs = step3Data.faqs || [];
-    updateField('faqs', [...currentFAQs, { question: '', answer: '' }]);
-  };
-
-  const updateFAQ = (index: number, field: 'question' | 'answer', value: string) => {
-    const currentFAQs = step3Data.faqs || [];
-    const updatedFAQs = currentFAQs.map((faq, i) =>
-      i === index ? { ...faq, [field]: value } : faq
-    );
-    updateField('faqs', updatedFAQs);
-  };
-
-  const removeFAQ = (index: number) => {
-    const currentFAQs = step3Data.faqs || [];
-    updateField(
-      'faqs',
-      currentFAQs.filter((_, i) => i !== index)
-    );
-  };
 
   const handleNext = () => {
     goToNextStep();
+  };
+
+  // Validierungsstatus prüfen
+  const isValidForNext = () => {
+    const skills = step3Data.skills || [];
+    return skills.length > 0;
+  };
+
+  const getValidationMessage = () => {
+    const skills = step3Data.skills || [];
+    if (skills.length === 0) {
+      return "Mindestens eine Fähigkeit ist erforderlich";
+    }
+    return null;
   };
 
   return (
@@ -199,6 +131,9 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
           Gestalten Sie Ihr Unternehmensprofil und präsentieren Sie Ihre Services
         </p>
       </div>
+
+      {/* Required Fields Indicator */}
+      <RequiredFieldIndicator />
 
       <div className="space-y-6">
         {/* Branding & Darstellung */}
@@ -265,7 +200,12 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label>Fähigkeiten</Label>
+              <RequiredFieldLabel 
+                required={true}
+                tooltip="Mindestens eine Fähigkeit ist erforderlich - beschreibt Ihre Kernkompetenzen"
+              >
+                Fähigkeiten
+              </RequiredFieldLabel>
               <div className="flex gap-2 mb-2">
                 <Input
                   placeholder="Neue Fähigkeit hinzufügen"
@@ -284,7 +224,7 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
                     className="flex items-center bg-[#14ad9f] text-white px-3 py-1 rounded-full text-sm"
                   >
                     {skill}
-                    <button onClick={() => removeSkill(index)} className="ml-2 hover:text-red-200">
+                    <button onClick={() => removeSkill(index)} className="ml-2 hover:text-gray-400">
                       <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
@@ -293,7 +233,12 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
             </div>
 
             <div>
-              <Label>Spezialisierungen</Label>
+              <RequiredFieldLabel 
+                required={false}
+                tooltip="Optional: Spezifische Bereiche Ihrer Expertise"
+              >
+                Spezialisierungen
+              </RequiredFieldLabel>
               <div className="flex gap-2 mb-2">
                 <Input
                   placeholder="Neue Spezialisierung hinzufügen"
@@ -314,7 +259,7 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
                     {specialty}
                     <button
                       onClick={() => removeSpecialty(index)}
-                      className="ml-2 hover:text-red-200"
+                      className="ml-2 hover:text-gray-400"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
@@ -328,7 +273,14 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
         {/* Sprachen */}
         <Card>
           <CardHeader>
-            <CardTitle>Sprachen</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <RequiredFieldLabel 
+                required={false}
+                tooltip="Optional: Sprachen die Sie sprechen - hilfreich für internationale Kunden"
+              >
+                Sprachen
+              </RequiredFieldLabel>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -357,139 +309,30 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
           </CardContent>
         </Card>
 
-        {/* Service-Pakete */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Service-Pakete</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {(step3Data.servicePackages || []).map((pkg, index) => (
-                <div key={index} className="border p-4 rounded-lg space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-medium">Paket {index + 1}</h4>
-                    <Button variant="outline" size="sm" onClick={() => removeServicePackage(index)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Input
-                    placeholder="Paket-Titel"
-                    value={pkg.title}
-                    onChange={e => updateServicePackage(index, 'title', e.target.value)}
-                  />
-                  <Textarea
-                    placeholder="Beschreibung"
-                    value={pkg.description}
-                    onChange={e => updateServicePackage(index, 'description', e.target.value)}
-                  />
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Preis (€)"
-                      value={pkg.price}
-                      onChange={e => updateServicePackage(index, 'price', Number(e.target.value))}
-                    />
-                    <Input
-                      placeholder="Dauer (z.B. 2 Stunden)"
-                      value={pkg.duration}
-                      onChange={e => updateServicePackage(index, 'duration', e.target.value)}
-                    />
-                  </div>
-                </div>
-              ))}
-              <Button onClick={addServicePackage} variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Service-Paket hinzufügen
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Portfolio */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Portfolio</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {(step3Data.portfolio || []).map((item, index) => (
-                <div key={index} className="border p-4 rounded-lg space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-medium">Portfolio-Eintrag {index + 1}</h4>
-                    <Button variant="outline" size="sm" onClick={() => removePortfolioItem(index)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Input
-                    placeholder="Projekt-Titel"
-                    value={item.title}
-                    onChange={e => updatePortfolioItem(index, 'title', e.target.value)}
-                  />
-                  <Textarea
-                    placeholder="Projekt-Beschreibung"
-                    value={item.description}
-                    onChange={e => updatePortfolioItem(index, 'description', e.target.value)}
-                  />
-                  <Input
-                    placeholder="Bild-URL"
-                    value={item.imageUrl}
-                    onChange={e => updatePortfolioItem(index, 'imageUrl', e.target.value)}
-                  />
-                </div>
-              ))}
-              <Button onClick={addPortfolioItem} variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Portfolio-Eintrag hinzufügen
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* FAQ */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageCircle className="h-5 w-5" />
-              Häufig gestellte Fragen
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {(step3Data.faqs || []).map((faq, index) => (
-                <div key={index} className="border p-4 rounded-lg space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-medium">FAQ {index + 1}</h4>
-                    <Button variant="outline" size="sm" onClick={() => removeFAQ(index)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Input
-                    placeholder="Frage"
-                    value={faq.question}
-                    onChange={e => updateFAQ(index, 'question', e.target.value)}
-                  />
-                  <Textarea
-                    placeholder="Antwort"
-                    value={faq.answer}
-                    onChange={e => updateFAQ(index, 'answer', e.target.value)}
-                  />
-                </div>
-              ))}
-              <Button onClick={addFAQ} variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                FAQ hinzufügen
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
+
+      {/* Validation Message */}
+      {!isValidForNext() && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-gray-700">
+            <AlertCircle className="h-5 w-5 text-[#14ad9f]" />
+            <span className="font-medium">Erforderliche Felder fehlen:</span>
+          </div>
+          <p className="mt-1 text-sm text-gray-600">{getValidationMessage()}</p>
+        </div>
+      )}
 
       {/* Navigation */}
       <div className="flex justify-between pt-6">
         <Button variant="outline" onClick={goToPreviousStep} className="px-6">
           Zurück
         </Button>
-        <Button onClick={handleNext} className="px-6 bg-[#14ad9f] hover:bg-[#129488] text-white">
+        <Button 
+          onClick={handleNext} 
+          className="px-6 bg-[#14ad9f] hover:bg-[#129488] text-white"
+          disabled={!isValidForNext()}
+        >
           Weiter
         </Button>
       </div>

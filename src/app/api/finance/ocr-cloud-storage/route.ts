@@ -79,14 +79,19 @@ export async function POST(request: NextRequest) {
     const firebaseUrl =
       process.env.FIREBASE_FUNCTION_URL ||
       'https://europe-west1-tilvo-f142f.cloudfunctions.net/financeApiWithOCR';
+    
+    // Add OCR endpoint path
+    const ocrEndpoint = `${firebaseUrl}/ocr/extract-receipt`;
 
-    console.log('[CLOUD OCR] Calling Firebase function:', firebaseUrl);
+    console.log('[CLOUD OCR] Calling Firebase function:', ocrEndpoint);
 
-    const firebaseResponse = await fetch(firebaseUrl, {
+    const firebaseResponse = await fetch(ocrEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Remove Authorization header for now - Firebase functions may not need it for internal calls
+        // Required authentication headers for Firebase function
+        'x-user-id': companyId, // Use companyId as user-id for company context
+        'x-company-id': companyId,
       },
       body: JSON.stringify(ocrRequest),
     });
@@ -128,38 +133,63 @@ export async function POST(request: NextRequest) {
     }
 
     // Transform Firebase response to expected format
+    console.log('[CLOUD OCR] Raw Firebase result details:', {
+      hasData: !!firebaseResult.data,
+      dataKeys: firebaseResult.data ? Object.keys(firebaseResult.data) : [],
+      rootKeys: Object.keys(firebaseResult),
+      vendor: firebaseResult.vendor,
+      dataVendor: firebaseResult.data?.vendorName,
+      amount: firebaseResult.amount,
+      dataAmount: firebaseResult.data?.totalGrossAmount
+    });
+
+    // Extract data from Firebase result - handle both root level and nested 'data' property
+    const extractedData = firebaseResult.data || firebaseResult;
+    
+    console.log('[CLOUD OCR] Extracted data for mapping:', {
+      vendorName: extractedData.vendorName,
+      totalGrossAmount: extractedData.totalGrossAmount,
+      invoiceNumber: extractedData.invoiceNumber,
+      invoiceDate: extractedData.invoiceDate,
+      dueDate: extractedData.dueDate,
+    });
+
     const transformedResult = {
       success: true,
       data: {
-        // Core extracted data
-        vendor: firebaseResult.vendor,
-        amount: firebaseResult.amount,
-        invoiceNumber: firebaseResult.invoiceNumber,
-        date: firebaseResult.date,
-        dueDate: firebaseResult.dueDate,
-        category: firebaseResult.category,
-        description: firebaseResult.description,
-        title: firebaseResult.title,
+        // Core extracted data - Comprehensive mapping from Firebase result
+        vendor: extractedData.vendorName || extractedData.vendor || extractedData.companyName || firebaseResult.vendor,
+        amount: extractedData.totalGrossAmount || extractedData.amount || extractedData.totalGross || firebaseResult.amount,
+        invoiceNumber: extractedData.invoiceNumber || firebaseResult.invoiceNumber,
+        date: extractedData.invoiceDate || extractedData.date || firebaseResult.date,
+        dueDate: extractedData.dueDate || firebaseResult.dueDate,
+        category: extractedData.category || firebaseResult.category,
+        description: extractedData.description || firebaseResult.description,
+        title: extractedData.title || firebaseResult.title,
 
-        // VAT information
-        vatAmount: firebaseResult.vatAmount,
-        netAmount: firebaseResult.netAmount,
-        vatRate: firebaseResult.vatRate,
+        // VAT information - Map from Firebase naming with all variants
+        vatAmount: extractedData.totalVatAmount || extractedData.vatAmount || extractedData.totalVat || firebaseResult.vatAmount,
+        netAmount: extractedData.totalNetAmount || extractedData.netAmount || extractedData.totalNet || firebaseResult.netAmount,
+        vatRate: extractedData.taxRate || extractedData.vatRate || firebaseResult.vatRate,
+
+        // 🎯 CUSTOMER/RECIPIENT Information - Extract from Firebase result
+        customerName: extractedData.customerName || firebaseResult.customerName,
+        customerAddress: extractedData.customerAddress || firebaseResult.customerAddress,
 
         // Enhanced fields
-        costCenter: firebaseResult.costCenter,
-        paymentTerms: firebaseResult.paymentTerms,
-        currency: firebaseResult.currency || 'EUR',
-        companyVatNumber: firebaseResult.companyVatNumber,
-        goBDCompliant: firebaseResult.goBDCompliant,
+        costCenter: extractedData.costCenter || firebaseResult.costCenter,
+        paymentTerms: extractedData.paymentTerms || firebaseResult.paymentTerms,
+        currency: extractedData.currency || firebaseResult.currency || 'EUR',
+        companyVatNumber: extractedData.vendorVatId || extractedData.companyVatNumber || firebaseResult.companyVatNumber,
+        goBDCompliant: extractedData.goBDCompliant || firebaseResult.goBDCompliant,
 
         // Validation and processing info
-        validationIssues: firebaseResult.validationIssues || [],
+        validationIssues: extractedData.validationIssues || firebaseResult.validationIssues || [],
         processingMode: 'CLOUD_STORAGE',
         cloudStorage: {
           source: s3Path || gcsPath || fileUrl,
-          processingTime: firebaseResult.processingTime,
-          confidence: firebaseResult.confidence,
+          processingTime: extractedData.processingTime || firebaseResult.processingTime,
+          confidence: extractedData.confidence || firebaseResult.confidence,
         },
       },
 
@@ -176,6 +206,14 @@ export async function POST(request: NextRequest) {
         processingTime: firebaseResult.processingTime || 0,
       },
     };
+
+    console.log('[CLOUD OCR] Transformed result data:', {
+      vendor: transformedResult.data.vendor,
+      amount: transformedResult.data.amount,
+      invoiceNumber: transformedResult.data.invoiceNumber,
+      date: transformedResult.data.date,
+      vatRate: transformedResult.data.vatRate
+    });
 
     console.log('[CLOUD OCR] Processing completed successfully');
 

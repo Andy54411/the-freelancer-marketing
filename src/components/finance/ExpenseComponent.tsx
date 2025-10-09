@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -86,6 +87,7 @@ export function ExpenseComponent({
   onRefresh,
 }: ExpenseComponentProps) {
   const { user } = useAuth(); // User-Kontext für Authentication
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -1267,7 +1269,13 @@ export function ExpenseComponent({
                 {expenses.map(expense => (
                   <div
                     key={expense.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group"
+                    onClick={() => {
+                      // 🎯 Navigiere zur Receipt Detail Page
+                      if (expense.id) {
+                        router.push(`/dashboard/company/${companyId}/finance/expenses/${expense.id}`);
+                      }
+                    }}
                   >
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
@@ -1323,7 +1331,10 @@ export function ExpenseComponent({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleEditExpense(expense)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // 🎯 Verhindere Navigation beim Klicken auf Edit
+                          handleEditExpense(expense);
+                        }}
                         disabled={isLoading}
                         className="hover:bg-[#14ad9f]/10"
                       >
@@ -1332,7 +1343,10 @@ export function ExpenseComponent({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteExpense(expense)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // 🎯 Verhindere Navigation beim Klicken auf Delete
+                          handleDeleteExpense(expense);
+                        }}
                         disabled={isLoading}
                         className="hover:bg-red-50 hover:text-red-600"
                       >

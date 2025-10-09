@@ -29,24 +29,24 @@ export class FirestoreInvoiceService {
     sequentialNumber: number;
     formattedNumber: string;
   }> {
-    console.log('🔥🔥🔥 FirestoreInvoiceService.getNextInvoiceNumber CALLED V2:', { companyId, timestamp: Date.now() });
-    
+
+
     try {
-      console.log('🔢🔢🔢 Calling NumberSequenceService.getNextNumberForType V2...', { companyId });
-      console.log('🧪 NumberSequenceService object:', NumberSequenceService);
-      console.log('🧪 getNextNumberForType method:', NumberSequenceService.getNextNumberForType);
-      
+
+
+
+
       // Nutze den NumberSequenceService für die Rechnungsnummerierung
       const result = await NumberSequenceService.getNextNumberForType(companyId, 'Rechnung');
 
-      console.log('✅ NumberSequenceService returned:', { result, companyId });
+
 
       const finalResult = {
         sequentialNumber: result.number,
         formattedNumber: result.formattedNumber
       };
 
-      console.log('🔥 FirestoreInvoiceService RETURNING:', { finalResult, companyId });
+
 
       return finalResult;
     } catch (error) {
@@ -57,13 +57,13 @@ export class FirestoreInvoiceService {
         companyId
       });
 
-      console.log('🚨 FALLING BACK TO OLD SYSTEM...', { companyId });
+
 
       // Fallback auf das alte System falls NumberSequence nicht gefunden wird
       const fallbackResult = await this.getNextInvoiceNumberFallback(companyId);
-      
-      console.log('🔥 FALLBACK RESULT:', { fallbackResult, companyId });
-      
+
+
+
       return fallbackResult;
     }
   }
@@ -152,21 +152,21 @@ export class FirestoreInvoiceService {
     formattedNumber: string;
   }> {
     const currentYear = new Date().getFullYear();
-    
+
     try {
       return await runTransaction(db, async (transaction) => {
         const stornoNumberingRef = doc(db, 'companies', companyId, 'settings', 'stornoNumbering');
         const stornoNumberingDoc = await transaction.get(stornoNumberingRef);
-        
+
         let nextNumber = 1;
-        
+
         if (stornoNumberingDoc.exists()) {
           const data = stornoNumberingDoc.data();
           if (data.year === currentYear) {
-            nextNumber = (data.nextNumber || 1);
+            nextNumber = data.nextNumber || 1;
           }
         }
-        
+
         const newStornoNumberingData = {
           companyId,
           year: currentYear,
@@ -174,9 +174,9 @@ export class FirestoreInvoiceService {
           nextNumber: nextNumber + 1,
           updatedAt: new Date()
         };
-        
+
         transaction.set(stornoNumberingRef, newStornoNumberingData);
-        
+
         return {
           sequentialNumber: nextNumber,
           formattedNumber: `ST-${String(nextNumber).padStart(4, '0')}`
@@ -184,7 +184,7 @@ export class FirestoreInvoiceService {
       });
     } catch (error) {
       console.error('Fallback-Storno-Nummerierung fehlgeschlagen:', error);
-      
+
       // Letzter Fallback
       const fallbackNumber = Date.now() % 1000;
       return {
@@ -205,10 +205,10 @@ export class FirestoreInvoiceService {
    * Hilfsfunktion: Findet Kunden-ID anhand des Kundennamens oder der E-Mail
    */
   static async findCustomerIdByNameOrEmail(
-    companyId: string,
-    customerName?: string,
-    customerEmail?: string
-  ): Promise<string | null> {
+  companyId: string,
+  customerName?: string,
+  customerEmail?: string)
+  : Promise<string | null> {
     try {
       if (!customerName && !customerEmail) {
         console.warn('⚠️ Weder Kundenname noch E-Mail angegeben');
@@ -254,14 +254,14 @@ export class FirestoreInvoiceService {
    * @param metadata - Zusätzliche Metadaten
    */
   static async createCustomerActivity(
-    companyId: string,
-    customerNameOrId: string,
-    type: 'user' | 'system' | 'invoice',
-    title: string,
-    description: string,
-    metadata?: any,
-    customerEmail?: string
-  ): Promise<void> {
+  companyId: string,
+  customerNameOrId: string,
+  type: 'user' | 'system' | 'invoice',
+  title: string,
+  description: string,
+  metadata?: any,
+  customerEmail?: string)
+  : Promise<void> {
     try {
       let customerId: string;
 
@@ -275,12 +275,12 @@ export class FirestoreInvoiceService {
           customerNameOrId,
           customerEmail
         );
-        
+
         if (!foundCustomerId) {
           console.warn(`⚠️ Kunde nicht gefunden für Aktivität: ${customerNameOrId}`);
           return; // Aktivität nicht erstellen wenn Kunde nicht existiert
         }
-        
+
         customerId = foundCustomerId;
       }
 
@@ -296,8 +296,8 @@ export class FirestoreInvoiceService {
 
       const activitiesRef = collection(db, 'companies', companyId, 'customers', customerId, 'activities');
       await addDoc(activitiesRef, activityData);
-      
-      console.log(`✅ Kundenaktivität erstellt für Kunde ${customerId}: ${title}`);
+
+
     } catch (error) {
       console.error('❌ Fehler beim Erstellen der Kundenaktivität:', error);
       // Nicht werfen - Aktivitäten sind nicht kritisch für den Hauptvorgang
@@ -308,8 +308,8 @@ export class FirestoreInvoiceService {
    * Speichert eine Rechnung in Firestore - SUBCOLLECTION companies/{companyId}/invoices
    */
   static async saveInvoice(invoice: InvoiceData): Promise<string> {
-    console.log('🚨🚨🚨 SAVE INVOICE CALLED - CACHE BUSTER V3:', { invoiceNumber: invoice.invoiceNumber, timestamp: Date.now() });
-    
+
+
     try {
       // Rekursive Funktion zum Entfernen aller undefined Werte
       const removeUndefined = (obj: any): any => {
@@ -350,14 +350,14 @@ export class FirestoreInvoiceService {
       const customerEmail = invoice.customer?.email || invoice.customerEmail;
       if (customerName) {
         try {
-          console.log('🔄 Creating customer activity for invoice:', {
-            companyId: invoice.companyId,
-            customerName,
-            customerEmail,
-            invoiceId: docRef.id,
-            invoiceNumber: invoice.invoiceNumber
-          });
-          
+
+
+
+
+
+
+
+
           await this.createCustomerActivity(
             invoice.companyId,
             customerName,
@@ -373,8 +373,8 @@ export class FirestoreInvoiceService {
             },
             customerEmail // Pass email for better customer lookup
           );
-          
-          console.log('✅ Customer activity created successfully for invoice');
+
+
         } catch (activityError) {
           console.error('❌ Could not create customer activity for invoice creation:', activityError);
         }
@@ -571,7 +571,7 @@ export class FirestoreInvoiceService {
 
             const customerName = (invoice.customer?.name || invoice.customerName) as string;
             const customerEmail = invoice.customer?.email || invoice.customerEmail;
-            
+
             await this.createCustomerActivity(
               companyId,
               customerName,
@@ -635,7 +635,7 @@ export class FirestoreInvoiceService {
         try {
           const customerName = (invoice.customer?.name || invoice.customerName) as string;
           const customerEmail = invoice.customer?.email || invoice.customerEmail;
-          
+
           await this.createCustomerActivity(
             invoice.companyId,
             customerName,
@@ -884,7 +884,7 @@ export class FirestoreInvoiceService {
           if (originalInvoice.customer?.name || originalInvoice.customerName) {
             const customerName = (originalInvoice.customer?.name || originalInvoice.customerName) as string;
             const customerEmail = originalInvoice.customer?.email || originalInvoice.customerEmail;
-            
+
             await this.createCustomerActivity(
               companyId,
               customerName,
@@ -1000,7 +1000,7 @@ export class FirestoreInvoiceService {
         try {
           const customerName = (invoice.customer?.name || invoice.customerName) as string;
           const customerEmail = invoice.customer?.email || invoice.customerEmail;
-          
+
           await this.createCustomerActivity(
             companyId,
             customerName,
@@ -1130,7 +1130,7 @@ export class FirestoreInvoiceService {
           isSmallBusiness: data.isSmallBusiness || false,
           paymentTerms: data.paymentTerms,
           tags: data.tags || [],
-          
+
           // Storno-spezifische Felder
           originalInvoiceId: data.originalInvoiceId,
           originalInvoiceNumber: data.originalInvoiceNumber,

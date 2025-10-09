@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Try advanced OCR via Firebase Functions
+// Try advanced OCR via Firebase Functions - ⚡ FIXED: Cloud Storage Format
 async function tryAdvancedOCR(file: File, companyId: string, filename: string) {
   const fileBuffer = await file.arrayBuffer();
   const base64File = Buffer.from(fileBuffer).toString('base64');
@@ -181,12 +181,21 @@ async function tryAdvancedOCR(file: File, companyId: string, filename: string) {
     process.env.FIREBASE_FUNCTION_URL ||
     'https://europe-west1-tilvo-f142f.cloudfunctions.net/financeApiWithOCR';
 
+  // ⚡ NEUE ARCHITEKTUR: Base64 Data URL Format (Cloud Storage Schema kompatibel)
   const payload = {
-    file: base64File,
+    fileUrl: `data:${file.type};base64,${base64File}`,  // ✅ Base64 Data URL statt raw base64
     fileName: filename,
-    companyId: companyId,
     mimeType: file.type,
+    maxFileSizeMB: 50,
+    forceReprocess: false
   };
+
+  console.log(`🔄 [OCR DEBUG] Sending payload to Firebase Function:`, {
+    fileUrlPrefix: payload.fileUrl.substring(0, 50) + '...',
+    fileName: payload.fileName,
+    mimeType: payload.mimeType,
+    payloadSize: JSON.stringify(payload).length
+  });
 
   const response = await fetch(`${functionUrl}/ocr/extract-receipt`, {
     method: 'POST',
@@ -201,11 +210,12 @@ async function tryAdvancedOCR(file: File, companyId: string, filename: string) {
 
   if (!response.ok) {
     const errorText = await response.text();
-
+    console.error(`❌ Firebase Function call failed: ${response.status}`, errorText);
     throw new Error(`Firebase Function call failed: ${response.status} - ${errorText}`);
   }
 
   const result = await response.json();
+  console.log(`✅ Firebase Function OCR result:`, result);
 
   return result;
 }

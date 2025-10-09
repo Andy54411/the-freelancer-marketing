@@ -98,13 +98,13 @@ export default function CreateCustomerPage() {
   const generateCustomerNumber = async (organizationType: string = 'Kunde') => {
     try {
       if (!params?.uid || typeof params.uid !== 'string') return;
-      
-      console.log(`🔢 Generiere ${organizationType}-Nummer...`);
-      
+
+
+
       // Erst prüfen, ob der Nummernkreis existiert
       const sequences = await NumberSequenceService.getNumberSequences(params.uid);
-      const targetSequence = sequences.find(seq => seq.type === organizationType);
-      
+      const targetSequence = sequences.find((seq) => seq.type === organizationType);
+
       if (!targetSequence) {
         // Fallback-Nummern für jeden Typ
         const fallbackNumbers = {
@@ -114,19 +114,19 @@ export default function CreateCustomerPage() {
           'Interessenten': 'IN-001'
         };
         const fallbackNumber = fallbackNumbers[organizationType as keyof typeof fallbackNumbers] || `${organizationType.substring(0, 2).toUpperCase()}-001`;
-        
+
         setNextCustomerNumber(fallbackNumber);
         handleInputChange('customerNumber', fallbackNumber);
-        console.log(`⚠️ Verwende Fallback für ${organizationType}: ${fallbackNumber}`);
+
         return;
       }
-      
+
       // Zeige Preview-Nummer (ohne zu inkrementieren)
       const previewNumber = NumberSequenceService.formatNumber(targetSequence.nextNumber, targetSequence.format);
       setNextCustomerNumber(previewNumber);
       handleInputChange('customerNumber', previewNumber);
-      console.log(`✅ ${organizationType}-Nummer: ${previewNumber}`);
-      
+
+
     } catch (error) {
       console.error(`Fehler beim Generieren der ${organizationType}-Nummer:`, error);
       // Fallback zur manuellen Generierung
@@ -143,23 +143,23 @@ export default function CreateCustomerPage() {
     // Synchronisiere alle Nummernkreise beim ersten Laden
     const initializeNumberSequences = async () => {
       if (!params?.uid || typeof params.uid !== 'string') return;
-      
+
       try {
-        console.log('🔄 Synchronisiere alle Nummernkreise...');
+
         await Promise.all([
-          NumberSequenceService.syncSequenceWithRealData(params.uid, 'Kunde'),
-          NumberSequenceService.syncSequenceWithRealData(params.uid, 'Lieferant'),
-          NumberSequenceService.syncSequenceWithRealData(params.uid, 'Partner'),
-          NumberSequenceService.syncSequenceWithRealData(params.uid, 'Interessenten')
-        ]);
-        
+        NumberSequenceService.syncSequenceWithRealData(params.uid, 'Kunde'),
+        NumberSequenceService.syncSequenceWithRealData(params.uid, 'Lieferant'),
+        NumberSequenceService.syncSequenceWithRealData(params.uid, 'Partner'),
+        NumberSequenceService.syncSequenceWithRealData(params.uid, 'Interessenten')]
+        );
+
         // Generiere Nummer für den Standard-Typ 'Kunde'
         await generateCustomerNumber('Kunde');
       } catch (error) {
         console.error('Fehler bei Nummernkreis-Initialisierung:', error);
       }
     };
-    
+
     initializeNumberSequences();
   }, []);
 
@@ -217,21 +217,21 @@ export default function CreateCustomerPage() {
     customerReference: '00',
     leitwegId: '',
     // Tags
-    tags: [] as string[],
+    tags: [] as string[]
   });
 
   // Tab Definitions - nur relevante Tabs für neue Kunden
   const tabs = [
-    { id: 'overview', label: 'Grunddaten', icon: FileText, count: null },
-    { id: 'contacts', label: 'Kontakte', icon: Users, count: contacts.length },
-    { id: 'payment', label: 'Zahlungsinformationen', icon: CreditCard, count: null }
-  ];
+  { id: 'overview', label: 'Grunddaten', icon: FileText, count: null },
+  { id: 'contacts', label: 'Kontakte', icon: Users, count: contacts.length },
+  { id: 'payment', label: 'Zahlungsinformationen', icon: CreditCard, count: null }];
+
 
 
 
   // Input Handler
   const handleInputChange = (field: string, value: string | number | boolean | string[]) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [field]: value
     }));
@@ -240,9 +240,9 @@ export default function CreateCustomerPage() {
   // Update isSupplier and customer number when organizationType changes
   React.useEffect(() => {
     const isSupplier = formData.organizationType === 'Lieferant';
-    
+
     // Update isSupplier flag
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       isSupplier: isSupplier
     }));
@@ -251,14 +251,14 @@ export default function CreateCustomerPage() {
     const currentPrefix = formData.customerNumber.split('-')[0];
     const expectedPrefix = {
       'Kunde': 'KD',
-      'Lieferant': 'LF', 
+      'Lieferant': 'LF',
       'Partner': 'PA',
       'Interessenten': 'IN'
     }[formData.organizationType];
 
     // Always generate new number when organizationType changes
     if (expectedPrefix && currentPrefix !== expectedPrefix) {
-      console.log(`🔄 OrganizationType geändert zu: ${formData.organizationType}, generiere neue Nummer...`);
+
       generateCustomerNumber(formData.organizationType);
     }
   }, [formData.organizationType]);
@@ -269,7 +269,7 @@ export default function CreateCustomerPage() {
   // VAT Validation
   const handleVATValidation = async () => {
     if (!formData.vatId) return;
-    
+
     setLoading(true);
     try {
       const isValid = await validateVATNumber(formData.vatId);
@@ -303,17 +303,17 @@ export default function CreateCustomerPage() {
   };
 
   const updateContact = (id: string, field: keyof ContactPerson, value: string | boolean) => {
-    setContacts(contacts.map(contact => 
-      contact.id === id ? { ...contact, [field]: value } : contact
+    setContacts(contacts.map((contact) =>
+    contact.id === id ? { ...contact, [field]: value } : contact
     ));
   };
 
   const removeContact = (id: string) => {
-    setContacts(contacts.filter(contact => contact.id !== id));
+    setContacts(contacts.filter((contact) => contact.id !== id));
   };
 
   const setPrimaryContact = (id: string) => {
-    setContacts(contacts.map(contact => ({
+    setContacts(contacts.map((contact) => ({
       ...contact,
       isPrimary: contact.id === id
     })));
@@ -360,9 +360,9 @@ export default function CreateCustomerPage() {
     setLoading(true);
     try {
       // ✅ WICHTIG: Generiere die korrekte Nummer basierend auf dem gewählten Typ
-      console.log(`🔄 SAVE DEBUG: Typ=${formData.organizationType}, Aktuelle Nummer=${formData.customerNumber}`);
+
       let finalCustomerNumber = formData.customerNumber;
-      
+
       // Prüfe ob die aktuelle Nummer zum gewählten Typ passt
       const expectedPrefix = {
         'Kunde': 'KD',
@@ -370,32 +370,32 @@ export default function CreateCustomerPage() {
         'Partner': 'PA',
         'Interessenten': 'IN'
       }[formData.organizationType];
-      
-      console.log(`🔍 Erwarteter Prefix: ${expectedPrefix}, Aktuelle Nummer startet mit: ${formData.customerNumber.substring(0, 2)}`);
-      
+
+
+
       if (expectedPrefix && !formData.customerNumber.startsWith(expectedPrefix)) {
-        console.log(`⚠️ MISMATCH! Nummer ${formData.customerNumber} passt nicht zu Typ ${formData.organizationType}`);
-        console.log(`🔄 Generiere neue ${formData.organizationType}-Nummer...`);
-        
+
+
+
         const result = await NumberSequenceService.getNextNumberForType(params.uid, formData.organizationType);
         finalCustomerNumber = result.formattedNumber;
-        console.log(`✅ Neue ${formData.organizationType}-Nummer generiert: ${finalCustomerNumber}`);
-        
+
+
         // Update auch das Formular für Anzeige
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           customerNumber: finalCustomerNumber
         }));
       } else {
-        console.log(`✅ Nummer ${formData.customerNumber} passt zu Typ ${formData.organizationType}`);
+
       }
-      
-      console.log(`💾 FINAL: Speichere mit Nummer: ${finalCustomerNumber}`);
+
+
 
       // Generiere Anzeigenamen basierend auf Kundentyp
-      const displayName = customerType === 'person' 
-        ? `${formData.title ? formData.title + ' ' : ''}${formData.firstName} ${formData.lastName}`.trim()
-        : formData.companyName;
+      const displayName = customerType === 'person' ?
+      `${formData.title ? formData.title + ' ' : ''}${formData.firstName} ${formData.lastName}`.trim() :
+      formData.companyName;
 
       // Erstelle legacy address string für Kompatibilität
       const legacyAddress = `${formData.street}\n${formData.postalCode} ${formData.city}\n${formData.country}`;
@@ -407,74 +407,74 @@ export default function CreateCustomerPage() {
         name: displayName,
         email: formData.email,
         phone: formData.phone,
-        
+
         // Adressdaten
         address: legacyAddress, // Legacy-Feld für Kompatibilität
         street: formData.street,
         city: formData.city,
         postalCode: formData.postalCode,
         country: formData.country,
-        
+
         // Steuerliche Daten
         taxNumber: formData.taxNumber,
         vatId: formData.vatId,
         vatValidated: formData.vatValidated,
-        
+
         // Organisation/Person-spezifische Felder
         isSupplier: formData.organizationType === 'Lieferant',
         organizationType: formData.organizationType,
-        
+
         // Person-spezifische Felder (falls customerType === 'person')
         firstName: customerType === 'person' ? formData.firstName : '',
         lastName: customerType === 'person' ? formData.lastName : '',
         title: customerType === 'person' ? formData.title : '',
         position: formData.position, // Position kann auch bei Organisationen relevant sein
-        
+
         // Organisation-spezifische Felder
         companyName: customerType === 'organisation' ? formData.companyName : '',
         website: formData.website,
         companySize: formData.companySize,
         industry: formData.industry,
-        
+
         // Buchhaltungskonten
         debitorNumber: formData.debitorNumber,
         creditorNumber: formData.creditorNumber,
-        
+
         // Geschäftsbedingungen & Zahlungsinformationen
         paymentTerms: formData.paymentTerms,
         discount: formData.discount,
         creditLimit: formData.creditLimit,
         currency: formData.currency,
-        
+
         // Bankdaten
         bankName: formData.bankName,
         iban: formData.iban,
         bic: formData.bic,
         accountHolder: formData.accountHolder,
-        
+
         // Zahlungsbedingungen
         preferredPaymentMethod: formData.preferredPaymentMethod,
         defaultInvoiceDueDate: formData.defaultInvoiceDueDate,
         earlyPaymentDiscount: formData.earlyPaymentDiscount,
         earlyPaymentDays: formData.earlyPaymentDays,
-        
+
         // Mahnwesen
         reminderFee: formData.reminderFee,
         lateFee: formData.lateFee,
         automaticReminders: formData.automaticReminders,
-        
+
         // E-Rechnung
         eInvoiceEnabled: formData.eInvoiceEnabled,
         customerReference: formData.customerReference,
         leitwegId: formData.leitwegId,
-        
+
         // Zusätzliche Informationen
         notes: formData.notes,
         tags: formData.tags,
         language: formData.language,
-        
+
         // Kontaktpersonen
-        contactPersons: contacts.map(contact => ({
+        contactPersons: contacts.map((contact) => ({
           id: contact.id,
           firstName: contact.firstName,
           lastName: contact.lastName,
@@ -488,8 +488,8 @@ export default function CreateCustomerPage() {
 
       // Speichere Kunden in Firebase Subcollection
       const customerId = await CustomerService.addCustomer(params.uid, customerData);
-      
-      console.log(`✅ Kunde erfolgreich erstellt: ${customerId}`);
+
+
       toast.success('Kunde erfolgreich erstellt');
       router.push(`/dashboard/company/${params.uid}/finance/contacts`);
     } catch (error) {
@@ -513,7 +513,7 @@ export default function CreateCustomerPage() {
   };
 
   const removeTag = (tagToRemove: string) => {
-    handleInputChange('tags', formData.tags.filter(tag => tag !== tagToRemove));
+    handleInputChange('tags', formData.tags.filter((tag) => tag !== tagToRemove));
   };
 
   const handleTagKeyPress = (e: React.KeyboardEvent) => {
@@ -557,11 +557,11 @@ export default function CreateCustomerPage() {
                     type="button"
                     onClick={() => setCustomerType('person')}
                     className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                      customerType === 'person'
-                        ? 'bg-[#14ad9f] text-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-800 hover:bg-white'
-                    }`}
-                  >
+                    customerType === 'person' ?
+                    'bg-[#14ad9f] text-white shadow-sm' :
+                    'text-gray-600 hover:text-gray-800 hover:bg-white'}`
+                    }>
+
                     <User className="h-4 w-4 inline mr-2" />
                     Person
                   </button>
@@ -569,11 +569,11 @@ export default function CreateCustomerPage() {
                     type="button"
                     onClick={() => setCustomerType('organisation')}
                     className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                      customerType === 'organisation'
-                        ? 'bg-[#14ad9f] text-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-800 hover:bg-white'
-                    }`}
-                  >
+                    customerType === 'organisation' ?
+                    'bg-[#14ad9f] text-white shadow-sm' :
+                    'text-gray-600 hover:text-gray-800 hover:bg-white'}`
+                    }>
+
                     <Users className="h-4 w-4 inline mr-2" />
                     Organisation
                   </button>
@@ -581,17 +581,17 @@ export default function CreateCustomerPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {customerType === 'person' ? (
-                  <>
+                {customerType === 'person' ?
+                <>
                     {/* Person-Geschäftsfelder */}
                     <div>
                       <Label htmlFor="title">Anrede</Label>
                       <select
-                        id="title"
-                        value={formData.title}
-                        onChange={(e) => handleInputChange('title', e.target.value)}
-                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                      >
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => handleInputChange('title', e.target.value)}
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]">
+
                         <option value="">Bitte wählen</option>
                         <option value="Herr">Herr</option>
                         <option value="Frau">Frau</option>
@@ -605,95 +605,95 @@ export default function CreateCustomerPage() {
                     <div>
                       <Label htmlFor="academicTitle">Titel</Label>
                       <Input
-                        id="academicTitle"
-                        value={formData.academicTitle || ''}
-                        onChange={(e) => handleInputChange('academicTitle', e.target.value)}
-                        placeholder="z.B. MBA, M.Sc."
-                        className="mt-1"
-                      />
+                      id="academicTitle"
+                      value={formData.academicTitle || ''}
+                      onChange={(e) => handleInputChange('academicTitle', e.target.value)}
+                      placeholder="z.B. MBA, M.Sc."
+                      className="mt-1" />
+
                     </div>
 
                     <div>
                       <Label htmlFor="firstName">Vorname *</Label>
                       <Input
-                        id="firstName"
-                        value={formData.firstName}
-                        onChange={(e) => handleInputChange('firstName', e.target.value)}
-                        placeholder="Max"
-                        className="mt-1"
-                      />
+                      id="firstName"
+                      value={formData.firstName}
+                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      placeholder="Max"
+                      className="mt-1" />
+
                     </div>
 
                     <div>
                       <Label htmlFor="lastName">Nachname *</Label>
                       <Input
-                        id="lastName"
-                        value={formData.lastName}
-                        onChange={(e) => handleInputChange('lastName', e.target.value)}
-                        placeholder="Mustermann"
-                        className="mt-1"
-                      />
+                      id="lastName"
+                      value={formData.lastName}
+                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      placeholder="Mustermann"
+                      className="mt-1" />
+
                     </div>
 
                     {/* Namenszusatz */}
                     <div>
                       <Label htmlFor="nameSuffix">Namenszusatz</Label>
                       <Input
-                        id="nameSuffix"
-                        value={formData.nameSuffix || ''}
-                        onChange={(e) => handleInputChange('nameSuffix', e.target.value)}
-                        placeholder="z.B. jun., sen."
-                        className="mt-1"
-                      />
+                      id="nameSuffix"
+                      value={formData.nameSuffix || ''}
+                      onChange={(e) => handleInputChange('nameSuffix', e.target.value)}
+                      placeholder="z.B. jun., sen."
+                      className="mt-1" />
+
                     </div>
 
                     {/* Kunden-Nr. / Lieferanten-Nr. mit Nummernkreise-Icon */}
                     <div>
                       <Label htmlFor="customerNumber" className="text-sm font-medium text-gray-700">
                         {{
-                          'Kunde': 'Kunden-Nr.',
-                          'Lieferant': 'Lieferanten-Nr.',
-                          'Partner': 'Partner-Nr.', 
-                          'Interessenten': 'Interessenten-Nr.'
-                        }[formData.organizationType] || 'Kontakt-Nr.'} <span className="text-red-500">*</span>
+                        'Kunde': 'Kunden-Nr.',
+                        'Lieferant': 'Lieferanten-Nr.',
+                        'Partner': 'Partner-Nr.',
+                        'Interessenten': 'Interessenten-Nr.'
+                      }[formData.organizationType] || 'Kontakt-Nr.'} <span className="text-red-500">*</span>
                       </Label>
                       <div className="relative mt-1">
                         <Input
-                          id="customerNumber"
-                          value={formData.customerNumber}
-                          onChange={(e) => handleInputChange('customerNumber', e.target.value)}
-                          placeholder="1003"
-                          required
-                          className="pr-10"
-                        />
+                        id="customerNumber"
+                        value={formData.customerNumber}
+                        onChange={(e) => handleInputChange('customerNumber', e.target.value)}
+                        placeholder="1003"
+                        required
+                        className="pr-10" />
+
                         <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              if (!params?.uid || typeof params.uid !== 'string') {
-                                toast.error('Firma-ID nicht verfügbar');
-                                return;
-                              }
-                              
-                              // Lade die entsprechende Nummernkreis basierend auf Typ
-                              const sequenceType = formData.organizationType; // Direkt den Typ verwenden
-                              const sequences = await NumberSequenceService.getNumberSequences(params.uid);
-                              const sequence = sequences.find(seq => seq.type === sequenceType);
-                              
-                              if (sequence) {
-                                setCurrentNumberSequence(sequence);
-                                setShowNumberSequenceModal(true);
-                              } else {
-                                toast.error(`${sequenceType}-Nummernkreis nicht gefunden`);
-                              }
-                            } catch (error) {
-                              console.error('Fehler beim Laden der Nummernkreise:', error);
-                              toast.error('Fehler beim Laden der Nummernkreise');
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            if (!params?.uid || typeof params.uid !== 'string') {
+                              toast.error('Firma-ID nicht verfügbar');
+                              return;
                             }
-                          }}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          title="Nummernkreis-Einstellungen"
-                        >
+
+                            // Lade die entsprechende Nummernkreis basierend auf Typ
+                            const sequenceType = formData.organizationType; // Direkt den Typ verwenden
+                            const sequences = await NumberSequenceService.getNumberSequences(params.uid);
+                            const sequence = sequences.find((seq) => seq.type === sequenceType);
+
+                            if (sequence) {
+                              setCurrentNumberSequence(sequence);
+                              setShowNumberSequenceModal(true);
+                            } else {
+                              toast.error(`${sequenceType}-Nummernkreis nicht gefunden`);
+                            }
+                          } catch (error) {
+                            console.error('Fehler beim Laden der Nummernkreise:', error);
+                            toast.error('Fehler beim Laden der Nummernkreise');
+                          }
+                        }}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        title="Nummernkreis-Einstellungen">
+
                           <Settings className="h-4 w-4" />
                         </button>
                       </div>
@@ -704,55 +704,55 @@ export default function CreateCustomerPage() {
                       <Label className="text-sm font-medium text-gray-700 mb-1 block">Typ</Label>
                       <div className="relative" ref={typeDropdownRef}>
                         <button
-                          type="button"
-                          onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-                          className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                        >
+                        type="button"
+                        onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+                        className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]">
+
                           <span>{formData.organizationType}</span>
                           <ChevronDown className="h-4 w-4 text-gray-400" />
                         </button>
-                        {showTypeDropdown && (
-                          <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                        {showTypeDropdown &&
+                      <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-50">
                             <div className="py-1">
-                              {['Kunde', 'Lieferant', 'Partner', 'Interessent'].map((type) => (
-                                <button
-                                  key={type}
-                                  type="button"
-                                  onClick={() => {
-                                    handleInputChange('organizationType', type);
-                                    setShowTypeDropdown(false);
-                                  }}
-                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                >
+                              {['Kunde', 'Lieferant', 'Partner', 'Interessent'].map((type) =>
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => {
+                              handleInputChange('organizationType', type);
+                              setShowTypeDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+
                                   {type}
                                 </button>
-                              ))}
+                          )}
                               <hr className="my-1" />
                               <button
-                                type="button"
-                                onClick={() => {
-                                  toast.info('Neuen Kontakt-Typen erstellen - Feature wird implementiert');
-                                  setShowTypeDropdown(false);
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-[#14ad9f] hover:bg-gray-50 transition-colors"
-                              >
+                            type="button"
+                            onClick={() => {
+                              toast.info('Neuen Kontakt-Typen erstellen - Feature wird implementiert');
+                              setShowTypeDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-[#14ad9f] hover:bg-gray-50 transition-colors">
+
                                 Neuen Kontakt-Typen erstellen
                               </button>
                             </div>
                           </div>
-                        )}
+                      }
                       </div>
                     </div>
 
                     <div>
                       <Label htmlFor="position">Position</Label>
                       <Input
-                        id="position"
-                        value={formData.position}
-                        onChange={(e) => handleInputChange('position', e.target.value)}
-                        placeholder="z.B. Geschäftsführer"
-                        className="mt-1"
-                      />
+                      id="position"
+                      value={formData.position}
+                      onChange={(e) => handleInputChange('position', e.target.value)}
+                      placeholder="z.B. Geschäftsführer"
+                      className="mt-1" />
+
                     </div>
 
                     {/* Buchhaltungskonten */}
@@ -762,34 +762,34 @@ export default function CreateCustomerPage() {
                         <div className="relative">
                           <Label htmlFor="debitorNumber" className="text-sm font-medium text-gray-700">
                             Debitoren-Nr.
-                            {formData.organizationType === 'Lieferant' && (
-                              <span className="text-xs text-gray-400 ml-1">(optional)</span>
-                            )}
+                            {formData.organizationType === 'Lieferant' &&
+                          <span className="text-xs text-gray-400 ml-1">(optional)</span>
+                          }
                           </Label>
                           <div className="relative">
                             <Input
-                              id="debitorNumber"
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={formData.debitorNumber}
-                              onChange={(e) => handleInputChange('debitorNumber', e.target.value)}
-                              className="mt-1 pr-8"
-                              disabled={formData.organizationType === 'Lieferant'}
-                            />
+                            id="debitorNumber"
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={formData.debitorNumber}
+                            onChange={(e) => handleInputChange('debitorNumber', e.target.value)}
+                            className="mt-1 pr-8"
+                            disabled={formData.organizationType === 'Lieferant'} />
+
                             <button
-                              type="button"
-                              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 mt-0.5"
-                              onMouseEnter={() => setTooltips(prev => ({ ...prev, debitorInfo: true }))}
-                              onMouseLeave={() => setTooltips(prev => ({ ...prev, debitorInfo: false }))}
-                            >
+                            type="button"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 mt-0.5"
+                            onMouseEnter={() => setTooltips((prev) => ({ ...prev, debitorInfo: true }))}
+                            onMouseLeave={() => setTooltips((prev) => ({ ...prev, debitorInfo: false }))}>
+
                               <InfoIcon className="h-4 w-4" />
                             </button>
-                            {tooltips.debitorInfo && (
-                              <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-xs rounded px-2 py-1 z-10 w-48 shadow-lg">
+                            {tooltips.debitorInfo &&
+                          <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-xs rounded px-2 py-1 z-10 w-48 shadow-lg">
                                 Für ausgehende Rechnungen und Kundenforderungen. Wird bei Kunden und Interessenten verwendet.
                               </div>
-                            )}
+                          }
                           </div>
                         </div>
 
@@ -797,100 +797,100 @@ export default function CreateCustomerPage() {
                         <div className="relative">
                           <Label htmlFor="creditorNumber" className="text-sm font-medium text-gray-700">
                             Kreditoren-Nr.
-                            {formData.organizationType !== 'Lieferant' && (
-                              <span className="text-xs text-gray-400 ml-1">(optional)</span>
-                            )}
+                            {formData.organizationType !== 'Lieferant' &&
+                          <span className="text-xs text-gray-400 ml-1">(optional)</span>
+                          }
                           </Label>
                           <div className="relative">
                             <Input
-                              id="creditorNumber"
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={formData.creditorNumber}
-                              onChange={(e) => handleInputChange('creditorNumber', e.target.value)}
-                              className="mt-1 pr-8"
-                              disabled={formData.organizationType !== 'Lieferant' && formData.organizationType !== 'Partner'}
-                            />
+                            id="creditorNumber"
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={formData.creditorNumber}
+                            onChange={(e) => handleInputChange('creditorNumber', e.target.value)}
+                            className="mt-1 pr-8"
+                            disabled={formData.organizationType !== 'Lieferant' && formData.organizationType !== 'Partner'} />
+
                             <button
-                              type="button"
-                              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 mt-0.5"
-                              onMouseEnter={() => setTooltips(prev => ({ ...prev, creditorInfo: true }))}
-                              onMouseLeave={() => setTooltips(prev => ({ ...prev, creditorInfo: false }))}
-                            >
+                            type="button"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 mt-0.5"
+                            onMouseEnter={() => setTooltips((prev) => ({ ...prev, creditorInfo: true }))}
+                            onMouseLeave={() => setTooltips((prev) => ({ ...prev, creditorInfo: false }))}>
+
                               <InfoIcon className="h-4 w-4" />
                             </button>
-                            {tooltips.creditorInfo && (
-                              <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-xs rounded px-2 py-1 z-10 w-48 shadow-lg">
+                            {tooltips.creditorInfo &&
+                          <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-xs rounded px-2 py-1 z-10 w-48 shadow-lg">
                                 Für eingehende Rechnungen und Verbindlichkeiten. Wird bei Lieferanten verwendet.
                               </div>
-                            )}
+                          }
                           </div>
                         </div>
                       </div>
                     </div>
-                  </>
-                ) : (
-                  <>
+                  </> :
+
+                <>
                     {/* Organisation-spezifische Felder */}
                     <div className="md:col-span-2">
                       <Label htmlFor="companyName">Firmenname / Organisation *</Label>
                       <Input
-                        id="companyName"
-                        value={formData.companyName}
-                        onChange={(e) => handleInputChange('companyName', e.target.value)}
-                        placeholder="z.B. Mustermann GmbH"
-                        className="mt-1"
-                      />
+                      id="companyName"
+                      value={formData.companyName}
+                      onChange={(e) => handleInputChange('companyName', e.target.value)}
+                      placeholder="z.B. Mustermann GmbH"
+                      className="mt-1" />
+
                     </div>
 
                     {/* Kunden-Nr. / Lieferanten-Nr. mit Nummernkreise-Icon */}
                     <div>
                       <Label htmlFor="customerNumber" className="text-sm font-medium text-gray-700">
                         {{
-                          'Kunde': 'Kunden-Nr.',
-                          'Lieferant': 'Lieferanten-Nr.',
-                          'Partner': 'Partner-Nr.', 
-                          'Interessenten': 'Interessenten-Nr.'
-                        }[formData.organizationType] || 'Kontakt-Nr.'} <span className="text-red-500">*</span>
+                        'Kunde': 'Kunden-Nr.',
+                        'Lieferant': 'Lieferanten-Nr.',
+                        'Partner': 'Partner-Nr.',
+                        'Interessenten': 'Interessenten-Nr.'
+                      }[formData.organizationType] || 'Kontakt-Nr.'} <span className="text-red-500">*</span>
                       </Label>
                       <div className="relative mt-1">
                         <Input
-                          id="customerNumber"
-                          value={formData.customerNumber}
-                          onChange={(e) => handleInputChange('customerNumber', e.target.value)}
-                          placeholder="1003"
-                          required
-                          className="pr-10"
-                        />
+                        id="customerNumber"
+                        value={formData.customerNumber}
+                        onChange={(e) => handleInputChange('customerNumber', e.target.value)}
+                        placeholder="1003"
+                        required
+                        className="pr-10" />
+
                         <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              if (!params?.uid || typeof params.uid !== 'string') {
-                                toast.error('Firma-ID nicht verfügbar');
-                                return;
-                              }
-                              
-                              // Lade die entsprechende Nummernkreis basierend auf Typ
-                              const sequenceType = formData.organizationType; // Direkt den Typ verwenden
-                              const sequences = await NumberSequenceService.getNumberSequences(params.uid);
-                              const sequence = sequences.find(seq => seq.type === sequenceType);
-                              
-                              if (sequence) {
-                                setCurrentNumberSequence(sequence);
-                                setShowNumberSequenceModal(true);
-                              } else {
-                                toast.error(`${sequenceType}-Nummernkreis nicht gefunden`);
-                              }
-                            } catch (error) {
-                              console.error('Fehler beim Laden der Nummernkreise:', error);
-                              toast.error('Fehler beim Laden der Nummernkreise');
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            if (!params?.uid || typeof params.uid !== 'string') {
+                              toast.error('Firma-ID nicht verfügbar');
+                              return;
                             }
-                          }}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          title="Nummernkreis-Einstellungen"
-                        >
+
+                            // Lade die entsprechende Nummernkreis basierend auf Typ
+                            const sequenceType = formData.organizationType; // Direkt den Typ verwenden
+                            const sequences = await NumberSequenceService.getNumberSequences(params.uid);
+                            const sequence = sequences.find((seq) => seq.type === sequenceType);
+
+                            if (sequence) {
+                              setCurrentNumberSequence(sequence);
+                              setShowNumberSequenceModal(true);
+                            } else {
+                              toast.error(`${sequenceType}-Nummernkreis nicht gefunden`);
+                            }
+                          } catch (error) {
+                            console.error('Fehler beim Laden der Nummernkreise:', error);
+                            toast.error('Fehler beim Laden der Nummernkreise');
+                          }
+                        }}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        title="Nummernkreis-Einstellungen">
+
                           <Settings className="h-4 w-4" />
                         </button>
                       </div>
@@ -901,43 +901,43 @@ export default function CreateCustomerPage() {
                       <Label className="text-sm font-medium text-gray-700 mb-1 block">Typ</Label>
                       <div className="relative" ref={typeDropdownRef}>
                         <button
-                          type="button"
-                          onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-                          className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                        >
+                        type="button"
+                        onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+                        className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]">
+
                           <span>{formData.organizationType}</span>
                           <ChevronDown className="h-4 w-4 text-gray-400" />
                         </button>
-                        {showTypeDropdown && (
-                          <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                        {showTypeDropdown &&
+                      <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-50">
                             <div className="py-1">
-                              {['Kunde', 'Lieferant', 'Partner', 'Interessent'].map((type) => (
-                                <button
-                                  key={type}
-                                  type="button"
-                                  onClick={() => {
-                                    handleInputChange('organizationType', type);
-                                    setShowTypeDropdown(false);
-                                  }}
-                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                >
+                              {['Kunde', 'Lieferant', 'Partner', 'Interessent'].map((type) =>
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => {
+                              handleInputChange('organizationType', type);
+                              setShowTypeDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+
                                   {type}
                                 </button>
-                              ))}
+                          )}
                               <hr className="my-1" />
                               <button
-                                type="button"
-                                onClick={() => {
-                                  toast.info('Neuen Kontakt-Typen erstellen - Feature wird implementiert');
-                                  setShowTypeDropdown(false);
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-[#14ad9f] hover:bg-gray-50 transition-colors"
-                              >
+                            type="button"
+                            onClick={() => {
+                              toast.info('Neuen Kontakt-Typen erstellen - Feature wird implementiert');
+                              setShowTypeDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-[#14ad9f] hover:bg-gray-50 transition-colors">
+
                                 Neuen Kontakt-Typen erstellen
                               </button>
                             </div>
                           </div>
-                        )}
+                      }
                       </div>
                     </div>
 
@@ -950,34 +950,34 @@ export default function CreateCustomerPage() {
                         <div className="relative">
                           <Label htmlFor="debitorNumber" className="text-sm font-medium text-gray-700">
                             Debitoren-Nr.
-                            {formData.organizationType === 'Lieferant' && (
-                              <span className="text-xs text-gray-400 ml-1">(optional)</span>
-                            )}
+                            {formData.organizationType === 'Lieferant' &&
+                          <span className="text-xs text-gray-400 ml-1">(optional)</span>
+                          }
                           </Label>
                           <div className="relative">
                             <Input
-                              id="debitorNumber"
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={formData.debitorNumber}
-                              onChange={(e) => handleInputChange('debitorNumber', e.target.value)}
-                              className="mt-1 pr-8"
-                              disabled={formData.organizationType === 'Lieferant'}
-                            />
+                            id="debitorNumber"
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={formData.debitorNumber}
+                            onChange={(e) => handleInputChange('debitorNumber', e.target.value)}
+                            className="mt-1 pr-8"
+                            disabled={formData.organizationType === 'Lieferant'} />
+
                             <button
-                              type="button"
-                              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 mt-0.5"
-                              onMouseEnter={() => setTooltips(prev => ({ ...prev, debitorInfo: true }))}
-                              onMouseLeave={() => setTooltips(prev => ({ ...prev, debitorInfo: false }))}
-                            >
+                            type="button"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 mt-0.5"
+                            onMouseEnter={() => setTooltips((prev) => ({ ...prev, debitorInfo: true }))}
+                            onMouseLeave={() => setTooltips((prev) => ({ ...prev, debitorInfo: false }))}>
+
                               <InfoIcon className="h-4 w-4" />
                             </button>
-                            {tooltips.debitorInfo && (
-                              <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-xs rounded px-2 py-1 z-10 w-48 shadow-lg">
+                            {tooltips.debitorInfo &&
+                          <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-xs rounded px-2 py-1 z-10 w-48 shadow-lg">
                                 Für ausgehende Rechnungen und Kundenforderungen. Wird bei Kunden und Interessenten verwendet.
                               </div>
-                            )}
+                          }
                           </div>
                         </div>
 
@@ -985,40 +985,40 @@ export default function CreateCustomerPage() {
                         <div className="relative">
                           <Label htmlFor="creditorNumber" className="text-sm font-medium text-gray-700">
                             Kreditoren-Nr.
-                            {formData.organizationType !== 'Lieferant' && (
-                              <span className="text-xs text-gray-400 ml-1">(optional)</span>
-                            )}
+                            {formData.organizationType !== 'Lieferant' &&
+                          <span className="text-xs text-gray-400 ml-1">(optional)</span>
+                          }
                           </Label>
                           <div className="relative">
                             <Input
-                              id="creditorNumber"
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={formData.creditorNumber}
-                              onChange={(e) => handleInputChange('creditorNumber', e.target.value)}
-                              className="mt-1 pr-8"
-                              disabled={formData.organizationType !== 'Lieferant' && formData.organizationType !== 'Partner'}
-                            />
+                            id="creditorNumber"
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={formData.creditorNumber}
+                            onChange={(e) => handleInputChange('creditorNumber', e.target.value)}
+                            className="mt-1 pr-8"
+                            disabled={formData.organizationType !== 'Lieferant' && formData.organizationType !== 'Partner'} />
+
                             <button
-                              type="button"
-                              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 mt-0.5"
-                              onMouseEnter={() => setTooltips(prev => ({ ...prev, creditorInfo: true }))}
-                              onMouseLeave={() => setTooltips(prev => ({ ...prev, creditorInfo: false }))}
-                            >
+                            type="button"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 mt-0.5"
+                            onMouseEnter={() => setTooltips((prev) => ({ ...prev, creditorInfo: true }))}
+                            onMouseLeave={() => setTooltips((prev) => ({ ...prev, creditorInfo: false }))}>
+
                               <InfoIcon className="h-4 w-4" />
                             </button>
-                            {tooltips.creditorInfo && (
-                              <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-xs rounded px-2 py-1 z-10 w-48 shadow-lg">
+                            {tooltips.creditorInfo &&
+                          <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-xs rounded px-2 py-1 z-10 w-48 shadow-lg">
                                 Für eingehende Rechnungen und Verbindlichkeiten. Wird bei Lieferanten verwendet.
                               </div>
-                            )}
+                          }
                           </div>
                         </div>
                       </div>
                     </div>
                   </>
-                )}
+                }
                 
                 {/* Gemeinsame Felder */}
                 <div>
@@ -1029,8 +1029,8 @@ export default function CreateCustomerPage() {
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     placeholder={customerType === 'person' ? 'max.mustermann@email.de' : 'kontakt@kunde.de'}
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div>
                   <Label htmlFor="phone">Telefon</Label>
@@ -1039,21 +1039,21 @@ export default function CreateCustomerPage() {
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     placeholder="+49 123 456789"
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
-                {customerType === 'organisation' && (
-                  <div className="md:col-span-2">
+                {customerType === 'organisation' &&
+                <div className="md:col-span-2">
                     <Label htmlFor="website">Webseite</Label>
                     <Input
-                      id="website"
-                      value={formData.website}
-                      onChange={(e) => handleInputChange('website', e.target.value)}
-                      placeholder="https://www.kunde.de"
-                      className="mt-1"
-                    />
+                    id="website"
+                    value={formData.website}
+                    onChange={(e) => handleInputChange('website', e.target.value)}
+                    placeholder="https://www.kunde.de"
+                    className="mt-1" />
+
                   </div>
-                )}
+                }
               </div>
             </div>
 
@@ -1068,8 +1068,8 @@ export default function CreateCustomerPage() {
                     value={formData.street}
                     onChange={(e) => handleInputChange('street', e.target.value)}
                     placeholder="Musterstraße 123"
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div>
                   <Label htmlFor="postalCode">PLZ</Label>
@@ -1078,8 +1078,8 @@ export default function CreateCustomerPage() {
                     value={formData.postalCode}
                     onChange={(e) => handleInputChange('postalCode', e.target.value)}
                     placeholder="12345"
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div>
                   <Label htmlFor="city">Ort</Label>
@@ -1088,8 +1088,8 @@ export default function CreateCustomerPage() {
                     value={formData.city}
                     onChange={(e) => handleInputChange('city', e.target.value)}
                     placeholder="Musterstadt"
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div className="md:col-span-2">
                   <Label htmlFor="country">Land</Label>
@@ -1097,8 +1097,8 @@ export default function CreateCustomerPage() {
                     id="country"
                     value={formData.country}
                     onChange={(e) => handleInputChange('country', e.target.value)}
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
               </div>
             </div>
@@ -1114,8 +1114,8 @@ export default function CreateCustomerPage() {
                     value={formData.taxNumber}
                     onChange={(e) => handleInputChange('taxNumber', e.target.value)}
                     placeholder="12/345/67890"
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div>
                   <Label htmlFor="vatId">USt-IdNr.</Label>
@@ -1125,19 +1125,19 @@ export default function CreateCustomerPage() {
                       value={formData.vatId}
                       onChange={(e) => handleInputChange('vatId', e.target.value)}
                       placeholder="DE123456789"
-                      className="rounded-r-none"
-                    />
+                      className="rounded-r-none" />
+
                     <Button
                       type="button"
                       onClick={handleVATValidation}
                       disabled={!formData.vatId || loading}
-                      className="rounded-l-none bg-[#14ad9f] hover:bg-[#129488] text-white"
-                    >
-                      {loading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <CheckCircle className="h-4 w-4" />
-                      )}
+                      className="rounded-l-none bg-[#14ad9f] hover:bg-[#129488] text-white">
+
+                      {loading ?
+                      <Loader2 className="h-4 w-4 animate-spin" /> :
+
+                      <CheckCircle className="h-4 w-4" />
+                      }
                     </Button>
                   </div>
                   <p className="text-sm text-gray-500 mt-1">
@@ -1159,8 +1159,8 @@ export default function CreateCustomerPage() {
                     id="companySize"
                     value={formData.companySize}
                     onChange={(e) => handleInputChange('companySize', e.target.value)}
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                  >
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]">
+
                     <option value="">Nicht angegeben</option>
                     <option value="Kleinstunternehmen">Kleinstunternehmen (1-9 MA)</option>
                     <option value="Kleinunternehmen">Kleinunternehmen (10-49 MA)</option>
@@ -1175,8 +1175,8 @@ export default function CreateCustomerPage() {
                     value={formData.industry}
                     onChange={(e) => handleInputChange('industry', e.target.value)}
                     placeholder="z.B. Maschinenbau"
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div className="md:col-span-2">
                   <Label htmlFor="notes">Notizen</Label>
@@ -1186,8 +1186,8 @@ export default function CreateCustomerPage() {
                     onChange={(e) => handleInputChange('notes', e.target.value)}
                     placeholder="Interne Notizen zum Kunden..."
                     rows={3}
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
               </div>
 
@@ -1203,54 +1203,54 @@ export default function CreateCustomerPage() {
                       onChange={(e) => setNewTag(e.target.value)}
                       onKeyPress={handleTagKeyPress}
                       placeholder="Tags hinzufügen..."
-                      className="w-full"
-                    />
+                      className="w-full" />
+
                   </div>
                   <Button
                     type="button"
                     onClick={addTag}
                     disabled={!newTag.trim()}
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4"
-                  >
+                    className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4">
+
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
 
                 {/* Tags Display */}
-                {formData.tags.length === 0 ? (
-                  <div className="text-center py-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
+                {formData.tags.length === 0 ?
+                <div className="text-center py-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
                     <Tag className="h-6 w-6 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-500">Keine Tags hinzugefügt</p>
                     <p className="text-xs text-gray-400">Fügen Sie Tags hinzu, um Kunden zu kategorisieren</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {formData.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-[#14ad9f] text-white text-sm rounded-full"
-                      >
+                  </div> :
+
+                <div className="flex flex-wrap gap-2">
+                    {formData.tags.map((tag, index) =>
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-[#14ad9f] text-white text-sm rounded-full">
+
                         <Tag className="h-3 w-3" />
                         {tag}
                         <button
-                          type="button"
-                          onClick={() => removeTag(tag)}
-                          className="ml-1 hover:bg-[#129488] rounded-full p-0.5 transition-colors"
-                        >
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="ml-1 hover:bg-[#129488] rounded-full p-0.5 transition-colors">
+
                           <X className="h-3 w-3" />
                         </button>
                       </span>
-                    ))}
+                  )}
                   </div>
-                )}
+                }
 
                 <p className="text-xs text-gray-500 mt-2">
                   Tags helfen dabei, Kunden zu kategorisieren und zu filtern. Beispiele: VIP-Kunde, Großkunde, Neukunde
                 </p>
               </div>
             </div>
-          </div>
-        );
+          </div>);
+
 
       case 'contacts':
         return (
@@ -1260,52 +1260,52 @@ export default function CreateCustomerPage() {
                 <h3 className="text-lg font-semibold text-gray-900">Kontaktpersonen</h3>
                 <Button
                   onClick={addContact}
-                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                >
+                  className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+
                   <UserPlus className="h-4 w-4 mr-2" />
                   Person hinzufügen
                 </Button>
               </div>
 
-              {contacts.length === 0 ? (
-                <div className="text-center py-8">
+              {contacts.length === 0 ?
+              <div className="text-center py-8">
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                   <h3 className="text-lg font-medium text-gray-900 mb-1">Keine Kontaktpersonen</h3>
                   <p className="text-gray-500">Fügen Sie eine Kontaktperson hinzu, um zu beginnen.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {contacts.map((contact) => (
-                    <div key={contact.id} className="border border-gray-200 rounded-lg p-4">
+                </div> :
+
+              <div className="space-y-4">
+                  {contacts.map((contact) =>
+                <div key={contact.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <User className="h-5 w-5 text-gray-400" />
                           <span className="font-medium text-gray-900">
                             Kontaktperson {contacts.indexOf(contact) + 1}
                           </span>
-                          {contact.isPrimary && (
-                            <span className="bg-[#14ad9f] text-white px-2 py-1 rounded-full text-xs font-medium">
+                          {contact.isPrimary &&
+                      <span className="bg-[#14ad9f] text-white px-2 py-1 rounded-full text-xs font-medium">
                               Hauptkontakt
                             </span>
-                          )}
+                      }
                         </div>
                         <div className="flex items-center gap-2">
-                          {!contact.isPrimary && (
-                            <Button
-                              onClick={() => setPrimaryContact(contact.id)}
-                              variant="outline"
-                              size="sm"
-                            >
+                          {!contact.isPrimary &&
+                      <Button
+                        onClick={() => setPrimaryContact(contact.id)}
+                        variant="outline"
+                        size="sm">
+
                               <Star className="h-4 w-4 mr-1" />
                               Als Hauptkontakt
                             </Button>
-                          )}
+                      }
                           <Button
-                            onClick={() => removeContact(contact.id)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700"
-                          >
+                        onClick={() => removeContact(contact.id)}
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700">
+
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -1315,66 +1315,66 @@ export default function CreateCustomerPage() {
                         <div>
                           <Label>Vorname</Label>
                           <Input
-                            value={contact.firstName}
-                            onChange={(e) => updateContact(contact.id, 'firstName', e.target.value)}
-                            placeholder="Max"
-                            className="mt-1"
-                          />
+                        value={contact.firstName}
+                        onChange={(e) => updateContact(contact.id, 'firstName', e.target.value)}
+                        placeholder="Max"
+                        className="mt-1" />
+
                         </div>
                         <div>
                           <Label>Nachname</Label>
                           <Input
-                            value={contact.lastName}
-                            onChange={(e) => updateContact(contact.id, 'lastName', e.target.value)}
-                            placeholder="Mustermann"
-                            className="mt-1"
-                          />
+                        value={contact.lastName}
+                        onChange={(e) => updateContact(contact.id, 'lastName', e.target.value)}
+                        placeholder="Mustermann"
+                        className="mt-1" />
+
                         </div>
                         <div>
                           <Label>E-Mail</Label>
                           <Input
-                            type="email"
-                            value={contact.email}
-                            onChange={(e) => updateContact(contact.id, 'email', e.target.value)}
-                            placeholder="max.mustermann@kunde.de"
-                            className="mt-1"
-                          />
+                        type="email"
+                        value={contact.email}
+                        onChange={(e) => updateContact(contact.id, 'email', e.target.value)}
+                        placeholder="max.mustermann@kunde.de"
+                        className="mt-1" />
+
                         </div>
                         <div>
                           <Label>Telefon</Label>
                           <Input
-                            value={contact.phone || ''}
-                            onChange={(e) => updateContact(contact.id, 'phone', e.target.value)}
-                            placeholder="+49 123 456789"
-                            className="mt-1"
-                          />
+                        value={contact.phone || ''}
+                        onChange={(e) => updateContact(contact.id, 'phone', e.target.value)}
+                        placeholder="+49 123 456789"
+                        className="mt-1" />
+
                         </div>
                         <div>
                           <Label>Position</Label>
                           <Input
-                            value={contact.position || ''}
-                            onChange={(e) => updateContact(contact.id, 'position', e.target.value)}
-                            placeholder="Geschäftsführer"
-                            className="mt-1"
-                          />
+                        value={contact.position || ''}
+                        onChange={(e) => updateContact(contact.id, 'position', e.target.value)}
+                        placeholder="Geschäftsführer"
+                        className="mt-1" />
+
                         </div>
                         <div>
                           <Label>Abteilung</Label>
                           <Input
-                            value={contact.department || ''}
-                            onChange={(e) => updateContact(contact.id, 'department', e.target.value)}
-                            placeholder="Einkauf"
-                            className="mt-1"
-                          />
+                        value={contact.department || ''}
+                        onChange={(e) => updateContact(contact.id, 'department', e.target.value)}
+                        placeholder="Einkauf"
+                        className="mt-1" />
+
                         </div>
                       </div>
                     </div>
-                  ))}
+                )}
                 </div>
-              )}
+              }
             </div>
-          </div>
-        );
+          </div>);
+
 
       case 'payment':
         return (
@@ -1389,8 +1389,8 @@ export default function CreateCustomerPage() {
                     id="paymentTerms"
                     value={formData.paymentTerms}
                     onChange={(e) => handleInputChange('paymentTerms', e.target.value)}
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                  >
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]">
+
                     <option value="Sofort">Sofort</option>
                     <option value="7 Tage netto">7 Tage netto</option>
                     <option value="14 Tage netto">14 Tage netto</option>
@@ -1409,8 +1409,8 @@ export default function CreateCustomerPage() {
                     step="0.01"
                     value={formData.discount}
                     onChange={(e) => handleInputChange('discount', parseFloat(e.target.value) || 0)}
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div>
                   <Label htmlFor="creditLimit">Kreditlimit (€)</Label>
@@ -1421,8 +1421,8 @@ export default function CreateCustomerPage() {
                     step="0.01"
                     value={formData.creditLimit}
                     onChange={(e) => handleInputChange('creditLimit', parseFloat(e.target.value) || 0)}
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div>
                   <Label htmlFor="currency">Währung</Label>
@@ -1430,8 +1430,8 @@ export default function CreateCustomerPage() {
                     id="currency"
                     value={formData.currency}
                     onChange={(e) => handleInputChange('currency', e.target.value)}
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                  >
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]">
+
                     <option value="EUR">EUR - Euro</option>
                     <option value="USD">USD - US-Dollar</option>
                     <option value="GBP">GBP - Britisches Pfund</option>
@@ -1610,8 +1610,8 @@ export default function CreateCustomerPage() {
                     value={formData.bankName}
                     onChange={(e) => handleInputChange('bankName', e.target.value)}
                     placeholder="z.B. Deutsche Bank"
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div>
                   <Label htmlFor="accountHolder">Kontoinhaber</Label>
@@ -1620,8 +1620,8 @@ export default function CreateCustomerPage() {
                     value={formData.accountHolder}
                     onChange={(e) => handleInputChange('accountHolder', e.target.value)}
                     placeholder="Max Mustermann"
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div>
                   <Label htmlFor="iban">IBAN</Label>
@@ -1630,8 +1630,8 @@ export default function CreateCustomerPage() {
                     value={formData.iban}
                     onChange={(e) => handleInputChange('iban', e.target.value)}
                     placeholder="DE89 3704 0044 0532 0130 00"
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div>
                   <Label htmlFor="bic">BIC/SWIFT</Label>
@@ -1640,8 +1640,8 @@ export default function CreateCustomerPage() {
                     value={formData.bic}
                     onChange={(e) => handleInputChange('bic', e.target.value)}
                     placeholder="COBADEFFXXX"
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
               </div>
             </div>
@@ -1656,8 +1656,8 @@ export default function CreateCustomerPage() {
                     id="preferredPaymentMethod"
                     value={formData.preferredPaymentMethod}
                     onChange={(e) => handleInputChange('preferredPaymentMethod', e.target.value)}
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                  >
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]">
+
                     <option value="Überweisung">Überweisung</option>
                     <option value="Lastschrift">Lastschrift</option>
                     <option value="Kreditkarte">Kreditkarte</option>
@@ -1675,8 +1675,8 @@ export default function CreateCustomerPage() {
                     max="365"
                     value={formData.defaultInvoiceDueDate}
                     onChange={(e) => handleInputChange('defaultInvoiceDueDate', parseInt(e.target.value) || 30)}
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div>
                   <Label htmlFor="earlyPaymentDiscount">Skonto (%)</Label>
@@ -1688,8 +1688,8 @@ export default function CreateCustomerPage() {
                     step="0.01"
                     value={formData.earlyPaymentDiscount}
                     onChange={(e) => handleInputChange('earlyPaymentDiscount', parseFloat(e.target.value) || 0)}
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div>
                   <Label htmlFor="earlyPaymentDays">Skonto-Tage</Label>
@@ -1700,8 +1700,8 @@ export default function CreateCustomerPage() {
                     max="90"
                     value={formData.earlyPaymentDays}
                     onChange={(e) => handleInputChange('earlyPaymentDays', parseInt(e.target.value) || 14)}
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
               </div>
             </div>
@@ -1719,8 +1719,8 @@ export default function CreateCustomerPage() {
                     step="0.01"
                     value={formData.reminderFee}
                     onChange={(e) => handleInputChange('reminderFee', parseFloat(e.target.value) || 0)}
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div>
                   <Label htmlFor="lateFee">Verzugszinsen (% p.a.)</Label>
@@ -1732,8 +1732,8 @@ export default function CreateCustomerPage() {
                     step="0.01"
                     value={formData.lateFee}
                     onChange={(e) => handleInputChange('lateFee', parseFloat(e.target.value) || 0)}
-                    className="mt-1"
-                  />
+                    className="mt-1" />
+
                 </div>
                 <div className="md:col-span-2">
                   <div className="flex items-center gap-3">
@@ -1742,8 +1742,8 @@ export default function CreateCustomerPage() {
                       type="checkbox"
                       checked={formData.automaticReminders}
                       onChange={(e) => handleInputChange('automaticReminders', e.target.checked)}
-                      className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded"
-                    />
+                      className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded" />
+
                     <Label htmlFor="automaticReminders" className="text-sm font-medium text-gray-700">
                       Automatische Zahlungserinnerungen aktivieren
                     </Label>
@@ -1771,19 +1771,19 @@ export default function CreateCustomerPage() {
                           type="checkbox"
                           checked={formData.eInvoiceEnabled}
                           onChange={(e) => handleInputChange('eInvoiceEnabled', e.target.checked)}
-                          className="sr-only"
-                        />
+                          className="sr-only" />
+
                         <label
                           htmlFor="eInvoiceEnabled"
                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2 cursor-pointer ${
-                            formData.eInvoiceEnabled ? 'bg-[#14ad9f]' : 'bg-gray-300'
-                          }`}
-                        >
+                          formData.eInvoiceEnabled ? 'bg-[#14ad9f]' : 'bg-gray-300'}`
+                          }>
+
                           <span
                             className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              formData.eInvoiceEnabled ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
+                            formData.eInvoiceEnabled ? 'translate-x-6' : 'translate-x-1'}`
+                            } />
+
                         </label>
                       </div>
                       <label htmlFor="eInvoiceEnabled" className="text-sm font-medium text-blue-900 cursor-pointer">
@@ -1791,16 +1791,16 @@ export default function CreateCustomerPage() {
                       </label>
                     </div>
                     <div className="relative">
-                      <HelpCircle 
-                        className="h-4 w-4 text-blue-600 cursor-help" 
+                      <HelpCircle
+                        className="h-4 w-4 text-blue-600 cursor-help"
                         onMouseEnter={() => setShowEInvoiceTooltip(true)}
-                        onMouseLeave={() => setShowEInvoiceTooltip(false)}
-                      />
-                      {showEInvoiceTooltip && (
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-50">
+                        onMouseLeave={() => setShowEInvoiceTooltip(false)} />
+
+                      {showEInvoiceTooltip &&
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-50">
                           E-Rechnungen sind ab 2025 für B2B-Geschäfte in Deutschland verpflichtend (§14 UStG)
                         </div>
-                      )}
+                      }
                     </div>
                   </div>
                   <div className="text-xs text-blue-700 font-medium">
@@ -1809,69 +1809,69 @@ export default function CreateCustomerPage() {
                 </div>
               </div>
 
-              {formData.eInvoiceEnabled && (
-                <div className="space-y-4">
+              {formData.eInvoiceEnabled &&
+              <div className="space-y-4">
                   {/* Referenz-Feld (umschaltbar) */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <Label 
-                        htmlFor={referenceFieldType === 'customerReference' ? 'customerReference' : 'leitwegId'} 
-                        className="text-sm font-medium text-gray-700"
-                      >
+                      <Label
+                      htmlFor={referenceFieldType === 'customerReference' ? 'customerReference' : 'leitwegId'}
+                      className="text-sm font-medium text-gray-700">
+
                         {referenceFieldType === 'customerReference' ? 'Kundenreferenz' : 'Leitweg-ID'}
                         {referenceFieldType === 'customerReference' && <span className="text-red-500 ml-1">*</span>}
                       </Label>
                       <button
-                        type="button"
-                        onClick={() => {
-                          setReferenceFieldType(referenceFieldType === 'customerReference' ? 'leitwegId' : 'customerReference');
-                        }}
-                        className="text-sm text-[#14ad9f] hover:text-[#129488] font-medium"
-                      >
+                      type="button"
+                      onClick={() => {
+                        setReferenceFieldType(referenceFieldType === 'customerReference' ? 'leitwegId' : 'customerReference');
+                      }}
+                      className="text-sm text-[#14ad9f] hover:text-[#129488] font-medium">
+
                         {referenceFieldType === 'customerReference' ? 'Leitweg-ID' : 'Kundenreferenz'}
                       </button>
                     </div>
                     <div className="relative">
                       <Input
-                        id={referenceFieldType === 'customerReference' ? 'customerReference' : 'leitwegId'}
-                        value={referenceFieldType === 'customerReference' ? formData.customerReference : formData.leitwegId}
-                        onChange={(e) => handleInputChange(
-                          referenceFieldType === 'customerReference' ? 'customerReference' : 'leitwegId', 
-                          e.target.value
-                        )}
-                        placeholder={
-                          referenceFieldType === 'customerReference' 
-                            ? "z.B. Auftragsnummer, ..." 
-                            : "z.B. 991-12345-12"
-                        }
-                        className="pr-10"
-                        required={referenceFieldType === 'customerReference'}
-                      />
+                      id={referenceFieldType === 'customerReference' ? 'customerReference' : 'leitwegId'}
+                      value={referenceFieldType === 'customerReference' ? formData.customerReference : formData.leitwegId}
+                      onChange={(e) => handleInputChange(
+                        referenceFieldType === 'customerReference' ? 'customerReference' : 'leitwegId',
+                        e.target.value
+                      )}
+                      placeholder={
+                      referenceFieldType === 'customerReference' ?
+                      "z.B. Auftragsnummer, ..." :
+                      "z.B. 991-12345-12"
+                      }
+                      className="pr-10"
+                      required={referenceFieldType === 'customerReference'} />
+
                       <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                         <div className="relative">
-                          <Info 
-                            className="h-4 w-4 text-gray-400 cursor-help" 
-                            onMouseEnter={() => setShowReferenceTooltip(true)}
-                            onMouseLeave={() => setShowReferenceTooltip(false)}
-                          />
-                          {showReferenceTooltip && (
-                            <div className="absolute right-0 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded shadow-lg z-50">
-                              {referenceFieldType === 'customerReference' ? (
-                                <>
-                                  <strong>Kundenreferenz:</strong><br/>
+                          <Info
+                          className="h-4 w-4 text-gray-400 cursor-help"
+                          onMouseEnter={() => setShowReferenceTooltip(true)}
+                          onMouseLeave={() => setShowReferenceTooltip(false)} />
+
+                          {showReferenceTooltip &&
+                        <div className="absolute right-0 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded shadow-lg z-50">
+                              {referenceFieldType === 'customerReference' ?
+                          <>
+                                  <strong>Kundenreferenz:</strong><br />
                                   Sollte dir keine Referenz vorliegen, gib einfach 00 an. Ist der Empfänger eine Behörde, nutze die Leitweg-ID.
-                                </>
-                              ) : (
-                                <>
-                                  <strong>Leitweg-ID:</strong><br/>
-                                  • Nur für öffentliche Auftraggeber erforderlich<br/>
-                                  • Format: 991-XXXXX-XX<br/>
-                                  • Eindeutige Adressierung in der Verwaltung<br/>
+                                </> :
+
+                          <>
+                                  <strong>Leitweg-ID:</strong><br />
+                                  • Nur für öffentliche Auftraggeber erforderlich<br />
+                                  • Format: 991-XXXXX-XX<br />
+                                  • Eindeutige Adressierung in der Verwaltung<br />
                                   • Wird vom Auftraggeber bereitgestellt
                                 </>
-                              )}
+                          }
                             </div>
-                          )}
+                        }
                         </div>
                       </div>
                     </div>
@@ -1914,7 +1914,7 @@ export default function CreateCustomerPage() {
                     </div>
                   </div>
                 </div>
-              )}
+              }
             </div>
 
             {/* Zusätzliche Informationen */}
@@ -1924,9 +1924,9 @@ export default function CreateCustomerPage() {
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
                   <h4 className="text-sm font-medium text-blue-900 mb-2">Skonto-Regelung</h4>
                   <p className="text-sm text-blue-800">
-                    {formData.earlyPaymentDiscount > 0 
-                      ? `Bei Zahlung innerhalb von ${formData.earlyPaymentDays} Tagen gewähren wir ${formData.earlyPaymentDiscount}% Skonto.`
-                      : 'Kein Skonto konfiguriert.'
+                    {formData.earlyPaymentDiscount > 0 ?
+                    `Bei Zahlung innerhalb von ${formData.earlyPaymentDays} Tagen gewähren wir ${formData.earlyPaymentDiscount}% Skonto.` :
+                    'Kein Skonto konfiguriert.'
                     }
                   </p>
                 </div>
@@ -1941,8 +1941,8 @@ export default function CreateCustomerPage() {
                 </div>
               </div>
             </div>
-          </div>
-        );
+          </div>);
+
 
       default:
         return (
@@ -1952,8 +1952,8 @@ export default function CreateCustomerPage() {
               <h3 className="text-lg font-medium text-gray-900 mb-1">Bitte wählen Sie einen Tab</h3>
               <p className="text-gray-500">Verwenden Sie die Navigation oben, um zwischen den Bereichen zu wechseln.</p>
             </div>
-          </div>
-        );
+          </div>);
+
     }
   };
 
@@ -1968,8 +1968,8 @@ export default function CreateCustomerPage() {
               <Button
                 onClick={handleCancel}
                 variant="ghost"
-                className="p-2"
-              >
+                className="p-2">
+
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
@@ -1983,49 +1983,49 @@ export default function CreateCustomerPage() {
               <Button
                 onClick={() => setShowActionsMenu(!showActionsMenu)}
                 variant="outline"
-                className="flex items-center gap-2"
-              >
+                className="flex items-center gap-2">
+
                 <MoreHorizontal className="h-4 w-4" />
                 Aktionen
               </Button>
               {/* Dropdown Menu */}
-              {showActionsMenu && (
-                <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+              {showActionsMenu &&
+              <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
                   <div className="py-1">
                     <button
-                      onClick={() => {
-                        handleSave();
-                        setShowActionsMenu(false);
-                      }}
-                      disabled={loading}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                    >
-                      {loading ? (
-                        <>
+                    onClick={() => {
+                      handleSave();
+                      setShowActionsMenu(false);
+                    }}
+                    disabled={loading}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+
+                      {loading ?
+                    <>
                           <Loader2 className="h-4 w-4 mr-3 animate-spin" />
                           Speichere...
-                        </>
-                      ) : (
-                        <>
+                        </> :
+
+                    <>
                           <Save className="h-4 w-4 mr-3" />
                           Speichern
                         </>
-                      )}
+                    }
                     </button>
                     <button
-                      onClick={() => {
-                        handleCancel();
-                        setShowActionsMenu(false);
-                      }}
-                      disabled={loading}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                    >
+                    onClick={() => {
+                      handleCancel();
+                      setShowActionsMenu(false);
+                    }}
+                    disabled={loading}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+
                       <X className="h-4 w-4 mr-3" />
                       Abbrechen
                     </button>
                   </div>
                 </div>
-              )}
+              }
             </div>
           </div>
         </div>
@@ -2042,24 +2042,24 @@ export default function CreateCustomerPage() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-3 py-2 text-sm font-medium whitespace-nowrap rounded-md transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-[#14ad9f] text-white'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                  }`}
-                >
+                  activeTab === tab.id ?
+                  'bg-[#14ad9f] text-white' :
+                  'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`
+                  }>
+
                   <Icon className="h-4 w-4" />
                   <span>{tab.label}</span>
-                  {tab.count !== null && tab.count > 0 && (
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${
-                      activeTab === tab.id 
-                        ? 'bg-white text-[#14ad9f]' 
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
+                  {tab.count !== null && tab.count > 0 &&
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${
+                  activeTab === tab.id ?
+                  'bg-white text-[#14ad9f]' :
+                  'bg-gray-100 text-gray-600'}`
+                  }>
                       {tab.count}
                     </span>
-                  )}
-                </button>
-              );
+                  }
+                </button>);
+
             })}
           </nav>
         </div>
@@ -2077,7 +2077,7 @@ export default function CreateCustomerPage() {
           setShowNumberSequenceModal(false);
           setCurrentNumberSequence(null);
         }}
-        onSave={async (updates: Partial<NumberSequence> & { id: string }) => {
+        onSave={async (updates: Partial<NumberSequence> & {id: string;}) => {
           try {
             // Aktualisiere die Nummernkreis-Einstellungen
             await NumberSequenceService.updateNumberSequence(
@@ -2095,7 +2095,7 @@ export default function CreateCustomerPage() {
               updates.format!
             );
 
-            setFormData(prev => ({
+            setFormData((prev) => ({
               ...prev,
               customerNumber: newCustomerNumber
             }));
@@ -2106,8 +2106,8 @@ export default function CreateCustomerPage() {
             toast.error('Fehler beim Aktualisieren der Einstellungen');
           }
         }}
-        sequence={currentNumberSequence}
-      />
-    </div>
-  );
+        sequence={currentNumberSequence} />
+
+    </div>);
+
 }

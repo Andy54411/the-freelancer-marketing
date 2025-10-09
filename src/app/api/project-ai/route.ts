@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 import { categories } from '@/lib/categoriesData';
 
-const MODEL_NAME = 'gemini-1.5-flash-latest';
+const MODEL_NAME = 'gemini-2.0-flash-exp'; // ✅ Aktuelles, stabiles Modell
 
 // Umfassende Kategorie-Datenbank für detaillierte KI-Fragen
 const CATEGORY_QUESTION_DATABASE = {
@@ -242,7 +242,7 @@ export async function POST(request: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'models/gemini-2.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'models/gemini-2.0-flash-exp' }); // ✅ Aktuelles, stabiles Modell
 
     const generationConfig: GenerationConfig = {
       temperature: 0.7,

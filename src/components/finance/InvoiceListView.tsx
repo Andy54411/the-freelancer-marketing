@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
+import { TransactionLinkService } from '@/services/transaction-link.service';
 import StornoInvoice from './StornoInvoice';
 import { EmailDialog } from './EmailDialog';
 
@@ -70,6 +71,7 @@ export function InvoiceListView({
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [selectedInvoiceForEmail, setSelectedInvoiceForEmail] = useState<InvoiceData | null>(null);
+  const [linkedInvoices, setLinkedInvoices] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedContact, setSelectedContact] = useState('');
   const [minAmount, setMinAmount] = useState('');
@@ -80,6 +82,25 @@ export function InvoiceListView({
   const [sortField, setSortField] = useState<'dueDate' | 'number' | 'date' | 'amount'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const router = useRouter();
+
+  // Lade verknüpfte Rechnungen beim Initialisieren
+  useEffect(() => {
+    const loadLinkedInvoices = async () => {
+      if (!companyId) return;
+
+      try {
+        const result = await TransactionLinkService.getLinks(companyId);
+        if (result.success && result.links) {
+          const linkedIds = new Set(result.links.map(link => link.documentId));
+          setLinkedInvoices(linkedIds);
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der verknüpften Rechnungen:', error);
+      }
+    };
+
+    loadLinkedInvoices();
+  }, [companyId]);
 
   const handleSort = (field: 'dueDate' | 'number' | 'date' | 'amount') => {
     if (sortField === field) {
@@ -554,65 +575,73 @@ export function InvoiceListView({
                         {invoice.status === 'paid' ? '0,00 €' : formatCurrency(invoice.total)}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          {['sent', 'finalized'].includes(invoice.status) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Als bezahlt markieren"
-                              onClick={() => handleMarkAsPaid(invoice.id)}
-                            >
-                              <DollarSign className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {['sent', 'paid', 'finalized'].includes(invoice.status) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Rechnung herunterladen"
-                              onClick={() => handleDownloadPdf(invoice.id)}
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
+                        {!linkedInvoices.has(invoice.id) ? (
+                          <div className="flex items-center gap-1">
+                            {['sent', 'finalized'].includes(invoice.status) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Als bezahlt markieren"
+                                onClick={() => handleMarkAsPaid(invoice.id)}
+                              >
+                                <DollarSign className="h-4 w-4" />
                               </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleViewInvoice(invoice.id)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                Anzeigen
-                              </DropdownMenuItem>
-                              {invoice.status === 'draft' && (
-                                <DropdownMenuItem onClick={() => handleEditInvoice(invoice.id)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Bearbeiten
+                            )}
+                            {['sent', 'paid', 'finalized'].includes(invoice.status) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Rechnung herunterladen"
+                                onClick={() => handleDownloadPdf(invoice.id)}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleViewInvoice(invoice.id)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Anzeigen
                                 </DropdownMenuItem>
-                              )}
-                              {['sent', 'paid'].includes(invoice.status) && !invoice.isStorno && (
-                                <DropdownMenuItem onClick={() => handleCreateStorno(invoice.id)}>
-                                  <X className="h-4 w-4 mr-2" />
-                                  Stornieren
-                                </DropdownMenuItem>
-                              )}
-                              {['sent', 'paid', 'finalized'].includes(invoice.status) && (
-                                <DropdownMenuItem onClick={() => handleSendEmail(invoice.id)}>
-                                  <Mail className="h-4 w-4 mr-2" />
-                                  E-Mail senden
-                                </DropdownMenuItem>
-                              )}
-                              {invoice.status === 'draft' && (
-                                <DropdownMenuItem className="text-red-600">
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Löschen
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                                {invoice.status === 'draft' && (
+                                  <DropdownMenuItem onClick={() => handleEditInvoice(invoice.id)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Bearbeiten
+                                  </DropdownMenuItem>
+                                )}
+                                {['sent', 'paid'].includes(invoice.status) && !invoice.isStorno && (
+                                  <DropdownMenuItem onClick={() => handleCreateStorno(invoice.id)}>
+                                    <X className="h-4 w-4 mr-2" />
+                                    Stornieren
+                                  </DropdownMenuItem>
+                                )}
+                                {['sent', 'paid', 'finalized'].includes(invoice.status) && (
+                                  <DropdownMenuItem onClick={() => handleSendEmail(invoice.id)}>
+                                    <Mail className="h-4 w-4 mr-2" />
+                                    E-Mail senden
+                                  </DropdownMenuItem>
+                                )}
+                                {invoice.status === 'draft' && (
+                                  <DropdownMenuItem className="text-red-600">
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Löschen
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center">
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                              Verknüpft
+                            </span>
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { CheckCircle, FileText, Shield, AlertCircle } from 'lucide-react';
+import { RequiredFieldLabel, RequiredFieldIndicator } from '@/components/onboarding/RequiredFieldLabel';
 
 // Harmonisierte Step5Data Interface
 interface Step5Data {
@@ -87,6 +88,21 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
   const completionPercentage = Math.round(getOverallCompletion());
   const canComplete = missingFields.length === 0 && step5Data.documentsCompleted;
 
+  // Validierungsstatus prüfen
+  const isValidForNext = () => {
+    return canComplete;
+  };
+
+  const getValidationMessage = () => {
+    if (!step5Data.documentsCompleted) {
+      return "Bestätigung dass alle Dokumente vollständig sind ist erforderlich";
+    }
+    if (missingFields.length > 0) {
+      return `Fehlende Felder in vorherigen Schritten: ${missingFields.join(', ')}`;
+    }
+    return null;
+  };
+
   // Debugging für Completion-Berechnung
 
   const handleSubmit = async () => {
@@ -137,16 +153,19 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
         </p>
       </div>
 
+      {/* Required Fields Indicator */}
+      <RequiredFieldIndicator />
+
       <div className="space-y-6">
         {/* Submit-Fehleranzeige */}
         {submitError && (
-          <Card className="border-red-200 bg-red-50">
+          <Card className="border-gray-200 bg-gray-50">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-red-600" />
+                <AlertCircle className="h-5 w-5 text-[#14ad9f]" />
                 <div>
-                  <h4 className="font-medium text-red-900">Fehler beim Abschließen</h4>
-                  <p className="text-sm text-red-700">{submitError}</p>
+                  <h4 className="font-medium text-gray-900">Fehler beim Abschließen</h4>
+                  <p className="text-sm text-gray-700">{submitError}</p>
                 </div>
               </div>
             </CardContent>
@@ -155,13 +174,13 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
 
         {/* Offline-Warnung */}
         {isOffline && (
-          <Card className="border-orange-200 bg-orange-50">
+          <Card className="border-gray-200 bg-gray-50">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
+                <AlertCircle className="h-5 w-5 text-[#14ad9f]" />
                 <div>
-                  <h4 className="font-medium text-orange-900">Keine Internetverbindung</h4>
-                  <p className="text-sm text-orange-700">
+                  <h4 className="font-medium text-gray-900">Keine Internetverbindung</h4>
+                  <p className="text-sm text-gray-700">
                     Bitte stellen Sie eine Internetverbindung her, um das Onboarding abzuschließen.
                   </p>
                 </div>
@@ -192,20 +211,20 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
               </div>
 
               {completionPercentage >= 100 ? (
-                <div className="flex items-center gap-2 text-green-600">
+                <div className="flex items-center gap-2 text-[#14ad9f]">
                   <CheckCircle className="h-4 w-4" />
                   <span className="text-sm font-medium">Alle Schritte abgeschlossen!</span>
                 </div>
               ) : (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="h-4 w-4 text-orange-600" />
-                    <span className="text-sm font-medium text-orange-600">
+                    <AlertCircle className="h-4 w-4 text-[#14ad9f]" />
+                    <span className="text-sm font-medium text-gray-700">
                       Bitte vervollständigen Sie alle vorherigen Schritte, bevor Sie fortfahren.
                     </span>
                   </div>
                   {missingFields.length > 0 && (
-                    <div className="text-sm text-orange-700">
+                    <div className="text-sm text-gray-600">
                       <span className="font-medium">Fehlende Felder: </span>
                       {missingFields.join(', ')}
                     </div>
@@ -355,12 +374,12 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <FileText className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <FileText className="h-5 w-5 text-[#14ad9f] flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-medium text-blue-900 mb-1">Dokumentenvollständigkeit</h4>
-                  <p className="text-sm text-blue-700 mb-3">
+                  <h4 className="font-medium text-gray-900 mb-1">Dokumentenvollständigkeit</h4>
+                  <p className="text-sm text-gray-700 mb-3">
                     Bitte bestätigen Sie, dass alle Ihre Angaben vollständig und korrekt sind. Nach
                     dem Abschluss wird Ihr Profil zur Überprüfung eingereicht.
                   </p>
@@ -371,12 +390,13 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
                       onCheckedChange={checked => updateField('documentsCompleted', checked)}
                     />
 
-                    <Label
-                      htmlFor="documentsCompleted"
-                      className="text-sm font-medium text-blue-900"
+                    <RequiredFieldLabel 
+                      required={true}
+                      tooltip="Pflicht: Bestätigung dass alle Informationen korrekt und vollständig sind"
+                      className="text-sm font-medium text-gray-900"
                     >
-                      Ich bestätige, dass alle Dokumente und Angaben vollständig sind *
-                    </Label>
+                      Ich bestätige, dass alle Dokumente und Angaben vollständig sind
+                    </RequiredFieldLabel>
                   </div>
                 </div>
               </div>
@@ -433,6 +453,17 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Validation Message */}
+      {!isValidForNext() && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-gray-700">
+            <AlertCircle className="h-5 w-5 text-[#14ad9f]" />
+            <span className="font-medium">Onboarding kann nicht abgeschlossen werden:</span>
+          </div>
+          <p className="mt-1 text-sm text-gray-600">{getValidationMessage()}</p>
+        </div>
+      )}
 
       {/* Navigation */}
       <div className="flex justify-between pt-6">

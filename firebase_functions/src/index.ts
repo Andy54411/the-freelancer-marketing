@@ -42,7 +42,6 @@ import * as maintenanceAuth from './maintenance_auth';
 import * as onCallFunctions from './on_call_functions';
 import * as chatbot from './chatbot';
 import * as enhancedChatbotAPI from "./enhanced-chatbot-api";
-import * as financeApiModule from './finance/api/finance-api';
 import * as financeHttpModule from './finance/functions/finance-http';
 import * as fixInconsistentPaymentModule from './fix_inconsistent_payment';
 import * as quoteNotifications from './quote_notifications';
@@ -129,8 +128,7 @@ export const handleSupportMessage = chatbot.handleSupportMessage;
 export const enhancedChatbot = enhancedChatbotAPI.enhancedChatbotAPI;
 export const supportDashboard = enhancedChatbotAPI.supportDashboardAPI;
 
-// Finance Module APIs
-export const financeApi = financeApiModule.financeApi;
+// Finance Module API - Production version with OCR & Smart Detection
 export const financeApiWithOCR = financeHttpModule.financeApi;
 
 // Manual Fix Functions

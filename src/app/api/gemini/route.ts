@@ -42,12 +42,12 @@ export async function POST(request: NextRequest) {
 
     // Try multiple models in order of preference (using actual available models)
     const modelNames = [
+      'models/gemini-2.0-flash-exp', // ✅ Primäres, stabiles Modell
       'models/gemini-2.5-flash',
       'models/gemini-2.0-flash',
       'models/gemini-flash-latest',
       'models/gemini-2.5-flash-lite',
-      'models/gemini-2.0-flash-lite',
-      'models/gemini-pro-latest'
+      'models/gemini-2.0-flash-lite'
     ];
 
     let lastError: Error | null = null;

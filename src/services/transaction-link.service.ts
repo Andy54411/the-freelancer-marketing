@@ -43,22 +43,22 @@ export class TransactionLinkService {
    * Erstelle eine neue Transaction-Document Verknüpfung
    */
   static async createLink(
-    companyId: string,
-    transactionId: string,
-    documentId: string,
-    transactionData: any,
-    documentData: any,
-    userId: string
-  ): Promise<{ success: boolean; linkId?: string; error?: string }> {
+  companyId: string,
+  transactionId: string,
+  documentId: string,
+  transactionData: any,
+  documentData: any,
+  userId: string)
+  : Promise<{success: boolean;linkId?: string;error?: string;}> {
     try {
-      console.log('🔄 TransactionLinkService.createLink called with:', {
-        companyId,
-        transactionId,
-        documentId,
-        userId,
-        transactionData,
-        documentData
-      });
+
+
+
+
+
+
+
+
 
       if (!companyId || !transactionId || !documentId) {
         throw new Error('Company ID, Transaction ID und Document ID sind erforderlich');
@@ -67,11 +67,23 @@ export class TransactionLinkService {
       // Eindeutige Link ID für bidirektionale Suche
       const linkId = `${transactionId}_${documentId}`;
 
+      // Bestimme den Dokumenttyp basierend auf der Dokumentnummer
+      const documentNumber = documentData.documentNumber || documentData.invoiceNumber || documentId;
+      let documentType: 'beleg' | 'rechnung' | 'gutschrift';
+      
+      if (documentData.isStorno) {
+        documentType = 'gutschrift';
+      } else if (documentNumber.startsWith('BE-')) {
+        documentType = 'beleg';
+      } else {
+        documentType = 'rechnung';
+      }
+
       const transactionLink: Omit<TransactionLink, 'id'> = {
         transactionId,
         documentId,
-        documentType: documentData.isStorno ? 'gutschrift' : 'rechnung',
-        documentNumber: documentData.documentNumber || documentData.invoiceNumber || documentId,
+        documentType,
+        documentNumber,
         documentDate: documentData.date || documentData.issueDate || new Date().toISOString(),
         documentAmount: documentData.total || 0,
         customerName: documentData.customerName || 'Unbekannter Kunde',
@@ -101,16 +113,16 @@ export class TransactionLinkService {
         }
       };
 
-      console.log('📝 Transaction Link Object:', transactionLink);
-      console.log('📍 Firestore Path:', `companies/${companyId}/transaction_links/${linkId}`);
+
+
 
       // In Firestore Subcollection speichern
       const linkRef = doc(db, 'companies', companyId, 'transaction_links', linkId);
-      console.log('🔥 About to save to Firestore...');
-      
+
+
       await setDoc(linkRef, transactionLink);
-      
-      console.log(`✅ Transaction Link erfolgreich in Firestore gespeichert: ${linkId} für Unternehmen ${companyId}`);
+
+
 
       return {
         success: true,
@@ -130,10 +142,10 @@ export class TransactionLinkService {
    * Hole alle Transaction Links für ein Unternehmen
    */
   static async getLinks(
-    companyId: string,
-    transactionId?: string,
-    documentId?: string
-  ): Promise<{ success: boolean; links?: TransactionLink[]; error?: string }> {
+  companyId: string,
+  transactionId?: string,
+  documentId?: string)
+  : Promise<{success: boolean;links?: TransactionLink[];error?: string;}> {
     try {
       if (!companyId) {
         throw new Error('Company ID ist erforderlich');
@@ -163,7 +175,7 @@ export class TransactionLinkService {
         } as TransactionLink);
       });
 
-      console.log(`📊 ${links.length} Transaction Links geladen für Unternehmen ${companyId}`);
+
 
       return {
         success: true,
@@ -183,12 +195,12 @@ export class TransactionLinkService {
    * Prüfe ob Transaction bereits verknüpft ist
    */
   static async isTransactionLinked(
-    companyId: string,
-    transactionId: string
-  ): Promise<{ isLinked: boolean; links?: TransactionLink[] }> {
+  companyId: string,
+  transactionId: string)
+  : Promise<{isLinked: boolean;links?: TransactionLink[];}> {
     try {
       const result = await this.getLinks(companyId, transactionId);
-      
+
       if (result.success && result.links) {
         return {
           isLinked: result.links.length > 0,
@@ -207,10 +219,10 @@ export class TransactionLinkService {
    * Entferne Transaction Link
    */
   static async removeLink(
-    companyId: string,
-    transactionId: string,
-    documentId: string
-  ): Promise<{ success: boolean; error?: string }> {
+  companyId: string,
+  transactionId: string,
+  documentId: string)
+  : Promise<{success: boolean;error?: string;}> {
     try {
       if (!companyId || !transactionId || !documentId) {
         throw new Error('Company ID, Transaction ID und Document ID sind erforderlich');
@@ -218,10 +230,10 @@ export class TransactionLinkService {
 
       const linkId = `${transactionId}_${documentId}`;
       const linkRef = doc(db, 'companies', companyId, 'transaction_links', linkId);
-      
+
       await deleteDoc(linkRef);
 
-      console.log(`✅ Transaction Link entfernt: ${linkId} für Unternehmen ${companyId}`);
+
 
       return { success: true };
 
@@ -238,14 +250,14 @@ export class TransactionLinkService {
    * Hole alle Dokumente die mit einer Transaction verknüpft sind
    */
   static async getLinkedDocuments(
-    companyId: string,
-    transactionId: string
-  ): Promise<{ success: boolean; documents?: any[]; error?: string }> {
+  companyId: string,
+  transactionId: string)
+  : Promise<{success: boolean;documents?: any[];error?: string;}> {
     try {
       const result = await this.getLinks(companyId, transactionId);
-      
+
       if (result.success && result.links) {
-        const documents = result.links.map(link => ({
+        const documents = result.links.map((link) => ({
           id: link.documentId,
           type: link.documentType,
           number: link.documentNumber,
@@ -279,14 +291,14 @@ export class TransactionLinkService {
    * Hole alle Transaktionen die mit einem Dokument verknüpft sind
    */
   static async getLinkedTransactions(
-    companyId: string,
-    documentId: string
-  ): Promise<{ success: boolean; transactions?: any[]; error?: string }> {
+  companyId: string,
+  documentId: string)
+  : Promise<{success: boolean;transactions?: any[];error?: string;}> {
     try {
       const result = await this.getLinks(companyId, undefined, documentId);
-      
+
       if (result.success && result.links) {
-        const transactions = result.links.map(link => ({
+        const transactions = result.links.map((link) => ({
           id: link.transactionId,
           name: link.transactionData.name,
           verwendungszweck: link.transactionData.verwendungszweck,
@@ -321,11 +333,11 @@ export class TransactionLinkService {
    * Aktualisiere Buchungsstatus einer Transaction Link
    */
   static async updateBookingStatus(
-    companyId: string,
-    transactionId: string,
-    documentId: string,
-    bookingStatus: 'open' | 'booked'
-  ): Promise<{ success: boolean; error?: string }> {
+  companyId: string,
+  transactionId: string,
+  documentId: string,
+  bookingStatus: 'open' | 'booked')
+  : Promise<{success: boolean;error?: string;}> {
     try {
       if (!companyId || !transactionId || !documentId) {
         throw new Error('Company ID, Transaction ID und Document ID sind erforderlich');
@@ -333,7 +345,7 @@ export class TransactionLinkService {
 
       const linkId = `${transactionId}_${documentId}`;
       const linkRef = doc(db, 'companies', companyId, 'transaction_links', linkId);
-      
+
       const updateData: any = {
         bookingStatus,
         updatedAt: serverTimestamp()
@@ -345,7 +357,7 @@ export class TransactionLinkService {
 
       await setDoc(linkRef, updateData, { merge: true });
 
-      console.log(`✅ Buchungsstatus aktualisiert: ${linkId} → ${bookingStatus}`);
+
 
       return { success: true };
 

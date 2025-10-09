@@ -5,7 +5,8 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { CheckCircle, Building2, Users, Globe, FileText } from 'lucide-react';
+import { CheckCircle, Building2, Users, Globe, FileText, AlertCircle } from 'lucide-react';
+import { RequiredFieldLabel, RequiredFieldIndicator } from '@/components/onboarding/RequiredFieldLabel';
 
 interface OnboardingStep1Props {
   companyUid: string;
@@ -117,6 +118,19 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
   // Speichern und weiter
   const [isSaving, setIsSaving] = useState(false);
 
+  // Validierungsstatus prüfen
+  const isValidForNext = () => {
+    return formData.businessType && formData.employees;
+  };
+
+  const getValidationMessage = () => {
+    const missing = validateForm();
+    if (missing.length > 0) {
+      return `Erforderliche Felder: ${missing.join(', ')}`;
+    }
+    return null;
+  };
+
   const handleNext = async () => {
     if (isSaving) {
       return; // Verhindere mehrfache Clicks
@@ -124,8 +138,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
     const missingFields = validateForm();
     if (missingFields.length > 0) {
-      alert(`Bitte füllen Sie folgende Pflichtfelder aus: ${missingFields.join(', ')}`);
-      return;
+      return; // Button ist bereits disabled
     }
 
     setIsSaving(true);
@@ -174,6 +187,9 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
           </p>
         </div>
 
+        {/* Required Fields Indicator */}
+        <RequiredFieldIndicator />
+
         {/* Main Form */}
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="grid gap-8">
@@ -181,7 +197,12 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-[#14ad9f]" />
-                <label className="text-lg font-semibold text-gray-900">Geschäftsmodell *</label>
+                <RequiredFieldLabel 
+                  required={true}
+                  tooltip="Wählen Sie Ihr Geschäftsmodell - bestimmt Ihre Zielgruppe und Steuereinstellungen"
+                >
+                  Geschäftsmodell
+                </RequiredFieldLabel>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
@@ -233,7 +254,12 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-[#14ad9f]" />
-                <label className="text-lg font-semibold text-gray-900">Mitarbeiteranzahl *</label>
+                <RequiredFieldLabel 
+                  required={true}
+                  tooltip="Anzahl der Mitarbeiter in Ihrem Unternehmen - wichtig für Steuer- und Buchungsoptionen"
+                >
+                  Mitarbeiteranzahl
+                </RequiredFieldLabel>
               </div>
               <select
                 value={formData.employees}
@@ -256,7 +282,12 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Globe className="h-5 w-5 text-[#14ad9f]" />
-                <label className="text-lg font-semibold text-gray-900">Firmenwebsite</label>
+                <RequiredFieldLabel 
+                  required={false}
+                  tooltip="Optional: Ihre Firmenwebsite für mehr Glaubwürdigkeit"
+                >
+                  Firmenwebsite
+                </RequiredFieldLabel>
               </div>
               <input
                 type="url"
@@ -275,7 +306,12 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-[#14ad9f]" />
-                <label className="text-lg font-semibold text-gray-900">Firmenbeschreibung</label>
+                <RequiredFieldLabel 
+                  required={false}
+                  tooltip="Optional: Beschreibung Ihres Unternehmens für Ihr öffentliches Profil"
+                >
+                  Firmenbeschreibung
+                </RequiredFieldLabel>
               </div>
               <textarea
                 value={formData.description}
@@ -347,6 +383,17 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             )}
           </div>
 
+          {/* Validation Message */}
+          {!isValidForNext() && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6">
+              <div className="flex items-center gap-2 text-gray-700">
+                <AlertCircle className="h-5 w-5 text-[#14ad9f]" />
+                <span className="font-medium">Erforderliche Felder fehlen:</span>
+              </div>
+              <p className="mt-1 text-sm text-gray-600">{getValidationMessage()}</p>
+            </div>
+          )}
+
           {/* Navigation Buttons */}
           <div className="flex justify-between pt-6 border-t border-gray-200">
             <button
@@ -359,10 +406,9 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             <button
               type="button"
               onClick={handleNext}
-              disabled={!isFormValid || isSaving}
-              style={{ pointerEvents: !isFormValid || isSaving ? 'none' : 'auto' }}
+              disabled={!isValidForNext() || isSaving}
               className={`px-6 py-2 text-white rounded-lg transition-colors flex items-center gap-2 ${
-                isFormValid && !isSaving
+                isValidForNext() && !isSaving
                   ? 'bg-[#14ad9f] hover:bg-[#129488] cursor-pointer'
                   : 'bg-gray-300 cursor-not-allowed'
               }`}
@@ -376,9 +422,9 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
         </div>
 
         {/* Info Box */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>💡 Hinweis:</strong> Grunddaten wie Firmenname, E-Mail und Adresse wurden
+        <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <p className="text-sm text-gray-700">
+            <strong className="text-[#14ad9f]">💡 Hinweis:</strong> Grunddaten wie Firmenname, E-Mail und Adresse wurden
             bereits bei der Registrierung erfasst. Hier ergänzen Sie nur zusätzliche Informationen
             für Ihr vollständiges Firmenprofil.
           </p>

@@ -38,11 +38,11 @@ interface CustomerData {
 }
 
 const CUSTOMER_COLORS = [
-  '#393196', // Lila
-  '#5B4FCF', // Helles Lila  
-  '#7C6EE7', // Mittleres Lila
-  '#A299FF', // Helles Lila
-  '#C8C1FF'  // Sehr helles Lila
+'#393196', // Lila
+'#5B4FCF', // Helles Lila  
+'#7C6EE7', // Mittleres Lila
+'#A299FF', // Helles Lila
+'#C8C1FF' // Sehr helles Lila
 ];
 
 export default function TopCustomersCard() {
@@ -66,15 +66,15 @@ export default function TopCustomersCard() {
 
   const fetchCustomerRevenue = async () => {
     if (!user?.uid) return;
-    
+
     setIsLoading(true);
     try {
-      console.log('🔍 Loading customer revenue for company:', user.uid);
-      
+
+
       // Berechne Zeitraum
       const now = new Date();
       let startDate = new Date();
-      
+
       switch (selectedPeriod) {
         case '1month':
           startDate.setMonth(now.getMonth() - 1);
@@ -91,12 +91,12 @@ export default function TopCustomersCard() {
         default:
           startDate.setMonth(now.getMonth() - 3);
       }
-      
-      console.log('📅 Date range:', {
-        selectedPeriod,
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: now.toISOString().split('T')[0]
-      });
+
+
+
+
+
+
 
       // Lade ALLE Rechnungen erst einmal ohne Datum-Filter 
       const invoicesQuery = query(
@@ -107,7 +107,7 @@ export default function TopCustomersCard() {
       const querySnapshot = await getDocs(invoicesQuery);
       const customerRevenueMap = new Map<string, CustomerRevenue>();
 
-      console.log(`📋 Found ${querySnapshot.size} invoice documents`);
+
 
       querySnapshot.forEach((doc) => {
         const invoice = doc.data();
@@ -115,15 +115,15 @@ export default function TopCustomersCard() {
         const amount = invoice.total || invoice.amount || 0;
         const status = invoice.status || 'draft';
 
-        console.log('💰 Invoice data:', {
-          id: doc.id,
-          invoiceNumber: invoice.invoiceNumber,
-          customerName,
-          amount,
-          status,
-          issueDate: invoice.issueDate,
-          createdAt: invoice.createdAt
-        });
+
+
+
+
+
+
+
+
+
 
         // Filter Rechnungen mit Umsatz (alle Status außer draft/cancelled)
         const excludedStatuses = ['draft', 'cancelled', 'deleted'];
@@ -170,7 +170,7 @@ export default function TopCustomersCard() {
         }
       });
 
-      console.log(`✅ Processed customers from invoices: ${customerRevenueMap.size}`);
+
 
       // Zusätzlich: Lade auch Kunden aus der Kunden-Subcollection für vollständige Liste
       try {
@@ -178,21 +178,21 @@ export default function TopCustomersCard() {
           collection(db, 'companies', user.uid, 'customers'),
           orderBy('createdAt', 'desc')
         );
-        
+
         const customersSnapshot = await getDocs(customersQuery);
-        console.log(`👥 Found ${customersSnapshot.size} customers in customers collection`);
-        
+
+
         customersSnapshot.forEach((doc) => {
           const customer = doc.data();
           const customerName = customer.name || customer.companyName || 'Unbekannter Kunde';
-          
-          console.log('👤 Customer from collection:', {
-            id: doc.id,
-            name: customerName,
-            email: customer.email,
-            phone: customer.phone
-          });
-          
+
+
+
+
+
+
+
+
           // Wenn Kunde noch nicht in der Revenue-Map ist, füge ihn hinzu
           if (!customerRevenueMap.has(customerName) && customerName !== 'Unbekannter Kunde') {
             customerRevenueMap.set(customerName, {
@@ -213,28 +213,28 @@ export default function TopCustomersCard() {
             existing.address = existing.address || customer.address;
           }
         });
-        
-        console.log(`📈 Total unique customers: ${customerRevenueMap.size}`);
+
+
       } catch (customerError) {
         console.warn('⚠️ Could not load customers collection:', customerError);
       }
 
       // Berechne durchschnittliche Rechnungsbeträge und sortiere
-      const allCustomers = Array.from(customerRevenueMap.values())
-        .map(customer => ({
-          ...customer,
-          averageInvoiceAmount: customer.invoiceCount > 0 ? customer.totalRevenue / customer.invoiceCount : 0
-        }))
-        .sort((a, b) => b.totalRevenue - a.totalRevenue);
+      const allCustomers = Array.from(customerRevenueMap.values()).
+      map((customer) => ({
+        ...customer,
+        averageInvoiceAmount: customer.invoiceCount > 0 ? customer.totalRevenue / customer.invoiceCount : 0
+      })).
+      sort((a, b) => b.totalRevenue - a.totalRevenue);
 
       // Nur Kunden mit Umsatz für Chart verwenden (mindestens 0.01€)
-      const customersWithRevenue = allCustomers.filter(customer => customer.totalRevenue >= 0.01);
+      const customersWithRevenue = allCustomers.filter((customer) => customer.totalRevenue >= 0.01);
       const sortedCustomers = customersWithRevenue.slice(0, 5);
 
-      console.log('📊 All customers:', allCustomers);
-      console.log('💰 Customers with revenue:', customersWithRevenue);
-      console.log('🏆 Top customers:', sortedCustomers);
-      console.log('💵 Total revenue in chart:', sortedCustomers.reduce((sum, c) => sum + c.totalRevenue, 0));
+
+
+
+
 
       // Erstelle Chart-Daten (nur Kunden mit Umsatz)
       const chartCustomers: CustomerData[] = sortedCustomers.map((customer, index) => ({
@@ -244,12 +244,12 @@ export default function TopCustomersCard() {
         color: CUSTOMER_COLORS[index] || '#C8C1FF'
       }));
 
-      console.log('📈 Chart data entries:', chartCustomers.length);
-      console.log('📊 Chart data:', chartCustomers);
+
+
 
       const finalTotal = sortedCustomers.reduce((sum, customer) => sum + customer.totalRevenue, 0);
 
-      console.log('� Final chart data:', chartCustomers);
+
 
       // Verwende alle Kunden (auch mit 0€) für die Kundenliste, aber nur Kunden mit Umsatz für Chart
       setCustomers(allCustomers);
@@ -268,30 +268,30 @@ export default function TopCustomersCard() {
 
   const getPeriodLabel = (period: string) => {
     switch (period) {
-      case '1month': return 'Letzter Monat';
-      case '3months': return 'Letzte 3 Monate';
-      case '6months': return 'Letzte 6 Monate';
-      case '1year': return 'Letztes Jahr';
-      default: return 'Letzte 3 Monate';
+      case '1month':return 'Letzter Monat';
+      case '3months':return 'Letzte 3 Monate';
+      case '6months':return 'Letzte 6 Monate';
+      case '1year':return 'Letztes Jahr';
+      default:return 'Letzte 3 Monate';
     }
   };
 
   const renderCenterText = () => {
     const text = formatAmount(totalRevenue);
     const textLength = text.length;
-    
+
     // Dynamische Schriftgröße basierend auf Textlänge
     let fontSize = 24;
-    if (textLength > 12) fontSize = 16;
-    else if (textLength > 10) fontSize = 18;
-    else if (textLength > 8) fontSize = 20;
-    
+    if (textLength > 12) fontSize = 16;else
+    if (textLength > 10) fontSize = 18;else
+    if (textLength > 8) fontSize = 20;
+
     // Bei sehr langen Zahlen: aufteilen in zwei Zeilen
     if (textLength > 12) {
       const parts = text.split('\u00A0'); // Split bei Non-Breaking Space vor €
       const number = parts[0];
       const currency = parts[1] || '€';
-      
+
       return (
         <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
           <tspan
@@ -301,8 +301,8 @@ export default function TopCustomersCard() {
               fontWeight: 600,
               fontSize: `${fontSize}px`,
               fill: 'rgb(16, 11, 45)'
-            }}
-          >
+            }}>
+
             {number}
           </tspan>
           <tspan
@@ -312,14 +312,14 @@ export default function TopCustomersCard() {
               fontWeight: 600,
               fontSize: `${fontSize - 2}px`,
               fill: 'rgb(16, 11, 45)'
-            }}
-          >
+            }}>
+
             {currency}
           </tspan>
-        </text>
-      );
+        </text>);
+
     }
-    
+
     return (
       <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
         <tspan
@@ -329,16 +329,16 @@ export default function TopCustomersCard() {
             fontWeight: 600,
             fontSize: `${fontSize}px`,
             fill: 'rgb(16, 11, 45)'
-          }}
-        >
+          }}>
+
           {text}
         </tspan>
-      </text>
-    );
+      </text>);
+
   };
 
   const handleCustomerClick = (customerName: string) => {
-    const customer = customers.find(c => c.name === customerName);
+    const customer = customers.find((c) => c.name === customerName);
     if (customer) {
       setSelectedCustomer(customer);
       setIsModalOpen(true);
@@ -359,8 +359,8 @@ export default function TopCustomersCard() {
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-[#14ad9f]" />
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -370,25 +370,25 @@ export default function TopCustomersCard() {
           <h3 className="text-lg font-semibold text-gray-900">Top 5 Kunden</h3>
         </div>
 
-        {chartData.length > 0 ? (
-          <div className="h-64 flex">
+        {chartData.length > 0 ?
+        <div className="h-64 flex">
             <div className="flex-1">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={80}
-                    outerRadius={120}
-                    paddingAngle={2}
-                    dataKey="value"
-                    stroke="#fff"
-                    strokeWidth={2}
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={80}
+                  outerRadius={120}
+                  paddingAngle={2}
+                  dataKey="value"
+                  stroke="#fff"
+                  strokeWidth={2}>
+
+                    {chartData.map((entry, index) =>
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                  )}
                   </Pie>
                   {renderCenterText()}
                 </PieChart>
@@ -396,28 +396,28 @@ export default function TopCustomersCard() {
             </div>
             <div className="w-40 flex items-center">
               <div className="space-y-2">
-                {chartData.map((entry, index) => (
-                  <div 
-                    key={`legend-${index}`} 
-                    className="flex items-center gap-2 text-sm cursor-pointer hover:opacity-80 hover:bg-gray-100 p-2 rounded transition-colors"
-                    title={entry.fullName}
-                    onClick={() => handleCustomerClick(entry.fullName)}
-                  >
-                    <div 
-                      className="w-3 h-3 rounded-sm flex-shrink-0"
-                      style={{ backgroundColor: entry.color }}
-                    />
+                {chartData.map((entry, index) =>
+              <div
+                key={`legend-${index}`}
+                className="flex items-center gap-2 text-sm cursor-pointer hover:opacity-80 hover:bg-gray-100 p-2 rounded transition-colors"
+                title={entry.fullName}
+                onClick={() => handleCustomerClick(entry.fullName)}>
+
+                    <div
+                  className="w-3 h-3 rounded-sm flex-shrink-0"
+                  style={{ backgroundColor: entry.color }} />
+
                     <span className="text-gray-600 font-medium truncate">{entry.name}</span>
                   </div>
-                ))}
+              )}
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="h-64 flex items-center justify-center text-gray-500">
+          </div> :
+
+        <div className="h-64 flex items-center justify-center text-gray-500">
             Keine Kundendaten verfügbar
           </div>
-        )}
+        }
       </div>
 
       <div className="border-t bg-gray-50 px-6 py-4 rounded-b-lg">
@@ -426,8 +426,8 @@ export default function TopCustomersCard() {
             <select
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="appearance-none bg-transparent border-none text-sm text-gray-600 cursor-pointer pr-6 focus:outline-none"
-            >
+              className="appearance-none bg-transparent border-none text-sm text-gray-600 cursor-pointer pr-6 focus:outline-none">
+
               <option value="1month">Letzter Monat</option>
               <option value="3months">Letzte 3 Monate</option>
               <option value="6months">Letzte 6 Monate</option>
@@ -444,8 +444,8 @@ export default function TopCustomersCard() {
       <CustomerDetailModal
         customer={selectedCustomer}
         isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      />
-    </div>
-  );
+        onClose={handleCloseModal} />
+
+    </div>);
+
 }

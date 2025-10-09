@@ -320,7 +320,23 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
               />
             </div>
             <div>
-              <Label htmlFor="bankAccountIban">Bankverbindung (IBAN)</Label>
+              <Label htmlFor="healthInsuranceMemberNumber">Versichertennummer</Label>
+              <Input
+                id="healthInsuranceMemberNumber"
+                value={employee.healthInsurance?.memberNumber || ''}
+                onChange={e =>
+                  onUpdate({
+                    healthInsurance: {
+                      provider: employee.healthInsurance?.provider || '',
+                      memberNumber: e.target.value,
+                    },
+                  })
+                }
+                disabled={!isEditing}
+              />
+            </div>
+            <div>
+              <Label htmlFor="bankAccountIban">IBAN</Label>
               <Input
                 id="bankAccountIban"
                 value={employee.bankAccount?.iban || ''}
@@ -334,6 +350,25 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                   })
                 }
                 disabled={!isEditing}
+                placeholder="DE89370400440532013000"
+              />
+            </div>
+            <div>
+              <Label htmlFor="bankAccountBic">BIC</Label>
+              <Input
+                id="bankAccountBic"
+                value={employee.bankAccount?.bic || ''}
+                onChange={e =>
+                  onUpdate({
+                    bankAccount: {
+                      iban: employee.bankAccount?.iban || '',
+                      bic: e.target.value,
+                      bankName: employee.bankAccount?.bankName || '',
+                    },
+                  })
+                }
+                disabled={!isEditing}
+                placeholder="DEUTDEFFXXX"
               />
             </div>
           </div>

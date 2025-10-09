@@ -8,8 +8,8 @@ import {
   where,
   orderBy,
   limit,
-  Timestamp,
-} from 'firebase/firestore';
+  Timestamp } from
+'firebase/firestore';
 import { db } from '@/firebase/clients';
 
 export interface OCRReceiptData {
@@ -56,6 +56,11 @@ export interface ReceiptDocument {
   currency?: string;
   isStorno?: boolean;
 
+  // 🎯 Storage-URL für hochgeladenen Beleg
+  storageUrl?: string;
+  fileName?: string;
+  fileType?: string;
+
   // OCR Metadata
   ocrConfidence?: number;
   ocrValidated?: boolean;
@@ -85,6 +90,10 @@ export interface TransactionLinkData {
   createdBy: string;
   bookedAt?: Timestamp;
 
+  // Differenz-Informationen
+  amountDifference?: number;
+  amountDifferenceReason?: string;
+
   // Transaction Data
   transactionData: {
     id: string;
@@ -111,80 +120,144 @@ export class ReceiptLinkingService {
    * Erstellt einen neuen Beleg aus OCR-Daten und versucht automatische Verknüpfung
    */
   static async createReceiptFromOCR(
-    companyId: string,
-    userId: string,
-    ocrData: OCRReceiptData,
-    pdfUrl?: string
-  ): Promise<{
+  companyId: string,
+  userId: string,
+  ocrData: OCRReceiptData,
+  storageUrl?: string,
+  transactionId?: string,
+  differenceReason?: string,
+  differenceAmount?: number)
+  : Promise<{
     success: boolean;
     receiptId?: string;
     linkedTransactionId?: string;
     error?: string;
   }> {
     try {
-      console.log('🔄 Erstelle Beleg aus OCR-Daten:', ocrData);
+
+      console.log('💾 createReceiptFromOCR aufgerufen mit Storage-URL:', storageUrl);
 
       // 1. Generiere Document Number
       const documentNumber = await this.generateReceiptNumber(companyId);
 
-      // 2. Erstelle Receipt Document
+      // 🎯 Extrahiere Dateiinformationen aus Storage-URL
+      let fileName: string | undefined;
+      let fileType: string | undefined;
+
+      if (storageUrl) {
+        try {
+          const urlParts = storageUrl.split('/');
+          const fileNameWithParams = urlParts[urlParts.length - 1];
+          fileName = fileNameWithParams.split('?')[0]; // Entferne Query-Parameter
+          
+          // Extrahiere Dateityp aus Dateiname
+          const extension = fileName.split('.').pop()?.toLowerCase();
+          if (extension) {
+            const typeMap: Record<string, string> = {
+              'pdf': 'application/pdf',
+              'jpg': 'image/jpeg',
+              'jpeg': 'image/jpeg',
+              'png': 'image/png'
+            };
+            fileType = typeMap[extension] || 'application/octet-stream';
+          }
+          
+          console.log('📄 Dateiinformationen extrahiert:', { fileName, fileType });
+        } catch (error) {
+          console.warn('⚠️ Fehler beim Extrahieren der Dateiinformationen:', error);
+        }
+      }
+
+      // 2. Erstelle Receipt Document (nur definierte Werte setzen - Firestore erlaubt kein undefined)
       const receiptData: Omit<ReceiptDocument, 'id'> = {
         documentNumber,
         customerName: ocrData.vendor || 'Unbekannt',
         amount: ocrData.amount || 0,
         date: ocrData.date || new Date().toISOString().split('T')[0],
         type: 'beleg',
-        category: ocrData.category,
-        description: ocrData.description || ocrData.title,
-        vatAmount: ocrData.vatAmount,
-        netAmount: ocrData.netAmount,
-        vatRate: ocrData.vatRate,
-        costCenter: ocrData.costCenter,
         currency: ocrData.currency || 'EUR',
         isStorno: false,
 
-        // OCR Metadata
-        ocrConfidence: 0.85, // Default confidence
-        ocrValidated: false,
-        goBDCompliant: ocrData.goBDCompliant,
-        validationIssues: ocrData.validationIssues,
-
         // System Fields
         createdAt: Timestamp.now(),
-        createdBy: userId,
+        createdBy: userId
       };
+      
+      // Nur optionale Felder hinzufügen, wenn sie definiert sind
+      if (ocrData.category) receiptData.category = ocrData.category;
+      if (ocrData.description || ocrData.title) receiptData.description = ocrData.description || ocrData.title;
+      if (ocrData.vatAmount !== undefined) receiptData.vatAmount = ocrData.vatAmount;
+      if (ocrData.netAmount !== undefined) receiptData.netAmount = ocrData.netAmount;
+      if (ocrData.vatRate !== undefined) receiptData.vatRate = ocrData.vatRate;
+      if (ocrData.costCenter) receiptData.costCenter = ocrData.costCenter;
+      if (storageUrl) receiptData.storageUrl = storageUrl;
+      if (fileName) receiptData.fileName = fileName;
+      if (fileType) receiptData.fileType = fileType;
+      if (ocrData.goBDCompliant !== undefined) receiptData.goBDCompliant = ocrData.goBDCompliant;
+      if (ocrData.validationIssues) receiptData.validationIssues = ocrData.validationIssues;
+      
+      // OCR Metadata
+      receiptData.ocrConfidence = 0.85;
+      receiptData.ocrValidated = false;
 
       // 3. Speichere Receipt in expenses subcollection
       const expensesRef = collection(db, 'companies', companyId, 'expenses');
       const receiptDoc = await addDoc(expensesRef, receiptData);
 
-      console.log('✅ Beleg erstellt:', receiptDoc.id, documentNumber);
+      console.log('✅ Beleg erfolgreich in Firestore gespeichert:', {
+        receiptId: receiptDoc.id,
+        documentNumber,
+        storageUrl: storageUrl || 'Keine Storage-URL',
+        fileName: fileName || 'Kein Dateiname',
+        receiptData_storageUrl: receiptData.storageUrl,
+        receiptData_fileName: receiptData.fileName,
+        receiptData_fileType: receiptData.fileType
+      });
 
-      // 4. Versuche automatische Verknüpfung mit passender Transaktion
-      const linkedTransactionId = await this.autoLinkToTransaction(
-        companyId,
-        receiptDoc.id,
-        receiptData,
-        userId
-      );
-
-      if (linkedTransactionId) {
-        console.log(
-          '🔗 Automatische Verknüpfung erfolgreich mit Transaktion:',
-          linkedTransactionId
+      // 4. Verknüpfe mit Transaktion nur, wenn eine transactionId übergeben wurde
+      let linkedTransactionId: string | null = null;
+      
+      if (transactionId) {
+        console.log('🔗 Verknüpfe Beleg mit Transaktion:', transactionId);
+        
+        // TODO: Lade echte Transaktionsdaten von FinAPI
+        // Für jetzt: Erstelle Link mit übergebener TransactionId
+        const linkResult = await this.createTransactionLink(
+          companyId,
+          transactionId,
+          receiptDoc.id,
+          receiptData as ReceiptDocument,
+          {
+            id: transactionId,
+            accountId: '3112628', // Wird später aus echten Transaktionsdaten geladen
+            name: receiptData.customerName,
+            verwendungszweck: receiptData.documentNumber,
+            buchungstag: receiptData.date,
+            betrag: receiptData.amount
+          },
+          userId,
+          differenceReason,
+          differenceAmount
         );
+        
+        if (linkResult.success) {
+          linkedTransactionId = transactionId;
+          console.log('✅ Beleg erfolgreich mit Transaktion verknüpft');
+        }
+      } else {
+        console.log('ℹ️ Keine TransactionId übergeben - keine automatische Verknüpfung');
       }
 
       return {
         success: true,
         receiptId: receiptDoc.id,
-        linkedTransactionId: linkedTransactionId || undefined,
+        linkedTransactionId: linkedTransactionId || undefined
       };
     } catch (error) {
       console.error('❌ Fehler beim Erstellen des Belegs:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unbekannter Fehler',
+        error: error instanceof Error ? error.message : 'Unbekannter Fehler'
       };
     }
   }
@@ -193,22 +266,22 @@ export class ReceiptLinkingService {
    * Automatische Verknüpfung mit passender Banktransaktion
    */
   static async autoLinkToTransaction(
-    companyId: string,
-    receiptId: string,
-    receiptData: Omit<ReceiptDocument, 'id'>,
-    userId: string
-  ): Promise<string | null> {
+  companyId: string,
+  receiptId: string,
+  receiptData: Omit<ReceiptDocument, 'id'>,
+  userId: string)
+  : Promise<string | null> {
     try {
-      console.log('🔍 Suche passende Transaktion für Beleg:', receiptData.documentNumber);
+
 
       // Lade bestehende Transaction Links um bereits verknüpfte zu überspringen
       const existingLinksRef = collection(db, 'companies', companyId, 'transaction_links');
       const existingLinksSnapshot = await getDocs(existingLinksRef);
       const linkedTransactionIds = new Set(
-        existingLinksSnapshot.docs.map(doc => doc.data().transactionId)
+        existingLinksSnapshot.docs.map((doc) => doc.data().transactionId)
       );
 
-      console.log('📋 Bereits verknüpfte Transaktionen:', Array.from(linkedTransactionIds));
+
 
       // Simuliere Transaktions-Abfrage (In der Realität würde hier FinAPI abgefragt werden)
       // Für Demo-Zwecke: Erstelle automatisch einen Transaction Link falls ähnliche Daten vorhanden sind
@@ -217,7 +290,7 @@ export class ReceiptLinkingService {
       const demoTransactionId = `demo_${Date.now()}`;
 
       if (!linkedTransactionIds.has(demoTransactionId)) {
-        console.log('🎯 Erstelle Demo-Verknüpfung für Receipt:', receiptId);
+
 
         // Erstelle automatischen Transaction Link
         const linkResult = await this.createTransactionLink(
@@ -231,52 +304,54 @@ export class ReceiptLinkingService {
             name: receiptData.customerName,
             verwendungszweck: receiptData.documentNumber,
             buchungstag: receiptData.date,
-            betrag: -Math.abs(receiptData.amount), // Negative für Ausgaben
+            betrag: -Math.abs(receiptData.amount) // Negative für Ausgaben
           },
-          userId
+          userId,
+          undefined, // Kein Differenzgrund bei automatischen Links
+          undefined  // Kein Differenzbetrag bei automatischen Links
         );
 
         if (linkResult.success) {
-          console.log('✅ Demo-Verknüpfung erstellt:', linkResult.linkId);
+
           return demoTransactionId;
         }
       }
 
       // Matching-Kriterien für zukünftige echte Implementation
       const matchingCriteria = [
-        // 1. Exakter Betrag + ähnlicher Name + ähnliches Datum (±3 Tage)
-        {
-          weight: 100,
-          check: (tx: any) => {
-            const amountMatch = Math.abs(Math.abs(tx.betrag) - receiptData.amount) < 0.01;
-            const nameMatch = this.calculateNameSimilarity(tx.name, receiptData.customerName) > 0.7;
-            const dateMatch = this.isDateWithinRange(tx.buchungstag, receiptData.date, 3);
-            return amountMatch && nameMatch && dateMatch;
-          },
-        },
-        // 2. Exakter Betrag + Rechnungsnummer im Verwendungszweck
-        {
-          weight: 95,
-          check: (tx: any) => {
-            const amountMatch = Math.abs(Math.abs(tx.betrag) - receiptData.amount) < 0.01;
-            const invoiceMatch =
-              receiptData.documentNumber &&
-              tx.verwendungszweck?.toLowerCase().includes(receiptData.documentNumber.toLowerCase());
-            return amountMatch && invoiceMatch;
-          },
-        },
-        // 3. Exakter Betrag + ähnliches Datum (±7 Tage)
-        {
-          weight: 80,
-          check: (tx: any) => {
-            const amountMatch = Math.abs(Math.abs(tx.betrag) - receiptData.amount) < 0.01;
-            const dateMatch = this.isDateWithinRange(tx.buchungstag, receiptData.date, 7);
-            return amountMatch && dateMatch;
-          },
-        },
-      ];
+      // 1. Exakter Betrag + ähnlicher Name + ähnliches Datum (±3 Tage)
+      {
+        weight: 100,
+        check: (tx: any) => {
+          const amountMatch = Math.abs(Math.abs(tx.betrag) - receiptData.amount) < 0.01;
+          const nameMatch = this.calculateNameSimilarity(tx.name, receiptData.customerName) > 0.7;
+          const dateMatch = this.isDateWithinRange(tx.buchungstag, receiptData.date, 3);
+          return amountMatch && nameMatch && dateMatch;
+        }
+      },
+      // 2. Exakter Betrag + Rechnungsnummer im Verwendungszweck
+      {
+        weight: 95,
+        check: (tx: any) => {
+          const amountMatch = Math.abs(Math.abs(tx.betrag) - receiptData.amount) < 0.01;
+          const invoiceMatch =
+          receiptData.documentNumber &&
+          tx.verwendungszweck?.toLowerCase().includes(receiptData.documentNumber.toLowerCase());
+          return amountMatch && invoiceMatch;
+        }
+      },
+      // 3. Exakter Betrag + ähnliches Datum (±7 Tage)
+      {
+        weight: 80,
+        check: (tx: any) => {
+          const amountMatch = Math.abs(Math.abs(tx.betrag) - receiptData.amount) < 0.01;
+          const dateMatch = this.isDateWithinRange(tx.buchungstag, receiptData.date, 7);
+          return amountMatch && dateMatch;
+        }
+      }];
 
-      console.log('📊 Matching-Kriterien für zukünftige Implementation:', matchingCriteria.length);
+
+
 
       return null;
     } catch (error) {
@@ -289,15 +364,17 @@ export class ReceiptLinkingService {
    * Erstellt Transaction Link zwischen Beleg und Banktransaktion
    */
   static async createTransactionLink(
-    companyId: string,
-    transactionId: string,
-    receiptId: string,
-    receiptData: ReceiptDocument,
-    transactionData: any,
-    userId: string
-  ): Promise<{ success: boolean; linkId?: string; error?: string }> {
+  companyId: string,
+  transactionId: string,
+  receiptId: string,
+  receiptData: ReceiptDocument,
+  transactionData: any,
+  userId: string,
+  differenceReason?: string,
+  differenceAmount?: number)
+  : Promise<{success: boolean;linkId?: string;error?: string;}> {
     try {
-      console.log('🔗 Erstelle Transaction Link:', { transactionId, receiptId });
+
 
       const linkData: TransactionLinkData = {
         transactionId,
@@ -312,6 +389,10 @@ export class ReceiptLinkingService {
         createdBy: userId,
         bookedAt: Timestamp.now(),
 
+        // Differenz-Informationen (falls vorhanden)
+        amountDifference: differenceAmount,
+        amountDifferenceReason: differenceReason,
+
         // Transaction Data
         transactionData: {
           id: transactionData.id,
@@ -319,7 +400,7 @@ export class ReceiptLinkingService {
           name: transactionData.name,
           verwendungszweck: transactionData.verwendungszweck,
           buchungstag: transactionData.buchungstag,
-          betrag: transactionData.betrag,
+          betrag: transactionData.betrag
         },
 
         // Document Data
@@ -329,8 +410,8 @@ export class ReceiptLinkingService {
           customerName: receiptData.customerName,
           date: receiptData.date,
           total: receiptData.amount,
-          type: receiptData.type,
-        },
+          type: receiptData.type
+        }
       };
 
       // Verwende transaction_links subcollection mit compound key
@@ -344,17 +425,17 @@ export class ReceiptLinkingService {
       const { setDoc } = await import('firebase/firestore');
       await setDoc(linkDocRef, linkData);
 
-      console.log('✅ Transaction Link erstellt:', linkId);
+
 
       return {
         success: true,
-        linkId,
+        linkId
       };
     } catch (error) {
       console.error('❌ Fehler beim Erstellen des Transaction Links:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unbekannter Fehler',
+        error: error instanceof Error ? error.message : 'Unbekannter Fehler'
       };
     }
   }
@@ -366,9 +447,9 @@ export class ReceiptLinkingService {
   private static generateReceiptNumber(companyId: string): Promise<string> {
     // Generiere fortlaufende Belegnummer
     const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000)
-      .toString()
-      .padStart(3, '0');
+    const random = Math.floor(Math.random() * 1000).
+    toString().
+    padStart(3, '0');
     return Promise.resolve(`BE-${timestamp.toString().slice(-6)}${random}`);
   }
 
@@ -388,8 +469,8 @@ export class ReceiptLinkingService {
     const words2 = s2.split(/\s+/);
 
     let matchingWords = 0;
-    words1.forEach(word1 => {
-      if (words2.some(word2 => word2.includes(word1) || word1.includes(word2))) {
+    words1.forEach((word1) => {
+      if (words2.some((word2) => word2.includes(word1) || word1.includes(word2))) {
         matchingWords++;
       }
     });

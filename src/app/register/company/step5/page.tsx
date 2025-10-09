@@ -1149,7 +1149,14 @@ export default function Step5CompanyPage() {
         </div>
       )}
       <div className="w-full max-w-xl lg:max-w-4xl mx-auto mb-6 px-4">
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-between mb-4">
+          <button
+            onClick={() => router.push('/register/company/step4')}
+            className="text-[#14ad9f] hover:text-[#129488] text-base sm:text-lg flex items-center transition-colors duration-200"
+            disabled={isLoading || isConvertingImage || isRedirecting}
+          >
+            <span className="mr-2">← Zurück zu Schritt 4</span>
+          </button>
           <button
             onClick={() => router.push('/')}
             className="text-[#14ad9f] hover:text-teal-700 text-base sm:text-lg flex items-center transition-colors duration-200"

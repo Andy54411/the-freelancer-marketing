@@ -49,20 +49,20 @@ export class FinAPISDKService {
       userId: string;
       userToken: string;
       createdAt: number;
-    }
-  > = new Map();
+    }> =
+  new Map();
 
   constructor(config: FinAPIConfig) {
     this.config = config;
     this.baseUrl =
-      config.baseUrl ||
-      (config.environment === 'production' ? 'https://finapi.io' : 'https://sandbox.finapi.io');
+    config.baseUrl || (
+    config.environment === 'production' ? 'https://finapi.io' : 'https://sandbox.finapi.io');
 
     // WebForm 2.0 uses a separate domain
     this.webFormBaseUrl =
-      config.environment === 'production'
-        ? 'https://webform.finapi.io'
-        : 'https://webform-sandbox.finapi.io';
+    config.environment === 'production' ?
+    'https://webform.finapi.io' :
+    'https://webform-sandbox.finapi.io';
   }
 
   /**
@@ -70,14 +70,14 @@ export class FinAPISDKService {
    */
   private getNormalCredentials(): FinAPICredentials {
     const clientId =
-      this.config.environment === 'production'
-        ? process.env.FINAPI_PROD_CLIENT_ID
-        : process.env.FINAPI_SANDBOX_CLIENT_ID;
+    this.config.environment === 'production' ?
+    process.env.FINAPI_PROD_CLIENT_ID :
+    process.env.FINAPI_SANDBOX_CLIENT_ID;
 
     const clientSecret =
-      this.config.environment === 'production'
-        ? process.env.FINAPI_PROD_CLIENT_SECRET
-        : process.env.FINAPI_SANDBOX_CLIENT_SECRET;
+    this.config.environment === 'production' ?
+    process.env.FINAPI_PROD_CLIENT_SECRET :
+    process.env.FINAPI_SANDBOX_CLIENT_SECRET;
 
     // Security: Only log environment and availability, never actual credentials
 
@@ -106,27 +106,27 @@ export class FinAPISDKService {
     // Security: Only log environment and availability, never actual credentials
 
     try {
-      console.log('🎯 FinAPI Token Request to:', `${this.baseUrl}/api/v2/oauth/token`);
-      console.log('🔑 Using Client ID:', this.config.credentials.clientId.substring(0, 8) + '...');
-      
+
+
+
       const response = await fetch(`${this.baseUrl}/api/v2/oauth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          Accept: 'application/json',
+          Accept: 'application/json'
         },
         body: new URLSearchParams({
           grant_type: 'client_credentials',
           client_id: this.config.credentials.clientId,
-          client_secret: this.config.credentials.clientSecret,
-        }),
+          client_secret: this.config.credentials.clientSecret
+        })
       });
 
-      console.log('🎫 Token Response Status:', response.status);
-      
+
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('❌ Token Error Response:', errorText);
+
         throw new Error(`Token request failed: ${response.status} ${errorText}`);
       }
 
@@ -149,13 +149,13 @@ export class FinAPISDKService {
   async getAdminClientToken(): Promise<string> {
     // Use the same credentials as normal operations - in sandbox there's no separate admin client
     const adminClientId =
-      this.config.environment === 'production'
-        ? process.env.FINAPI_ADMIN_CLIENT_ID
-        : process.env.FINAPI_SANDBOX_CLIENT_ID;
+    this.config.environment === 'production' ?
+    process.env.FINAPI_ADMIN_CLIENT_ID :
+    process.env.FINAPI_SANDBOX_CLIENT_ID;
     const adminClientSecret =
-      this.config.environment === 'production'
-        ? process.env.FINAPI_ADMIN_CLIENT_SECRET
-        : process.env.FINAPI_SANDBOX_CLIENT_SECRET;
+    this.config.environment === 'production' ?
+    process.env.FINAPI_ADMIN_CLIENT_SECRET :
+    process.env.FINAPI_SANDBOX_CLIENT_SECRET;
 
     if (!adminClientId || !adminClientSecret) {
       throw new Error('finAPI admin credentials are not configured for user management operations');
@@ -168,14 +168,14 @@ export class FinAPISDKService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          Accept: 'application/json',
+          Accept: 'application/json'
         },
         body: new URLSearchParams({
           grant_type: 'client_credentials',
           client_id: adminClientId,
           client_secret: adminClientSecret,
-          scope: 'all',
-        }),
+          scope: 'all'
+        })
       });
 
       if (!response.ok) {
@@ -201,15 +201,15 @@ export class FinAPISDKService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          Accept: 'application/json',
+          Accept: 'application/json'
         },
         body: new URLSearchParams({
           grant_type: 'password',
           client_id: normalCredentials.clientId,
           client_secret: normalCredentials.clientSecret,
           username: userId,
-          password: password,
-        }),
+          password: password
+        })
       });
 
       if (!response.ok) {
@@ -243,11 +243,11 @@ export class FinAPISDKService {
    * Get or create finAPI user with consistent credentials
    */
   async getOrCreateUser(
-    userEmail: string,
-    password: string,
-    companyId: string,
-    forceCreate: boolean = false
-  ): Promise<{ user: FinAPIUser; userToken: string }> {
+  userEmail: string,
+  password: string,
+  companyId: string,
+  forceCreate: boolean = false)
+  : Promise<{user: FinAPIUser;userToken: string;}> {
     try {
       // FIRST: Check Firestore for existing finAPI user data
 
@@ -265,9 +265,9 @@ export class FinAPISDKService {
             user: {
               id: firestoreFinAPIUser.userId,
               email: firestoreFinAPIUser.userEmail,
-              password: firestoreFinAPIUser.password,
+              password: firestoreFinAPIUser.password
             } as FinAPIUser,
-            userToken,
+            userToken
           };
         } catch (tokenError: any) {}
       } else {
@@ -298,7 +298,7 @@ export class FinAPISDKService {
       password,
       email: userEmail,
       phone: '+49 99 999999-999',
-      isAutoUpdateEnabled: false,
+      isAutoUpdateEnabled: false
     };
 
     const response = await fetch(`${this.baseUrl}/api/v2/users`, {
@@ -306,9 +306,9 @@ export class FinAPISDKService {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${adminToken}`,
-        'X-Request-Id': Math.random().toString(36).substring(2, 15),
+        'X-Request-Id': Math.random().toString(36).substring(2, 15)
       },
-      body: JSON.stringify(userData),
+      body: JSON.stringify(userData)
     });
 
     if (!response.ok) {
@@ -320,8 +320,8 @@ export class FinAPISDKService {
 
         // Try multiple passwords in order (new consistent password first, then old ones)
         const passwordsToTry = [
-          password, // The new consistent password
-          'demo123', // Legacy hardcoded password
+        password, // The new consistent password
+        'demo123' // Legacy hardcoded password
         ];
 
         for (const tryPassword of passwordsToTry) {
@@ -333,7 +333,7 @@ export class FinAPISDKService {
             if (existingUser) {
               return {
                 user: existingUser,
-                userToken,
+                userToken
               };
             }
           } catch (tokenError: any) {}
@@ -360,7 +360,7 @@ export class FinAPISDKService {
             userId: uniqueFinapiUserId,
             userEmail,
             password,
-            createdAt: Date.now(),
+            createdAt: Date.now()
           });
 
           return newUser;
@@ -380,12 +380,12 @@ export class FinAPISDKService {
       userId: user.id,
       userEmail,
       password,
-      createdAt: Date.now(),
+      createdAt: Date.now()
     });
 
     return {
       user,
-      userToken,
+      userToken
     };
   }
 
@@ -398,8 +398,8 @@ export class FinAPISDKService {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${userToken}`,
-          Accept: 'application/json',
-        },
+          Accept: 'application/json'
+        }
       });
 
       if (!response.ok) {
@@ -417,10 +417,10 @@ export class FinAPISDKService {
    * Create new finAPI user
    */
   async createUser(
-    userId: string,
-    password: string,
-    email: string
-  ): Promise<{ user: FinAPIUser; userToken: string }> {
+  userId: string,
+  password: string,
+  email: string)
+  : Promise<{user: FinAPIUser;userToken: string;}> {
     const adminToken = await this.getAdminClientToken();
 
     const userData = {
@@ -428,7 +428,7 @@ export class FinAPISDKService {
       password: password,
       email: email,
       phone: '+49000000000', // Dummy phone number for sandbox
-      isAutoUpdateEnabled: true,
+      isAutoUpdateEnabled: true
     };
 
     try {
@@ -437,9 +437,9 @@ export class FinAPISDKService {
         headers: {
           Authorization: `Bearer ${adminToken}`,
           'Content-Type': 'application/json',
-          Accept: 'application/json',
+          Accept: 'application/json'
         },
-        body: JSON.stringify(userData),
+        body: JSON.stringify(userData)
       });
 
       if (!response.ok) {
@@ -471,8 +471,8 @@ export class FinAPISDKService {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${adminToken}`,
-          Accept: 'application/json',
-        },
+          Accept: 'application/json'
+        }
       });
 
       if (response.ok) {
@@ -485,8 +485,8 @@ export class FinAPISDKService {
               method: 'DELETE',
               headers: {
                 Authorization: `Bearer ${adminToken}`,
-                Accept: 'application/json',
-              },
+                Accept: 'application/json'
+              }
             });
 
             if (deleteResponse.ok) {
@@ -513,11 +513,11 @@ export class FinAPISDKService {
    * Create WebForm URL for bank connection using finAPI WebForm 2.0
    */
   async createWebForm(
-    userEmail: string,
-    companyId: string,
-    bankId?: string,
-    redirectUrl?: string
-  ): Promise<string> {
+  userEmail: string,
+  companyId: string,
+  bankId?: string,
+  redirectUrl?: string)
+  : Promise<string> {
     try {
       // Validate input parameters
       if (!userEmail || typeof userEmail !== 'string') {
@@ -563,9 +563,9 @@ export class FinAPISDKService {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${userAccessToken}`, // User Token für WebForm
-            'X-Request-Id': Math.random().toString(36).substring(2, 15),
+            'X-Request-Id': Math.random().toString(36).substring(2, 15)
           },
-          body: JSON.stringify(webFormPayload),
+          body: JSON.stringify(webFormPayload)
         }
       );
 
@@ -591,9 +591,9 @@ export class FinAPISDKService {
    * With intelligent fallback to legacy finAPI system
    */
   async syncUserBankData(
-    userEmail: string,
-    companyId: string
-  ): Promise<{
+  userEmail: string,
+  companyId: string)
+  : Promise<{
     connections: any[];
     accounts: any[];
     transactions: any[];
@@ -611,8 +611,8 @@ export class FinAPISDKService {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${userToken}`,
-          Accept: 'application/json',
-        },
+          Accept: 'application/json'
+        }
       });
 
       let connections = [];
@@ -626,8 +626,8 @@ export class FinAPISDKService {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${userToken}`,
-          Accept: 'application/json',
-        },
+          Accept: 'application/json'
+        }
       });
 
       let accounts = [];
@@ -641,8 +641,8 @@ export class FinAPISDKService {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${userToken}`,
-          Accept: 'application/json',
-        },
+          Accept: 'application/json'
+        }
       });
 
       let transactions = [];
@@ -654,7 +654,7 @@ export class FinAPISDKService {
       return {
         connections,
         accounts,
-        transactions,
+        transactions
       };
     } catch (error: any) {
       // FALLBACK: Use legacy finAPI system
@@ -665,7 +665,7 @@ export class FinAPISDKService {
           return {
             connections: [], // Legacy system doesn't return connections
             accounts: legacyResult.accounts,
-            transactions: legacyResult.transactions,
+            transactions: legacyResult.transactions
           };
         } else {
           throw new Error(legacyResult.message);
@@ -674,7 +674,7 @@ export class FinAPISDKService {
         return {
           connections: [],
           accounts: [],
-          transactions: [],
+          transactions: []
         };
       }
     }
@@ -697,8 +697,8 @@ export class FinAPISDKService {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${clientToken}`,
-          Accept: 'application/json',
-        },
+          Accept: 'application/json'
+        }
       });
 
       if (!response.ok) {
@@ -722,13 +722,13 @@ export class FinAPISDKService {
    * Get banks with pagination and search support
    */
   async getBanks(
-    options: {
-      search?: string;
-      page?: number;
-      perPage?: number;
-      includeTestBanks?: boolean;
-    } = {}
-  ): Promise<{
+  options: {
+    search?: string;
+    page?: number;
+    perPage?: number;
+    includeTestBanks?: boolean;
+  } = {})
+  : Promise<{
     banks: any[];
     paging: {
       page: number;
@@ -755,25 +755,25 @@ export class FinAPISDKService {
         url.searchParams.set('isTestBank', 'true');
       }
 
-      console.log('🔗 FinAPI URL:', url.toString());
-      console.log('🧪 Test-Banks aktiviert:', includeTestBanks);
-      console.log('🔍 Suchbegriff für FinAPI:', search);
-      console.log('🎫 Client Token (first 10 chars):', clientToken.substring(0, 10) + '...');
+
+
+
+
 
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${clientToken}`,
-          Accept: 'application/json',
-        },
+          Accept: 'application/json'
+        }
       });
 
-      console.log('📡 FinAPI Response Status:', response.status);
-      console.log('📡 FinAPI Response Headers:', Object.fromEntries(response.headers.entries()));
+
+
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('❌ FinAPI Error Response:', errorText);
+
         throw new Error(`Banks request failed: ${response.status} ${errorText}`);
       }
 
@@ -785,8 +785,8 @@ export class FinAPISDKService {
           page,
           perPage,
           pageCount: 1,
-          totalCount: data.banks?.length || 0,
-        },
+          totalCount: data.banks?.length || 0
+        }
       };
     } catch (error: any) {
       // Return empty result instead of throwing
@@ -796,8 +796,8 @@ export class FinAPISDKService {
           page: options.page || 1,
           perPage: options.perPage || 20,
           pageCount: 0,
-          totalCount: 0,
-        },
+          totalCount: 0
+        }
       };
     }
   }
@@ -844,21 +844,21 @@ export class FinAPISDKService {
    * Save finAPI user data to Firestore
    */
   private async saveFinAPIUserToFirestore(
-    companyId: string,
-    finapiUserData: {
-      userId: string;
-      userEmail: string;
-      password: string;
-      createdAt: number;
-    }
-  ): Promise<void> {
+  companyId: string,
+  finapiUserData: {
+    userId: string;
+    userEmail: string;
+    password: string;
+    createdAt: number;
+  })
+  : Promise<void> {
     try {
       // Update the company document with finAPI user data
       if (db) {
         await db.collection('companies').doc(companyId).update({
           finapiUser: finapiUserData,
           updatedAt: new Date().toISOString(),
-          lastModifiedBy: 'finapi-service',
+          lastModifiedBy: 'finapi-service'
         });
       }
     } catch (error: any) {}
@@ -888,9 +888,9 @@ export function createFinAPIService(environment?: 'sandbox' | 'production'): Fin
   const config: FinAPIConfig = {
     credentials: {
       clientId: defaultClientId,
-      clientSecret: defaultClientSecret,
+      clientSecret: defaultClientSecret
     },
-    environment: detectedEnvironment,
+    environment: detectedEnvironment
   };
 
   return new FinAPISDKService(config);

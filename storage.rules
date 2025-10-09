@@ -121,6 +121,17 @@ service firebase.storage {
                        request.resource.contentType.matches('application/pdf')));
     }
 
+    // 🎯 NEU: Beleg-Uploads über OCR-API (moderner Pfad)
+    // Pfad: {companyId}/receipts/{fileName}
+    match /{companyId}/receipts/{fileName} {
+      allow read: if request.auth != null && 
+                     (isSupportStaff() || 
+                      request.auth.uid == companyId);
+      allow write: if request.auth != null && 
+                      request.auth.uid == companyId &&
+                      (isDelete() || (isUpload() && isValidDocumentType()));
+    }
+
     // Invoice PDFs - Firmen können ihre Rechnungs-PDFs verwalten
     // Pfad: invoices/{companyId}/{invoiceId}/{fileName}
     // WICHTIG: Diese Regel deckt auch Unterordner ab (z.B. actions/)

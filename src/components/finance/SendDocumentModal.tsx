@@ -167,9 +167,9 @@ export function SendDocumentModal({
   // ✅ Dynamic redirect handler
   const handleRedirectAfterAction = useCallback((invoiceId?: string) => {
     if (!redirectAfterAction || !invoiceId) return;
-    
+
     let redirectUrl: string;
-    
+
     if (typeof redirectAfterAction === 'function') {
       // Function: Custom redirect logic
       redirectUrl = redirectAfterAction(invoiceId, documentType);
@@ -177,8 +177,8 @@ export function SendDocumentModal({
       // String: Direct URL or template
       redirectUrl = redirectAfterAction.replace('{documentId}', invoiceId).replace('{companyId}', companyId);
     }
-    
-    console.log(`🔀 Redirecting after action to: ${redirectUrl}`);
+
+
     router.push(redirectUrl);
   }, [redirectAfterAction, documentType, companyId, router]);
 
@@ -1269,9 +1269,9 @@ ${document.companyName || 'Ihr Unternehmen'}`;
               allStyles.push(css);
             }
           } catch (e) {
+
             // Ignoriere CORS-Fehler für externe Stylesheets
-          }
-        });
+          }});
 
         // Erstelle komplettes HTML mit ALLEN Styles
         const completeHtml = `<!DOCTYPE html>
@@ -1333,7 +1333,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
         const byteArray = new Uint8Array(byteNumbers);
         pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
 
-        console.log('✅ PDF erfolgreich mit API generiert');
+
 
       } catch (pdfError) {
         console.error('❌ Fehler bei PDF-API:', pdfError);
@@ -1394,18 +1394,18 @@ ${document.companyName || 'Ihr Unternehmen'}`;
 
           // 🔥 KRITISCH: IMMER neue Nummer generieren bei neuen Dokumenten (keine ID = neues Dokument)
           if (!invoiceId || !finalInvoiceNumber || finalInvoiceNumber.startsWith('RE-1')) {
-            console.log('🔢 SendDocumentModal: Generiere neue Rechnungsnummer...');
+
             try {
               const numberResult = await FirestoreInvoiceService.getNextInvoiceNumber(companyId);
               finalInvoiceNumber = numberResult.formattedNumber;
               finalSequentialNumber = numberResult.sequentialNumber;
-              console.log('✅ SendDocumentModal: Neue Rechnungsnummer generiert:', { finalInvoiceNumber, finalSequentialNumber });
+
             } catch (numberError) {
               console.error('❌ SendDocumentModal: Fehler bei Nummernkreis-Generierung:', numberError);
               // Fallback nur im Notfall
               finalInvoiceNumber = `RE-${Date.now().toString().slice(-4)}`;
               finalSequentialNumber = Date.now() % 1000;
-              console.log('🚨 SendDocumentModal: Using fallback number:', finalInvoiceNumber);
+
             }
           }
 
@@ -1489,11 +1489,11 @@ ${document.companyName || 'Ihr Unternehmen'}`;
         if (documentType === 'invoice' && invoiceId && companyId) {
           try {
             const { GoBDService } = await import('@/services/gobdService');
-            
+
             const userId = user?.uid || 'unknown';
             const userName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Unbekannt';
-            
-            console.log(`🔒 Aktiviere GoBD Auto-Lock für ${method}:`, invoiceId);
+
+
             await GoBDService.autoLockOnSend(companyId, invoiceId, userId, userName);
           } catch (gobdError) {
             console.error('❌ GoBD Auto-Lock fehlgeschlagen:', gobdError);
@@ -1505,7 +1505,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
       // Spezialbehandlung für Save-Operation
       if (method === 'save') {
         await activateGoBDLock();
-        
+
         // 🔥 CRITICAL: Status auf 'finalized' setzen für Save-Aktion
         if (documentType === 'invoice' && invoiceId && companyId) {
           try {
@@ -1521,14 +1521,14 @@ ${document.companyName || 'Ihr Unternehmen'}`;
             // Nicht kritisch - Action trotzdem fortsetzen
           }
         }
-        
+
         toast.success(`${documentLabel} gespeichert`);
-        
+
         // 🔥 CRITICAL: onSend aufrufen für Navigation zur Detailseite
         if (onSend) {
           await onSend(method, { invoiceId });
         }
-        
+
         // 🔀 Dynamic redirect after action
         handleRedirectAfterAction(invoiceId);
         onClose();
@@ -1538,7 +1538,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
       // Spezialbehandlung für Post-Operation (noch nicht implementiert)
       if (method === 'post') {
         await activateGoBDLock();
-        
+
         // 🔥 CRITICAL: Status auf 'finalized' setzen für Post-Aktion
         if (documentType === 'invoice' && invoiceId && companyId) {
           try {
@@ -1549,20 +1549,20 @@ ${document.companyName || 'Ihr Unternehmen'}`;
               finalizedAt: new Date(),
               updatedAt: new Date()
             });
-            console.log('✅ Status auf "finalized" aktualisiert für Rechnung:', invoiceId);
+
           } catch (statusError) {
             console.error('❌ Fehler beim Status-Update:', statusError);
             // Nicht kritisch - Action trotzdem fortsetzen
           }
         }
-        
+
         toast.error('Per Post versenden ist noch nicht verfügbar');
-        
+
         // 🔥 CRITICAL: onSend aufrufen für Navigation zur Detailseite
         if (onSend) {
           await onSend(method, { invoiceId });
         }
-        
+
         // 🔀 Dynamic redirect after action
         handleRedirectAfterAction(invoiceId);
         onClose();
@@ -1723,7 +1723,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
 
         // 🔥 CRITICAL: GoBD-System nach erfolgreichem Drucken aktivieren
         await activateGoBDLock();
-        
+
         // 🔥 CRITICAL: Status auf 'finalized' setzen für Print-Aktion
         if (documentType === 'invoice' && invoiceId && companyId) {
           try {
@@ -1764,15 +1764,15 @@ ${document.companyName || 'Ihr Unternehmen'}`;
         if (documentType === 'invoice' && invoiceId && companyId) {
           try {
             const { GoBDService } = await import('@/services/gobdService');
-            
+
             // Get current user from existing auth hook (already imported at top)
             // Note: useAuth hook is already imported and used in this component
             const userId = user?.uid || 'unknown';
             const userName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Unbekannt';
-            
-            console.log('🔒 Aktiviere GoBD Auto-Lock für Rechnung:', invoiceId);
+
+
             await GoBDService.autoLockOnSend(companyId, invoiceId, userId, userName);
-            
+
             // 🔥 CRITICAL: Status auf 'sent' setzen für E-Mail-Aktion
             const collectionName = 'invoices';
             const docRef = doc(db, 'companies', companyId, collectionName, invoiceId);
@@ -1781,7 +1781,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
               sentAt: new Date(),
               updatedAt: new Date()
             });
-            console.log('✅ Status auf "sent" aktualisiert für Rechnung:', invoiceId);
+
           } catch (gobdError) {
             console.error('❌ GoBD Auto-Lock oder Status-Update fehlgeschlagen:', gobdError);
             // Nicht kritisch - E-Mail wurde trotzdem versendet
@@ -1821,7 +1821,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
 
           // 🔥 CRITICAL: GoBD-System nach erfolgreichem Download aktivieren
           await activateGoBDLock();
-          
+
           // 🔥 CRITICAL: Status auf 'finalized' setzen für Download-Aktion
           if (documentType === 'invoice' && invoiceId && companyId) {
             try {
@@ -1839,12 +1839,12 @@ ${document.companyName || 'Ihr Unternehmen'}`;
           }
 
           toast.success(`${documentLabel} erfolgreich heruntergeladen`);
-          
+
           // 🔥 CRITICAL: onSend aufrufen für Navigation zur Detailseite
           if (onSend) {
             await onSend(method, { invoiceId });
           }
-          
+
           // 🔀 Dynamic redirect after action
           handleRedirectAfterAction(invoiceId);
           onClose();
