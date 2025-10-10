@@ -107,7 +107,6 @@ export class UpdateService {
 
       // Prüfe, ob es ein User oder Company ist
       const isCompany = await this.isCompanyUser(userId);
-      console.log(`🔍 User ${userId} ist ${isCompany ? 'Company' : 'User'}`);
 
       // Erstelle neuen Status, wenn keiner existiert - mit altem Datum für neue Updates
       const defaultStatus: UserUpdateStatus = {

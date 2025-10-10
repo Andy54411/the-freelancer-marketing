@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -86,7 +86,6 @@ export default function ReceiptDetailPage() {
 
       if (expenseData.storageUrl) {
         setPdfUrl(expenseData.storageUrl);
-        console.log('✅ PDF-URL geladen:', expenseData.storageUrl);
       } else {
         console.warn('⚠️ Kein storageUrl Feld vorhanden');
       }
@@ -154,9 +153,9 @@ export default function ReceiptDetailPage() {
               <h3 className="text-lg font-semibold">Fehler</h3>
             </div>
             <p className="text-sm text-gray-600 mb-4">{error || 'Beleg nicht gefunden'}</p>
-            <Button 
-              onClick={() => router.back()} 
-              variant="outline" 
+            <Button
+              onClick={() => router.back()}
+              variant="outline"
               className="w-full border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white transition-colors"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -175,12 +174,7 @@ export default function ReceiptDetailPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.back()}
-                className="gap-2"
-              >
+              <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 Zurück
               </Button>
@@ -192,9 +186,9 @@ export default function ReceiptDetailPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleDownload}
                 className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white transition-colors"
               >
@@ -280,9 +274,7 @@ export default function ReceiptDetailPage() {
                       <p className="label text-sm text-gray-600">Belegnummer</p>
                     </div>
                     <div className="right text-right">
-                      <p className="text-sm font-medium text-gray-900">
-                        {expense.documentNumber}
-                      </p>
+                      <p className="text-sm font-medium text-gray-900">{expense.documentNumber}</p>
                     </div>
                   </div>
                   <div className="detail flex justify-between items-start py-2 gap-4">
@@ -312,9 +304,7 @@ export default function ReceiptDetailPage() {
                       <p className="label text-sm text-gray-600">Kunde</p>
                     </div>
                     <div className="right text-right">
-                      <p className="text-sm font-medium text-gray-900">
-                        {expense.customerName}
-                      </p>
+                      <p className="text-sm font-medium text-gray-900">{expense.customerName}</p>
                     </div>
                   </div>
                   {expense.category && (
@@ -323,9 +313,7 @@ export default function ReceiptDetailPage() {
                         <p className="label text-sm text-gray-600">Kategorie</p>
                       </div>
                       <div className="right text-right">
-                        <p className="text-sm font-medium text-gray-900">
-                          {expense.category}
-                        </p>
+                        <p className="text-sm font-medium text-gray-900">{expense.category}</p>
                       </div>
                     </div>
                   )}
@@ -335,9 +323,7 @@ export default function ReceiptDetailPage() {
                         <p className="label text-sm text-gray-600">Kostenstelle</p>
                       </div>
                       <div className="right text-right">
-                        <p className="text-sm font-medium text-gray-900">
-                          {expense.costCenter}
-                        </p>
+                        <p className="text-sm font-medium text-gray-900">{expense.costCenter}</p>
                       </div>
                     </div>
                   )}
@@ -396,9 +382,7 @@ export default function ReceiptDetailPage() {
                     <div className="text-center text-gray-500">
                       <FileText className="h-12 w-12 mx-auto mb-4 text-[#14ad9f] opacity-40" />
                       <p className="font-medium text-gray-700">Keine PDF-Vorschau verfügbar</p>
-                      <p className="text-sm mt-2">
-                        Der Beleg wurde ohne Datei-Anhang gespeichert.
-                      </p>
+                      <p className="text-sm mt-2">Der Beleg wurde ohne Datei-Anhang gespeichert.</p>
                     </div>
                   </div>
                 )}

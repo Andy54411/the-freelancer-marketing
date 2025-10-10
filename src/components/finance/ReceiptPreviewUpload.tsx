@@ -120,7 +120,6 @@ export default function ReceiptPreviewUpload({
       // 🎯 Speichere Storage-URL (Priorität: fileUrl > s3Path > gcsPath)
       const finalStorageUrl = uploadResult.fileUrl || uploadResult.s3Path || uploadResult.gcsPath;
       setStorageUrl(finalStorageUrl);
-      console.log('✅ Storage-URL gespeichert:', finalStorageUrl);
 
       setOcrProgress('OCR-Analyse wird gestartet...');
 

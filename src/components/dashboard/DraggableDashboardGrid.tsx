@@ -16,9 +16,7 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
-import {
-  useSortable,
-} from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -43,14 +41,9 @@ interface SortableItemProps {
 }
 
 function SortableItem({ id, component, isEditMode, onToggle }: SortableItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -91,10 +84,12 @@ function SortableItem({ id, component, isEditMode, onToggle }: SortableItemProps
             className="h-6 w-6 p-0 bg-white border-gray-200 hover:bg-gray-50"
             onClick={() => onToggle?.(component.id)}
           >
-            <div className={cn(
-              "w-2 h-2 rounded-full",
-              component.enabled ? "bg-green-500" : "bg-gray-400"
-            )} />
+            <div
+              className={cn(
+                'w-2 h-2 rounded-full',
+                component.enabled ? 'bg-green-500' : 'bg-gray-400'
+              )}
+            />
           </Button>
           <Button
             variant="outline"
@@ -106,16 +101,18 @@ function SortableItem({ id, component, isEditMode, onToggle }: SortableItemProps
           </Button>
         </div>
       )}
-      
+
       {/* Component Content */}
-      <div className={cn(
-        "transition-all duration-200",
-        isEditMode && "border-2 border-dashed border-gray-300 rounded-lg p-2",
-        isEditMode && component.enabled && "border-[#14ad9f]"
-      )}>
+      <div
+        className={cn(
+          'transition-all duration-200',
+          isEditMode && 'border-2 border-dashed border-gray-300 rounded-lg p-2',
+          isEditMode && component.enabled && 'border-[#14ad9f]'
+        )}
+      >
         {component.component || (
           <div className="p-4 text-gray-500 text-center">
-            Komponente "{component.title}" nicht verfügbar
+            Komponente &quot;{component.title}&quot; nicht verfügbar
           </div>
         )}
       </div>
@@ -143,6 +140,11 @@ export default function DraggableDashboardGrid({
   const [components, setComponents] = useState(initialComponents);
   const [isEditMode, setIsEditMode] = useState(false);
 
+  // Update local state when initialComponents changes
+  React.useEffect(() => {
+    setComponents(initialComponents);
+  }, [initialComponents]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -155,51 +157,55 @@ export default function DraggableDashboardGrid({
   );
 
   // Drag End Handler
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      const oldIndex = components.findIndex((item) => item.id === active.id);
-      const newIndex = components.findIndex((item) => item.id === over.id);
+      if (over && active.id !== over.id) {
+        const oldIndex = components.findIndex(item => item.id === active.id);
+        const newIndex = components.findIndex(item => item.id === over.id);
 
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newComponents = arrayMove(components, oldIndex, newIndex).map((comp, index) => ({
-          ...comp,
-          order: index,
-        }));
-        
-        setComponents(newComponents);
-        onReorder?.(newComponents);
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const newComponents = arrayMove(components, oldIndex, newIndex).map((comp, index) => ({
+            ...comp,
+            order: index,
+          }));
+
+          setComponents(newComponents);
+          onReorder?.(newComponents);
+        }
       }
-    }
-  }, [components, onReorder]);
+    },
+    [components, onReorder]
+  );
 
   // Toggle Component Enable/Disable
-  const handleToggleComponent = useCallback((componentId: string) => {
-    const newComponents = components.map(comp =>
-      comp.id === componentId
-        ? { ...comp, enabled: !comp.enabled }
-        : comp
-    );
-    setComponents(newComponents);
-    onReorder?.(newComponents);
-  }, [components, onReorder]);
+  const handleToggleComponent = useCallback(
+    (componentId: string) => {
+      const newComponents = components.map(comp =>
+        comp.id === componentId ? { ...comp, enabled: !comp.enabled } : comp
+      );
+      setComponents(newComponents);
+      onReorder?.(newComponents);
+    },
+    [components, onReorder]
+  );
 
   // Nur aktive Komponenten für das Drag & Drop
   const activeComponents = components.filter(comp => comp.enabled);
   const sortableIds = activeComponents.map(comp => comp.id);
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn('relative', className)}>
       {/* Edit Mode Toggle */}
       <div className="flex justify-end mb-4">
         <Button
-          variant={isEditMode ? "default" : "outline"}
+          variant={isEditMode ? 'default' : 'outline'}
           size="sm"
           onClick={() => setIsEditMode(!isEditMode)}
           className={cn(
-            "transition-colors",
-            isEditMode && "bg-[#14ad9f] hover:bg-[#129488] text-white"
+            'transition-colors',
+            isEditMode && 'bg-[#14ad9f] hover:bg-[#129488] text-white'
           )}
         >
           <Settings className="h-4 w-4 mr-2" />
@@ -211,23 +217,16 @@ export default function DraggableDashboardGrid({
       {isEditMode && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>Bearbeitungsmodus aktiv:</strong> Ziehe Komponenten zum Neu-Anordnen. 
-            Klicke auf den farbigen Punkt zum Ein-/Ausschalten von Komponenten.
+            <strong>Bearbeitungsmodus aktiv:</strong> Ziehe Komponenten zum Neu-Anordnen. Klicke auf
+            den farbigen Punkt zum Ein-/Ausschalten von Komponenten.
           </p>
         </div>
       )}
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext 
-          items={sortableIds} 
-          strategy={rectSortingStrategy}
-        >
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={sortableIds} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {components.map((component) => (
+            {components.map(component => (
               <SortableItem
                 key={component.id}
                 id={component.id}
@@ -243,13 +242,11 @@ export default function DraggableDashboardGrid({
       {/* Deaktivierte Komponenten */}
       {isEditMode && components.some(comp => !comp.enabled) && (
         <div className="mt-8 border-t pt-6">
-          <h3 className="text-lg font-semibold text-gray-700 mb-4">
-            Deaktivierte Komponenten
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-700 mb-4">Deaktivierte Komponenten</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {components
               .filter(comp => !comp.enabled)
-              .map((component) => (
+              .map(component => (
                 <div
                   key={component.id}
                   className="relative group opacity-50 hover:opacity-75 transition-opacity"

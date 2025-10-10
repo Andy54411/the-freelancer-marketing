@@ -819,6 +819,39 @@ service cloud.firestore {
                        (resource.data.companyId == request.auth.uid || isSupportStaff());
     }
 
+        // Finance: Quotes Collection
+        match /quotes/{quoteId} {
+          // Lesen: Nur eigene Firma oder Support Staff
+          allow read: if request.auth != null && 
+                         (resource.data.companyId == request.auth.uid) ||
+                         isSupportStaff();
+
+          // Listen-Abfragen: Nur eigene Firma mit companyId-Filter oder Support Staff
+          allow list: if request.auth != null && 
+                        (isSupportStaff() ||
+                         ('where' in request.query &&
+                          request.query.where != null &&
+                          request.query.where.size() > 0 &&
+                          request.query.where[0].path == 'companyId' &&
+                          request.query.where[0].op == '==' &&
+                          request.query.where[0].value == request.auth.uid));
+
+          // Erstellen: Nur eigene Firma
+          allow create: if request.auth != null && 
+                           request.resource.data.companyId == request.auth.uid &&
+                           request.resource.data.createdBy == request.auth.uid &&
+                           request.resource.data.createdAt == request.time;
+
+          // Aktualisieren: Nur eigene Firma
+          allow update: if request.auth != null && 
+                           resource.data.companyId == request.auth.uid &&
+                           request.resource.data.lastModifiedBy == request.auth.uid &&
+                           request.resource.data.updatedAt == request.time;
+
+          // Löschen: Nur eigene Firma oder Support Staff
+          allow delete: if request.auth != null && 
+                           (resource.data.companyId == request.auth.uid || isSupportStaff());
+        }
     // Finance: Expenses Collection
     match /expenses/{expenseId} {
       // Lesen: Nur eigene Firma
@@ -2069,6 +2102,28 @@ service cloud.firestore {
         // Löschen: Nur Support Staff
         allow delete: if isSupportStaff();
       }
+    }
+
+    // GoBD Settings Collection (GoBD-Einstellungen pro Unternehmen)
+    match /gobdSettings/{companyId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany();
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
     }
 
     // GoBD Period Locks Collection (Festschreibungsperioden)
