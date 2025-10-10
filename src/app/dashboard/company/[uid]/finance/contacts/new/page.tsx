@@ -331,10 +331,7 @@ export default function ContactsPage() {
   const persistDirectly = true;
   const onSaved = undefined;
 
-  if (!companyId) {
-    return <div className="p-6">Lädt...</div>;
-  }
-  // State Management
+  // State Management - MUSS vor jedem bedingten Return stehen
   const [loading, setLoading] = useState(false);
   const [customerType, setCustomerType] = useState<CustomerType>('organisation');
   const [activeSubTab, setActiveSubTab] = useState<SubTabType>('overview');
@@ -347,12 +344,16 @@ export default function ContactsPage() {
     Array<{id: string;name: string;categoryType: string;}>>(
     []);
   const [referenceFieldType, setReferenceFieldType] = useState<'customerReference' | 'leitwegId'>('customerReference');
-
   const [newTag, setNewTag] = useState('');
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
 
   // Refs for outside click detection
   const typeDropdownRef = useRef<HTMLDivElement>(null);
+  const [defaultValuesApplied, setDefaultValuesApplied] = useState(false);
+
+  if (!companyId) {
+    return <div className="p-6">Lädt...</div>;
+  }
 
   // Tab Definitionen - nur relevante Tabs für neue Kunden
   const tabs: TabDefinition[] = [
@@ -420,9 +421,6 @@ export default function ContactsPage() {
       generateNextCustomerNumber();
     }
   }, [open]);
-
-  // Separater Effect für Form-Daten basierend auf defaultValues - NUR beim ersten Öffnen
-  const [defaultValuesApplied, setDefaultValuesApplied] = useState(false);
 
   // DefaultValues werden in einer Page nicht benötigt
   // useEffect für defaultValues entfernt

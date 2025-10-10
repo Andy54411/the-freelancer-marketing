@@ -18,6 +18,7 @@ import {
   Briefcase,
   XCircle,
   MessageSquare,
+  Bell,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -41,6 +42,7 @@ const navigation = [
   { name: 'Chat-Monitoring', href: '/dashboard/admin/chat-monitoring', icon: MessageSquare },
   { name: 'Storno-Verwaltung', href: '/dashboard/admin/storno-management', icon: XCircle },
   { name: 'Enhanced Analytics', href: '/dashboard/admin/analytics', icon: BarChart3 },
+  { name: 'Updates & Changelog', href: '/dashboard/admin/updates', icon: Bell },
   { name: 'Unternehmen', href: '/dashboard/admin/companies', icon: Building2 },
   { name: 'Benutzer', href: '/dashboard/admin/users', icon: Users },
   { name: 'Admin-Benutzer', href: '/dashboard/admin/admin-users', icon: Shield },
