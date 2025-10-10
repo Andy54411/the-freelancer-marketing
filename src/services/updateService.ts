@@ -32,6 +32,7 @@ export class UpdateService {
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
+        version: doc.data().version || '1.0.0', // Fallback für Updates ohne Version
         releaseDate: doc.data().releaseDate?.toDate?.()?.toISOString() || doc.data().releaseDate,
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
       })) as UpdateNotification[];
@@ -53,6 +54,7 @@ export class UpdateService {
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
+        version: doc.data().version || '1.0.0', // Fallback für Updates ohne Version
         releaseDate: doc.data().releaseDate?.toDate?.()?.toISOString() || doc.data().releaseDate,
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
       })) as UpdateNotification[];
