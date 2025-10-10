@@ -1,0 +1,95 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { UpdateService } from '@/services/updateService';
+import { UpdateNotification } from '@/types/updates';
+import { toast } from 'sonner';
+
+export const useUpdateNotifications = () => {
+  const { user } = useAuth();
+  const [unseenUpdates, setUnseenUpdates] = useState<UpdateNotification[]>([]);
+  const [unseenCount, setUnseenCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+
+  // Updates laden
+  const loadUnseenUpdates = useCallback(async () => {
+    if (!user?.uid) return;
+
+    try {
+      setLoading(true);
+      const updates = await UpdateService.getUnseenUpdates(user.uid);
+      const count = await UpdateService.getUnseenUpdateCount(user.uid);
+      
+      setUnseenUpdates(updates);
+      setUnseenCount(count);
+
+      // Zeige Notification, wenn neue Updates verfügbar sind
+      if (updates.length > 0) {
+        const latestUpdate = updates[0];
+        toast.info(`🎉 Neue Updates verfügbar! ${latestUpdate.title}`, {
+          action: {
+            label: 'Anzeigen',
+            onClick: () => setShowNotificationModal(true)
+          },
+          duration: 10000
+        });
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Updates:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.uid]);
+
+  // Update als gesehen markieren
+  const markUpdateAsSeen = useCallback(async (updateId: string, version: string) => {
+    if (!user?.uid) return;
+
+    try {
+      await UpdateService.markUpdateAsSeen(user.uid, updateId, version);
+      await loadUnseenUpdates(); // Reload nach dem Markieren
+    } catch (error) {
+      console.error('Fehler beim Markieren des Updates:', error);
+    }
+  }, [user?.uid, loadUnseenUpdates]);
+
+  // Alle Updates als gesehen markieren
+  const markAllAsSeen = useCallback(async () => {
+    if (!user?.uid) return;
+
+    try {
+      await UpdateService.markAllUpdatesAsSeen(user.uid);
+      setUnseenUpdates([]);
+      setUnseenCount(0);
+      setShowNotificationModal(false);
+      toast.success('Alle Updates als gelesen markiert');
+    } catch (error) {
+      console.error('Fehler beim Markieren aller Updates:', error);
+      toast.error('Fehler beim Markieren der Updates');
+    }
+  }, [user?.uid]);
+
+  // Initial load und periodische Updates
+  useEffect(() => {
+    if (user?.uid) {
+      loadUnseenUpdates();
+
+      // Prüfe alle 5 Minuten auf neue Updates
+      const interval = setInterval(loadUnseenUpdates, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [user?.uid, loadUnseenUpdates]);
+
+  return {
+    unseenUpdates,
+    unseenCount,
+    loading,
+    showNotificationModal,
+    setShowNotificationModal,
+    markUpdateAsSeen,
+    markAllAsSeen,
+    refreshUpdates: loadUnseenUpdates
+  };
+};

@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 // Entfernt: Tabs Import - verwenden jetzt custom Tab-Leiste
 import { Button } from '@/components/ui/button';
-import { Calculator, Hash, CreditCard, Wallet, ArrowLeftRight, Building2, Shield } from 'lucide-react';
+import { Calculator, Hash, CreditCard, Wallet, ArrowLeftRight, Building2, Shield, DollarSign, MoreHorizontal, ChevronDown } from 'lucide-react';
 
 // Import Tab Components
 import NumberSequencesTab from '@/components/accounting/NumberSequencesTab';
@@ -14,6 +14,7 @@ import PaymentAccountsTab, { PaymentAccount } from '@/components/accounting/Paym
 import TransactionMatchingTab from '@/components/accounting/TransactionMatchingTab';
 import CostCentersTab, { CostCenter } from '@/components/accounting/CostCentersTab';
 import { GoBDSystem } from '@/components/finance/gobd';
+import FinanceSettingsTab from '@/components/accounting/FinanceSettingsTab';
 
 // Import Services
 import { NumberSequenceService, NumberSequence } from '@/services/numberSequenceService';
@@ -22,6 +23,8 @@ export default function AccountingPage() {
   const params = useParams();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
   const [activeTab, setActiveTab] = useState('sequences');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // State für Nummerkreise - wird aus der Datenbank geladen
   const [numberSequences, setNumberSequences] = useState<NumberSequence[]>([]);
@@ -52,6 +55,22 @@ export default function AccountingPage() {
 
     loadNumberSequences();
   }, [uid]);
+
+  // FUNKTIONIERENDER Click-outside Handler
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+
 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
     {
@@ -160,87 +179,113 @@ export default function AccountingPage() {
         </div>
       </div>
 
-      {/* NEUE CUSTOM TAB-LEISTE - Taskilo Design */}
+      {/* EINFACHE HORIZONTALE TAB-LEISTE */}
       <div className="space-y-6">
-        <div className="bg-gray-100 p-1 rounded-lg">
-          <nav className="grid w-full grid-cols-7 gap-1">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            {/* Haupttabs */}  
             <button
               onClick={() => setActiveTab('sequences')}
-              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                 activeTab === 'sequences'
-                  ? 'bg-[#14ad9f] text-white shadow-sm'
-                  : 'bg-transparent text-gray-700 hover:bg-gray-200'
+                  ? 'border-[#14ad9f] text-[#14ad9f]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <Hash className="h-4 w-4" />
               Nummernkreise
             </button>
+            
             <button
               onClick={() => setActiveTab('accounts')}
-              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                 activeTab === 'accounts'
-                  ? 'bg-[#14ad9f] text-white shadow-sm'
-                  : 'bg-transparent text-gray-700 hover:bg-gray-200'
+                  ? 'border-[#14ad9f] text-[#14ad9f]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <Calculator className="h-4 w-4" />
               Buchungskonten
             </button>
+            
             <button
               onClick={() => setActiveTab('payment-methods')}
-              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                 activeTab === 'payment-methods'
-                  ? 'bg-[#14ad9f] text-white shadow-sm'
-                  : 'bg-transparent text-gray-700 hover:bg-gray-200'
+                  ? 'border-[#14ad9f] text-[#14ad9f]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <CreditCard className="h-4 w-4" />
               Zahlungsmethoden
             </button>
+            
             <button
               onClick={() => setActiveTab('payment-accounts')}
-              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                 activeTab === 'payment-accounts'
-                  ? 'bg-[#14ad9f] text-white shadow-sm'
-                  : 'bg-transparent text-gray-700 hover:bg-gray-200'
+                  ? 'border-[#14ad9f] text-[#14ad9f]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <Wallet className="h-4 w-4" />
               Zahlungskonten
             </button>
+            
             <button
               onClick={() => setActiveTab('transaction-matching')}
-              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                 activeTab === 'transaction-matching'
-                  ? 'bg-[#14ad9f] text-white shadow-sm'
-                  : 'bg-transparent text-gray-700 hover:bg-gray-200'
+                  ? 'border-[#14ad9f] text-[#14ad9f]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <ArrowLeftRight className="h-4 w-4" />
               Transaktionszuordnung
             </button>
-            <button
-              onClick={() => setActiveTab('cost-centers')}
-              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
-                activeTab === 'cost-centers'
-                  ? 'bg-[#14ad9f] text-white shadow-sm'
-                  : 'bg-transparent text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <Building2 className="h-4 w-4" />
-              Kostenstelle
-            </button>
-            <button
-              onClick={() => setActiveTab('gobd')}
-              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
-                activeTab === 'gobd'
-                  ? 'bg-[#14ad9f] text-white shadow-sm'
-                  : 'bg-transparent text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <Shield className="h-4 w-4" />
-              GoBD
-            </button>
+
+            {/* 3-Punkte Dropdown - FUNKTIONIERT GARANTIERT! */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-1 ${
+                  ['cost-centers', 'gobd', 'finance-settings'].includes(activeTab)
+                    ? 'border-[#14ad9f] text-[#14ad9f]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setActiveTab('cost-centers');
+                        setDropdownOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Kostenstelle
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab('gobd');
+                        setDropdownOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      GoBD
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab('finance-settings');
+                        setDropdownOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Finanzeinstellungen
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </nav>
         </div>
 
@@ -282,6 +327,9 @@ export default function AccountingPage() {
           )}
           {activeTab === 'gobd' && (
             <GoBDSystem companyId={uid} />
+          )}
+          {activeTab === 'finance-settings' && (
+            <FinanceSettingsTab companyUid={uid} />
           )}
         </div>
       </div>

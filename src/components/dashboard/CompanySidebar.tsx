@@ -127,13 +127,10 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
-    label: 'Buchhaltung',
+    label: 'Buchhaltungseinstellungen',
     icon: FiCalculator,
     value: 'accounting',
-    subItems: [
-      { label: 'Dashboard', value: 'accounting-overview', href: 'finance/accounting' },
-      { label: 'Einstellungen', value: 'accounting-settings', href: 'finance/settings' },
-    ],
+    href: 'finance/accounting',
   },
   {
     label: 'Geschäftspartner',

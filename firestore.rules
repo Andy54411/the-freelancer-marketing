@@ -2595,5 +2595,37 @@ service cloud.firestore {
                     && (resource.data.companyId == request.auth.uid || 
                         isSupportStaff());
     }
+
+    // ===== UPDATE NOTIFICATION SYSTEM =====
+    
+    // Update Notifications Collection - Für System-Updates und Changelog
+    match /updates/{updateId} {
+      // Jeder authentifizierte Benutzer kann Updates lesen
+      allow read, list: if request.auth != null;
+      
+      // Nur Administratoren können Updates erstellen, bearbeiten und löschen
+      // Administratoren sind definiert durch eine spezielle E-Mail-Liste
+      allow create, update, delete: if request.auth != null 
+                                    && request.auth.token.email in [
+                                      'andy.staudinger@taskilo.de',
+                                      'support@taskilo.de',
+                                      'admin@taskilo.de'
+                                    ];
+    }
+
+    // User Update Status Collection - Tracking welche Updates ein User gesehen hat
+    match /userUpdateStatus/{userId} {
+      // Benutzer können nur ihren eigenen Status lesen und schreiben
+      allow read, write: if request.auth != null 
+                         && request.auth.uid == userId;
+      
+      // Administratoren können alle Status lesen (für Analytics)
+      allow read: if request.auth != null 
+                  && request.auth.token.email in [
+                    'andy.staudinger@taskilo.de',
+                    'support@taskilo.de',
+                    'admin@taskilo.de'
+                  ];
+    }
   }
 }

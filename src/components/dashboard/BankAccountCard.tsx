@@ -97,7 +97,10 @@ export default function BankAccountCard({
       );
 
       if (!response.ok) {
-        throw new Error('Failed to load transactions');
+        console.warn(`Transaction API returned ${response.status}: ${response.statusText}`);
+        // Setze leere Transaktionen statt Error zu werfen
+        setTransactions([]);
+        return;
       }
 
       const data = await response.json();

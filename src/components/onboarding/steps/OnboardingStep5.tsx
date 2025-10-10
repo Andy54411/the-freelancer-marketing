@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CheckCircle, FileText, Shield, AlertCircle } from 'lucide-react';
 import { RequiredFieldLabel, RequiredFieldIndicator } from '@/components/onboarding/RequiredFieldLabel';
 
-// Harmonisierte Step5Data Interface
+// Step5Data Interface
 interface Step5Data {
   documentsCompleted: boolean;
 }
@@ -20,15 +20,15 @@ interface OnboardingStep5Props {
 }
 
 export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
-  const { user } = useAuth();
-  const {
-    stepData,
-    updateStepData,
+  const { 
+    stepData, 
+    updateStepData, 
+    goToNextStep, 
     goToPreviousStep,
-    submitOnboarding,
-    getOverallCompletion,
     saveCurrentStep,
+    submitOnboarding 
   } = useOnboarding();
+  const { user } = useAuth();
 
   const [step5Data, setStep5Data] = useState<Step5Data>(
     stepData[5] || {
@@ -37,34 +37,50 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isCompleted, setIsCompleted] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
+
   const updateField = (field: keyof Step5Data, value: any) => {
-    const updatedData = { ...step5Data, [field]: value };
-    setStep5Data(updatedData);
-    updateStepData(5, updatedData);
+    const newData = { ...step5Data, [field]: value };
+    setStep5Data(newData);
+    updateStepData(5, newData);
   };
 
-  const getMissingFields = () => {
+  // Fehlende Felder aus vorherigen Schritten ermitteln
+  const getMissingFields = (): string[] => {
     const missing: string[] = [];
+    
+    // Step 1 validieren
+    const step1 = stepData[1];
+    if (!step1?.companyName) missing.push('Unternehmensname');
+    if (!step1?.legalForm) missing.push('Rechtsform');
+    if (!step1?.address?.street) missing.push('Straße');
+    if (!step1?.address?.city) missing.push('Stadt');
 
-    // Step 1 Prüfung
-    if (!stepData[1]?.businessType) missing.push('Unternehmenstyp');
-    if (!stepData[1]?.employees) missing.push('Mitarbeiteranzahl');
+    // Step 2 validieren
+    const step2 = stepData[2];
+    if (!step2?.contactPerson?.firstName) missing.push('Vorname Ansprechpartner');
+    if (!step2?.contactPerson?.lastName) missing.push('Nachname Ansprechpartner');
+    if (!step2?.contactPerson?.email) missing.push('E-Mail Ansprechpartner');
+    if (!step2?.contactPerson?.phone) missing.push('Telefon Ansprechpartner');
 
-    // Step 2 Prüfung
-    if (!stepData[2]?.kleinunternehmer) missing.push('Kleinunternehmerregelung');
-    if (!stepData[2]?.profitMethod) missing.push('Gewinnermittlung');
-    if (!stepData[2]?.priceInput) missing.push('Preiseingabe');
-    if (!stepData[2]?.taxRate) missing.push('Steuersatz');
+    // Step 3 validieren
+    const step3 = stepData[3];
+    if (!step3?.skills || step3.skills.length === 0) missing.push('Mindestens eine Fähigkeit');
 
-    // Step 4 Prüfung
-    if (!stepData[4]?.availabilityType) missing.push('Verfügbarkeitstyp');
-    if (!stepData[4]?.advanceBookingHours) missing.push('Vorlaufzeit');
-    if (!stepData[4]?.maxTravelDistance) missing.push('Max. Entfernung');
+    // Step 4 validieren
+    const step4 = stepData[4];
+    if (!step4?.availabilityType) missing.push('Verfügbarkeitstyp');
 
     return missing;
+  };
+
+  // Gesamtkompletion berechnen
+  const getOverallCompletion = (): number => {
+    const totalFields = 10; // Geschätzte Anzahl wichtiger Felder
+    const missingCount = getMissingFields().length;
+    return Math.max(0, ((totalFields - missingCount) / totalFields) * 100);
   };
 
   // Online/Offline Status überwachen

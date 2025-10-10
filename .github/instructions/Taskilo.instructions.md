@@ -1,257 +1,253 @@
-TASKILO AI CODING GUIDELINES: MASTER-DOKUMENT
-Architecture Overview
-Taskilo is a service marketplace platform connecting customers with verified service providers. Built with Next.js 15 + TypeScript, Firebase backend, and AWS integrations.
+# TASKILO AI DEVELOPMENT GUIDELINES
 
-Core Components
-Frontend: Next.js App Router (src/app/) with shadcn/ui components.
+## 🎯 OBERSTE PRIORITÄTEN
 
-Backend: Firebase (Firestore, Auth, Functions, Storage, Realtime DB) and AWS Lambda (specialized services).
+### 1. DEUTSCHE FINANZ-COMPLIANCE (NICHT VERHANDELBAR)
+- **GoBD-Konformität**: Alle Finanz- und Buchhaltungsfunktionen müssen deutschen Gesetzen entsprechen
+- **Steuerrecht §19 UStG**: Kleinunternehmer-Regelung korrekt implementieren
+- **Rechnungslegung**: Fortlaufende Nummerierung, keine Löschungen (nur Stornierungen)
+- **DATEV-Integration**: Kompatibilität zu deutschen Buchhaltungsstandards
 
-Dashboards: Three distinct user interfaces - Customer, Provider, and Admin dashboards.
+### 2. QUALITÄTS-STANDARDS (AUSNAHMSLOS)
+- **NIEMALS Mock-Daten**: Immer echte Daten verwenden, Probleme an der Wurzel lösen
+- **TypeScript-Compliance**: Alle Compilation-Fehler müssen behoben werden
+- **get_errors vor Abschluss**: Jede Aufgabe muss mit fehlerfreiem Code enden
+- **Zod-Validierung**: ALLE eingehenden Daten müssen validiert werden
 
-Invoice System: Professional German accounting module (SevDesk/LexOffice-style) with GoBD compliance.
+### 3. UPDATE-NOTIFICATION-PFLICHT (MANDATORY)
+Bei **JEDEM** Commit/Push MUSS ein detailliertes Update erstellt werden:
+- **Admin-Panel nutzen**: `/dashboard/admin/updates`
+- **Kategorisierung**: feature | improvement | bugfix | security
+- **Deutsche Sprache**: Benutzerfreundliche Beschreibungen
+- **Screenshots/Dokumentation**: Vollständige visuelle Dokumentation
 
-Payments: Stripe integration with complex B2B/B2C flows.
+## 🏗️ ARCHITEKTUR-ÜBERBLICK
 
-Integrations: AWS SES/Resend emails, Google services, DATEV accounting, FinAPI banking.
+### Core Technology Stack
+- **Frontend**: Next.js 15 App Router + TypeScript
+- **Backend**: Firebase (Firestore, Auth, Functions, Storage)
+- **Cloud Services**: AWS Lambda (specialized services)
+- **UI Framework**: shadcn/ui + Radix UI
+- **Styling**: Tailwind CSS mit Taskilo-Farbschema (Teal: 14ad9f)
+- **Deployment**: Vercel (Frontend) + Firebase (Functions)
 
-Deployment: Vercel (frontend) + Firebase (functions) + AWS Lambda (specialized services).
+### Database Collections (Firestore)
+```
+Core Business:
+├── users (35 registration + 13 onboarding fields)
+├── companies (service providers)
+├── customers (B2B customer management with VAT)
+├── auftraege (orders/jobs)
+├── quotes (Angebote)
+└── invoices (GoBD-compliant invoicing)
 
-Key Data Patterns
-Users Collection: Single document merging registration (35 fields) + onboarding (13 fields) data.
+Communication:
+├── chats (general messaging)
+├── directChats (1:1 conversations)
+├── supportChats (customer support)
+└── notifications (system notifications)
 
-Customers Collection: B2B customer management with VAT validation, customer numbers, supplier flags.
+Financial Management:
+├── escrowPayments (payment processing)
+├── expenses (expense tracking)
+├── payout_logs (payment history)
+└── stripe_cache (payment cache)
 
-Multi-tenant: Companies as service providers with complex tax/finance logic.
+Operations:
+├── inventory (stock management)
+├── stockMovements (inventory changes)
+├── timeEntries (time tracking)
+└── orderTimeTracking (project time)
 
-Dual Business Model: B2B (business-to-business) + B2C (business-to-consumer) flows.
+Update System:
+├── updates (changelog entries)
+└── userUpdateStatus (user notification tracking)
 
-Real-time: Firestore listeners for chat, notifications, live updates.
+Analytics & Compliance:
+├── admin_logs (audit trail)
+├── analytics (business metrics)
+├── ai_conversations (AI interaction logs)
+└── finapi_disconnections (banking compliance)
+```
 
-German Business Context: VAT, tax methods, DATEV integration, Kleinunternehmer rules.
+### Dashboard Architecture
+1. **Customer Dashboard** (`/dashboard/user/[uid]`)
+   - Service booking interface
+   - Order management
+   - Payment processing
 
-Database Collections Overview
-Core: users, companies, customers, auftraege (orders), quotes, invoices
+2. **Provider Dashboard** (`/dashboard/company/[uid]`)
+   - Business management
+   - Invoice generation (SevDesk-style)
+   - Time tracking & projects
+   - Financial reporting
 
-Communication: chats, directChats, supportChats, notifications
+3. **Admin Dashboard** (`/dashboard/admin`)
+   - Platform administration
+   - User management
+   - Analytics & reporting
+   - Update notifications management
 
-Financial: escrowPayments, expenses, payout_logs, stripe_cache
+## 💻 ENTWICKLUNGS-STANDARDS
 
-Operations: inventory, stockMovements, timeEntries, orderTimeTracking
+### Code Patterns
+```typescript
+// ✅ Firebase Client Integration
+import { db, auth, functions } from '@/firebase/clients';
 
-Analytics: admin_logs, analytics, ai_conversations, ai_learning_patterns
+// ✅ Server-side Firebase
+import * as admin from 'firebase-admin';
 
-Compliance: finapi_disconnections, revolut_disconnections, steuerberater_invites
+// ✅ Service Pattern
+export class CustomerService {
+  static async getCustomer(id: string) {
+    const doc = await getDoc(doc(db, 'customers', id));
+    return doc.exists() ? doc.data() : null;
+  }
+}
 
-Dashboard Architecture
-Customer Dashboard: End-user interface for booking services, managing orders, payments.
+// ✅ Zod Validation (MANDATORY)
+import { z } from 'zod';
+const CustomerSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  vatId: z.string().optional()
+});
+```
 
-Provider Dashboard: Service provider interface for managing business, quotes, invoices, time tracking.
+### Path Aliases (ALWAYS USE)
+```typescript
+// ✅ CORRECT
+import { Button } from '@/components/ui/button';
+import { CustomerService } from '@/services/customerService';
 
-Admin Dashboard: Platform administration with analytics, user management, financial oversight.
+// ❌ WRONG
+import { Button } from '../../../components/ui/button';
+```
 
-Invoice System (SevDesk/LexOffice-style)
-GoBD Compliance: Fortlaufende Rechnungsnummerierung, deutsche Steuerstandards.
+### German Business Logic
+```typescript
+// Steuerlogik für deutsche Unternehmen
+interface TaxSettings {
+  kleinunternehmer: 'ja' | 'nein';  // §19 UStG
+  profitMethod: 'euer' | 'bilanz';
+  priceInput: 'brutto' | 'netto';
+  taxRate: '19' | '7' | '0';        // 0% für Kleinunternehmer
+}
 
-Storno Functionality: Professionelle Stornorechnungen mit negativen Beträgen. Keine Rechnungen löschen!
+// Customer Management
+interface Customer {
+  customerNumber: string;      // "LF-001" fortlaufend
+  vatId?: string;             // EU-Umsatzsteuer-ID
+  isSupplier: boolean;        // Lieferant vs. Kunde
+  vatValidated: boolean;      // VAT-Validierung Status
+}
+```
 
-E-Invoicing: Elektronische Rechnungsstellung (XRechnung, ZUGFeRD).
+## 🎨 UI/UX GUIDELINES
 
-Templates: Mehrere Rechnungsvorlagen mit Branding-Optionen.
+### Design System
+- **Primary Color**: Taskilo Teal (Hex: 14ad9f)
+- **Buttons**: `bg-[color:14ad9f] hover:bg-[color:129488] text-white`
+- **NEVER use black (Hex: 000000)** as primary color
 
-Customer Management: Kunden- und Lieferantenverwaltung mit VAT-Validierung.
+### Component Patterns
+```tsx
+// ✅ Info-Icons with Tooltips (NOT separate text)
+<div className="relative">
+  <Input className="pr-8" />
+  <button className="absolute right-2 top-1/2 transform -translate-y-1/2">
+    <InfoIcon className="h-4 w-4" />
+  </button>
+</div>
 
-Tax Logic: Automatische Steuerberechnung (19%/7%/0%), Kleinunternehmer-Unterstützung.
+// ✅ Loading States (ALWAYS implement)
+{isLoading ? <Skeleton className="w-full h-8" /> : <ActualContent />}
+```
 
-PDF Generation: Professionelle PDF-Erstellung mit React-PDF.
+### Form Handling
+- **React Hook Form** + **Zod validation**
+- **Error handling** with proper user feedback
+- **Loading states** during submissions
 
-OCR Belegerfassung: Automatische Texterkennung für Belege.
+## 🔧 DEVELOPMENT WORKFLOW
 
-Development Workflow
-Local Development
-# Install dependencies (pnpm required)
+### Local Development
+```bash
+# Dependencies (pnpm REQUIRED)
 pnpm install
 
-
-# Alternative: Start Next.js only
+# Development server
 pnpm run dev
 
 # Build with memory optimization
 NODE_OPTIONS="--max-old-space-size=8192" pnpm run build
 
-Firebase Emulators
-Auto-connect: Set NEXT_PUBLIC_FIREBASE_*_EMULATOR_HOST env vars to enable.
-
-Data seeding: pnpm run setup-emulator imports production data.
-
-Functions: cd firebase_functions && pnpm run serve for local function testing.
-
-Testing & Quality
-# Type checking (critical for complex types)
+# Quality checks (MANDATORY before commits)
 pnpm run type-check
-
-# Linting with max 100 warnings
 pnpm run lint
-
-# Format code
 pnpm run format
+pnpm run logs:remove
+```
 
-# Console log cleanup
-pnpm run logs:remove  # Remove debug logs before commits
+### Firebase Integration
+- **Emulators**: Set `NEXT_PUBLIC_FIREBASE_*_EMULATOR_HOST` env vars
+- **Data seeding**: `pnpm run setup-emulator`
+- **Functions**: `cd firebase_functions && pnpm run serve`
 
-KRITISCHE AI-ANWEISUNGEN - NIEMALS IGNORIEREN!
-FÜHRENDES PRINZIP: Die oberste Priorität ist die Einhaltung deutscher Finanz- und Steuergesetze (GoBD, UStG). Sicherheit und Korrektheit vor Geschwindigkeit.
+## 🚫 VERBOTENE PRAKTIKEN
 
-PROBLEMLÖSUNG-PRINZIPIEN:
+### Code Quality
+- ❌ **console.log()** - Use structured logging only
+- ❌ **Mock/Fallback data** - Always fix root causes
+- ❌ **TypeScript errors** - Must be 100% error-free
+- ❌ **Missing validation** - All inputs must be validated
 
-NIEMALS NUR SYMPTOME VERSTECKEN - Debug-Logs entfernen oder NIemals Fallback/Mock-Daten verwenden!!
+### Firebase/Database
+- ❌ **orderBy() in queries** - Sort in application to avoid index errors
+- ❌ **Uncontrolled listeners** - Always clean up subscriptions
+- ❌ **Direct document deletion** - Use soft deletes for audit trails
 
-PROBLEME RICHTIG UND GEWISSENHAFT LÖSEN - Die echte Ursache finden und beheben.
+### Business Logic
+- ❌ **Incorrect tax calculations** - Must follow German tax law
+- ❌ **Missing GoBD compliance** - All financial operations must be compliant
+- ❌ **B2B/B2C logic mixing** - Keep business flows separate
 
-KEINE MOCK-DATEN - Immer echte Daten verwenden.
+## 🔄 INTEGRATION POINTS
 
-ZEIT RESPEKTIEREN - Effizient und zielgerichtet arbeiten.
+### External Services
+- **DATEV**: German accounting software integration
+- **FinAPI**: Banking connections and verification
+- **Stripe Connect**: Payment processing for service providers
+- **AWS SES/Resend**: Email delivery services
+- **Google Services**: Maps, Analytics (via GTM)
 
-QUALITÄTSSICHERUNG:
+### Payment Flows
+- **B2B**: Complex tax calculations, invoice requirements
+- **B2C**: Simplified consumer flows
+- **Escrow**: Secure payment handling
+- **Webhooks**: Firebase functions handle Stripe events
 
-IMMER ARBEITSBEREICH PRÜFEN - Vor Abschluss jeder Aufgabe MUSS get_errors ausgeführt werden.
+## 📊 MONITORING & ANALYTICS
 
-TYPESCRIPT-ERRORS BEHEBEN - Alle TypeScript-Compilation-Fehler müssen behoben werden.
+### Performance
+- **Build optimization**: 8GB Node.js memory limit
+- **Bundle analysis**: Monitor bundle sizes
+- **Real-time updates**: Efficient listener management
 
-FEHLERFREIE PRODUCTION - System muss vollständig kompilierbar und einsatzbereit sein.
+### Compliance & Auditing
+- **Admin logs**: All administrative actions
+- **Audit trails**: Complete change history
+- **Error tracking**: Comprehensive error monitoring
+- **Business intelligence**: Analytics for decision making
 
-Code Patterns & Conventions
-Firebase Integration
-// Client-side (src/firebase/clients.ts)
-import { db, auth, functions } from '@/firebase/clients';
+## 🎯 ERFOLGS-KRITERIEN
 
-// Server-side (src/firebase/server.ts) 
-import * as admin from 'firebase-admin';
+Eine Aufgabe ist nur dann abgeschlossen, wenn:
+1. ✅ **Keine TypeScript-Fehler** (`get_errors` zeigt sauberes Ergebnis)
+2. ✅ **Deutsche Compliance** beachtet (GoBD, Steuerrecht)
+3. ✅ **Update-Notification** erstellt (bei Code-Änderungen)
+4. ✅ **Echte Daten** verwendet (keine Mocks/Fallbacks)
+5. ✅ **Code-Qualität** eingehalten (Zod, Pfad-Aliase, etc.)
 
-// Service pattern (src/services/)
-export class SomeService {
-  static async someOperation(userId: string) {
-    const doc = await getDoc(doc(db, 'users', userId));
-    // ... business logic
-  }
-}
-
-Data Validation & Multi-Cloud Strategy
-ZOD-PFLICHT: ALLE eingehenden Daten aus HTTP-, Cloud Function- oder API-Requests MÜSSEN mit Zod validiert werden (z.B. in den Service-Schichten).
-
-Path Aliases: @/ maps to src/. IMMER diesen Alias für alle internen Imports verwenden.
-
-Cloud Access (Lambda): Der Handler muss dynamisch zwischen S3 und GCS/HTTP-Zugriff wechseln.
-
-Cloud Access Logik
-
-Details
-
-AWS S3 Download
-
-Nativer Zugriff über @aws-sdk/client-s3 (höchste Priorität für s3:// Pfade).
-
-GCS/HTTP Download
-
-Generischer Download über axios (für https:// oder gs:// Pfade, wobei gs:// eine signierte HTTP-URL voraussetzt).
-
-Logging Veto
-
-console.log ist verboten. Nur strukturierte Logger verwenden.
-
-Component Structure
-UI Components: src/components/ui/ (Radix-based, shadcn/ui)
-
-Feature Components: src/components/ with subdirectories
-
-Finance Components: src/components/finance/ - Complete accounting suite
-
-Forms: React Hook Form + Zod validation.
-
-Ladezustände: Implementiere IMMER Skeleton-Screens oder Ladeindikatoren bei asynchronen Datenabrufen.
-
-Design System & Taskilo Color Scheme
-Primary Color: #14ad9f (Türkis/Teal). NEVER use black (#000000) as the primary color.
-
-Primary Buttons: bg-[#14ad9f] hover:bg-[#129488] text-white.
-
-UI Library: shadcn/ui components built on Radix UI primitives.
-
-UI/UX Patterns
-Info-Dialoge: IMMER als Info-Icons rechts in Input-Feldern mit Tooltip implementieren. NIEMALS als separaten Text darunter.
-
-// ✅ RICHTIG: Info-Icon im Input mit Tooltip
-<div className="relative">
-  <Input className="pr-8" />
-  <button className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
-    <InfoIcon className="h-4 w-4" />
-  </button>
-  {tooltip && <div className="tooltip">Erklärungstext</div>}
-</div>
-
-Tooltips: State-basierte onMouseEnter/onMouseLeave Handler, NICHT CSS-only hover.
-
-Dropdown-Menüs: Click-outside Handler mit useRef für automatisches Schließen.
-
-German Business Logic
-// Kleinunternehmer-Regelung (deutsche Steuerlogik)
-interface TaxSettings {
-  kleinunternehmer: 'ja' | 'nein';  // §19 UStG - Umsatzgrenze 22.000€
-  profitMethod: 'euer' | 'bilanz';  
-  priceInput: 'brutto' | 'netto';   
-  taxRate: string;                  // "19", "7", "0" (0 für Kleinunternehmer)
-}
-
-// Customer Management mit VAT-Validierung
-interface Customer {
-  customerNumber: string;     // "LF-002" - fortlaufende Nummerierung
-  vatId: string;             // Umsatzsteuer-ID
-  vatValidated: boolean;     // EU VAT validation status
-  isSupplier: boolean;       // Lieferant vs. Kunde
-  totalAmount: number;       // Gesamtumsatz mit diesem Kunden
-  totalInvoices: number;     // Anzahl Rechnungen
-}
-
-Environment & Configuration
-Environment Variables: Extensive Firebase/AWS/Google service configs.
-
-Build Optimization: Webpack externals for Firebase functions, CSS optimization.
-
-Integration Points
-Payment Flow (Stripe)
-B2B/B2C: Different tax calculations and invoice requirements.
-
-Connect: Service providers have Stripe Connect accounts.
-
-Webhooks: Firebase functions handle payment events.
-
-External APIs
-DATEV: Accounting integration for German businesses.
-
-FinAPI: Banking connections for payment verification.
-
-AWS Lambda: Specialized services (realtime, email, admin workspace).
-
-Common Pitfalls
-Firebase Data Structure
-Firestore Queries: Vermeide orderBy(), sortiere stattdessen in der Anwendung, um Indexfehler zu verhindern.
-
-Performance: Compound queries und Paginierung für große Datensätze sind Pflicht.
-
-Real-time Updates: Careful listener management to avoid memory leaks.
-
-German Business Logic
-Kleinunternehmer-Regelung: MUSS §19 UStG korrekt implementieren (keine Umsatzsteuer-Ausweisung).
-
-Preiskalkulation: Brutto-/Netto-Logik je nach Unternehmenstyp korrekt behandeln.
-
-B2B vs B2C Logic: Logik strikt trennen.
-
-Deployment & Production
-Build Process
-Memory: 8GB Node.js memory limit for large builds.
-
-Environment Management
-Emulators: Extensive local testing with production data seeding.
-
-Secrets: Firebase service accounts, AWS credentials, Stripe keys.
+**REMEMBER**: Taskilo ist eine professionelle deutsche B2B-Plattform. Qualität, Compliance und Benutzerfreundlichkeit haben absolute Priorität.

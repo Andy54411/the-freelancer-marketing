@@ -10,6 +10,8 @@ import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
 import { useCompanyDashboard } from '@/hooks/useCompanyDashboard';
 import { useAuth } from '@/contexts/AuthContext';
 import AdminApprovalStatus from '@/components/AdminApprovalStatus';
+import { useUpdateNotifications } from '@/hooks/useUpdateNotifications';
+import UpdateNotificationModal from '@/components/ui/UpdateNotificationModal';
 import { Loader2 as FiLoader } from 'lucide-react';
 import {
   Grid as FiGrid,
@@ -41,6 +43,16 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
   // AuthContext für zusätzliche Fallback-Daten
   const { user } = useAuth();
+
+  // Update Notifications
+  const {
+    unseenUpdates,
+    unseenCount,
+    showNotificationModal,
+    setShowNotificationModal,
+    markUpdateAsSeen,
+    markAllAsSeen
+  } = useUpdateNotifications();
 
   const toggleExpanded = (itemValue: string) => {
     setExpandedItems(prev =>
@@ -372,6 +384,15 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
           </main>
         </div>
       </div>
+
+      {/* Update Notification Modal */}
+      <UpdateNotificationModal
+        isOpen={showNotificationModal}
+        onClose={() => setShowNotificationModal(false)}
+        updates={unseenUpdates}
+        onMarkAsSeen={markUpdateAsSeen}
+        onMarkAllAsSeen={markAllAsSeen}
+      />
     </SidebarVisibilityProvider>
   );
 }

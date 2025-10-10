@@ -21,13 +21,13 @@ import { NumberSequenceService } from '@/services/numberSequenceService';
 
 export class CustomerService {
   /**
-   * Alle Kunden für eine Company abrufen
+   * Alle Kunden für eine Company abrufen (nur echte Kunden, keine Lieferanten)
    */
   static async getCustomers(companyId: string): Promise<Customer[]> {
     try {
-      // NEUE SUBCOLLECTION STRUKTUR
+      // NEUE SUBCOLLECTION STRUKTUR - filtere nur echte Kunden
       const customersRef = collection(db, 'companies', companyId, 'customers');
-      const q = query(customersRef, orderBy('name', 'asc'));
+      const q = query(customersRef, where('isSupplier', '!=', true), orderBy('name', 'asc'));
       const snapshot = await getDocs(q);
 
       return snapshot.docs.map((doc) => {
@@ -50,6 +50,48 @@ export class CustomerService {
           vatId: data.vatId || '',
           vatValidated: data.vatValidated || false,
           isSupplier: data.isSupplier || false,
+          totalInvoices: data.totalInvoices || 0,
+          totalAmount: data.totalAmount || 0,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          contactPersons: data.contactPersons || [],
+          companyId: data.companyId || companyId
+        } as Customer;
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Alle Lieferanten für eine Company abrufen
+   */
+  static async getSuppliers(companyId: string): Promise<Customer[]> {
+    try {
+      // NEUE SUBCOLLECTION STRUKTUR - lade alle und filtere Lieferanten
+      const customersRef = collection(db, 'companies', companyId, 'customers');
+      const q = query(customersRef, where('isSupplier', '==', true), orderBy('name', 'asc'));
+      const snapshot = await getDocs(q);
+
+      return snapshot.docs.map((doc) => {
+        const data = doc.data();
+        // Lieferanten haben meist LF- Prefix
+        const customerNumber = data.customerNumber || 'LF-PENDING';
+
+        return {
+          id: doc.id,
+          customerNumber,
+          name: data.name || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          address: data.address || '',
+          street: data.street || '',
+          city: data.city || '',
+          postalCode: data.postalCode || '',
+          country: data.country || 'Deutschland',
+          taxNumber: data.taxNumber || '',
+          vatId: data.vatId || '',
+          vatValidated: data.vatValidated || false,
+          isSupplier: data.isSupplier || true,
           totalInvoices: data.totalInvoices || 0,
           totalAmount: data.totalAmount || 0,
           createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),

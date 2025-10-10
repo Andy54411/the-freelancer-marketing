@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue } from
 '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useParams } from 'next/navigation';
 import {
   Loader2,
   Plus,
@@ -41,7 +41,7 @@ import { toast } from 'sonner';
 import { validateVATNumber } from '@/utils/vatValidation';
 import { NumberSequenceService, type NumberSequence } from '@/services/numberSequenceService';
 import { CustomerService } from '@/services/customerService';
-import NewCategoryModal from './NewCategoryModal';
+import NewCategoryModal from '@/components/finance/NewCategoryModal';
 
 export interface ContactPerson {
   id: string;
@@ -317,22 +317,26 @@ const TooltipIcon = ({ text, icon: Icon = Info }: { text: string; icon?: any }) 
   );
 };
 
-export default function NewCustomerModal({
-  open,
-  onOpenChange,
-  defaultValues,
-  contactType = 'organisation',
-  saving,
-  onSave,
-  persistDirectly,
-  companyId,
-  onSaved
-}: NewCustomerModalProps) {
+export default function ContactsPage() {
+  const params = useParams();
+  const companyId = params?.uid as string;
+  
+  // Fixed values for page mode
+  const open = true;
+  const onOpenChange = () => {};
+  const defaultValues: Partial<{ name: string; firstName?: string; lastName?: string; }> | undefined = undefined;
+  const contactType: 'organisation' | 'person' = 'organisation';
+  const saving = false;
+  const onSave = undefined;
+  const persistDirectly = true;
+  const onSaved = undefined;
+
+  if (!companyId) {
+    return <div className="p-6">Lädt...</div>;
+  }
   // State Management
   const [loading, setLoading] = useState(false);
-  const [customerType, setCustomerType] = useState<CustomerType>(
-    contactType === 'person' ? 'person' : 'organisation'
-  );
+  const [customerType, setCustomerType] = useState<CustomerType>('organisation');
   const [activeSubTab, setActiveSubTab] = useState<SubTabType>('overview');
   const [formData, setFormData] = useState<ExtendedFormData>(DEFAULT_FORM_DATA);
   const [contacts, setContacts] = useState<ContactPerson[]>([]);
@@ -420,44 +424,8 @@ export default function NewCustomerModal({
   // Separater Effect für Form-Daten basierend auf defaultValues - NUR beim ersten Öffnen
   const [defaultValuesApplied, setDefaultValuesApplied] = useState(false);
 
-  useEffect(() => {
-    if (open && defaultValues && !defaultValuesApplied) {
-
-      setFormData((prev) => {
-        const updates: Partial<ExtendedFormData> = {};
-
-        if (defaultValues.name) {
-          if (customerType === 'person') {
-            if (defaultValues.firstName) {
-              updates.firstName = defaultValues.firstName;
-            }
-            if (defaultValues.lastName) {
-              updates.lastName = defaultValues.lastName;
-            }
-            if (!defaultValues.firstName && !defaultValues.lastName) {
-              const nameParts = defaultValues.name.split(' ');
-              updates.firstName = nameParts[0] || '';
-              updates.lastName = nameParts.slice(1).join(' ') || '';
-            }
-          } else {
-            updates.companyName = defaultValues.name;
-          }
-        }
-
-        // Behalte bestehende Werte bei, überschreibe nur Name-Felder
-        return {
-          ...prev,
-          ...updates
-        };
-      });
-      setDefaultValuesApplied(true);
-    }
-
-    // Reset flag wenn Modal geschlossen wird
-    if (!open && defaultValuesApplied) {
-      setDefaultValuesApplied(false);
-    }
-  }, [open, defaultValues?.name, defaultValues?.firstName, defaultValues?.lastName, customerType, defaultValuesApplied]);
+  // DefaultValues werden in einer Page nicht benötigt
+  // useEffect für defaultValues entfernt
 
   // Input Handler
   const handleInputChange = (field: string, value: string | number | boolean | string[]) => {
@@ -676,16 +644,15 @@ export default function NewCustomerModal({
 
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl w-full max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-gray-900">
-            {customerType === 'person' ? 'Person erstellen' : 'Organisation erstellen'}
-          </DialogTitle>
-          <DialogDescription>
-            Erstellen Sie einen neuen {customerType === 'person' ? 'Personenkontakt' : 'Organisationskontakt'} mit automatischer Nummerngenerierung
-          </DialogDescription>
-        </DialogHeader>
+    <div className="max-w-6xl w-full p-6 bg-white min-h-screen">
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold text-gray-900">
+          {customerType === 'person' ? 'Person erstellen' : 'Organisation erstellen'}
+        </h1>
+        <p className="text-gray-600 mt-1">
+          Erstellen Sie einen neuen {customerType === 'person' ? 'Personenkontakt' : 'Organisationskontakt'} mit automatischer Nummerngenerierung
+        </p>
+      </div>
 
         {/* Customer Type Toggle */}
         <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
@@ -1760,7 +1727,7 @@ export default function NewCustomerModal({
           }
 
           <div className="flex justify-end gap-3 pt-6 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => window.history.back()}>
               Abbrechen
             </Button>
             <Button
@@ -1892,8 +1859,8 @@ export default function NewCustomerModal({
 
                         toast.success(`${displayName} wurde erfolgreich erstellt`);
 
-                        if (onSaved) onSaved(response.customerId);
-                        onOpenChange(false);
+                        // Kunde erfolgreich erstellt
+                        toast.success('Kunde erfolgreich erstellt!');
                         return;
                       } else {
                         throw new Error('Kunde konnte nicht erstellt werden');
@@ -1906,8 +1873,8 @@ export default function NewCustomerModal({
                   }
 
                   if (onSave) {
-                    await onSave(customerData);
-                    onOpenChange(false);
+                    // Custom save logic würde hier stehen
+                    toast.success('Kunde erfolgreich gespeichert!');
                   }
                 } catch (error) {
                   console.error('Fehler beim Erstellen des Kunden:', error);
@@ -1922,7 +1889,6 @@ export default function NewCustomerModal({
             </Button>
           </div>
         </div>
-      </DialogContent>
 
       {/* Category Modal */}
       {companyId &&
@@ -1939,6 +1905,6 @@ export default function NewCustomerModal({
         }} />
 
       }
-    </Dialog>);
+    </div>);
 
 }

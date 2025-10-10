@@ -1426,5 +1426,25 @@ service cloud.firestore {
                        ((resource.data.companyId == request.auth.uid && isCompany()) ||
                         isSupportStaff());
     }
+
+    // ===== UPDATE NOTIFICATION SYSTEM =====
+    
+    // Update Notifications Collection - Für System-Updates und Changelog
+    match /updates/{updateId} {
+      // Jeder authentifizierte Benutzer kann Updates lesen
+      allow read, list: if request.auth != null;
+      
+      // Für Emulator: Vereinfachte Admin-Berechtigung über Support Staff
+      allow create, update, delete: if request.auth != null && isSupportStaff();
+    }
+
+    // User Update Status Collection - Tracking welche Updates ein User gesehen hat
+    match /userUpdateStatus/{userId} {
+      // Benutzer können nur ihren eigenen Status lesen und schreiben
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Support Staff kann alle Status lesen (für Analytics)
+      allow read: if request.auth != null && isSupportStaff();
+    }
   }
 }

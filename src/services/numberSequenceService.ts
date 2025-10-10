@@ -705,45 +705,34 @@ export class NumberSequenceService {
     try {
       // Nur für bestimmte Typen unterstützen
       if (!['Kunde', 'Lieferant', 'Partner', 'Interessenten'].includes(type)) {
-
         return;
       }
 
-      // Importiere CustomerService dynamisch um zirkuläre Abhängigkeiten zu vermeiden
-      const { CustomerService } = await import('@/services/customerService');
-
-      // Lade alle Kontakte
-      const customers = await CustomerService.getCustomers(companyId);
+      // Direkte Firebase-Abfrage um zirkuläre Abhängigkeiten zu vermeiden
+      const customersRef = collection(db, 'companies', companyId, 'customers');
+      const snapshot = await getDocs(customersRef);
+      
+      const customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
 
       // Filtere nach Typ basierend auf customerNumber Prefix
-      let relevantContacts = customers;
-      if (type === 'Kunde') {
-        relevantContacts = customers.filter((c) => c.customerNumber.startsWith('KD-'));
-      } else if (type === 'Lieferant') {
-        relevantContacts = customers.filter((c) => c.customerNumber.startsWith('LF-'));
-      } else if (type === 'Partner') {
-        relevantContacts = customers.filter((c) => c.customerNumber.startsWith('PA-'));
-      } else if (type === 'Interessenten') {
-        relevantContacts = customers.filter((c) => c.customerNumber.startsWith('IN-'));
-      }
-
-
-
-      if (relevantContacts.length === 0) {
-
-        return;
-      }
-
-      // Extrahiere Nummern basierend auf Typ
-      const numbers: number[] = [];
       const prefixes = {
         'Kunde': 'KD-',
         'Lieferant': 'LF-',
         'Partner': 'PA-',
         'Interessenten': 'IN-'
       };
-
+      
       const prefix = prefixes[type as keyof typeof prefixes];
+      const relevantContacts = customers.filter((c) => 
+        c.customerNumber && c.customerNumber.startsWith(prefix)
+      );
+
+      if (relevantContacts.length === 0) {
+        return;
+      }
+
+      // Extrahiere Nummern basierend auf Typ
+      const numbers: number[] = [];
 
       relevantContacts.forEach((contact) => {
         const match = contact.customerNumber.match(new RegExp(`^${prefix.replace('-', '')}-(\\d+)$`));
