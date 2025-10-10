@@ -13,8 +13,8 @@ import {
   deleteDoc,
   onSnapshot,
   Timestamp,
-  serverTimestamp } from
-'firebase/firestore';
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { Customer } from '@/components/finance/AddCustomerModal';
 import { NumberSequenceService } from '@/services/numberSequenceService';
@@ -25,38 +25,45 @@ export class CustomerService {
    */
   static async getCustomers(companyId: string): Promise<Customer[]> {
     try {
-      // NEUE SUBCOLLECTION STRUKTUR - filtere nur echte Kunden
+      // NEUE SUBCOLLECTION STRUKTUR - lade alle und filtere client-seitig
+      // Grund: where('isSupplier', '!=', true) schließt auch Dokumente ohne isSupplier Feld aus!
       const customersRef = collection(db, 'companies', companyId, 'customers');
-      const q = query(customersRef, where('isSupplier', '!=', true), orderBy('name', 'asc'));
+      const q = query(customersRef, orderBy('name', 'asc'));
       const snapshot = await getDocs(q);
 
-      return snapshot.docs.map((doc) => {
-        const data = doc.data();
-        // ✅ NEUE: Verwende NumberSequenceService für konsistente Kundennummern
-        const customerNumber = data.customerNumber || 'KD-PENDING';
+      // Client-seitige Filterung: isSupplier === false ODER undefined/null
+      return snapshot.docs
+        .filter(doc => {
+          const data = doc.data();
+          return data.isSupplier !== true; // Schließt nur explizit true aus
+        })
+        .map(doc => {
+          const data = doc.data();
+          // ✅ NEUE: Verwende NumberSequenceService für konsistente Kundennummern
+          const customerNumber = data.customerNumber || 'KD-PENDING';
 
-        return {
-          id: doc.id,
-          customerNumber,
-          name: data.name || '',
-          email: data.email || '',
-          phone: data.phone || '',
-          address: data.address || '',
-          street: data.street || '',
-          city: data.city || '',
-          postalCode: data.postalCode || '',
-          country: data.country || 'Deutschland',
-          taxNumber: data.taxNumber || '',
-          vatId: data.vatId || '',
-          vatValidated: data.vatValidated || false,
-          isSupplier: data.isSupplier || false,
-          totalInvoices: data.totalInvoices || 0,
-          totalAmount: data.totalAmount || 0,
-          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-          contactPersons: data.contactPersons || [],
-          companyId: data.companyId || companyId
-        } as Customer;
-      });
+          return {
+            id: doc.id,
+            customerNumber,
+            name: data.name || '',
+            email: data.email || '',
+            phone: data.phone || '',
+            address: data.address || '',
+            street: data.street || '',
+            city: data.city || '',
+            postalCode: data.postalCode || '',
+            country: data.country || 'Deutschland',
+            taxNumber: data.taxNumber || '',
+            vatId: data.vatId || '',
+            vatValidated: data.vatValidated || false,
+            isSupplier: data.isSupplier || false,
+            totalInvoices: data.totalInvoices || 0,
+            totalAmount: data.totalAmount || 0,
+            createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+            contactPersons: data.contactPersons || [],
+            companyId: data.companyId || companyId,
+          } as Customer;
+        });
     } catch (error) {
       throw error;
     }
@@ -72,7 +79,7 @@ export class CustomerService {
       const q = query(customersRef, where('isSupplier', '==', true), orderBy('name', 'asc'));
       const snapshot = await getDocs(q);
 
-      return snapshot.docs.map((doc) => {
+      return snapshot.docs.map(doc => {
         const data = doc.data();
         // Lieferanten haben meist LF- Prefix
         const customerNumber = data.customerNumber || 'LF-PENDING';
@@ -96,7 +103,7 @@ export class CustomerService {
           totalAmount: data.totalAmount || 0,
           createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
           contactPersons: data.contactPersons || [],
-          companyId: data.companyId || companyId
+          companyId: data.companyId || companyId,
         } as Customer;
       });
     } catch (error) {
@@ -117,7 +124,7 @@ export class CustomerService {
       }
 
       const data = customerDoc.data();
-      // ✅ NEUE: Verwende NumberSequenceService für konsistente Kundennummern  
+      // ✅ NEUE: Verwende NumberSequenceService für konsistente Kundennummern
       const customerNumber = data.customerNumber || 'KD-PENDING';
 
       return {
@@ -139,7 +146,7 @@ export class CustomerService {
         totalAmount: data.totalAmount || 0,
         createdAt: data.createdAt || new Date().toISOString(),
         contactPersons: data.contactPersons || [],
-        companyId: companyId // Setze explizit die companyId
+        companyId: companyId, // Setze explizit die companyId
       };
     } catch (error) {
       throw error;
@@ -150,12 +157,11 @@ export class CustomerService {
    * Erstellt einen neuen Kunden
    */
   static async addCustomer(
-  companyId: string,
-  customerData: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt' | 'companyId'>)
-  : Promise<string> {
+    companyId: string,
+    customerData: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt' | 'companyId'>
+  ): Promise<string> {
     try {
       // ✅ Verwende die bereits korrekte customerNumber aus den Daten
-
 
       // ⚠️ NICHT mehr überschreiben - Create-Formular hat bereits die korrekte Nummer generiert
 
@@ -164,12 +170,11 @@ export class CustomerService {
         // customerNumber wird NICHT überschrieben - kommt bereits korrekt vom Create-Formular
         totalInvoices: 0,
         totalAmount: 0,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
 
       // NEUE SUBCOLLECTION STRUKTUR
       const docRef = await addDoc(collection(db, 'companies', companyId, 'customers'), newCustomer);
-
 
       return docRef.id;
     } catch (error) {
@@ -182,16 +187,16 @@ export class CustomerService {
    * Aktualisiert einen Kunden
    */
   static async updateCustomer(
-  companyId: string,
-  customerId: string,
-  updates: Partial<Customer>)
-  : Promise<void> {
+    companyId: string,
+    customerId: string,
+    updates: Partial<Customer>
+  ): Promise<void> {
     try {
       // NEUE SUBCOLLECTION STRUKTUR
       const customerRef = doc(db, 'companies', companyId, 'customers', customerId);
       await updateDoc(customerRef, {
         ...updates,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
     } catch (error) {
       throw error;
@@ -223,10 +228,10 @@ export class CustomerService {
 
       const term = searchTerm.toLowerCase();
       return customers.filter(
-        (customer) =>
-        customer.name.toLowerCase().includes(term) ||
-        customer.email.toLowerCase().includes(term) ||
-        customer.customerNumber.toLowerCase().includes(term)
+        customer =>
+          customer.name.toLowerCase().includes(term) ||
+          customer.email.toLowerCase().includes(term) ||
+          customer.customerNumber.toLowerCase().includes(term)
       );
     } catch (error) {
       throw error;
@@ -253,22 +258,15 @@ export class CustomerService {
    */
   static async syncCustomerNumberSequence(companyId: string): Promise<void> {
     try {
-
-
       // 1. Lade alle existierenden Kunden
       const customers = await this.getCustomers(companyId);
 
-
-
       // 2. Filtere nur echte Kunden (keine Lieferanten)
-      const actualCustomers = customers.filter((customer) => !customer.isSupplier);
-
+      const actualCustomers = customers.filter(customer => !customer.isSupplier);
 
       // 3. Extrahiere alle Kundennummern - RESPEKTIERE die echten Daten aus der DB
       const customerNumbers: number[] = [];
-      actualCustomers.forEach((customer) => {
-
-
+      actualCustomers.forEach(customer => {
         // Unterstütze KD-XXX Format (führende Nullen beachten!)
         // KD-002 -> 2, KD-010 -> 10, KD-1000 -> 1000
         const match = customer.customerNumber.match(/^KD-0*(\d+)$/);
@@ -276,12 +274,9 @@ export class CustomerService {
           const num = parseInt(match[1], 10);
           if (!isNaN(num)) {
             customerNumbers.push(num);
-
           } else {
-
           }
         } else {
-
         }
       });
 
@@ -289,24 +284,12 @@ export class CustomerService {
       const highestNumber = customerNumbers.length > 0 ? Math.max(...customerNumbers) : 1000;
       const nextNumber = highestNumber + 1;
 
-
-
-
-
-
       // 5. Aktualisiere den Nummernkreis
-      await NumberSequenceService.updateNumberSequence(
-        companyId,
-        `${companyId}_Kunde`,
-        {
-          nextNumber,
-          nextFormatted: `KD-${nextNumber.toString().padStart(3, '0')}`,
-          updatedAt: new Date()
-        }
-      );
-
-
-
+      await NumberSequenceService.updateNumberSequence(companyId, `${companyId}_Kunde`, {
+        nextNumber,
+        nextFormatted: `KD-${nextNumber.toString().padStart(3, '0')}`,
+        updatedAt: new Date(),
+      });
     } catch (error) {
       console.error('❌ Fehler beim Synchronisieren des Kunden-Nummernkreises:', error);
       throw error;
@@ -317,19 +300,19 @@ export class CustomerService {
    * Abonniert Änderungen an Kunden (Real-time Updates)
    */
   static subscribeToCustomers(
-  companyId: string,
-  callback: (customers: Customer[]) => void)
-  : () => void {
+    companyId: string,
+    callback: (customers: Customer[]) => void
+  ): () => void {
     // NEUE SUBCOLLECTION STRUKTUR
     const customersQuery = query(
       collection(db, 'companies', companyId, 'customers'),
       orderBy('name', 'asc')
     );
 
-    return onSnapshot(customersQuery, (snapshot) => {
+    return onSnapshot(customersQuery, snapshot => {
       const customers: Customer[] = [];
 
-      snapshot.forEach((doc) => {
+      snapshot.forEach(doc => {
         const data = doc.data();
         // ✅ NEUE: Verwende NumberSequenceService für konsistente Kundennummern
         const customerNumber = data.customerNumber || 'KD-PENDING';
@@ -355,7 +338,7 @@ export class CustomerService {
             totalAmount: data.totalAmount || 0,
             createdAt: data.createdAt || new Date().toISOString(),
             contactPersons: data.contactPersons || [],
-            companyId: data.companyId || companyId
+            companyId: data.companyId || companyId,
           };
           customers.push(customer);
         }
@@ -392,15 +375,15 @@ export class CustomerService {
    * Prüft ob eine E-Mail bereits verwendet wird
    */
   static async isEmailTaken(
-  companyId: string,
-  email: string,
-  excludeCustomerId?: string)
-  : Promise<boolean> {
+    companyId: string,
+    email: string,
+    excludeCustomerId?: string
+  ): Promise<boolean> {
     try {
       const customers = await this.getCustomers(companyId);
       return customers.some(
-        (customer) =>
-        customer.email.toLowerCase() === email.toLowerCase() && customer.id !== excludeCustomerId
+        customer =>
+          customer.email.toLowerCase() === email.toLowerCase() && customer.id !== excludeCustomerId
       );
     } catch (error) {
       return false;
@@ -415,43 +398,43 @@ export class CustomerService {
       const customers = await this.getCustomers(companyId);
 
       const headers = [
-      'Kundennummer',
-      'Name',
-      'E-Mail',
-      'Telefon',
-      'Adresse',
-      'Strasse',
-      'Stadt',
-      'PLZ',
-      'Land',
-      'Steuernummer',
-      'USt-IdNr',
-      'Anzahl Rechnungen',
-      'Gesamtumsatz',
-      'Erstellt am'];
-
+        'Kundennummer',
+        'Name',
+        'E-Mail',
+        'Telefon',
+        'Adresse',
+        'Strasse',
+        'Stadt',
+        'PLZ',
+        'Land',
+        'Steuernummer',
+        'USt-IdNr',
+        'Anzahl Rechnungen',
+        'Gesamtumsatz',
+        'Erstellt am',
+      ];
 
       const csvRows = [
-      headers.join(','),
-      ...customers.map((customer) =>
-      [
-      customer.customerNumber,
-      `"${customer.name}"`,
-      customer.email,
-      customer.phone || '',
-      `"${customer.address}"`,
-      `"${customer.street || ''}"`,
-      `"${customer.city || ''}"`,
-      customer.postalCode || '',
-      customer.country || '',
-      customer.taxNumber || '',
-      customer.vatId || '',
-      customer.totalInvoices.toString(),
-      customer.totalAmount.toFixed(2),
-      new Date(customer.createdAt).toLocaleDateString('de-DE')].
-      join(',')
-      )];
-
+        headers.join(','),
+        ...customers.map(customer =>
+          [
+            customer.customerNumber,
+            `"${customer.name}"`,
+            customer.email,
+            customer.phone || '',
+            `"${customer.address}"`,
+            `"${customer.street || ''}"`,
+            `"${customer.city || ''}"`,
+            customer.postalCode || '',
+            customer.country || '',
+            customer.taxNumber || '',
+            customer.vatId || '',
+            customer.totalInvoices.toString(),
+            customer.totalAmount.toFixed(2),
+            new Date(customer.createdAt).toLocaleDateString('de-DE'),
+          ].join(',')
+        ),
+      ];
 
       return csvRows.join('\n');
     } catch (error) {

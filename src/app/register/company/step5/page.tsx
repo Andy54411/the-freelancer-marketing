@@ -917,6 +917,19 @@ export default function Step5CompanyPage() {
           legalForm: cleanedCompanyData.legalForm || 'Einzelunternehmen',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
+          // Storage: Default 500 MB Free Plan
+          storageLimit: 500 * 1024 * 1024, // 500 MB
+          storagePlanId: 'free',
+          usage: {
+            storageUsed: 0,
+            firestoreUsed: 0,
+            totalUsed: 0,
+            lastUpdate: serverTimestamp(),
+            stats: {
+              totalFiles: 0,
+              totalDocuments: 0,
+            },
+          },
         };
 
         await setDoc(doc(db, 'companies', currentAuthUserUID), coreData);

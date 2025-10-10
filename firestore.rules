@@ -1686,6 +1686,35 @@ service cloud.firestore {
                          ((request.auth.uid == companyId && isCompany()) ||
                           isSupportStaff());
       }
+
+      // Folders Subcollection für Customer Document Folders
+      match /folders/{folderId} {
+        // Lesen: Nur eigene Firma oder Support Staff
+        allow read: if request.auth != null && 
+                       (request.auth.uid == companyId) ||
+                       isSupportStaff();
+        
+        // Listen-Abfragen: Nur eigene Firma
+        allow list: if request.auth != null && 
+                      (request.auth.uid == companyId) ||
+                      isSupportStaff();
+        
+        // Erstellen: Nur eigene Firma
+        allow create: if request.auth != null && 
+                         request.auth.uid == companyId &&
+                         isCompany() &&
+                         request.resource.data.createdBy == request.auth.uid;
+        
+        // Aktualisieren: Nur eigene Firma
+        allow update: if request.auth != null && 
+                         request.auth.uid == companyId &&
+                         isCompany();
+        
+        // Löschen: Nur eigene Firma oder Support Staff
+        allow delete: if request.auth != null && 
+                         ((request.auth.uid == companyId && isCompany()) ||
+                          isSupportStaff());
+      }
     }
 
     // Calendar Events Collection - für Terminverwaltung mit Notizen und Dateien

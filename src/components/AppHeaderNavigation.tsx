@@ -207,7 +207,7 @@ const AppHeaderNavigation: React.FC = () => {
     : [[], [], [], []];
 
   return (
-    <nav className="bg-white border-t border-gray-100 shadow-sm relative">
+    <nav className="bg-white relative">
       {/* Desktop Navigation - Modernes Design mit besserer Visualisierung */}
       <div className="hidden lg:block">
         <div className="container mx-auto px-4">

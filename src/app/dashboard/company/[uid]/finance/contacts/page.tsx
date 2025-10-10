@@ -8,14 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Users, 
-  Building2, 
-  UserCheck, 
-  UserPlus, 
-  Search, 
-  Filter, 
-  Download, 
+import {
+  Users,
+  Building2,
+  UserCheck,
+  UserPlus,
+  Search,
+  Filter,
+  Download,
   Plus,
   Check,
   Edit,
@@ -31,7 +31,7 @@ import {
   CheckCircle,
   AlertCircle,
   User,
-  FileIcon
+  FileIcon,
 } from 'lucide-react';
 import {
   Table,
@@ -71,7 +71,9 @@ export default function ContactsPage({ params }: ContactsPageProps) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'customers' | 'suppliers'>('all');
-  const [sortBy, setSortBy] = useState<'name' | 'customerNumber' | 'totalAmount' | 'createdAt'>('name');
+  const [sortBy, setSortBy] = useState<'name' | 'customerNumber' | 'totalAmount' | 'createdAt'>(
+    'name'
+  );
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Kontakte laden
@@ -85,13 +87,13 @@ export default function ContactsPage({ params }: ContactsPageProps) {
       // Lade sowohl Kunden als auch Lieferanten
       const [customers, suppliers] = await Promise.all([
         CustomerService.getCustomers(resolvedParams.uid),
-        CustomerService.getSuppliers(resolvedParams.uid)
+        CustomerService.getSuppliers(resolvedParams.uid),
       ]);
 
       // Kombiniere und markiere den Typ
       const allContacts = [
         ...customers.map(c => ({ ...c, type: 'customer' as const })),
-        ...suppliers.map(s => ({ ...s, type: 'supplier' as const }))
+        ...suppliers.map(s => ({ ...s, type: 'supplier' as const })),
       ];
 
       setContacts(allContacts);
@@ -106,19 +108,21 @@ export default function ContactsPage({ params }: ContactsPageProps) {
   // Kontakte filtern und sortieren
   const filteredAndSortedContacts = contacts
     .filter(contact => {
-      const matchesSearch = contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           contact.customerNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (contact.email && contact.email.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      const matchesFilter = statusFilter === 'all' || 
-                          (statusFilter === 'customers' && contact.type === 'customer') ||
-                          (statusFilter === 'suppliers' && contact.type === 'supplier');
-      
+      const matchesSearch =
+        contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.customerNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (contact.email && contact.email.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      const matchesFilter =
+        statusFilter === 'all' ||
+        (statusFilter === 'customers' && contact.type === 'customer') ||
+        (statusFilter === 'suppliers' && contact.type === 'supplier');
+
       return matchesSearch && matchesFilter;
     })
     .sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortBy) {
         case 'name':
           comparison = a.name.localeCompare(b.name);
@@ -133,7 +137,7 @@ export default function ContactsPage({ params }: ContactsPageProps) {
           comparison = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
           break;
       }
-      
+
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
@@ -144,7 +148,7 @@ export default function ContactsPage({ params }: ContactsPageProps) {
     suppliers: contacts.filter(c => c.type === 'supplier').length,
     totalRevenue: contacts
       .filter(c => c.type === 'customer')
-      .reduce((sum, c) => sum + (c.totalAmount || 0), 0)
+      .reduce((sum, c) => sum + (c.totalAmount || 0), 0),
   };
 
   // Kontakt löschen
@@ -216,7 +220,9 @@ export default function ContactsPage({ params }: ContactsPageProps) {
               Exportieren
             </Button>
             <Button
-              onClick={() => router.push(`/dashboard/company/${resolvedParams.uid}/finance/contacts/new`)}
+              onClick={() =>
+                router.push(`/dashboard/company/${resolvedParams.uid}/finance/contacts/new`)
+              }
               className="flex items-center gap-2 bg-[#14ad9f] hover:bg-[#129488] text-white"
             >
               <Plus className="h-4 w-4" />
@@ -294,12 +300,12 @@ export default function ContactsPage({ params }: ContactsPageProps) {
                   <Input
                     placeholder="Nach Name, Kundennummer oder E-Mail suchen..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={e => setSearchTerm(e.target.value)}
                     className="pl-10"
                   />
                 </div>
               </div>
-              
+
               <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
                 <SelectTrigger className="w-full md:w-48">
                   <SelectValue />
@@ -341,9 +347,7 @@ export default function ContactsPage({ params }: ContactsPageProps) {
               <Users className="h-5 w-5" />
               Kontakte ({filteredAndSortedContacts.length})
             </CardTitle>
-            <CardDescription>
-              Übersicht aller Ihrer Geschäftskontakte
-            </CardDescription>
+            <CardDescription>Übersicht aller Ihrer Geschäftskontakte</CardDescription>
           </CardHeader>
           <CardContent>
             {filteredAndSortedContacts.length === 0 ? (
@@ -353,14 +357,15 @@ export default function ContactsPage({ params }: ContactsPageProps) {
                   {searchTerm ? 'Keine Kontakte gefunden' : 'Noch keine Kontakte'}
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  {searchTerm 
+                  {searchTerm
                     ? 'Versuchen Sie einen anderen Suchbegriff.'
-                    : 'Erstellen Sie Ihren ersten Kontakt, um zu beginnen.'
-                  }
+                    : 'Erstellen Sie Ihren ersten Kontakt, um zu beginnen.'}
                 </p>
                 {!searchTerm && (
                   <Button
-                    onClick={() => router.push(`/dashboard/company/${resolvedParams.uid}/finance/contacts/new`)}
+                    onClick={() =>
+                      router.push(`/dashboard/company/${resolvedParams.uid}/finance/contacts/new`)
+                    }
                     className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -376,28 +381,29 @@ export default function ContactsPage({ params }: ContactsPageProps) {
                       <TableHead>Kontakt</TableHead>
                       <TableHead>Typ</TableHead>
                       <TableHead>Kontaktdaten</TableHead>
-                      <TableHead>Adresse</TableHead>
                       <TableHead className="text-right">Umsatz/Ausgaben</TableHead>
                       <TableHead className="text-right">Rechnungen</TableHead>
                       <TableHead className="text-right">Aktionen</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredAndSortedContacts.map((contact) => (
+                    {filteredAndSortedContacts.map(contact => (
                       <TableRow key={contact.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg ${
-                              contact.type === 'customer' 
-                                ? 'bg-green-100' 
-                                : 'bg-orange-100'
-                            }`}>
+                            <div
+                              className={`p-2 rounded-lg ${
+                                contact.type === 'customer' ? 'bg-green-100' : 'bg-orange-100'
+                              }`}
+                            >
                               {contact.type === 'customer' ? (
-                                <User className={`h-4 w-4 ${
-                                  contact.type === 'customer' 
-                                    ? 'text-green-600' 
-                                    : 'text-orange-600'
-                                }`} />
+                                <User
+                                  className={`h-4 w-4 ${
+                                    contact.type === 'customer'
+                                      ? 'text-green-600'
+                                      : 'text-orange-600'
+                                  }`}
+                                />
                               ) : (
                                 <Building2 className="h-4 w-4 text-orange-600" />
                               )}
@@ -408,19 +414,20 @@ export default function ContactsPage({ params }: ContactsPageProps) {
                             </div>
                           </div>
                         </TableCell>
-                        
+
                         <TableCell>
-                          <Badge 
+                          <Badge
                             variant={contact.type === 'customer' ? 'default' : 'secondary'}
-                            className={contact.type === 'customer' 
-                              ? 'bg-green-100 text-green-800 hover:bg-green-100' 
-                              : 'bg-orange-100 text-orange-800 hover:bg-orange-100'
+                            className={
+                              contact.type === 'customer'
+                                ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                                : 'bg-orange-100 text-orange-800 hover:bg-orange-100'
                             }
                           >
                             {contact.type === 'customer' ? 'Kunde' : 'Lieferant'}
                           </Badge>
                         </TableCell>
-                        
+
                         <TableCell>
                           <div className="space-y-1">
                             {contact.email && (
@@ -437,35 +444,17 @@ export default function ContactsPage({ params }: ContactsPageProps) {
                             )}
                           </div>
                         </TableCell>
-                        
-                        <TableCell>
-                          {(contact.street || contact.city) && (
-                            <div className="flex items-start gap-2 text-sm text-gray-600">
-                              <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                              <div>
-                                {contact.street && <div>{contact.street}</div>}
-                                {contact.city && (
-                                  <div>
-                                    {contact.postalCode} {contact.city}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </TableCell>
-                        
+
                         <TableCell className="text-right">
                           <div className="font-medium">
                             {formatCurrency(contact.totalAmount || 0)}
                           </div>
                         </TableCell>
-                        
+
                         <TableCell className="text-right">
-                          <div className="text-sm text-gray-600">
-                            {contact.totalInvoices || 0}
-                          </div>
+                          <div className="text-sm text-gray-600">{contact.totalInvoices || 0}</div>
                         </TableCell>
-                        
+
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -474,33 +463,49 @@ export default function ContactsPage({ params }: ContactsPageProps) {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem 
-                                onClick={() => router.push(`/dashboard/company/${resolvedParams.uid}/finance/contacts/${contact.id}`)}
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  router.push(
+                                    `/dashboard/company/${resolvedParams.uid}/finance/contacts/${contact.id}`
+                                  )
+                                }
                               >
                                 <Eye className="h-4 w-4 mr-2" />
                                 Ansehen
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => router.push(`/dashboard/company/${resolvedParams.uid}/finance/contacts/${contact.id}/edit`)}
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  router.push(
+                                    `/dashboard/company/${resolvedParams.uid}/finance/contacts/${contact.id}/edit`
+                                  )
+                                }
                               >
                                 <Edit className="h-4 w-4 mr-2" />
                                 Bearbeiten
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => router.push(`/dashboard/company/${resolvedParams.uid}/finance/invoices/create?customerId=${contact.id}`)}
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  router.push(
+                                    `/dashboard/company/${resolvedParams.uid}/finance/invoices/create?customerId=${contact.id}`
+                                  )
+                                }
                               >
                                 <FileText className="h-4 w-4 mr-2" />
                                 Rechnung erstellen
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => router.push(`/dashboard/company/${resolvedParams.uid}/finance/quotes/create?customerId=${contact.id}`)}
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  router.push(
+                                    `/dashboard/company/${resolvedParams.uid}/finance/quotes/create?customerId=${contact.id}`
+                                  )
+                                }
                               >
                                 <FileIcon className="h-4 w-4 mr-2" />
                                 Angebot erstellen
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => handleDeleteContact(contact)}
                                 className="text-red-600 hover:text-red-700"
                               >

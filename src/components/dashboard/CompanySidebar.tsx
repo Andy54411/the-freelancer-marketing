@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import {
   Grid as FiGrid,
@@ -29,6 +29,7 @@ import {
   Boxes as FiBoxes,
   HelpCircle as FiHelpCircle,
 } from 'lucide-react';
+import { StorageCardSidebar } from './StorageCardSidebar';
 
 interface NavigationItem {
   label: string;
@@ -198,12 +199,6 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
-    label: 'Advertising',
-    icon: FiTrendingUp,
-    value: 'taskilo-advertising',
-    href: 'taskilo-advertising',
-  },
-  {
     label: 'Steuerportal',
     icon: FiShield,
     value: 'steuerportal',
@@ -224,12 +219,6 @@ const navigationItems: NavigationItem[] = [
     icon: FiHelpCircle,
     value: 'support',
     href: 'support',
-  },
-  {
-    label: 'KI-Assistent',
-    icon: FiBot,
-    value: 'ai-assistant',
-    href: 'ai-assistant',
   },
   {
     label: 'Einstellungen',
@@ -346,11 +335,6 @@ export default function CompanySidebar({
       return pathname?.includes('/finance/inventory');
     }
 
-    // Taskilo Advertising aktiv wenn Taskilo Advertising-Pfad
-    if (item.value === 'taskilo-advertising') {
-      return pathname?.includes('/taskilo-advertising');
-    }
-
     // Steuerportal aktiv bei /steuerportal/*, /datev/* oder finance Steuern/Auswertung
     if (item.value === 'steuerportal') {
       return (
@@ -371,10 +355,8 @@ export default function CompanySidebar({
           !pathname.includes('/orders') &&
           !pathname.includes('/inbox') &&
           !pathname.includes('/settings') &&
-          !pathname.includes('/ai-assistant') &&
           !pathname.includes('/calendar') &&
           !pathname.includes('/reviews') &&
-          !pathname.includes('/taskilo-advertising') &&
           !pathname.includes('/steuerportal') &&
           !pathname.includes('/marketplace') &&
           !pathname.includes('/datev') &&
@@ -408,92 +390,163 @@ export default function CompanySidebar({
     return pathname.includes(`/${subItem.href}`);
   };
 
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [maxHeight, setMaxHeight] = useState('100vh');
+  const [isDragging, setIsDragging] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
+
+  useEffect(() => {
+    const updateMaxHeight = () => {
+      if (typeof window !== 'undefined') {
+        const viewportHeight = window.innerHeight;
+        const footerOffset = -50; // Abstand zum Footer
+        setMaxHeight(`${viewportHeight - footerOffset}px`);
+      }
+    };
+
+    updateMaxHeight();
+    window.addEventListener('resize', updateMaxHeight);
+    return () => window.removeEventListener('resize', updateMaxHeight);
+  }, []);
+
+  // Drag-to-Scroll Handler
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    setStartY(e.pageY - scrollRef.current.offsetTop);
+    setScrollTop(scrollRef.current.scrollTop);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const y = e.pageY - scrollRef.current.offsetTop;
+    const walk = (y - startY) * 2; // Scroll-Geschwindigkeit
+    scrollRef.current.scrollTop = scrollTop - walk;
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-white border-r border-gray-200">
-      <div className="flex flex-col flex-1 pt-5 pb-4 overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center flex-shrink-0 px-4">
-          <h2 className="text-lg font-semibold text-gray-900">Dashboard</h2>
-          {companyName && <span className="ml-2 text-sm text-gray-500">{companyName}</span>}
-        </div>
+    <>
+      <style jsx>{`
+        .sidebar-scroll::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+      <div ref={sidebarRef} className="flex flex-col bg-white" style={{ maxHeight }}>
+        <div
+          ref={scrollRef}
+          className="sidebar-scroll flex flex-col flex-1 pt-5 pb-4 overflow-y-auto select-none"
+          style={{
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            cursor: isDragging ? 'grabbing' : 'grab',
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+        >
+          {/* Header */}
+          <div className="flex items-center flex-shrink-0 px-4 mb-5">
+            <h2 className="text-lg font-semibold text-gray-900">Dashboard</h2>
+            {companyName && <span className="ml-2 text-sm text-gray-500">{companyName}</span>}
+          </div>
 
-        {/* Navigation */}
-        <nav className="mt-5 flex-1 px-2 space-y-1">
-          {navigationItems.map(item => {
-            const isMainActive = isItemActive(item);
-            const hasSubItems = item.subItems && item.subItems.length > 0;
-            const isItemExpanded = isExpanded(item.value);
+          {/* Navigation */}
+          <nav className="flex-1 px-2 space-y-1">
+            {navigationItems.map(item => {
+              const isMainActive = isItemActive(item);
+              const hasSubItems = item.subItems && item.subItems.length > 0;
+              const isItemExpanded = isExpanded(item.value);
 
-            return (
-              <div key={item.value}>
-                {/* Main Button */}
-                <button
-                  onClick={() => {
-                    if (hasSubItems) {
-                      onToggleExpanded(item.value);
-                    } else if (item.href) {
-                      onNavigate(item.value, item.href);
-                    } else {
-                      onNavigate(item.value);
-                    }
-                  }}
-                  className={`${
-                    isMainActive
-                      ? 'bg-[#14ad9f] text-white'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  } group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md w-full transition-colors`}
-                >
-                  <div className="flex items-center">
-                    <item.icon
-                      className={`${
-                        isMainActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
-                      } mr-3 flex-shrink-0 h-6 w-6`}
-                    />
-                    {item.label}
-                  </div>
-                  {hasSubItems && (
-                    <FiChevronDown
-                      className={`h-4 w-4 transition-transform ${
-                        isItemExpanded ? 'rotate-180' : ''
-                      } ${isMainActive ? 'text-white' : 'text-gray-400'}`}
-                    />
+              return (
+                <div key={item.value}>
+                  {/* Main Button */}
+                  <button
+                    onClick={() => {
+                      if (hasSubItems) {
+                        onToggleExpanded(item.value);
+                      } else if (item.href) {
+                        onNavigate(item.value, item.href);
+                      } else {
+                        onNavigate(item.value);
+                      }
+                    }}
+                    className={`${
+                      isMainActive
+                        ? 'bg-[#14ad9f] text-white'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    } group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md w-full transition-colors`}
+                  >
+                    <div className="flex items-center">
+                      <item.icon
+                        className={`${
+                          isMainActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
+                        } mr-3 flex-shrink-0 h-6 w-6`}
+                      />
+                      {item.label}
+                    </div>
+                    {hasSubItems && (
+                      <FiChevronDown
+                        className={`h-4 w-4 transition-transform ${
+                          isItemExpanded ? 'rotate-180' : ''
+                        } ${isMainActive ? 'text-white' : 'text-gray-400'}`}
+                      />
+                    )}
+                  </button>
+
+                  {/* Sub Items */}
+                  {hasSubItems && isItemExpanded && (
+                    <div className="ml-6 mt-1 space-y-1">
+                      {item.subItems?.map(subItem => {
+                        const isSubActive = isSubItemActive(subItem);
+
+                        return (
+                          <button
+                            key={subItem.value}
+                            onClick={() => {
+                              if (subItem.href) {
+                                onNavigate(subItem.value, subItem.href);
+                              } else {
+                                onNavigate(subItem.value);
+                              }
+                            }}
+                            className={`${
+                              isSubActive
+                                ? 'bg-[#14ad9f] text-white'
+                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                            } group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
+                          >
+                            <FiChevronRight className="mr-2 h-4 w-4" />
+                            {subItem.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
-                </button>
 
-                {/* Sub Items */}
-                {hasSubItems && isItemExpanded && (
-                  <div className="ml-6 mt-1 space-y-1">
-                    {item.subItems?.map(subItem => {
-                      const isSubActive = isSubItemActive(subItem);
-
-                      return (
-                        <button
-                          key={subItem.value}
-                          onClick={() => {
-                            if (subItem.href) {
-                              onNavigate(subItem.value, subItem.href);
-                            } else {
-                              onNavigate(subItem.value);
-                            }
-                          }}
-                          className={`${
-                            isSubActive
-                              ? 'bg-[#14ad9f] text-white'
-                              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                          } group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
-                        >
-                          <FiChevronRight className="mr-2 h-4 w-4" />
-                          {subItem.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </nav>
+                  {/* Storage Card direkt nach Einstellungen Button */}
+                  {item.value === 'settings' && (
+                    <div className="mt-2 px-2">
+                      <StorageCardSidebar companyId={uid} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

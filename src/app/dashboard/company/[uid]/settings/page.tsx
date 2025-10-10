@@ -14,6 +14,7 @@ import ServicesForm from '@/components/dashboard_setting/services-professional';
 import FaqsForm from '@/components/dashboard_setting/faqs';
 import PaymentTermsForm from '@/components/dashboard_setting/PaymentTermsForm';
 import ManagingDirectorModal from '@/components/dashboard_setting/ManagingDirectorModal';
+import { CompanyStorageCard } from '@/components/dashboard/CompanyStorageCard';
 import { RawFirestoreUserData, UserDataForSettings } from '@/types/settings';
 import { Loader2 as FiLoader, Save as FiSave } from 'lucide-react';
 import { toast } from 'sonner';
@@ -377,6 +378,13 @@ export default function SettingsPage() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
             <p className="text-gray-600">{description}</p>
           </div>
+
+          {/* Storage Card - nur bei general view */}
+          {view === 'general' && (
+            <div className="mb-6">
+              <CompanyStorageCard companyId={uid} />
+            </div>
+          )}
 
           <div className="bg-white rounded-lg shadow-sm border p-6">
             {renderSettingsComponent()}

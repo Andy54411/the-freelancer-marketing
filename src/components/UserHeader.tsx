@@ -481,7 +481,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
   return (
     <>
-      <header className="bg-white shadow-sm relative">
+      <header className="bg-white relative">
         <div className="container mx-auto px-4 py-3">
           <div className="flex justify-between items-center">
             {/* Logo */}

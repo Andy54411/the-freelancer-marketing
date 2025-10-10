@@ -340,17 +340,19 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         <UserHeader currentUid={uid} />
 
         <div className="flex flex-1">
-          {/* Desktop Sidebar */}
-          <aside className="hidden md:flex md:w-64 md:flex-col md:bg-white md:border-r md:border-gray-200">
-            <CompanySidebar
-              companyName={companyDataForHeader?.companyName}
-              uid={uid}
-              expandedItems={expandedItems}
-              onToggleExpanded={toggleExpanded}
-              onNavigate={handleNavigation}
-              getCurrentView={getCurrentView}
-            />
-          </aside>
+          {/* Desktop Sidebar - Dynamic height stops before footer */}
+          <div className="hidden md:block md:w-64 md:flex-shrink-0">
+            <div className="sticky top-0 bg-white overflow-hidden">
+              <CompanySidebar
+                companyName={companyDataForHeader?.companyName}
+                uid={uid}
+                expandedItems={expandedItems}
+                onToggleExpanded={toggleExpanded}
+                onNavigate={handleNavigation}
+                getCurrentView={getCurrentView}
+              />
+            </div>
+          </div>
 
           {/* Mobile Sidebar */}
           <CompanyMobileSidebar

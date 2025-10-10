@@ -1042,8 +1042,10 @@ export async function POST(req: NextRequest, companyId: string) {
             // 📊 SERVICE USAGE TRACKING - Track platform booking for analytics
             try {
               // Dynamic import des Service Tracking Service
-              const { ServiceUsageTrackingService } = await import('@/services/serviceUsageTrackingService');
-              
+              const { ServiceUsageTrackingService } = await import(
+                '@/services/serviceUsageTrackingService'
+              );
+
               // Erstelle Service-Package-Daten aus Order-Informationen
               const servicePackageData = {
                 packageName: orderData.selectedSubcategory || 'Platform Service',
@@ -1060,7 +1062,10 @@ export async function POST(req: NextRequest, companyId: string) {
               );
             } catch (trackingError) {
               // Service-Tracking ist nicht kritisch für die Hauptfunktion
-              console.warn('⚠️ Platform service usage tracking failed (non-critical):', trackingError);
+              console.warn(
+                '⚠️ Platform service usage tracking failed (non-critical):',
+                trackingError
+              );
             }
           } else {
           }
@@ -1083,6 +1088,130 @@ export async function POST(req: NextRequest, companyId: string) {
       // ... andere cases ...
       // Z.B. setup_intent.succeeded für das Speichern von Zahlungsmethoden
       // case 'setup_intent.succeeded': { ... }
+
+      // ========================================
+      // STORAGE SUBSCRIPTION EVENTS
+      // ========================================
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+
+        // Check if this is a storage subscription
+        if (session.metadata?.type === 'storage_subscription') {
+          const companyId = session.metadata.companyId;
+          const planId = session.metadata.planId;
+          const storage = parseInt(session.metadata.storage);
+
+          try {
+            // Update storage limit for the entire company
+            const companyRef = db!.collection('companies').doc(companyId);
+            await companyRef.update({
+              storageLimit: storage,
+              storagePlanId: planId,
+              stripeSubscriptionId: session.subscription,
+              subscriptionStatus: 'active',
+              subscriptionUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+
+            // Update subscription log
+            const subscriptionLogRef = db!
+              .collection('companies')
+              .doc(companyId)
+              .collection('storage_subscriptions')
+              .doc(session.id);
+
+            await subscriptionLogRef.set(
+              {
+                status: 'active',
+                subscriptionId: session.subscription,
+                planId: planId,
+                storage: storage,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                activatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+
+            console.log(
+              `✅ Storage subscription activated for company ${companyId}: ${planId} (${storage} bytes)`
+            );
+          } catch (storageError: unknown) {
+            let storageErrorMessage = 'Storage subscription activation failed';
+            if (storageError instanceof Error) {
+              storageErrorMessage = storageError.message;
+            }
+            const errorKey = `storage_subscription_${companyId}`;
+            if (shouldLogError(errorKey)) {
+              console.error('Storage subscription error:', storageErrorMessage);
+            }
+          }
+        }
+        break;
+      }
+
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+
+        // Check if this is a storage subscription
+        if (
+          subscription.metadata?.companyId &&
+          subscription.metadata?.type === 'storage_subscription'
+        ) {
+          const companyId = subscription.metadata.companyId;
+          const status = subscription.status;
+
+          try {
+            const companyRef = db!.collection('companies').doc(companyId);
+            await companyRef.update({
+              subscriptionStatus: status,
+              subscriptionUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+
+            console.log(`✅ Storage subscription updated: ${status} for company ${companyId}`);
+          } catch (updateError: unknown) {
+            const errorKey = `storage_subscription_update_${companyId}`;
+            if (shouldLogError(errorKey)) {
+              console.error('Storage subscription update error:', updateError);
+            }
+          }
+        }
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+
+        // Check if this is a storage subscription
+        if (
+          subscription.metadata?.companyId &&
+          subscription.metadata?.type === 'storage_subscription'
+        ) {
+          const companyId = subscription.metadata.companyId;
+
+          try {
+            // Reset to default storage (1 GB)
+            const companyRef = db!.collection('companies').doc(companyId);
+            await companyRef.update({
+              storageLimit: 1024 * 1024 * 1024, // 1 GB
+              storagePlanId: null,
+              stripeSubscriptionId: null,
+              subscriptionStatus: 'canceled',
+              subscriptionUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+
+            console.log(`✅ Storage subscription canceled for company ${companyId}, reset to 1GB`);
+          } catch (deleteError: unknown) {
+            const errorKey = `storage_subscription_delete_${companyId}`;
+            if (shouldLogError(errorKey)) {
+              console.error('Storage subscription delete error:', deleteError);
+            }
+          }
+        }
+        break;
+      }
+      // ========================================
+      // END STORAGE SUBSCRIPTION EVENTS
+      // ========================================
+
       default:
       // Es ist wichtig, für unbehandelte Events trotzdem 200 OK zu senden,
       // damit Stripe nicht versucht, sie erneut zu senden.

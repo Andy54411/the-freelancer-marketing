@@ -1,7 +1,15 @@
 import { storage } from '@/firebase/clients';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc, setDoc, updateDoc, collection as fsCollection, addDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
-
+import {
+  doc,
+  setDoc,
+  updateDoc,
+  collection as fsCollection,
+  addDoc,
+  Timestamp,
+  serverTimestamp,
+} from 'firebase/firestore';
+import { UsageTrackingService } from './usageTrackingService';
 
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
@@ -58,15 +66,15 @@ export interface OrderRecord {
   totalAmountPaidByBuyer?: number; // in Cents
   jobCalculatedPriceInCents?: number; // in Cents
   status:
-  'AKTIV' |
-  'ABGESCHLOSSEN' |
-  'STORNIERT' |
-  'FEHLENDE DETAILS' |
-  'IN BEARBEITUNG' |
-  'zahlung_erhalten_clearing' |
-  'abgelehnt_vom_anbieter' |
-  'COMPLETED' |
-  'BEZAHLT';
+    | 'AKTIV'
+    | 'ABGESCHLOSSEN'
+    | 'STORNIERT'
+    | 'FEHLENDE DETAILS'
+    | 'IN BEARBEITUNG'
+    | 'zahlung_erhalten_clearing'
+    | 'abgelehnt_vom_anbieter'
+    | 'COMPLETED'
+    | 'BEZAHLT';
   createdAt: any; // Firebase Timestamp
   paidAt?: any; // Firebase Timestamp
   description?: string;
@@ -75,7 +83,6 @@ export interface OrderRecord {
 }
 
 export class FinanceService {
-
   /**
    * Speichert finale PDF-Daten und PDF in Storage/Subcollection
    */
@@ -85,18 +92,21 @@ export class FinanceService {
     actionType,
     pdfBlob,
     finalData,
-    userId
-
-
-
-
-
-
-
-  }: {companyId: string;invoiceId: string;actionType: string;pdfBlob: Blob;finalData: any;userId?: string;}) {
+    userId,
+  }: {
+    companyId: string;
+    invoiceId: string;
+    actionType: string;
+    pdfBlob: Blob;
+    finalData: any;
+    userId?: string;
+  }) {
     // Validierung
     if (!companyId || !invoiceId) {
-      console.error('saveFinalInvoiceWithPDF: companyId oder invoiceId fehlt!', { companyId, invoiceId });
+      console.error('saveFinalInvoiceWithPDF: companyId oder invoiceId fehlt!', {
+        companyId,
+        invoiceId,
+      });
       throw new Error('Ungültige Firestore-Referenz: companyId oder invoiceId fehlt!');
     }
 
@@ -105,20 +115,22 @@ export class FinanceService {
     const pdfPath = `invoices/${companyId}/${invoiceId}.pdf`;
     const pdfRef = ref(storage, pdfPath);
 
-
     await uploadBytes(pdfRef, pdfBlob);
     const pdfUrl = await getDownloadURL(pdfRef);
 
-
+    // Track storage usage
+    await UsageTrackingService.trackStorageUpload(companyId, pdfBlob.size);
 
     // 2. Daten bereinigen (Entferne undefined, Funktionen, etc.)
-    const cleanFinalData = JSON.parse(JSON.stringify(finalData, (key, value) => {
-      // Entferne undefined, Funktionen, Symbols
-      if (value === undefined || typeof value === 'function' || typeof value === 'symbol') {
-        return null;
-      }
-      return value;
-    }));
+    const cleanFinalData = JSON.parse(
+      JSON.stringify(finalData, (key, value) => {
+        // Entferne undefined, Funktionen, Symbols
+        if (value === undefined || typeof value === 'function' || typeof value === 'symbol') {
+          return null;
+        }
+        return value;
+      })
+    );
 
     // 3. Daten in Subcollection speichern
     const actionData = {
@@ -127,24 +139,14 @@ export class FinanceService {
       actionType,
       createdAt: serverTimestamp(), // ✅ FIX: Use serverTimestamp() for Firestore Rules
       userId: userId || null,
-      companyId // Explizit hinzufügen für Security Rules
+      companyId, // Explizit hinzufügen für Security Rules
     };
-
-
-
-
-
-
-
-
-
 
     // Subcollection: companies/{companyId}/invoices/{invoiceId}/actions
     const actionsCol = fsCollection(db, 'companies', companyId, 'invoices', invoiceId, 'actions');
 
     try {
       const docRef = await addDoc(actionsCol, actionData);
-
     } catch (firestoreError) {
       console.error('❌ Firestore subcollection save failed:', firestoreError);
       // Continue - we still want to update the main invoice
@@ -155,9 +157,8 @@ export class FinanceService {
       const mainInvoiceRef = doc(db, 'companies', companyId, 'invoices', invoiceId);
       await updateDoc(mainInvoiceRef, {
         pdfUrl: pdfUrl,
-        lastPdfUpdate: serverTimestamp()
+        lastPdfUpdate: serverTimestamp(),
       });
-
     } catch (updateError) {
       console.error('❌ Failed to update main invoice with PDF URL:', updateError);
     }
@@ -172,30 +173,30 @@ export class FinanceService {
     try {
       // Lade echte Auftragsdaten aus Firebase
       const [orders, invoices, payments, expenses] = await Promise.all([
-      this.getCompanyOrders(companyId),
-      this.getInvoices(companyId),
-      this.getPayments(companyId),
-      this.getExpenses(companyId)]
-      );
+        this.getCompanyOrders(companyId),
+        this.getInvoices(companyId),
+        this.getPayments(companyId),
+        this.getExpenses(companyId),
+      ]);
 
       // 🔄 KOMBINATION: Berechne Gesamtumsatz aus BEIDEN Quellen
 
       // 1. Umsatz aus Aufträgen (auftraege collection)
       const ordersRevenue =
-      orders.
-      filter(
-        (order) =>
-        order.status === 'ABGESCHLOSSEN' ||
-        order.status === 'COMPLETED' ||
-        order.status === 'BEZAHLT' ||
-        order.status === 'zahlung_erhalten_clearing'
-      ).
-      reduce((sum, order) => sum + (order.totalAmountPaidByBuyer || 0), 0) / 100; // Von Cent zu Euro
+        orders
+          .filter(
+            order =>
+              order.status === 'ABGESCHLOSSEN' ||
+              order.status === 'COMPLETED' ||
+              order.status === 'BEZAHLT' ||
+              order.status === 'zahlung_erhalten_clearing'
+          )
+          .reduce((sum, order) => sum + (order.totalAmountPaidByBuyer || 0), 0) / 100; // Von Cent zu Euro
 
       // 2. Umsatz aus Rechnungen (invoices collection)
-      const invoicesRevenue = invoices.
-      filter((inv) => inv.status === 'paid').
-      reduce((sum, inv) => sum + inv.total, 0);
+      const invoicesRevenue = invoices
+        .filter(inv => inv.status === 'paid')
+        .reduce((sum, inv) => sum + inv.total, 0);
 
       // 3. GESAMTUMSATZ = Aufträge + Rechnungen
       const totalRevenue = ordersRevenue + invoicesRevenue;
@@ -206,7 +207,7 @@ export class FinanceService {
 
       // Berechne ausstehende Rechnungen (aus invoice system)
       const outstandingInvoices = invoices.filter(
-        (inv) => inv.status === 'sent' || inv.status === 'overdue'
+        inv => inv.status === 'sent' || inv.status === 'overdue'
       );
       const outstandingAmount = outstandingInvoices.reduce((sum, inv) => sum + inv.total, 0);
 
@@ -216,24 +217,24 @@ export class FinanceService {
 
       // Diesen Monat: Aufträge
       const thisMonthOrdersRevenue =
-      orders.
-      filter((order) => {
-        const paidDate = order.paidAt ? new Date(order.paidAt._seconds * 1000) : null;
-        return (
-          (order.status === 'ABGESCHLOSSEN' ||
-          order.status === 'COMPLETED' ||
-          order.status === 'BEZAHLT' ||
-          order.status === 'zahlung_erhalten_clearing') &&
-          paidDate &&
-          paidDate >= currentMonth);
-
-      }).
-      reduce((sum, order) => sum + (order.totalAmountPaidByBuyer || 0), 0) / 100;
+        orders
+          .filter(order => {
+            const paidDate = order.paidAt ? new Date(order.paidAt._seconds * 1000) : null;
+            return (
+              (order.status === 'ABGESCHLOSSEN' ||
+                order.status === 'COMPLETED' ||
+                order.status === 'BEZAHLT' ||
+                order.status === 'zahlung_erhalten_clearing') &&
+              paidDate &&
+              paidDate >= currentMonth
+            );
+          })
+          .reduce((sum, order) => sum + (order.totalAmountPaidByBuyer || 0), 0) / 100;
 
       // Diesen Monat: Rechnungen
-      const thisMonthInvoicesRevenue = invoices.
-      filter((inv) => inv.status === 'paid' && new Date(inv.issueDate) >= currentMonth).
-      reduce((sum, inv) => sum + inv.total, 0);
+      const thisMonthInvoicesRevenue = invoices
+        .filter(inv => inv.status === 'paid' && new Date(inv.issueDate) >= currentMonth)
+        .reduce((sum, inv) => sum + inv.total, 0);
 
       // Kombinierter Umsatz diesen Monat
       const thisMonthRevenue = thisMonthOrdersRevenue + thisMonthInvoicesRevenue;
@@ -253,7 +254,7 @@ export class FinanceService {
         thisMonthRevenue,
         vatTotal,
         monthlyData,
-        lastUpdate: new Date()
+        lastUpdate: new Date(),
       };
 
       return stats;
@@ -275,12 +276,12 @@ export class FinanceService {
     const querySnapshot = await getDocs(invoicesQuery);
     const invoices: InvoiceData[] = [];
 
-    querySnapshot.forEach((doc) => {
+    querySnapshot.forEach(doc => {
       const data = doc.data();
       invoices.push({
         ...data,
         id: doc.id,
-        createdAt: data.createdAt?.toDate?.() || new Date()
+        createdAt: data.createdAt?.toDate?.() || new Date(),
       } as InvoiceData);
     });
 
@@ -301,7 +302,7 @@ export class FinanceService {
       const querySnapshot = await getDocs(paymentsQuery);
       const payments: PaymentRecord[] = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const data = doc.data();
         payments.push({
           id: doc.id,
@@ -312,7 +313,7 @@ export class FinanceService {
           description: data.description || '',
           date: data.date?.toDate?.() || new Date(),
           invoiceId: data.invoiceId,
-          createdAt: data.createdAt?.toDate?.() || new Date()
+          createdAt: data.createdAt?.toDate?.() || new Date(),
         });
       });
 
@@ -336,7 +337,7 @@ export class FinanceService {
       const querySnapshot = await getDocs(expensesQuery);
       const expenses: ExpenseRecord[] = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const data = doc.data();
         expenses.push({
           id: doc.id,
@@ -347,7 +348,7 @@ export class FinanceService {
           date: data.date?.toDate?.() || new Date(),
           receipt: data.receipt,
           taxDeductible: data.taxDeductible || false,
-          createdAt: data.createdAt?.toDate?.() || new Date()
+          createdAt: data.createdAt?.toDate?.() || new Date(),
         });
       });
 
@@ -371,7 +372,7 @@ export class FinanceService {
       const querySnapshot = await getDocs(ordersQuery);
       const orders: OrderRecord[] = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const data = doc.data();
         orders.push({
           id: doc.id,
@@ -384,7 +385,7 @@ export class FinanceService {
           paidAt: data.paidAt,
           description: data.description,
           selectedCategory: data.selectedCategory,
-          selectedSubcategory: data.selectedSubcategory
+          selectedSubcategory: data.selectedSubcategory,
         });
       });
 
@@ -398,15 +399,16 @@ export class FinanceService {
    * Berechnet monatliche Finanzstatistiken basierend auf echten Auftragsdaten
    */
   private static calculateMonthlyDataFromOrders(
-  orders: OrderRecord[],
-  expenses: ExpenseRecord[])
-  : Array<{
+    orders: OrderRecord[],
+    expenses: ExpenseRecord[]
+  ): Array<{
     month: string;
     revenue: number;
     expenses: number;
     profit: number;
   }> {
-    const monthlyData: Array<{month: string;revenue: number;expenses: number;profit: number;}> = [];
+    const monthlyData: Array<{ month: string; revenue: number; expenses: number; profit: number }> =
+      [];
     const today = new Date();
 
     // Generiere Daten für die letzten 12 Monate
@@ -416,52 +418,52 @@ export class FinanceService {
 
       // Monatsnamen auf Deutsch
       const monthNames = [
-      'Januar',
-      'Februar',
-      'März',
-      'April',
-      'Mai',
-      'Juni',
-      'Juli',
-      'August',
-      'September',
-      'Oktober',
-      'November',
-      'Dezember'];
-
+        'Januar',
+        'Februar',
+        'März',
+        'April',
+        'Mai',
+        'Juni',
+        'Juli',
+        'August',
+        'September',
+        'Oktober',
+        'November',
+        'Dezember',
+      ];
 
       const monthName = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
 
       // Umsatz für diesen Monat aus echten Aufträgen
       const monthRevenue =
-      orders.
-      filter((order) => {
-        const paidDate = order.paidAt ? new Date(order.paidAt._seconds * 1000) : null;
-        return (
-          (order.status === 'ABGESCHLOSSEN' ||
-          order.status === 'COMPLETED' ||
-          order.status === 'BEZAHLT' ||
-          order.status === 'zahlung_erhalten_clearing') &&
-          paidDate &&
-          paidDate >= date &&
-          paidDate < nextMonth);
-
-      }).
-      reduce((sum, order) => sum + (order.totalAmountPaidByBuyer || 0), 0) / 100; // Cent zu Euro
+        orders
+          .filter(order => {
+            const paidDate = order.paidAt ? new Date(order.paidAt._seconds * 1000) : null;
+            return (
+              (order.status === 'ABGESCHLOSSEN' ||
+                order.status === 'COMPLETED' ||
+                order.status === 'BEZAHLT' ||
+                order.status === 'zahlung_erhalten_clearing') &&
+              paidDate &&
+              paidDate >= date &&
+              paidDate < nextMonth
+            );
+          })
+          .reduce((sum, order) => sum + (order.totalAmountPaidByBuyer || 0), 0) / 100; // Cent zu Euro
 
       // Ausgaben für diesen Monat
-      const monthExpenses = expenses.
-      filter((exp) => {
-        const expDate = new Date(exp.date);
-        return expDate >= date && expDate < nextMonth;
-      }).
-      reduce((sum, exp) => sum + exp.amount, 0);
+      const monthExpenses = expenses
+        .filter(exp => {
+          const expDate = new Date(exp.date);
+          return expDate >= date && expDate < nextMonth;
+        })
+        .reduce((sum, exp) => sum + exp.amount, 0);
 
       monthlyData.push({
         month: monthName,
         revenue: monthRevenue,
         expenses: monthExpenses,
-        profit: monthRevenue - monthExpenses
+        profit: monthRevenue - monthExpenses,
       });
     }
 
@@ -472,16 +474,17 @@ export class FinanceService {
    * Berechnet monatliche Finanzstatistiken aus BEIDEN Quellen: Aufträge UND Rechnungen
    */
   private static calculateMonthlyDataFromBothSources(
-  orders: OrderRecord[],
-  invoices: InvoiceData[],
-  expenses: ExpenseRecord[])
-  : Array<{
+    orders: OrderRecord[],
+    invoices: InvoiceData[],
+    expenses: ExpenseRecord[]
+  ): Array<{
     month: string;
     revenue: number;
     expenses: number;
     profit: number;
   }> {
-    const monthlyData: Array<{month: string;revenue: number;expenses: number;profit: number;}> = [];
+    const monthlyData: Array<{ month: string; revenue: number; expenses: number; profit: number }> =
+      [];
     const today = new Date();
 
     // Generiere Daten für die letzten 12 Monate
@@ -491,63 +494,63 @@ export class FinanceService {
 
       // Monatsnamen auf Deutsch
       const monthNames = [
-      'Januar',
-      'Februar',
-      'März',
-      'April',
-      'Mai',
-      'Juni',
-      'Juli',
-      'August',
-      'September',
-      'Oktober',
-      'November',
-      'Dezember'];
-
+        'Januar',
+        'Februar',
+        'März',
+        'April',
+        'Mai',
+        'Juni',
+        'Juli',
+        'August',
+        'September',
+        'Oktober',
+        'November',
+        'Dezember',
+      ];
 
       const monthName = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
 
       // 1. Umsatz aus Aufträgen für diesen Monat
       const monthOrdersRevenue =
-      orders.
-      filter((order) => {
-        const paidDate = order.paidAt ? new Date(order.paidAt._seconds * 1000) : null;
-        return (
-          (order.status === 'ABGESCHLOSSEN' ||
-          order.status === 'COMPLETED' ||
-          order.status === 'BEZAHLT' ||
-          order.status === 'zahlung_erhalten_clearing') &&
-          paidDate &&
-          paidDate >= date &&
-          paidDate < nextMonth);
-
-      }).
-      reduce((sum, order) => sum + (order.totalAmountPaidByBuyer || 0), 0) / 100; // Cent zu Euro
+        orders
+          .filter(order => {
+            const paidDate = order.paidAt ? new Date(order.paidAt._seconds * 1000) : null;
+            return (
+              (order.status === 'ABGESCHLOSSEN' ||
+                order.status === 'COMPLETED' ||
+                order.status === 'BEZAHLT' ||
+                order.status === 'zahlung_erhalten_clearing') &&
+              paidDate &&
+              paidDate >= date &&
+              paidDate < nextMonth
+            );
+          })
+          .reduce((sum, order) => sum + (order.totalAmountPaidByBuyer || 0), 0) / 100; // Cent zu Euro
 
       // 2. Umsatz aus Rechnungen für diesen Monat
-      const monthInvoicesRevenue = invoices.
-      filter((inv) => {
-        const invDate = new Date(inv.issueDate);
-        return inv.status === 'paid' && invDate >= date && invDate < nextMonth;
-      }).
-      reduce((sum, inv) => sum + inv.total, 0);
+      const monthInvoicesRevenue = invoices
+        .filter(inv => {
+          const invDate = new Date(inv.issueDate);
+          return inv.status === 'paid' && invDate >= date && invDate < nextMonth;
+        })
+        .reduce((sum, inv) => sum + inv.total, 0);
 
       // 3. Kombinierter Monatsumsatz
       const monthRevenue = monthOrdersRevenue + monthInvoicesRevenue;
 
       // Ausgaben für diesen Monat
-      const monthExpenses = expenses.
-      filter((exp) => {
-        const expDate = new Date(exp.date);
-        return expDate >= date && expDate < nextMonth;
-      }).
-      reduce((sum, exp) => sum + exp.amount, 0);
+      const monthExpenses = expenses
+        .filter(exp => {
+          const expDate = new Date(exp.date);
+          return expDate >= date && expDate < nextMonth;
+        })
+        .reduce((sum, exp) => sum + exp.amount, 0);
 
       monthlyData.push({
         month: monthName,
         revenue: monthRevenue,
         expenses: monthExpenses,
-        profit: monthRevenue - monthExpenses
+        profit: monthRevenue - monthExpenses,
       });
     }
 
@@ -563,7 +566,7 @@ export class FinanceService {
 
       await addDoc(collection(db, 'payments'), {
         ...payment,
-        createdAt: Timestamp.now()
+        createdAt: Timestamp.now(),
       });
     } catch (error) {
       throw error;
@@ -579,7 +582,7 @@ export class FinanceService {
 
       await addDoc(collection(db, 'expenses'), {
         ...expense,
-        createdAt: Timestamp.now()
+        createdAt: Timestamp.now(),
       });
     } catch (error) {
       throw error;
@@ -640,15 +643,16 @@ export class FinanceService {
    * Berechnet monatliche Finanzstatistiken für die letzten 12 Monate
    */
   private static calculateMonthlyData(
-  invoices: InvoiceData[],
-  expenses: ExpenseRecord[])
-  : Array<{
+    invoices: InvoiceData[],
+    expenses: ExpenseRecord[]
+  ): Array<{
     month: string;
     revenue: number;
     expenses: number;
     profit: number;
   }> {
-    const monthlyData: Array<{month: string;revenue: number;expenses: number;profit: number;}> = [];
+    const monthlyData: Array<{ month: string; revenue: number; expenses: number; profit: number }> =
+      [];
     const today = new Date();
 
     // Generiere Daten für die letzten 12 Monate
@@ -658,43 +662,43 @@ export class FinanceService {
 
       // Monatsnamen auf Deutsch
       const monthNames = [
-      'Januar',
-      'Februar',
-      'März',
-      'April',
-      'Mai',
-      'Juni',
-      'Juli',
-      'August',
-      'September',
-      'Oktober',
-      'November',
-      'Dezember'];
-
+        'Januar',
+        'Februar',
+        'März',
+        'April',
+        'Mai',
+        'Juni',
+        'Juli',
+        'August',
+        'September',
+        'Oktober',
+        'November',
+        'Dezember',
+      ];
 
       const monthName = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
 
       // Umsatz für diesen Monat (nur bezahlte Rechnungen)
-      const monthRevenue = invoices.
-      filter((inv) => {
-        const invDate = new Date(inv.issueDate);
-        return inv.status === 'paid' && invDate >= date && invDate < nextMonth;
-      }).
-      reduce((sum, inv) => sum + inv.total, 0);
+      const monthRevenue = invoices
+        .filter(inv => {
+          const invDate = new Date(inv.issueDate);
+          return inv.status === 'paid' && invDate >= date && invDate < nextMonth;
+        })
+        .reduce((sum, inv) => sum + inv.total, 0);
 
       // Ausgaben für diesen Monat
-      const monthExpenses = expenses.
-      filter((exp) => {
-        const expDate = new Date(exp.date);
-        return expDate >= date && expDate < nextMonth;
-      }).
-      reduce((sum, exp) => sum + exp.amount, 0);
+      const monthExpenses = expenses
+        .filter(exp => {
+          const expDate = new Date(exp.date);
+          return expDate >= date && expDate < nextMonth;
+        })
+        .reduce((sum, exp) => sum + exp.amount, 0);
 
       monthlyData.push({
         month: monthName,
         revenue: monthRevenue,
         expenses: monthExpenses,
-        profit: monthRevenue - monthExpenses
+        profit: monthRevenue - monthExpenses,
       });
     }
 
