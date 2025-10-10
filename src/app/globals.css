@@ -1,6 +1,5 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
-@import '@tailwindcss/typography';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -249,5 +248,164 @@
 
 .invoice-modal-container > div > div {
   width: 100% !important;
+}
+
+/* Custom Prose Styles for Update Notifications */
+.prose {
+  color: var(--foreground);
+  max-width: none;
+}
+
+.prose h1 {
+  color: var(--foreground);
+  font-weight: 800;
+  font-size: 1.875rem;
+  margin-top: 0;
+  margin-bottom: 2rem;
+  line-height: 1.111;
+}
+
+.prose h2 {
+  color: var(--foreground);
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  line-height: 1.333;
+}
+
+.prose h3 {
+  color: var(--foreground);
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin-top: 1.6rem;
+  margin-bottom: 0.6rem;
+  line-height: 1.6;
+}
+
+.prose h4 {
+  color: var(--foreground);
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.prose p {
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  line-height: 1.75;
+}
+
+.prose ul {
+  list-style-type: disc;
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  padding-left: 1.625rem;
+}
+
+.prose ol {
+  list-style-type: decimal;
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  padding-left: 1.625rem;
+}
+
+.prose li {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.75;
+}
+
+.prose li p {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.prose em {
+  color: var(--foreground);
+  font-style: italic;
+}
+
+.prose code {
+  color: var(--foreground);
+  font-weight: 600;
+  font-size: 0.875rem;
+  background-color: var(--muted);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.prose blockquote {
+  font-weight: 500;
+  font-style: italic;
+  color: var(--muted-foreground);
+  border-left-width: 0.25rem;
+  border-left-color: var(--border);
+  quotes: '\201C' '\201D' '\2018' '\2019';
+  margin-top: 1.6rem;
+  margin-bottom: 1.6rem;
+  padding-left: 1rem;
+}
+
+.prose a {
+  color: #14ad9f;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.prose a:hover {
+  color: #129488;
+}
+
+.prose-sm {
+  font-size: 0.875rem;
+  line-height: 1.714;
+}
+
+.prose-sm h1 {
+  font-size: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 1.714rem;
+  line-height: 1.2;
+}
+
+.prose-sm h2 {
+  font-size: 1.286rem;
+  margin-top: 1.714rem;
+  margin-bottom: 0.857rem;
+  line-height: 1.333;
+}
+
+.prose-sm h3 {
+  font-size: 1.143rem;
+  margin-top: 1.714rem;
+  margin-bottom: 0.571rem;
+  line-height: 1.5;
+}
+
+.prose-sm p {
+  margin-top: 1.143rem;
+  margin-bottom: 1.143rem;
+}
+
+.prose-sm ul,
+.prose-sm ol {
+  margin-top: 1.143rem;
+  margin-bottom: 1.143rem;
+  padding-left: 1.429rem;
+}
+
+.prose-sm li {
+  margin-top: 0.286rem;
+  margin-bottom: 0.286rem;
+}
+
+.prose {
   max-width: none !important;
 }
