@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { UpdateService } from '@/services/updateService';
 import { UpdateNotification, CreateUpdateRequest } from '@/types/updates';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,38 +17,27 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Plus, 
-  Save, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  Calendar, 
+import {
+  Plus,
+  Save,
+  Edit,
+  Trash2,
+  Eye,
+  Calendar,
   Settings,
   Sparkles,
   Wrench,
   Bug,
   Shield,
-  AlertTriangle
+  AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
 
-const ADMIN_USERS = ['andystaudinger@gmail.com']; // Liste der Admin-E-Mails
-
-interface UpdateAdminPanelProps {
-  params: Promise<{
-    uid: string;
-  }>;
-}
-
-export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
-  const resolvedParams = React.use(params);
-  const { user } = useAuth();
-  const router = useRouter();
+export default function UpdateAdminPanel() {
   const [updates, setUpdates] = useState<UpdateNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState<CreateUpdateRequest>({
@@ -62,44 +49,72 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
     tags: [],
     screenshots: [],
     videoUrl: '',
-    documentationUrl: ''
+    documentationUrl: '',
   });
   const [newTag, setNewTag] = useState('');
   const [newScreenshot, setNewScreenshot] = useState('');
 
-  // Check if user is admin
-  const isAdmin = user?.email && ADMIN_USERS.includes(user.email);
-
   useEffect(() => {
-    if (!isAdmin) {
-      router.push(`/dashboard/company/${resolvedParams.uid}`);
-      return;
-    }
-    loadUpdates();
-  }, [isAdmin, resolvedParams.uid, router]);
+    checkAuthAndLoadUpdates();
+  }, []);
 
-  const loadUpdates = async () => {
+  // AWS Admin Authentication Check & Load Updates
+  const checkAuthAndLoadUpdates = async () => {
     setLoading(true);
     try {
-      const allUpdates = await UpdateService.getAllUpdates();
-      setUpdates(allUpdates);
+      // Überprüfe AWS Admin Authentication
+      const authResponse = await fetch('/api/admin/auth/verify');
+      if (!authResponse.ok) {
+        setIsAuthenticated(false);
+        return;
+      }
+
+      setIsAuthenticated(true);
+
+      // Lade Updates über Admin API
+      await loadUpdates();
     } catch (error) {
-      console.error('Fehler beim Laden der Updates:', error);
-      toast.error('Fehler beim Laden der Updates');
+      console.error('Auth/Load error:', error);
+      setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }
   };
 
+  const loadUpdates = async () => {
+    try {
+      const response = await fetch('/api/admin/updates');
+      if (!response.ok) {
+        throw new Error('Failed to load updates');
+      }
+
+      const data = await response.json();
+      setUpdates(data.updates || []);
+    } catch (error) {
+      console.error('Fehler beim Laden der Updates:', error);
+      toast.error('Fehler beim Laden der Updates');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.uid || !user?.email) return;
 
     setSaving(true);
     try {
-      await UpdateService.createUpdate(formData, user.email);
+      const response = await fetch('/api/admin/updates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create update');
+      }
+
       toast.success('Update erfolgreich erstellt!');
-      
+
       // Reset form
       setFormData({
         version: '',
@@ -110,11 +125,11 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
         tags: [],
         screenshots: [],
         videoUrl: '',
-        documentationUrl: ''
+        documentationUrl: '',
       });
-      
+
       // Reload updates
-      loadUpdates();
+      await loadUpdates();
     } catch (error) {
       console.error('Fehler beim Erstellen des Updates:', error);
       toast.error('Fehler beim Erstellen des Updates');
@@ -127,7 +142,7 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
       setFormData(prev => ({
         ...prev,
-        tags: [...prev.tags, newTag.trim()]
+        tags: [...prev.tags, newTag.trim()],
       }));
       setNewTag('');
     }
@@ -136,7 +151,7 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
   const removeTag = (tagToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
+      tags: prev.tags.filter(tag => tag !== tagToRemove),
     }));
   };
 
@@ -144,7 +159,7 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
     if (newScreenshot.trim() && !(formData.screenshots || []).includes(newScreenshot.trim())) {
       setFormData(prev => ({
         ...prev,
-        screenshots: [...(prev.screenshots || []), newScreenshot.trim()]
+        screenshots: [...(prev.screenshots || []), newScreenshot.trim()],
       }));
       setNewScreenshot('');
     }
@@ -153,20 +168,29 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
   const removeScreenshot = (screenshotToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      screenshots: (prev.screenshots || []).filter(screenshot => screenshot !== screenshotToRemove)
+      screenshots: (prev.screenshots || []).filter(screenshot => screenshot !== screenshotToRemove),
     }));
   };
 
-  if (!isAdmin) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#14ad9f]"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
             <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
             <h2 className="text-lg font-semibold mb-2">Zugriff verweigert</h2>
-            <p className="text-gray-600">
-              Sie haben keine Berechtigung, auf diese Seite zuzugreifen.
-            </p>
+            <p className="text-gray-600 mb-4">Sie sind nicht als Administrator angemeldet.</p>
+            <Button onClick={() => (window.location.href = '/admin/login')} variant="outline">
+              Zur Anmeldung
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -218,7 +242,7 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
                         id="version"
                         placeholder="z.B. 1.2.3"
                         value={formData.version}
-                        onChange={(e) => setFormData(prev => ({ ...prev, version: e.target.value }))}
+                        onChange={e => setFormData(prev => ({ ...prev, version: e.target.value }))}
                         required
                       />
                     </div>
@@ -227,7 +251,9 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
                       <Label htmlFor="category">Kategorie *</Label>
                       <Select
                         value={formData.category}
-                        onValueChange={(value: any) => setFormData(prev => ({ ...prev, category: value }))}
+                        onValueChange={(value: any) =>
+                          setFormData(prev => ({ ...prev, category: value }))
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -268,7 +294,7 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
                       id="title"
                       placeholder="Kurzer, prägnanter Titel des Updates"
                       value={formData.title}
-                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                      onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
                       required
                     />
                   </div>
@@ -279,7 +305,9 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
                       id="description"
                       placeholder="Detaillierte Beschreibung des Updates..."
                       value={formData.description}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, description: e.target.value }))
+                      }
                       rows={4}
                       required
                     />
@@ -290,7 +318,9 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
                     <Switch
                       id="breaking"
                       checked={formData.isBreaking}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isBreaking: checked }))}
+                      onCheckedChange={checked =>
+                        setFormData(prev => ({ ...prev, isBreaking: checked }))
+                      }
                     />
                     <Label htmlFor="breaking" className="flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 text-yellow-500" />
@@ -305,15 +335,15 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
                       <Input
                         placeholder="Tag hinzufügen..."
                         value={newTag}
-                        onChange={(e) => setNewTag(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                        onChange={e => setNewTag(e.target.value)}
+                        onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addTag())}
                       />
                       <Button type="button" onClick={addTag} variant="outline">
                         Hinzufügen
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {formData.tags.map((tag) => (
+                      {formData.tags.map(tag => (
                         <Badge key={tag} variant="secondary" className="flex items-center gap-2">
                           {tag}
                           <button
@@ -336,7 +366,7 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
                         id="videoUrl"
                         placeholder="https://..."
                         value={formData.videoUrl}
-                        onChange={(e) => setFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
+                        onChange={e => setFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
                       />
                     </div>
 
@@ -346,7 +376,9 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
                         id="documentationUrl"
                         placeholder="https://..."
                         value={formData.documentationUrl}
-                        onChange={(e) => setFormData(prev => ({ ...prev, documentationUrl: e.target.value }))}
+                        onChange={e =>
+                          setFormData(prev => ({ ...prev, documentationUrl: e.target.value }))
+                        }
                       />
                     </div>
                   </div>
@@ -358,8 +390,8 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
                       <Input
                         placeholder="Screenshot URL hinzufügen..."
                         value={newScreenshot}
-                        onChange={(e) => setNewScreenshot(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addScreenshot())}
+                        onChange={e => setNewScreenshot(e.target.value)}
+                        onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addScreenshot())}
                       />
                       <Button type="button" onClick={addScreenshot} variant="outline">
                         Hinzufügen
@@ -407,9 +439,7 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
             <Card>
               <CardHeader>
                 <CardTitle>Updates verwalten</CardTitle>
-                <CardDescription>
-                  Übersicht aller erstellten Updates
-                </CardDescription>
+                <CardDescription>Übersicht aller erstellten Updates</CardDescription>
               </CardHeader>
               <CardContent>
                 {loading ? (
@@ -419,7 +449,7 @@ export default function UpdateAdminPanel({ params }: UpdateAdminPanelProps) {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {updates.map((update) => (
+                    {updates.map(update => (
                       <div key={update.id} className="border rounded-lg p-4">
                         <div className="flex justify-between items-start">
                           <div>
