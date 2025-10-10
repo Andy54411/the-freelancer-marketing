@@ -14,7 +14,7 @@ import {
   limit,
   serverTimestamp,
   onSnapshot,
-  Unsubscribe
+  Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { UpdateNotification, UserUpdateStatus, CreateUpdateRequest } from '@/types/updates';
@@ -33,7 +33,7 @@ export class UpdateService {
         id: doc.id,
         ...doc.data(),
         releaseDate: doc.data().releaseDate?.toDate?.()?.toISOString() || doc.data().releaseDate,
-        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
       })) as UpdateNotification[];
     } catch (error) {
       console.error('Fehler beim Laden der Updates:', error);
@@ -54,7 +54,7 @@ export class UpdateService {
         id: doc.id,
         ...doc.data(),
         releaseDate: doc.data().releaseDate?.toDate?.()?.toISOString() || doc.data().releaseDate,
-        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
       })) as UpdateNotification[];
     } catch (error) {
       console.error('Fehler beim Laden der neuesten Updates:', error);
@@ -71,9 +71,10 @@ export class UpdateService {
       const allUpdates = await this.getAllUpdates();
 
       // Filtere Updates, die nach der letzten gesehenen Version veröffentlicht wurden
-      return allUpdates.filter(update => 
-        !userStatus.seenUpdates.includes(update.id) &&
-        new Date(update.releaseDate) > new Date(userStatus.lastChecked)
+      return allUpdates.filter(
+        update =>
+          !userStatus.seenUpdates.includes(update.id) &&
+          new Date(update.releaseDate) > new Date(userStatus.lastChecked)
       );
     } catch (error) {
       console.error('Fehler beim Laden ungesehener Updates:', error);
@@ -82,10 +83,11 @@ export class UpdateService {
   }
 
   /**
-   * User Update Status abrufen
+   * User Update Status abrufen (funktioniert für beide: users und companies)
    */
   static async getUserUpdateStatus(userId: string): Promise<UserUpdateStatus> {
     try {
+      // Zuerst versuchen, den Status zu laden
       const statusDoc = await getDoc(doc(db, 'userUpdateStatus', userId));
 
       if (statusDoc.exists()) {
@@ -94,27 +96,57 @@ export class UpdateService {
           userId,
           lastSeenVersion: data.lastSeenVersion || '0.0.0',
           seenUpdates: data.seenUpdates || [],
-          lastChecked: data.lastChecked?.toDate?.()?.toISOString() || new Date().toISOString()
+          lastChecked: data.lastChecked?.toDate?.()?.toISOString() || new Date().toISOString(),
         };
       }
 
-      // Erstelle neuen Status, wenn keiner existiert
+      // Prüfe, ob es ein User oder Company ist
+      const isCompany = await this.isCompanyUser(userId);
+      console.log(`🔍 User ${userId} ist ${isCompany ? 'Company' : 'User'}`);
+
+      // Erstelle neuen Status, wenn keiner existiert - mit altem Datum für neue Updates
       const defaultStatus: UserUpdateStatus = {
         userId,
         lastSeenVersion: '0.0.0',
         seenUpdates: [],
-        lastChecked: new Date().toISOString()
+        lastChecked: new Date('2024-01-01').toISOString(), // Altes Datum, damit alle neuen Updates angezeigt werden
       };
 
       await setDoc(doc(db, 'userUpdateStatus', userId), {
         ...defaultStatus,
-        lastChecked: serverTimestamp()
+        lastChecked: serverTimestamp(),
+        userType: isCompany ? 'company' : 'user', // Speichere den Typ für Debug-Zwecke
       });
 
       return defaultStatus;
     } catch (error) {
       console.error('Fehler beim Laden des User Status:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Prüfe, ob eine UID zu einer Company gehört
+   */
+  private static async isCompanyUser(userId: string): Promise<boolean> {
+    try {
+      // Prüfe zuerst, ob ein Company-Dokument existiert
+      const companyDoc = await getDoc(doc(db, 'companies', userId));
+      if (companyDoc.exists()) {
+        return true;
+      }
+
+      // Fallback: Prüfe User-Dokument auf user_type
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        return userData.user_type === 'firma';
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Fehler beim Prüfen des User-Typs:', error);
+      return false;
     }
   }
 
@@ -129,7 +161,7 @@ export class UpdateService {
       await updateDoc(statusRef, {
         lastSeenVersion: version,
         seenUpdates: [...new Set([...currentStatus.seenUpdates, updateId])],
-        lastChecked: serverTimestamp()
+        lastChecked: serverTimestamp(),
       });
     } catch (error) {
       console.error('Fehler beim Markieren des Updates:', error);
@@ -150,7 +182,7 @@ export class UpdateService {
       await updateDoc(statusRef, {
         lastSeenVersion: latestVersion,
         seenUpdates: allUpdateIds,
-        lastChecked: serverTimestamp()
+        lastChecked: serverTimestamp(),
       });
     } catch (error) {
       console.error('Fehler beim Markieren aller Updates:', error);
@@ -167,7 +199,7 @@ export class UpdateService {
         ...updateData,
         releaseDate: serverTimestamp(),
         createdBy,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
       };
 
       const docRef = await addDoc(collection(db, 'updates'), newUpdate);
@@ -181,12 +213,15 @@ export class UpdateService {
   /**
    * Update bearbeiten (nur für Admins/Entwickler)
    */
-  static async updateUpdate(updateId: string, updateData: Partial<UpdateNotification>): Promise<void> {
+  static async updateUpdate(
+    updateId: string,
+    updateData: Partial<UpdateNotification>
+  ): Promise<void> {
     try {
       const updateRef = doc(db, 'updates', updateId);
       await updateDoc(updateRef, {
         ...updateData,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
     } catch (error) {
       console.error('Fehler beim Bearbeiten des Updates:', error);
@@ -201,12 +236,12 @@ export class UpdateService {
     const updatesRef = collection(db, 'updates');
     const q = query(updatesRef, orderBy('releaseDate', 'desc'));
 
-    return onSnapshot(q, (snapshot) => {
+    return onSnapshot(q, snapshot => {
       const updates = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         releaseDate: doc.data().releaseDate?.toDate?.()?.toISOString() || doc.data().releaseDate,
-        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
       })) as UpdateNotification[];
 
       callback(updates);
@@ -220,7 +255,7 @@ export class UpdateService {
     try {
       const updatesRef = collection(db, 'updates');
       const q = query(
-        updatesRef, 
+        updatesRef,
         where('category', '==', category),
         orderBy('releaseDate', 'desc')
       );
@@ -230,7 +265,7 @@ export class UpdateService {
         id: doc.id,
         ...doc.data(),
         releaseDate: doc.data().releaseDate?.toDate?.()?.toISOString() || doc.data().releaseDate,
-        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
       })) as UpdateNotification[];
     } catch (error) {
       console.error('Fehler beim Filtern der Updates:', error);

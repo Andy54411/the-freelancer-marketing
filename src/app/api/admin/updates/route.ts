@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
       description,
       category,
       imageUrl: imageUrl || null,
+      releaseDate: admin.firestore.FieldValue.serverTimestamp(), // WICHTIG: releaseDate hinzufügen
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };

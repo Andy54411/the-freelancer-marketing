@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { UpdateNotification } from '@/types/updates';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ import {
   FileText,
   CheckCircle,
   X,
+  Settings,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -88,6 +90,36 @@ export default function UpdateNotificationModal({
   onMarkAsSeen,
   onMarkAllAsSeen,
 }: UpdateNotificationModalProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const handleViewAllUpdates = () => {
+    // Schließe das Modal
+    onClose();
+
+    // Bestimme die richtige Updates-Seite basierend auf dem aktuellen Dashboard
+    let updatesPath = '/dashboard/admin/updates'; // Default fallback
+
+    if (pathname?.includes('/dashboard/user/')) {
+      // User Dashboard - navigiere zu allgemeiner Updates-Seite oder bleibe im User-Kontext
+      const uid = pathname.split('/dashboard/user/')[1]?.split('/')[0];
+      updatesPath = uid ? `/dashboard/user/${uid}/updates` : '/updates';
+    } else if (pathname?.includes('/dashboard/company/')) {
+      // Company Dashboard - navigiere zu allgemeiner Updates-Seite oder bleibe im Company-Kontext
+      const uid = pathname.split('/dashboard/company/')[1]?.split('/')[0];
+      updatesPath = uid ? `/dashboard/company/${uid}/updates` : '/updates';
+    } else if (pathname?.includes('/dashboard/admin')) {
+      // Admin Dashboard - navigiere zur Admin Updates-Seite
+      updatesPath = '/dashboard/admin/updates';
+    } else {
+      // Fallback für andere Pfade
+      updatesPath = '/updates';
+    }
+
+    console.log('🔍 Update Navigation:', { pathname, updatesPath });
+    router.push(updatesPath);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh]">
@@ -106,6 +138,15 @@ export default function UpdateNotificationModal({
               <Badge variant="secondary" className="bg-[#14ad9f]/10 text-[#14ad9f]">
                 {updates.length} Updates
               </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleViewAllUpdates}
+                className="flex items-center gap-2 text-[#14ad9f] border-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+              >
+                <Settings className="h-4 w-4" />
+                Updates verwalten
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
