@@ -51,7 +51,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     showNotificationModal,
     setShowNotificationModal,
     markUpdateAsSeen,
-    markAllAsSeen
+    markAllAsSeen,
+    dismissUpdate,
   } = useUpdateNotifications();
 
   const toggleExpanded = (itemValue: string) => {
@@ -392,6 +393,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         updates={unseenUpdates}
         onMarkAsSeen={markUpdateAsSeen}
         onMarkAllAsSeen={markAllAsSeen}
+        onDismissUpdate={dismissUpdate}
       />
     </SidebarVisibilityProvider>
   );

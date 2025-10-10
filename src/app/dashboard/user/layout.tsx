@@ -20,6 +20,7 @@ export default function UserDashboardLayout({ children }: { children: React.Reac
     setShowNotificationModal,
     markUpdateAsSeen,
     markAllAsSeen,
+    dismissUpdate,
   } = useUpdateNotifications();
 
   return (
@@ -49,6 +50,7 @@ export default function UserDashboardLayout({ children }: { children: React.Reac
           updates={unseenUpdates}
           onMarkAsSeen={markUpdateAsSeen}
           onMarkAllAsSeen={markAllAsSeen}
+          onDismissUpdate={dismissUpdate}
         />
       </div>
     </SidebarVisibilityProvider>

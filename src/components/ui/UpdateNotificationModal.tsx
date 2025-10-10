@@ -36,6 +36,7 @@ interface UpdateNotificationModalProps {
   updates: UpdateNotification[];
   onMarkAsSeen: (updateId: string, version: string) => void;
   onMarkAllAsSeen: () => void;
+  onDismissUpdate?: (updateId: string, version: string) => void;
 }
 
 const getCategoryIcon = (category: string) => {
@@ -89,6 +90,7 @@ export default function UpdateNotificationModal({
   updates,
   onMarkAsSeen,
   onMarkAllAsSeen,
+  onDismissUpdate,
 }: UpdateNotificationModalProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -247,15 +249,28 @@ export default function UpdateNotificationModal({
                       </Button>
                     )}
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onMarkAsSeen(update.id, update.version)}
-                      className="flex items-center gap-2 ml-auto text-[#14ad9f] hover:text-[#129488]"
-                    >
-                      <CheckCircle className="h-4 w-4" />
-                      Als gelesen markieren
-                    </Button>
+                    <div className="flex items-center gap-2 ml-auto">
+                      {onDismissUpdate && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onDismissUpdate(update.id, update.version)}
+                          className="flex items-center gap-2 text-gray-500 hover:text-red-600"
+                        >
+                          <X className="h-4 w-4" />
+                          Verwerfen
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onMarkAsSeen(update.id, update.version)}
+                        className="flex items-center gap-2 text-[#14ad9f] hover:text-[#129488]"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Als gelesen markieren
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Screenshots */}

@@ -21,7 +21,7 @@ export const useUpdateNotifications = () => {
       setLoading(true);
       const updates = await UpdateService.getUnseenUpdates(user.uid);
       const count = await UpdateService.getUnseenUpdateCount(user.uid);
-      
+
       setUnseenUpdates(updates);
       setUnseenCount(count);
 
@@ -31,9 +31,9 @@ export const useUpdateNotifications = () => {
         toast.info(`🎉 Neue Updates verfügbar! ${latestUpdate.title}`, {
           action: {
             label: 'Anzeigen',
-            onClick: () => setShowNotificationModal(true)
+            onClick: () => setShowNotificationModal(true),
           },
-          duration: 10000
+          duration: 10000,
         });
       }
     } catch (error) {
@@ -44,16 +44,19 @@ export const useUpdateNotifications = () => {
   }, [user?.uid]);
 
   // Update als gesehen markieren
-  const markUpdateAsSeen = useCallback(async (updateId: string, version: string) => {
-    if (!user?.uid) return;
+  const markUpdateAsSeen = useCallback(
+    async (updateId: string, version: string) => {
+      if (!user?.uid) return;
 
-    try {
-      await UpdateService.markUpdateAsSeen(user.uid, updateId, version);
-      await loadUnseenUpdates(); // Reload nach dem Markieren
-    } catch (error) {
-      console.error('Fehler beim Markieren des Updates:', error);
-    }
-  }, [user?.uid, loadUnseenUpdates]);
+      try {
+        await UpdateService.markUpdateAsSeen(user.uid, updateId, version);
+        await loadUnseenUpdates(); // Reload nach dem Markieren
+      } catch (error) {
+        console.error('Fehler beim Markieren des Updates:', error);
+      }
+    },
+    [user?.uid, loadUnseenUpdates]
+  );
 
   // Alle Updates als gesehen markieren
   const markAllAsSeen = useCallback(async () => {
@@ -70,6 +73,23 @@ export const useUpdateNotifications = () => {
       toast.error('Fehler beim Markieren der Updates');
     }
   }, [user?.uid]);
+
+  // Update verwerfen
+  const dismissUpdate = useCallback(
+    async (updateId: string, version: string) => {
+      if (!user?.uid) return;
+
+      try {
+        await UpdateService.dismissUpdate(user.uid, updateId, version);
+        await loadUnseenUpdates(); // Reload nach dem Verwerfen
+        toast.success('Update verworfen');
+      } catch (error) {
+        console.error('Fehler beim Verwerfen des Updates:', error);
+        toast.error('Fehler beim Verwerfen des Updates');
+      }
+    },
+    [user?.uid, loadUnseenUpdates]
+  );
 
   // Initial load und periodische Updates
   useEffect(() => {
@@ -90,6 +110,7 @@ export const useUpdateNotifications = () => {
     setShowNotificationModal,
     markUpdateAsSeen,
     markAllAsSeen,
-    refreshUpdates: loadUnseenUpdates
+    dismissUpdate,
+    refreshUpdates: loadUnseenUpdates,
   };
 };

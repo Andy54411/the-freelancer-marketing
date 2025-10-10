@@ -19,6 +19,7 @@ export interface UserUpdateStatus {
   userId: string;
   lastSeenVersion: string;
   seenUpdates: string[];
+  dismissedUpdates?: string[]; // Verworfene Updates
   lastChecked: string;
 }
 

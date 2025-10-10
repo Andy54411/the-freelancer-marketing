@@ -43,6 +43,8 @@ import {
   Package as FiPackage,
   Info as FiInfo,
   FileText as FiFileText,
+  Trash2 as FiTrash2,
+  Check as FiCheck,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { OverdueInvoicesAlert } from '@/components/finance/OverdueInvoicesAlert';
@@ -77,7 +79,8 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   const { user: authUser, loading: authLoading, unreadMessagesCount, recentChats } = useAuth(); // KORREKTUR: Alle Daten aus dem Context beziehen
 
   // Update-Notification System
-  const { unseenCount, unseenUpdates, setShowNotificationModal } = useUpdateNotifications();
+  const { unseenCount, unseenUpdates, setShowNotificationModal, dismissUpdate, markUpdateAsSeen } =
+    useUpdateNotifications();
 
   const router = useRouter();
   const [profilePictureURLFromStorage, setProfilePictureURLFromStorage] = useState<string | null>(
@@ -660,34 +663,86 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                             </button>
                           </div>
                         </div>
-                        <div className="max-h-32 overflow-y-auto">
+                        <div className="max-h-64 overflow-y-auto">
                           {unseenUpdates.slice(0, 3).map(update => (
                             <div
                               key={update.id}
-                              className="p-3 hover:bg-gray-50 cursor-pointer border-l-4 border-[#14ad9f]"
-                              onClick={() => {
-                                setShowNotificationModal(true);
-                                setIsNotificationDropdownOpen(false);
-                              }}
+                              className="group border-l-4 border-[#14ad9f] hover:bg-gray-50"
                             >
-                              <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-full bg-[#14ad9f] flex items-center justify-center shrink-0">
-                                  <FiInfo className="text-white w-4 h-4" />
+                              <div className="p-3">
+                                <div className="flex items-start gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-[#14ad9f] flex items-center justify-center shrink-0">
+                                    <FiInfo className="text-white w-4 h-4" />
+                                  </div>
+                                  <div className="flex-1 overflow-hidden">
+                                    <p className="text-sm text-gray-900 font-medium">
+                                      {update.title}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Version {update.version} •{' '}
+                                      {update.category === 'feature'
+                                        ? 'Neue Funktion'
+                                        : update.category === 'improvement'
+                                          ? 'Verbesserung'
+                                          : update.category === 'bugfix'
+                                            ? 'Fehlerbehebung'
+                                            : 'Sicherheit'}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div className="flex-1 overflow-hidden">
-                                  <p className="text-sm text-gray-900 font-medium">
-                                    {update.title}
-                                  </p>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    Version {update.version} •{' '}
-                                    {update.category === 'feature'
-                                      ? 'Neue Funktion'
-                                      : update.category === 'improvement'
-                                        ? 'Verbesserung'
-                                        : update.category === 'bugfix'
-                                          ? 'Fehlerbehebung'
-                                          : 'Sicherheit'}
-                                  </p>
+
+                                {/* Action Buttons */}
+                                <div className="flex items-center justify-between mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => {
+                                      // Bestimme die richtige Updates-Route basierend auf User-Typ
+                                      const userType = authUser?.user_type;
+                                      let updatesRoute = '';
+
+                                      if (userType === 'firma' && currentUser?.uid) {
+                                        updatesRoute = `/dashboard/company/${currentUser.uid}/updates`;
+                                      } else if (currentUser?.uid) {
+                                        updatesRoute = `/dashboard/user/${currentUser.uid}/updates`;
+                                      }
+
+                                      if (updatesRoute) {
+                                        router.push(updatesRoute);
+                                        setIsNotificationDropdownOpen(false);
+                                      }
+                                    }}
+                                    className="text-xs text-[#14ad9f] hover:text-[#129488] font-medium"
+                                  >
+                                    Details anzeigen
+                                  </button>
+
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={async e => {
+                                        e.stopPropagation();
+                                        await markUpdateAsSeen(
+                                          update.id,
+                                          update.version || '1.0.0'
+                                        );
+                                      }}
+                                      className="flex items-center gap-1 text-xs text-green-600 hover:text-green-700 font-medium"
+                                      title="Als gelesen markieren"
+                                    >
+                                      <FiCheck className="w-3 h-3" />
+                                      Gelesen
+                                    </button>
+
+                                    <button
+                                      onClick={async e => {
+                                        e.stopPropagation();
+                                        await dismissUpdate(update.id, update.version || '1.0.0');
+                                      }}
+                                      className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 font-medium"
+                                      title="Update-Benachrichtigung löschen"
+                                    >
+                                      <FiTrash2 className="w-3 h-3" />
+                                      Löschen
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             </div>

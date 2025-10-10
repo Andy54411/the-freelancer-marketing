@@ -18,6 +18,8 @@ import {
   PlayCircle,
   FileText,
   ArrowLeft,
+  User,
+  Trash2,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -75,12 +77,18 @@ export default function UserUpdatesPage() {
 
     try {
       setLoading(true);
-      const [all, unseen] = await Promise.all([
+      const [all, unseen, userStatus] = await Promise.all([
         UpdateService.getAllUpdates(),
         UpdateService.getUnseenUpdates(user.uid),
+        UpdateService.getUserUpdateStatus(user.uid),
       ]);
 
-      setAllUpdates(all);
+      // Filtere verworfene Updates auch aus der "Alle Updates" Liste
+      const filteredAll = all.filter(
+        update => !(userStatus.dismissedUpdates || []).includes(update.id)
+      );
+
+      setAllUpdates(filteredAll);
       setUnseenUpdates(unseen);
     } catch (error) {
       console.error('Fehler beim Laden der Updates:', error);
@@ -113,6 +121,19 @@ export default function UserUpdatesPage() {
     } catch (error) {
       console.error('Fehler beim Markieren aller Updates:', error);
       toast.error('Fehler beim Markieren der Updates');
+    }
+  };
+
+  const handleDismissUpdate = async (updateId: string, version: string) => {
+    if (!user?.uid) return;
+
+    try {
+      await UpdateService.dismissUpdate(user.uid, updateId, version);
+      await loadUpdates(); // Neu laden
+      toast.success('Update-Benachrichtigung wurde gelöscht');
+    } catch (error) {
+      console.error('Fehler beim Löschen der Update-Benachrichtigung:', error);
+      toast.error('Fehler beim Löschen der Update-Benachrichtigung');
     }
   };
 
@@ -162,7 +183,7 @@ export default function UserUpdatesPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-[#14ad9f]" />
+              <User className="h-6 w-6 text-[#14ad9f]" />
               Plattform-Updates
             </h1>
             <p className="text-gray-600">
@@ -212,6 +233,7 @@ export default function UserUpdatesPage() {
                 key={update.id}
                 update={update}
                 onMarkAsSeen={handleMarkAsSeen}
+                onDismiss={handleDismissUpdate}
                 isNew={true}
               />
             ))
@@ -224,6 +246,7 @@ export default function UserUpdatesPage() {
               key={update.id}
               update={update}
               onMarkAsSeen={handleMarkAsSeen}
+              onDismiss={handleDismissUpdate}
               isNew={unseenUpdates.some(u => u.id === update.id)}
             />
           ))}
@@ -237,10 +260,11 @@ export default function UserUpdatesPage() {
 interface UpdateCardProps {
   update: UpdateNotification;
   onMarkAsSeen: (updateId: string, version: string) => void;
+  onDismiss: (updateId: string, version: string) => void;
   isNew: boolean;
 }
 
-function UpdateCard({ update, onMarkAsSeen, isNew }: UpdateCardProps) {
+function UpdateCard({ update, onMarkAsSeen, onDismiss, isNew }: UpdateCardProps) {
   return (
     <Card className={isNew ? 'border-[#14ad9f] border-2' : ''}>
       <CardHeader>
@@ -306,42 +330,57 @@ function UpdateCard({ update, onMarkAsSeen, isNew }: UpdateCardProps) {
         )}
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
-          {update.videoUrl && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open(update.videoUrl, '_blank')}
-              className="flex items-center gap-2"
-            >
-              <PlayCircle className="h-4 w-4" />
-              Video
-            </Button>
-          )}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {update.videoUrl && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(update.videoUrl, '_blank')}
+                className="flex items-center gap-2"
+              >
+                <PlayCircle className="h-4 w-4" />
+                Video
+              </Button>
+            )}
 
-          {update.documentationUrl && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open(update.documentationUrl, '_blank')}
-              className="flex items-center gap-2"
-            >
-              <FileText className="h-4 w-4" />
-              Dokumentation
-            </Button>
-          )}
+            {update.documentationUrl && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(update.documentationUrl, '_blank')}
+                className="flex items-center gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Dokumentation
+              </Button>
+            )}
+          </div>
 
-          {isNew && (
+          <div className="flex items-center gap-2">
+            {isNew && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onMarkAsSeen(update.id, update.version || '1.0.0')}
+                className="flex items-center gap-2 text-[#14ad9f] hover:text-[#129488]"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Als gelesen markieren
+              </Button>
+            )}
+
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onMarkAsSeen(update.id, update.version)}
-              className="flex items-center gap-2 ml-auto text-[#14ad9f] hover:text-[#129488]"
+              onClick={() => onDismiss(update.id, update.version || '1.0.0')}
+              className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+              title="Update-Benachrichtigung löschen"
             >
-              <CheckCircle className="h-4 w-4" />
-              Als gelesen markieren
+              <Trash2 className="h-4 w-4" />
+              Löschen
             </Button>
-          )}
+          </div>
         </div>
       </CardContent>
     </Card>

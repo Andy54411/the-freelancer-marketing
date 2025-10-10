@@ -71,9 +71,11 @@ export class UpdateService {
       const allUpdates = await this.getAllUpdates();
 
       // Filtere Updates, die nach der letzten gesehenen Version veröffentlicht wurden
+      // und nicht verworfen wurden
       return allUpdates.filter(
         update =>
           !userStatus.seenUpdates.includes(update.id) &&
+          !(userStatus.dismissedUpdates || []).includes(update.id) &&
           new Date(update.releaseDate) > new Date(userStatus.lastChecked)
       );
     } catch (error) {
@@ -96,6 +98,7 @@ export class UpdateService {
           userId,
           lastSeenVersion: data.lastSeenVersion || '0.0.0',
           seenUpdates: data.seenUpdates || [],
+          dismissedUpdates: data.dismissedUpdates || [],
           lastChecked: data.lastChecked?.toDate?.()?.toISOString() || new Date().toISOString(),
         };
       }
@@ -109,6 +112,7 @@ export class UpdateService {
         userId,
         lastSeenVersion: '0.0.0',
         seenUpdates: [],
+        dismissedUpdates: [],
         lastChecked: new Date('2024-01-01').toISOString(), // Altes Datum, damit alle neuen Updates angezeigt werden
       };
 
@@ -158,8 +162,11 @@ export class UpdateService {
       const statusRef = doc(db, 'userUpdateStatus', userId);
       const currentStatus = await this.getUserUpdateStatus(userId);
 
+      // Validiere version Parameter - verwende aktuelle lastSeenVersion als Fallback
+      const validVersion = version || currentStatus.lastSeenVersion || '0.0.0';
+
       await updateDoc(statusRef, {
-        lastSeenVersion: version,
+        lastSeenVersion: validVersion,
         seenUpdates: [...new Set([...currentStatus.seenUpdates, updateId])],
         lastChecked: serverTimestamp(),
       });
@@ -186,6 +193,24 @@ export class UpdateService {
       });
     } catch (error) {
       console.error('Fehler beim Markieren aller Updates:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update verwerfen (wird nicht mehr als Notification angezeigt)
+   */
+  static async dismissUpdate(userId: string, updateId: string, version: string): Promise<void> {
+    try {
+      const statusRef = doc(db, 'userUpdateStatus', userId);
+      const currentStatus = await this.getUserUpdateStatus(userId);
+
+      await updateDoc(statusRef, {
+        dismissedUpdates: [...new Set([...(currentStatus.dismissedUpdates || []), updateId])],
+        lastChecked: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Fehler beim Verwerfen des Updates:', error);
       throw error;
     }
   }
