@@ -13,17 +13,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Sparkles, 
-  Wrench, 
-  Bug, 
-  Shield, 
-  Calendar, 
+import {
+  Sparkles,
+  Wrench,
+  Bug,
+  Shield,
+  Calendar,
   ExternalLink,
   PlayCircle,
   FileText,
   CheckCircle,
-  X
+  X,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -86,7 +86,7 @@ export default function UpdateNotificationModal({
   onClose,
   updates,
   onMarkAsSeen,
-  onMarkAllAsSeen
+  onMarkAllAsSeen,
 }: UpdateNotificationModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -121,7 +121,7 @@ export default function UpdateNotificationModal({
 
         <ScrollArea className="max-h-[60vh] pr-4">
           <div className="space-y-4">
-            {updates.map((update) => (
+            {updates.map(update => (
               <Card key={update.id} className="relative">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
@@ -139,17 +139,14 @@ export default function UpdateNotificationModal({
                           )}
                         </CardTitle>
                         <div className="flex items-center gap-4 mt-1">
-                          <Badge 
-                            variant="secondary" 
-                            className={getCategoryColor(update.category)}
-                          >
+                          <Badge variant="secondary" className={getCategoryColor(update.category)}>
                             {getCategoryLabel(update.category)}
                           </Badge>
                           <div className="flex items-center gap-1 text-sm text-gray-500">
-                            <Calendar className="h-3 w-3" />
-                            v{update.version} • {formatDistanceToNow(new Date(update.releaseDate), { 
-                              addSuffix: true, 
-                              locale: de 
+                            <Calendar className="h-3 w-3" />v{update.version} •{' '}
+                            {formatDistanceToNow(new Date(update.releaseDate), {
+                              addSuffix: true,
+                              locale: de,
                             })}
                           </div>
                         </div>
@@ -165,21 +162,18 @@ export default function UpdateNotificationModal({
                     </Button>
                   </div>
                 </CardHeader>
-                
+
                 <CardContent className="pt-0">
-                  <CardDescription className="text-gray-700 leading-relaxed">
-                    {update.description}
-                  </CardDescription>
+                  <div
+                    className="prose prose-sm prose-gray max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-em:text-gray-600 prose-code:bg-gray-100 prose-code:text-gray-800 prose-blockquote:text-gray-600 prose-blockquote:border-[#14ad9f]"
+                    dangerouslySetInnerHTML={{ __html: update.description }}
+                  />
 
                   {/* Tags */}
                   {update.tags && update.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">
-                      {update.tags.map((tag) => (
-                        <Badge 
-                          key={tag} 
-                          variant="outline" 
-                          className="text-xs bg-gray-50"
-                        >
+                      {update.tags.map(tag => (
+                        <Badge key={tag} variant="outline" className="text-xs bg-gray-50">
                           {tag}
                         </Badge>
                       ))}
@@ -199,7 +193,7 @@ export default function UpdateNotificationModal({
                         Video ansehen
                       </Button>
                     )}
-                    
+
                     {update.documentationUrl && (
                       <Button
                         variant="outline"

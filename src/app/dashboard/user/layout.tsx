@@ -5,9 +5,22 @@ import UserHeader from '@/components/UserHeader'; // Importiere die UserHeader-K
 import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext'; // Import SidebarVisibilityProvider
 import { FiLoader } from 'react-icons/fi'; // Für den Suspense-Fallback
 import { useAuth } from '@/contexts/AuthContext';
+import { useUpdateNotifications } from '@/hooks/useUpdateNotifications';
+import UpdateNotificationModal from '@/components/ui/UpdateNotificationModal';
 
 export default function UserDashboardLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+
+  // Update-Notification System
+  const {
+    unseenUpdates,
+    unseenCount,
+    loading,
+    showNotificationModal,
+    setShowNotificationModal,
+    markUpdateAsSeen,
+    markAllAsSeen,
+  } = useUpdateNotifications();
 
   return (
     <SidebarVisibilityProvider>
@@ -28,6 +41,15 @@ export default function UserDashboardLayout({ children }: { children: React.Reac
             {children}
           </Suspense>
         </main>
+
+        {/* Update Notification Modal */}
+        <UpdateNotificationModal
+          isOpen={showNotificationModal}
+          onClose={() => setShowNotificationModal(false)}
+          updates={unseenUpdates}
+          onMarkAsSeen={markUpdateAsSeen}
+          onMarkAllAsSeen={markAllAsSeen}
+        />
       </div>
     </SidebarVisibilityProvider>
   );

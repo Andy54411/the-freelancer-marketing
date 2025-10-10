@@ -46,6 +46,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { OverdueInvoicesAlert } from '@/components/finance/OverdueInvoicesAlert';
+import { useUpdateNotifications } from '@/hooks/useUpdateNotifications';
 const auth = getAuth(app);
 
 // NEU: Interface für Benachrichtigungen
@@ -74,6 +75,9 @@ interface UserHeaderProps {
 
 const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   const { user: authUser, loading: authLoading, unreadMessagesCount, recentChats } = useAuth(); // KORREKTUR: Alle Daten aus dem Context beziehen
+
+  // Update-Notification System
+  const { unseenCount, unseenUpdates, setShowNotificationModal } = useUpdateNotifications();
 
   const router = useRouter();
   const [profilePictureURLFromStorage, setProfilePictureURLFromStorage] = useState<string | null>(
@@ -532,9 +536,9 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                 <button className="text-gray-600 hover:text-[#14ad9f] block p-2 rounded-md hover:bg-gray-100">
                   <FiBell size={24} />
                 </button>
-                {unreadNotificationsCount > 0 && (
+                {(unreadNotificationsCount > 0 || unseenCount > 0) && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full px-1.5 py-0.5 text-xs font-medium z-10">
-                    {unreadNotificationsCount}
+                    {unreadNotificationsCount + unseenCount}
                   </span>
                 )}
                 {isNotificationDropdownOpen && currentUser && (
@@ -635,6 +639,61 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                       <p className="p-4 text-sm text-gray-500 text-center">
                         Keine neuen Benachrichtigungen.
                       </p>
+                    )}
+
+                    {/* Update-Benachrichtigungen */}
+                    {unseenUpdates.length > 0 && (
+                      <>
+                        <div className="border-t border-gray-200 px-3 py-2 bg-gray-50">
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                              Neue Updates ({unseenCount})
+                            </h5>
+                            <button
+                              onClick={() => {
+                                setShowNotificationModal(true);
+                                setIsNotificationDropdownOpen(false);
+                              }}
+                              className="text-xs text-[#14ad9f] hover:text-[#129488] font-medium"
+                            >
+                              Alle anzeigen
+                            </button>
+                          </div>
+                        </div>
+                        <div className="max-h-32 overflow-y-auto">
+                          {unseenUpdates.slice(0, 3).map(update => (
+                            <div
+                              key={update.id}
+                              className="p-3 hover:bg-gray-50 cursor-pointer border-l-4 border-[#14ad9f]"
+                              onClick={() => {
+                                setShowNotificationModal(true);
+                                setIsNotificationDropdownOpen(false);
+                              }}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-full bg-[#14ad9f] flex items-center justify-center shrink-0">
+                                  <FiInfo className="text-white w-4 h-4" />
+                                </div>
+                                <div className="flex-1 overflow-hidden">
+                                  <p className="text-sm text-gray-900 font-medium">
+                                    {update.title}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Version {update.version} •{' '}
+                                    {update.category === 'feature'
+                                      ? 'Neue Funktion'
+                                      : update.category === 'improvement'
+                                        ? 'Verbesserung'
+                                        : update.category === 'bugfix'
+                                          ? 'Fehlerbehebung'
+                                          : 'Sicherheit'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     )}
                   </div>
                 )}

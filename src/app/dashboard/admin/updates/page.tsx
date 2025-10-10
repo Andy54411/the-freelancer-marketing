@@ -8,6 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import dynamic from 'next/dynamic';
+
+// Update Text Editor - Dynamic Import für Client-Side Only
+const UpdateTextEditor = dynamic(() => import('@/components/ui/UpdateTextEditor'), {
+  ssr: false,
+  loading: () => <div className="min-h-[200px] border rounded-md bg-gray-50 animate-pulse" />,
+});
 import {
   Select,
   SelectContent,
@@ -301,16 +308,23 @@ export default function UpdateAdminPanel() {
 
                   <div>
                     <Label htmlFor="description">Beschreibung *</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Detaillierte Beschreibung des Updates..."
-                      value={formData.description}
-                      onChange={e =>
-                        setFormData(prev => ({ ...prev, description: e.target.value }))
-                      }
-                      rows={4}
-                      required
-                    />
+                    <div className="mt-2">
+                      <UpdateTextEditor
+                        value={formData.description}
+                        onChange={html => setFormData(prev => ({ ...prev, description: html }))}
+                        placeholder="Detaillierte Beschreibung des Updates...
+
+🎉 **Nutzen Sie die Toolbar für Formatierung:**
+- Fett, Kursiv, Unterstrichen
+- Überschriften (H1, H2, H3)
+- Aufzählungen und nummerierte Listen
+- Textausrichtung und Links
+- Farben für wichtige Textstellen
+
+Beschreiben Sie die Verbesserungen kundenfreundlich!"
+                        className="w-full"
+                      />
+                    </div>
                   </div>
 
                   {/* Breaking Change Toggle */}
