@@ -256,7 +256,7 @@ export class UpdateService {
   }
 
   /**
-   * Real-time Updates abonnieren
+   * Updates abonnieren (Real-Time)
    */
   static subscribeToUpdates(callback: (updates: UpdateNotification[]) => void): Unsubscribe {
     const updatesRef = collection(db, 'updates');
@@ -272,6 +272,91 @@ export class UpdateService {
 
       callback(updates);
     });
+  }
+
+  /**
+   * Unseen Updates für User abonnieren (Real-Time)
+   * Kombiniert Updates und UserUpdateStatus Listener
+   */
+  static subscribeToUnseenUpdates(
+    userId: string,
+    callback: (unseenUpdates: UpdateNotification[], count: number) => void
+  ): Unsubscribe {
+    let allUpdates: UpdateNotification[] = [];
+    let userStatus: UserUpdateStatus | null = null;
+    let updatesUnsubscribe: Unsubscribe | null = null;
+    let statusUnsubscribe: Unsubscribe | null = null;
+
+    const processUpdates = () => {
+      if (!allUpdates.length || !userStatus) return;
+
+      const unseenUpdates = allUpdates.filter(
+        update =>
+          !userStatus!.seenUpdates.includes(update.id) &&
+          !(userStatus!.dismissedUpdates || []).includes(update.id) &&
+          new Date(update.releaseDate) > new Date(userStatus!.lastChecked)
+      );
+
+      callback(unseenUpdates, unseenUpdates.length);
+    };
+
+    // Subscribe zu Updates Collection
+    const updatesRef = collection(db, 'updates');
+    const updatesQuery = query(updatesRef, orderBy('releaseDate', 'desc'));
+
+    updatesUnsubscribe = onSnapshot(updatesQuery, snapshot => {
+      allUpdates = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        version: doc.data().version || '1.0.0',
+        releaseDate: doc.data().releaseDate?.toDate?.()?.toISOString() || doc.data().releaseDate,
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
+      })) as UpdateNotification[];
+
+      processUpdates();
+    });
+
+    // Subscribe zu UserUpdateStatus
+    const statusDocRef = doc(db, 'userUpdateStatus', userId);
+
+    statusUnsubscribe = onSnapshot(statusDocRef, async statusDoc => {
+      if (statusDoc.exists()) {
+        const data = statusDoc.data();
+        userStatus = {
+          userId,
+          lastSeenVersion: data.lastSeenVersion || '0.0.0',
+          seenUpdates: data.seenUpdates || [],
+          dismissedUpdates: data.dismissedUpdates || [],
+          lastChecked: data.lastChecked?.toDate?.()?.toISOString() || new Date().toISOString(),
+        };
+      } else {
+        // Erstelle Default Status wenn nicht vorhanden
+        userStatus = {
+          userId,
+          lastSeenVersion: '0.0.0',
+          seenUpdates: [],
+          dismissedUpdates: [],
+          lastChecked: new Date('2024-01-01').toISOString(),
+        };
+
+        // Initialisiere Status in Firestore
+        await setDoc(statusDocRef, {
+          userId,
+          lastSeenVersion: '0.0.0',
+          seenUpdates: [],
+          dismissedUpdates: [],
+          lastChecked: new Date('2024-01-01'),
+        });
+      }
+
+      processUpdates();
+    });
+
+    // Return combined unsubscribe function
+    return () => {
+      if (updatesUnsubscribe) updatesUnsubscribe();
+      if (statusUnsubscribe) statusUnsubscribe();
+    };
   }
 
   /**

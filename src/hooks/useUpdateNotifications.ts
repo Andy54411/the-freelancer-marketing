@@ -91,16 +91,38 @@ export const useUpdateNotifications = () => {
     [user?.uid, loadUnseenUpdates]
   );
 
-  // Initial load und periodische Updates
+  // Real-Time Subscription zu unseen updates
   useEffect(() => {
-    if (user?.uid) {
-      loadUnseenUpdates();
-
-      // Prüfe alle 5 Minuten auf neue Updates
-      const interval = setInterval(loadUnseenUpdates, 5 * 60 * 1000);
-      return () => clearInterval(interval);
+    if (!user?.uid) {
+      setUnseenUpdates([]);
+      setUnseenCount(0);
+      setLoading(false);
+      return;
     }
-  }, [user?.uid, loadUnseenUpdates]);
+
+    setLoading(true);
+
+    // Subscribe zu Real-Time Updates
+    const unsubscribe = UpdateService.subscribeToUnseenUpdates(user.uid, (unseenUpdates, count) => {
+      setUnseenUpdates(unseenUpdates);
+      setUnseenCount(count);
+      setLoading(false);
+
+      // Zeige Toast nur wenn neue Updates hinzukommen (nicht beim initialen Load)
+      if (count > unseenCount && unseenCount > 0) {
+        const latestUpdate = unseenUpdates[0];
+        toast.info(`🎉 Neue Updates verfügbar! ${latestUpdate.title}`, {
+          action: {
+            label: 'Anzeigen',
+            onClick: () => setShowNotificationModal(true),
+          },
+          duration: 10000,
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid]); // Entferne loadUnseenUpdates aus deps, da wir es nicht mehr brauchen
 
   return {
     unseenUpdates,

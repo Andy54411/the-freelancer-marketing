@@ -10,6 +10,7 @@ import { ref as storageRef, listAll, getDownloadURL } from 'firebase/storage'; /
 import {
   doc,
   getDoc,
+  getDocs,
   collection,
   query,
   where,
@@ -113,27 +114,35 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       return () => {};
     }
 
-    // KORREKTUR: Prüfe Auth-Status bevor Query ausgeführt wird
-    if (!auth.currentUser) {
-      setUnreadNotificationsCount(0);
-      setNotifications([]);
-      return () => {};
-    }
+    // DEBUG: Prüfe erst alle Notifications für diesen User
+    const allNotificationsQuery = query(
+      collection(db, 'notifications'),
+      where('userId', '==', uid),
+      orderBy('createdAt', 'desc'),
+      limit(10)
+    );
 
-    // KORREKTUR: Stelle sicher, dass der aktuelle User dem UID entspricht
-    if (auth.currentUser.uid !== uid) {
-      setUnreadNotificationsCount(0);
-      setNotifications([]);
-      return () => {};
-    }
+    getDocs(allNotificationsQuery)
+      .then(snap => {
+        const allDocs = snap.docs.map(d => ({
+          id: d.id,
+          isRead: d.data().isRead,
+          type: d.data().type,
+          message: d.data().message,
+          createdAt: d.data().createdAt,
+        }));
+      })
+      .catch(err => {
+        console.error('[NotificationDebug] Error fetching all notifications:', err);
+      });
 
-    // Ändere Query um nur ungelesene Benachrichtigungen zu holen
+    // LÖSUNG: Lade ALLE Notifications und filtere client-seitig
+    // Grund: Manche Notifications haben kein isRead Feld (= ungelesen)
     const notificationsQuery = query(
       collection(db, 'notifications'),
       where('userId', '==', uid), // WICHTIG: Diese where-Klausel ist für die Firestore-Regel erforderlich
-      where('isRead', '==', false), // Nur ungelesene Benachrichtigungen
-      orderBy('createdAt', 'desc'), // Index ist jetzt verfügbar
-      limit(10) // Die 10 neuesten ungelesenen Benachrichtigungen
+      orderBy('createdAt', 'desc'),
+      limit(20) // Lade mehr, da wir client-seitig filtern
     );
 
     let isSubscriptionActive = true; // Flag to prevent processing after unmount
@@ -143,7 +152,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       (snapshot: QuerySnapshot) => {
         if (!isSubscriptionActive) return; // Prevent processing if component unmounted
 
-        const fetchedNotifications = snapshot.docs.map(
+        const allNotifications = snapshot.docs.map(
           doc =>
             ({
               id: doc.id,
@@ -151,21 +160,29 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
             }) as NotificationPreview
         );
 
-        // Da wir nur ungelesene Benachrichtigungen laden, ist die Anzahl gleich der Gesamtanzahl
-        setNotifications(fetchedNotifications);
-        setUnreadNotificationsCount(fetchedNotifications.length);
+        // Client-seitige Filterung: isRead === false ODER isRead === undefined
+        const unreadNotifications = allNotifications.filter(
+          notif => notif.isRead === false || notif.isRead === undefined
+        );
+
+        // Nur ungelesene Notifications anzeigen
+        setNotifications(unreadNotifications);
+        setUnreadNotificationsCount(unreadNotifications.length);
       },
       error => {
         if (!isSubscriptionActive) return; // Prevent processing if component unmounted
 
-        // KORREKTUR: Verwende warn statt error für permission-denied, um Console-Spam zu reduzieren
-        if (error.code === 'permission-denied') {
-        } else {
-        }
+        console.error('[NotificationDebug] Error:', error.code, error.message);
 
-        // Fallback: Setze leere Arrays bei Fehlern (ohne weitere Console-Ausgaben)
-        setNotifications([]);
-        setUnreadNotificationsCount(0);
+        // Bei Permission-Fehler: Setze Counts auf 0 statt Fehler zu werfen
+        if (error.code === 'permission-denied') {
+          setNotifications([]);
+          setUnreadNotificationsCount(0);
+        } else {
+          // Andere Fehler: Auch auf 0 setzen
+          setNotifications([]);
+          setUnreadNotificationsCount(0);
+        }
       }
     );
 
@@ -278,20 +295,22 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     }
   }, [currentUser?.uid, currentUid, authUser]);
 
-  // Effekt zum Abonnieren von Nachrichten, basierend auf dem aktuellen Benutzer und seinem Typ
+  // Effekt zum Abonnieren von Nachrichten - OPTIMIERT für sofortiges Laden
   useEffect(() => {
-    // KORREKTUR: Nur subscribe wenn currentUser und currentUid übereinstimmen
-    if (currentUser?.uid && currentUser.uid === currentUid) {
-      const unsubscribeNotifications = subscribeToNotifications(currentUser.uid);
-      return () => {
-        unsubscribeNotifications();
-      };
-    } else {
-      // Cleanup wenn User nicht übereinstimmt
+    // Subscribe sofort wenn currentUser vorhanden ist
+    if (!currentUser?.uid) {
+      // Cleanup wenn kein User
+
       setNotifications([]);
       setUnreadNotificationsCount(0);
+      return;
     }
-  }, [currentUser?.uid, currentUid, subscribeToNotifications]);
+
+    const unsubscribeNotifications = subscribeToNotifications(currentUser.uid);
+    return () => {
+      unsubscribeNotifications();
+    };
+  }, [currentUser?.uid, subscribeToNotifications]);
 
   // Load workspaces for Quick Note functionality
   useEffect(() => {
