@@ -68,6 +68,20 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
     loadNotifications();
   }, [companyId]);
 
+  // Automatisches Cleanup von alten Approval-Notifications wenn Company approved ist
+  useEffect(() => {
+    if (status.isApproved && !status.isLoading) {
+      // Cleanup alte "Prüfung"-Notifications
+      fetch(`/api/admin/cleanup-approval-notifications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId }),
+      }).catch(err => {
+        // Fehler ignorieren - Cleanup ist nice-to-have
+      });
+    }
+  }, [status.isApproved, status.isLoading, companyId]);
+
   const checkApprovalStatus = async () => {
     try {
       setStatus(prev => ({ ...prev, isLoading: true }));
@@ -267,12 +281,8 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
     new Date(status.adminApprovedAt) > new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   // Zeige nichts an, wenn bereits freigegeben - Benachrichtigung über globales System
-  if (
-    !status.accountSuspended &&
-    status.isApproved &&
-    status.adminApproved &&
-    !isRecentlyApproved
-  ) {
+  // WICHTIG: isApproved ist bereits die kombinierte Logik (adminApproved ODER approvalStatus)
+  if (!status.accountSuspended && status.isApproved && !isRecentlyApproved) {
     return null;
   }
 

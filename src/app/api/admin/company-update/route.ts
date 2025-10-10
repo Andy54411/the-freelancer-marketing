@@ -36,28 +36,41 @@ export async function POST(request: NextRequest) {
 
     await db!.collection('companies').doc(companyId).update(updateData);
 
-    // Automatische Benachrichtigung erstellen für Bell
-    if (!adminApproved) {
-      // Global notification für Header Bell über die richtige API
-      const response = await fetch(`https://taskilo.de/api/notifications`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: companyId,
-          type: 'approval_status_update',
-          title: 'Freigabe-Status Update',
-          message:
-            'Ihr Unternehmen befindet sich derzeit in der Prüfung. Wir werden Sie informieren, sobald die Überprüfung abgeschlossen ist.',
-          link: `/dashboard/company/${companyId}`,
-          isRead: false,
-        }),
-      });
+    // Notification Management basierend auf Approval Status
+    if (adminApproved) {
+      // FREIGEGEBEN: Lösche alte "Prüfung"-Notifications
+      const oldNotificationsSnapshot = await db!
+        .collection('notifications')
+        .where('userId', '==', companyId)
+        .where('type', '==', 'approval_status_update')
+        .get();
 
-      if (response.ok) {
-      } else {
-      }
+      const deletePromises = oldNotificationsSnapshot.docs.map(doc => doc.ref.delete());
+      await Promise.all(deletePromises);
+
+      // Erstelle neue Approval-Notification
+      await db!.collection('notifications').add({
+        userId: companyId,
+        type: 'approval_approved',
+        title: '🎉 Unternehmen freigegeben!',
+        message:
+          'Herzlichen Glückwunsch! Ihr Unternehmen wurde von einem Administrator freigegeben. Sie können jetzt alle Platform-Features nutzen.',
+        link: `/dashboard/company/${companyId}`,
+        isRead: false,
+        createdAt: new Date(),
+      });
+    } else {
+      // NICHT FREIGEGEBEN: Erstelle Prüfungs-Notification
+      await db!.collection('notifications').add({
+        userId: companyId,
+        type: 'approval_status_update',
+        title: 'Freigabe-Status Update',
+        message:
+          'Ihr Unternehmen befindet sich derzeit in der Prüfung. Wir werden Sie informieren, sobald die Überprüfung abgeschlossen ist.',
+        link: `/dashboard/company/${companyId}`,
+        isRead: false,
+        createdAt: new Date(),
+      });
     }
 
     return NextResponse.json({
