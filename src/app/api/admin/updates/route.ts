@@ -5,17 +5,7 @@ import { jwtVerify } from 'jose';
 import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import { db } from '@/firebase/server';
-import {
-  collection,
-  addDoc,
-  getDocs,
-  doc,
-  updateDoc,
-  deleteDoc,
-  query,
-  orderBy,
-  Timestamp,
-} from 'firebase/firestore';
+import * as admin from 'firebase-admin';
 
 const dynamodb = new DynamoDBClient({
   region: process.env.AWS_REGION || 'eu-central-1',
@@ -69,25 +59,25 @@ async function verifyAdmin(request: NextRequest) {
 // GET - Alle Updates abrufen
 export async function GET(request: NextRequest) {
   try {
-    const admin = await verifyAdmin(request);
-    if (!admin) {
+    const adminUser = await verifyAdmin(request);
+    if (!adminUser) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
     }
 
-    const updatesRef = collection(db, 'updates');
-    const updatesQuery = query(updatesRef, orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(updatesQuery);
+    if (!db) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
+    }
 
-    const updates = snapshot.docs.map(doc => ({
+    const updatesSnapshot = await db.collection('updates').orderBy('createdAt', 'desc').get();
+
+    const updates = updatesSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
-      updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt,
     }));
 
     return NextResponse.json({ updates });
   } catch (error) {
-    console.error('Error fetching updates:', error);
+    console.error('Fehler beim Laden der Updates:', error);
     return NextResponse.json({ error: 'Fehler beim Laden der Updates' }, { status: 500 });
   }
 }
@@ -95,55 +85,42 @@ export async function GET(request: NextRequest) {
 // POST - Neues Update erstellen
 export async function POST(request: NextRequest) {
   try {
-    const admin = await verifyAdmin(request);
-    if (!admin) {
+    const adminUser = await verifyAdmin(request);
+    if (!adminUser) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
     }
 
-    const updateData = await request.json();
+    const body = await request.json();
+    const { title, description, category, imageUrl } = body;
 
-    // Validierung
-    if (
-      !updateData.version ||
-      !updateData.title ||
-      !updateData.description ||
-      !updateData.category
-    ) {
+    if (!title || !description || !category) {
       return NextResponse.json(
-        {
-          error: 'Version, Titel, Beschreibung und Kategorie sind erforderlich',
-        },
+        { error: 'Titel, Beschreibung und Kategorie sind erforderlich' },
         { status: 400 }
       );
     }
 
-    // Update-Objekt erstellen
+    if (!db) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
+    }
+
     const newUpdate = {
-      version: updateData.version,
-      title: updateData.title,
-      description: updateData.description,
-      category: updateData.category,
-      releaseDate: updateData.releaseDate || new Date().toISOString().split('T')[0],
-      isBreaking: updateData.isBreaking || false,
-      tags: updateData.tags || [],
-      screenshots: updateData.screenshots || [],
-      videoUrl: updateData.videoUrl || null,
-      documentationUrl: updateData.documentationUrl || null,
-      createdBy: admin.email,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+      title,
+      description,
+      category,
+      imageUrl: imageUrl || null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    const updatesRef = collection(db, 'updates');
-    const docRef = await addDoc(updatesRef, newUpdate);
+    const docRef = await db.collection('updates').add(newUpdate);
 
     return NextResponse.json({
-      success: true,
       id: docRef.id,
-      message: 'Update erfolgreich erstellt',
+      ...newUpdate,
     });
   } catch (error) {
-    console.error('Error creating update:', error);
+    console.error('Fehler beim Erstellen des Updates:', error);
     return NextResponse.json({ error: 'Fehler beim Erstellen des Updates' }, { status: 500 });
   }
 }
@@ -151,8 +128,8 @@ export async function POST(request: NextRequest) {
 // PUT - Update bearbeiten
 export async function PUT(request: NextRequest) {
   try {
-    const admin = await verifyAdmin(request);
-    if (!admin) {
+    const adminUser = await verifyAdmin(request);
+    if (!adminUser) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
     }
 
@@ -162,11 +139,17 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Update-ID ist erforderlich' }, { status: 400 });
     }
 
-    const updateRef = doc(db, 'updates', id);
-    await updateDoc(updateRef, {
-      ...updateData,
-      updatedAt: Timestamp.now(),
-    });
+    if (!db) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
+    }
+
+    await db
+      .collection('updates')
+      .doc(id)
+      .update({
+        ...updateData,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
 
     return NextResponse.json({
       success: true,
@@ -181,8 +164,8 @@ export async function PUT(request: NextRequest) {
 // DELETE - Update löschen
 export async function DELETE(request: NextRequest) {
   try {
-    const admin = await verifyAdmin(request);
-    if (!admin) {
+    const adminUser = await verifyAdmin(request);
+    if (!adminUser) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
     }
 
@@ -193,8 +176,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Update-ID ist erforderlich' }, { status: 400 });
     }
 
-    const updateRef = doc(db, 'updates', id);
-    await deleteDoc(updateRef);
+    if (!db) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
+    }
+
+    await db.collection('updates').doc(id).delete();
 
     return NextResponse.json({
       success: true,

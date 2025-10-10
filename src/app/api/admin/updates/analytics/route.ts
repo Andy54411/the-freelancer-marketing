@@ -5,7 +5,7 @@ import { jwtVerify } from 'jose';
 import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import { db } from '@/firebase/server';
-import { collection, getDocs, doc, getDoc, query, where, orderBy } from 'firebase/firestore';
+import * as admin from 'firebase-admin';
 
 const dynamodb = new DynamoDBClient({
   region: process.env.AWS_REGION || 'eu-central-1',
@@ -58,9 +58,13 @@ async function verifyAdmin(request: NextRequest) {
 // GET - Update-Analytics abrufen
 export async function GET(request: NextRequest) {
   try {
-    const admin = await verifyAdmin(request);
-    if (!admin) {
+    const adminUser = await verifyAdmin(request);
+    if (!adminUser) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    }
+
+    if (!db) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -68,9 +72,10 @@ export async function GET(request: NextRequest) {
 
     if (updateId) {
       // Spezifische Update-Statistiken
-      const statusRef = collection(db, 'userUpdateStatus');
-      const statusQuery = query(statusRef, where('seenUpdates', 'array-contains', updateId));
-      const statusSnapshot = await getDocs(statusQuery);
+      const statusSnapshot = await db
+        .collection('userUpdateStatus')
+        .where('seenUpdates', 'array-contains', updateId)
+        .get();
 
       const seenByUsers = statusSnapshot.docs.map(doc => ({
         userId: doc.id,
@@ -85,19 +90,20 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // Allgemeine Analytics
-      const statusRef = collection(db, 'userUpdateStatus');
-      const statusSnapshot = await getDocs(statusRef);
+      const statusSnapshot = await db.collection('userUpdateStatus').get();
 
-      const allStatus = statusSnapshot.docs.map(doc => ({
-        userId: doc.id,
-        ...doc.data(),
-        lastChecked: doc.data().lastChecked?.toDate?.()?.toISOString() || doc.data().lastChecked,
-      }));
+      const allStatus = statusSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          userId: doc.id,
+          seenUpdates: data.seenUpdates || [],
+          lastChecked: data.lastChecked?.toDate?.()?.toISOString() || data.lastChecked,
+          ...data,
+        };
+      });
 
       // Updates für Statistiken
-      const updatesRef = collection(db, 'updates');
-      const updatesQuery = query(updatesRef, orderBy('createdAt', 'desc'));
-      const updatesSnapshot = await getDocs(updatesQuery);
+      const updatesSnapshot = await db.collection('updates').orderBy('createdAt', 'desc').get();
 
       const updates = updatesSnapshot.docs.map(doc => {
         const updateData = doc.data();
