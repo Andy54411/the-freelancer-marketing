@@ -66,7 +66,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       } else {
         router.push('/admin/login');
       }
-    } catch (error) {
+    } catch (_error) {
       router.push('/admin/login');
     } finally {
       setLoading(false);
@@ -81,7 +81,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     try {
       await fetch('/api/admin/auth/logout', { method: 'POST' });
       router.push('/admin/login');
-    } catch (error) {}
+    } catch (_error) {}
   };
 
   if (loading) {
