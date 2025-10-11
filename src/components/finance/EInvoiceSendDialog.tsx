@@ -43,6 +43,8 @@ import {
   FileText,
   Shield,
   Info,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 
@@ -97,6 +99,7 @@ export function EInvoiceSendDialog({
   const [isSending, setIsSending] = useState(false);
   const [transmissionLogId, setTransmissionLogId] = useState<string | null>(null);
   const [showTransmissionLog, setShowTransmissionLog] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState<RecipientSettingsForm>({
@@ -824,13 +827,29 @@ Mit freundlichen Grüßen`,
 
                       <div className="space-y-2">
                         <Label htmlFor="apiKey">API-Schlüssel</Label>
-                        <Input
-                          id="apiKey"
-                          type="password"
-                          placeholder="Authentifizierungs-Token"
-                          value={formData.apiKey}
-                          onChange={e => setFormData(prev => ({ ...prev, apiKey: e.target.value }))}
-                        />
+                        <div className="relative">
+                          <Input
+                            id="apiKey"
+                            type={showApiKey ? 'text' : 'password'}
+                            placeholder="Authentifizierungs-Token"
+                            value={formData.apiKey}
+                            onChange={e =>
+                              setFormData(prev => ({ ...prev, apiKey: e.target.value }))
+                            }
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowApiKey(!showApiKey)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            {showApiKey ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}

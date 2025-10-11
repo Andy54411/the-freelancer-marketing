@@ -236,6 +236,7 @@ const navigationItems: NavigationItem[] = [
       { label: 'Auszahlungen', value: 'settings-payouts' },
       { label: 'Storno-Einstellungen', value: 'settings-storno', href: 'settings/storno' },
       { label: 'Textvorlagen', value: 'settings-textvorlagen', href: 'settings/textvorlagen' },
+      { label: 'E-Mail Integration', value: 'settings-email', href: 'settings/email-integration' },
     ],
   },
 ];

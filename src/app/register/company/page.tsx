@@ -6,6 +6,7 @@ import { FiX, FiInfo, FiCheck } from 'react-icons/fi';
 import { useState } from 'react';
 import { useRegistration } from '@/contexts/Registration-Context'; // Korrigierter Pfad zum Context
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { Eye, EyeOff } from 'lucide-react';
 
 const steps = [
   'Über Sie',
@@ -38,6 +39,8 @@ export default function Step1() {
   const [localIsSoleOwner, setLocalIsSoleOwner] = useState(false); // Initial auf false setzen
   const [agreeTerms, setAgreeTerms] = useState(false); // Initial auf false setzen
   const [isModalOpen, setIsModalOpen] = useState(false); // Zustand für das Modal
+  const [showPassword, setShowPassword] = useState(false); // NEU: Passwort-Sichtbarkeit
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // NEU: Bestätigungspasswort-Sichtbarkeit
 
   const router = useRouter(); // Next.js Router für Navigation
   const { trackEvent, trackNavigation } = useAnalytics();
@@ -237,15 +240,24 @@ export default function Step1() {
             <label className="block text-gray-700 text-sm font-semibold mb-2" htmlFor="password">
               Passwort
             </label>
-            <input
-              type="password"
-              id="password"
-              value={localPassword}
-              onChange={e => setLocalPassword(e.target.value)}
-              required
-              autoComplete="new-password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                value={localPassword}
+                onChange={e => setLocalPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+                className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           {/* Passwort bestätigen */}
           <div className="mb-6">
@@ -257,15 +269,24 @@ export default function Step1() {
             >
               Passwort bestätigen
             </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-              required
-              autoComplete="new-password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800"
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+                className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           {/* Checkboxen */}
           <div className="mb-4 flex items-center">

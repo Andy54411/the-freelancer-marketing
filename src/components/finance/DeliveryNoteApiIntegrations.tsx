@@ -36,6 +36,8 @@ import {
   RefreshCw,
   Download,
   Upload,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -69,6 +71,8 @@ export function DeliveryNoteApiIntegrations({ companyId }: DeliveryNoteApiIntegr
   const [loading, setLoading] = useState(false);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [selectedIntegration, setSelectedIntegration] = useState<ApiIntegration | null>(null);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [showSecretKey, setShowSecretKey] = useState(false);
 
   // Verfügbare API-Integrationen
   const availableIntegrations: Omit<ApiIntegration, 'id' | 'status' | 'config' | 'credentials'>[] =
@@ -476,40 +480,64 @@ export function DeliveryNoteApiIntegrations({ companyId }: DeliveryNoteApiIntegr
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="apiKey">API-Schlüssel</Label>
-                    <Input
-                      id="apiKey"
-                      type="password"
-                      value={selectedIntegration.credentials?.apiKey || ''}
-                      onChange={e =>
-                        setSelectedIntegration({
-                          ...selectedIntegration,
-                          credentials: {
-                            ...selectedIntegration.credentials,
-                            apiKey: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="Ihr API-Schlüssel"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="apiKey"
+                        type={showApiKey ? 'text' : 'password'}
+                        value={selectedIntegration.credentials?.apiKey || ''}
+                        onChange={e =>
+                          setSelectedIntegration({
+                            ...selectedIntegration,
+                            credentials: {
+                              ...selectedIntegration.credentials,
+                              apiKey: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Ihr API-Schlüssel"
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="secretKey">Secret Key (optional)</Label>
-                    <Input
-                      id="secretKey"
-                      type="password"
-                      value={selectedIntegration.credentials?.secretKey || ''}
-                      onChange={e =>
-                        setSelectedIntegration({
-                          ...selectedIntegration,
-                          credentials: {
-                            ...selectedIntegration.credentials,
-                            secretKey: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="Secret Key"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="secretKey"
+                        type={showSecretKey ? 'text' : 'password'}
+                        value={selectedIntegration.credentials?.secretKey || ''}
+                        onChange={e =>
+                          setSelectedIntegration({
+                            ...selectedIntegration,
+                            credentials: {
+                              ...selectedIntegration.credentials,
+                              secretKey: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Secret Key"
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSecretKey(!showSecretKey)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        {showSecretKey ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
 

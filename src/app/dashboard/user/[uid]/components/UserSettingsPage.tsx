@@ -12,6 +12,7 @@ import {
 import { FiLoader, FiSave, FiUser, FiLock, FiImage, FiMapPin } from 'react-icons/fi';
 import { toast } from 'sonner';
 import { RawFirestoreUserData } from '@/types/settings'; // Wiederverwenden des Typs
+import { Eye, EyeOff } from 'lucide-react';
 
 // Interne Datenstruktur für das User-Einstellungsformular
 import {
@@ -50,6 +51,9 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
   const [form, setForm] = useState<UserSettingsFormData | null>(null);
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (userData) {
@@ -430,14 +434,23 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
             >
               Altes Passwort
             </label>
-            <input
-              type="password"
-              id="oldPassword"
-              value={form.oldPassword || ''}
-              onChange={e => handleChange('oldPassword', e.target.value)}
-              className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:text-white p-2"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showOldPassword ? 'text' : 'password'}
+                id="oldPassword"
+                value={form.oldPassword || ''}
+                onChange={e => handleChange('oldPassword', e.target.value)}
+                className="mt-1 block w-full pr-10 border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:text-white p-2"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowOldPassword(!showOldPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <div>
             <label
@@ -446,14 +459,23 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
             >
               Neues Passwort
             </label>
-            <input
-              type="password"
-              id="newPassword"
-              value={form.newPassword || ''}
-              onChange={e => handleChange('newPassword', e.target.value)}
-              className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:text-white p-2"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showNewPassword ? 'text' : 'password'}
+                id="newPassword"
+                value={form.newPassword || ''}
+                onChange={e => handleChange('newPassword', e.target.value)}
+                className="mt-1 block w-full pr-10 border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:text-white p-2"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <div>
             <label
@@ -462,14 +484,23 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
             >
               Neues Passwort bestätigen
             </label>
-            <input
-              type="password"
-              id="confirmNewPassword"
-              value={form.confirmNewPassword || ''}
-              onChange={e => handleChange('confirmNewPassword', e.target.value)}
-              className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:text-white p-2"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                id="confirmNewPassword"
+                value={form.confirmNewPassword || ''}
+                onChange={e => handleChange('confirmNewPassword', e.target.value)}
+                className="mt-1 block w-full pr-10 border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:text-white p-2"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <button
             type="submit"

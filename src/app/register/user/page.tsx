@@ -13,6 +13,7 @@ import Flag from 'react-world-flags';
 import LoginPopup from '@/components/LoginPopup';
 import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext'; // NEU: Google Maps Context importieren
 import { useRegistration } from '@/contexts/Registration-Context'; // NEU: Registration-Context importieren
+import { Eye, EyeOff } from 'lucide-react';
 
 const PAGE_LOG = 'UserRegisterPage:';
 const PAGE_ERROR = 'UserRegisterPage ERROR:';
@@ -66,6 +67,7 @@ function UserRegisterFormContent() {
   const [registrationSuccess, setRegistrationSuccess] = useState(false); // NEU: Zustand für Erfolgsmeldung
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // NEU: Passwort-Sichtbarkeit
 
   const [agreesToNewsletter, setAgreesToNewsletter] = useState(false); // NEU: Zustand für Newsletter-Zustimmung
   const redirectToFromParams = searchParams?.get('redirectTo');
@@ -333,15 +335,24 @@ function UserRegisterFormContent() {
                   <Label htmlFor="passwordReg" className="text-[#14ad9f] font-medium">
                     Passwort
                   </Label>
-                  <Input
-                    type="password"
-                    id="passwordReg"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    required
-                    className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
-                    autoComplete="new-password" // Hinzugefügt für Browser-Hinweis
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      id="passwordReg"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      required
+                      className="px-3 py-2 pr-10 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="grid gap-1.5">

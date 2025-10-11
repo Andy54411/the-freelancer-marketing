@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'; // Fehlende Imports hinzugefügt
 import { Input } from '@/components/ui/input'; // Fehlender Import hinzugefügt
 import { Label } from '@/components/ui/label'; // Fehlender Import hinzugefügt
-import React from 'react'; // Import für React und Typen wie React.FormEvent
+import React, { useState } from 'react'; // Import für React und Typen wie React.FormEvent
+import { Eye, EyeOff } from 'lucide-react';
 
 interface LoginFormProps extends React.ComponentProps<'div'> {
   email?: string;
@@ -35,6 +36,8 @@ export function LoginForm({
   // loading,
   ...props
 }: LoginFormProps) {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
@@ -107,16 +110,26 @@ export function LoginForm({
                       Passwort vergessen?
                     </a>
                   </div>
-                  <Input
-                    id="password"
-                    autoComplete="current-password"
-                    type="password"
-                    required
-                    value={password || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      onPasswordChange?.(e.target.value)
-                    } // 'e' typisiert
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      autoComplete="current-password"
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password || ''}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        onPasswordChange?.(e.target.value)
+                      }
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <Button
                   type="submit"
