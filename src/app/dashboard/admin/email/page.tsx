@@ -902,7 +902,12 @@ export default function EmailAdminPage() {
                                   ...
                                 </p>
                                 <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                                  <span>{formatEmailDate(email.receivedAt).date}</span>
+                                  <span>
+                                    {
+                                      formatEmailDate(email.receivedAt || new Date().toISOString())
+                                        .date
+                                    }
+                                  </span>
                                   {email.attachments && email.attachments.length > 0 && (
                                     <span className="flex items-center">
                                       <Paperclip className="h-3 w-3 mr-1" />
@@ -1024,10 +1029,16 @@ export default function EmailAdminPage() {
                               </div>
                               <div className="text-right">
                                 <p className="text-gray-500 text-sm">
-                                  {formatEmailDate(email.receivedAt).date}
+                                  {
+                                    formatEmailDate(email.receivedAt || new Date().toISOString())
+                                      .date
+                                  }
                                 </p>
                                 <p className="text-gray-500 text-sm">
-                                  {formatEmailDate(email.receivedAt).time}
+                                  {
+                                    formatEmailDate(email.receivedAt || new Date().toISOString())
+                                      .time
+                                  }
                                 </p>
                                 {email.attachments && email.attachments.length > 0 && (
                                   <div className="flex items-center text-gray-500 text-sm mt-1">
