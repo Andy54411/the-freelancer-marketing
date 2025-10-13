@@ -46,6 +46,11 @@ interface CompanySettings {
   registrationNumber?: string;
   legalForm?: string;
   districtCourt?: string;
+  // Tax Rules
+  defaultTaxRate?: string;
+  taxMethod?: string;
+  priceInput?: string;
+  accountingSystem?: string;
 }
 
 /**
@@ -194,6 +199,11 @@ export class PDFGenerationService {
       registrationNumber: data.companyRegister || data.registrationNumber || '',
       legalForm: data.legalForm || '',
       districtCourt: data.districtCourt || '',
+      // Tax Rules
+      defaultTaxRate: data.defaultTaxRate || data.taxRate || '19',
+      taxMethod: data.taxMethod || 'soll',
+      priceInput: data.priceInput || 'netto',
+      accountingSystem: data.accountingSystem || 'skr03',
     } as CompanySettings;
   }
 
@@ -216,9 +226,63 @@ export class PDFGenerationService {
     const React = (await import('react')).default;
     const PDFTemplate = (await import('@/components/finance/PDFTemplates')).default;
 
+    // 🔥 CRITICAL: Merge Company-Daten ins Document für PDF-Generierung
+    // Dies stellt sicher, dass ALLE Company-Daten (auch aus step3/step4/bankDetails) verfügbar sind
+    const enrichedDocument = {
+      ...documentData,
+      // Company Basis-Daten
+      companyName: documentData.companyName || companySettings.name,
+      companyAddress:
+        documentData.companyAddress ||
+        `${companySettings.street} ${companySettings.houseNumber}\n${companySettings.postalCode} ${companySettings.city}\n${companySettings.country}`.trim(),
+      companyStreet: documentData.companyStreet || companySettings.street,
+      companyHouseNumber: documentData.companyHouseNumber || companySettings.houseNumber,
+      companyPostalCode: documentData.companyPostalCode || companySettings.postalCode,
+      companyCity: documentData.companyCity || companySettings.city,
+      companyCountry: documentData.companyCountry || companySettings.country,
+      companyPhone: documentData.companyPhone || companySettings.phone,
+      companyEmail: documentData.companyEmail || companySettings.email,
+      companyWebsite: documentData.companyWebsite || companySettings.website,
+      companyTaxNumber: documentData.companyTaxNumber || companySettings.taxNumber,
+      companyVatId: documentData.companyVatId || companySettings.vatId,
+
+      // Bank-Daten (für Platzhalter-System)
+      companyIban: documentData.companyIban || companySettings.iban,
+      companyBic: documentData.companyBic || companySettings.bic,
+      bankDetails: documentData.bankDetails || {
+        iban: companySettings.iban,
+        bic: companySettings.bic,
+        bankName: companySettings.bank,
+        accountHolder: companySettings.accountHolder,
+      },
+
+      // Registrierungsdaten
+      companyRegister: documentData.companyRegister || companySettings.registrationNumber,
+      companyRegistrationNumber:
+        documentData.companyRegistrationNumber || companySettings.registrationNumber,
+      legalForm: documentData.legalForm || companySettings.legalForm,
+      districtCourt: documentData.districtCourt || companySettings.districtCourt,
+
+      // Kleinunternehmer-Status
+      isSmallBusiness:
+        documentData.isSmallBusiness !== undefined
+          ? documentData.isSmallBusiness
+          : companySettings.kleinunternehmer === 'ja',
+
+      // 🔥 Tax Rules & Accounting
+      taxRate:
+        documentData.taxRate || documentData.vatRate || companySettings.defaultTaxRate || '19',
+      vatRate:
+        documentData.vatRate || documentData.taxRate || companySettings.defaultTaxRate || '19',
+      taxMethod: documentData.taxMethod || companySettings.taxMethod || 'soll',
+      priceInput: documentData.priceInput || companySettings.priceInput || 'netto',
+      accountingSystem:
+        documentData.accountingSystem || companySettings.accountingSystem || 'skr03',
+    };
+
     // Template Props vorbereiten
     const templateProps = {
-      document: documentData,
+      document: enrichedDocument, // 🔥 Verwende enrichedDocument statt documentData
       template: template,
       color: color,
       logoUrl: logoUrl || null,
