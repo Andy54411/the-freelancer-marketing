@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Filter,
   SortDesc,
+  Check,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -362,6 +363,31 @@ export function EmailList({
   const allSelected = emails.length > 0 && selectedEmails.length === emails.length;
   const someSelected = selectedEmails.length > 0 && selectedEmails.length < emails.length;
 
+  // Prüfe ob alle ausgewählten Emails gelesen/ungelesen sind
+  const selectedEmailsObjects = emails.filter(e => selectedEmails.includes(e.id));
+  const allSelectedAreRead =
+    selectedEmailsObjects.length > 0 && selectedEmailsObjects.every(e => e.read);
+  const allSelectedAreUnread =
+    selectedEmailsObjects.length > 0 && selectedEmailsObjects.every(e => !e.read);
+
+  // DEBUG: Log selection state
+  if (selectedEmails.length > 0) {
+    console.log(`📧 [EmailList] Selection State:`, {
+      selectedCount: selectedEmails.length,
+      allRead: allSelectedAreRead,
+      allUnread: allSelectedAreUnread,
+      showReadButton: !allSelectedAreRead,
+      showUnreadButton: !allSelectedAreUnread,
+      readCounts: {
+        read: selectedEmailsObjects.filter(e => e.read).length,
+        unread: selectedEmailsObjects.filter(e => !e.read).length,
+      },
+      sampleEmails: selectedEmailsObjects
+        .slice(0, 3)
+        .map(e => ({ id: e.id.substring(0, 8), read: e.read })),
+    });
+  }
+
   const handleSelectAll = () => {
     onSelectAll(!allSelected);
   };
@@ -472,7 +498,43 @@ export function EmailList({
             />
 
             {selectedEmails.length > 0 && !isCompact && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="bg-teal-100 text-teal-800 text-xs">
+                  {selectedEmails.length} ausgewählt
+                </Badge>
+                {/* Als gelesen markieren - nur anzeigen wenn NICHT alle gelesen sind */}
+                {!allSelectedAreRead && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      console.log(`📧 [EmailList] Mark as READ clicked:`, {
+                        selectedCount: selectedEmails.length,
+                        selectedIds: selectedEmails.slice(0, 3),
+                      });
+                      onMarkAsRead(selectedEmails, true);
+                    }}
+                    className="text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+                    title="Ausgewählte als gelesen markieren"
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    <span className="text-xs">Als gelesen</span>
+                  </Button>
+                )}
+                {/* Als ungelesen markieren - nur anzeigen wenn NICHT alle ungelesen sind */}
+                {!allSelectedAreUnread && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onMarkAsRead(selectedEmails, false)}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    title="Ausgewählte als ungelesen markieren"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    <span className="text-xs">Als ungelesen</span>
+                  </Button>
+                )}
+                <div className="h-6 w-px bg-gray-300 mx-1" /> {/* Divider */}
                 <Button variant="ghost" size="sm" onClick={() => onArchiveEmails(selectedEmails)}>
                   <Archive className="h-4 w-4" />
                 </Button>

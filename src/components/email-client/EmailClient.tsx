@@ -11,6 +11,7 @@ import {
   limit,
   onSnapshot,
   doc,
+  getDoc,
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
@@ -331,12 +332,18 @@ export function EmailClient({
         );
 
         // DEBUG: Welche Dokumente haben sich geändert?
-        snapshot.docChanges().forEach(change => {
-          const data = change.doc.data();
-          console.log(
-            `🔄 [Firestore] ${change.type}: ${data.subject?.substring(0, 30)} | read: ${data.read} | id: ${change.doc.id}`
-          );
-        });
+        const changes = snapshot.docChanges();
+        if (changes.length > 0) {
+          console.log(`🔄 [Firestore] ${changes.length} document change(s) detected`);
+          changes.forEach(change => {
+            const data = change.doc.data();
+            console.log(
+              `🔄 [Firestore] ${change.type}: ${data.subject?.substring(0, 30)} | read: ${data.read} | id: ${change.doc.id.substring(0, 8)}`
+            );
+          });
+        } else {
+          console.log(`🔄 [Firestore] Snapshot received but NO changes detected`);
+        }
 
         setIsRealtimeConnected(true);
         setLastActivity(new Date());
@@ -635,14 +642,41 @@ export function EmailClient({
 
         emailIds.forEach(emailId => {
           const emailRef = doc(db, 'companies', companyId, 'emailCache', emailId);
+          console.log(
+            `📝 [handleMarkAsRead] Adding to batch: companies/${companyId}/emailCache/${emailId}`
+          );
           // NUR das read-Feld updaten - kein merge, kein timestamp update
           batch.update(emailRef, { read: read });
         });
 
+        console.log(`⏳ [handleMarkAsRead] Committing batch with ${emailIds.length} updates...`);
         await batch.commit();
+        console.log(`✅ [handleMarkAsRead] Batch committed successfully`);
+
+        // DEBUG: Verify the update actually happened in Firestore
+        const firstEmailId = emailIds[0];
+        const verifyRef = doc(db, 'companies', companyId, 'emailCache', firstEmailId);
+        const verifyDoc = await getDoc(verifyRef);
+        if (verifyDoc.exists()) {
+          console.log(`🔍 [handleMarkAsRead] VERIFY: First email read status in Firestore:`, {
+            id: firstEmailId.substring(0, 20),
+            read: verifyDoc.data()?.read,
+            subject: verifyDoc.data()?.subject?.substring(0, 30),
+          });
+        }
+
         console.log(
           `✅ [handleMarkAsRead] DONE: Successfully marked ${emailIds.length} email(s) as ${read ? 'read' : 'unread'}`
         );
+
+        // Auswahl aufheben nach erfolgreichem Markieren (nur bei Mehrfachauswahl)
+        // WICHTIG: Verzögere das Aufheben, damit der Firestore-Listener zuerst die Änderung erhält
+        if (emailIds.length > 1) {
+          setTimeout(() => {
+            setSelectedEmails([]);
+            console.log(`🔄 [handleMarkAsRead] Selection cleared after Firestore update`);
+          }, 500); // 500ms Verzögerung
+        }
 
         // NICHT den local state updaten! Der Firestore Listener macht das automatisch
         // und behält die korrekte Sortierung bei

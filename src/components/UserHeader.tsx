@@ -643,78 +643,129 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                       </div>
                     )}
 
-                    {notifications.length > 0 ? (
-                      <ul>
-                        {notifications.map(notification => (
-                          <li key={notification.id}>
+                    {/* Email Notifications */}
+                    {unreadEmailsCount > 0 && (
+                      <>
+                        <div className="border-b border-gray-200 px-3 py-2 bg-blue-50">
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-xs font-semibold text-gray-600 uppercase tracking-wide flex items-center gap-2">
+                              <FiMail className="w-4 h-4" />
+                              Ungelesene E-Mails ({unreadEmailsCount})
+                            </h5>
                             <Link
-                              href={notification.link || '#'}
-                              onClick={() =>
-                                handleNotificationClick(notification.id, notification.link || '#')
-                              }
-                              className="block p-3 hover:bg-gray-100 bg-blue-50"
+                              href={`/dashboard/company/${currentUid}/emails`}
+                              onClick={() => setIsNotificationDropdownOpen(false)}
+                              className="text-xs text-[#14ad9f] hover:text-[#129488] font-medium"
                             >
-                              <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
-                                  {notification.type === 'order' && (
-                                    <FiPackage className="text-gray-600" />
-                                  )}
-                                  {notification.type === 'support' && (
-                                    <FiHelpCircle className="text-gray-600" />
-                                  )}
-                                  {(notification.type === 'system' ||
-                                    notification.type === 'update') && (
-                                    <FiInfo className="text-gray-600" />
-                                  )}
-                                  {notification.type === 'new_proposal' && (
-                                    <FiFileText className="text-blue-600" />
-                                  )}
-                                  {notification.type === 'proposal_accepted' && (
-                                    <FiCheckSquare className="text-green-600" />
-                                  )}
-                                  {notification.type === 'proposal_declined' && (
-                                    <FiUser className="text-red-600" />
-                                  )}
-                                  {notification.type === 'project_created' && (
-                                    <FiBriefcase className="text-[#14ad9f]" />
-                                  )}
-                                  {notification.type === 'quote_accepted' && (
-                                    <FiCheckSquare className="text-green-600" />
-                                  )}
-                                  {notification.type === 'contact_exchanged' && (
-                                    <FiMail className="text-blue-600" />
-                                  )}
-                                </div>
-                                <div className="flex-1 overflow-hidden">
-                                  <p className="text-sm text-gray-900 font-medium">
-                                    {notification.message}
-                                  </p>
-                                  <p className="text-xs text-gray-400 mt-1">
-                                    {(() => {
-                                      if (notification.createdAt?.toDate) {
-                                        return notification.createdAt
-                                          .toDate()
-                                          .toLocaleString('de-DE');
-                                      } else if (typeof notification.createdAt === 'string') {
-                                        return new Date(notification.createdAt).toLocaleString(
-                                          'de-DE'
-                                        );
-                                      } else {
-                                        return new Date().toLocaleString('de-DE');
-                                      }
-                                    })()}
-                                  </p>
-                                </div>
-                              </div>
+                              Alle anzeigen
                             </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
+                          </div>
+                        </div>
+                        <Link
+                          href={`/dashboard/company/${currentUid}/emails`}
+                          onClick={() => setIsNotificationDropdownOpen(false)}
+                          className="block p-3 hover:bg-gray-100 bg-blue-50/30"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center shrink-0">
+                              <FiMail className="text-white w-4 h-4" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-900 font-medium">
+                                {unreadEmailsCount} ungelesene E-Mail
+                                {unreadEmailsCount !== 1 ? 's' : ''}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Klicken um E-Mail-Postfach zu öffnen
+                              </p>
+                            </div>
+                          </div>
+                        </Link>
+                      </>
+                    )}
+
+                    {/* System Notifications */}
+                    {notifications.length > 0 ? (
+                      <>
+                        {unreadEmailsCount > 0 && (
+                          <div className="border-t border-gray-200 px-3 py-2 bg-gray-50">
+                            <h5 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                              System-Benachrichtigungen
+                            </h5>
+                          </div>
+                        )}
+                        <ul>
+                          {notifications.map(notification => (
+                            <li key={notification.id}>
+                              <Link
+                                href={notification.link || '#'}
+                                onClick={() =>
+                                  handleNotificationClick(notification.id, notification.link || '#')
+                                }
+                                className="block p-3 hover:bg-gray-100 bg-blue-50"
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
+                                    {notification.type === 'order' && (
+                                      <FiPackage className="text-gray-600" />
+                                    )}
+                                    {notification.type === 'support' && (
+                                      <FiHelpCircle className="text-gray-600" />
+                                    )}
+                                    {(notification.type === 'system' ||
+                                      notification.type === 'update') && (
+                                      <FiInfo className="text-gray-600" />
+                                    )}
+                                    {notification.type === 'new_proposal' && (
+                                      <FiFileText className="text-blue-600" />
+                                    )}
+                                    {notification.type === 'proposal_accepted' && (
+                                      <FiCheckSquare className="text-green-600" />
+                                    )}
+                                    {notification.type === 'proposal_declined' && (
+                                      <FiUser className="text-red-600" />
+                                    )}
+                                    {notification.type === 'project_created' && (
+                                      <FiBriefcase className="text-[#14ad9f]" />
+                                    )}
+                                    {notification.type === 'quote_accepted' && (
+                                      <FiCheckSquare className="text-green-600" />
+                                    )}
+                                    {notification.type === 'contact_exchanged' && (
+                                      <FiMail className="text-blue-600" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 overflow-hidden">
+                                    <p className="text-sm text-gray-900 font-medium">
+                                      {notification.message}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      {(() => {
+                                        if (notification.createdAt?.toDate) {
+                                          return notification.createdAt
+                                            .toDate()
+                                            .toLocaleString('de-DE');
+                                        } else if (typeof notification.createdAt === 'string') {
+                                          return new Date(notification.createdAt).toLocaleString(
+                                            'de-DE'
+                                          );
+                                        } else {
+                                          return new Date().toLocaleString('de-DE');
+                                        }
+                                      })()}
+                                    </p>
+                                  </div>
+                                </div>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : unreadEmailsCount === 0 ? (
                       <p className="p-4 text-sm text-gray-500 text-center">
                         Keine neuen Benachrichtigungen.
                       </p>
-                    )}
+                    ) : null}
 
                     {/* Update-Benachrichtigungen */}
                     {unseenUpdates.length > 0 && (
