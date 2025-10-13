@@ -75,8 +75,8 @@ export const gmailSyncHttp = onRequest(
 
       logger.info('🔍 Target E-Mail gefunden:', { targetUserEmail });
 
-      // Gmail Credentials laden
-      const credentials = await getGmailCredentials(targetUserEmail);
+      // Gmail Credentials laden (mit companyId für Effizienz)
+      const credentials = await getGmailCredentials(targetUserEmail, companyId);
       if (!credentials) {
         res.status(404).json({ error: 'Gmail Credentials nicht gefunden' });
         return;
@@ -147,18 +147,22 @@ export const gmailSyncHttp = onRequest(
 /**
  * Gmail Credentials aus Firestore laden
  */
-async function getGmailCredentials(emailAddress: string): Promise<{
+async function getGmailCredentials(
+  emailAddress: string, 
+  companyId?: string
+): Promise<{
   accessToken: string;
   refreshToken: string;
 } | null> {
   try {
-    logger.info('🔍 Suche Gmail Credentials für:', { emailAddress });
+    logger.info('🔍 Suche Gmail Credentials für:', { emailAddress, companyId });
 
-    // Suche in emailConfigs Subcollections
-    const companiesSnapshot = await db.collection('companies').get();
-    
-    for (const companyDoc of companiesSnapshot.docs) {
-      const emailConfigsSnapshot = await companyDoc.ref.collection('emailConfigs')
+    // Wenn companyId gegeben ist, direkt dort suchen (schneller!)
+    if (companyId) {
+      const emailConfigsSnapshot = await db
+        .collection('companies')
+        .doc(companyId)
+        .collection('emailConfigs')
         .where('email', '==', emailAddress)
         .limit(1)
         .get();
@@ -167,19 +171,42 @@ async function getGmailCredentials(emailAddress: string): Promise<{
         const emailConfig = emailConfigsSnapshot.docs[0].data();
         
         if (emailConfig.tokens?.access_token && emailConfig.tokens?.refresh_token) {
-          logger.info('🔍 Gmail Tokens aus emailConfigs geladen');
+          logger.info('✅ Gmail Tokens aus emailConfigs geladen (direkt via companyId)');
           return {
             accessToken: emailConfig.tokens.access_token,
             refreshToken: emailConfig.tokens.refresh_token,
           };
         }
       }
+    } else {
+      // Fallback: Suche in allen Companies (langsamer)
+      logger.info('⚠️ Suche in allen Companies (kein companyId gegeben)');
+      const companiesSnapshot = await db.collection('companies').get();
+      
+      for (const companyDoc of companiesSnapshot.docs) {
+        const emailConfigsSnapshot = await companyDoc.ref.collection('emailConfigs')
+          .where('email', '==', emailAddress)
+          .limit(1)
+          .get();
+        
+        if (!emailConfigsSnapshot.empty) {
+          const emailConfig = emailConfigsSnapshot.docs[0].data();
+          
+          if (emailConfig.tokens?.access_token && emailConfig.tokens?.refresh_token) {
+            logger.info('✅ Gmail Tokens aus emailConfigs geladen (via Suche)');
+            return {
+              accessToken: emailConfig.tokens.access_token,
+              refreshToken: emailConfig.tokens.refresh_token,
+            };
+          }
+        }
+      }
     }
 
-    logger.warn('Keine Gmail Konfiguration gefunden für:', emailAddress);
+    logger.warn('❌ Keine Gmail Konfiguration gefunden für:', emailAddress);
     return null;
   } catch (error) {
-    logger.error('Fehler beim Laden der Gmail Credentials:', error);
+    logger.error('❌ Fehler beim Laden der Gmail Credentials:', error);
     return null;
   }
 }

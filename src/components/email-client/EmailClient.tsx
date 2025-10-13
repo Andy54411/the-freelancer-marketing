@@ -7,11 +7,11 @@ import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/f
 import { EmailList } from './EmailList';
 import { EmailViewer } from './EmailViewer';
 import { EmailCompose } from './EmailCompose';
-import type { 
-  EmailMessage, 
-  EmailFolder, 
+import type {
+  EmailMessage,
+  EmailFolder,
   EmailFilter,
-  EmailCompose as EmailComposeType
+  EmailCompose as EmailComposeType,
 } from './types';
 import { cn } from '@/lib/utils';
 // useOptimizedGmail Hook entfernt
@@ -34,27 +34,27 @@ const setupGlobalPerformanceTracking = (userId: string) => {
         const storageKey = `gmail_performance_${userId}`;
         const stored = localStorage.getItem(storageKey);
         const history = stored ? JSON.parse(stored) : [];
-        
+
         history.unshift({
           ...event,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
-        
+
         localStorage.setItem(storageKey, JSON.stringify(history.slice(0, 100)));
       },
-      
+
       trackCacheEvent: (event: any) => {
         const storageKey = `gmail_cache_events_${userId}`;
         const stored = localStorage.getItem(storageKey);
         const events = stored ? JSON.parse(stored) : [];
-        
+
         events.unshift({
           ...event,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
-        
+
         localStorage.setItem(storageKey, JSON.stringify(events.slice(0, 100)));
-      }
+      },
     };
   }
 };
@@ -66,16 +66,21 @@ interface EmailClientProps {
   className?: string;
 }
 
-export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = false, className }: EmailClientProps) {
+export function EmailClient({
+  companyId,
+  initialFolder = 'inbox',
+  autoCompose = false,
+  className,
+}: EmailClientProps) {
   // State
   const [folders, setFolders] = useState<EmailFolder[]>([
     { id: 'inbox', name: 'Posteingang', type: 'inbox', count: 0, unreadCount: 0 },
     { id: 'sent', name: 'Gesendet', type: 'sent', count: 0, unreadCount: 0 },
     { id: 'drafts', name: 'Entwürfe', type: 'drafts', count: 0, unreadCount: 0 },
     { id: 'spam', name: 'Spam', type: 'spam', count: 0, unreadCount: 0 },
-    { id: 'trash', name: 'Papierkorb', type: 'trash', count: 0, unreadCount: 0 }
+    { id: 'trash', name: 'Papierkorb', type: 'trash', count: 0, unreadCount: 0 },
   ]);
-  
+
   const [emails, setEmails] = useState<EmailMessage[]>([]);
   const [selectedFolder, setSelectedFolder] = useState(initialFolder);
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
@@ -95,82 +100,34 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
   const [cacheSource, setCacheSource] = useState<'local' | 'api' | 'cache'>('local');
   const [newEmailsCount, setNewEmailsCount] = useState(0);
   const [cacheHitRatio, setCacheHitRatio] = useState(0);
-  
-  const refreshCachedEmails = useCallback(async (forceRefresh = false) => {
-    console.log('🔄 Loading emails from API...', { forceRefresh, companyId, selectedFolder });
-    
-    setCacheLoading(true);
-    setCacheError(null);
-    
-    try {
-      // Lade E-Mails von der API
-      const response = await fetch(`/api/company/${companyId}/emails?folder=${selectedFolder}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
 
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
-      }
+  const refreshCachedEmails = useCallback(
+    async (forceRefresh = false) => {
+      console.log('🔄 Loading emails from API...', { forceRefresh, companyId, selectedFolder });
 
-      const data = await response.json();
-      
-      if (data.emails && Array.isArray(data.emails)) {
-        console.log(`✅ Loaded ${data.emails.length} emails from API`);
-        
-        // Sortiere E-Mails nach Datum (neueste zuerst)
-        const sortedEmails = data.emails.sort((a: any, b: any) => {
-          const getTimestamp = (email: any) => {
-            // Firestore Timestamp (in Sekunden, konvertiere zu Millisekunden)
-            if (email.timestamp && email.timestamp._seconds) {
-              return email.timestamp._seconds * 1000;
-            }
-            // Gmail internalDate (string of milliseconds)
-            if (email.internalDate && typeof email.internalDate === 'string') {
-              return parseInt(email.internalDate);
-            }
-            // Date string
-            if (email.date) {
-              return new Date(email.date).getTime();
-            }
-            // Number timestamp
-            if (typeof email.timestamp === 'number') {
-              // Wenn in Sekunden (< Jahr 2100), konvertiere zu Millisekunden
-              return email.timestamp < 4102444800 ? email.timestamp * 1000 : email.timestamp;
-            }
-            return 0;
-          };
-          
-          const timestampA = getTimestamp(a);
-          const timestampB = getTimestamp(b);
-          
-          console.log(`📧 Sorting: A(${a.subject?.substring(0, 30)}): ${timestampA}, B(${b.subject?.substring(0, 30)}): ${timestampB}`);
-          
-          return timestampB - timestampA; // Neueste zuerst (B > A)
-        });
-        
-        setCachedEmails(sortedEmails);
-        setCacheSource('api');
-        setNewEmailsCount(sortedEmails.length);
-      } else {
-        console.warn('⚠️ No emails in API response:', data);
-        setCachedEmails([]);
-      }
-      
-    } catch (error) {
-      console.error('❌ Failed to load emails:', error);
-      setCacheError(error instanceof Error ? error.message : 'Fehler beim Laden der E-Mails');
-      // Fallback: Try to load from localStorage cache
+      setCacheLoading(true);
+      setCacheError(null);
+
       try {
-        const cachedData = localStorage.getItem(`gmail_cache_${companyId}_${selectedFolder}`);
-        if (cachedData) {
-          const parsedData = JSON.parse(cachedData);
-          const emails = parsedData.emails || [];
-          
-          // Sortiere auch Cache-E-Mails nach Datum (neueste zuerst)
-          const sortedEmails = emails.sort((a: any, b: any) => {
+        // Lade E-Mails von der API
+        const response = await fetch(`/api/company/${companyId}/emails?folder=${selectedFolder}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.emails && Array.isArray(data.emails)) {
+          console.log(`✅ Loaded ${data.emails.length} emails from API`);
+
+          // Sortiere E-Mails nach Datum (neueste zuerst)
+          const sortedEmails = data.emails.sort((a: any, b: any) => {
             const getTimestamp = (email: any) => {
               // Firestore Timestamp (in Sekunden, konvertiere zu Millisekunden)
               if (email.timestamp && email.timestamp._seconds) {
@@ -191,30 +148,82 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
               }
               return 0;
             };
-            
+
             const timestampA = getTimestamp(a);
             const timestampB = getTimestamp(b);
-            
+
+            console.log(
+              `📧 Sorting: A(${a.subject?.substring(0, 30)}): ${timestampA}, B(${b.subject?.substring(0, 30)}): ${timestampB}`
+            );
+
             return timestampB - timestampA; // Neueste zuerst (B > A)
           });
-          
+
           setCachedEmails(sortedEmails);
-          setCacheSource('cache');
-          console.log('📦 Loaded emails from cache fallback');
+          setCacheSource('api');
+          setNewEmailsCount(sortedEmails.length);
+        } else {
+          console.warn('⚠️ No emails in API response:', data);
+          setCachedEmails([]);
         }
-      } catch (cacheError) {
-        console.error('Cache fallback failed:', cacheError);
+      } catch (error) {
+        console.error('❌ Failed to load emails:', error);
+        setCacheError(error instanceof Error ? error.message : 'Fehler beim Laden der E-Mails');
+        // Fallback: Try to load from localStorage cache
+        try {
+          const cachedData = localStorage.getItem(`gmail_cache_${companyId}_${selectedFolder}`);
+          if (cachedData) {
+            const parsedData = JSON.parse(cachedData);
+            const emails = parsedData.emails || [];
+
+            // Sortiere auch Cache-E-Mails nach Datum (neueste zuerst)
+            const sortedEmails = emails.sort((a: any, b: any) => {
+              const getTimestamp = (email: any) => {
+                // Firestore Timestamp (in Sekunden, konvertiere zu Millisekunden)
+                if (email.timestamp && email.timestamp._seconds) {
+                  return email.timestamp._seconds * 1000;
+                }
+                // Gmail internalDate (string of milliseconds)
+                if (email.internalDate && typeof email.internalDate === 'string') {
+                  return parseInt(email.internalDate);
+                }
+                // Date string
+                if (email.date) {
+                  return new Date(email.date).getTime();
+                }
+                // Number timestamp
+                if (typeof email.timestamp === 'number') {
+                  // Wenn in Sekunden (< Jahr 2100), konvertiere zu Millisekunden
+                  return email.timestamp < 4102444800 ? email.timestamp * 1000 : email.timestamp;
+                }
+                return 0;
+              };
+
+              const timestampA = getTimestamp(a);
+              const timestampB = getTimestamp(b);
+
+              return timestampB - timestampA; // Neueste zuerst (B > A)
+            });
+
+            setCachedEmails(sortedEmails);
+            setCacheSource('cache');
+            console.log('📦 Loaded emails from cache fallback');
+          }
+        } catch (cacheError) {
+          console.error('Cache fallback failed:', cacheError);
+        }
+      } finally {
+        setCacheLoading(false);
       }
-    } finally {
-      setCacheLoading(false);
-    }
-  }, [companyId, selectedFolder]);
+    },
+    [companyId, selectedFolder]
+  );
 
   // Sync cached emails with component state
   useEffect(() => {
     console.log('📧 Syncing cached emails to UI:', cachedEmails.length);
     setEmails(cachedEmails);
-    
+
     // Nur loading beenden wenn wir nicht gerade laden
     if (!cacheLoading) {
       setIsLoading(false);
@@ -224,7 +233,9 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
   // Performance Logging
   useEffect(() => {
     if (cacheSource && cacheHitRatio !== undefined) {
-      console.log(`⚡ Gmail Performance: ${cacheSource} source, ${Math.round(cacheHitRatio * 100)}% cache hit`);
+      console.log(
+        `⚡ Gmail Performance: ${cacheSource} source, ${Math.round(cacheHitRatio * 100)}% cache hit`
+      );
       if (newEmailsCount > 0) {
         console.log(`🆕 ${newEmailsCount} neue E-Mails geladen`);
       }
@@ -237,7 +248,7 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
 
   useEffect(() => {
     console.log('🎯 Setting up Gmail Real-time listener for:', companyId);
-    
+
     // Hör auf neue Gmail Events in der SUBCOLLECTION
     const realtimeQuery = query(
       collection(db, `companies/${companyId}/realtime_events`),
@@ -246,28 +257,32 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
       limit(1)
     );
 
-    const unsubscribe = onSnapshot(realtimeQuery, (snapshot) => {
-      if (!snapshot.empty) {
-        const latestEvent = snapshot.docs[0].data();
-        console.log('🔥 REAL-TIME Gmail Event empfangen:', latestEvent);
-        
-        if (latestEvent.data?.userEmail && latestEvent.data.userEmail.includes(companyId)) {
-          console.log('✅ Event für diese Company - aktualisiere E-Mails sofort!');
-          setLastActivity(new Date());
-          setIsRealtimeConnected(true);
-          
-          // Force refresh der E-Mails
-          refreshCachedEmails(true);
+    const unsubscribe = onSnapshot(
+      realtimeQuery,
+      snapshot => {
+        if (!snapshot.empty) {
+          const latestEvent = snapshot.docs[0].data();
+          console.log('🔥 REAL-TIME Gmail Event empfangen:', latestEvent);
+
+          if (latestEvent.data?.userEmail && latestEvent.data.userEmail.includes(companyId)) {
+            console.log('✅ Event für diese Company - aktualisiere E-Mails sofort!');
+            setLastActivity(new Date());
+            setIsRealtimeConnected(true);
+
+            // Force refresh der E-Mails
+            refreshCachedEmails(true);
+          }
         }
+      },
+      error => {
+        console.error('❌ Real-time listener error:', error);
+        setIsRealtimeConnected(false);
       }
-    }, (error) => {
-      console.error('❌ Real-time listener error:', error);
-      setIsRealtimeConnected(false);
-    });
+    );
 
     return () => unsubscribe();
   }, [companyId, refreshCachedEmails]);
-  
+
   /*
   OLD REALTIME CODE REMOVED
   const { isConnected: isRealtimeConnected, lastActivity } = useRealtimeEmails({
@@ -317,10 +332,11 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
   // Initial load - einmalig beim Start, dann nur über Webhooks
   useEffect(() => {
     // Nur einmal laden beim ersten Start der Komponente
-    console.log('📱 EmailClient: Initaler Load beim Start für:', companyId);
+    console.log('📱 EmailClient: Initaler Load beim Start für:', companyId, selectedFolder);
     setIsLoading(true);
     refreshCachedEmails(false);
-  }, [companyId, refreshCachedEmails]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId, selectedFolder]);
 
   // Window Focus Detection - aktualisiere beim Zurückkehren zur App
   useEffect(() => {
@@ -329,14 +345,14 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
     const handleFocus = () => {
       const now = Date.now();
       const timeSinceLastFocus = now - lastFocusTime;
-      
+
       // DEAKTIVIERT: Window focus refresh - NUR über Webhooks!
       // if (timeSinceLastFocus > 120000) {
       //   console.log('👀 App focus detected after long absence - refreshing emails');
       //   loadEmails(true);
       // }
       console.log('👀 App focus detected - Webhook-System übernimmt E-Mail-Updates');
-      
+
       lastFocusTime = now;
     };
 
@@ -357,8 +373,7 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // F5 oder Cmd/Ctrl+R für Refresh
-      if (event.key === 'F5' || 
-          ((event.metaKey || event.ctrlKey) && event.key === 'r')) {
+      if (event.key === 'F5' || ((event.metaKey || event.ctrlKey) && event.key === 'r')) {
         event.preventDefault();
         console.log('⌨️ Keyboard refresh triggered');
         handleRefresh();
@@ -380,19 +395,26 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
 
   // 🚀 OPTIMIZED: Use Smart Cache statt direkter API-Calls
   const loadEmails = async (forceRefresh = false) => {
-    console.log(`⚡ SMART CACHE: ${forceRefresh ? 'Force refresh' : 'Smart load'} für ${companyId}/${selectedFolder}`);
-    
+    console.log(
+      `⚡ SMART CACHE: ${forceRefresh ? 'Force refresh' : 'Smart load'} für ${companyId}/${selectedFolder}`
+    );
+
     try {
       // Use optimized cache service
       await refreshCachedEmails(forceRefresh);
-      
-      // Update folder counts (approximate)
-      setFolders(prev => prev.map(folder => 
-        folder.id === selectedFolder 
-          ? { ...folder, count: cachedEmails.length, unreadCount: cachedEmails.filter(e => !e.read).length }
-          : folder
-      ));
 
+      // Update folder counts (approximate)
+      setFolders(prev =>
+        prev.map(folder =>
+          folder.id === selectedFolder
+            ? {
+                ...folder,
+                count: cachedEmails.length,
+                unreadCount: cachedEmails.filter(e => !e.read).length,
+              }
+            : folder
+        )
+      );
     } catch (error) {
       console.error('Smart Cache Load Fehler:', error);
       setAuthError(error instanceof Error ? error.message : 'Fehler beim Laden der E-Mails');
@@ -424,9 +446,8 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
         loadEmails: () => loadEmails(true),
         isConnected: isRealtimeConnected,
         lastActivity: lastActivity,
-        companyId: companyId
+        companyId: companyId,
       };
-
     }
   }, []); // Removed realtime dependencies
 
@@ -436,17 +457,15 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
     setSelectedFolder(folderId);
     setSelectedEmail(null);
     setSelectedEmails([]);
-    
+
     // Load emails for new folder
     setIsLoading(true);
     refreshCachedEmails(false);
   };
 
   const handleEmailSelect = (emailId: string) => {
-    setSelectedEmails(prev => 
-      prev.includes(emailId) 
-        ? prev.filter(id => id !== emailId)
-        : [...prev, emailId]
+    setSelectedEmails(prev =>
+      prev.includes(emailId) ? prev.filter(id => id !== emailId) : [...prev, emailId]
     );
   };
 
@@ -456,14 +475,17 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
 
   const handleEmailClick = async (email: EmailMessage) => {
     setSelectedEmail(email);
-    
+
     // Mark as read if unread
     if (!email.read) {
       await handleMarkAsRead([email.id], true);
     }
   };
 
-  const handleCompose = (mode: 'new' | 'reply' | 'replyAll' | 'forward' = 'new', email?: EmailMessage) => {
+  const handleCompose = (
+    mode: 'new' | 'reply' | 'replyAll' | 'forward' = 'new',
+    email?: EmailMessage
+  ) => {
     setComposeMode(mode);
     setReplyToEmail(email || null);
     setIsComposeOpen(true);
@@ -477,7 +499,7 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
       const response = await fetch(`/api/company/${companyId}/emails/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(emailData)
+        body: JSON.stringify(emailData),
       });
 
       if (response.ok) {
@@ -501,7 +523,7 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
       const response = await fetch(`/api/company/${companyId}/emails/draft`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(emailData)
+        body: JSON.stringify(emailData),
       });
 
       if (!response.ok) {
@@ -524,16 +546,14 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
       const response = await fetch(`/api/company/${companyId}/emails/${emailId}/star`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ starred: !email?.starred })
+        body: JSON.stringify({ starred: !email?.starred }),
       });
 
       if (response.ok) {
-        setEmails(prev => prev.map(e => 
-          e.id === emailId ? { ...e, starred: !e.starred } : e
-        ));
-        
+        setEmails(prev => prev.map(e => (e.id === emailId ? { ...e, starred: !e.starred } : e)));
+
         if (selectedEmail?.id === emailId) {
-          setSelectedEmail(prev => prev ? { ...prev, starred: !prev.starred } : null);
+          setSelectedEmail(prev => (prev ? { ...prev, starred: !prev.starred } : null));
         }
       }
     } catch (error) {
@@ -546,7 +566,7 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
       const response = await fetch(`/api/company/${companyId}/emails/archive`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailIds })
+        body: JSON.stringify({ emailIds }),
       });
 
       if (response.ok) {
@@ -570,7 +590,7 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
       const response = await fetch(`/api/company/${companyId}/emails/delete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailIds })
+        body: JSON.stringify({ emailIds }),
       });
 
       if (response.ok) {
@@ -594,17 +614,15 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
       const response = await fetch(`/api/company/${companyId}/emails/mark-read`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailIds, read })
+        body: JSON.stringify({ emailIds, read }),
       });
 
       if (response.ok) {
-        setEmails(prev => prev.map(e => 
-          emailIds.includes(e.id) ? { ...e, read } : e
-        ));
-        
+        setEmails(prev => prev.map(e => (emailIds.includes(e.id) ? { ...e, read } : e)));
+
         // @ts-ignore - selectedEmail is checked
         if (selectedEmail && selectedEmail.id && emailIds.includes(selectedEmail.id)) {
-          setSelectedEmail(prev => prev ? { ...prev, read } : null);
+          setSelectedEmail(prev => (prev ? { ...prev, read } : null));
         }
       } else if (response.status === 403) {
         const errorData = await response.json();
@@ -612,9 +630,9 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
           // Gmail Berechtigung unzureichend - zeige Re-Autorisierungs-Dialog
           const shouldReconnect = confirm(
             'Gmail-Berechtigung unzureichend für diese Aktion.\n\n' +
-            'Möchten Sie Gmail mit erweiterten Berechtigungen erneut verbinden?'
+              'Möchten Sie Gmail mit erweiterten Berechtigungen erneut verbinden?'
           );
-          
+
           if (shouldReconnect) {
             // Get Gmail connect URL from new API
             const connectResponse = await fetch(`/api/gmail/connect?uid=${companyId}`);
@@ -637,7 +655,7 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
     try {
       setAuthError(null);
       setRequiresReauth(false);
-      
+
       // Redirect zu Gmail OAuth
       // Get Gmail connect URL from new API
       const connectResponse = await fetch(`/api/gmail/connect?uid=${companyId}`);
@@ -654,19 +672,30 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
   // Zeige Authentifizierungs-Fehler UI
   if (requiresReauth) {
     return (
-      <div className={cn("h-full flex items-center justify-center bg-gray-50", className)}>
+      <div className={cn('h-full flex items-center justify-center bg-gray-50', className)}>
         <Card className="w-full max-w-md p-6 text-center">
           <div className="mb-4">
             <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              <svg
+                className="w-8 h-8 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
               </svg>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Gmail-Authentifizierung erforderlich
             </h3>
             <p className="text-gray-600 mb-6">
-              {authError || 'Ihre Gmail-Verbindung ist abgelaufen. Bitte melden Sie sich erneut an, um E-Mails zu laden.'}
+              {authError ||
+                'Ihre Gmail-Verbindung ist abgelaufen. Bitte melden Sie sich erneut an, um E-Mails zu laden.'}
             </p>
             <div className="space-y-3">
               <button
@@ -693,12 +722,14 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
   }
 
   return (
-    <div className={cn("h-screen w-screen flex bg-white", className)}>
+    <div className={cn('h-screen w-screen flex bg-white', className)}>
       {/* Email List - Fixed Width */}
-      <div className={cn(
-        "bg-white flex flex-col overflow-hidden border-r border-gray-200",
-        selectedEmail ? "w-80" : "flex-1"
-      )}>
+      <div
+        className={cn(
+          'bg-white flex flex-col overflow-hidden border-r border-gray-200',
+          selectedEmail ? 'w-80' : 'flex-1'
+        )}
+      >
         <EmailList
           emails={emails}
           selectedEmails={selectedEmails}
@@ -716,7 +747,7 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
           isCompact={!!selectedEmail}
           realtimeStatus={{
             connected: isRealtimeConnected,
-            lastActivity: lastActivity
+            lastActivity: lastActivity,
           }}
         />
       </div>
@@ -727,17 +758,17 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
           <EmailViewer
             email={selectedEmail}
             onClose={() => setSelectedEmail(null)}
-            onReply={(email) => handleCompose('reply', email)}
-            onReplyAll={(email) => handleCompose('replyAll', email)}
-            onForward={(email) => handleCompose('forward', email)}
-            onArchive={(emailId) => handleArchiveEmails([emailId])}
-            onDelete={(emailId) => handleDeleteEmails([emailId])}
+            onReply={email => handleCompose('reply', email)}
+            onReplyAll={email => handleCompose('replyAll', email)}
+            onForward={email => handleCompose('forward', email)}
+            onArchive={emailId => handleArchiveEmails([emailId])}
+            onDelete={emailId => handleDeleteEmails([emailId])}
             onStar={handleStarEmail}
             onMarkAsRead={(emailId, read) => handleMarkAsRead([emailId], read)}
           />
         </div>
       )}
-      
+
       {/* Compose Modal */}
       <EmailCompose
         isOpen={isComposeOpen}
@@ -752,7 +783,11 @@ export function EmailClient({ companyId, initialFolder = 'inbox', autoCompose = 
         }}
         onSend={handleSendEmail}
         onSaveDraft={handleSaveDraft}
-        replyTo={composeMode === 'reply' || composeMode === 'replyAll' ? replyToEmail || undefined : undefined}
+        replyTo={
+          composeMode === 'reply' || composeMode === 'replyAll'
+            ? replyToEmail || undefined
+            : undefined
+        }
         forwardEmail={composeMode === 'forward' ? replyToEmail || undefined : undefined}
       />
     </div>
