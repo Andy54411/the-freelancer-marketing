@@ -100,6 +100,7 @@ export function EmailClient({
   const [cacheSource, setCacheSource] = useState<'local' | 'api' | 'cache'>('local');
   const [newEmailsCount, setNewEmailsCount] = useState(0);
   const [cacheHitRatio, setCacheHitRatio] = useState(0);
+  const [isInitialLoad, setIsInitialLoad] = useState(true); // Flag für ersten Ladevorgang
 
   const refreshCachedEmails = useCallback(
     async (forceRefresh = false) => {
@@ -218,6 +219,36 @@ export function EmailClient({
     },
     [companyId, selectedFolder]
   );
+
+  // Auto-Polling: NUR beim ersten Laden, wenn keine E-Mails da sind
+  useEffect(() => {
+    if (isInitialLoad && cachedEmails.length === 0 && !cacheLoading) {
+      console.log('🔄 Initial load: No emails found, starting auto-polling...');
+
+      const pollInterval = setInterval(() => {
+        console.log('🔄 Auto-polling for emails (initial load)...');
+        refreshCachedEmails(false);
+      }, 2000); // Alle 2 Sekunden
+
+      // Stop polling nach 30 Sekunden oder wenn E-Mails gefunden wurden
+      const stopTimeout = setTimeout(() => {
+        console.log('⏱️ Auto-polling timeout reached (30s)');
+        clearInterval(pollInterval);
+        setIsInitialLoad(false); // Markiere als nicht mehr initial
+      }, 30000);
+
+      return () => {
+        clearInterval(pollInterval);
+        clearTimeout(stopTimeout);
+      };
+    }
+
+    // Wenn E-Mails gefunden wurden, stop polling
+    if (cachedEmails.length > 0 && isInitialLoad) {
+      console.log('✅ Emails found, stopping auto-polling');
+      setIsInitialLoad(false);
+    }
+  }, [cachedEmails.length, cacheLoading, isInitialLoad, refreshCachedEmails]);
 
   // Sync cached emails with component state
   useEffect(() => {
@@ -717,6 +748,20 @@ export function EmailClient({
             </div>
           </div>
         </Card>
+      </div>
+    );
+  }
+
+  // Zeige Loading Screen während Initial Polling (nur wenn keine E-Mails da sind)
+  if (isInitialLoad && cachedEmails.length === 0) {
+    return (
+      <div className={cn('h-screen w-screen flex items-center justify-center bg-white', className)}>
+        <div className="text-center">
+          {/* CSS Spinner Animation */}
+          <div className="inline-block w-16 h-16 border-4 border-gray-200 border-t-[#14ad9f] rounded-full animate-spin"></div>
+          <p className="mt-6 text-gray-600 text-lg font-medium">E-Mails werden geladen...</p>
+          <p className="mt-2 text-gray-400 text-sm">Dies kann bis zu 30 Sekunden dauern</p>
+        </div>
       </div>
     );
   }

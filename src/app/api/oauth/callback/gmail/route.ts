@@ -267,31 +267,44 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Initiale E-Mails laden
+    // Initiale E-Mails laden via Firebase Function (asynchron im Hintergrund)
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_APP_URL}/api/company/${state}/gmail-sync`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            force: true,
-            initialSync: true,
-          }),
-        }
-      );
+      const functionUrl =
+        process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL ||
+        'https://europe-west1-tilvo-f142f.cloudfunctions.net';
+      const syncUrl = `${functionUrl}/gmailSyncHttp`;
 
-      if (response.ok) {
-        const syncData = await response.json();
-        console.log('✅ Initiale E-Mails werden geladen:', syncData);
-      } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('⚠️ Fehler beim initialen E-Mail-Sync:', response.status, errorData);
-      }
+      console.log(`🔄 Triggering initial email sync via Firebase Function: ${syncUrl}`);
+
+      // Asynchroner Aufruf - wir warten NICHT auf die Antwort
+      fetch(syncUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyId: state,
+          userEmail: userInfo.data.email,
+          force: true,
+          initialSync: true,
+          action: 'initial_sync',
+        }),
+      })
+        .then(response => {
+          if (response.ok) {
+            console.log('✅ Initial sync erfolgreich gestartet');
+          } else {
+            console.error('⚠️ Initial sync start fehlgeschlagen:', response.status);
+          }
+        })
+        .catch(error => {
+          console.error('⚠️ Initial sync trigger error:', error);
+        });
+
+      console.log('🔄 Initial sync wurde im Hintergrund gestartet');
     } catch (syncError) {
-      console.error('⚠️ Fehler beim initialen E-Mail-Sync (Exception):', syncError);
+      console.error('⚠️ Fehler beim Trigger des initialen Syncs:', syncError);
+      // Nicht kritisch - weiter zum Redirect
     }
 
     // Zur Email-Client Seite weiterleiten - NICHT zur Integration Seite!

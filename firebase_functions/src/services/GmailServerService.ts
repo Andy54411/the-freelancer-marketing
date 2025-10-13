@@ -270,8 +270,7 @@ export class GmailServerService {
           const messageResponse = await this.gmail.users.messages.get({
             userId: 'me',
             id: message.id!,
-            format: 'metadata',
-            metadataHeaders: ['Subject', 'From', 'Date', 'Message-ID', 'To']
+            format: 'full'  // FULL format um Body und HTML zu bekommen!
           });
 
           return this.parseGmailMessage(messageResponse.data, userEmail);
@@ -352,17 +351,35 @@ export class GmailServerService {
     let body = '';
     let htmlBody = '';
 
-    // Extraktiere Body Content
-    if (message.payload.body?.data) {
-      body = Buffer.from(message.payload.body.data, 'base64').toString();
-    } else if (message.payload.parts) {
-      for (const part of message.payload.parts) {
-        if (part.mimeType === 'text/plain' && part.body?.data) {
+    // Rekursive Funktion zum Durchsuchen aller Parts
+    const extractBodyFromParts = (parts: any[]): void => {
+      for (const part of parts) {
+        // Direkte Body-Daten im Part
+        if (part.mimeType === 'text/plain' && part.body?.data && !body) {
           body = Buffer.from(part.body.data, 'base64').toString();
-        } else if (part.mimeType === 'text/html' && part.body?.data) {
+        } else if (part.mimeType === 'text/html' && part.body?.data && !htmlBody) {
           htmlBody = Buffer.from(part.body.data, 'base64').toString();
         }
+        
+        // Rekursiv durch verschachtelte Parts (multipart/alternative, multipart/mixed, etc.)
+        if (part.parts && Array.isArray(part.parts)) {
+          extractBodyFromParts(part.parts);
+        }
       }
+    };
+
+    // Extraktiere Body Content
+    if (message.payload.body?.data) {
+      // Body direkt im Payload (einfache E-Mails)
+      body = Buffer.from(message.payload.body.data, 'base64').toString();
+    } else if (message.payload.parts) {
+      // Multipart E-Mail - durchsuche rekursiv alle Parts
+      extractBodyFromParts(message.payload.parts);
+    }
+    
+    // Fallback: Verwende snippet wenn kein Body gefunden wurde
+    if (!body && !htmlBody && message.snippet) {
+      body = message.snippet;
     }
 
     return {
@@ -387,7 +404,7 @@ export class GmailServerService {
   }
 
   /**
-   * Extraktiere Attachments
+   * Extraktiere Attachments (rekursiv)
    */
   private extractAttachments(payload: any): Array<{
     id: string;
@@ -402,8 +419,9 @@ export class GmailServerService {
       size: number;
     }> = [];
 
-    if (payload.parts) {
-      for (const part of payload.parts) {
+    const extractFromParts = (parts: any[]): void => {
+      for (const part of parts) {
+        // Part ist ein Attachment
         if (part.filename && part.body?.attachmentId) {
           attachments.push({
             id: part.body.attachmentId,
@@ -412,7 +430,16 @@ export class GmailServerService {
             size: part.body.size || 0
           });
         }
+        
+        // Rekursiv durch verschachtelte Parts
+        if (part.parts && Array.isArray(part.parts)) {
+          extractFromParts(part.parts);
+        }
       }
+    };
+
+    if (payload.parts) {
+      extractFromParts(payload.parts);
     }
 
     return attachments;
