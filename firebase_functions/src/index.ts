@@ -166,3 +166,7 @@ export { setupGmailWatch };
 // Gmail HTTP Sync Function
 import { gmailSyncHttp } from './gmail-sync-http';
 export { gmailSyncHttp };
+
+// Scheduled Functions
+import * as scheduledUsageCalculation from './scheduled-usage-calculation';
+export const dailyUsageCalculation = scheduledUsageCalculation.dailyUsageCalculation;
