@@ -2067,6 +2067,51 @@ service cloud.firestore {
                         isSupportStaff());
     }
 
+    // ===== REALTIME EVENTS SUBCOLLECTION =====
+    // Gmail und andere Real-time Event Notifications als Subcollection
+    match /companies/{companyId}/realtime_events/{eventId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId ||
+                      isSupportStaff());
+      
+      // Listen-Abfragen: Nur eigene Firma oder Support Staff
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId ||
+                     isSupportStaff());
+      
+      // Erstellen: Immer erlaubt (für Firebase Functions und Support Staff)
+      allow create: if true;
+      
+      // Aktualisieren: Nur für Status-Updates durch System oder Support Staff
+      allow update: if isSupportStaff();
+      
+      // Löschen: Nur Support Staff (für Cleanup)
+      allow delete: if isSupportStaff();
+    }
+
+    // Gmail Sync Stats Subcollection - Statistiken als Subcollection
+    match /companies/{companyId}/gmail_sync_stats/{statsId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId ||
+                      isSupportStaff());
+      
+      // Listen-Abfragen: Nur eigene Firma oder Support Staff
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId ||
+                     isSupportStaff());
+      
+      // Erstellen: Nur System (über Cloud Functions) oder Support Staff
+      allow create: if isSupportStaff();
+      
+      // Aktualisieren: Nur System (über Cloud Functions) oder Support Staff
+      allow update: if isSupportStaff();
+      
+      // Löschen: Nur Support Staff (für Cleanup)
+      allow delete: if isSupportStaff();
+    }
+
     // Storno-Rechnungen Collection - als Subcollection unter companies
     match /companies/{companyId}/stornoRechnungen/{stornoId} {
       // Lesen: Nur eigene Firma oder Support Staff
@@ -2711,5 +2756,7 @@ service cloud.firestore {
                     'admin@taskilo.de'
                   ];
     }
+
+
   }
 }

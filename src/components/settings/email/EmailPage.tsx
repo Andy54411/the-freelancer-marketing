@@ -1,0 +1,277 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Mail, Settings, FileText, History, AlertCircle } from 'lucide-react';
+import { GmailConnectionCard } from './GmailConnectionCard';
+import { EmailProviderGrid } from './EmailProviderGrid';
+import { EmailTemplates } from './EmailTemplates';
+import { EmailSettingsCard } from './EmailSettingsCard';
+import { EmailConfig, EmailSettings, EmailTemplate } from './types';
+
+interface EmailPageProps {
+  companyId: string;
+}
+
+export function EmailPage({ companyId }: EmailPageProps) {
+  const searchParams = useSearchParams();
+  const [emailConfig, setEmailConfig] = useState<EmailConfig | null>(null);
+  const [emailSettings, setEmailSettings] = useState<EmailSettings>({
+    defaultFrom: '',
+    signature: '',
+    autoReply: false,
+    autoReplyMessage: '',
+    trackOpens: false,
+    trackClicks: false
+  });
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // URL Parameter für Fehlermeldungen
+  const watchError = searchParams?.get('watchError');
+
+  // Lade E-Mail-Konfiguration, Einstellungen und Vorlagen
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // E-Mail-Konfiguration laden
+        const configResponse = await fetch(`/api/company/${companyId}/email-config`);
+        if (configResponse.ok) {
+          const config = await configResponse.json();
+          setEmailConfig(config);
+        }
+
+        // E-Mail-Einstellungen laden
+        const settingsResponse = await fetch(`/api/company/${companyId}/email-settings`);
+        if (settingsResponse.ok) {
+          const settings = await settingsResponse.json();
+          setEmailSettings(settings);
+        }
+
+        // E-Mail-Vorlagen laden
+        const templatesResponse = await fetch(`/api/company/${companyId}/email-templates`);
+        if (templatesResponse.ok) {
+          const templates = await templatesResponse.json();
+          setTemplates(templates);
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Daten:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [companyId]);
+
+  // Gmail verbinden
+  const handleGmailConnect = () => {
+    window.location.href = `/api/gmail/connect?uid=${companyId}`;
+  };
+
+  // Gmail trennen
+  const handleGmailDisconnect = async () => {
+    try {
+      const response = await fetch(`/api/company/${companyId}/gmail-disconnect`, {
+        method: 'POST'
+      });
+      
+      if (response.ok) {
+        setEmailConfig(null);
+      }
+    } catch (error) {
+      console.error('Fehler beim Trennen von Gmail:', error);
+    }
+  };
+
+  // Einstellungen speichern
+  const handleSaveSettings = async (settings: EmailSettings) => {
+    try {
+      const response = await fetch(`/api/company/${companyId}/email-settings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(settings)
+      });
+      
+      if (response.ok) {
+        setEmailSettings(settings);
+      }
+    } catch (error) {
+      console.error('Fehler beim Speichern der Einstellungen:', error);
+      throw error;
+    }
+  };
+
+  // Template speichern
+  const handleSaveTemplate = async (template: EmailTemplate) => {
+    try {
+      const response = await fetch(`/api/company/${companyId}/email-templates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(template)
+      });
+      
+      if (response.ok) {
+        const savedTemplate = await response.json();
+        setTemplates(prev => {
+          const existing = prev.find(t => t.id === savedTemplate.id);
+          if (existing) {
+            return prev.map(t => t.id === savedTemplate.id ? savedTemplate : t);
+          }
+          return [...prev, savedTemplate];
+        });
+      }
+    } catch (error) {
+      console.error('Fehler beim Speichern der Vorlage:', error);
+      throw error;
+    }
+  };
+
+  // Template löschen
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      const response = await fetch(`/api/company/${companyId}/email-templates/${templateId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        setTemplates(prev => prev.filter(t => t.id !== templateId));
+      }
+    } catch (error) {
+      console.error('Fehler beim Löschen der Vorlage:', error);
+      throw error;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">E-Mail-Management</h1>
+        <p className="text-gray-600 mt-2">
+          Verwalten Sie Ihre E-Mail-Verbindungen, Vorlagen und Einstellungen
+        </p>
+      </div>
+
+      {/* Fehlermeldungen anzeigen */}
+      {watchError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Gmail Watch Setup Fehler:</strong><br />
+            {decodeURIComponent(watchError)}
+            <br /><br />
+            <em>Das bedeutet: Die Pub/Sub Berechtigungen wurden gerade konfiguriert. Versuche bitte, Gmail erneut zu verbinden.</em>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Tabs defaultValue="connections" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="connections" className="flex items-center">
+            <Mail className="h-4 w-4 mr-2" />
+            Verbindungen
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center">
+            <FileText className="h-4 w-4 mr-2" />
+            Vorlagen
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center">
+            <Settings className="h-4 w-4 mr-2" />
+            Einstellungen
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center">
+            <History className="h-4 w-4 mr-2" />
+            Verlauf
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="connections" className="mt-6">
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>E-Mail-Anbieter</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <EmailProviderGrid
+                  companyId={companyId}
+                  emailConfigs={emailConfig ? [emailConfig] : []}
+                  onDeleteConfig={handleGmailDisconnect}
+                  onConnectGmail={handleGmailConnect}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="templates" className="mt-6">
+          <EmailTemplates
+            companyId={companyId}
+            templates={templates}
+            onCreateTemplate={async (template) => {
+              const newTemplate = {
+                ...template,
+                id: Date.now().toString(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+              await handleSaveTemplate(newTemplate);
+            }}
+            onUpdateTemplate={async (templateId, updates) => {
+              const existingTemplate = templates.find(t => t.id === templateId);
+              if (existingTemplate) {
+                const updatedTemplate = {
+                  ...existingTemplate,
+                  ...updates,
+                  updatedAt: new Date().toISOString()
+                };
+                await handleSaveTemplate(updatedTemplate);
+              }
+            }}
+            onDeleteTemplate={handleDeleteTemplate}
+          />
+        </TabsContent>
+
+        <TabsContent value="settings" className="mt-6">
+          <EmailSettingsCard
+            companyId={companyId}
+            settings={emailSettings}
+            onSaveSettings={handleSaveSettings}
+          />
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>E-Mail-Verlauf</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12 text-gray-500">
+                <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>E-Mail-Verlauf wird hier angezeigt</p>
+                <p className="text-sm">Bald verfügbar...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

@@ -1,7 +1,8 @@
 // src/app/api/storage/send-limit-email/route.ts
 import { NextResponse, type NextRequest } from 'next/server';
 import { admin } from '@/firebase/server';
-import { StorageEmailService } from '@/services/storageEmailService';
+// TODO: Re-implement with new email service
+// import { StorageEmailService } from '@/services/storageEmailService';
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,24 +44,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // TODO: Re-implement email sending with new Gmail service
+    console.log(`Storage limit email would be sent: type=${type}, companyId=${companyId}`);
+
     // Send appropriate email
     switch (type) {
       case 'warning':
-        await StorageEmailService.sendLimitWarningEmail(
-          recipient,
-          currentUsage,
-          limit,
-          percentUsed
-        );
+        // await StorageEmailService.sendLimitWarningEmail(
+        //   recipient,
+        //   currentUsage,
+        //   limit,
+        //   percentUsed
+        // );
+        console.log('Warning email would be sent');
         break;
 
       case 'over_limit':
-        await StorageEmailService.sendOverLimitEmail(
-          recipient,
-          currentUsage,
-          limit,
-          companyData.storagePlanId || 'free'
-        );
+        // await StorageEmailService.sendOverLimitEmail(
+        //   recipient,
+        //   currentUsage,
+        //   limit,
+        //   companyData.storagePlanId || 'free'
+        // );
+        console.log('Over limit email would be sent');
         break;
 
       default:

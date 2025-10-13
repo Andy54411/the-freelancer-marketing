@@ -45,7 +45,7 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 31536000,
     dangerouslyAllowSVG: true,
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    contentSecurityPolicy: "default-src * data: blob: http: https:; script-src 'none'; style-src * 'unsafe-inline' data: blob: http: https:; img-src * data: blob: http: https:; sandbox;",
     unoptimized: true,
     remotePatterns: [
       {
@@ -113,28 +113,7 @@ const nextConfig = {
         source: '/robots.txt',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=0, s-maxage=3600' }],
       },
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self';",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com https://m.stripe.network https://q.stripe.com https://hooks.stripe.com https://connect.stripe.com https://js.stripe.network https://maps.googleapis.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://googletagmanager.com https://va.vercel-scripts.com https://vitals.vercel-insights.com https://vercel.live https://vercel.com https://*.vercel.app https://cdn.vercel-insights.com https://*.gstatic.com https://*.firebasedatabase.app https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app https://*.googleapis.com https://apis.google.com https://accounts.google.com https://gapi.google.com https://cdnjs.cloudflare.com data: blob:;",
-              "script-src-elem 'self' 'unsafe-inline' https://js.stripe.com https://checkout.stripe.com https://m.stripe.network https://q.stripe.com https://hooks.stripe.com https://connect.stripe.com https://js.stripe.network https://maps.googleapis.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://googletagmanager.com https://va.vercel-scripts.com https://vitals.vercel-insights.com https://vercel.live https://vercel.com https://*.vercel.app https://cdn.vercel-insights.com https://*.gstatic.com https://*.firebasedatabase.app https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app https://*.googleapis.com https://apis.google.com https://accounts.google.com https://gapi.google.com https://cdnjs.cloudflare.com data: blob:;",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://maps.googleapis.com https://*.gstatic.com;",
-              "font-src 'self' https://fonts.gstatic.com https://*.gstatic.com data:;",
-              "img-src 'self' data: blob: https: https://*.firebasestorage.app https://maps.googleapis.com https://maps.gstatic.com https://www.google-analytics.com https://*.gstatic.com https://*.googleapis.com;",
-              "connect-src 'self' https://*.stripe.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://maps.googleapis.com https://maps.google.com https://places.googleapis.com https://geolocation.googleapis.com https://roads.googleapis.com https://*.googleapis.com https://vercel.live https://vercel.com https://*.vercel.app https://va.vercel-scripts.com https://vitals.vercel-insights.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://cloudfunctions.net https://us-central1-tilvo-f142f.cloudfunctions.net https://europe-west1-tilvo-f142f.cloudfunctions.net https://accounts.google.com https://*.gstatic.com https://gapi.google.com https://generativelanguage.googleapis.com https://*.firebasestorage.app https://*.firebasedatabase.app https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app https://appleid.apple.com https://*.apple.com https://*.execute-api.eu-central-1.amazonaws.com https://cdnjs.cloudflare.com wss: ws: data: blob:;",
-              "frame-src 'self' https://js.stripe.com https://checkout.stripe.com https://hooks.stripe.com https://connect.stripe.com https://vercel.live https://*.firebasedatabase.app https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app https://*.firebaseapp.com https://appleid.apple.com https://accounts.google.com https://storage.googleapis.com https://firebasestorage.googleapis.com https://*.firebasestorage.app https://tilvo-f142f.firebasestorage.app blob:;",
-              "worker-src 'self' blob:;",
-              "object-src 'none';",
-              "base-uri 'self';",
-              "form-action 'self'",
-            ].join(' '),
-          },
-        ],
-      },
+      // CSP KOMPLETT DEAKTIVIERT FÜR E-MAIL BILDER!!!
     ];
   },
 };

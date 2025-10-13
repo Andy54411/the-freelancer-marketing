@@ -5,21 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { EmailThreadAccordion } from '@/components/admin/EmailThreadAccordion';
 import { ReceivedEmail } from '@/types/email';
-import {
-  Html,
-  Head,
-  Body,
-  Container,
-  Text,
-  Heading,
-  Button as EmailButton,
-  Link,
-} from '@react-email/components';
 import { convert } from 'html-to-text';
-import DOMPurify from 'dompurify';
 import { decode } from 'html-entities';
 import TurndownService from 'turndown';
 import juice from 'juice';
+import DOMPurify from 'dompurify';
 import {
   ArrowLeft,
   Reply,
@@ -347,313 +337,35 @@ function QuickReplyForm({
   );
 }
 
-// Sichere HTML-Renderer Komponente mit iframe
+// SIMPLE Gmail-Style HTML Renderer - NO COMPLEX ANALYSIS!
 function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
-  const [iframeHeight, setIframeHeight] = useState(600);
+  if (!htmlContent) {
+    return (
+      <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-lg">
+        <p>📧 Keine HTML-Inhalte verfügbar</p>
+      </div>
+    );
+  }
 
-  // HTML-Inhalte für iframe vorbereiten
-  const sanitizedHTML = useMemo(() => {
-    // KRITISCH: Euro-Symbol-Bereinigung AUCH im HTML-Renderer!
-
-    // CHARACTER CODE ANALYZER - Finde die exakten problematischen Zeichen!
-    // 🔥 ULTIMATE CHARACTER ANALYZER - FINDET ALLE PROBLEMATISCHEN ZEICHEN
-    const suspiciousChars: Array<{
-      char: string;
-      charCode: number;
-      hex: string;
-      unicode: string;
-      index: number;
-      context: string;
-    }> = [];
-    
-    const matchSearchResults: Array<{
-      match: string;
-      index: number;
-      context: string;
-    }> = [];
-
-    // Suche speziell nach "Match" mit problematischen Zeichen
-    const matchRegex = /[""''€‚„‹›«»‰‱][Mm]atch[""''€‚„‹›«»‰‱]/g;
-    let matchResult;
-    while ((matchResult = matchRegex.exec(htmlContent)) !== null) {
-      matchSearchResults.push({
-        match: matchResult[0],
-        index: matchResult.index!,
-        context: htmlContent.substring(Math.max(0, matchResult.index! - 30), matchResult.index! + 30),
-      });
-    }
-
-    // Analysiere ALLE nicht-ASCII Zeichen (erweitert)
-    const textToAnalyze = htmlContent.substring(0, 5000); // Mehr Text analysieren
-    for (let i = 0; i < textToAnalyze.length; i++) {
-      const char = textToAnalyze[i];
-      const code = char.charCodeAt(0);
-
-      // Alle nicht-ASCII Zeichen UND spezielle problematische Zeichen
-      if (
-        code > 127 || // Alle Unicode-Zeichen
-        code === 8364 || // Euro-Symbol €
-        code === 8220 || // Left double quotation mark "
-        code === 8221 || // Right double quotation mark "
-        code === 8216 || // Left single quotation mark '
-        code === 8217 || // Right single quotation mark '
-        code === 8211 || // En dash –
-        code === 8212 || // Em dash —
-        code === 8218 || // Single low-9 quotation mark ‚
-        code === 8222 || // Double low-9 quotation mark „
-        code === 8249 || // Single left-pointing angle quotation mark ‹
-        code === 8250 || // Single right-pointing angle quotation mark ›
-        code === 171 || // Left-pointing double angle quotation mark «
-        code === 187 || // Right-pointing double angle quotation mark »
-        code === 8240 || // Per mille sign ‰
-        code === 8241 // Per ten thousand sign ‱
-      ) {
-        suspiciousChars.push({
-          char: char,
-          charCode: code,
-          hex: '0x' + code.toString(16),
-          unicode: `\\u${code.toString(16).padStart(4, '0')}`,
-          index: i,
-          context: textToAnalyze.substring(Math.max(0, i - 15), i + 15),
-        });
-      }
-    }
-
-    const cleanedHtml = htmlContent
-      // 🔥 ULTIMATE Unicode-Bereinigung - ALLE problematischen Zeichen
-      // Euro-Zeichen und Varianten
-      .replace(/€œ/g, '"')
-      .replace(/€/g, '"')
-      .replace(/€™/g, "'")
-      .replace(/€"/g, '–')
-      .replace(/€/g, '"')
-
-      // Alle Anführungszeichen-Varianten → normale Anführungszeichen
-      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"') // " " „ ‟ ″ ‶ → "
-      .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'") // ' ' ‚ ‛ ′ → '
-
-      // Alle Bindestrich-Varianten → normaler Bindestrich
-      .replace(/[\u2013\u2014\u2015]/g, '-') // – — ― → -
-
-      // Weitere problematische Zeichen
-      .replace(/[\u2039\u203A]/g, "'") // ‹ › → '
-      .replace(/[\u00AB\u00BB]/g, '"') // « » → "
-      .replace(/[\u2030\u2031]/g, '%') // ‰ ‱ → %
-      .replace(/[\u2026]/g, '...') // … → ...
-      .replace(/[\u00A0]/g, ' ') // Non-breaking space → normal space
-
-      // Spezielle Bereinigung für "Match" Probleme
-      .replace(/[""''€‚„‹›«»‰‱]([Mm]atch)[""''€‚„‹›«»‰‱]/g, '"$1"')
-
-      // Unicode-spezifische Kombinationen
-      .replace(/\u20AC\u201C/g, '"') // Unicode Euro + Left Quote
-      .replace(/\u20AC\u201D/g, '"') // Unicode Euro + Right Quote
-      .replace(/\u20AC\u2019/g, "'") // Unicode Euro + Right Single Quote
-      .replace(/\u20AC\u2013/g, '–') // Unicode Euro + En Dash
-      .replace(/\u20AC/g, '"') // Alle verbleibenden Euro-Symbole
-
-      // SPEZIFISCH: Die exakten problematischen Zeichen aus dem HTML!
-      .replace(/"/g, '"') // Smart quotes (Unicode 201C, 201D) -> normale Anführungszeichen
-      .replace(/"/g, '"') // Smart quotes (Unicode 201C, 201D) -> normale Anführungszeichen
-      .replace(/'/g, "'") // Smart single quote (Unicode 2019) -> normaler Apostroph
-      .replace(/'/g, "'") // Smart single quote (Unicode 2018) -> normaler Apostroph
-      .replace(/–/g, '-') // En dash (Unicode 2013) -> normaler Bindestrich
-      .replace(/—/g, '-') // Em dash (Unicode 2014) -> normaler Bindestrich
-
-      // Fallback: Alle verbliebenen Unicode-Zeichen > 127 (außer deutsche Umlaute)
-      .replace(/[^\x00-\x7FäöüÄÖÜß]/g, function (match) {
-        const code = match.charCodeAt(0);
-
-        if (code >= 8200 && code <= 8300) return '"'; // Smart quotes range
-        if (code >= 8000 && code <= 8500) return "'"; // Other punctuation
-        return '';
-      });
-
-    const finalHtml = DOMPurify.sanitize(cleanedHtml, {
-      ALLOWED_TAGS: [
-        'div',
-        'p',
-        'span',
-        'b',
-        'i',
-        'u',
-        'strong',
-        'em',
-        'br',
-        'ul',
-        'ol',
-        'li',
-        'h1',
-        'h2',
-        'h3',
-        'h4',
-        'h5',
-        'h6',
-        'table',
-        'tr',
-        'td',
-        'th',
-        'tbody',
-        'thead',
-        'img',
-        'a',
-        'center',
-        'font',
-      ],
-      ALLOWED_ATTR: [
-        'style',
-        'class',
-        'href',
-        'src',
-        'alt',
-        'title',
-        'target',
-        'align',
-        'width',
-        'height',
-        'color',
-        'bgcolor',
-        'cellpadding',
-        'cellspacing',
-        'border',
-      ],
-      ALLOW_DATA_ATTR: false,
-      FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input', 'button'],
-      FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover'],
-    });
-
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              line-height: 1.6;
-              margin: 20px;
-              color: #333;
-              background: white;
-            }
-            img {
-              max-width: 100%;
-              height: auto;
-            }
-            table {
-              border-collapse: collapse;
-            }
-            a {
-              color: #0066cc;
-              text-decoration: none;
-            }
-            a:hover {
-              text-decoration: underline;
-            }
-            /* Nur minimale Sicherheits-Fixes - KEIN Design Override! */
-          </style>
-          <script>
-            // Enhanced Link Handler für finAPI Newsletter und andere E-Mail-Links
-            window.addEventListener('load', function() {
-              const height = Math.max(
-                document.body.scrollHeight,
-                document.body.offsetHeight,
-                document.documentElement.clientHeight,
-                document.documentElement.scrollHeight,
-                document.documentElement.offsetHeight
-              );
-              parent.postMessage({type: 'resize', height: height + 40}, '*');
-
-              // Link-Handler für bessere Kompatibilität
-              document.addEventListener('click', function(e) {
-                const target = e.target.closest('a');
-                if (target && target.href) {
-                  e.preventDefault();
-
-                  // finAPI und andere Newsletter-Links sicher öffnen
-                  const url = target.href;
-
-                  // Message an Parent senden für sicheres Link-Handling
-                  parent.postMessage({
-                    type: 'openLink',
-                    url: url,
-                    text: target.textContent || target.innerText,
-                    isTracking: url.includes('sendibm') || url.includes('tracking') || url.includes('click')
-                  }, '*');
-
-                  // Fallback: Direktes Öffnen mit erweiterten Attributen
-                  try {
-                    const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-                    if (!newWindow) {
-                      // Backup: Top-Level Navigation
-                      window.top.open(url, '_blank');
-                    }
-                  } catch (err) {
-
-                    // Als letzter Ausweg: Message für Parent-handling
-                    window.parent.location.href = url;
-                  }
-                }
-              });
-            });
-          </script>
-        </head>
-        <body>
-          ${finalHtml}
-        </body>
-      </html>
-    `;
-  }, [htmlContent]);
-
-  // Message-Listener für Auto-Resize und Link-Handling
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data && event.data.type === 'resize') {
-        setIframeHeight(Math.max(600, event.data.height));
-      } else if (event.data && event.data.type === 'openLink') {
-        // Sichere Link-Behandlung für finAPI und andere Newsletter-Links
-
-        try {
-          // finAPI Tracking-Links und Newsletter-Links sicher öffnen
-          if (event.data.isTracking) {
-          }
-
-          // Link in neuem Tab öffnen mit verbesserter Sicherheit
-          const newWindow = window.open(event.data.url, '_blank', 'noopener,noreferrer');
-
-          if (!newWindow) {
-            // Fallback: Browser-native Link-Handling
-
-            window.location.href = event.data.url;
-          }
-        } catch (error) {
-          // Final fallback: Copy to clipboard
-          navigator.clipboard?.writeText(event.data.url).then(() => {
-            alert(`Link wurde in die Zwischenablage kopiert: ${event.data.url}`);
-          });
-        }
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  // Simple security - remove only scripts
+  const safeHtml = htmlContent
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/on\w+="[^"]*"/gi, '');
 
   return (
-    <iframe
-      srcDoc={sanitizedHTML}
-      style={{
-        width: '100%',
-        height: `${iframeHeight}px`,
-        border: '1px solid #e5e7eb',
-        borderRadius: '6px',
-        backgroundColor: 'white',
-      }}
-      sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation allow-forms allow-downloads allow-modals"
-      title="E-Mail Inhalt"
-      referrerPolicy="no-referrer"
-      loading="lazy"
-    />
+    <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+      <iframe
+        srcDoc={safeHtml}
+        className="w-full border-0"
+        style={{
+          minHeight: '600px',
+          height: '80vh',
+          width: '100%'
+        }}
+        sandbox="allow-same-origin"
+        title="Gmail Style Email - Admin View"
+      />
+    </div>
   );
 }
 

@@ -152,3 +152,17 @@ export const updateAllUserCustomClaims = maintenanceAuth.updateAllUserCustomClai
 export const createB2CPayment = mobileAppPayments.createB2CPayment;
 export const createB2BPayment = mobileAppPayments.createB2BPayment;
 export const createHourlyPayment = mobileAppPayments.createHourlyPayment;
+
+// Gmail Functions
+import * as gmailWebhookModule from './gmail-webhook';
+export const gmailWebhook = gmailWebhookModule.gmailWebhook;
+export const gmailSyncBackup = gmailWebhookModule.gmailSyncBackup;
+export const gmailWatchRenewal = gmailWebhookModule.gmailWatchRenewal;
+
+// Gmail Setup Function
+import { setupGmailWatch } from './setup-gmail-watch';
+export { setupGmailWatch };
+
+// Gmail HTTP Sync Function
+import { gmailSyncHttp } from './gmail-sync-http';
+export { gmailSyncHttp };

@@ -18,7 +18,7 @@ interface UserDetails {
 export const populateChatUserDetails = onDocumentCreated({
     document: "chats/{chatId}",
     region: "europe-west1",
-    memory: "128MiB", // Reduced memory for cost savings
+    memory: "256MiB", // Erhöht von 128MiB wegen Memory-Limit-Überschreitungen
     timeoutSeconds: 60 // Shorter timeout
 }, async (event) => {
     incrementOperationCount();
@@ -62,7 +62,7 @@ export const populateChatUserDetails = onDocumentCreated({
 export const onUserUpdatePropagateToChats = onDocumentUpdated({
     document: "users/{userId}",
     region: "europe-west1",
-    memory: "128MiB",
+    memory: "256MiB", // Erhöht von 128MiB wegen Memory-Limit-Überschreitungen
     timeoutSeconds: 60
 }, async (event) => {
     incrementOperationCount();
@@ -169,7 +169,7 @@ function isSignificantProfileChange(
 export const onChatUpdateManageUserDetails = onDocumentUpdated({
     document: "chats/{chatId}",
     region: "europe-west1", 
-    memory: "128MiB",
+    memory: "256MiB", // Erhöht von 128MiB wegen Memory-Limit-Überschreitungen
     timeoutSeconds: 60
 }, async (event) => {
     incrementOperationCount();
@@ -223,7 +223,7 @@ export const onChatUpdateManageUserDetails = onDocumentUpdated({
 export const onCompanyUpdatePropagateToChats = onDocumentUpdated({
     document: "companies/{companyId}",
     region: "europe-west1",
-    memory: "128MiB", 
+    memory: "256MiB", // Erhöht von 128MiB wegen Memory-Limit-Überschreitungen
     timeoutSeconds: 60
 }, async (event) => {
     incrementOperationCount();
