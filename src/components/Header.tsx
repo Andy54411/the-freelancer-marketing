@@ -89,7 +89,8 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const searchDropdownContainerRef = useRef<HTMLDivElement>(null); // Ref für Such-Dropdown-Container
   const searchInputRef = useRef<HTMLInputElement>(null); // Ref für das Such-Inputfeld
-  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0); // State für ungelesene Nachrichten
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0); // State für ungelesene Nachrichten (Chats)
+  const [unreadEmailsCount, setUnreadEmailsCount] = useState(0); // State für ungelesene E-Mails
   const [recentChats, setRecentChats] = useState<HeaderChatPreview[]>([]); // NEU: State für die letzten Chats
   const inboxHoverTimeout = useRef<NodeJS.Timeout | null>(null); // NEU: Ref für den Hover-Timeout
   const router = useRouter();
@@ -195,6 +196,48 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
       return unsubscribe;
     }
   }, [currentUser, firestoreUserData, subscribeToRecentChats]);
+
+  // 🔔 NEUE EMAIL NOTIFICATIONS: Listener für ungelesene E-Mails
+  useEffect(() => {
+    if (!company?.uid) {
+      setUnreadEmailsCount(0);
+      return;
+    }
+
+    console.log('🔔 Email Notification Listener aktiviert für Company:', company.uid);
+
+    // Listener auf emailCache für ungelesene E-Mails
+    const emailCacheRef = collection(db, 'companies', company.uid, 'emailCache');
+    const unreadEmailsQuery = query(emailCacheRef, where('read', '==', false));
+
+    const unsubscribe = onSnapshot(
+      unreadEmailsQuery,
+      snapshot => {
+        const unreadCount = snapshot.docs.length;
+        console.log(`🔔 Ungelesene E-Mails: ${unreadCount}`);
+        setUnreadEmailsCount(unreadCount);
+
+        // Optional: Browser-Notification wenn neue Email
+        if (unreadCount > 0 && document.hidden) {
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Neue E-Mail erhalten! 📧', {
+              body: `Du hast ${unreadCount} ungelesene E-Mail${unreadCount > 1 ? 's' : ''}`,
+              icon: '/favicon.ico',
+            });
+          }
+        }
+      },
+      error => {
+        console.error('❌ Email notification listener error:', error);
+        setUnreadEmailsCount(0);
+      }
+    );
+
+    return () => {
+      console.log('🔔 Email notification listener: Cleanup');
+      unsubscribe();
+    };
+  }, [company?.uid]);
 
   const loadProfilePictureFromStorage = useCallback(async (uid: string) => {
     if (!uid) {
@@ -513,9 +556,9 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                     <button className="text-gray-600 hover:text-[#14ad9f] p-1">
                       <FiBell size={20} />
                     </button>
-                    {unreadMessagesCount > 0 && (
+                    {(unreadMessagesCount > 0 || unreadEmailsCount > 0) && (
                       <span className="absolute -top-1 -right-1 bg-[#14ad9f] text-white rounded-full px-1.5 py-0.5 text-xs font-medium z-10">
-                        {unreadMessagesCount}
+                        {unreadMessagesCount + unreadEmailsCount}
                       </span>
                     )}
                   </div>

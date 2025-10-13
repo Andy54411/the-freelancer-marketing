@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { 
+import {
   Star,
   Paperclip,
   Archive,
@@ -14,35 +14,35 @@ import {
   ChevronDown,
   RefreshCw,
   Filter,
-  SortDesc
+  SortDesc,
 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { EmailMessage, EmailFilter } from './types';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { formatEmailBody } from '@/lib/emailUtils';
 
 // Helper function to extract sender name/email from different formats
 const getSenderDisplay = (from: any): string => {
   if (!from) return 'Unbekannt';
-  
+
   // Direct object with name/email
   if (typeof from === 'object' && !Array.isArray(from)) {
     return from?.name || from?.email || 'Unbekannt';
   }
-  
+
   // String format
   if (typeof from === 'string') {
     return from;
   }
-  
+
   // Array format
   if (Array.isArray(from) && from.length > 0) {
     const first = from[0];
@@ -51,7 +51,7 @@ const getSenderDisplay = (from: any): string => {
     }
     return first || 'Unbekannt';
   }
-  
+
   return 'Unbekannt';
 };
 
@@ -93,7 +93,7 @@ export function EmailList({
   isLoading = false,
   realtimeStatus,
   isCompact = false,
-  className
+  className,
 }: EmailListProps) {
   const [sortBy, setSortBy] = useState<'date' | 'subject' | 'from'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -110,8 +110,6 @@ export function EmailList({
     }
   }, [emails.length, prevEmailCount]);
 
-
-
   const allSelected = emails.length > 0 && selectedEmails.length === emails.length;
   const someSelected = selectedEmails.length > 0 && selectedEmails.length < emails.length;
 
@@ -119,14 +117,14 @@ export function EmailList({
     onSelectAll(!allSelected);
   };
 
-  const formatEmailDate = (timestamp: any) => {
+  const formatEmailDate = (timestamp: any): { relative: string; absolute: string } => {
     try {
       let date: Date;
-      
+
       if (!timestamp) {
-        return 'Unbekannt';
+        return { relative: 'Unbekannt', absolute: '' };
       }
-      
+
       // Handle Firestore Timestamp objects
       if (timestamp && typeof timestamp === 'object' && timestamp._seconds) {
         date = new Date(timestamp._seconds * 1000);
@@ -148,32 +146,39 @@ export function EmailList({
       // Handle number timestamps
       else if (typeof timestamp === 'number') {
         date = new Date(timestamp);
-      }
-      else {
+      } else {
         console.warn('Unknown timestamp format:', timestamp);
-        return 'Unbekannt';
+        return { relative: 'Unbekannt', absolute: '' };
       }
-      
+
       // Validate the date
       if (isNaN(date.getTime())) {
         console.warn('Invalid timestamp:', timestamp);
-        return 'Unbekannt';
+        return { relative: 'Unbekannt', absolute: '' };
       }
-      
-      return formatDistanceToNow(date, { 
-        addSuffix: true, 
-        locale: de 
+
+      // Relatives Datum (vor X Minuten)
+      const relative = formatDistanceToNow(date, {
+        addSuffix: true,
+        locale: de,
       });
+
+      // Absolutes Datum (13. Okt 2025, 12:34)
+      const absolute = format(date, 'd. MMM yyyy, HH:mm', { locale: de });
+
+      return { relative, absolute };
     } catch (error) {
       console.error('Error formatting date:', error, 'timestamp:', timestamp);
-      return 'Unbekannt';
+      return { relative: 'Unbekannt', absolute: '' };
     }
   };
 
   const getEmailPreview = (email: EmailMessage) => {
     const emailContent = formatEmailBody(email);
     // Use textOnly for clean preview, never HTML
-    return emailContent.textOnly.substring(0, 100) + (emailContent.textOnly.length > 100 ? '...' : '');
+    return (
+      emailContent.textOnly.substring(0, 100) + (emailContent.textOnly.length > 100 ? '...' : '')
+    );
   };
 
   const sortedEmails = [...emails].sort((a, b) => {
@@ -206,12 +211,9 @@ export function EmailList({
   });
 
   return (
-    <Card className={cn("h-[800px] flex flex-col overflow-hidden bg-white", className)}>
+    <Card className={cn('h-[800px] flex flex-col overflow-hidden bg-white', className)}>
       {/* Toolbar - Kompakt oder Normal */}
-      <div className={cn(
-        "border-b bg-gray-50/50 flex-shrink-0",
-        isCompact ? "p-2" : "p-4"
-      )}>
+      <div className={cn('border-b bg-gray-50/50 flex-shrink-0', isCompact ? 'p-2' : 'p-4')}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Checkbox
@@ -219,21 +221,13 @@ export function EmailList({
               onCheckedChange={handleSelectAll}
               className="data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600"
             />
-            
+
             {selectedEmails.length > 0 && !isCompact && (
               <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onArchiveEmails(selectedEmails)}
-                >
+                <Button variant="ghost" size="sm" onClick={() => onArchiveEmails(selectedEmails)}>
                   <Archive className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDeleteEmails(selectedEmails)}
-                >
+                <Button variant="ghost" size="sm" onClick={() => onDeleteEmails(selectedEmails)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -241,26 +235,28 @@ export function EmailList({
           </div>
 
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className={cn(
-              "bg-teal-100 text-teal-800",
-              isCompact ? "text-xs px-2 py-1" : ""
-            )}>
+            <Badge
+              variant="secondary"
+              className={cn('bg-teal-100 text-teal-800', isCompact ? 'text-xs px-2 py-1' : '')}
+            >
               {emails.length} E-Mails
             </Badge>
-            
+
             {/* Real-time Status - nur wenn nicht kompakt */}
             {realtimeStatus && !isCompact && (
               <div className="flex items-center gap-1">
-                <div className={cn(
-                  "w-2 h-2 rounded-full",
-                  realtimeStatus.connected ? "bg-green-500 animate-pulse" : "bg-red-500"
-                )} />
+                <div
+                  className={cn(
+                    'w-2 h-2 rounded-full',
+                    realtimeStatus.connected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+                  )}
+                />
                 <span className="text-xs text-gray-500">
-                  {realtimeStatus.connected ? "Live" : "Offline"}
+                  {realtimeStatus.connected ? 'Live' : 'Offline'}
                 </span>
               </div>
             )}
-            
+
             {!isCompact && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -271,9 +267,7 @@ export function EmailList({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setSortBy('date')}>
-                    Nach Datum
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy('date')}>Nach Datum</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setSortBy('subject')}>
                     Nach Betreff
                   </DropdownMenuItem>
@@ -297,14 +291,14 @@ export function EmailList({
               </Button>
             )}
 
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={onSync}
               disabled={isLoading}
               title="E-Mails aktualisieren"
             >
-              <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+              <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
             </Button>
           </div>
         </div>
@@ -320,8 +314,18 @@ export function EmailList({
         ) : sortedEmails.length === 0 ? (
           <div className="p-8 text-center">
             <div className="text-gray-400 mb-4">
-              <svg className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <svg
+                className="h-16 w-16 mx-auto"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1}
+                  d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
               </svg>
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">Keine E-Mails</h3>
@@ -329,88 +333,104 @@ export function EmailList({
           </div>
         ) : (
           <div className="divide-y">
-            {sortedEmails.map((email) => (
+            {sortedEmails.map(email => (
               <div
                 key={email.id}
                 className={cn(
-                  "group px-4 py-3 hover:bg-gray-50/80 cursor-pointer transition-all duration-150 w-full min-w-0 border-l-2 border-l-transparent",
-                  !email.read && "bg-blue-50/40 border-l-teal-500 hover:bg-blue-50/60",
-                  selectedEmails.includes(email.id) && "bg-teal-50 border-l-teal-600",
-                  email.read && "hover:bg-gray-50"
+                  'group px-2 py-1.5 hover:bg-gray-50/80 cursor-pointer transition-all duration-150 w-full min-w-0 border-l-2 border-l-transparent',
+                  !email.read && 'bg-blue-50/40 border-l-teal-500 hover:bg-blue-50/60',
+                  selectedEmails.includes(email.id) && 'bg-teal-50 border-l-teal-600',
+                  email.read && 'hover:bg-gray-50'
                 )}
                 onClick={() => onEmailClick(email)}
               >
-                <div className="flex items-start gap-3 w-full min-w-0">
+                <div className="flex items-start gap-1.5 w-full min-w-0">
                   <div className="relative">
                     <Checkbox
                       checked={selectedEmails.includes(email.id)}
                       onCheckedChange={() => onSelectEmail(email.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="mt-1.5 data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600 rounded-sm"
+                      onClick={e => e.stopPropagation()}
+                      className="mt-0.5 h-3.5 w-3.5 data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600 rounded-sm"
                     />
                     {!email.read && (
-                      <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-teal-500 rounded-full"></div>
+                      <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-teal-500 rounded-full"></div>
                     )}
                   </div>
-                  
+
                   <Button
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      "p-0 h-auto mt-1.5 hover:bg-transparent",
-                      email.starred ? "text-yellow-500 hover:text-yellow-600" : "text-gray-400 hover:text-gray-500"
+                      'p-0 h-auto mt-0.5 hover:bg-transparent',
+                      email.starred
+                        ? 'text-yellow-500 hover:text-yellow-600'
+                        : 'text-gray-400 hover:text-gray-500'
                     )}
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       onStarEmail(email.id);
                     }}
                   >
-                    <Star className={cn("h-4 w-4", email.starred && "fill-current")} />
+                    <Star className={cn('h-3 w-3', email.starred && 'fill-current')} />
                   </Button>
 
                   <div className="flex-1 min-w-0 overflow-hidden">
-                    <div className="flex items-start justify-between mb-1.5 w-full min-w-0">
-                      <div className="flex-1 min-w-0 pr-2">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={cn(
-                            "text-sm truncate block",
-                            !email.read ? "font-semibold text-gray-900" : "font-medium text-gray-700"
-                          )}>
+                    <div className="flex items-start justify-between w-full min-w-0">
+                      <div className="flex-1 min-w-0 pr-1">
+                        <div className="flex items-center gap-1">
+                          <span
+                            className={cn(
+                              'text-[11px] truncate block leading-tight',
+                              !email.read
+                                ? 'font-semibold text-gray-900'
+                                : 'font-medium text-gray-700'
+                            )}
+                          >
                             {getSenderDisplay(email.from)}
                           </span>
                           {email.attachments && email.attachments.length > 0 && (
-                            <Paperclip className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                            <Paperclip className="h-2.5 w-2.5 text-gray-400 flex-shrink-0" />
                           )}
                           {email.priority === 'high' && (
-                            <Badge variant="destructive" className="text-xs h-4 px-1.5">
-                              Wichtig
+                            <Badge variant="destructive" className="text-[9px] h-3 px-0.5">
+                              !
                             </Badge>
                           )}
                         </div>
-                        
-                        <div className="mb-1">
-                          <span className={cn(
-                            "text-sm truncate block w-full leading-5",
-                            !email.read ? "font-semibold text-gray-900" : "font-medium text-gray-700"
-                          )}>
+
+                        <div className="line-clamp-1">
+                          <span
+                            className={cn(
+                              'text-[11px] leading-tight',
+                              !email.read
+                                ? 'font-semibold text-gray-900'
+                                : 'font-medium text-gray-700'
+                            )}
+                          >
                             {email.subject || '(Kein Betreff)'}
                           </span>
-                        </div>
-                        
-                        <div className={cn(
-                          "text-xs leading-4 truncate w-full",
-                          !email.read ? "text-gray-600" : "text-gray-500"
-                        )}>
-                          {getEmailPreview(email)}
+                          <span
+                            className={cn(
+                              'text-[10px] leading-tight ml-1',
+                              !email.read ? 'text-gray-600' : 'text-gray-500'
+                            )}
+                          >
+                            {getEmailPreview(email)}
+                          </span>
                         </div>
                       </div>
-                      
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        <span className={cn(
-                          "text-xs whitespace-nowrap",
-                          !email.read ? "text-gray-700 font-medium" : "text-gray-500"
-                        )}>
-                          {formatEmailDate(email.timestamp)}
+
+                      <div className="flex flex-col items-end flex-shrink-0 ml-2">
+                        <span
+                          className={cn(
+                            'text-[10px] whitespace-nowrap leading-tight',
+                            !email.read ? 'text-gray-700 font-medium' : 'text-gray-500'
+                          )}
+                        >
+                          {formatEmailDate(email.timestamp).relative}
+                        </span>
+                        <span className="text-[9px] text-gray-400 whitespace-nowrap leading-tight">
+                          {formatEmailDate(email.timestamp).absolute}
                         </span>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -418,7 +438,7 @@ export function EmailList({
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-opacity"
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={e => e.stopPropagation()}
                             >
                               <MoreHorizontal className="h-3.5 w-3.5 text-gray-500" />
                             </Button>
@@ -434,7 +454,7 @@ export function EmailList({
                             <DropdownMenuItem onClick={() => onArchiveEmails([email.id])}>
                               Archivieren
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={() => onDeleteEmails([email.id])}
                               className="text-red-600"
                             >
