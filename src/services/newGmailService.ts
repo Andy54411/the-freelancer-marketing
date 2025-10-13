@@ -382,6 +382,7 @@ export class NewGmailService {
       const emailLines: string[] = [];
 
       // Headers
+      emailLines.push(`From: ${this.config.email}`); // 🔥 CRITICAL: From-Header hinzufügen
       emailLines.push(`To: ${to.join(', ')}`);
       if (cc && cc.length > 0) {
         emailLines.push(`Cc: ${cc.join(', ')}`);

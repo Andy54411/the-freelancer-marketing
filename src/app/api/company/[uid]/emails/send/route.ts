@@ -88,11 +88,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const processedAttachments = attachments
       ? await Promise.all(
           attachments.map(async (file: any) => {
-            // If file is already a Buffer or base64 string
+            // If file has content (base64 string or Buffer from JSON)
             if (file.content) {
+              // Convert base64 string to Buffer if needed
+              const contentBuffer =
+                typeof file.content === 'string'
+                  ? Buffer.from(file.content, 'base64')
+                  : Buffer.from(file.content);
+
               return {
                 filename: file.filename || file.name,
-                content: file.content,
+                content: contentBuffer,
                 mimeType: file.mimeType || file.type || 'application/octet-stream',
               };
             }
