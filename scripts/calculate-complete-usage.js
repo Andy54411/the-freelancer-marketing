@@ -184,6 +184,7 @@ async function calculateFirestoreUsage(companyId) {
     { name: 'timeEntries', isSub: true },
     { name: 'orderTimeTracking', isSub: true },
     { name: 'workspaces', isSub: true },
+    { name: 'emailCache', isSub: true }, // Gmail E-Mail Cache
 
     // Root collections mit companyId Filter
     { name: 'auftraege', isSub: false },

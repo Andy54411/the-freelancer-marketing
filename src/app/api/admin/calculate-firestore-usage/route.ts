@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
       'inlineInvoiceServices',
       'kostenstellen',
       'storage_subscriptions',
+      'emailCache', // Gmail E-Mail Cache
     ];
 
     let totalSize = 0;
