@@ -28,7 +28,7 @@ import {
 } from '@/services/emailIntegrationService';
 
 export default function EmailIntegrationPage() {
-  const { authUser } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -62,15 +62,15 @@ export default function EmailIntegrationPage() {
   });
 
   const loadConfig = async () => {
-    if (!authUser?.uid) {
+    if (!user?.uid) {
       setLoading(false);
       return;
     }
 
-    console.log('[EmailIntegration] Loading config for user:', authUser.uid);
+    console.log('[EmailIntegration] Loading config for user:', user.uid);
     setLoading(true);
     try {
-      const existingConfig = await getEmailConfig(authUser.uid);
+      const existingConfig = await getEmailConfig(user.uid);
 
       if (existingConfig) {
         try {
@@ -113,7 +113,7 @@ export default function EmailIntegrationPage() {
   useEffect(() => {
     loadConfig();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authUser?.uid]);
+  }, [user?.uid]);
 
   const handleProviderChange = (provider: string) => {
     setSelectedProvider(provider);
@@ -139,7 +139,7 @@ export default function EmailIntegrationPage() {
   };
 
   const handleTestConnection = async (type: 'smtp' | 'imap' | 'both') => {
-    if (!authUser?.uid) return;
+    if (!user?.uid) return;
 
     setTesting(true);
     try {
@@ -157,10 +157,10 @@ export default function EmailIntegrationPage() {
 
       if (data.success) {
         toast.success(data.message);
-        await markAsTested(authUser.uid, true);
+        await markAsTested(user.uid, true);
       } else {
         toast.error(data.message);
-        await markAsTested(authUser.uid, false);
+        await markAsTested(user.uid, false);
       }
     } catch (error: any) {
       toast.error(`Verbindungstest fehlgeschlagen: ${error.message}`);
@@ -170,7 +170,7 @@ export default function EmailIntegrationPage() {
   };
 
   const handleSave = async () => {
-    if (!authUser?.uid) return;
+    if (!user?.uid) return;
 
     // Validation
     if (!config.smtp?.host || !config.smtp?.username || !config.smtp?.password) {
@@ -183,7 +183,7 @@ export default function EmailIntegrationPage() {
       // Encrypt passwords
       const configToSave: any = {
         ...config,
-        companyId: authUser.uid,
+        companyId: user.uid,
         smtp: {
           ...config.smtp,
           password: encryptPassword(config.smtp.password),
@@ -210,7 +210,7 @@ export default function EmailIntegrationPage() {
   };
 
   const handleSync = async () => {
-    if (!authUser?.uid) return;
+    if (!user?.uid) return;
 
     toast.info('E-Mail-Synchronisation gestartet...');
 
@@ -219,7 +219,7 @@ export default function EmailIntegrationPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          companyId: authUser.uid,
+          companyId: user.uid,
           limit: 50,
         }),
       });

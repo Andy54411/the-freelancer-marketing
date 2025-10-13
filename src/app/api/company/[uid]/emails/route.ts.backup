@@ -1,0 +1,153 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db, withFirebase } from '@/firebase/server';
+import { NewGmailService } from '@/services/newGmailService';
+
+// Rate limiting: Prevent multiple simultaneous calls
+const ongoingRequests = new Map<string, Promise<any>>();
+
+// Global rate limiting für Gmail API calls
+const ongoingGmailCalls = new Map<string, Promise<any>>();
+
+// Fallback: Load emails from Firestore cache
+async function loadFromFirestore(uid: string, folder: string, limit: number, offset: number): Promise<any[]> {
+  return await withFirebase(async () => {
+    try {
+      // Einheitliche E-Mail-Collection verwenden (emailCache als primäre Quelle)
+      const emailSnapshot = await db!
+        .collection('companies')
+        .doc(uid)
+        .collection('emailCache')
+        .where('folder.id', '==', folder)
+        .limit(limit)
+        .get();
+
+      const emails = emailSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      console.log(`📱 Loaded ${emails.length} emails from unified emailCache for folder ${folder}`);
+      return emails.sort((a: any, b: any) => 
+        new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()
+      );
+    } catch (error) {
+      console.error('Error loading from Firestore:', error);
+      return [];
+    }
+  });
+}
+
+// GET - E-Mails abrufen
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ uid: string }> }
+) {
+  try {
+    const { uid } = await params;
+    const { searchParams } = new URL(request.url);
+    const folder = searchParams.get('folder') || 'inbox';
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = parseInt(searchParams.get('offset') || '0');
+    const useGmail = searchParams.get('source') !== 'firestore'; // Default: Gmail verwenden
+    
+    // Rate limiting key (vereinfacht - nur User+Folder, nicht Limit/Offset)
+    const requestKey = `${uid}-${folder}`;
+    
+    // If ANY request for this user+folder is already ongoing, wait for it
+    if (ongoingRequests.has(requestKey)) {
+      console.log(`⏳ RATE LIMIT: Waiting for ongoing request ${requestKey} (limit=${limit}, offset=${offset})`);
+      const existingData = await ongoingRequests.get(requestKey);
+      // Return fresh NextResponse with the cached data
+      return NextResponse.json(existingData);
+    }
+    
+    // Create the request promise that returns DATA (not NextResponse)
+    const requestPromise = (async () => {
+      let emails: any[] = [];
+      let unreadCount = 0;
+      let source = 'unknown';
+
+    // Versuche echte Gmail API zu verwenden
+    try {
+      const gmailConfig = await NewGmailService.getGmailConfig(uid);
+      
+      if (gmailConfig?.tokens?.refresh_token && gmailConfig.tokens.refresh_token !== 'invalid') {
+        console.log(`📧 Using Gmail API for company ${uid}`);
+        
+        const gmailService = new NewGmailService(gmailConfig, uid);
+        const gmailEmails = await gmailService.getEmails(folder, limit);
+        
+        emails = gmailEmails;
+        unreadCount = emails.filter((email: any) => !email.read).length;
+        source = 'gmail';
+        
+        console.log(`✅ Loaded ${emails.length} emails from Gmail API`);
+      } else {
+        throw new Error('No valid Gmail tokens');
+      }
+    } catch (gmailError) {
+      console.error('Gmail API error, falling back to Firestore:', gmailError);
+      
+      // Fallback zu Firestore
+      emails = await loadFromFirestore(uid, folder, limit, offset);
+      unreadCount = emails.filter((email: any) => !email.read).length;
+      source = 'firestore';
+      
+      console.log(`📦 Loaded ${emails.length} emails from Firestore fallback`);
+    }
+
+      // Return DATA, not NextResponse
+      return {
+        emails,
+        count: emails.length,
+        unreadCount,
+        folder,
+        source: source || 'unknown'
+      };
+    })();
+    
+    // Store the promise
+    ongoingRequests.set(requestKey, requestPromise);
+    
+    try {
+      const data = await requestPromise;
+      return NextResponse.json(data);
+    } finally {
+      // Clean up
+      ongoingRequests.delete(requestKey);
+    }
+    
+  } catch (error) {
+    console.error('Fehler beim Abrufen der E-Mails:', error);
+    // Clean up if requestKey exists
+    const { uid } = await params;
+    const { searchParams } = new URL(request.url);
+    const folder = searchParams.get('folder') || 'inbox';
+    const requestKey = `${uid}-${folder}`;
+    ongoingRequests.delete(requestKey);
+    
+    // Handle special error types
+    if (error instanceof Error) {
+      if (error.message.startsWith('AUTH_REQUIRED:')) {
+        return NextResponse.json({ 
+          error: 'Gmail authentication required', 
+          details: error.message.replace('AUTH_REQUIRED:', ''),
+          requiresAuth: true
+        }, { status: 401 });
+      }
+      
+      if (error.message.startsWith('GMAIL_API_ERROR:')) {
+        return NextResponse.json({ 
+          error: 'Gmail API authentication failed', 
+          details: error.message.replace('GMAIL_API_ERROR:', '')
+        }, { status: 401 });
+      }
+    }
+    
+    return NextResponse.json(
+      { message: 'Fehler beim Abrufen der E-Mails', error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
+

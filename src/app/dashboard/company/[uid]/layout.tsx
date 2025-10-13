@@ -366,24 +366,31 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
           {/* Main Content */}
           <main className="flex-1">
-            <div className="py-6">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-                <div className="mb-8">
-                  <div className="flex items-center space-x-2">
-                    <HeaderIcon className="h-6 w-6 text-gray-600" />
-                    <h1 className="text-2xl font-bold text-gray-900">{getHeaderLabel()}</h1>
-                    <span className="text-sm text-gray-500">
-                      {companyDataForHeader?.companyName}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Admin Approval Status Banner */}
-                <AdminApprovalStatus companyId={uid} className="mb-6" />
-
+            {/* Email Integration und Emails bekommen volle Breite */}
+            {pathname?.includes('/email-integration') || pathname?.includes('/emails') ? (
+              <div className="h-full w-full">
                 {children}
               </div>
-            </div>
+            ) : (
+              <div className="py-6">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+                  <div className="mb-8">
+                    <div className="flex items-center space-x-2">
+                      <HeaderIcon className="h-6 w-6 text-gray-600" />
+                      <h1 className="text-2xl font-bold text-gray-900">{getHeaderLabel()}</h1>
+                      <span className="text-sm text-gray-500">
+                        {companyDataForHeader?.companyName}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Admin Approval Status Banner */}
+                  <AdminApprovalStatus companyId={uid} className="mb-6" />
+
+                  {children}
+                </div>
+              </div>
+            )}
           </main>
         </div>
       </div>

@@ -33,7 +33,7 @@ interface QuoteNotification {
 export const onQuoteCreated = onDocumentCreated({
   document: 'quotes/{quoteId}',
   region: "europe-west1",
-  memory: "128MiB",
+  memory: "256MiB", // Erhöht von 128MiB wegen Memory-Limit-Überschreitungen
   timeoutSeconds: 60
 }, async (event: FirestoreEvent<QueryDocumentSnapshot | undefined, { quoteId: string }>) => {
   incrementOperationCount();

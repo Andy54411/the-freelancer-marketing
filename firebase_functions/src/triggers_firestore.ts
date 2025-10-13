@@ -94,7 +94,7 @@ interface FirmaUserData {
 export const createUserProfile = onDocumentCreated({
   document: "users/{userId}",
   region: "europe-west1",
-  memory: "128MiB",
+  memory: "256MiB", // Erhöht von 128MiB wegen Memory-Limit-Überschreitungen
   timeoutSeconds: 60
 }, async (event) => {
   incrementOperationCount();
@@ -205,7 +205,7 @@ export const createCompanyProfile = onDocumentCreated({
 export const updateUserProfile = onDocumentUpdated({
   document: "users/{userId}",
   region: "europe-west1",
-  memory: "128MiB",
+  memory: "256MiB", // Erhöht von 128MiB wegen Memory-Limit-Überschreitungen
   timeoutSeconds: 60
 }, async (event) => {
   incrementOperationCount();

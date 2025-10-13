@@ -10,6 +10,7 @@ import {
   MessageSquare as FiMessageSquare,
   DollarSign as FiDollarSign,
   Mail as FiMail,
+  Send as FiSend,
   ClipboardList as FiClipboardList,
   ChevronDown as FiChevronDown,
   ChevronRight as FiChevronRight,
@@ -110,6 +111,19 @@ const navigationItems: NavigationItem[] = [
     icon: FiCalendar,
     value: 'calendar',
     href: 'calendar',
+  },
+  {
+    label: 'E-Mail',
+    icon: FiSend,
+    value: 'email',
+    href: 'emails',
+    subItems: [
+      { label: 'Posteingang', value: 'email-inbox', href: 'emails?folder=inbox' },
+      { label: 'Gesendet', value: 'email-sent', href: 'emails?folder=sent' },
+      { label: 'Entwürfe', value: 'email-drafts', href: 'emails?folder=drafts' },
+      { label: 'Spam', value: 'email-spam', href: 'emails?folder=spam' },
+      { label: 'Papierkorb', value: 'email-trash', href: 'emails?folder=trash' },
+    ],
   },
   {
     label: 'Rechnungen',
@@ -236,7 +250,7 @@ const navigationItems: NavigationItem[] = [
       { label: 'Auszahlungen', value: 'settings-payouts' },
       { label: 'Storno-Einstellungen', value: 'settings-storno', href: 'settings/storno' },
       { label: 'Textvorlagen', value: 'settings-textvorlagen', href: 'settings/textvorlagen' },
-      { label: 'E-Mail Integration', value: 'settings-email', href: 'settings/email-integration' },
+      { label: 'E-Mail Integration', value: 'settings-email', href: 'email-integration' },
     ],
   },
 ];
@@ -509,6 +523,29 @@ export default function CompanySidebar({
                   {/* Sub Items */}
                   {hasSubItems && isItemExpanded && (
                     <div className="ml-6 mt-1 space-y-1">
+                      {/* E-Mail spezifische Elemente */}
+                      {item.value === 'email' && (
+                        <>
+                          {/* Neue E-Mail Button */}
+                          <button
+                            onClick={() => onNavigate('email-compose', 'emails?compose=true')}
+                            className="bg-teal-600 hover:bg-teal-700 text-white group flex items-center justify-center px-3 py-2 text-sm font-medium rounded-md w-full transition-colors mb-3"
+                          >
+                            <FiUserPlus className="mr-2 h-4 w-4" />
+                            Neue E-Mail
+                          </button>
+
+                          {/* E-Mail Suchfeld */}
+                          <div className="relative mb-3">
+                            <input
+                              type="text"
+                              placeholder="E-Mails durchsuchen..."
+                              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                            />
+                          </div>
+                        </>
+                      )}
+
                       {item.subItems?.map(subItem => {
                         const isSubActive = isSubItemActive(subItem);
 
@@ -526,13 +563,48 @@ export default function CompanySidebar({
                               isSubActive
                                 ? 'bg-[#14ad9f] text-white'
                                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                            } group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
+                            } group flex items-center justify-between px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
                           >
-                            <FiChevronRight className="mr-2 h-4 w-4" />
-                            {subItem.label}
+                            <div className="flex items-center">
+                              <FiChevronRight className="mr-2 h-4 w-4" />
+                              {subItem.label}
+                            </div>
+                            {/* E-Mail Zähler */}
+                            {item.value === 'email' && (
+                              <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-full">
+                                0
+                              </span>
+                            )}
                           </button>
                         );
                       })}
+
+                      {/* E-Mail Quick Actions */}
+                      {item.value === 'email' && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <button
+                            onClick={() => onNavigate('email-favorites', 'emails?folder=starred')}
+                            className="text-gray-500 hover:bg-gray-50 hover:text-gray-700 group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors"
+                          >
+                            <FiChevronRight className="mr-2 h-4 w-4" />
+                            Favoriten
+                          </button>
+                          <button
+                            onClick={() => onNavigate('email-archive', 'emails?folder=archived')}
+                            className="text-gray-500 hover:bg-gray-50 hover:text-gray-700 group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors"
+                          >
+                            <FiChevronRight className="mr-2 h-4 w-4" />
+                            Archiv
+                          </button>
+                          <button
+                            onClick={() => onNavigate('email-settings', 'email-integration')}
+                            className="text-gray-500 hover:bg-gray-50 hover:text-gray-700 group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors"
+                          >
+                            <FiChevronRight className="mr-2 h-4 w-4" />
+                            Einstellungen
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 
