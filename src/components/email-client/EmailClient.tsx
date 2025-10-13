@@ -3,7 +3,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { db } from '@/firebase/clients';
-import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  doc,
+  updateDoc,
+  writeBatch,
+} from 'firebase/firestore';
 import { EmailList } from './EmailList';
 import { EmailViewer } from './EmailViewer';
 import { EmailCompose } from './EmailCompose';
@@ -290,7 +300,8 @@ export function EmailClient({
 
     // DIREKTE Verbindung zur emailCache Collection
     const emailCacheRef = collection(db, 'companies', companyId, 'emailCache');
-    const emailQuery = query(emailCacheRef, orderBy('timestamp', 'desc'));
+    // WICHTIG: Sortiere nach internalDate (Gmail Original), NICHT nach timestamp (Firestore Update-Zeit)!
+    const emailQuery = query(emailCacheRef, orderBy('internalDate', 'desc'));
 
     const unsubscribe = onSnapshot(
       emailQuery,
@@ -305,11 +316,12 @@ export function EmailClient({
           return {
             id: doc.id,
             ...data,
-            // Timestamp conversion
-            timestamp: data.timestamp?._seconds
-              ? data.timestamp._seconds * 1000
-              : data.internalDate
-                ? parseInt(data.internalDate)
+            // WICHTIG: Verwende IMMER internalDate (Original Gmail Timestamp)
+            // NICHT das Firestore timestamp, das sich beim Update ändern kann!
+            timestamp: data.internalDate
+              ? parseInt(data.internalDate)
+              : data.timestamp?._seconds
+                ? data.timestamp._seconds * 1000
                 : Date.now(),
           } as unknown as EmailMessage;
         });
@@ -706,43 +718,25 @@ export function EmailClient({
 
   const handleMarkAsRead = async (emailIds: string[], read: boolean) => {
     try {
-      // TODO: Implement new mark-read email API
-      console.log('Mark-read email not implemented in new API yet');
-      return;
-      const response = await fetch(`/api/company/${companyId}/emails/mark-read`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailIds, read }),
+      console.log(`📧 Marking ${emailIds.length} email(s) as ${read ? 'read' : 'unread'}`);
+
+      // WICHTIG: Wir updaten NUR das 'read' Feld, NICHT das 'timestamp'!
+      // Das verhindert, dass Emails beim Lesen neu sortiert werden
+      const batch = writeBatch(db);
+
+      emailIds.forEach(emailId => {
+        const emailRef = doc(db, 'companies', companyId, 'emailCache', emailId);
+        // NUR das read-Feld updaten - kein merge, kein timestamp update
+        batch.update(emailRef, { read: read });
       });
 
-      if (response.ok) {
-        setEmails(prev => prev.map(e => (emailIds.includes(e.id) ? { ...e, read } : e)));
+      await batch.commit();
+      console.log(
+        `✅ Successfully marked ${emailIds.length} email(s) as ${read ? 'read' : 'unread'}`
+      );
 
-        // @ts-ignore - selectedEmail is checked
-        if (selectedEmail && selectedEmail.id && emailIds.includes(selectedEmail.id)) {
-          setSelectedEmail(prev => (prev ? { ...prev, read } : null));
-        }
-      } else if (response.status === 403) {
-        const errorData = await response.json();
-        if (errorData.error === 'insufficient_scope') {
-          // Gmail Berechtigung unzureichend - zeige Re-Autorisierungs-Dialog
-          const shouldReconnect = confirm(
-            'Gmail-Berechtigung unzureichend für diese Aktion.\n\n' +
-              'Möchten Sie Gmail mit erweiterten Berechtigungen erneut verbinden?'
-          );
-
-          if (shouldReconnect) {
-            // Get Gmail connect URL from new API
-            const connectResponse = await fetch(`/api/gmail/connect?uid=${companyId}`);
-            const connectData = await connectResponse.json();
-            if (connectData.authUrl) {
-              window.location.href = connectData.authUrl;
-            }
-          }
-        } else {
-          console.error('Fehler beim Markieren:', errorData.message);
-        }
-      }
+      // NICHT den local state updaten! Der Firestore Listener macht das automatisch
+      // und behält die korrekte Sortierung bei
     } catch (error) {
       console.error('Fehler beim Markieren als gelesen/ungelesen:', error);
     }

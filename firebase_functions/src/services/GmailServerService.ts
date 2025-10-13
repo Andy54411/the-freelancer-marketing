@@ -21,6 +21,10 @@ export interface GmailEmail {
   subject: string;
   body: string;
   htmlBody?: string;
+  // KRITISCH: internalDate ist Gmail's ORIGINAL unveränderlicher Timestamp
+  // String format: Millisekunden seit Unix Epoch (z.B. "1697123456789")
+  // Wird verwendet für die Sortierung (NIEMALS ändern nach dem Speichern!)
+  internalDate: string;
   receivedAt: Date;
   read: boolean;
   starred: boolean;
@@ -394,6 +398,8 @@ export class GmailServerService {
       subject: getHeader('Subject'),
       body,
       htmlBody: htmlBody || undefined,
+      // KRITISCH: internalDate ist Gmail's ORIGINAL unveränderlicher Timestamp (als String)
+      internalDate: message.internalDate, // String mit Millisekunden seit Epoch
       receivedAt: new Date(parseInt(message.internalDate)),
       read: !message.labelIds?.includes('UNREAD'),
       starred: message.labelIds?.includes('STARRED') || false,

@@ -200,21 +200,29 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
   // 🔔 NEUE EMAIL NOTIFICATIONS: Listener für ungelesene E-Mails
   useEffect(() => {
     if (!company?.uid) {
+      console.log('🔔 Email Notification Listener NICHT aktiviert - keine Company UID:', company);
       setUnreadEmailsCount(0);
       return;
     }
 
     console.log('🔔 Email Notification Listener aktiviert für Company:', company.uid);
+    console.log('🔔 Collection Path:', `companies/${company.uid}/emailCache`);
 
-    // Listener auf emailCache für ungelesene E-Mails
+    // Listener auf emailCache - ALLE Emails laden, dann filtern (kein Index nötig)
     const emailCacheRef = collection(db, 'companies', company.uid, 'emailCache');
-    const unreadEmailsQuery = query(emailCacheRef, where('read', '==', false));
 
     const unsubscribe = onSnapshot(
-      unreadEmailsQuery,
+      emailCacheRef,
       snapshot => {
-        const unreadCount = snapshot.docs.length;
-        console.log(`🔔 Ungelesene E-Mails: ${unreadCount}`);
+        // Filtere im Code nach ungelesenen Emails
+        const unreadEmails = snapshot.docs.filter(doc => {
+          const data = doc.data();
+          // Prüfe read-Status: false oder undefined = ungelesen
+          return data.read === false || data.read === undefined;
+        });
+
+        const unreadCount = unreadEmails.length;
+        console.log(`🔔 Ungelesene E-Mails: ${unreadCount} von ${snapshot.docs.length} gesamt`);
         setUnreadEmailsCount(unreadCount);
 
         // Optional: Browser-Notification wenn neue Email

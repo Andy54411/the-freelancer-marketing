@@ -558,6 +558,10 @@ async function saveEmailsToFirestore(userEmail: string, emails: any[]): Promise<
             from: email.from ? (Array.isArray(email.from) ? email.from.join(', ').substring(0, 500) : email.from.substring(0, 500)) : '',
             to: email.to ? (Array.isArray(email.to) ? email.to.join(', ').substring(0, 500) : email.to.substring(0, 500)) : '',
             date: email.date || '',
+            // KRITISCH: internalDate ist Gmail's ORIGINALER unveränderlicher Timestamp!
+            // Wird NUR beim ersten Speichern gesetzt, NIEMALS danach geändert
+            internalDate: email.internalDate || email.receivedAt || Date.now().toString(),
+            // timestamp ist für Firestore Operationen (kann sich ändern)
             timestamp: email.receivedAt || new Date(),
             body: email.body ? email.body.substring(0, 50000) : '', // Limit 50KB
             htmlBody: email.htmlBody ? email.htmlBody.substring(0, 50000) : '', // Limit 50KB
