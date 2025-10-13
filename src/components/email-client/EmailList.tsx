@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -55,6 +55,248 @@ const getSenderDisplay = (from: any): string => {
   return 'Unbekannt';
 };
 
+// ===== MEMOIZED EMAIL ITEM COMPONENT =====
+// Diese Komponente wird nur neu gerendert, wenn sich ihre Props ändern
+// NICHT bei jedem Firestore-Update der Liste!
+interface EmailItemProps {
+  email: EmailMessage;
+  isSelected: boolean;
+  onSelect: (emailId: string) => void;
+  onClick: (email: EmailMessage) => void;
+  onStar: (emailId: string) => void;
+  onMarkAsRead: (emailIds: string[], read: boolean) => void;
+  onArchive: (emailIds: string[]) => void;
+  onDelete: (emailIds: string[]) => void;
+}
+
+const EmailItem = memo(
+  ({
+    email,
+    isSelected,
+    onSelect,
+    onClick,
+    onStar,
+    onMarkAsRead,
+    onArchive,
+    onDelete,
+  }: EmailItemProps) => {
+    // DEBUG: Log wenn diese Email-Item-Komponente neu rendert
+    console.log(
+      `🔄 [EmailItem] Rendering: ${email.subject?.substring(0, 30)} | read: ${email.read} | selected: ${isSelected}`
+    );
+
+    const formatEmailDate = (timestamp: any): { relative: string; absolute: string } => {
+      try {
+        let date: Date;
+
+        // Handle Firestore Timestamp objects
+        if (timestamp && typeof timestamp === 'object' && '_seconds' in timestamp) {
+          date = new Date(timestamp._seconds * 1000);
+        }
+        // Handle string timestamps
+        else if (typeof timestamp === 'string') {
+          // Check if it's a Gmail internal date (milliseconds since epoch)
+          if (/^\d+$/.test(timestamp)) {
+            date = new Date(parseInt(timestamp));
+          } else {
+            // Try parsing as ISO string or other formats
+            date = new Date(timestamp);
+          }
+        }
+        // Handle Date objects
+        else if (timestamp instanceof Date) {
+          date = timestamp;
+        }
+        // Handle number timestamps
+        else if (typeof timestamp === 'number') {
+          date = new Date(timestamp);
+        } else {
+          return { relative: 'Unbekannt', absolute: '' };
+        }
+
+        // Validate the date
+        if (isNaN(date.getTime())) {
+          return { relative: 'Unbekannt', absolute: '' };
+        }
+
+        // Relatives Datum (vor X Minuten)
+        const relative = formatDistanceToNow(date, {
+          addSuffix: true,
+          locale: de,
+        });
+
+        // Absolutes Datum (13. Okt 2025, 12:34)
+        const absolute = format(date, 'd. MMM yyyy, HH:mm', { locale: de });
+
+        return { relative, absolute };
+      } catch (error) {
+        return { relative: 'Unbekannt', absolute: '' };
+      }
+    };
+
+    const getEmailPreview = (email: EmailMessage) => {
+      const emailContent = formatEmailBody(email);
+      return (
+        emailContent.textOnly.substring(0, 100) + (emailContent.textOnly.length > 100 ? '...' : '')
+      );
+    };
+
+    return (
+      <div
+        className={cn(
+          'group px-2 py-1.5 hover:bg-gray-50/80 cursor-pointer transition-all duration-150 w-full min-w-0 border-l-2 border-l-transparent',
+          !email.read && 'bg-blue-50/40 border-l-teal-500 hover:bg-blue-50/60',
+          isSelected && 'bg-teal-50 border-l-teal-600',
+          email.read && 'hover:bg-gray-50'
+        )}
+        onClick={() => onClick(email)}
+      >
+        <div className="flex items-start gap-1.5 w-full min-w-0">
+          <div className="relative">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onSelect(email.id)}
+              onClick={e => e.stopPropagation()}
+              className="mt-0.5 h-3.5 w-3.5 data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600 rounded-sm"
+            />
+            {!email.read && (
+              <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-teal-500 rounded-full"></div>
+            )}
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              'p-0 h-auto mt-0.5 hover:bg-transparent',
+              email.starred
+                ? 'text-yellow-500 hover:text-yellow-600'
+                : 'text-gray-400 hover:text-gray-500'
+            )}
+            onClick={e => {
+              e.stopPropagation();
+              onStar(email.id);
+            }}
+          >
+            <Star className={cn('h-3 w-3', email.starred && 'fill-current')} />
+          </Button>
+
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <div className="flex items-start justify-between w-full min-w-0">
+              <div className="flex-1 min-w-0 pr-1">
+                <div className="flex items-center gap-1">
+                  <span
+                    className={cn(
+                      'text-[11px] truncate block leading-tight',
+                      !email.read ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'
+                    )}
+                  >
+                    {getSenderDisplay(email.from)}
+                  </span>
+                  {email.attachments && email.attachments.length > 0 && (
+                    <Paperclip className="h-2.5 w-2.5 text-gray-400 flex-shrink-0" />
+                  )}
+                  {email.priority === 'high' && (
+                    <Badge variant="destructive" className="text-[9px] h-3 px-0.5">
+                      !
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="line-clamp-1">
+                  <span
+                    className={cn(
+                      'text-[11px] leading-tight',
+                      !email.read ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'
+                    )}
+                  >
+                    {email.subject || '(Kein Betreff)'}
+                  </span>
+                  <span
+                    className={cn(
+                      'text-[10px] leading-tight ml-1',
+                      !email.read ? 'text-gray-600' : 'text-gray-500'
+                    )}
+                  >
+                    {getEmailPreview(email)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-end flex-shrink-0 ml-2">
+                <span
+                  className={cn(
+                    'text-[10px] whitespace-nowrap leading-tight',
+                    !email.read ? 'text-gray-700 font-medium' : 'text-gray-500'
+                  )}
+                >
+                  {formatEmailDate(email.timestamp).relative}
+                </span>
+                <span className="text-[9px] text-gray-400 whitespace-nowrap leading-tight">
+                  {formatEmailDate(email.timestamp).absolute}
+                </span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-opacity"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <MoreHorizontal className="h-3.5 w-3.5 text-gray-500" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => onMarkAsRead([email.id], !email.read)}>
+                      {email.read ? 'Als ungelesen markieren' : 'Als gelesen markieren'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onStar(email.id)}>
+                      {email.starred ? 'Stern entfernen' : 'Mit Stern markieren'}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => onArchive([email.id])}>
+                      Archivieren
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onDelete([email.id])} className="text-red-600">
+                      Löschen
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison: Nur neu rendern wenn sich relevante Props ändern
+    const shouldSkipRerender =
+      prevProps.email.id === nextProps.email.id &&
+      prevProps.email.read === nextProps.email.read &&
+      prevProps.email.starred === nextProps.email.starred &&
+      prevProps.isSelected === nextProps.isSelected;
+
+    // DEBUG: Log Memoization-Entscheidungen
+    if (!shouldSkipRerender) {
+      console.log(
+        `⚡ [EmailItem] Re-render erlaubt für: ${nextProps.email.subject?.substring(0, 30)}`,
+        {
+          readChanged: prevProps.email.read !== nextProps.email.read,
+          starredChanged: prevProps.email.starred !== nextProps.email.starred,
+          selectedChanged: prevProps.isSelected !== nextProps.isSelected,
+        }
+      );
+    }
+
+    return shouldSkipRerender;
+  }
+);
+
+EmailItem.displayName = 'EmailItem';
+
+// ===== END MEMOIZED EMAIL ITEM =====
+
 interface EmailListProps {
   emails: EmailMessage[];
   selectedEmails: string[];
@@ -102,13 +344,20 @@ export function EmailList({
   // Log email count changes
   useEffect(() => {
     if (emails.length !== prevEmailCount) {
-      console.log(`📊 EmailList: E-Mail-Anzahl geändert von ${prevEmailCount} zu ${emails.length}`);
+      console.log(
+        `📊 [EmailList] E-Mail-Anzahl geändert von ${prevEmailCount} zu ${emails.length}`
+      );
       if (emails.length > prevEmailCount) {
-        console.log(`📬 ${emails.length - prevEmailCount} neue E-Mail(s) in der Liste!`);
+        console.log(
+          `📬 [EmailList] ${emails.length - prevEmailCount} neue E-Mail(s) in der Liste!`
+        );
       }
       setPrevEmailCount(emails.length);
     }
   }, [emails.length, prevEmailCount]);
+
+  // DEBUG: Log wenn die komplette Liste neu rendert
+  console.log(`📋 [EmailList] Main component rendering with ${emails.length} emails`);
 
   const allSelected = emails.length > 0 && selectedEmails.length === emails.length;
   const someSelected = selectedEmails.length > 0 && selectedEmails.length < emails.length;
@@ -334,139 +583,17 @@ export function EmailList({
         ) : (
           <div className="divide-y">
             {sortedEmails.map(email => (
-              <div
+              <EmailItem
                 key={email.id}
-                className={cn(
-                  'group px-2 py-1.5 hover:bg-gray-50/80 cursor-pointer transition-all duration-150 w-full min-w-0 border-l-2 border-l-transparent',
-                  !email.read && 'bg-blue-50/40 border-l-teal-500 hover:bg-blue-50/60',
-                  selectedEmails.includes(email.id) && 'bg-teal-50 border-l-teal-600',
-                  email.read && 'hover:bg-gray-50'
-                )}
-                onClick={() => onEmailClick(email)}
-              >
-                <div className="flex items-start gap-1.5 w-full min-w-0">
-                  <div className="relative">
-                    <Checkbox
-                      checked={selectedEmails.includes(email.id)}
-                      onCheckedChange={() => onSelectEmail(email.id)}
-                      onClick={e => e.stopPropagation()}
-                      className="mt-0.5 h-3.5 w-3.5 data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600 rounded-sm"
-                    />
-                    {!email.read && (
-                      <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-teal-500 rounded-full"></div>
-                    )}
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      'p-0 h-auto mt-0.5 hover:bg-transparent',
-                      email.starred
-                        ? 'text-yellow-500 hover:text-yellow-600'
-                        : 'text-gray-400 hover:text-gray-500'
-                    )}
-                    onClick={e => {
-                      e.stopPropagation();
-                      onStarEmail(email.id);
-                    }}
-                  >
-                    <Star className={cn('h-3 w-3', email.starred && 'fill-current')} />
-                  </Button>
-
-                  <div className="flex-1 min-w-0 overflow-hidden">
-                    <div className="flex items-start justify-between w-full min-w-0">
-                      <div className="flex-1 min-w-0 pr-1">
-                        <div className="flex items-center gap-1">
-                          <span
-                            className={cn(
-                              'text-[11px] truncate block leading-tight',
-                              !email.read
-                                ? 'font-semibold text-gray-900'
-                                : 'font-medium text-gray-700'
-                            )}
-                          >
-                            {getSenderDisplay(email.from)}
-                          </span>
-                          {email.attachments && email.attachments.length > 0 && (
-                            <Paperclip className="h-2.5 w-2.5 text-gray-400 flex-shrink-0" />
-                          )}
-                          {email.priority === 'high' && (
-                            <Badge variant="destructive" className="text-[9px] h-3 px-0.5">
-                              !
-                            </Badge>
-                          )}
-                        </div>
-
-                        <div className="line-clamp-1">
-                          <span
-                            className={cn(
-                              'text-[11px] leading-tight',
-                              !email.read
-                                ? 'font-semibold text-gray-900'
-                                : 'font-medium text-gray-700'
-                            )}
-                          >
-                            {email.subject || '(Kein Betreff)'}
-                          </span>
-                          <span
-                            className={cn(
-                              'text-[10px] leading-tight ml-1',
-                              !email.read ? 'text-gray-600' : 'text-gray-500'
-                            )}
-                          >
-                            {getEmailPreview(email)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-end flex-shrink-0 ml-2">
-                        <span
-                          className={cn(
-                            'text-[10px] whitespace-nowrap leading-tight',
-                            !email.read ? 'text-gray-700 font-medium' : 'text-gray-500'
-                          )}
-                        >
-                          {formatEmailDate(email.timestamp).relative}
-                        </span>
-                        <span className="text-[9px] text-gray-400 whitespace-nowrap leading-tight">
-                          {formatEmailDate(email.timestamp).absolute}
-                        </span>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-opacity"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <MoreHorizontal className="h-3.5 w-3.5 text-gray-500" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => onMarkAsRead([email.id], !email.read)}>
-                              {email.read ? 'Als ungelesen markieren' : 'Als gelesen markieren'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onStarEmail(email.id)}>
-                              {email.starred ? 'Stern entfernen' : 'Mit Stern markieren'}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => onArchiveEmails([email.id])}>
-                              Archivieren
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => onDeleteEmails([email.id])}
-                              className="text-red-600"
-                            >
-                              Löschen
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                email={email}
+                isSelected={selectedEmails.includes(email.id)}
+                onSelect={onSelectEmail}
+                onClick={onEmailClick}
+                onStar={onStarEmail}
+                onMarkAsRead={onMarkAsRead}
+                onArchive={onArchiveEmails}
+                onDelete={onDeleteEmails}
+              />
             ))}
           </div>
         )}
@@ -474,3 +601,31 @@ export function EmailList({
     </Card>
   );
 }
+
+// ===== MEMOIZE THE ENTIRE EMAIL LIST =====
+// Verhindert unnötige Re-Renders der gesamten Liste
+export const MemoizedEmailList = memo(EmailList, (prevProps, nextProps) => {
+  // Nur neu rendern wenn sich relevante Props ändern
+  const shouldSkipRerender =
+    prevProps.emails.length === nextProps.emails.length &&
+    prevProps.selectedEmails.length === nextProps.selectedEmails.length &&
+    prevProps.isLoading === nextProps.isLoading &&
+    prevProps.filter === nextProps.filter &&
+    prevProps.isCompact === nextProps.isCompact &&
+    // Prüfe ob sich die emails-Array-Referenz geändert hat
+    prevProps.emails === nextProps.emails &&
+    prevProps.selectedEmails === nextProps.selectedEmails;
+
+  if (!shouldSkipRerender) {
+    console.log(`⚡ [EmailList] Re-render erlaubt:`, {
+      emailsChanged: prevProps.emails !== nextProps.emails,
+      emailCountChanged: prevProps.emails.length !== nextProps.emails.length,
+      selectedChanged: prevProps.selectedEmails !== nextProps.selectedEmails,
+      loadingChanged: prevProps.isLoading !== nextProps.isLoading,
+    });
+  }
+
+  return shouldSkipRerender;
+});
+
+MemoizedEmailList.displayName = 'MemoizedEmailList';

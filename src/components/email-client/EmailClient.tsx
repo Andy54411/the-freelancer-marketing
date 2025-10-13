@@ -14,7 +14,7 @@ import {
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
-import { EmailList } from './EmailList';
+import { EmailList, MemoizedEmailList } from './EmailList';
 import { EmailViewer } from './EmailViewer';
 import { EmailCompose } from './EmailCompose';
 import type {
@@ -138,21 +138,22 @@ export function EmailClient({
           console.log(`✅ Loaded ${data.emails.length} emails from API`);
 
           // Sortiere E-Mails nach Datum (neueste zuerst)
+          // WICHTIG: Verwende IMMER internalDate als primären Sort-Key + Email-ID als Tiebreaker
           const sortedEmails = data.emails.sort((a: any, b: any) => {
             const getTimestamp = (email: any) => {
-              // Firestore Timestamp (in Sekunden, konvertiere zu Millisekunden)
-              if (email.timestamp && email.timestamp._seconds) {
-                return email.timestamp._seconds * 1000;
-              }
-              // Gmail internalDate (string of milliseconds)
+              // PRIORITÄT 1: Gmail internalDate (unveränderlich!)
               if (email.internalDate && typeof email.internalDate === 'string') {
                 return parseInt(email.internalDate);
               }
-              // Date string
+              // PRIORITÄT 2: Firestore Timestamp
+              if (email.timestamp && email.timestamp._seconds) {
+                return email.timestamp._seconds * 1000;
+              }
+              // FALLBACK 3: Date string
               if (email.date) {
                 return new Date(email.date).getTime();
               }
-              // Number timestamp
+              // FALLBACK 4: Number timestamp
               if (typeof email.timestamp === 'number') {
                 // Wenn in Sekunden (< Jahr 2100), konvertiere zu Millisekunden
                 return email.timestamp < 4102444800 ? email.timestamp * 1000 : email.timestamp;
@@ -163,11 +164,13 @@ export function EmailClient({
             const timestampA = getTimestamp(a);
             const timestampB = getTimestamp(b);
 
-            console.log(
-              `📧 Sorting: A(${a.subject?.substring(0, 30)}): ${timestampA}, B(${b.subject?.substring(0, 30)}): ${timestampB}`
-            );
+            // Primärer Sort: Nach Timestamp (neueste zuerst)
+            if (timestampB !== timestampA) {
+              return timestampB - timestampA;
+            }
 
-            return timestampB - timestampA; // Neueste zuerst (B > A)
+            // Sekundärer Sort: Nach Email-ID (stabile Sortierung bei gleichem Timestamp!)
+            return (b.id || '').localeCompare(a.id || '');
           });
 
           setCachedEmails(sortedEmails);
@@ -190,19 +193,19 @@ export function EmailClient({
             // Sortiere auch Cache-E-Mails nach Datum (neueste zuerst)
             const sortedEmails = emails.sort((a: any, b: any) => {
               const getTimestamp = (email: any) => {
-                // Firestore Timestamp (in Sekunden, konvertiere zu Millisekunden)
-                if (email.timestamp && email.timestamp._seconds) {
-                  return email.timestamp._seconds * 1000;
-                }
-                // Gmail internalDate (string of milliseconds)
+                // PRIORITÄT 1: Gmail internalDate (unveränderlich!)
                 if (email.internalDate && typeof email.internalDate === 'string') {
                   return parseInt(email.internalDate);
                 }
-                // Date string
+                // PRIORITÄT 2: Firestore Timestamp
+                if (email.timestamp && email.timestamp._seconds) {
+                  return email.timestamp._seconds * 1000;
+                }
+                // FALLBACK 3: Date string
                 if (email.date) {
                   return new Date(email.date).getTime();
                 }
-                // Number timestamp
+                // FALLBACK 4: Number timestamp
                 if (typeof email.timestamp === 'number') {
                   // Wenn in Sekunden (< Jahr 2100), konvertiere zu Millisekunden
                   return email.timestamp < 4102444800 ? email.timestamp * 1000 : email.timestamp;
@@ -213,7 +216,13 @@ export function EmailClient({
               const timestampA = getTimestamp(a);
               const timestampB = getTimestamp(b);
 
-              return timestampB - timestampA; // Neueste zuerst (B > A)
+              // Primärer Sort: Nach Timestamp (neueste zuerst)
+              if (timestampB !== timestampA) {
+                return timestampB - timestampA;
+              }
+
+              // Sekundärer Sort: Nach Email-ID (stabile Sortierung!)
+              return (b.id || '').localeCompare(a.id || '');
             });
 
             setCachedEmails(sortedEmails);
@@ -262,7 +271,18 @@ export function EmailClient({
 
   // Sync cached emails with component state
   useEffect(() => {
-    console.log('📧 Syncing cached emails to UI:', cachedEmails.length);
+    console.log(`📧 [syncToUI] Syncing ${cachedEmails.length} emails to UI`);
+
+    // DEBUG: Zeige erste 3 Emails mit read-Status
+    if (cachedEmails.length > 0) {
+      const preview = cachedEmails.slice(0, 3).map(e => ({
+        subject: e.subject?.substring(0, 20),
+        read: e.read,
+        id: e.id?.substring(0, 8),
+      }));
+      console.log(`📧 [syncToUI] Preview:`, preview);
+    }
+
     setEmails(cachedEmails);
 
     // Nur loading beenden wenn wir nicht gerade laden
@@ -306,7 +326,18 @@ export function EmailClient({
     const unsubscribe = onSnapshot(
       emailQuery,
       snapshot => {
-        console.log(`🔥 Firestore Snapshot: ${snapshot.docs.length} emails in cache`);
+        console.log(
+          `🔥 [Firestore Listener] Snapshot empfangen: ${snapshot.docs.length} emails in cache`
+        );
+
+        // DEBUG: Welche Dokumente haben sich geändert?
+        snapshot.docChanges().forEach(change => {
+          const data = change.doc.data();
+          console.log(
+            `🔄 [Firestore] ${change.type}: ${data.subject?.substring(0, 30)} | read: ${data.read} | id: ${change.doc.id}`
+          );
+        });
+
         setIsRealtimeConnected(true);
         setLastActivity(new Date());
 
@@ -573,24 +604,66 @@ export function EmailClient({
     refreshCachedEmails(false);
   };
 
-  const handleEmailSelect = (emailId: string) => {
+  const handleEmailSelect = useCallback((emailId: string) => {
     setSelectedEmails(prev =>
       prev.includes(emailId) ? prev.filter(id => id !== emailId) : [...prev, emailId]
     );
-  };
+  }, []);
 
-  const handleSelectAll = (selected: boolean) => {
-    setSelectedEmails(selected ? emails.map(e => e.id) : []);
-  };
+  const handleSelectAll = useCallback(
+    (selected: boolean) => {
+      setSelectedEmails(selected ? emails.map(e => e.id) : []);
+    },
+    [emails]
+  );
 
-  const handleEmailClick = async (email: EmailMessage) => {
-    setSelectedEmail(email);
+  // WICHTIG: handleMarkAsRead muss VOR handleEmailClick definiert werden!
+  const handleMarkAsRead = useCallback(
+    async (emailIds: string[], read: boolean) => {
+      try {
+        console.log(
+          `📧 [handleMarkAsRead] START: Marking ${emailIds.length} email(s) as ${read ? 'read' : 'unread'}`
+        );
+        console.log(
+          `📧 [handleMarkAsRead] Email IDs:`,
+          emailIds.map(id => id.substring(0, 8))
+        );
 
-    // Mark as read if unread
-    if (!email.read) {
-      await handleMarkAsRead([email.id], true);
-    }
-  };
+        // WICHTIG: Wir updaten NUR das 'read' Feld, NICHT das 'timestamp'!
+        // Das verhindert, dass Emails beim Lesen neu sortiert werden
+        const batch = writeBatch(db);
+
+        emailIds.forEach(emailId => {
+          const emailRef = doc(db, 'companies', companyId, 'emailCache', emailId);
+          // NUR das read-Feld updaten - kein merge, kein timestamp update
+          batch.update(emailRef, { read: read });
+        });
+
+        await batch.commit();
+        console.log(
+          `✅ [handleMarkAsRead] DONE: Successfully marked ${emailIds.length} email(s) as ${read ? 'read' : 'unread'}`
+        );
+
+        // NICHT den local state updaten! Der Firestore Listener macht das automatisch
+        // und behält die korrekte Sortierung bei
+      } catch (error) {
+        console.error('❌ [handleMarkAsRead] Error:', error);
+      }
+    },
+    [companyId]
+  );
+
+  const handleEmailClick = useCallback(
+    async (email: EmailMessage) => {
+      setSelectedEmail(email);
+
+      // Mark as read if unread
+      if (!email.read) {
+        await handleMarkAsRead([email.id], true);
+      }
+    },
+    [handleMarkAsRead]
+  );
 
   const handleCompose = (
     mode: 'new' | 'reply' | 'replyAll' | 'forward' = 'new',
@@ -645,102 +718,85 @@ export function EmailClient({
     }
   };
 
-  const handleStarEmail = async (emailId: string) => {
-    try {
-      const email = emails.find(e => e.id === emailId);
-      if (!email) return;
+  const handleStarEmail = useCallback(
+    async (emailId: string) => {
+      try {
+        const email = emails.find(e => e.id === emailId);
+        if (!email) return;
 
-      // TODO: Implement new star email API
-      console.log('Star email not implemented in new API yet');
-      return;
-      const response = await fetch(`/api/company/${companyId}/emails/${emailId}/star`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ starred: !email?.starred }),
-      });
+        // TODO: Implement new star email API
+        console.log('Star email not implemented in new API yet');
+        return;
+        const response = await fetch(`/api/company/${companyId}/emails/${emailId}/star`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ starred: !email?.starred }),
+        });
 
-      if (response.ok) {
-        setEmails(prev => prev.map(e => (e.id === emailId ? { ...e, starred: !e.starred } : e)));
+        if (response.ok) {
+          setEmails(prev => prev.map(e => (e.id === emailId ? { ...e, starred: !e.starred } : e)));
 
-        if (selectedEmail?.id === emailId) {
-          setSelectedEmail(prev => (prev ? { ...prev, starred: !prev.starred } : null));
+          if (selectedEmail?.id === emailId) {
+            setSelectedEmail(prev => (prev ? { ...prev, starred: !prev.starred } : null));
+          }
         }
+      } catch (error) {
+        console.error('Fehler beim Markieren mit Stern:', error);
       }
-    } catch (error) {
-      console.error('Fehler beim Markieren mit Stern:', error);
-    }
-  };
+    },
+    [emails, companyId, selectedEmail]
+  );
 
-  const handleArchiveEmails = async (emailIds: string[]) => {
-    try {
-      const response = await fetch(`/api/company/${companyId}/emails/archive`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailIds }),
-      });
+  const handleArchiveEmails = useCallback(
+    async (emailIds: string[]) => {
+      try {
+        const response = await fetch(`/api/company/${companyId}/emails/archive`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ emailIds }),
+        });
 
-      if (response.ok) {
-        setEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
-        setSelectedEmails([]);
-        // @ts-ignore - selectedEmail is checked
-        if (selectedEmail && selectedEmail.id && emailIds.includes(selectedEmail.id)) {
-          setSelectedEmail(null);
+        if (response.ok) {
+          setEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
+          setSelectedEmails([]);
+          // @ts-ignore - selectedEmail is checked
+          if (selectedEmail && selectedEmail.id && emailIds.includes(selectedEmail.id)) {
+            setSelectedEmail(null);
+          }
         }
+      } catch (error) {
+        console.error('Fehler beim Archivieren:', error);
       }
-    } catch (error) {
-      console.error('Fehler beim Archivieren:', error);
-    }
-  };
+    },
+    [companyId, selectedEmail]
+  );
 
-  const handleDeleteEmails = async (emailIds: string[]) => {
-    try {
-      // TODO: Implement new delete email API
-      console.log('Delete email not implemented in new API yet');
-      return;
-      const response = await fetch(`/api/company/${companyId}/emails/delete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailIds }),
-      });
+  const handleDeleteEmails = useCallback(
+    async (emailIds: string[]) => {
+      try {
+        // TODO: Implement new delete email API
+        console.log('Delete email not implemented in new API yet');
+        return;
+        const response = await fetch(`/api/company/${companyId}/emails/delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ emailIds }),
+        });
 
-      if (response.ok) {
-        setEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
-        setSelectedEmails([]);
-        // @ts-ignore - selectedEmail is checked
-        if (selectedEmail && selectedEmail.id && emailIds.includes(selectedEmail.id)) {
-          setSelectedEmail(null);
+        if (response.ok) {
+          setEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
+          setSelectedEmails([]);
+          // @ts-ignore - selectedEmail is checked
+          if (selectedEmail && selectedEmail.id && emailIds.includes(selectedEmail.id)) {
+            setSelectedEmail(null);
+          }
         }
+      } catch (error) {
+        console.error('Fehler beim Löschen:', error);
       }
-    } catch (error) {
-      console.error('Fehler beim Löschen:', error);
-    }
-  };
-
-  const handleMarkAsRead = async (emailIds: string[], read: boolean) => {
-    try {
-      console.log(`📧 Marking ${emailIds.length} email(s) as ${read ? 'read' : 'unread'}`);
-
-      // WICHTIG: Wir updaten NUR das 'read' Feld, NICHT das 'timestamp'!
-      // Das verhindert, dass Emails beim Lesen neu sortiert werden
-      const batch = writeBatch(db);
-
-      emailIds.forEach(emailId => {
-        const emailRef = doc(db, 'companies', companyId, 'emailCache', emailId);
-        // NUR das read-Feld updaten - kein merge, kein timestamp update
-        batch.update(emailRef, { read: read });
-      });
-
-      await batch.commit();
-      console.log(
-        `✅ Successfully marked ${emailIds.length} email(s) as ${read ? 'read' : 'unread'}`
-      );
-
-      // NICHT den local state updaten! Der Firestore Listener macht das automatisch
-      // und behält die korrekte Sortierung bei
-    } catch (error) {
-      console.error('Fehler beim Markieren als gelesen/ungelesen:', error);
-    }
-  };
+    },
+    [companyId, selectedEmail]
+  );
 
   // Handler für Gmail Neu-Authentifizierung
   const handleReconnectGmail = async () => {
@@ -836,7 +892,7 @@ export function EmailClient({
           selectedEmail ? 'w-80' : 'flex-1'
         )}
       >
-        <EmailList
+        <MemoizedEmailList
           emails={emails}
           selectedEmails={selectedEmails}
           onSelectEmail={handleEmailSelect}
