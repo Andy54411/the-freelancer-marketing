@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
       }
       console.log('✅ Watch Status Speicherung verifiziert');
 
-      // Zusätzlich: Update emailConfig mit Watch Status
+      // Zusätzlich: Update emailConfig mit Watch Status - NUR BEI ERFOLG!
       await db
         .collection('companies')
         .doc(state)
@@ -192,9 +192,13 @@ export async function GET(request: NextRequest) {
         .update({
           watchEnabled: true,
           watchSetupAt: new Date(),
+          watchExpiration: new Date(parseInt(watchResponse.data.expiration!)),
+          watchHistoryId: watchResponse.data.historyId,
           lastWatchCheck: new Date(),
+          watchSetupSuccess: true, // NEU: Erfolgs-Flag
+          watchSetupError: null, // NEU: Kein Fehler
         });
-      console.log('✅ EmailConfig mit Watch Status aktualisiert');
+      console.log('✅ EmailConfig mit Watch Status und Expiration aktualisiert');
     } catch (watchError) {
       console.error('❌ KRITISCHER FEHLER beim Einrichten der Gmail Watch:', watchError);
       console.error('❌ Watch Error Details:', {
@@ -256,11 +260,10 @@ export async function GET(request: NextRequest) {
       // KRITISCH: Watch-Fehler ist ein schwerwiegender Fehler!
       console.log('❌ KRITISCHER WATCH SETUP FEHLER - Benutzer muss informiert werden!');
 
-      // Redirect mit Fehlerinfo für besseres Debugging
-      const errorUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state}/email-integration?watchError=${encodeURIComponent(watchError instanceof Error ? watchError.message : String(watchError))}`;
-      console.log('🔄 Redirecting with watch error info to:', errorUrl);
+      // Bei Watch-Fehler NICHT zur Email-Seite, sondern zurück zur Integration mit Fehler
+      const errorUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state}/settings/email-integration?error=watch_setup_failed&details=${encodeURIComponent(watchError instanceof Error ? watchError.message : String(watchError))}`;
+      console.log('🔄 Redirecting to integration page with error:', errorUrl);
 
-      // TROTZDEM weiterleiten, aber mit Fehlerinfo
       return new Response(null, {
         status: 302,
         headers: { Location: errorUrl },

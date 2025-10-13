@@ -170,3 +170,7 @@ export { gmailSyncHttp };
 // Scheduled Functions
 import * as scheduledUsageCalculation from './scheduled-usage-calculation';
 export const dailyUsageCalculation = scheduledUsageCalculation.dailyUsageCalculation;
+
+// Test Functions
+import * as testUsageCalculationModule from './test-usage-calculation';
+export const testUsageCalculation = testUsageCalculationModule.testUsageCalculation;

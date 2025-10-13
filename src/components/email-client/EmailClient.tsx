@@ -273,10 +273,80 @@ export function EmailClient({
     }
   }, [cacheSource, cacheHitRatio, newEmailsCount]);
 
-  // 🔥 REAL-TIME: Gmail Push Notifications Listener
+  // 🔥 REAL-TIME: Direct Firestore Listener auf emailCache (HAUPTLÖSUNG)
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [lastActivity, setLastActivity] = useState<Date | null>(null);
 
+  useEffect(() => {
+    if (!companyId || !selectedFolder) {
+      console.warn('⚠️ Direct email listener: No companyId or folder');
+      return;
+    }
+
+    console.log('🔥 DIRECT emailCache Firestore Listener aktiviert:', {
+      companyId,
+      folder: selectedFolder,
+    });
+
+    // DIREKTE Verbindung zur emailCache Collection
+    const emailCacheRef = collection(db, 'companies', companyId, 'emailCache');
+    const emailQuery = query(emailCacheRef, orderBy('timestamp', 'desc'));
+
+    const unsubscribe = onSnapshot(
+      emailQuery,
+      snapshot => {
+        console.log(`🔥 Firestore Snapshot: ${snapshot.docs.length} emails in cache`);
+        setIsRealtimeConnected(true);
+        setLastActivity(new Date());
+
+        // Convert Firestore docs to Email objects
+        const allEmails = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            // Timestamp conversion
+            timestamp: data.timestamp?._seconds
+              ? data.timestamp._seconds * 1000
+              : data.internalDate
+                ? parseInt(data.internalDate)
+                : Date.now(),
+          } as unknown as EmailMessage;
+        });
+
+        // Filter by selected folder
+        const filteredEmails = allEmails.filter(email => {
+          if (selectedFolder === 'inbox')
+            return !email.labels?.includes('TRASH') && !email.labels?.includes('SENT');
+          if (selectedFolder === 'sent') return email.labels?.includes('SENT');
+          if (selectedFolder === 'trash') return email.labels?.includes('TRASH');
+          return true;
+        });
+
+        console.log(
+          `✅ REAL-TIME UPDATE: ${filteredEmails.length} emails in ${selectedFolder} folder`
+        );
+
+        setCachedEmails(filteredEmails);
+        setCacheSource('local');
+        setNewEmailsCount(filteredEmails.length);
+        setCacheLoading(false);
+        setIsInitialLoad(false);
+      },
+      error => {
+        console.error('❌ Direct email listener error:', error);
+        setIsRealtimeConnected(false);
+        setCacheLoading(false);
+      }
+    );
+
+    return () => {
+      console.log('🔥 Direct email listener: Cleanup');
+      unsubscribe();
+    };
+  }, [companyId, selectedFolder]);
+
+  // 🔥 BACKUP: Gmail Push Notifications Listener (Fallback)
   useEffect(() => {
     console.log('🎯 Setting up Gmail Real-time listener for:', companyId);
 
@@ -293,15 +363,12 @@ export function EmailClient({
       snapshot => {
         if (!snapshot.empty) {
           const latestEvent = snapshot.docs[0].data();
-          console.log('🔥 REAL-TIME Gmail Event empfangen:', latestEvent);
+          console.log('🔥 REAL-TIME Gmail Event empfangen (backup):', latestEvent);
 
           if (latestEvent.data?.userEmail && latestEvent.data.userEmail.includes(companyId)) {
-            console.log('✅ Event für diese Company - aktualisiere E-Mails sofort!');
+            console.log('✅ Event für diese Company empfangen');
             setLastActivity(new Date());
-            setIsRealtimeConnected(true);
-
-            // Force refresh der E-Mails
-            refreshCachedEmails(true);
+            // Der direkte emailCache Listener updated bereits automatisch
           }
         }
       },
@@ -312,7 +379,7 @@ export function EmailClient({
     );
 
     return () => unsubscribe();
-  }, [companyId, refreshCachedEmails]);
+  }, [companyId]);
 
   /*
   OLD REALTIME CODE REMOVED
