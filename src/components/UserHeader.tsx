@@ -77,8 +77,6 @@ interface UserHeaderProps {
 }
 
 const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
-  console.log('🔔 [UserHeader] Component rendered with currentUid:', currentUid);
-
   const { user: authUser, loading: authLoading, unreadMessagesCount, recentChats } = useAuth(); // KORREKTUR: Alle Daten aus dem Context beziehen
 
   // Update-Notification System
@@ -351,12 +349,9 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   // 🔔 EMAIL NOTIFICATIONS: Listener für ungelesene E-Mails
   useEffect(() => {
     if (!currentUid) {
-      console.log('🔔 [UserHeader] Email Listener NICHT aktiviert - keine Company UID');
       setUnreadEmailsCount(0);
       return;
     }
-
-    console.log('🔔 [UserHeader] Email Notification Listener aktiviert für Company:', currentUid);
 
     // Listener auf emailCache für ungelesene E-Mails
     const emailCacheRef = collection(db, 'companies', currentUid, 'emailCache');
@@ -371,9 +366,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
           return data.read === false || data.read === undefined;
         }).length;
 
-        console.log(
-          `🔔 [UserHeader] Ungelesene E-Mails: ${unreadCount} von ${snapshot.docs.length}`
-        );
         setUnreadEmailsCount(unreadCount);
 
         // Optional: Browser-Notification bei neuen Emails (nur wenn Tab im Hintergrund)
@@ -393,7 +385,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     );
 
     return () => {
-      console.log('🔔 [UserHeader] Email notification listener: Cleanup');
       unsubscribe();
     };
   }, [currentUid]);

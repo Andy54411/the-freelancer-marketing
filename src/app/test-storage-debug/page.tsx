@@ -12,13 +12,12 @@ export default function StorageDebugPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('Fetching company data for:', companyId);
         const docRef = doc(db, 'companies', companyId);
         const snapshot = await getDoc(docRef);
 
         if (snapshot.exists()) {
           const docData = snapshot.data();
-          console.log('Document data:', docData);
+
           setData(docData);
         } else {
           setError('Document does not exist');

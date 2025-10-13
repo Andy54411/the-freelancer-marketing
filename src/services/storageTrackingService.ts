@@ -20,8 +20,6 @@ export class StorageTrackingService {
         storageUsed: increment(fileSize),
         lastStorageUpdate: new Date(),
       });
-
-      console.log(`[Storage Tracking] Added ${fileSize} bytes to company ${companyId}`);
     } catch (error) {
       console.error('[Storage Tracking] Error tracking upload:', error);
       // Nicht werfen - Upload soll nicht fehlschlagen wegen Tracking
@@ -41,8 +39,6 @@ export class StorageTrackingService {
         storageUsed: increment(-fileSize), // Negativ für Subtraktion
         lastStorageUpdate: new Date(),
       });
-
-      console.log(`[Storage Tracking] Removed ${fileSize} bytes from company ${companyId}`);
     } catch (error) {
       console.error('[Storage Tracking] Error tracking deletion:', error);
     }

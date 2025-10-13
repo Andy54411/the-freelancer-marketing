@@ -115,8 +115,6 @@ export function EmailClient({
 
   const refreshCachedEmails = useCallback(
     async (forceRefresh = false) => {
-      console.log('🔄 Loading emails from API...', { forceRefresh, companyId, selectedFolder });
-
       setCacheLoading(true);
       setCacheError(null);
 
@@ -136,8 +134,6 @@ export function EmailClient({
         const data = await response.json();
 
         if (data.emails && Array.isArray(data.emails)) {
-          console.log(`✅ Loaded ${data.emails.length} emails from API`);
-
           // Sortiere E-Mails nach Datum (neueste zuerst)
           // WICHTIG: Verwende IMMER internalDate als primären Sort-Key + Email-ID als Tiebreaker
           const sortedEmails = data.emails.sort((a: any, b: any) => {
@@ -228,7 +224,6 @@ export function EmailClient({
 
             setCachedEmails(sortedEmails);
             setCacheSource('cache');
-            console.log('📦 Loaded emails from cache fallback');
           }
         } catch (cacheError) {
           console.error('Cache fallback failed:', cacheError);
@@ -243,16 +238,12 @@ export function EmailClient({
   // Auto-Polling: NUR beim ersten Laden, wenn keine E-Mails da sind
   useEffect(() => {
     if (isInitialLoad && cachedEmails.length === 0 && !cacheLoading) {
-      console.log('🔄 Initial load: No emails found, starting auto-polling...');
-
       const pollInterval = setInterval(() => {
-        console.log('🔄 Auto-polling for emails (initial load)...');
         refreshCachedEmails(false);
       }, 2000); // Alle 2 Sekunden
 
       // Stop polling nach 30 Sekunden oder wenn E-Mails gefunden wurden
       const stopTimeout = setTimeout(() => {
-        console.log('⏱️ Auto-polling timeout reached (30s)');
         clearInterval(pollInterval);
         setIsInitialLoad(false); // Markiere als nicht mehr initial
       }, 30000);
@@ -265,15 +256,12 @@ export function EmailClient({
 
     // Wenn E-Mails gefunden wurden, stop polling
     if (cachedEmails.length > 0 && isInitialLoad) {
-      console.log('✅ Emails found, stopping auto-polling');
       setIsInitialLoad(false);
     }
   }, [cachedEmails.length, cacheLoading, isInitialLoad, refreshCachedEmails]);
 
   // Sync cached emails with component state
   useEffect(() => {
-    console.log(`📧 [syncToUI] Syncing ${cachedEmails.length} emails to UI`);
-
     // DEBUG: Zeige erste 3 Emails mit read-Status
     if (cachedEmails.length > 0) {
       const preview = cachedEmails.slice(0, 3).map(e => ({
@@ -281,7 +269,6 @@ export function EmailClient({
         read: e.read,
         id: e.id?.substring(0, 8),
       }));
-      console.log(`📧 [syncToUI] Preview:`, preview);
     }
 
     setEmails(cachedEmails);
@@ -295,11 +282,7 @@ export function EmailClient({
   // Performance Logging
   useEffect(() => {
     if (cacheSource && cacheHitRatio !== undefined) {
-      console.log(
-        `⚡ Gmail Performance: ${cacheSource} source, ${Math.round(cacheHitRatio * 100)}% cache hit`
-      );
       if (newEmailsCount > 0) {
-        console.log(`🆕 ${newEmailsCount} neue E-Mails geladen`);
       }
     }
   }, [cacheSource, cacheHitRatio, newEmailsCount]);
@@ -314,11 +297,6 @@ export function EmailClient({
       return;
     }
 
-    console.log('🔥 DIRECT emailCache Firestore Listener aktiviert:', {
-      companyId,
-      folder: selectedFolder,
-    });
-
     // DIREKTE Verbindung zur emailCache Collection
     const emailCacheRef = collection(db, 'companies', companyId, 'emailCache');
     // WICHTIG: Sortiere nach internalDate (Gmail Original), NICHT nach timestamp (Firestore Update-Zeit)!
@@ -327,22 +305,13 @@ export function EmailClient({
     const unsubscribe = onSnapshot(
       emailQuery,
       snapshot => {
-        console.log(
-          `🔥 [Firestore Listener] Snapshot empfangen: ${snapshot.docs.length} emails in cache`
-        );
-
         // DEBUG: Welche Dokumente haben sich geändert?
         const changes = snapshot.docChanges();
         if (changes.length > 0) {
-          console.log(`🔄 [Firestore] ${changes.length} document change(s) detected`);
           changes.forEach(change => {
             const data = change.doc.data();
-            console.log(
-              `🔄 [Firestore] ${change.type}: ${data.subject?.substring(0, 30)} | read: ${data.read} | id: ${change.doc.id.substring(0, 8)}`
-            );
           });
         } else {
-          console.log(`🔄 [Firestore] Snapshot received but NO changes detected`);
         }
 
         setIsRealtimeConnected(true);
@@ -373,10 +342,6 @@ export function EmailClient({
           return true;
         });
 
-        console.log(
-          `✅ REAL-TIME UPDATE: ${filteredEmails.length} emails in ${selectedFolder} folder`
-        );
-
         setCachedEmails(filteredEmails);
         setCacheSource('local');
         setNewEmailsCount(filteredEmails.length);
@@ -391,15 +356,12 @@ export function EmailClient({
     );
 
     return () => {
-      console.log('🔥 Direct email listener: Cleanup');
       unsubscribe();
     };
   }, [companyId, selectedFolder]);
 
   // 🔥 BACKUP: Gmail Push Notifications Listener (Fallback)
   useEffect(() => {
-    console.log('🎯 Setting up Gmail Real-time listener for:', companyId);
-
     // Hör auf neue Gmail Events in der SUBCOLLECTION
     const realtimeQuery = query(
       collection(db, `companies/${companyId}/realtime_events`),
@@ -413,10 +375,8 @@ export function EmailClient({
       snapshot => {
         if (!snapshot.empty) {
           const latestEvent = snapshot.docs[0].data();
-          console.log('🔥 REAL-TIME Gmail Event empfangen (backup):', latestEvent);
 
           if (latestEvent.data?.userEmail && latestEvent.data.userEmail.includes(companyId)) {
-            console.log('✅ Event für diese Company empfangen');
             setLastActivity(new Date());
             // Der direkte emailCache Listener updated bereits automatisch
           }
@@ -456,8 +416,7 @@ export function EmailClient({
     },
     onEmailsUpdated: (emailData) => {
       console.log('🚀 WEBHOOK DIRECT UPDATE: E-Mails direkt vom Webhook erhalten!');
-
-      
+       
       // DIREKT die E-Mail-Daten vom Webhook verwenden - KEINE API-Calls nötig!
       if (emailData.emails && Array.isArray(emailData.emails)) {
         console.log('✅ WEBHOOK: E-Mails direkt in UI übernommen - SOFORT verfügbar!');
@@ -480,7 +439,7 @@ export function EmailClient({
   // Initial load - einmalig beim Start, dann nur über Webhooks
   useEffect(() => {
     // Nur einmal laden beim ersten Start der Komponente
-    console.log('📱 EmailClient: Initaler Load beim Start für:', companyId, selectedFolder);
+
     setIsLoading(true);
     refreshCachedEmails(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -499,7 +458,6 @@ export function EmailClient({
       //   console.log('👀 App focus detected after long absence - refreshing emails');
       //   loadEmails(true);
       // }
-      console.log('👀 App focus detected - Webhook-System übernimmt E-Mail-Updates');
 
       lastFocusTime = now;
     };
@@ -523,7 +481,7 @@ export function EmailClient({
       // F5 oder Cmd/Ctrl+R für Refresh
       if (event.key === 'F5' || ((event.metaKey || event.ctrlKey) && event.key === 'r')) {
         event.preventDefault();
-        console.log('⌨️ Keyboard refresh triggered');
+
         handleRefresh();
       }
     };
@@ -543,10 +501,6 @@ export function EmailClient({
 
   // 🚀 OPTIMIZED: Use Smart Cache statt direkter API-Calls
   const loadEmails = async (forceRefresh = false) => {
-    console.log(
-      `⚡ SMART CACHE: ${forceRefresh ? 'Force refresh' : 'Smart load'} für ${companyId}/${selectedFolder}`
-    );
-
     try {
       // Use optimized cache service
       await refreshCachedEmails(forceRefresh);
@@ -573,16 +527,12 @@ export function EmailClient({
 
   // Manual refresh function
   const handleRefresh = () => {
-    console.log('🔄 Manual email refresh triggered');
     loadEmails(true);
   };
 
   // Debug function für Webhook-Testing (nur für Development)
   const testWebhookRefresh = () => {
-    console.log('🧪 TEST: Simulating webhook refresh event');
-    loadEmails(true).then(() => {
-      console.log('✅ TEST: Webhook refresh simulation completed');
-    });
+    loadEmails(true).then(() => {});
   };
 
   // Expose test function to window for browser console testing
@@ -601,7 +551,6 @@ export function EmailClient({
 
   // Event handlers
   const handleFolderSelect = (folderId: string) => {
-    console.log('📁 Folder selected:', folderId);
     setSelectedFolder(folderId);
     setSelectedEmail(null);
     setSelectedEmails([]);
@@ -628,53 +577,31 @@ export function EmailClient({
   const handleMarkAsRead = useCallback(
     async (emailIds: string[], read: boolean) => {
       try {
-        console.log(
-          `📧 [handleMarkAsRead] START: Marking ${emailIds.length} email(s) as ${read ? 'read' : 'unread'}`
-        );
-        console.log(
-          `📧 [handleMarkAsRead] Email IDs:`,
-          emailIds.map(id => id.substring(0, 8))
-        );
-
         // WICHTIG: Wir updaten NUR das 'read' Feld, NICHT das 'timestamp'!
         // Das verhindert, dass Emails beim Lesen neu sortiert werden
         const batch = writeBatch(db);
 
         emailIds.forEach(emailId => {
           const emailRef = doc(db, 'companies', companyId, 'emailCache', emailId);
-          console.log(
-            `📝 [handleMarkAsRead] Adding to batch: companies/${companyId}/emailCache/${emailId}`
-          );
+
           // NUR das read-Feld updaten - kein merge, kein timestamp update
           batch.update(emailRef, { read: read });
         });
 
-        console.log(`⏳ [handleMarkAsRead] Committing batch with ${emailIds.length} updates...`);
         await batch.commit();
-        console.log(`✅ [handleMarkAsRead] Batch committed successfully`);
 
         // DEBUG: Verify the update actually happened in Firestore
         const firstEmailId = emailIds[0];
         const verifyRef = doc(db, 'companies', companyId, 'emailCache', firstEmailId);
         const verifyDoc = await getDoc(verifyRef);
         if (verifyDoc.exists()) {
-          console.log(`🔍 [handleMarkAsRead] VERIFY: First email read status in Firestore:`, {
-            id: firstEmailId.substring(0, 20),
-            read: verifyDoc.data()?.read,
-            subject: verifyDoc.data()?.subject?.substring(0, 30),
-          });
         }
-
-        console.log(
-          `✅ [handleMarkAsRead] DONE: Successfully marked ${emailIds.length} email(s) as ${read ? 'read' : 'unread'}`
-        );
 
         // Auswahl aufheben nach erfolgreichem Markieren (nur bei Mehrfachauswahl)
         // WICHTIG: Verzögere das Aufheben, damit der Firestore-Listener zuerst die Änderung erhält
         if (emailIds.length > 1) {
           setTimeout(() => {
             setSelectedEmails([]);
-            console.log(`🔄 [handleMarkAsRead] Selection cleared after Firestore update`);
           }, 500); // 500ms Verzögerung
         }
 
@@ -711,7 +638,7 @@ export function EmailClient({
   const handleSendEmail = async (emailData: EmailComposeType) => {
     try {
       // TODO: Implement new send email API
-      console.log('Send email not implemented in new API yet');
+
       return;
       const response = await fetch(`/api/company/${companyId}/emails/send`, {
         method: 'POST',
@@ -735,7 +662,7 @@ export function EmailClient({
   const handleSaveDraft = async (emailData: EmailComposeType) => {
     try {
       // TODO: Implement new draft email API
-      console.log('Draft email not implemented in new API yet');
+
       return;
       const response = await fetch(`/api/company/${companyId}/emails/draft`, {
         method: 'POST',
@@ -759,7 +686,7 @@ export function EmailClient({
         if (!email) return;
 
         // TODO: Implement new star email API
-        console.log('Star email not implemented in new API yet');
+
         return;
         const response = await fetch(`/api/company/${companyId}/emails/${emailId}/star`, {
           method: 'POST',
@@ -809,7 +736,7 @@ export function EmailClient({
     async (emailIds: string[]) => {
       try {
         // TODO: Implement new delete email API
-        console.log('Delete email not implemented in new API yet');
+
         return;
         const response = await fetch(`/api/company/${companyId}/emails/delete`, {
           method: 'POST',

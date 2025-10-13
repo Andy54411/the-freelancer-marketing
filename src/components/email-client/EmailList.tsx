@@ -82,9 +82,6 @@ const EmailItem = memo(
     onDelete,
   }: EmailItemProps) => {
     // DEBUG: Log wenn diese Email-Item-Komponente neu rendert
-    console.log(
-      `🔄 [EmailItem] Rendering: ${email.subject?.substring(0, 30)} | read: ${email.read} | selected: ${isSelected}`
-    );
 
     const formatEmailDate = (timestamp: any): { relative: string; absolute: string } => {
       try {
@@ -160,6 +157,7 @@ const EmailItem = memo(
               onClick={e => e.stopPropagation()}
               className="mt-0.5 h-3.5 w-3.5 data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600 rounded-sm"
             />
+
             {!email.read && (
               <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-teal-500 rounded-full"></div>
             )}
@@ -280,14 +278,6 @@ const EmailItem = memo(
 
     // DEBUG: Log Memoization-Entscheidungen
     if (!shouldSkipRerender) {
-      console.log(
-        `⚡ [EmailItem] Re-render erlaubt für: ${nextProps.email.subject?.substring(0, 30)}`,
-        {
-          readChanged: prevProps.email.read !== nextProps.email.read,
-          starredChanged: prevProps.email.starred !== nextProps.email.starred,
-          selectedChanged: prevProps.isSelected !== nextProps.isSelected,
-        }
-      );
     }
 
     return shouldSkipRerender;
@@ -345,20 +335,13 @@ export function EmailList({
   // Log email count changes
   useEffect(() => {
     if (emails.length !== prevEmailCount) {
-      console.log(
-        `📊 [EmailList] E-Mail-Anzahl geändert von ${prevEmailCount} zu ${emails.length}`
-      );
       if (emails.length > prevEmailCount) {
-        console.log(
-          `📬 [EmailList] ${emails.length - prevEmailCount} neue E-Mail(s) in der Liste!`
-        );
       }
       setPrevEmailCount(emails.length);
     }
   }, [emails.length, prevEmailCount]);
 
   // DEBUG: Log wenn die komplette Liste neu rendert
-  console.log(`📋 [EmailList] Main component rendering with ${emails.length} emails`);
 
   const allSelected = emails.length > 0 && selectedEmails.length === emails.length;
   const someSelected = selectedEmails.length > 0 && selectedEmails.length < emails.length;
@@ -372,20 +355,6 @@ export function EmailList({
 
   // DEBUG: Log selection state
   if (selectedEmails.length > 0) {
-    console.log(`📧 [EmailList] Selection State:`, {
-      selectedCount: selectedEmails.length,
-      allRead: allSelectedAreRead,
-      allUnread: allSelectedAreUnread,
-      showReadButton: !allSelectedAreRead,
-      showUnreadButton: !allSelectedAreUnread,
-      readCounts: {
-        read: selectedEmailsObjects.filter(e => e.read).length,
-        unread: selectedEmailsObjects.filter(e => !e.read).length,
-      },
-      sampleEmails: selectedEmailsObjects
-        .slice(0, 3)
-        .map(e => ({ id: e.id.substring(0, 8), read: e.read })),
-    });
   }
 
   const handleSelectAll = () => {
@@ -508,10 +477,6 @@ export function EmailList({
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      console.log(`📧 [EmailList] Mark as READ clicked:`, {
-                        selectedCount: selectedEmails.length,
-                        selectedIds: selectedEmails.slice(0, 3),
-                      });
                       onMarkAsRead(selectedEmails, true);
                     }}
                     className="text-teal-600 hover:text-teal-700 hover:bg-teal-50"
@@ -562,6 +527,7 @@ export function EmailList({
                     realtimeStatus.connected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
                   )}
                 />
+
                 <span className="text-xs text-gray-500">
                   {realtimeStatus.connected ? 'Live' : 'Offline'}
                 </span>
@@ -679,12 +645,6 @@ export const MemoizedEmailList = memo(EmailList, (prevProps, nextProps) => {
     prevProps.selectedEmails === nextProps.selectedEmails;
 
   if (!shouldSkipRerender) {
-    console.log(`⚡ [EmailList] Re-render erlaubt:`, {
-      emailsChanged: prevProps.emails !== nextProps.emails,
-      emailCountChanged: prevProps.emails.length !== nextProps.emails.length,
-      selectedChanged: prevProps.selectedEmails !== nextProps.selectedEmails,
-      loadingChanged: prevProps.isLoading !== nextProps.isLoading,
-    });
   }
 
   return shouldSkipRerender;

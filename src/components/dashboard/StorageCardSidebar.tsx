@@ -47,41 +47,23 @@ export function StorageCardSidebar({ companyId }: StorageCardSidebarProps) {
 
   useEffect(() => {
     if (!companyId) {
-      console.log('[StorageCardSidebar] No companyId provided');
       return;
     }
 
-    console.log('[StorageCardSidebar] Setting up listener for companyId:', companyId);
     const companyRef = doc(db, 'companies', companyId);
 
     const unsubscribe = onSnapshot(
       companyRef,
       snapshot => {
-        console.log('[StorageCardSidebar] Snapshot received, exists:', snapshot.exists());
         if (snapshot.exists()) {
           const data = snapshot.data();
-          console.log('[StorageCardSidebar] Full document data:', {
-            hasUsage: !!data.usage,
-            hasStorageLimit: !!data.storageLimit,
-            storageLimit: data.storageLimit,
-            usage: data.usage,
-            legacyStorageUsed: data.storageUsed,
-          });
 
           const usage = data.usage || {};
-
-          console.log('[StorageCardSidebar] Extracted usage object:', usage);
-          console.log('[StorageCardSidebar] Setting state with:', {
-            storageUsed: usage.storageUsed || data.storageUsed || 0,
-            firestoreUsed: usage.firestoreUsed || 0,
-            storageLimit: data.storageLimit || 1024 * 1024 * 1024,
-          });
 
           setStorageLimit(data.storageLimit || 1024 * 1024 * 1024);
           setStorageUsed(usage.storageUsed || data.storageUsed || 0);
           setFirestoreUsed(usage.firestoreUsed || 0);
         } else {
-          console.log('[StorageCardSidebar] Company document does not exist!');
         }
       },
       error => {
@@ -90,7 +72,6 @@ export function StorageCardSidebar({ companyId }: StorageCardSidebarProps) {
     );
 
     return () => {
-      console.log('[StorageCardSidebar] Cleaning up listener');
       unsubscribe();
     };
   }, [companyId]);

@@ -40,7 +40,7 @@ export class NewGmailService {
   constructor(config: GmailConfig, userId: string) {
     this.config = config;
     this.userId = userId;
-    
+
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
@@ -59,7 +59,6 @@ export class NewGmailService {
       // Map folder names to Gmail labels
       const gmailLabel = this.mapFolderToGmailLabel(folder);
 
-
       // Get message IDs
       const listResponse = await this.gmail.users.messages.list({
         userId: 'me',
@@ -68,28 +67,24 @@ export class NewGmailService {
       });
 
       if (!listResponse.data.messages?.length) {
-        console.log(`📭 No messages found in ${folder}`);
         return [];
       }
-
-
 
       // Get full message details in batches
       const emails: EmailMessage[] = [];
       const batchSize = 10;
-      
+
       for (let i = 0; i < listResponse.data.messages.length; i += batchSize) {
         const batch = listResponse.data.messages.slice(i, i + batchSize);
 
-        
-        const batchPromises = batch.map(async (message) => {
+        const batchPromises = batch.map(async message => {
           try {
             const emailResponse = await this.gmail.users.messages.get({
               userId: 'me',
               id: message.id!,
-              format: 'full'
+              format: 'full',
             });
-            
+
             return this.parseGmailMessage(emailResponse.data, folder);
           } catch (error) {
             console.error(`Error fetching message ${message.id}:`, error);
@@ -98,12 +93,12 @@ export class NewGmailService {
         });
 
         const batchResults = await Promise.all(batchPromises);
-        emails.push(...batchResults.filter(email => email !== null) as EmailMessage[]);
+        emails.push(...(batchResults.filter(email => email !== null) as EmailMessage[]));
       }
 
-
-      return emails.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
+      return emails.sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
     } catch (error) {
       console.error('Error fetching emails:', error);
       throw error;
@@ -113,14 +108,16 @@ export class NewGmailService {
   /**
    * Fetch emails with Gmail search query
    */
-  async fetchEmailsWithQuery(query: string, folder: string = 'INBOX', limit: number = 50): Promise<EmailMessage[]> {
+  async fetchEmailsWithQuery(
+    query: string,
+    folder: string = 'INBOX',
+    limit: number = 50
+  ): Promise<EmailMessage[]> {
     try {
       const gmailLabel = this.mapFolderToGmailLabel(folder);
-      
+
       // Build Gmail search query with folder filter
       const fullQuery = `in:${gmailLabel.toLowerCase()} ${query}`;
-      
-      console.log(`🔍 Gmail Query: ${fullQuery}`);
 
       // Get message IDs with search query
       const listResponse = await this.gmail.users.messages.list({
@@ -130,25 +127,24 @@ export class NewGmailService {
       });
 
       if (!listResponse.data.messages?.length) {
-        console.log(`📭 No messages found for query: ${fullQuery}`);
         return [];
       }
 
       // Get full message details in batches
       const emails: EmailMessage[] = [];
       const batchSize = 10;
-      
+
       for (let i = 0; i < listResponse.data.messages.length; i += batchSize) {
         const batch = listResponse.data.messages.slice(i, i + batchSize);
-        
-        const batchPromises = batch.map(async (message) => {
+
+        const batchPromises = batch.map(async message => {
           try {
             const fullMessage = await this.gmail.users.messages.get({
               userId: 'me',
               id: message.id!,
-              format: 'full'
+              format: 'full',
             });
-            
+
             return this.parseGmailMessage(fullMessage.data, folder);
           } catch (error) {
             console.error(`Error fetching message ${message.id}:`, error);
@@ -157,11 +153,12 @@ export class NewGmailService {
         });
 
         const batchResults = await Promise.all(batchPromises);
-        emails.push(...batchResults.filter(email => email !== null) as EmailMessage[]);
+        emails.push(...(batchResults.filter(email => email !== null) as EmailMessage[]));
       }
 
-      return emails.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
+      return emails.sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
     } catch (error) {
       console.error('Error fetching emails with query:', error);
       throw error;
@@ -173,14 +170,13 @@ export class NewGmailService {
    */
   private parseGmailMessage(message: any, folder: string): EmailMessage {
     const headers = message.payload?.headers || [];
-    const getHeader = (name: string) => headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || '';
+    const getHeader = (name: string) =>
+      headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || '';
 
     // Extract email body with improved multi-part parsing
     let body = '';
     let htmlBody = '';
-    
 
-    
     if (message.payload?.body?.data) {
       // Simple single-part message
       const content = Buffer.from(message.payload.body.data, 'base64').toString('utf-8');
@@ -189,30 +185,22 @@ export class NewGmailService {
       } else {
         body = content;
       }
-
     } else if (message.payload?.parts) {
       // Multi-part message
 
-      
       const textPart = this.findPart(message.payload.parts, 'text/plain');
       const htmlPart = this.findPart(message.payload.parts, 'text/html');
-      
+
       if (textPart?.body?.data) {
         body = Buffer.from(textPart.body.data, 'base64').toString('utf-8');
-
       }
       if (htmlPart?.body?.data) {
         htmlBody = Buffer.from(htmlPart.body.data, 'base64').toString('utf-8');
-
       }
-      
+
       // Debug: Log all parts
-      message.payload.parts.forEach((part: any, index: number) => {
-
-      });
+      message.payload.parts.forEach((part: any, index: number) => {});
     }
-    
-
 
     // Parse addresses - ohne undefined Werte
     const parseAddress = (addressString: string) => {
@@ -221,7 +209,7 @@ export class NewGmailService {
         const match = addr.trim().match(/^(.*?)\s*<(.+?)>$/) || addr.trim().match(/^(.+)$/);
         if (match) {
           const result: any = {
-            email: match[2] || match[1].trim()
+            email: match[2] || match[1].trim(),
           };
           // Nur name hinzufügen wenn es wirklich existiert
           if (match[2] && match[1]) {
@@ -248,11 +236,11 @@ export class NewGmailService {
       starred: message.labelIds?.includes('STARRED') || false,
       folder: {
         id: folder,
-        name: this.getFolderName(folder)
+        name: this.getFolderName(folder),
       },
       attachments: this.extractAttachments(message.payload),
       labels: message.labelIds || [],
-      threadId: message.threadId
+      threadId: message.threadId,
     };
   }
 
@@ -269,7 +257,7 @@ export class NewGmailService {
 
   private extractAttachments(payload: any): any[] {
     const attachments: any[] = [];
-    
+
     const extractFromParts = (parts: any[]) => {
       for (const part of parts) {
         if (part.filename && part.body?.attachmentId) {
@@ -277,7 +265,7 @@ export class NewGmailService {
             id: part.body.attachmentId,
             filename: part.filename,
             size: part.body.size || 0,
-            mimeType: part.mimeType
+            mimeType: part.mimeType,
           });
         }
         if (part.parts) {
@@ -295,28 +283,28 @@ export class NewGmailService {
 
   private mapFolderToGmailLabel(folder: string): string {
     const folderToLabel: { [key: string]: string } = {
-      'inbox': 'INBOX',
-      'sent': 'SENT',
-      'draft': 'DRAFT',
-      'drafts': 'DRAFT',
-      'trash': 'TRASH',
-      'spam': 'SPAM',
-      'INBOX': 'INBOX',
-      'SENT': 'SENT',
-      'DRAFT': 'DRAFT',
-      'TRASH': 'TRASH',
-      'SPAM': 'SPAM'
+      inbox: 'INBOX',
+      sent: 'SENT',
+      draft: 'DRAFT',
+      drafts: 'DRAFT',
+      trash: 'TRASH',
+      spam: 'SPAM',
+      INBOX: 'INBOX',
+      SENT: 'SENT',
+      DRAFT: 'DRAFT',
+      TRASH: 'TRASH',
+      SPAM: 'SPAM',
     };
     return folderToLabel[folder] || folder.toUpperCase();
   }
 
   private getFolderName(folderId: string): string {
     const folderNames: { [key: string]: string } = {
-      'INBOX': 'Posteingang',
-      'SENT': 'Gesendet',
-      'DRAFT': 'Entwürfe',
-      'TRASH': 'Papierkorb',
-      'SPAM': 'Spam'
+      INBOX: 'Posteingang',
+      SENT: 'Gesendet',
+      DRAFT: 'Entwürfe',
+      TRASH: 'Papierkorb',
+      SPAM: 'Spam',
     };
     return folderNames[folderId] || folderId;
   }
@@ -354,10 +342,8 @@ export class NewGmailService {
 
       await db.collection('companies').doc(userId).update({
         'gmailConfig.tokens.refresh_token': 'invalid',
-        'gmailConfig.tokens.access_token': 'invalid'
+        'gmailConfig.tokens.access_token': 'invalid',
       });
-
-
     } catch (error) {
       console.error('Error marking token as invalid:', error);
     }

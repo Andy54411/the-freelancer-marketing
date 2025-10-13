@@ -67,7 +67,6 @@ export default function EmailIntegrationPage() {
       return;
     }
 
-    console.log('[EmailIntegration] Loading config for user:', user.uid);
     setLoading(true);
     try {
       const existingConfig = await getEmailConfig(user.uid);
@@ -99,8 +98,6 @@ export default function EmailIntegrationPage() {
           });
         }
       } else {
-        // No config exists yet - this is normal for new users
-        console.log('No email config found - using default values');
       }
     } catch (error) {
       console.error('Error loading config:', error);
@@ -414,6 +411,7 @@ export default function EmailIntegrationPage() {
                     }))
                   }
                 />
+
                 <Label>SSL/TLS verwenden (Port 465)</Label>
               </div>
 
@@ -447,6 +445,7 @@ export default function EmailIntegrationPage() {
                     }
                     className="pr-10"
                   />
+
                   <button
                     type="button"
                     onClick={() => setShowSmtpPassword(!showSmtpPassword)}
@@ -531,6 +530,7 @@ export default function EmailIntegrationPage() {
                     }))
                   }
                 />
+
                 <Label>IMAP aktivieren (E-Mails empfangen)</Label>
               </div>
 
@@ -577,6 +577,7 @@ export default function EmailIntegrationPage() {
                   }
                   disabled={!config.imap?.enabled}
                 />
+
                 <Label>SSL/TLS verwenden (empfohlen)</Label>
               </div>
 
@@ -612,6 +613,7 @@ export default function EmailIntegrationPage() {
                     disabled={!config.imap?.enabled}
                     className="pr-10"
                   />
+
                   <button
                     type="button"
                     onClick={() => setShowImapPassword(!showImapPassword)}
@@ -657,6 +659,7 @@ export default function EmailIntegrationPage() {
                   }
                   disabled={!config.imap?.enabled}
                 />
+
                 <Label>Automatische Synchronisation</Label>
               </div>
 

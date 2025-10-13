@@ -20,8 +20,6 @@ export class UsageTrackingService {
         'usage.storageUsed': increment(fileSize),
         'usage.lastStorageUpdate': new Date(),
       });
-
-      console.log(`[Usage Tracking] Added ${fileSize} bytes storage to company ${companyId}`);
     } catch (error) {
       console.error('[Usage Tracking] Error tracking storage upload:', error);
     }
@@ -40,8 +38,6 @@ export class UsageTrackingService {
         'usage.storageUsed': increment(-fileSize),
         'usage.lastStorageUpdate': new Date(),
       });
-
-      console.log(`[Usage Tracking] Removed ${fileSize} bytes storage from company ${companyId}`);
     } catch (error) {
       console.error('[Usage Tracking] Error tracking storage deletion:', error);
     }
@@ -61,8 +57,6 @@ export class UsageTrackingService {
         'usage.firestoreWrites': increment(1),
         'usage.lastFirestoreUpdate': new Date(),
       });
-
-      console.log(`[Usage Tracking] Added ${documentSize} bytes Firestore to company ${companyId}`);
     } catch (error) {
       console.error('[Usage Tracking] Error tracking Firestore write:', error);
     }
@@ -82,10 +76,6 @@ export class UsageTrackingService {
         'usage.firestoreDeletes': increment(1),
         'usage.lastFirestoreUpdate': new Date(),
       });
-
-      console.log(
-        `[Usage Tracking] Removed ${documentSize} bytes Firestore from company ${companyId}`
-      );
     } catch (error) {
       console.error('[Usage Tracking] Error tracking Firestore deletion:', error);
     }

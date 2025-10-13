@@ -196,12 +196,6 @@ export class StorageLimitService {
         'storageCancellation.recordedAt': serverTimestamp(),
       });
 
-      console.log('[StorageLimitService] Cancellation consent recorded:', {
-        companyId,
-        userSignature,
-        currentUsage,
-      });
-
       return { success: true };
     } catch (error) {
       console.error('[StorageLimitService] Error recording consent:', error);

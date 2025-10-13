@@ -200,13 +200,9 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
   // 🔔 NEUE EMAIL NOTIFICATIONS: Listener für ungelesene E-Mails
   useEffect(() => {
     if (!company?.uid) {
-      console.log('🔔 Email Notification Listener NICHT aktiviert - keine Company UID:', company);
       setUnreadEmailsCount(0);
       return;
     }
-
-    console.log('🔔 Email Notification Listener aktiviert für Company:', company.uid);
-    console.log('🔔 Collection Path:', `companies/${company.uid}/emailCache`);
 
     // Listener auf emailCache - ALLE Emails laden, dann filtern (kein Index nötig)
     const emailCacheRef = collection(db, 'companies', company.uid, 'emailCache');
@@ -222,7 +218,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
         });
 
         const unreadCount = unreadEmails.length;
-        console.log(`🔔 Ungelesene E-Mails: ${unreadCount} von ${snapshot.docs.length} gesamt`);
+
         setUnreadEmailsCount(unreadCount);
 
         // Optional: Browser-Notification wenn neue Email
@@ -242,7 +238,6 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
     );
 
     return () => {
-      console.log('🔔 Email notification listener: Cleanup');
       unsubscribe();
     };
   }, [company?.uid]);
@@ -514,6 +509,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                 onChange={e => setSearchTerm(e.target.value)}
                 value={searchTerm}
               />
+
               <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
               {isSearchDropdownOpen && (
                 <div className="absolute top-full left-0 mt-1 w-full max-h-96 overflow-y-auto bg-white rounded-md shadow-lg z-30 ring-1 ring-black ring-opacity-5">
