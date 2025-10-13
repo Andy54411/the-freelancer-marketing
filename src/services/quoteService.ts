@@ -16,8 +16,8 @@ import {
   onSnapshot,
   serverTimestamp,
   increment,
-  Timestamp } from
-'firebase/firestore';
+  Timestamp,
+} from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { InventoryService } from './inventoryService';
 import { NumberSequenceService } from './numberSequenceService';
@@ -48,12 +48,14 @@ export interface Quote {
   customerNumber?: string;
   customerEmail: string;
   customerPhone?: string;
-  customerAddress?: string | {
-    street: string;
-    city: string;
-    postalCode: string;
-    country: string;
-  };
+  customerAddress?:
+    | string
+    | {
+        street: string;
+        city: string;
+        postalCode: string;
+        country: string;
+      };
 
   // Datum & Gültigkeit
   date: Date;
@@ -149,17 +151,10 @@ export class QuoteService {
       const q = query(quotesRef, orderBy('date', 'desc'));
       const snapshot = await getDocs(q);
 
-      const quotes = snapshot.docs.map((doc) => {
+      const quotes = snapshot.docs.map(doc => {
         const data = doc.data();
 
         // Debug logging to see what's happening
-
-
-
-
-
-
-
 
         // CRITICAL FIX: Always use Firestore document ID, ignore any id field in data
         const quote = {
@@ -174,21 +169,14 @@ export class QuoteService {
           acceptedAt: data.acceptedAt?.toDate(),
           rejectedAt: data.rejectedAt?.toDate(),
           convertedAt: data.convertedAt?.toDate(),
-          cancelledAt: data.cancelledAt?.toDate()
+          cancelledAt: data.cancelledAt?.toDate(),
         } as Quote;
 
         // Force ID to be the document ID - this fixes existing data
         quote.id = doc.id;
 
-
-
-
-
-
-
         return quote;
       });
-
 
       return quotes;
     } catch (error) {
@@ -223,17 +211,11 @@ export class QuoteService {
         acceptedAt: data.acceptedAt?.toDate(),
         rejectedAt: data.rejectedAt?.toDate(),
         convertedAt: data.convertedAt?.toDate(),
-        cancelledAt: data.cancelledAt?.toDate()
+        cancelledAt: data.cancelledAt?.toDate(),
       } as Quote;
 
       // Force ID to be the document ID - this fixes existing data
       quote.id = snapshot.id;
-
-
-
-
-
-
 
       return quote;
     } catch (error) {
@@ -245,39 +227,95 @@ export class QuoteService {
    * Neues Angebot erstellen
    */
   static async createQuote(
-  companyId: string,
-  quoteData: Omit<Quote, 'id' | 'number' | 'createdAt' | 'updatedAt'>)
-  : Promise<string> {
+    companyId: string,
+    quoteData: Omit<Quote, 'id' | 'number' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
     try {
+      // 🔥 Lade vollständige Company-Daten für PDF-Generierung
+      const companyRef = doc(db, 'companies', companyId);
+      const companySnap = await getDoc(companyRef);
+
+      let companyEnrichment = {};
+      if (companySnap.exists()) {
+        const companyData = companySnap.data();
+
+        // Extrahiere Bank-Daten aus allen verfügbaren Quellen (wie placeholderSystem.ts)
+        const bankDetails = companyData.bankDetails || companyData.step4 || companyData.step3 || {};
+
+        companyEnrichment = {
+          // Company Basis-Daten
+          companyName: companyData.companyName || '',
+          companyStreet: companyData.companyStreet || '',
+          companyHouseNumber: companyData.companyHouseNumber || '',
+          companyPostalCode: companyData.companyPostalCode || '',
+          companyCity: companyData.companyCity || '',
+          companyCountry: companyData.companyCountry || 'Deutschland',
+          companyPhone: companyData.phoneNumber || companyData.companyPhoneNumber || '',
+          companyEmail: companyData.email || companyData.contactEmail || '',
+          companyWebsite: companyData.website || companyData.companyWebsite || '',
+          companyTaxNumber: companyData.taxNumber || '',
+          companyVatId: companyData.vatId || '',
+
+          // Bank-Daten (komplett für Platzhalter-System)
+          companyIban: bankDetails.iban || companyData.iban || '',
+          companyBic: bankDetails.bic || companyData.bic || '',
+          bankDetails: {
+            iban: bankDetails.iban || companyData.iban || '',
+            bic: bankDetails.bic || companyData.bic || '',
+            bankName: bankDetails.bankName || companyData.bankName || '',
+            accountHolder:
+              bankDetails.accountHolder ||
+              companyData.accountHolder ||
+              companyData.companyName ||
+              '',
+          },
+
+          // Registrierungsdaten
+          companyRegister: companyData.companyRegister || companyData.registrationNumber || '',
+          companyRegistrationNumber:
+            companyData.companyRegister || companyData.registrationNumber || '',
+          legalForm: companyData.legalForm || '',
+          districtCourt: companyData.districtCourt || '',
+
+          // Kleinunternehmer-Status
+          isSmallBusiness: companyData.kleinunternehmer === 'ja' || false,
+        };
+      }
+
       // Angebotsnummer generieren
       const number = await this.generateQuoteNumber(companyId);
 
       // CRITICAL FIX: Remove 'id' field from quoteData to prevent empty ID from being saved
       const { id, ...cleanQuoteData } = quoteData as any;
 
-
-
-
-
-
-
       const quotesRef = collection(db, 'companies', companyId, 'quotes');
       const payload: Record<string, any> = {
         ...cleanQuoteData, // Use cleaned data without ID
+        ...companyEnrichment, // 🔥 Füge vollständige Company-Daten hinzu
         number,
         companyId,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        date: Timestamp.fromDate(cleanQuoteData.date instanceof Date ? cleanQuoteData.date : new Date(cleanQuoteData.date)),
-        validUntil: Timestamp.fromDate(cleanQuoteData.validUntil instanceof Date ? cleanQuoteData.validUntil : new Date(cleanQuoteData.validUntil)),
-        deliveryDate: cleanQuoteData.deliveryDate ? Timestamp.fromDate(cleanQuoteData.deliveryDate instanceof Date ? cleanQuoteData.deliveryDate : new Date(cleanQuoteData.deliveryDate)) : null
+        date: Timestamp.fromDate(
+          cleanQuoteData.date instanceof Date ? cleanQuoteData.date : new Date(cleanQuoteData.date)
+        ),
+        validUntil: Timestamp.fromDate(
+          cleanQuoteData.validUntil instanceof Date
+            ? cleanQuoteData.validUntil
+            : new Date(cleanQuoteData.validUntil)
+        ),
+        deliveryDate: cleanQuoteData.deliveryDate
+          ? Timestamp.fromDate(
+              cleanQuoteData.deliveryDate instanceof Date
+                ? cleanQuoteData.deliveryDate
+                : new Date(cleanQuoteData.deliveryDate)
+            )
+          : null,
       };
 
       const cleanedPayload = Object.fromEntries(
         Object.entries(payload).filter(([key, value]) => value !== undefined && key !== 'id') // Also filter out any id field
       );
-
-
 
       const docRef = await addDoc(quotesRef, cleanedPayload);
 
@@ -293,7 +331,7 @@ export class QuoteService {
             quoteId: docRef.id,
             quoteNumber: number,
             amount: cleanQuoteData.total,
-            currency: cleanQuoteData.currency
+            currency: cleanQuoteData.currency,
           }
         );
       } catch (activityError) {
@@ -311,16 +349,61 @@ export class QuoteService {
    * Angebot aktualisieren
    */
   static async updateQuote(
-  companyId: string,
-  quoteId: string,
-  updates: Partial<Quote>)
-  : Promise<void> {
+    companyId: string,
+    quoteId: string,
+    updates: Partial<Quote>
+  ): Promise<void> {
     try {
+      // 🔥 Lade aktuelle Company-Daten bei jedem Update
+      const companyRef = doc(db, 'companies', companyId);
+      const companySnap = await getDoc(companyRef);
+
+      let companyEnrichment = {};
+      if (companySnap.exists()) {
+        const companyData = companySnap.data();
+
+        // Extrahiere Bank-Daten aus allen verfügbaren Quellen
+        const bankDetails = companyData.bankDetails || companyData.step4 || companyData.step3 || {};
+
+        companyEnrichment = {
+          companyName: companyData.companyName || '',
+          companyStreet: companyData.companyStreet || '',
+          companyHouseNumber: companyData.companyHouseNumber || '',
+          companyPostalCode: companyData.companyPostalCode || '',
+          companyCity: companyData.companyCity || '',
+          companyCountry: companyData.companyCountry || 'Deutschland',
+          companyPhone: companyData.phoneNumber || companyData.companyPhoneNumber || '',
+          companyEmail: companyData.email || companyData.contactEmail || '',
+          companyWebsite: companyData.website || companyData.companyWebsite || '',
+          companyTaxNumber: companyData.taxNumber || '',
+          companyVatId: companyData.vatId || '',
+          companyIban: bankDetails.iban || companyData.iban || '',
+          companyBic: bankDetails.bic || companyData.bic || '',
+          bankDetails: {
+            iban: bankDetails.iban || companyData.iban || '',
+            bic: bankDetails.bic || companyData.bic || '',
+            bankName: bankDetails.bankName || companyData.bankName || '',
+            accountHolder:
+              bankDetails.accountHolder ||
+              companyData.accountHolder ||
+              companyData.companyName ||
+              '',
+          },
+          companyRegister: companyData.companyRegister || companyData.registrationNumber || '',
+          companyRegistrationNumber:
+            companyData.companyRegister || companyData.registrationNumber || '',
+          legalForm: companyData.legalForm || '',
+          districtCourt: companyData.districtCourt || '',
+          isSmallBusiness: companyData.kleinunternehmer === 'ja' || false,
+        };
+      }
+
       const quoteRef = doc(db, 'companies', companyId, 'quotes', quoteId);
 
       const updateData: any = {
         ...updates,
-        updatedAt: serverTimestamp()
+        ...companyEnrichment, // 🔥 Aktualisiere Company-Daten bei jedem Update
+        updatedAt: serverTimestamp(),
       };
 
       // Datum-Felder konvertieren
@@ -348,14 +431,17 @@ export class QuoteService {
 
             await this.createCustomerActivity(
               companyId,
-              updates.customerId || updates.customerName || quoteData.customerId || quoteData.customerName,
+              updates.customerId ||
+                updates.customerName ||
+                quoteData.customerId ||
+                quoteData.customerName,
               'document',
               `Angebot aktualisiert: ${quoteData.number}`,
               `Das Angebot wurde bearbeitet und aktualisiert.`,
               {
                 quoteId: quoteId,
                 quoteNumber: quoteData.number,
-                updateType: 'modification'
+                updateType: 'modification',
               }
             );
           }
@@ -379,9 +465,9 @@ export class QuoteService {
 
       // Evtl. bestehende Reservierungen freigeben
       if (quote && (quote.status === 'draft' || quote.status === 'sent')) {
-        const inventoryItems = (quote.items || []).
-        filter((it) => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount').
-        map((it) => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
+        const inventoryItems = (quote.items || [])
+          .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
+          .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
         if (inventoryItems.length > 0) {
           await InventoryService.releaseReservationForQuote(companyId, quoteId, inventoryItems);
         }
@@ -404,7 +490,7 @@ export class QuoteService {
               quoteNumber: quote.number,
               amount: quote.total,
               currency: quote.currency,
-              actionType: 'deleted'
+              actionType: 'deleted',
             }
           );
         } catch (activityError) {
@@ -434,7 +520,7 @@ export class QuoteService {
       await updateDoc(quoteRef, {
         status: 'sent',
         sentAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
 
       // Automatisch Aktivität in Kundenhistorie erstellen
@@ -450,7 +536,7 @@ export class QuoteService {
             quoteNumber: quoteData.number,
             amount: quoteData.total,
             currency: quoteData.currency,
-            actionType: 'sent'
+            actionType: 'sent',
           }
         );
       } catch (activityError) {
@@ -471,13 +557,13 @@ export class QuoteService {
       await updateDoc(quoteRef, {
         status: 'accepted',
         acceptedAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
 
       // Reservierte Artikel als verkauft markieren
-      const inventoryItems = (quote?.items || []).
-      filter((it) => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount').
-      map((it) => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
+      const inventoryItems = (quote?.items || [])
+        .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
+        .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
       if (inventoryItems.length > 0) {
         await InventoryService.sellReservedItems(companyId, quoteId, inventoryItems);
       }
@@ -496,7 +582,7 @@ export class QuoteService {
               quoteNumber: quote.number,
               amount: quote.total,
               currency: quote.currency,
-              actionType: 'accepted'
+              actionType: 'accepted',
             }
           );
         } catch (activityError) {
@@ -519,13 +605,13 @@ export class QuoteService {
         status: 'rejected',
         rejectedAt: serverTimestamp(),
         rejectionReason: reason || '',
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
 
       // Reservierungen freigeben
-      const inventoryItems = (quote?.items || []).
-      filter((it) => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount').
-      map((it) => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
+      const inventoryItems = (quote?.items || [])
+        .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
+        .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
       if (inventoryItems.length > 0) {
         await InventoryService.releaseReservationForQuote(companyId, quoteId, inventoryItems);
       }
@@ -533,9 +619,9 @@ export class QuoteService {
       // Automatisch Aktivität in Kundenhistorie erstellen
       if (quote?.customerId || quote?.customerName) {
         try {
-          const description = reason ?
-          `Das Angebot wurde abgelehnt. Grund: ${reason}` :
-          'Das Angebot wurde vom Kunden abgelehnt.';
+          const description = reason
+            ? `Das Angebot wurde abgelehnt. Grund: ${reason}`
+            : 'Das Angebot wurde vom Kunden abgelehnt.';
 
           await this.createCustomerActivity(
             companyId,
@@ -549,7 +635,7 @@ export class QuoteService {
               amount: quote.total,
               currency: quote.currency,
               actionType: 'rejected',
-              rejectionReason: reason
+              rejectionReason: reason,
             }
           );
         } catch (activityError) {
@@ -571,13 +657,13 @@ export class QuoteService {
       await updateDoc(quoteRef, {
         status: 'cancelled',
         cancelledAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
 
       // Reservierungen freigeben (falls vorhanden)
-      const inventoryItems = (quote?.items || []).
-      filter((it) => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount').
-      map((it) => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
+      const inventoryItems = (quote?.items || [])
+        .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
+        .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
       if (inventoryItems.length > 0) {
         await InventoryService.releaseReservationForQuote(companyId, quoteId, inventoryItems);
       }
@@ -609,7 +695,7 @@ export class QuoteService {
         convertedToInvoice: true,
         // invoiceId,
         convertedAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
 
       return 'temp-invoice-id'; // TODO: Echte Invoice-ID zurückgeben
@@ -654,7 +740,7 @@ export class QuoteService {
           emailSubject: 'Angebot {NUMBER}',
           autoSend: false,
           autoConvertToInvoice: false,
-          reminderDays: [7, 3, 1]
+          reminderDays: [7, 3, 1],
         };
 
         await this.updateQuoteSettings(companyId, defaultSettings);
@@ -671,14 +757,14 @@ export class QuoteService {
    * Angebots-Einstellungen aktualisieren
    */
   static async updateQuoteSettings(
-  companyId: string,
-  settings: Partial<QuoteSettings>)
-  : Promise<void> {
+    companyId: string,
+    settings: Partial<QuoteSettings>
+  ): Promise<void> {
     try {
       const settingsRef = doc(db, 'companies', companyId, 'settings', 'quotes');
       await updateDoc(settingsRef, {
         ...settings,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
     } catch (error) {
       throw error;
@@ -703,15 +789,15 @@ export class QuoteService {
 
       const stats = {
         total: quotes.length,
-        draft: quotes.filter((q) => q.status === 'draft').length,
-        sent: quotes.filter((q) => q.status === 'sent').length,
-        accepted: quotes.filter((q) => q.status === 'accepted').length,
-        rejected: quotes.filter((q) => q.status === 'rejected').length,
-        expired: quotes.filter((q) => q.status === 'expired').length,
+        draft: quotes.filter(q => q.status === 'draft').length,
+        sent: quotes.filter(q => q.status === 'sent').length,
+        accepted: quotes.filter(q => q.status === 'accepted').length,
+        rejected: quotes.filter(q => q.status === 'rejected').length,
+        expired: quotes.filter(q => q.status === 'expired').length,
         totalValue: quotes.reduce((sum, q) => sum + q.total, 0),
-        acceptedValue: quotes.
-        filter((q) => q.status === 'accepted').
-        reduce((sum, q) => sum + q.total, 0)
+        acceptedValue: quotes
+          .filter(q => q.status === 'accepted')
+          .reduce((sum, q) => sum + q.total, 0),
       };
 
       return stats;
@@ -727,8 +813,8 @@ export class QuoteService {
     const quotesRef = collection(db, 'companies', companyId, 'quotes');
     const q = query(quotesRef, orderBy('date', 'desc'));
 
-    return onSnapshot(q, (snapshot) => {
-      const quotes = snapshot.docs.map((doc) => {
+    return onSnapshot(q, snapshot => {
+      const quotes = snapshot.docs.map(doc => {
         const data = doc.data();
 
         // CRITICAL FIX: Always use Firestore document ID, ignore any id field in data
@@ -743,7 +829,7 @@ export class QuoteService {
           sentAt: data.sentAt?.toDate(),
           acceptedAt: data.acceptedAt?.toDate(),
           rejectedAt: data.rejectedAt?.toDate(),
-          convertedAt: data.convertedAt?.toDate()
+          convertedAt: data.convertedAt?.toDate(),
         } as Quote;
 
         // Force ID to be the document ID - this fixes existing data
@@ -760,13 +846,13 @@ export class QuoteService {
    * Aktivität in der Kundenhistorie erstellen
    */
   static async createCustomerActivity(
-  companyId: string,
-  customerIdOrName: string,
-  type: 'call' | 'email' | 'meeting' | 'document' | 'system' | 'invoice' | 'note',
-  title: string,
-  description: string,
-  metadata?: any)
-  : Promise<void> {
+    companyId: string,
+    customerIdOrName: string,
+    type: 'call' | 'email' | 'meeting' | 'document' | 'system' | 'invoice' | 'note',
+    title: string,
+    description: string,
+    metadata?: any
+  ): Promise<void> {
     try {
       // Versuche zuerst den Kunden anhand der ID zu finden
       let customerId = customerIdOrName;
@@ -802,10 +888,8 @@ export class QuoteService {
         timestamp: serverTimestamp(),
         user: 'System', // Da es automatisch erstellt wird
         userId: 'system',
-        metadata: metadata || {}
+        metadata: metadata || {},
       });
-
-
     } catch (error) {
       console.error('Fehler beim Erstellen der Kundenaktivität:', error);
       throw error;

@@ -348,4 +348,119 @@ export class NewGmailService {
       console.error('Error marking token as invalid:', error);
     }
   }
+
+  /**
+   * Send email via Gmail API
+   *
+   * @param to - Recipient email addresses
+   * @param subject - Email subject
+   * @param body - Plain text body
+   * @param htmlBody - HTML body (optional)
+   * @param cc - CC recipients (optional)
+   * @param bcc - BCC recipients (optional)
+   * @param attachments - File attachments (optional)
+   */
+  async sendEmail(options: {
+    to: string[];
+    subject: string;
+    body: string;
+    htmlBody?: string;
+    cc?: string[];
+    bcc?: string[];
+    attachments?: Array<{
+      filename: string;
+      content: Buffer | string; // Buffer or base64 string
+      mimeType: string;
+    }>;
+  }): Promise<{ messageId: string; success: boolean }> {
+    try {
+      const { to, subject, body, htmlBody, cc, bcc, attachments } = options;
+
+      // Build email message in RFC 2822 format
+      const boundary = `boundary_${Date.now()}_${Math.random().toString(36)}`;
+
+      const emailLines: string[] = [];
+
+      // Headers
+      emailLines.push(`To: ${to.join(', ')}`);
+      if (cc && cc.length > 0) {
+        emailLines.push(`Cc: ${cc.join(', ')}`);
+      }
+      if (bcc && bcc.length > 0) {
+        emailLines.push(`Bcc: ${bcc.join(', ')}`);
+      }
+      emailLines.push(`Subject: ${subject}`);
+      emailLines.push('MIME-Version: 1.0');
+      emailLines.push(`Content-Type: multipart/mixed; boundary="${boundary}"`);
+      emailLines.push('');
+
+      // Plain text body
+      emailLines.push(`--${boundary}`);
+      emailLines.push('Content-Type: text/plain; charset=UTF-8');
+      emailLines.push('Content-Transfer-Encoding: 7bit');
+      emailLines.push('');
+      emailLines.push(body);
+      emailLines.push('');
+
+      // HTML body (if provided)
+      if (htmlBody) {
+        emailLines.push(`--${boundary}`);
+        emailLines.push('Content-Type: text/html; charset=UTF-8');
+        emailLines.push('Content-Transfer-Encoding: 7bit');
+        emailLines.push('');
+        emailLines.push(htmlBody);
+        emailLines.push('');
+      }
+
+      // Attachments
+      if (attachments && attachments.length > 0) {
+        for (const attachment of attachments) {
+          emailLines.push(`--${boundary}`);
+          emailLines.push(`Content-Type: ${attachment.mimeType}; name="${attachment.filename}"`);
+          emailLines.push('Content-Transfer-Encoding: base64');
+          emailLines.push(`Content-Disposition: attachment; filename="${attachment.filename}"`);
+          emailLines.push('');
+
+          // Convert Buffer to base64 if needed
+          const base64Content = Buffer.isBuffer(attachment.content)
+            ? attachment.content.toString('base64')
+            : attachment.content;
+
+          // Split base64 into 76-character lines (RFC 2045)
+          const lines = base64Content.match(/.{1,76}/g) || [];
+          emailLines.push(...lines);
+          emailLines.push('');
+        }
+      }
+
+      // End boundary
+      emailLines.push(`--${boundary}--`);
+
+      // Join all lines
+      const rawMessage = emailLines.join('\r\n');
+
+      // Encode to base64url
+      const encodedMessage = Buffer.from(rawMessage)
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
+      // Send via Gmail API
+      const response = await this.gmail.users.messages.send({
+        userId: 'me',
+        requestBody: {
+          raw: encodedMessage,
+        },
+      });
+
+      return {
+        messageId: response.data.id || '',
+        success: true,
+      };
+    } catch (error) {
+      console.error('Error sending email via Gmail:', error);
+      throw error;
+    }
+  }
 }

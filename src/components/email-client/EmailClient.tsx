@@ -25,6 +25,7 @@ import type {
   EmailCompose as EmailComposeType,
 } from './types';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 // useOptimizedGmail Hook entfernt
 
 // Global Type Declaration für Performance Tracking
@@ -115,12 +116,20 @@ export function EmailClient({
 
   const refreshCachedEmails = useCallback(
     async (forceRefresh = false) => {
+      if (!companyId) {
+        setCacheError('Keine Company-ID verfügbar');
+        setCacheLoading(false);
+        return;
+      }
+
       setCacheLoading(true);
       setCacheError(null);
 
       try {
         // Lade E-Mails von der API
-        const response = await fetch(`/api/company/${companyId}/emails?folder=${selectedFolder}`, {
+        const apiUrl = `/api/company/${companyId}/emails?folder=${selectedFolder}`;
+
+        const response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -128,7 +137,8 @@ export function EmailClient({
         });
 
         if (!response.ok) {
-          throw new Error(`API Error: ${response.status}`);
+          const errorText = await response.text().catch(() => 'Unknown error');
+          throw new Error(`API Error ${response.status}: ${errorText}`);
         }
 
         const data = await response.json();
@@ -178,8 +188,17 @@ export function EmailClient({
           setCachedEmails([]);
         }
       } catch (error) {
-        console.error('❌ Failed to load emails:', error);
-        setCacheError(error instanceof Error ? error.message : 'Fehler beim Laden der E-Mails');
+        const errorMessage =
+          error instanceof Error ? error.message : 'Fehler beim Laden der E-Mails';
+        setCacheError(errorMessage);
+
+        // Check if it's a network error
+        if (errorMessage.includes('Failed to fetch')) {
+          setCacheError(
+            'Netzwerkfehler: Bitte überprüfen Sie Ihre Internetverbindung und Gmail-Konfiguration'
+          );
+        }
+
         // Fallback: Try to load from localStorage cache
         try {
           const cachedData = localStorage.getItem(`gmail_cache_${companyId}_${selectedFolder}`);
@@ -637,24 +656,57 @@ export function EmailClient({
 
   const handleSendEmail = async (emailData: EmailComposeType) => {
     try {
-      // TODO: Implement new send email API
+      if (!companyId) {
+        throw new Error('Company ID missing');
+      }
 
-      return;
+      // Convert File attachments to format accepted by API
+      const processedAttachments = emailData.attachments
+        ? await Promise.all(
+            emailData.attachments.map(async file => {
+              const arrayBuffer = await file.arrayBuffer();
+              const buffer = Buffer.from(arrayBuffer);
+              return {
+                filename: file.name,
+                content: buffer.toString('base64'),
+                mimeType: file.type || 'application/octet-stream',
+              };
+            })
+          )
+        : [];
+
       const response = await fetch(`/api/company/${companyId}/emails/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(emailData),
+        body: JSON.stringify({
+          to: emailData.to.split(',').map(email => email.trim()),
+          cc: emailData.cc ? emailData.cc.split(',').map(email => email.trim()) : undefined,
+          bcc: emailData.bcc ? emailData.bcc.split(',').map(email => email.trim()) : undefined,
+          subject: emailData.subject,
+          body: emailData.body,
+          htmlBody: emailData.body.replace(/\n/g, '<br>'), // Simple HTML conversion
+          attachments: processedAttachments,
+        }),
       });
 
-      if (response.ok) {
-        // Refresh emails
-        await loadEmails();
-        setIsComposeOpen(false);
-      } else {
-        throw new Error('Fehler beim Senden der E-Mail');
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (result.code === 'GMAIL_AUTH_ERROR') {
+          throw new Error('Gmail-Authentifizierung abgelaufen. Bitte Gmail erneut verbinden.');
+        }
+        throw new Error(result.error || 'Fehler beim Senden der E-Mail');
       }
+
+      // Refresh emails to show sent message
+      await loadEmails();
+      setIsComposeOpen(false);
+
+      // Show success message
+      toast.success('E-Mail erfolgreich gesendet');
     } catch (error) {
       console.error('Fehler beim Senden:', error);
+      toast.error(error instanceof Error ? error.message : 'Fehler beim Senden der E-Mail');
       throw error;
     }
   };
@@ -844,6 +896,54 @@ export function EmailClient({
     );
   }
 
+  // Error Display
+  if (cacheError) {
+    return (
+      <div className={cn('h-screen w-screen flex items-center justify-center bg-white', className)}>
+        <div className="text-center max-w-md px-6">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-red-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Fehler beim Laden der E-Mails
+          </h3>
+          <p className="text-gray-600 mb-6">{cacheError}</p>
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                setCacheError(null);
+                handleRefresh();
+              }}
+              className="w-full px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              Erneut versuchen
+            </button>
+            <button
+              onClick={() =>
+                (window.location.href = `/dashboard/company/${companyId}/settings/integrations`)
+              }
+              className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Gmail-Einstellungen prüfen
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn('h-screen w-screen flex bg-white', className)}>
       {/* Email List - Fixed Width */}
@@ -906,6 +1006,7 @@ export function EmailClient({
         }}
         onSend={handleSendEmail}
         onSaveDraft={handleSaveDraft}
+        companyId={companyId}
         replyTo={
           composeMode === 'reply' || composeMode === 'replyAll'
             ? replyToEmail || undefined
