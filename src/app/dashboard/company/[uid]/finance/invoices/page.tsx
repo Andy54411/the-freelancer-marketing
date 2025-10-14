@@ -9,6 +9,7 @@ import { InvoiceData } from '@/types/invoiceTypes';
 import { Button } from '@/components/ui/button';
 import { FileText, Plus, Download, Filter } from 'lucide-react';
 import Link from 'next/link';
+import { ImportXRechnungDialog } from '@/components/finance/ImportXRechnungDialog';
 
 export default function InvoicesPage() {
   const params = useParams();
@@ -25,6 +26,7 @@ export default function InvoicesPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(initialTab);
   const [showFilters, setShowFilters] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
 
   useEffect(() => {
     if (user && user.uid === uid) {
@@ -70,7 +72,11 @@ export default function InvoicesPage() {
         <header className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
           <div className="flex gap-2">
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2"
+              onClick={() => setShowImportDialog(true)}
+            >
               <FileText className="h-4 w-4" />
               E-Rechnung lesen
             </Button>
@@ -82,6 +88,15 @@ export default function InvoicesPage() {
             </Link>
           </div>
         </header>
+        
+        <ImportXRechnungDialog
+          open={showImportDialog}
+          onOpenChange={setShowImportDialog}
+          companyId={uid}
+          onSuccess={loadInvoices}
+          defaultType="income" // 🎯 Default: Einnahme (da wir auf Invoices-Seite sind)
+        />
+        
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
@@ -98,7 +113,11 @@ export default function InvoicesPage() {
         <header className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
           <div className="flex gap-2">
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2"
+              onClick={() => setShowImportDialog(true)}
+            >
               <FileText className="h-4 w-4" />
               E-Rechnung lesen
             </Button>
@@ -110,6 +129,15 @@ export default function InvoicesPage() {
             </Link>
           </div>
         </header>
+        
+        <ImportXRechnungDialog
+          open={showImportDialog}
+          onOpenChange={setShowImportDialog}
+          companyId={uid}
+          onSuccess={loadInvoices}
+          defaultType="income" // 🎯 Default: Einnahme (da wir auf Invoices-Seite sind)
+        />
+        
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-2">Fehler</h2>
@@ -128,7 +156,11 @@ export default function InvoicesPage() {
       <header className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
         <div className="flex gap-2">
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={() => setShowImportDialog(true)}
+          >
             <FileText className="h-4 w-4" />
             E-Rechnung lesen
           </Button>
@@ -140,6 +172,14 @@ export default function InvoicesPage() {
           </Link>
         </div>
       </header>
+
+      <ImportXRechnungDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        companyId={uid}
+        onSuccess={loadInvoices}
+        defaultType="income" // 🎯 Default: Einnahme (da wir auf Invoices-Seite sind)
+      />
 
       <InvoiceListView
         invoices={invoices}

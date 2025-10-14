@@ -5,34 +5,34 @@ import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-// Dynamic imports für PDF.js Komponenten um SSR-Probleme zu vermeiden
-const Document = dynamic(() => import('react-pdf').then(mod => ({ default: mod.Document })), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center py-8">
-      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#14ad9f]"></div>
-      <span className="ml-3 text-sm text-gray-600">PDF-Komponente wird geladen...</span>
-    </div>
-  ),
-});
+// Lazy Loading für react-pdf
+const ReactPDFDocument = dynamic(
+  () => import('react-pdf').then((mod) => ({ default: mod.Document })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#14ad9f]"></div>
+        <span className="ml-3 text-sm text-gray-600">PDF wird geladen...</span>
+      </div>
+    ),
+  }
+);
 
-const Page = dynamic(() => import('react-pdf').then(mod => ({ default: mod.Page })), {
-  ssr: false,
-});
+const ReactPDFPage = dynamic(
+  () => import('react-pdf').then((mod) => ({ default: mod.Page })),
+  { ssr: false }
+);
 
-// PDF.js worker erst nach dem Mount konfigurieren
+// Aliase für bessere Lesbarkeit
+const Document = ReactPDFDocument;
+const Page = ReactPDFPage;
+
+// Worker-Konfiguration global
 if (typeof window !== 'undefined') {
-  import('react-pdf')
-    .then(({ pdfjs }) => {
-      // Versuche zuerst lokalen Worker, dann Fallback auf CDN
-      pdfjs.GlobalWorkerOptions.workerSrc = '/pdf-worker/pdf.worker.min.mjs';
-    })
-    .catch(() => {
-      // Fallback für ältere Versionen
-      import('react-pdf').then(({ pdfjs }) => {
-        pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
-      });
-    });
+  import('pdfjs-dist').then((pdfjs) => {
+    pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
+  });
 }
 
 interface PdfPreviewProps {
@@ -77,9 +77,9 @@ export function PdfPreview({ file, fileUrl, className = '' }: PdfPreviewProps) {
   // Memoize options to prevent unnecessary reloads
   const documentOptions = useMemo(
     () => ({
-      cMapUrl: '/pdf-worker/',
+      cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.296/cmaps/',
       cMapPacked: true,
-      standardFontDataUrl: '/pdf-worker/',
+      standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@5.4.296/standard_fonts/',
       // CORS-freundliche Einstellungen
       withCredentials: false,
     }),

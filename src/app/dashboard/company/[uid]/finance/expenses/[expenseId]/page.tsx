@@ -4,29 +4,34 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   ArrowLeft,
   Download,
   FileText,
-  Calendar,
-  User,
   Euro,
-  Hash,
-  MapPin,
-  Phone,
-  Mail,
+  Calendar,
   Building,
-  ExternalLink,
-  AlertCircle,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Tag,
 } from 'lucide-react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
+import { doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { db, storage } from '@/firebase/clients';
+import { ref, getDownloadURL } from 'firebase/storage';
 import { toast } from 'sonner';
 
 interface ExpenseData {
   id: string;
-  documentNumber: string;
-  customerName: string;
+  title: string;
   amount: number;
   netAmount?: number;
   vatAmount?: number;
@@ -35,18 +40,22 @@ interface ExpenseData {
   dueDate?: string;
   category?: string;
   description?: string;
-  currency?: string;
-  status?: string;
-  storageUrl?: string;
-  fileName?: string;
-  fileType?: string;
+  vendor?: string;
+  invoiceNumber?: string;
+  companyName?: string;
+  companyAddress?: string;
+  companyVatNumber?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  receipt?: {
+    fileName: string;
+    downloadURL: string;
+  };
   createdAt?: any;
   updatedAt?: any;
-  costCenter?: string;
-  transactionId?: string;
 }
 
-export default function ReceiptDetailPage() {
+export default function ExpenseDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -73,71 +82,107 @@ export default function ReceiptDetailPage() {
       const expenseSnap = await getDoc(expenseRef);
 
       if (!expenseSnap.exists()) {
-        setError('Beleg nicht gefunden');
+        setError('Ausgabe nicht gefunden');
         return;
       }
 
+      const rawData = expenseSnap.data();
       const expenseData = {
         id: expenseSnap.id,
-        ...expenseSnap.data(),
+        ...rawData,
       } as ExpenseData;
 
       setExpense(expenseData);
 
-      if (expenseData.storageUrl) {
-        setPdfUrl(expenseData.storageUrl);
-      } else {
-        console.warn('⚠️ Kein storageUrl Feld vorhanden');
+      // Load PDF - Versuche verschiedene Felder
+      const fileName = (rawData as any).fileName;
+      const storageUrl = (rawData as any).storageUrl;
+      const receiptDownloadUrl = expenseData.receipt?.downloadURL;
+
+      if (receiptDownloadUrl) {
+        // Bereits eine receipt.downloadURL vorhanden
+        setPdfUrl(receiptDownloadUrl);
+      } else if (storageUrl) {
+        // Parse den Storage-Pfad aus der alten storageUrl
+        try {
+          // Extract path from URL: .../o/{path}?...
+          const match = storageUrl.match(/\/o\/(.+?)\?/);
+          if (match && match[1]) {
+            const storagePath = decodeURIComponent(match[1]);
+            const storageRef = ref(storage, storagePath);
+            const freshUrl = await getDownloadURL(storageRef);
+            setPdfUrl(freshUrl);
+          } else {
+            setPdfUrl(storageUrl);
+          }
+        } catch (storageErr) {
+          console.error('Error loading PDF from storage:', storageErr);
+          setPdfUrl(storageUrl);
+        }
+      } else if (fileName) {
+        // Try to construct path from fileName
+        try {
+          const storageRef = ref(storage, `expense-receipts/${uid}/${fileName}`);
+          const freshUrl = await getDownloadURL(storageRef);
+          setPdfUrl(freshUrl);
+        } catch (err) {
+          console.error('Error loading PDF from fileName:', err);
+        }
       }
-    } catch (err) {
-      console.error('❌ Fehler beim Laden des Belegs:', err);
-      setError(
-        'Fehler beim Laden des Belegs: ' +
-          (err instanceof Error ? err.message : 'Unbekannter Fehler')
-      );
+    } catch (err: any) {
+      console.error('Error loading expense:', err);
+      setError(err.message || 'Fehler beim Laden der Ausgabe');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('de-DE', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
+  const handleBackToExpenses = () => {
+    router.push(`/dashboard/company/${uid}/finance/expenses`);
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '-';
+  const handleDelete = async () => {
+    if (!expense) return;
+    
+    if (!confirm('Möchten Sie diese Ausgabe wirklich löschen?')) return;
+
     try {
-      const date = new Date(dateString);
-      if (!isNaN(date.getTime())) {
-        return date.toLocaleDateString('de-DE', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        });
-      }
-      return dateString;
-    } catch {
-      return dateString;
+      await deleteDoc(doc(db, 'companies', uid, 'expenses', expenseId));
+      toast.success('Ausgabe gelöscht');
+      handleBackToExpenses();
+    } catch (err: any) {
+      console.error('Error deleting expense:', err);
+      toast.error('Fehler beim Löschen');
     }
   };
 
-  const handleDownload = () => {
+  const handleDownloadReceipt = () => {
     if (pdfUrl) {
       window.open(pdfUrl, '_blank');
-    } else {
-      toast.error('Keine PDF-URL verfügbar');
+      toast.success('Beleg wird heruntergeladen');
     }
   };
+
+  // Auth check
+  if (!user || user.uid !== uid) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
+          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#14ad9f] mx-auto mb-4"></div>
-          <p className="text-gray-600">Lade Beleg...</p>
+      <div className="space-y-6">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
+            <p className="mt-2 text-gray-600">Ausgabe wird geladen...</p>
+          </div>
         </div>
       </div>
     );
@@ -145,21 +190,22 @@ export default function ReceiptDetailPage() {
 
   if (error || !expense) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white border border-gray-200 rounded-lg shadow-sm">
-          <div className="p-6">
-            <div className="text-red-600 flex items-center gap-2 mb-2">
-              <AlertCircle className="h-5 w-5" />
-              <h3 className="text-lg font-semibold">Fehler</h3>
-            </div>
-            <p className="text-sm text-gray-600 mb-4">{error || 'Beleg nicht gefunden'}</p>
-            <Button
-              onClick={() => router.back()}
-              variant="outline"
-              className="w-full border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Zurück
+      <div className="space-y-6">
+        <Button
+          variant="ghost"
+          onClick={handleBackToExpenses}
+          className="mb-4 text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Zurück zu Ausgaben
+        </Button>
+
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-red-600 mb-2">Fehler</h2>
+            <p className="text-gray-600 mb-4">{error || 'Ausgabe nicht gefunden'}</p>
+            <Button onClick={handleBackToExpenses} className="bg-[#14ad9f] hover:bg-[#129488]">
+              Zurück zu Ausgaben
             </Button>
           </div>
         </div>
@@ -169,224 +215,179 @@ export default function ReceiptDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Zurück
-              </Button>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">
-                  Beleg {expense.documentNumber}
-                </h1>
-                <p className="text-sm text-gray-500">{expense.customerName}</p>
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Button variant="ghost" onClick={handleBackToExpenses} className="p-2">
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <div>
+                  <h2 className="text-base font-semibold text-gray-900">
+                    {expense.title || 'Ausgabe'}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {expense.vendor && `${expense.vendor} • `}
+                    {new Date(expense.date).toLocaleDateString('de-DE')}
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownload}
-                className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white transition-colors"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Herunterladen
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Details */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Betragsinfo */}
-            <div className="infocard bg-white border border-gray-200 rounded-lg">
-              <div className="top border-b border-gray-100 p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Betragsinformationen</h3>
-                  <div className="group">
-                    <Euro className="h-5 w-5 text-gray-400" />
-                  </div>
-                </div>
-              </div>
-              <div className="details p-4">
-                <div className="space-y-4">
-                  <div className="detail flex justify-between items-start py-2 border-t border-gray-100 pt-4">
-                    <div className="left">
-                      <p className="label text-sm text-gray-600">Gesamtbetrag</p>
-                    </div>
-                    <div className="right">
-                      <p className="text-sm font-bold text-gray-900">
-                        {formatCurrency(expense.amount)}
-                      </p>
-                    </div>
-                  </div>
-                  {expense.netAmount !== undefined && (
-                    <div className="detail flex justify-between items-start py-2">
-                      <div className="left">
-                        <p className="label text-sm text-gray-600">Nettobetrag</p>
-                      </div>
-                      <div className="right">
-                        <p className="text-sm font-medium text-gray-900">
-                          {formatCurrency(expense.netAmount)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  {expense.vatAmount !== undefined && (
-                    <div className="detail flex justify-between items-start py-2">
-                      <div className="left">
-                        <p className="label text-sm text-gray-600">
-                          MwSt. ({expense.vatRate || 0}%)
-                        </p>
-                      </div>
-                      <div className="right">
-                        <p className="text-sm font-medium text-gray-900">
-                          {formatCurrency(expense.vatAmount)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+              <div className="flex items-center space-x-2">
+                {pdfUrl && (
+                  <Button
+                    onClick={handleDownloadReceipt}
+                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Beleg herunterladen
+                  </Button>
+                )}
 
-            {/* Belegdetails */}
-            <div className="infocard bg-white border border-gray-200 rounded-lg">
-              <div className="top border-b border-gray-100 p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Belegdetails</h3>
-                  <div className="group">
-                    <FileText className="h-5 w-5 text-gray-400" />
-                  </div>
-                </div>
-              </div>
-              <div className="details p-4">
-                <div className="space-y-4">
-                  <div className="detail flex justify-between items-start py-2 gap-4">
-                    <div className="left flex-shrink-0">
-                      <p className="label text-sm text-gray-600">Belegnummer</p>
-                    </div>
-                    <div className="right text-right">
-                      <p className="text-sm font-medium text-gray-900">{expense.documentNumber}</p>
-                    </div>
-                  </div>
-                  <div className="detail flex justify-between items-start py-2 gap-4">
-                    <div className="left flex-shrink-0">
-                      <p className="label text-sm text-gray-600">Belegdatum</p>
-                    </div>
-                    <div className="right text-right">
-                      <p className="text-sm font-medium text-gray-900">
-                        {formatDate(expense.date)}
-                      </p>
-                    </div>
-                  </div>
-                  {expense.dueDate && (
-                    <div className="detail flex justify-between items-start py-2 gap-4">
-                      <div className="left flex-shrink-0">
-                        <p className="label text-sm text-gray-600">Fälligkeitsdatum</p>
-                      </div>
-                      <div className="right text-right">
-                        <p className="text-sm font-medium text-gray-900">
-                          {formatDate(expense.dueDate)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  <div className="detail flex justify-between items-start py-2 gap-4">
-                    <div className="left flex-shrink-0">
-                      <p className="label text-sm text-gray-600">Kunde</p>
-                    </div>
-                    <div className="right text-right">
-                      <p className="text-sm font-medium text-gray-900">{expense.customerName}</p>
-                    </div>
-                  </div>
-                  {expense.category && (
-                    <div className="detail flex justify-between items-start py-2 gap-4">
-                      <div className="left flex-shrink-0">
-                        <p className="label text-sm text-gray-600">Kategorie</p>
-                      </div>
-                      <div className="right text-right">
-                        <p className="text-sm font-medium text-gray-900">{expense.category}</p>
-                      </div>
-                    </div>
-                  )}
-                  {expense.costCenter && (
-                    <div className="detail flex justify-between items-start py-2 gap-4">
-                      <div className="left flex-shrink-0">
-                        <p className="label text-sm text-gray-600">Kostenstelle</p>
-                      </div>
-                      <div className="right text-right">
-                        <p className="text-sm font-medium text-gray-900">{expense.costCenter}</p>
-                      </div>
-                    </div>
-                  )}
-                  {expense.description && (
-                    <div className="detail flex justify-between items-start py-2 border-t border-gray-100 pt-4 gap-4">
-                      <div className="left flex-shrink-0">
-                        <p className="label text-sm text-gray-600">Beschreibung</p>
-                      </div>
-                      <div className="right text-right">
-                        <p className="text-sm font-medium text-gray-900">{expense.description}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => toast.info('Bearbeiten wird bald hinzugefügt')}>
+                      <Edit className="h-4 w-4 mr-3" />
+                      Bearbeiten
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+                      <Trash2 className="h-4 w-4 mr-3" />
+                      Löschen
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>
+        </header>
 
-          {/* Right Column - PDF Preview */}
-          <div className="lg:col-span-2">
-            <div className="infocard bg-white border border-gray-200 rounded-lg h-full">
-              <div className="top border-b border-gray-100 p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-gray-400" />
-                    Beleg-Vorschau
-                  </h3>
-                  {pdfUrl && (
-                    <a
-                      href={pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs text-[#14ad9f] hover:text-[#129488] transition-colors"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      <span>In neuem Tab öffnen</span>
-                    </a>
-                  )}
-                </div>
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+          {/* Expense Details */}
+          <div className="lg:col-span-1">
+            <div className="bg-white border border-gray-200 rounded-lg">
+              <div className="border-b border-gray-100 p-4">
+                <h3 className="text-lg font-semibold text-gray-900">Ausgabedetails</h3>
               </div>
-              <div className="details p-0">
-                {pdfUrl ? (
-                  <div className="w-full h-[800px] bg-gray-50 rounded-b-lg overflow-hidden">
-                    <iframe
-                      src={pdfUrl}
-                      className="w-full h-full border-0"
-                      title="Beleg PDF"
-                      onError={() => {
-                        console.error('❌ Fehler beim Laden des PDFs');
-                        toast.error('Fehler beim Laden des PDFs');
-                      }}
-                    />
+
+              <div className="p-4 space-y-3">
+                {/* Amount */}
+                <div className="flex justify-between items-center py-2">
+                  <div className="flex items-center">
+                    <Euro className="h-4 w-4 mr-2 text-gray-400" />
+                    <p className="text-sm text-gray-600">Betrag</p>
                   </div>
-                ) : (
-                  <div className="w-full h-[800px] bg-gray-50 rounded-b-lg flex items-center justify-center">
-                    <div className="text-center text-gray-500">
-                      <FileText className="h-12 w-12 mx-auto mb-4 text-[#14ad9f] opacity-40" />
-                      <p className="font-medium text-gray-700">Keine PDF-Vorschau verfügbar</p>
-                      <p className="text-sm mt-2">Der Beleg wurde ohne Datei-Anhang gespeichert.</p>
+                  <p className="text-sm font-bold text-gray-900">
+                    {expense.amount.toFixed(2)} €
+                  </p>
+                </div>
+
+                {/* Category */}
+                {expense.category && (
+                  <div className="flex justify-between items-center py-2">
+                    <div className="flex items-center">
+                      <Tag className="h-4 w-4 mr-2 text-gray-400" />
+                      <p className="text-sm text-gray-600">Kategorie</p>
                     </div>
+                    <Badge variant="outline">{expense.category}</Badge>
                   </div>
                 )}
+
+                {/* Date */}
+                <div className="flex justify-between items-center py-2">
+                  <div className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                    <p className="text-sm text-gray-600">Datum</p>
+                  </div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {new Date(expense.date).toLocaleDateString('de-DE')}
+                  </p>
+                </div>
+
+                {/* Vendor */}
+                {expense.vendor && (
+                  <div className="flex justify-between items-center py-2">
+                    <div className="flex items-center">
+                      <Building className="h-4 w-4 mr-2 text-gray-400" />
+                      <p className="text-sm text-gray-600">Lieferant</p>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">{expense.vendor}</p>
+                  </div>
+                )}
+
+                {/* Invoice Number */}
+                {expense.invoiceNumber && (
+                  <div className="flex justify-between items-center py-2">
+                    <div className="flex items-center">
+                      <FileText className="h-4 w-4 mr-2 text-gray-400" />
+                      <p className="text-sm text-gray-600">Rechnungsnr.</p>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">{expense.invoiceNumber}</p>
+                  </div>
+                )}
+
+                {/* Description */}
+                {expense.description && (
+                  <div className="py-2 border-t border-gray-100">
+                    <p className="text-sm text-gray-600 mb-1">Beschreibung</p>
+                    <p className="text-sm text-gray-900">{expense.description}</p>
+                  </div>
+                )}
+
+                {/* VAT Info */}
+                {expense.vatAmount !== undefined && expense.vatAmount !== null && (
+                  <>
+                    <div className="flex justify-between items-center py-2 border-t border-gray-100">
+                      <p className="text-sm text-gray-600">Nettobetrag</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {(expense.netAmount || 0).toFixed(2)} €
+                      </p>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <p className="text-sm text-gray-600">
+                        MwSt. ({expense.vatRate || 19}%)
+                      </p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {(expense.vatAmount || 0).toFixed(2)} €
+                      </p>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-t border-gray-100">
+                      <p className="text-sm font-semibold text-gray-900">Gesamtbetrag</p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {expense.amount.toFixed(2)} €
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
+            </div>
+          </div>
+
+          {/* PDF Preview */}
+          <div className="lg:col-span-2">
+            <div className="bg-white border border-gray-200 rounded-lg h-[800px]">
+              {pdfUrl ? (
+                <iframe
+                  src={pdfUrl}
+                  className="w-full h-full rounded-lg"
+                  title="Beleg Vorschau"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-gray-500">
+                    <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>Kein Beleg verfügbar</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

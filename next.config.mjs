@@ -36,7 +36,31 @@ const nextConfig = {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
       '@': path.resolve(process.cwd(), 'src'),
+      'canvas': false,
+      'encoding': false,
     };
+
+    // Fix für pdfjs-dist in Next.js 15
+    config.module = config.module || {};
+    config.module.rules = config.module.rules || [];
+    
+    // ESM-Behandlung für pdfjs-dist
+    config.module.rules.push({
+      test: /\.mjs$/,
+      include: /node_modules/,
+      type: 'javascript/auto',
+    });
+
+    // PDF.js Worker-Dateien ignorieren (werden via CDN geladen)
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        canvas: false,
+        encoding: false,
+        fs: false,
+        path: false,
+      };
+    }
 
     return config;
   },

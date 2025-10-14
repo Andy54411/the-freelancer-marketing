@@ -6,6 +6,7 @@
 3. **TypeScript 100%**: get_errors vor Abschluss
 4. **Zod-Validierung**: ALLE Inputs validieren
 5. **Update-Notifications**: Bei jedem Commit via `/dashboard/admin/updates`
+6. **KEINE FALLBACKS**: Fehler müssen sichtbar sein! Keine `|| ''`, `|| 'default'`, `?? fallback` - Problem an der Wurzel lösen!
 
 ## 🏗️ STACK
 Next.js 15 + TypeScript + Firebase + Vercel
@@ -55,6 +56,7 @@ pnpm run type-check
 - ❌ TypeScript errors - 100% clean
 - ❌ orderBy() in Firestore - Sort in app
 - ❌ Deletions - Soft deletes only
+- ❌ FALLBACKS - Keine `|| ''`, `|| 'default'`, `?? fallback` - Problem an der Wurzel lösen!
 
 ## ✅ ERFOLG
 Aufgabe abgeschlossen wenn:

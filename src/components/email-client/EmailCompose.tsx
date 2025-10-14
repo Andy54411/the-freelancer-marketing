@@ -51,7 +51,7 @@ import {
   Save,
   FileText,
   Receipt,
-  File,
+  File as FileIcon,
   Folder,
   ChevronDown,
   Upload,
@@ -86,6 +86,13 @@ interface FirestoreDocument {
   fileUrl?: string;
   type: 'invoice' | 'quote' | 'document';
   pdfGenerated?: boolean; // Flag für bereits generierte PDFs
+  eInvoiceData?: {
+    format: string;
+    guid: string;
+    validationStatus: string;
+    version: string;
+    createdAt: string;
+  }; // E-Invoice data for ZUGFeRD generation
 }
 
 // Helper function to convert HTML to plain text
@@ -232,8 +239,32 @@ export function EmailCompose({
   // Update email state when replyTo or forwardEmail changes
   useEffect(() => {
     if (isOpen && replyTo) {
+      //  TEMPORÄRER FIX: Parse String-Format für alte Emails
+      let replyToEmail = '';
+      
+      if (typeof replyTo.from === 'object' && replyTo.from?.email) {
+        // ✅ Neues Format: { email: string, name?: string }
+        replyToEmail = replyTo.from.email;
+      } else if (typeof replyTo.from === 'string') {
+        // 🔧 Altes Format: "Name <email@example.com>" oder "email@example.com"
+        const match = replyTo.from.match(/^.*?<(.+?)>$/);
+        if (match) {
+          replyToEmail = match[1].trim();
+        } else {
+          // Nur Email ohne <> Klammern
+          const emailMatch = replyTo.from.match(/^([^\s@]+@[^\s@]+)$/);
+          if (emailMatch) {
+            replyToEmail = emailMatch[1].trim();
+          }
+        }
+      }
+      
+      if (!replyToEmail) {
+        toast.error('FEHLER: Konnte E-Mail-Adresse nicht extrahieren!');
+      }
+
       setEmail({
-        to: replyTo.from.email,
+        to: replyToEmail,
         cc: '',
         bcc: '',
         subject: `Re: ${replyTo.subject}`,
@@ -366,6 +397,7 @@ export function EmailCompose({
           createdAt: doc.data().createdAt,
           pdfUrl: doc.data().pdfUrl,
           type: 'invoice' as const,
+          eInvoiceData: doc.data().eInvoiceData, // E-Invoice data for ZUGFeRD generation
         }));
       } else if (type === 'quote') {
         const quotesRef = collection(db, 'companies', companyId, 'quotes');
@@ -483,6 +515,98 @@ export function EmailCompose({
 
       // Add to regular attachments (as File)
       setAttachments(prev => [...prev, pdfFile]);
+
+      // 🔥 CRITICAL: Für Invoices auch E-Rechnung (XML) als Anhang hinzufügen
+      if (doc.type === 'invoice' && doc.eInvoiceData) {
+        try {
+          toast.loading('E-Rechnung (XML) wird generiert...', { id: `einvoice-${doc.id}` });
+          
+          // Dynamischer Import des E-Invoice-Service
+          const { EInvoiceService } = await import('@/services/eInvoiceService');
+          
+          // Lade Invoice-Daten aus Firestore
+          const { doc: firestoreDoc, getDoc } = await import('firebase/firestore');
+          const { db } = await import('@/firebase/clients');
+          const invoiceRef = firestoreDoc(db, 'companies', companyId, 'invoices', doc.id);
+          const invoiceSnap = await getDoc(invoiceRef);
+          
+          if (invoiceSnap.exists()) {
+            const invoiceData = { id: invoiceSnap.id, ...invoiceSnap.data() };
+            
+            // Lade Company-Daten
+            const companyRef = firestoreDoc(db, 'companies', companyId);
+            const companySnap = await getDoc(companyRef);
+            
+            if (companySnap.exists()) {
+              const companyData = companySnap.data();
+              
+              // Baue vollständige Firmenadresse für E-Rechnung
+              const companyAddressLine = [
+                companyData.companyStreet || '',
+                companyData.companyHouseNumber || ''
+              ].filter(Boolean).join(' ');
+              
+              const companyCityLine = [
+                companyData.companyPostalCode || '',
+                companyData.companyCity || ''
+              ].filter(Boolean).join(' ');
+              
+              const companyAddress = [
+                companyAddressLine,
+                companyCityLine
+              ].filter(Boolean).join('\n');
+              
+              // Generiere UUID (Browser-kompatibel)
+              const generateUUID = () => {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                  const r = Math.random() * 16 | 0;
+                  const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                  return v.toString(16);
+                });
+              };
+              
+              // Generiere ZUGFeRD-XML (nicht PDF!)
+              const zugferdXml = await EInvoiceService.generateZUGFeRDXML(
+                invoiceData,
+                {
+                  conformanceLevel: 'EXTENDED',
+                  guideline: 'urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0',
+                  specificationId: 'urn:cen.eu:en16931:2017'
+                },
+                {
+                  ...companyData,
+                  companyAddress: companyAddress,
+                  companyVatId: companyData.vatId || '',
+                  companyEmail: companyData.contactEmail || companyData.email || '',
+                  taxNumber: companyData.taxNumber || '',
+                  legalForm: companyData.legalForm || '',
+                  registrationNumber: companyData.companyRegister || companyData.registrationNumber || '',
+                  iban: companyData.bankDetails?.iban || companyData.iban || '',
+                  bic: companyData.bankDetails?.bic || companyData.bic || '',
+                  accountHolder: companyData.bankDetails?.accountHolder || companyData.accountHolder || companyData.companyName
+                }
+              );
+              
+              // Konvertiere XML-String zu File
+              const xmlBlob = new Blob([zugferdXml], { type: 'application/xml' });
+              const xmlFile = new File(
+                [xmlBlob],
+                `${doc.number || doc.invoiceNumber}_XRechnung.xml`,
+                { type: 'application/xml' }
+              );
+              
+              // Füge E-Rechnung (XML) als zweiten Anhang hinzu
+              setAttachments(prev => [...prev, xmlFile]);
+              toast.success('E-Rechnung (XML) hinzugefügt', { id: `einvoice-${doc.id}` });
+            }
+          }
+        } catch (eInvoiceError) {
+          console.error('Fehler bei E-Rechnungs-Generierung:', eInvoiceError);
+          toast.warning('E-Rechnung konnte nicht generiert werden (normales PDF wurde angehängt)', {
+            id: `einvoice-${doc.id}`
+          });
+        }
+      }
 
       // Also add to firestoreAttachments for display
       setFirestoreAttachments(prev => [...prev, { ...doc, pdfGenerated: true }]);
@@ -888,7 +1012,7 @@ export function EmailCompose({
                             </div>
                           ) : availableDocuments.length === 0 ? (
                             <div className="text-center py-12 text-gray-500">
-                              <File className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                              <FileIcon className="h-12 w-12 mx-auto mb-3 text-gray-400" />
                               <p>Keine Dokumente gefunden</p>
                             </div>
                           ) : (
@@ -924,7 +1048,7 @@ export function EmailCompose({
                                               <FileText className="h-5 w-5 text-blue-600" />
                                             )}
                                             {doc.type === 'document' && (
-                                              <File className="h-5 w-5 text-purple-600" />
+                                              <FileIcon className="h-5 w-5 text-purple-600" />
                                             )}
                                           </>
                                         )}
@@ -1049,7 +1173,7 @@ export function EmailCompose({
                         <div className="flex items-center gap-2">
                           {doc.type === 'invoice' && <Receipt className="h-4 w-4 text-teal-600" />}
                           {doc.type === 'quote' && <FileText className="h-4 w-4 text-blue-600" />}
-                          {doc.type === 'document' && <File className="h-4 w-4 text-purple-600" />}
+                          {doc.type === 'document' && <FileIcon className="h-4 w-4 text-purple-600" />}
                           <span className="text-sm font-medium">
                             {doc.type === 'invoice' && `Rechnung ${doc.number}`}
                             {doc.type === 'quote' && `Angebot ${doc.number}`}

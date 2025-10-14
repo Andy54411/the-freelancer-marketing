@@ -145,7 +145,7 @@ export class EInvoiceService {
                           xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
   <rsm:ExchangedDocumentContext>
     <ram:GuidelineSpecifiedDocumentContextParameter>
-      <ram:ID>${metadata.guideline}</ram:ID>
+      <ram:ID>${metadata.guideline || 'urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0'}</ram:ID>
     </ram:GuidelineSpecifiedDocumentContextParameter>
   </rsm:ExchangedDocumentContext>
 
@@ -155,11 +155,12 @@ export class EInvoiceService {
     <ram:IssueDateTime>
       <udt:DateTimeString format="102">${invoiceData.issueDate.replace(/-/g, '')}</udt:DateTimeString>
     </ram:IssueDateTime>
+    ${invoiceData.notes ? `<ram:IncludedNote>\n      <ram:Content>${invoiceData.notes}</ram:Content>\n    </ram:IncludedNote>` : ''}
   </rsm:ExchangedDocument>
 
   <rsm:SupplyChainTradeTransaction>
     <ram:ApplicableHeaderTradeAgreement>
-      <ram:BuyerReference>${invoiceData.buyerReference || ''}</ram:BuyerReference>
+      <ram:BuyerReference>${invoiceData.buyerReference || invoiceData.leitwegId || invoiceData.customerNumber || 'KUNDE'}</ram:BuyerReference>
       <ram:SellerTradeParty>
         <ram:Name>${companyData.companyName}</ram:Name>
         <ram:PostalTradeAddress>
@@ -168,9 +169,12 @@ export class EInvoiceService {
           <ram:CityName>${this.extractCity(companyData.companyAddress)}</ram:CityName>
           <ram:CountryID>DE</ram:CountryID>
         </ram:PostalTradeAddress>
+        ${companyData.companyEmail ? `<ram:URIUniversalCommunication>\n          <ram:URIID schemeID="EM">${companyData.companyEmail}</ram:URIID>\n        </ram:URIUniversalCommunication>` : ''}
         <ram:SpecifiedTaxRegistration>
           <ram:ID schemeID="VA">${companyData.companyVatId}</ram:ID>
         </ram:SpecifiedTaxRegistration>
+        ${companyData.taxNumber ? `<ram:SpecifiedTaxRegistration>\n          <ram:ID schemeID="FC">${companyData.taxNumber}</ram:ID>\n        </ram:SpecifiedTaxRegistration>` : ''}
+        ${companyData.legalForm && companyData.registrationNumber ? `<ram:SpecifiedLegalOrganization>\n          <ram:ID>${companyData.registrationNumber}</ram:ID>\n          <ram:TradingBusinessName>${companyData.companyName}</ram:TradingBusinessName>\n        </ram:SpecifiedLegalOrganization>` : ''}
       </ram:SellerTradeParty>
 
       <ram:BuyerTradeParty>
@@ -181,6 +185,8 @@ export class EInvoiceService {
           <ram:CityName>${this.extractCity(invoiceData.customerAddress)}</ram:CityName>
           <ram:CountryID>DE</ram:CountryID>
         </ram:PostalTradeAddress>
+        ${invoiceData.customerEmail ? `<ram:URIUniversalCommunication>\n          <ram:URIID schemeID="EM">${invoiceData.customerEmail}</ram:URIID>\n        </ram:URIUniversalCommunication>` : ''}
+        ${invoiceData.customerVatId ? `<ram:SpecifiedTaxRegistration>\n          <ram:ID schemeID="VA">${invoiceData.customerVatId}</ram:ID>\n        </ram:SpecifiedTaxRegistration>` : ''}
       </ram:BuyerTradeParty>
     </ram:ApplicableHeaderTradeAgreement>
 
@@ -193,8 +199,10 @@ export class EInvoiceService {
     </ram:ApplicableHeaderTradeDelivery>
 
     <ram:ApplicableHeaderTradeSettlement>
+      ${invoiceData.buyerAccountingReference || invoiceData.purchaseOrderNumber ? `<ram:ReceivableSpecifiedTradeAccountingAccount>\n        <ram:ID>${invoiceData.buyerAccountingReference || invoiceData.purchaseOrderNumber}</ram:ID>\n      </ram:ReceivableSpecifiedTradeAccountingAccount>` : ''}
       <ram:PaymentReference>${invoiceData.invoiceNumber}</ram:PaymentReference>
       <ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>
+      ${companyData.iban ? `<ram:SpecifiedTradeSettlementPaymentMeans>\n        <ram:TypeCode>58</ram:TypeCode>\n        <ram:PayeePartyCreditorFinancialAccount>\n          <ram:IBANID>${companyData.iban}</ram:IBANID>\n          <ram:AccountName>${companyData.accountHolder || companyData.companyName}</ram:AccountName>\n        </ram:PayeePartyCreditorFinancialAccount>\n        ${companyData.bic ? `<ram:PayeeSpecifiedCreditorFinancialInstitution>\n          <ram:BICID>${companyData.bic}</ram:BICID>\n        </ram:PayeeSpecifiedCreditorFinancialInstitution>` : ''}\n      </ram:SpecifiedTradeSettlementPaymentMeans>` : ''}
 
       <ram:ApplicableTradeTax>
         <ram:CalculatedAmount>${invoiceData.tax.toFixed(2)}</ram:CalculatedAmount>
@@ -205,6 +213,7 @@ export class EInvoiceService {
       </ram:ApplicableTradeTax>
 
       <ram:SpecifiedTradePaymentTerms>
+        ${invoiceData.paymentTerms || invoiceData.paymentTermsDays ? `<ram:Description>${invoiceData.paymentTerms || `Zahlbar innerhalb von ${invoiceData.paymentTermsDays || 14} Tagen ohne Abzug.`}</ram:Description>` : ''}
         <ram:DueDateDateTime>
           <udt:DateTimeString format="102">${invoiceData.dueDate.replace(/-/g, '')}</udt:DateTimeString>
         </ram:DueDateDateTime>
@@ -226,7 +235,8 @@ export class EInvoiceService {
 
       return xmlTemplate;
     } catch (error) {
-      throw new Error('ZUGFeRD XML konnte nicht generiert werden');
+      console.error('ZUGFeRD XML Generation Error:', error);
+      throw new Error(`ZUGFeRD XML konnte nicht generiert werden: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -561,19 +571,25 @@ export class EInvoiceService {
         <ram:LineID>${index + 1}</ram:LineID>
       </ram:AssociatedDocumentLineDocument>
       <ram:SpecifiedTradeProduct>
-        <ram:Name>${item.description}</ram:Name>
+        <ram:Name>${item.description || item.name || 'Leistung'}</ram:Name>
+        ${item.articleNumber ? `<ram:SellerAssignedID>${item.articleNumber}</ram:SellerAssignedID>` : ''}
       </ram:SpecifiedTradeProduct>
       <ram:SpecifiedLineTradeAgreement>
         <ram:NetPriceProductTradePrice>
-          <ram:ChargeAmount>${item.unitPrice.toFixed(2)}</ram:ChargeAmount>
+          <ram:ChargeAmount>${(item.unitPrice || item.price || 0).toFixed(2)}</ram:ChargeAmount>
         </ram:NetPriceProductTradePrice>
       </ram:SpecifiedLineTradeAgreement>
       <ram:SpecifiedLineTradeDelivery>
-        <ram:BilledQuantity unitCode="HUR">${item.quantity}</ram:BilledQuantity>
+        <ram:BilledQuantity unitCode="${item.unit || 'HUR'}">${item.quantity || 1}</ram:BilledQuantity>
       </ram:SpecifiedLineTradeDelivery>
       <ram:SpecifiedLineTradeSettlement>
+        <ram:ApplicableTradeTax>
+          <ram:TypeCode>VAT</ram:TypeCode>
+          <ram:CategoryCode>S</ram:CategoryCode>
+          <ram:RateApplicablePercent>${item.taxRate || item.vatRate || 19}</ram:RateApplicablePercent>
+        </ram:ApplicableTradeTax>
         <ram:SpecifiedTradeSettlementLineMonetarySummation>
-          <ram:LineTotalAmount>${item.total.toFixed(2)}</ram:LineTotalAmount>
+          <ram:LineTotalAmount>${(item.total || item.totalPrice || 0).toFixed(2)}</ram:LineTotalAmount>
         </ram:SpecifiedTradeSettlementLineMonetarySummation>
       </ram:SpecifiedLineTradeSettlement>
     </ram:IncludedSupplyChainTradeLineItem>`

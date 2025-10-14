@@ -4,7 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExpenseComponent } from '@/components/finance/ExpenseComponent';
+import { ImportXRechnungDialog } from '@/components/finance/ImportXRechnungDialog';
+import { Button } from '@/components/ui/button';
+import { FileDown, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 interface ExpenseData {
   id: string;
@@ -42,6 +46,7 @@ export default function ExpensesPage() {
 
   const [expenses, setExpenses] = useState<ExpenseData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [importDialogOpen, setImportDialogOpen] = useState(false); // 🎯 Import-Dialog State
 
   // Ausgaben von API laden
   const loadExpenses = async () => {
@@ -195,18 +200,47 @@ export default function ExpensesPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6">
-          <ExpenseComponent
-            companyId={uid}
-            expenses={expenses}
-            onSave={handleSaveExpense}
-            onDelete={handleDeleteExpense}
-            onRefresh={loadExpenses}
-          />
+    <div className="space-y-6">
+      {/* Header mit Buttons */}
+      <header className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Ausgaben</h1>
+          <p className="text-gray-600 mt-1">Geschäftsausgaben verwalten und Belege verarbeiten</p>
         </div>
-      </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setImportDialogOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <FileDown className="h-4 w-4" />
+            E-Rechnung importieren
+          </Button>
+          <Link href={`/dashboard/company/${uid}/finance/expenses/create`}>
+            <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Ausgabe erfassen
+            </Button>
+          </Link>
+        </div>
+      </header>
+
+      <ExpenseComponent
+        companyId={uid}
+        expenses={expenses}
+        onSave={handleSaveExpense}
+        onDelete={handleDeleteExpense}
+        onRefresh={loadExpenses}
+      />
+
+      {/* 📥 E-Rechnung Import Dialog */}
+      <ImportXRechnungDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        companyId={uid}
+        onSuccess={loadExpenses}
+        defaultType="expense" // 🎯 Default: Ausgabe (da wir auf Expenses-Seite sind)
+      />
     </div>
   );
 }

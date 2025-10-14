@@ -17,9 +17,30 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Upload, FileText, Edit, Trash2, Mail, Phone } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Plus, Upload, FileText, Edit, Trash2, Mail, Phone, Eye, MoreHorizontal, Download, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { PdfPreview } from './PdfPreview';
+import ExpenseReceiptUpload from '@/components/finance/ExpenseReceiptUpload';
 
 interface ExpenseData {
   id?: string;
@@ -91,7 +112,6 @@ export function ExpenseComponent({
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<ExpenseFormData>({
     title: '',
@@ -118,6 +138,7 @@ export function ExpenseComponent({
   const [currentReceipt, setCurrentReceipt] = useState<File | null>(null);
   const [editingExpense, setEditingExpense] = useState<ExpenseData | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
 
   const categories = [
     'Büromaterial',
@@ -819,49 +840,43 @@ export function ExpenseComponent({
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
-            {/* File Upload */}
-            <div className="bg-gray-50 rounded-lg p-4 border-2 border-dashed border-gray-300 hover:border-[#14ad9f] transition-colors">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
+            {/* OCR Upload mit ExpenseReceiptUpload */}
+            <ExpenseReceiptUpload
+              companyId={companyId}
+              onDataExtracted={async (data, storageUrl) => {
+                // Update form with extracted data
+                setFormData(prev => ({
+                  ...prev,
+                  title: data.title || prev.title,
+                  amount: data.amount ? data.amount.toString() : prev.amount,
+                  category: data.category || prev.category,
+                  description: data.description || prev.description,
+                  vendor: data.vendor || prev.vendor,
+                  date: data.date || prev.date,
+                  dueDate: data.dueDate || prev.dueDate,
+                  paymentTerms: data.paymentTerms || prev.paymentTerms,
+                  invoiceNumber: data.invoiceNumber || prev.invoiceNumber,
+                  vatAmount: data.vatAmount !== null && data.vatAmount !== undefined ? data.vatAmount.toString() : prev.vatAmount,
+                  netAmount: data.netAmount !== null && data.netAmount !== undefined ? data.netAmount.toString() : prev.netAmount,
+                  vatRate: data.vatRate !== null && data.vatRate !== undefined ? data.vatRate.toString() : prev.vatRate,
+                  companyName: data.vendor || prev.companyName,
+                  companyVatNumber: data.companyVatNumber || prev.companyVatNumber,
+                }));
 
-              <div className="text-center">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                <div className="text-sm text-gray-600 mb-3">
-                  {currentReceipt ? (
-                    <span className="text-[#14ad9f] font-medium">
-                      Ausgewählt: {currentReceipt.name}
-                    </span>
-                  ) : (
-                    <div>
-                      <div>PDF-Beleg oder Rechnung hochladen für automatische Datenextraktion</div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Tipp: Für Beträge Datei wie &quot;Rechnung-123-45.67.pdf&quot; benennen
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingFile}
-                  className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {uploadingFile ? 'Verarbeitung...' : 'Beleg hochladen'}
-                </Button>
-              </div>
-            </div>
+                toast.success('✅ OCR-Extraktion erfolgreich', {
+                  description: 'Daten wurden automatisch eingetragen',
+                });
+              }}
+              onFileUploaded={(file, storageUrl) => {
+                setCurrentReceipt(file);
+                setUploadingFile(false);
+              }}
+              showPreview={true}
+              enhancedMode={false}
+            />
 
-            {/* Side-by-Side Layout: Form und PDF Preview */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {/* Left Column: Form Fields */}
-              <div className="space-y-6">
+            {/* Form Fields */}
+            <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
                   Grundinformationen
                 </h3>
@@ -1132,63 +1147,6 @@ export function ExpenseComponent({
                     Steuerlich absetzbar
                   </Label>
                 </div>
-              </div>
-
-              {/* Right Column: PDF Preview */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                  PDF-Vorschau
-                </h3>
-
-                {/* Zeige aktuelle Datei oder bereits gespeicherte PDF */}
-                {currentReceipt ? (
-                  <PdfPreview file={currentReceipt} className="h-[800px]" />
-                ) : isEditMode && editingExpense?.receipt?.downloadURL ? (
-                  <PdfPreview fileUrl={editingExpense.receipt.downloadURL} className="h-[800px]" />
-                ) : (
-                  <div className="h-[800px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-                    <div className="text-center text-gray-500">
-                      <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>Keine PDF-Datei ausgewählt</p>
-                      <p className="text-xs">Laden Sie einen Beleg hoch für die Vorschau</p>
-                    </div>
-                  </div>
-                )}
-
-                {currentReceipt && (
-                  <div className="bg-[#14ad9f]/10 rounded-lg p-4 border border-[#14ad9f]/20">
-                    <div className="flex items-start space-x-3">
-                      <FileText className="h-5 w-5 text-[#14ad9f] mt-0.5" />
-                      <div>
-                        <div className="text-sm font-medium text-[#14ad9f] mb-1">
-                          Beleg hochgeladen: {currentReceipt.name}
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          Überprüfen Sie die automatisch extrahierten Daten links mit dem PDF-Inhalt
-                          rechts auf Korrektheit
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {isEditMode && editingExpense?.receipt && !currentReceipt && (
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <div className="flex items-start space-x-3">
-                      <FileText className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <div className="text-sm font-medium text-blue-700 mb-1">
-                          Gespeicherter Beleg: {editingExpense.receipt.fileName}
-                        </div>
-                        <div className="text-xs text-blue-600">
-                          Dieser Beleg wurde bereits gespeichert und steht für Steuerberater zur
-                          Verfügung
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Action Buttons */}
@@ -1255,111 +1213,170 @@ export function ExpenseComponent({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {expenses.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p>Noch keine Ausgaben erfasst</p>
-                <p className="text-sm">
-                  Klicken Sie auf &quot;Ausgabe hinzufügen&quot; um zu beginnen
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {expenses.map(expense => (
-                  <div
-                    key={expense.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group"
-                    onClick={() => {
-                      // 🎯 Navigiere zur Receipt Detail Page
-                      if (expense.id) {
-                        router.push(`/dashboard/company/${companyId}/finance/expenses/${expense.id}`);
-                      }
-                    }}
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-gray-900">{expense.title}</div>
-                          <div className="text-sm text-gray-500 flex items-center gap-3">
-                            <span>{expense.category}</span>
-                            {expense.vendor && (
-                              <>
-                                <span>•</span>
-                                <span>{expense.vendor}</span>
-                              </>
-                            )}
-                            {expense.invoiceNumber && (
-                              <>
-                                <span>•</span>
-                                <span>RG: {expense.invoiceNumber}</span>
-                              </>
-                            )}
-                          </div>
+          {expenses.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <p>Noch keine Ausgaben erfasst</p>
+              <p className="text-sm">
+                Klicken Sie auf &quot;Ausgabe hinzufügen&quot; um zu beginnen
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50px]">Beleg</TableHead>
+                    <TableHead>Titel</TableHead>
+                    <TableHead>Kategorie</TableHead>
+                    <TableHead>Lieferant</TableHead>
+                    <TableHead className="text-right">Betrag</TableHead>
+                    <TableHead>Datum</TableHead>
+                    <TableHead className="w-[80px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {expenses.map(expense => (
+                    <TableRow
+                      key={expense.id}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => {
+                        if (expense.id) {
+                          router.push(`/dashboard/company/${companyId}/finance/expenses/${expense.id}`);
+                        }
+                      }}
+                    >
+                      <TableCell>
+                        {expense.receipt?.downloadURL ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewingReceipt(expense.receipt!.downloadURL);
+                            }}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Eye className="h-4 w-4 text-[#14ad9f]" />
+                          </Button>
+                        ) : (
+                          <FileText className="h-4 w-4 text-gray-300" />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{expense.title}</div>
+                        {expense.invoiceNumber && (
+                          <div className="text-xs text-gray-500">RG: {expense.invoiceNumber}</div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {expense.category}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">{expense.vendor || '-'}</div>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(expense.amount || 0)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {new Date(expense.date).toLocaleDateString('de-DE')}
                         </div>
-                        <div className="text-right">
-                          <div className="font-medium text-lg">
-                            {formatCurrency(expense.amount || 0)}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {new Date(expense.date).toLocaleDateString('de-DE')}
-                          </div>
-                        </div>
-                      </div>
-                      {expense.description && (
-                        <div className="text-sm text-gray-600 mt-2">{expense.description}</div>
-                      )}
-                      {expense.receipt && (
-                        <div className="text-xs text-[#14ad9f] mt-1 flex items-center">
-                          <FileText className="h-3 w-3 mr-1" />
-                          {expense.receipt.downloadURL ? (
-                            <a
-                              href={expense.receipt.downloadURL}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:text-[#129488] hover:underline"
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                              className="h-8 w-8 p-0"
                             >
-                              Beleg: {expense.receipt.fileName}
-                            </a>
-                          ) : (
-                            <span>Beleg: {expense.receipt.fileName}</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex space-x-1 ml-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation(); // 🎯 Verhindere Navigation beim Klicken auf Edit
-                          handleEditExpense(expense);
-                        }}
-                        disabled={isLoading}
-                        className="hover:bg-[#14ad9f]/10"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation(); // 🎯 Verhindere Navigation beim Klicken auf Delete
-                          handleDeleteExpense(expense);
-                        }}
-                        disabled={isLoading}
-                        className="hover:bg-red-50 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditExpense(expense);
+                              }}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Bearbeiten
+                            </DropdownMenuItem>
+                            {expense.receipt?.downloadURL && (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(expense.receipt!.downloadURL, '_blank');
+                                }}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Beleg herunterladen
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteExpense(expense);
+                              }}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Löschen
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* PDF-Viewer-Dialog */}
+      <Dialog open={!!viewingReceipt} onOpenChange={(open) => !open && setViewingReceipt(null)}>
+        <DialogContent className="max-w-6xl h-[95vh] p-0">
+          <DialogHeader className="p-6 pb-4 border-b">
+            <DialogTitle className="flex justify-between items-center">
+              <span>Beleg-Vorschau</span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => viewingReceipt && window.open(viewingReceipt, '_blank')}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Neuer Tab
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewingReceipt(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="h-[calc(95vh-100px)] bg-gray-900">
+            {viewingReceipt && (
+              <iframe
+                src={viewingReceipt}
+                className="w-full h-full border-0"
+                title="PDF Beleg"
+                allow="fullscreen"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

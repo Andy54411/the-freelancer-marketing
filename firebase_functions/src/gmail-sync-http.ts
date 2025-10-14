@@ -238,14 +238,39 @@ async function saveEmailsToFirestore(companyId: string, userEmail: string, email
           continue;
         }
 
+        // 📧 Parse Email Address Helper
+        const parseEmailAddress = (emailString: string): { email: string; name?: string } | string => {
+          if (!emailString) return '';
+          
+          // Format: "Name <email@example.com>" oder nur "email@example.com"
+          const match = emailString.match(/^(.+?)\s*<(.+?)>$/);
+          if (match) {
+            return {
+              name: match[1].trim(),
+              email: match[2].trim()
+            };
+          }
+          
+          // Nur Email ohne Name
+          const emailOnlyMatch = emailString.match(/^([^\s@]+@[^\s@]+)$/);
+          if (emailOnlyMatch) {
+            return {
+              email: emailOnlyMatch[1].trim()
+            };
+          }
+          
+          // Fallback: String zurückgeben wenn Format unbekannt
+          return emailString;
+        };
+
         // E-Mail-Objekt für Firestore vorbereiten
         const emailData = {
           id: email.id,
           messageId: email.messageId || email.id,
           threadId: email.threadId,
           subject: email.subject || '(Kein Betreff)',
-          from: email.from || '',
-          to: email.to || '',
+          from: parseEmailAddress(email.from || ''),
+          to: parseEmailAddress(email.to || ''),
           date: email.date || '',
           timestamp: email.receivedAt || new Date(),
           body: email.body || '',
