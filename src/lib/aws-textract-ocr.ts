@@ -1,7 +1,7 @@
 /**
  * AWS TEXTRACT OCR SERVICE
  * Direkter AWS Textract Zugriff ohne Firebase Function STRICT mode
- * 
+ *
  * KEINE FALLBACKS - GoBD compliant OCR oder Error!
  */
 
@@ -13,7 +13,9 @@ let textractClient: TextractClient | null = null;
 function getTextractClient(): TextractClient {
   if (!textractClient) {
     if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-      throw new Error('AWS credentials not configured! Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY');
+      throw new Error(
+        'AWS credentials not configured! Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY'
+      );
     }
 
     textractClient = new TextractClient({
@@ -140,8 +142,10 @@ function parseTextractResponse(rawText: string, blocks: any[]): TextractExpenseR
 
   // Extract VAT information from document
   const vatInfo = extractVATInfo(rawText, amount);
-  
-  console.log(`💶 [VAT Calculation] Amount: ${amount}, VAT Rate: ${vatInfo.vatRate}%, Net: ${vatInfo.netAmount}, VAT: ${vatInfo.vatAmount}`);
+
+  console.log(
+    `💶 [VAT Calculation] Amount: ${amount}, VAT Rate: ${vatInfo.vatRate}%, Net: ${vatInfo.netAmount}, VAT: ${vatInfo.vatAmount}`
+  );
 
   // Extract company details
   const companyDetails = extractCompanyDetails(rawText);
@@ -161,27 +165,32 @@ function parseTextractResponse(rawText: string, blocks: any[]): TextractExpenseR
 }
 
 /**
- * Extract vendor/company name from OCR text
+ * Extrahiert den Vendor/Lieferanten aus Textract-Blöcken
  */
-function extractVendor(text: string): string | null {
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+function extractVendor(_blocks: unknown[], text: string): string | null {
+  const lines = text
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0);
 
   console.log('🔍 [Vendor Extraction] First 15 lines:', lines.slice(0, 15));
 
   // Look for "Stripe" specifically in first lines
   for (let i = 0; i < Math.min(15, lines.length); i++) {
     const line = lines[i];
-    
+
     // Match "Stripe Payments Europe, Limited" or similar
     if (line.toLowerCase().includes('stripe')) {
       console.log(`🏢 [Vendor Extraction] Found Stripe in line ${i}: "${line}"`);
-      
+
       // Wenn nur "stripe" (lowercase, kein vollständiger Name), suche weiter
       if (line.toLowerCase() === 'stripe') {
-        console.log(`⏭️  [Vendor Extraction] Line ${i} is just "stripe", looking for full company name...`);
+        console.log(
+          `⏭️  [Vendor Extraction] Line ${i} is just "stripe", looking for full company name...`
+        );
         continue;
       }
-      
+
       // Vollständiger Firmenname gefunden (z.B. "Stripe Payments Europe, Limited")
       return line;
     }
@@ -195,11 +204,13 @@ function extractVendor(text: string): string | null {
 
   for (const line of lines.slice(0, 15)) {
     // Skip obvious non-vendor lines - MATCH auch einzelne Wörter mit $!
-    if (line.match(/^(Tax|Invoice|Bill|Date|Number|Amount|VAT|Account|Total|Fee|Billing|Payment)$/i)) {
+    if (
+      line.match(/^(Tax|Invoice|Bill|Date|Number|Amount|VAT|Account|Total|Fee|Billing|Payment)$/i)
+    ) {
       console.log(`⏭️  [Vendor Extraction] Skipping header word: "${line}"`);
       continue;
     }
-    
+
     // Skip address/location lines
     if (line.match(/^(The One|Grand Canal|Dublin|Ireland|Street|Building)/i)) {
       console.log(`⏭️  [Vendor Extraction] Skipping address line: "${line}"`);
@@ -255,9 +266,9 @@ function extractAmount(text: string): number | null {
  */
 function extractDate(text: string): string | null {
   const datePatterns = [
-    /(?:Invoice\s+Date|Datum|Date)[\s:]*([A-Z][a-z]{2}\s+\d{1,2},\s+\d{4})/i,  // Jul 1, 2025
-    /(\d{1,2})[./\-](\d{1,2})[./\-](\d{4})/,  // DD.MM.YYYY or DD/MM/YYYY
-    /(\d{4})[./\-](\d{1,2})[./\-](\d{1,2})/,  // YYYY-MM-DD
+    /(?:Invoice\s+Date|Datum|Date)[\s:]*([A-Z][a-z]{2}\s+\d{1,2},\s+\d{4})/i, // Jul 1, 2025
+    /(\d{1,2})[./\-](\d{1,2})[./\-](\d{4})/, // DD.MM.YYYY or DD/MM/YYYY
+    /(\d{4})[./\-](\d{1,2})[./\-](\d{1,2})/, // YYYY-MM-DD
   ];
 
   for (const pattern of datePatterns) {
@@ -280,7 +291,7 @@ function extractDate(text: string): string | null {
         }
       } else {
         const [, p1, p2, p3] = match;
-        
+
         // Determine format
         if (p1.length === 4) {
           // YYYY-MM-DD
@@ -301,7 +312,7 @@ function extractDate(text: string): string | null {
  */
 function extractInvoiceNumber(text: string): string | null {
   const patterns = [
-    /(?:Invoice\s+Number)[\s:]*([A-Z0-9-]+)/i,  // Invoice Number LADCKPPC-2025-06
+    /(?:Invoice\s+Number)[\s:]*([A-Z0-9-]+)/i, // Invoice Number LADCKPPC-2025-06
     /(?:Invoice|Receipt|Rechnung|Beleg)[#\s:-]*([A-Z0-9-]+)/i,
     /(?:Nummer|Number|No\.|Nr\.)[#\s:-]*([A-Z0-9-]+)/i,
   ];
@@ -321,15 +332,21 @@ function extractInvoiceNumber(text: string): string | null {
  * Extract VAT information from document text
  * Detects Reverse Charge, explicit VAT amounts, or calculates from total
  */
-function extractVATInfo(text: string, totalAmount: number): {
+function extractVATInfo(
+  text: string,
+  totalAmount: number
+): {
   vatRate: number;
   vatAmount: number;
   netAmount: number;
 } {
   const textLower = text.toLowerCase();
-  
+
   // 1. Check for Reverse Charge (0% VAT)
-  if (textLower.includes('reverse charge') || textLower.includes('umkehrung der steuerschuldnerschaft')) {
+  if (
+    textLower.includes('reverse charge') ||
+    textLower.includes('umkehrung der steuerschuldnerschaft')
+  ) {
     console.log('💶 [VAT Info] Reverse Charge detected - 0% VAT');
     return {
       vatRate: 0,
@@ -337,7 +354,7 @@ function extractVATInfo(text: string, totalAmount: number): {
       netAmount: totalAmount,
     };
   }
-  
+
   // 2. Look for explicit "Total VAT €0.00" or "MwSt. €0.00"
   const zeroVatMatch = text.match(/(?:Total\s+VAT|MwSt|VAT)[\s:]*[€$£]?\s*0[.,]00/i);
   if (zeroVatMatch) {
@@ -348,23 +365,23 @@ function extractVATInfo(text: string, totalAmount: number): {
       netAmount: totalAmount,
     };
   }
-  
+
   // 3. Try to extract explicit VAT amount
   const vatPatterns = [
     /(?:Total\s+VAT|MwSt[\s-]?Betrag|VAT\s+Amount)[\s:]*[€$£]?\s*([\d.,]+)/gi,
     /(?:zzgl\.|incl\.|inkl\.)[\s]+(\d+)\s*%\s*MwSt/gi,
   ];
-  
+
   for (const pattern of vatPatterns) {
     const matches = Array.from(text.matchAll(pattern));
     for (const match of matches) {
       const vatAmountStr = match[1].replace(/[€$£\s]/g, '').replace(',', '.');
       const vatAmount = parseFloat(vatAmountStr);
-      
+
       if (!isNaN(vatAmount) && vatAmount > 0) {
         const netAmount = totalAmount - vatAmount;
         const vatRate = Math.round((vatAmount / netAmount) * 100);
-        
+
         console.log(`💶 [VAT Info] Explicit VAT found: ${vatAmount}€, Rate: ${vatRate}%`);
         return {
           vatRate,
@@ -374,13 +391,13 @@ function extractVATInfo(text: string, totalAmount: number): {
       }
     }
   }
-  
+
   // 4. Default: German standard 19% (wenn nichts anderes gefunden)
   console.log('💶 [VAT Info] Using default German VAT 19%');
   const vatRate = 19;
   const netAmount = Math.round((totalAmount / 1.19) * 100) / 100;
   const vatAmount = Math.round((totalAmount - netAmount) * 100) / 100;
-  
+
   return {
     vatRate,
     vatAmount,
@@ -401,18 +418,21 @@ function extractCompanyDetails(text: string): {
   companyEmail?: string;
   companyPhone?: string;
 } {
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const lines = text
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0);
   const result: any = {};
 
   // Extract company name (improved vendor logic)
   for (let i = 0; i < Math.min(10, lines.length); i++) {
     const line = lines[i];
-    
+
     // Skip header words
     if (line.match(/^(stripe|Tax|Invoice|Bill|Date|Number|Amount|VAT|Account)$/i)) {
       continue;
     }
-    
+
     // Look for full company name with legal entity
     if (line.match(/(?:GmbH|AG|Inc\.|LLC|Ltd\.|Limited|Co\.|KG|OHG|Payments)/i)) {
       result.companyName = line;
@@ -424,7 +444,7 @@ function extractCompanyDetails(text: string): {
   // Extract VAT number
   const vatPatterns = [
     /(?:VAT|USt|Steuer|UID)[\s-]?(?:Number|Nummer|Nr|ID)?[\s:]*([A-Z]{2}\s?[0-9A-Z]{8,15})/gi,
-    /\b([A-Z]{2}\s?[0-9]{8,15}[A-Z]?)\b/g,  // Generic VAT format
+    /\b([A-Z]{2}\s?[0-9]{8,15}[A-Z]?)\b/g, // Generic VAT format
   ];
 
   for (const pattern of vatPatterns) {
@@ -461,9 +481,11 @@ function extractCompanyDetails(text: string): {
     const validPhone = phoneMatches.find(m => {
       const phone = m[0].trim();
       // VAT numbers don't have + and are usually 8+ digits without separators
-      return phone.includes('+') || phone.includes('(') || phone.includes(' ') || phone.includes('-');
+      return (
+        phone.includes('+') || phone.includes('(') || phone.includes(' ') || phone.includes('-')
+      );
     });
-    
+
     if (validPhone) {
       result.companyPhone = validPhone[0].trim();
       console.log(`📞 [Company Details] Found phone: "${result.companyPhone}"`);
@@ -483,7 +505,12 @@ function extractCompanyDetails(text: string): {
     if (line.match(/(?:Street|Strasse|Str\.|Building|Avenue|Road|Canal|Platz|Plaza)/i)) {
       startCapture = true;
       // Also include previous line if it's part of building name
-      if (i > 0 && !lines[i - 1].match(/^(stripe|Tax|Invoice|Account|Number|Stripe Payments|acct_|inv_|LADCKPPC|[A-Z]{2}\d{8})/i)) {
+      if (
+        i > 0 &&
+        !lines[i - 1].match(
+          /^(stripe|Tax|Invoice|Account|Number|Stripe Payments|acct_|inv_|LADCKPPC|[A-Z]{2}\d{8})/i
+        )
+      ) {
         addressLines.push(lines[i - 1]);
       }
       addressLines.push(line);
@@ -499,25 +526,34 @@ function extractCompanyDetails(text: string): {
     // If capturing, collect address-like lines (skip section headers)
     if (startCapture && !stopCapture) {
       // Skip section headers but keep address data
-      if (line.match(/^(Account\s+Number|Invoice\s+Number|Invoice\s+Date|Service\s+Month|Stripe\s+VAT|Customer\s+VAT|acct_|LADCKPPC)/i)) {
+      if (
+        line.match(
+          /^(Account\s+Number|Invoice\s+Number|Invoice\s+Date|Service\s+Month|Stripe\s+VAT|Customer\s+VAT|acct_|LADCKPPC)/i
+        )
+      ) {
         continue; // Skip this line but continue capturing
       }
-      
+
       // Skip date patterns like "Jul 1, 2025"
       if (line.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}$/i)) {
         console.log(`⏭️  [Company Details] Skipping date line: "${line}"`);
         continue;
       }
-      
+
       // Skip single digits (like "2" from postal codes mixed with dates)
       if (line.match(/^\d{1}$/)) {
         console.log(`⏭️  [Company Details] Skipping single digit: "${line}"`);
         continue;
       }
-      
+
       // Keep lines that look like address parts
-      if (line.match(/(?:Dublin|Ireland|Street|Lower|Co\.|Germany|Berlin|Munich|Vienna|Zürich|\d{4,6})/i) || 
-          (line.length < 50 && line.length > 2)) { // Short lines (but not too short) are likely address parts
+      if (
+        line.match(
+          /(?:Dublin|Ireland|Street|Lower|Co\.|Germany|Berlin|Munich|Vienna|Zürich|\d{4,6})/i
+        ) ||
+        (line.length < 50 && line.length > 2)
+      ) {
+        // Short lines (but not too short) are likely address parts
         addressLines.push(line);
       }
     }
@@ -525,21 +561,25 @@ function extractCompanyDetails(text: string): {
 
   if (addressLines.length > 0) {
     console.log(`📍 [Company Details] Address lines found:`, addressLines);
-    
+
     // Separate address street from city/country
     const streetParts: string[] = [];
     let foundCity = false;
-    
+
     for (let i = 0; i < addressLines.length; i++) {
       const line = addressLines[i];
-      
+
       // Check for country names
-      if (line.match(/^(Germany|Deutschland|Ireland|Austria|Österreich|Switzerland|Schweiz|France|Italy|Spain|UK|United Kingdom|Belgium|Netherlands)/i)) {
+      if (
+        line.match(
+          /^(Germany|Deutschland|Ireland|Austria|Österreich|Switzerland|Schweiz|France|Italy|Spain|UK|United Kingdom|Belgium|Netherlands)/i
+        )
+      ) {
         result.companyCountry = line;
         console.log(`🌍 [Company Details] Found country: "${line}"`);
         continue;
       }
-      
+
       // Dublin format: "Dublin 2"
       if (line.match(/^Dublin\s+\d+$/i)) {
         result.companyCity = line; // "Dublin 2"
@@ -548,7 +588,7 @@ function extractCompanyDetails(text: string): {
         console.log(`📍 [Company Details] Found Dublin city+postal: "${line}"`);
         continue;
       }
-      
+
       // County: "Co. Dublin"
       if (line.match(/^Co\.\s+Dublin$/i)) {
         if (!result.companyCity) {
@@ -557,23 +597,25 @@ function extractCompanyDetails(text: string): {
         console.log(`📍 [Company Details] Found county: "${line}"`);
         continue;
       }
-      
+
       // Standard ZIP+City format: "12345 Berlin"
       const zipCityMatch = line.match(/^([A-Z0-9]{4,6})\s+(.+)$/);
       if (zipCityMatch) {
         result.companyZip = zipCityMatch[1];
         result.companyCity = zipCityMatch[2];
         foundCity = true;
-        console.log(`📍 [Company Details] Found ZIP+City: "${result.companyZip} ${result.companyCity}"`);
+        console.log(
+          `📍 [Company Details] Found ZIP+City: "${result.companyZip} ${result.companyCity}"`
+        );
         continue;
       }
-      
+
       // Everything else is street address (before city/country)
       if (!foundCity && !result.companyCountry) {
         streetParts.push(line);
       }
     }
-    
+
     // Combine street parts with comma for single-line input field
     if (streetParts.length > 0) {
       result.companyAddress = streetParts.join(', ');

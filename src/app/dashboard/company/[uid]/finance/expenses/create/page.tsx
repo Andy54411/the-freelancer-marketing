@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Upload, FileText, Save } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import ExpenseReceiptUpload from '@/components/finance/ExpenseReceiptUpload';
@@ -54,7 +54,6 @@ export default function CreateExpensePage() {
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadingFile, setUploadingFile] = useState(false);
   const [currentReceipt, setCurrentReceipt] = useState<File | null>(null);
 
   const [formData, setFormData] = useState<ExpenseFormData>({
@@ -99,37 +98,6 @@ export default function CreateExpensePage() {
     'Reparaturen',
     'Sonstiges',
   ];
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setCurrentReceipt(file);
-    setUploadingFile(true);
-
-    try {
-      // Dateiname-Extraktion für Betrag
-      const fileNameLower = file.name.toLowerCase();
-      const amountMatch = fileNameLower.match(/(\d+[.,]\d{2})/);
-      if (amountMatch) {
-        const extractedAmount = amountMatch[1].replace(',', '.');
-        setFormData(prev => ({ ...prev, amount: extractedAmount }));
-        toast.success(`Betrag ${extractedAmount}€ aus Dateinamen erkannt!`);
-      }
-
-      // Rechnungsnummer-Extraktion
-      const invoiceMatch = fileNameLower.match(/(?:re|rechnung|invoice)[_\s-]*(\d+)/i);
-      if (invoiceMatch) {
-        setFormData(prev => ({ ...prev, invoiceNumber: invoiceMatch[1] }));
-      }
-
-      toast.success('Beleg geladen - bereit zum Speichern');
-    } catch (error) {
-      toast.error('Fehler beim Laden des Belegs');
-    } finally {
-      setUploadingFile(false);
-    }
-  };
 
   const uploadPdfToStorage = async (file: File): Promise<string> => {
     const storage = getStorage();
@@ -208,7 +176,7 @@ export default function CreateExpensePage() {
           });
           pdfDownloadURL = await uploadPdfToStorage(currentReceipt);
           toast.success('PDF erfolgreich gespeichert!');
-        } catch (error) {
+        } catch {
           toast.error('PDF-Upload fehlgeschlagen, Ausgabe wird trotzdem gespeichert');
         }
       }
@@ -259,8 +227,7 @@ export default function CreateExpensePage() {
       } else {
         throw new Error(result.error || 'Speichern fehlgeschlagen');
       }
-    } catch (error) {
-      console.error('Save error:', error);
+    } catch {
       toast.error('Fehler beim Speichern der Ausgabe');
     } finally {
       setIsLoading(false);
@@ -483,7 +450,7 @@ export default function CreateExpensePage() {
                 <Checkbox
                   id="taxDeductible"
                   checked={formData.taxDeductible}
-                  onCheckedChange={(checked) =>
+                  onCheckedChange={checked =>
                     setFormData(prev => ({ ...prev, taxDeductible: checked as boolean }))
                   }
                 />
@@ -611,9 +578,18 @@ export default function CreateExpensePage() {
                     dueDate: data.dueDate || prev.dueDate,
                     paymentTerms: data.paymentTerms || prev.paymentTerms,
                     invoiceNumber: data.invoiceNumber || prev.invoiceNumber,
-                    vatAmount: data.vatAmount !== null && data.vatAmount !== undefined ? data.vatAmount.toString() : prev.vatAmount,
-                    netAmount: data.netAmount !== null && data.netAmount !== undefined ? data.netAmount.toString() : prev.netAmount,
-                    vatRate: data.vatRate !== null && data.vatRate !== undefined ? data.vatRate.toString() : prev.vatRate,
+                    vatAmount:
+                      data.vatAmount !== null && data.vatAmount !== undefined
+                        ? data.vatAmount.toString()
+                        : prev.vatAmount,
+                    netAmount:
+                      data.netAmount !== null && data.netAmount !== undefined
+                        ? data.netAmount.toString()
+                        : prev.netAmount,
+                    vatRate:
+                      data.vatRate !== null && data.vatRate !== undefined
+                        ? data.vatRate.toString()
+                        : prev.vatRate,
                     // Firmeninformationen aus OCR
                     companyName: data.companyName || data.vendor || prev.companyName,
                     companyAddress: data.companyAddress || prev.companyAddress,
@@ -626,13 +602,11 @@ export default function CreateExpensePage() {
                   }));
                   toast.success('✅ OCR-Extraktion erfolgreich');
                 }}
-                onFileUploaded={(file, storageUrl) => {
+                onFileUploaded={file => {
                   setCurrentReceipt(file);
-                  setUploadingFile(false);
                 }}
                 showPreview={true}
                 enhancedMode={false}
-                className="h-[750px]"
               />
             </div>
           </div>

@@ -31,22 +31,18 @@ interface ExtractedExpenseData {
 
 interface ExpenseReceiptUploadProps {
   companyId: string;
-  onDataExtracted: (data: ExtractedExpenseData, storageUrl?: string) => void | Promise<void>;
-  onFileUploaded?: (file: File, storageUrl?: string) => void;
-  className?: string;
-  accept?: string;
-  maxSize?: number;
+  onDataExtracted?: (data: ExtractedExpenseData) => void;
+  onFileUploaded?: (storageUrl: string) => void;
   showPreview?: boolean;
+  enhancedMode?: boolean;
 }
 
-export default function ExpenseReceiptUpload({
+export function ExpenseReceiptUpload({
   companyId,
   onDataExtracted,
   onFileUploaded,
-  className = '',
-  accept = '.pdf,.jpg,.jpeg,.png',
-  maxSize = 15 * 1024 * 1024, // 15MB
   showPreview = true,
+  enhancedMode = true,
 }: ExpenseReceiptUploadProps) {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [processingOCR, setProcessingOCR] = useState(false);
@@ -259,9 +255,7 @@ export default function ExpenseReceiptUpload({
                 </span>
               ))}
             </div>
-            {ocrProgress && (
-              <p className="text-sm text-gray-600 mt-2">{ocrProgress}</p>
-            )}
+            {ocrProgress && <p className="text-sm text-gray-600 mt-2">{ocrProgress}</p>}
           </div>
           <style jsx>{`
             @keyframes snakeLoad {

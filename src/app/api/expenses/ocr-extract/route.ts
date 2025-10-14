@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * 💰 EXPENSE-SPEZIFISCHE OCR-EXTRAKTION
- * 
+ *
  * Diese Route ist AUSSCHLIESSLICH für Ausgabenbelege (Expenses).
  * Unterschied zu Invoice OCR:
  * - Fokus auf: vendor, amount, category, date, description
@@ -56,16 +56,16 @@ export async function POST(request: NextRequest) {
 
     // STRATEGIE: Versuche lokales Parsing ZUERST (schneller + offline)
     // Dann Firebase OCR als Enhancement (teuer + langsam)
-    
+
     // 1. Schnelles lokales Parsing
     const localData = await extractExpenseFromFile(file, filename);
-    
+
     // 2. Versuche OCR Enhancement (optional, nur wenn nötig)
     let enhancedData = localData;
-    
+
     // Nur OCR wenn kritische Daten fehlen (aber immer versuchen für Betrag!)
     const needsOCR = !localData.amount; // Betrag ist das Wichtigste!
-    
+
     if (needsOCR) {
       console.log('🔄 [Expense OCR] Local parsing incomplete, trying OCR enhancement...');
       try {
@@ -76,8 +76,12 @@ export async function POST(request: NextRequest) {
           amount: enhancedData.amount,
           category: enhancedData.category,
         });
-      } catch (ocrError: any) {
-        console.log('⚠️ [Expense OCR] Firebase OCR unavailable, using local parsing:', ocrError?.message?.substring(0, 100));
+      } catch (ocrError: unknown) {
+        const errorMessage = ocrError instanceof Error ? ocrError.message : String(ocrError);
+        console.log(
+          '⚠️ [Expense OCR] Firebase OCR unavailable, using local parsing:',
+          errorMessage.substring(0, 100)
+        );
         // enhancedData bleibt = localData (Fallback funktioniert!)
       }
     } else {
@@ -98,10 +102,9 @@ export async function POST(request: NextRequest) {
       data: enhancedData,
       extractionMethod: needsOCR ? 'local_with_ocr_fallback' : 'local_parsing',
     });
-
   } catch (error) {
     console.error('❌ [Expense OCR] Error:', error);
-    
+
     // Minimaler Fallback
     return NextResponse.json({
       success: true,
@@ -155,20 +158,20 @@ async function extractExpenseFromFile(file: File, filename: string) {
 
   // 3. Vendor/Lieferant erkennen (z.B. "amazon", "rewe", "stripe")
   const vendorPatterns: Record<string, string> = {
-    'amazon': 'Amazon',
-    'rewe': 'REWE',
-    'edeka': 'EDEKA',
-    'stripe': 'Stripe',
-    'google': 'Google',
-    'microsoft': 'Microsoft',
-    'telekom': 'Deutsche Telekom',
-    'vodafone': 'Vodafone',
-    'aws': 'Amazon Web Services',
-    'digitalocean': 'DigitalOcean',
-    'linode': 'Linode',
-    'uber': 'Uber',
-    'booking': 'Booking.com',
-    'hotels': 'Hotels.com',
+    amazon: 'Amazon',
+    rewe: 'REWE',
+    edeka: 'EDEKA',
+    stripe: 'Stripe',
+    google: 'Google',
+    microsoft: 'Microsoft',
+    telekom: 'Deutsche Telekom',
+    vodafone: 'Vodafone',
+    aws: 'Amazon Web Services',
+    digitalocean: 'DigitalOcean',
+    linode: 'Linode',
+    uber: 'Uber',
+    booking: 'Booking.com',
+    hotels: 'Hotels.com',
   };
 
   for (const [keyword, vendorName] of Object.entries(vendorPatterns)) {
@@ -181,7 +184,9 @@ async function extractExpenseFromFile(file: File, filename: string) {
 
   // 4. Kategorie intelligent zuordnen
   data.category = detectExpenseCategory(filename, data.vendor);
-  console.log(`🎯 [Category Detection] filename="${filename}", vendor="${data.vendor}", result="${data.category}"`);
+  console.log(
+    `🎯 [Category Detection] filename="${filename}", vendor="${data.vendor}", result="${data.category}"`
+  );
 
   // 5. Beschreibung aus Dateinamen
   if (!data.description) {
@@ -207,7 +212,7 @@ async function extractExpenseFromFile(file: File, filename: string) {
  * 🔄 ECHTER OCR MIT AWS TEXTRACT
  * KEINE FALLBACKS - GoBD compliant oder Error!
  */
-async function tryOCREnhancement(file: File, companyId: string, filename: string) {
+async function tryOCREnhancement(file: File, _companyId: string, _filename: string) {
   console.log('🚀 [Expense OCR] Starting AWS Textract extraction...');
 
   const { extractExpenseWithTextract } = await import('@/lib/aws-textract-ocr');
@@ -256,12 +261,17 @@ async function tryOCREnhancement(file: File, companyId: string, filename: string
  * 🔀 MERGE LOCAL + OCR DATA
  * OCR-Daten haben Vorrang (weil präziser), lokale Daten nur als Fallback
  */
-function mergeExpenseData(localData: any, ocrData: any) {
+function mergeExpenseData(
+  localData: Partial<ExtractedExpenseData>,
+  ocrData: Partial<ExtractedExpenseData>
+) {
   // Intelligente Kategorie-Auswahl: Lokale Kategorien-Erkennung hat Vorrang!
-  const finalCategory = 
-    (localData.category && localData.category !== 'Sonstiges') 
-      ? localData.category 
-      : (ocrData.category && ocrData.category !== 'Sonstiges' && ocrData.category !== 'Zahlungsdienstleister')
+  const finalCategory =
+    localData.category && localData.category !== 'Sonstiges'
+      ? localData.category
+      : ocrData.category &&
+          ocrData.category !== 'Sonstiges' &&
+          ocrData.category !== 'Zahlungsdienstleister'
         ? ocrData.category
         : 'Sonstiges';
 
@@ -302,24 +312,79 @@ function detectExpenseCategory(filename: string, vendor: string = ''): string {
 
   // Kategorie-Mappings mit Keywords (Vendor-Namen UND Keywords)
   const categoryMap: Record<string, string[]> = {
-    'Software/Lizenzen': ['software', 'lizenz', 'license', 'subscription', 'saas', 'adobe', 'microsoft', 'stripe', 'paypal', 'github', 'gitlab', 'zoom', 'slack'],
-    'IT/Hosting': ['hosting', 'server', 'domain', 'cloud', 'aws', 'digitalocean', 'vercel', 'netlify', 'heroku', 'linode'],
-    'Marketing/Werbung': ['marketing', 'werbung', 'ads', 'google ads', 'facebook', 'social media', 'seo', 'meta'],
-    'Reisekosten': ['reise', 'travel', 'hotel', 'flug', 'train', 'uber', 'taxi', 'booking', 'bewirtung', 'hotels.com', 'airbnb'],
-    'Kommunikation': ['telefon', 'handy', 'mobile', 'internet', 'telekom', 'vodafone', 'o2', 'mobilfunk'],
-    'Büromaterial': ['büro', 'office', 'papier', 'toner', 'druckerpatrone', 'stift', 'ordner'],
-    'Versicherungen': ['versicherung', 'insurance', 'beitrag', 'ihk', 'berufsgenossenschaft'],
+    'Software/Lizenzen': [
+      'software',
+      'lizenz',
+      'license',
+      'subscription',
+      'saas',
+      'adobe',
+      'microsoft',
+      'stripe',
+      'paypal',
+      'github',
+      'gitlab',
+      'zoom',
+      'slack',
+    ],
+    'IT/Hosting': [
+      'hosting',
+      'server',
+      'domain',
+      'cloud',
+      'aws',
+      'digitalocean',
+      'vercel',
+      'netlify',
+      'heroku',
+      'linode',
+    ],
+    'Marketing/Werbung': [
+      'marketing',
+      'werbung',
+      'ads',
+      'google ads',
+      'facebook',
+      'social media',
+      'seo',
+      'meta',
+    ],
+    Reisekosten: [
+      'reise',
+      'travel',
+      'hotel',
+      'flug',
+      'train',
+      'uber',
+      'taxi',
+      'booking',
+      'bewirtung',
+      'hotels.com',
+      'airbnb',
+    ],
+    Kommunikation: [
+      'telefon',
+      'handy',
+      'mobile',
+      'internet',
+      'telekom',
+      'vodafone',
+      'o2',
+      'mobilfunk',
+    ],
+    Büromaterial: ['büro', 'office', 'papier', 'toner', 'druckerpatrone', 'stift', 'ordner'],
+    Versicherungen: ['versicherung', 'insurance', 'beitrag', 'ihk', 'berufsgenossenschaft'],
     'Miete/Nebenkosten': ['miete', 'nebenkosten', 'rent', 'immobilie'],
-    'Fahrzeugkosten': ['tankstelle', 'shell', 'aral', 'total', 'esso', 'auto', 'kfz', 'parkgebühr'],
-    'Fortbildung': ['fortbildung', 'kurs', 'schulung', 'weiterbildung', 'seminar', 'training'],
-    'Beratung': ['rechtsanwalt', 'steuerberater', 'notar', 'beratung', 'consulting'],
-    'Sonstiges': [],
+    Fahrzeugkosten: ['tankstelle', 'shell', 'aral', 'total', 'esso', 'auto', 'kfz', 'parkgebühr'],
+    Fortbildung: ['fortbildung', 'kurs', 'schulung', 'weiterbildung', 'seminar', 'training'],
+    Beratung: ['rechtsanwalt', 'steuerberater', 'notar', 'beratung', 'consulting'],
+    Sonstiges: [],
   };
 
   // Prüfe jede Kategorie
   for (const [category, keywords] of Object.entries(categoryMap)) {
     if (category === 'Sonstiges') continue; // Skip fallback
-    
+
     for (const keyword of keywords) {
       if (searchText.includes(keyword)) {
         console.log(`[Category Detection] MATCH! keyword="${keyword}" -> category="${category}"`);
