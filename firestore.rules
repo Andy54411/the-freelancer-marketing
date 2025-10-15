@@ -120,6 +120,30 @@ service cloud.firestore {
       // Öffentlicher Lesezugriff auf Company-Dokumente für Service-Discovery
       allow get, list: if true;
 
+      // ✅ TEXT TEMPLATES SUBCOLLECTION - Wiederverwendbare Textbausteine
+      match /textTemplates/{templateId} {
+        // Companies können ihre eigenen Templates erstellen
+        allow create: if request.auth != null 
+                      && request.auth.uid == companyId
+                      && request.resource.data.createdBy == request.auth.uid
+                      && request.resource.data.keys().hasAll([
+                        'name', 'category', 'objectType', 'textType', 
+                        'text', 'companyId', 'createdBy', 'isDefault', 'isPrivate'
+                      ]);
+
+        // Companies können ihre eigenen Templates lesen
+        allow read, list: if request.auth != null 
+                          && (request.auth.uid == companyId || isSupportStaff());
+
+        // Companies können ihre eigenen Templates aktualisieren
+        allow update: if request.auth != null 
+                      && request.auth.uid == companyId;
+
+        // Companies können ihre eigenen Templates löschen
+        allow delete: if request.auth != null 
+                      && (request.auth.uid == companyId || isSupportStaff());
+      }
+
       // TEMPORÄR: Vollständig permissive Regeln für Debugging
       match /{subcollection}/{docId} {
         allow read, write: if request.auth != null;
@@ -2700,29 +2724,14 @@ service cloud.firestore {
       allow read: if isSupportStaff();
     }
 
-    // 📄 TEXT TEMPLATES COLLECTION - SevDesk-like Text Template System
+    // ❌ DEPRECATED: OLD TEXT TEMPLATES COLLECTION (Root Level)
+    // ⚠️ Nur noch für Migration lesbar - KEINE neuen Schreibzugriffe mehr!
     match /textTemplates/{templateId} {
-      // Companies können ihre eigenen Text-Templates erstellen
-      allow create: if request.auth != null 
-                    && isCompany()
-                    && request.resource.data.companyId == request.auth.uid
-                    && request.resource.data.createdBy == request.auth.uid
-                    && request.resource.data.keys().hasAll(['name', 'category', 'objectType', 'textType', 'text', 'companyId', 'createdBy', 'isDefault', 'isPrivate']);
-
-      // Companies können ihre eigenen Text-Templates lesen und auflisten
-      allow read, list: if request.auth != null 
-                        && (resource.data.companyId == request.auth.uid || 
-                            isSupportStaff());
-
-      // Companies können ihre eigenen Text-Templates aktualisieren
-      allow update: if request.auth != null 
-                    && resource.data.companyId == request.auth.uid
-                    && resource.data.createdBy == request.auth.uid;
-
-      // Companies können ihre eigenen Text-Templates löschen
-      allow delete: if request.auth != null 
-                    && (resource.data.companyId == request.auth.uid || 
-                        isSupportStaff());
+      // Nur noch für Migration und Support lesbar
+      allow read: if request.auth != null && isSupportStaff();
+      
+      // KEINE neuen Schreibzugriffe mehr erlaubt - verwende Subcollections!
+      allow write: if false;
     }
 
     // ===== UPDATE NOTIFICATION SYSTEM =====

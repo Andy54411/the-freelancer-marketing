@@ -67,15 +67,16 @@ export default function TextvorlagenPage() {
   const handleUpdateTextTemplate = async (
     templateData: Omit<TextTemplate, 'id' | 'createdAt' | 'updatedAt'>
   ) => {
-    if (!editingTemplate) return;
-    await TextTemplateService.updateTextTemplate(editingTemplate.id, templateData);
+    if (!editingTemplate || !uid) return;
+    await TextTemplateService.updateTextTemplate(uid, editingTemplate.id, templateData);
     await loadTextTemplates();
     setEditingTemplate(null);
   };
 
   const handleDeleteTextTemplate = async (templateId: string) => {
+    if (!uid) return;
     try {
-      await TextTemplateService.deleteTextTemplate(templateId);
+      await TextTemplateService.deleteTextTemplate(uid, templateId);
       await loadTextTemplates();
       toast.success('Textvorlage erfolgreich gelöscht');
     } catch (error) {

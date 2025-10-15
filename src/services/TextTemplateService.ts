@@ -16,7 +16,19 @@ import { db } from '@/firebase/clients';
 import { TextTemplate, DEFAULT_TEXT_TEMPLATES } from '@/types/textTemplates';
 
 export class TextTemplateService {
-  private static readonly COLLECTION_NAME = 'textTemplates';
+  /**
+   * ✅ NEU: Subcollection Path für Text Templates
+   */
+  private static getCollectionPath(companyId: string): string {
+    return `companies/${companyId}/textTemplates`;
+  }
+
+  /**
+   * ✅ NEU: Collection Reference für Subcollection
+   */
+  private static getCollectionRef(companyId: string) {
+    return collection(db, this.getCollectionPath(companyId));
+  }
 
   /**
    * Erstellt eine neue Textvorlage
@@ -25,7 +37,13 @@ export class TextTemplateService {
     templateData: Omit<TextTemplate, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<TextTemplate> {
     try {
-      const docRef = await addDoc(collection(db, this.COLLECTION_NAME), {
+      const { companyId } = templateData;
+      if (!companyId) {
+        throw new Error('companyId ist erforderlich');
+      }
+
+      const collectionRef = this.getCollectionRef(companyId);
+      const docRef = await addDoc(collectionRef, {
         ...templateData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -58,11 +76,12 @@ export class TextTemplateService {
    * Aktualisiert eine bestehende Textvorlage
    */
   static async updateTextTemplate(
+    companyId: string,
     templateId: string,
     templateData: Partial<Omit<TextTemplate, 'id' | 'createdAt' | 'updatedAt'>>
   ): Promise<void> {
     try {
-      const templateRef = doc(db, this.COLLECTION_NAME, templateId);
+      const templateRef = doc(db, this.getCollectionPath(companyId), templateId);
 
       await updateDoc(templateRef, {
         ...templateData,
@@ -92,9 +111,9 @@ export class TextTemplateService {
   /**
    * Löscht eine Textvorlage
    */
-  static async deleteTextTemplate(templateId: string): Promise<void> {
+  static async deleteTextTemplate(companyId: string, templateId: string): Promise<void> {
     try {
-      const templateRef = doc(db, this.COLLECTION_NAME, templateId);
+      const templateRef = doc(db, this.getCollectionPath(companyId), templateId);
       await deleteDoc(templateRef);
     } catch (error) {
       console.error('Fehler beim Löschen der Textvorlage:', error);
@@ -104,14 +123,12 @@ export class TextTemplateService {
 
   /**
    * Lädt alle Textvorlagen für ein Unternehmen
+   * ✅ VEREINFACHT: Kein where-Filter mehr nötig durch Subcollection!
    */
   static async getTextTemplates(companyId: string): Promise<TextTemplate[]> {
     try {
-      const q = query(
-        collection(db, this.COLLECTION_NAME),
-        where('companyId', '==', companyId),
-        orderBy('createdAt', 'desc')
-      );
+      const collectionRef = this.getCollectionRef(companyId);
+      const q = query(collectionRef, orderBy('createdAt', 'desc'));
 
       const querySnapshot = await getDocs(q);
       return this.mapQuerySnapshotToTemplates(querySnapshot);
@@ -123,6 +140,7 @@ export class TextTemplateService {
 
   /**
    * Lädt Textvorlagen nach Typ gefiltert
+   * ✅ VEREINFACHT: Ohne companyId-Filter
    */
   static async getTextTemplatesByType(
     companyId: string,
@@ -130,17 +148,16 @@ export class TextTemplateService {
     textType?: TextTemplate['textType']
   ): Promise<TextTemplate[]> {
     try {
+      const collectionRef = this.getCollectionRef(companyId);
       let q = query(
-        collection(db, this.COLLECTION_NAME),
-        where('companyId', '==', companyId),
+        collectionRef,
         where('objectType', '==', objectType),
         orderBy('createdAt', 'desc')
       );
 
       if (textType) {
         q = query(
-          collection(db, this.COLLECTION_NAME),
-          where('companyId', '==', companyId),
+          collectionRef,
           where('objectType', '==', objectType),
           where('textType', '==', textType),
           orderBy('createdAt', 'desc')
@@ -157,6 +174,7 @@ export class TextTemplateService {
 
   /**
    * Lädt die Standard-Textvorlage für einen bestimmten Typ
+   * ✅ VEREINFACHT: Ohne companyId-Filter
    */
   static async getDefaultTextTemplate(
     companyId: string,
@@ -164,9 +182,9 @@ export class TextTemplateService {
     textType: TextTemplate['textType']
   ): Promise<TextTemplate | null> {
     try {
+      const collectionRef = this.getCollectionRef(companyId);
       const q = query(
-        collection(db, this.COLLECTION_NAME),
-        where('companyId', '==', companyId),
+        collectionRef,
         where('objectType', '==', objectType),
         where('textType', '==', textType),
         where('isDefault', '==', true)
@@ -183,23 +201,48 @@ export class TextTemplateService {
   }
 
   /**
-   * Erstellt Standard-Textvorlagen für ein neues Unternehmen
+   * ✅ NEU: Initialisiert Standard-Templates für eine neue Company
    */
-  static async createDefaultTemplates(companyId: string, userId: string): Promise<void> {
+  static async initializeTemplatesForNewCompany(
+    companyId: string,
+    userId: string
+  ): Promise<void> {
     try {
-      const promises = DEFAULT_TEXT_TEMPLATES.map(template =>
-        this.createTextTemplate({
-          ...template,
+      console.log(`🚀 Initializing default templates for company: ${companyId}`);
+      
+      const collectionRef = this.getCollectionRef(companyId);
+      
+      // Erstelle alle Standard-Templates parallel
+      const promises = DEFAULT_TEXT_TEMPLATES.map((template) =>
+        addDoc(collectionRef, {
+          name: template.name,
+          category: template.category,
+          objectType: template.objectType,
+          textType: template.textType,
+          text: template.text,
+          isDefault: template.isDefault,
+          isPrivate: false,
           companyId,
           createdBy: userId,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         })
       );
 
       await Promise.all(promises);
+      console.log(`✅ ${DEFAULT_TEXT_TEMPLATES.length} templates initialized for ${companyId}`);
     } catch (error) {
       console.error('Fehler beim Erstellen der Standard-Textvorlagen:', error);
       throw new Error('Fehler beim Erstellen der Standard-Textvorlagen');
     }
+  }
+
+  /**
+   * ⚠️ DEPRECATED: Legacy-Methode für Kompatibilität
+   * Verwende stattdessen: initializeTemplatesForNewCompany()
+   */
+  static async createDefaultTemplates(companyId: string, userId: string): Promise<void> {
+    return this.initializeTemplatesForNewCompany(companyId, userId);
   }
 
   /**
@@ -310,6 +353,7 @@ export class TextTemplateService {
 
   /**
    * Setzt andere Standard-Templates auf nicht-Standard
+   * ✅ ANGEPASST: Für Subcollections
    */
   private static async updateOtherDefaultTemplates(
     companyId: string,
@@ -318,9 +362,9 @@ export class TextTemplateService {
     excludeTemplateId: string
   ): Promise<void> {
     try {
+      const collectionRef = this.getCollectionRef(companyId);
       const q = query(
-        collection(db, this.COLLECTION_NAME),
-        where('companyId', '==', companyId),
+        collectionRef,
         where('objectType', '==', objectType),
         where('textType', '==', textType),
         where('isDefault', '==', true)
@@ -369,30 +413,24 @@ export class TextTemplateService {
   }
 
   /**
-   * Erstellt Standard-Templates für ein Unternehmen (falls noch keine vorhanden)
+   * ✅ ANGEPASST: Prüft ob Templates existieren, erstellt sie falls nicht
    */
-  static async createDefaultTemplatesIfNeeded(companyId: string, userId: string): Promise<void> {
+  static async createDefaultTemplatesIfNeeded(
+    companyId: string,
+    userId: string
+  ): Promise<boolean> {
     try {
-      // Prüfen ob bereits Templates vorhanden sind
-      const existingTemplates = await this.getTextTemplates(companyId);
-
-      if (existingTemplates.length > 0) {
-        return; // Templates bereits vorhanden
+      const templates = await this.getTextTemplates(companyId);
+      
+      if (templates.length === 0) {
+        await this.initializeTemplatesForNewCompany(companyId, userId);
+        return true; // Templates wurden erstellt
       }
-
-      // Standard-Templates importieren
-      const importPromises = DEFAULT_TEXT_TEMPLATES.map(template =>
-        this.createTextTemplate({
-          ...template,
-          companyId,
-          createdBy: userId,
-        })
-      );
-
-      await Promise.all(importPromises);
+      
+      return false; // Templates existieren bereits
     } catch (error) {
-      console.error('Fehler beim Erstellen der Standard-Templates:', error);
-      // Fehler nicht weiterwerfen, da dies optional ist
+      console.error('Fehler beim Prüfen/Erstellen der Standard-Templates:', error);
+      return false;
     }
   }
 }
