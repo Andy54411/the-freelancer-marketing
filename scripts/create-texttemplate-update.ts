@@ -1,11 +1,10 @@
 /**
  * 📢 UPDATE NOTIFICATION CREATOR
- * 
+ *
  * Erstellt eine Update-Notification für die Textvorlagen-Migration
  */
 
 import * as admin from 'firebase-admin';
-import * as path from 'path';
 
 // Firebase Admin initialisieren
 if (!admin.apps.length) {
@@ -24,27 +23,32 @@ async function createUpdateNotification() {
       category: 'improvement',
       priority: 'medium',
       date: admin.firestore.Timestamp.now(),
-      description: 'Das Textvorlagen-System wurde grundlegend überarbeitet für bessere Performance und Datenisolation.',
+      description:
+        'Das Textvorlagen-System wurde grundlegend überarbeitet für bessere Performance und Datenisolation.',
       changes: [
         {
           type: 'improvement',
           title: 'Schnellere Textvorlagen',
-          description: 'Textvorlagen werden jetzt als Subcollections gespeichert, was zu deutlich schnelleren Ladezeiten führt.',
+          description:
+            'Textvorlagen werden jetzt als Subcollections gespeichert, was zu deutlich schnelleren Ladezeiten führt.',
         },
         {
           type: 'improvement',
           title: 'Bessere Datenisolation',
-          description: 'Jedes Unternehmen hat nun seine eigenen Textvorlagen-Daten, was die Sicherheit erhöht.',
+          description:
+            'Jedes Unternehmen hat nun seine eigenen Textvorlagen-Daten, was die Sicherheit erhöht.',
         },
         {
           type: 'improvement',
           title: 'Automatische Initialisierung',
-          description: 'Neue Unternehmen erhalten automatisch Standard-Textvorlagen beim ersten Login.',
+          description:
+            'Neue Unternehmen erhalten automatisch Standard-Textvorlagen beim ersten Login.',
         },
         {
           type: 'technical',
           title: 'Architektur-Verbesserung',
-          description: 'Migration von Root Collection zu Subcollections für konsistente Datenstruktur.',
+          description:
+            'Migration von Root Collection zu Subcollections für konsistente Datenstruktur.',
         },
       ],
       impactedFeatures: [
@@ -68,14 +72,15 @@ async function createUpdateNotification() {
     };
 
     const docRef = await db.collection('updates').add(updateData);
-    
+
     console.log('✅ Update-Notification erstellt!');
     console.log(`📋 ID: ${docRef.id}`);
     console.log(`📌 Version: ${updateData.version}`);
     console.log(`🎯 Titel: ${updateData.title}`);
     console.log('\n🔗 Notification kann hier eingesehen werden:');
-    console.log(`https://console.firebase.google.com/project/tilvo-f142f/firestore/data/updates/${docRef.id}`);
-    
+    console.log(
+      `https://console.firebase.google.com/project/tilvo-f142f/firestore/data/updates/${docRef.id}`
+    );
   } catch (error) {
     console.error('❌ Fehler beim Erstellen der Update-Notification:', error);
     process.exit(1);
@@ -87,7 +92,7 @@ createUpdateNotification()
     console.log('\n✅ Fertig!');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Fehler:', error);
     process.exit(1);
   });

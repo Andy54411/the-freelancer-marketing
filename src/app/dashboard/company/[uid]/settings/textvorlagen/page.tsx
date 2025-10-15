@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -34,6 +33,7 @@ export default function TextvorlagenPage() {
 
   useEffect(() => {
     loadTextTemplates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid]);
 
   // Textvorlagen laden

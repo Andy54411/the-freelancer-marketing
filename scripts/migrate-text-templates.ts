@@ -1,10 +1,10 @@
 /**
  * 🔄 TEXT TEMPLATES MIGRATION SCRIPT
- * 
+ *
  * Migriert Text Templates von Root Collection zu Subcollections
  * Von: textTemplates/{templateId}
  * Nach: companies/{companyId}/textTemplates/{templateId}
- * 
+ *
  * WICHTIG:
  * - Erstellt automatisch Backup
  * - Behält Template-IDs bei
@@ -13,7 +13,6 @@
  */
 
 import * as admin from 'firebase-admin';
-import * as path from 'path';
 
 // ===== KONFIGURATION =====
 const PROJECT_ID = 'tilvo-f142f';
@@ -41,6 +40,7 @@ const db = admin.firestore();
 interface OldTemplate {
   id: string;
   companyId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
@@ -72,12 +72,12 @@ async function migrateTextTemplates() {
   try {
     // ===== SCHRITT 1: BACKUP ERSTELLEN =====
     console.log('📦 SCHRITT 1: Backup erstellen...\n');
-    
+
     const oldTemplatesSnapshot = await db.collection('textTemplates').get();
     stats.totalTemplates = oldTemplatesSnapshot.size;
-    
+
     console.log(`   Gefunden: ${stats.totalTemplates} Templates in Root Collection`);
-    
+
     if (stats.totalTemplates === 0) {
       console.log('\n⚠️  Keine Templates zum Migrieren gefunden!');
       return;
@@ -86,47 +86,49 @@ async function migrateTextTemplates() {
     if (!DRY_RUN) {
       const backupRef = db.collection('textTemplates_backup');
       const backupBatch = db.batch();
-      
+
       oldTemplatesSnapshot.docs.forEach(doc => {
         backupBatch.set(backupRef.doc(doc.id), doc.data());
       });
-      
+
       await backupBatch.commit();
-      console.log(`   ✅ Backup erstellt: textTemplates_backup (${stats.totalTemplates} Dokumente)\n`);
+      console.log(
+        `   ✅ Backup erstellt: textTemplates_backup (${stats.totalTemplates} Dokumente)\n`
+      );
     } else {
       console.log(`   🔧 DRY RUN: Backup würde erstellt werden\n`);
     }
 
     // ===== SCHRITT 2: TEMPLATES NACH COMPANY GRUPPIEREN =====
     console.log('📊 SCHRITT 2: Templates nach Company gruppieren...\n');
-    
+
     const templatesByCompany = new Map<string, OldTemplate[]>();
-    
+
     oldTemplatesSnapshot.docs.forEach(doc => {
       const data = doc.data();
       const companyId = data.companyId;
-      
+
       if (!companyId) {
         console.warn(`   ⚠️  Template ${doc.id} hat keine companyId, wird übersprungen`);
         stats.skipped++;
         return;
       }
-      
+
       if (!templatesByCompany.has(companyId)) {
         templatesByCompany.set(companyId, []);
       }
-      
+
       templatesByCompany.get(companyId)!.push({
         id: doc.id,
         companyId,
         ...data,
       });
     });
-    
+
     stats.companies = templatesByCompany.size;
     console.log(`   ✅ ${stats.companies} Companies gefunden`);
     console.log(`   📋 Templates pro Company:`);
-    
+
     for (const [companyId, templates] of templatesByCompany) {
       console.log(`      - ${companyId.substring(0, 8)}...: ${templates.length} Templates`);
     }
@@ -134,12 +136,14 @@ async function migrateTextTemplates() {
 
     // ===== SCHRITT 3: MIGRATION ZU SUBCOLLECTIONS =====
     console.log('🔄 SCHRITT 3: Migration zu Subcollections...\n');
-    
+
     let companyIndex = 0;
     for (const [companyId, templates] of templatesByCompany) {
       companyIndex++;
-      console.log(`   [${companyIndex}/${stats.companies}] Company: ${companyId.substring(0, 20)}...`);
-      
+      console.log(
+        `   [${companyIndex}/${stats.companies}] Company: ${companyId.substring(0, 20)}...`
+      );
+
       try {
         // Prüfe ob Company existiert
         const companyDoc = await db.collection('companies').doc(companyId).get();
@@ -152,7 +156,7 @@ async function migrateTextTemplates() {
         if (!DRY_RUN) {
           // Erstelle Templates in Subcollection mit Batch
           const batch = db.batch();
-          
+
           templates.forEach(template => {
             const { id, ...templateData } = template;
             const newRef = db
@@ -160,7 +164,7 @@ async function migrateTextTemplates() {
               .doc(companyId)
               .collection('textTemplates')
               .doc(id); // Behalte alte ID bei
-            
+
             batch.set(newRef, templateData);
           });
 
@@ -171,7 +175,6 @@ async function migrateTextTemplates() {
           stats.migrated += templates.length;
           console.log(`      🔧 DRY RUN: ${templates.length} Templates würden migriert werden`);
         }
-        
       } catch (error) {
         console.error(`      ❌ Fehler bei Migration:`, error);
         stats.errors += templates.length;
@@ -189,7 +192,7 @@ async function migrateTextTemplates() {
     console.log(`⚠️  Übersprungen:   ${stats.skipped}`);
     console.log(`❌ Fehler:          ${stats.errors}`);
     console.log('='.repeat(70));
-    
+
     if (!DRY_RUN) {
       console.log('\n📦 Backup Location: textTemplates_backup Collection');
       console.log('\n⚠️  WICHTIG:');
@@ -203,7 +206,6 @@ async function migrateTextTemplates() {
       console.log('   $ npx ts-node scripts/migrate-text-templates.ts');
     }
     console.log('='.repeat(70) + '\n');
-
   } catch (error) {
     console.error('\n❌ KRITISCHER FEHLER:', error);
     process.exit(1);
@@ -218,7 +220,7 @@ migrateTextTemplates()
     console.log('✅ Migration erfolgreich abgeschlossen!\n');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n❌ Migration fehlgeschlagen:', error);
     process.exit(1);
   });

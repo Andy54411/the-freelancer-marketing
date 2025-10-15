@@ -203,17 +203,14 @@ export class TextTemplateService {
   /**
    * ✅ NEU: Initialisiert Standard-Templates für eine neue Company
    */
-  static async initializeTemplatesForNewCompany(
-    companyId: string,
-    userId: string
-  ): Promise<void> {
+  static async initializeTemplatesForNewCompany(companyId: string, userId: string): Promise<void> {
     try {
       console.log(`🚀 Initializing default templates for company: ${companyId}`);
-      
+
       const collectionRef = this.getCollectionRef(companyId);
-      
+
       // Erstelle alle Standard-Templates parallel
-      const promises = DEFAULT_TEXT_TEMPLATES.map((template) =>
+      const promises = DEFAULT_TEXT_TEMPLATES.map(template =>
         addDoc(collectionRef, {
           name: template.name,
           category: template.category,
@@ -248,9 +245,11 @@ export class TextTemplateService {
   /**
    * Ersetzt Platzhalter in einem Text mit echten Werten
    */
-  static replacePlaceholders(
+  replacePlaceholders(
     text: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     companySettings?: any,
     language: string = 'de'
   ): string {
@@ -415,18 +414,15 @@ export class TextTemplateService {
   /**
    * ✅ ANGEPASST: Prüft ob Templates existieren, erstellt sie falls nicht
    */
-  static async createDefaultTemplatesIfNeeded(
-    companyId: string,
-    userId: string
-  ): Promise<boolean> {
+  static async createDefaultTemplatesIfNeeded(companyId: string, userId: string): Promise<boolean> {
     try {
       const templates = await this.getTextTemplates(companyId);
-      
+
       if (templates.length === 0) {
         await this.initializeTemplatesForNewCompany(companyId, userId);
         return true; // Templates wurden erstellt
       }
-      
+
       return false; // Templates existieren bereits
     } catch (error) {
       console.error('Fehler beim Prüfen/Erstellen der Standard-Templates:', error);
