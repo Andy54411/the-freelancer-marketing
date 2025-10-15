@@ -173,6 +173,44 @@ export class TextTemplateService {
   }
 
   /**
+   * Lädt E-Mail-Textvorlagen für ein bestimmtes Dokument
+   * ✅ NEU: Filtert nach category='EMAIL' und objectType
+   */
+  static async getEmailTemplatesByObjectType(
+    companyId: string,
+    objectType: TextTemplate['objectType'],
+    textType?: TextTemplate['textType']
+  ): Promise<TextTemplate[]> {
+    try {
+      const collectionRef = this.getCollectionRef(companyId);
+      let q;
+
+      if (textType) {
+        q = query(
+          collectionRef,
+          where('category', '==', 'EMAIL'),
+          where('objectType', '==', objectType),
+          where('textType', '==', textType),
+          orderBy('createdAt', 'desc')
+        );
+      } else {
+        q = query(
+          collectionRef,
+          where('category', '==', 'EMAIL'),
+          where('objectType', '==', objectType),
+          orderBy('createdAt', 'desc')
+        );
+      }
+
+      const querySnapshot = await getDocs(q);
+      return this.mapQuerySnapshotToTemplates(querySnapshot);
+    } catch (error) {
+      console.error('Fehler beim Laden der E-Mail-Textvorlagen:', error);
+      throw new Error('Fehler beim Laden der E-Mail-Textvorlagen');
+    }
+  }
+
+  /**
    * Lädt die Standard-Textvorlage für einen bestimmten Typ
    * ✅ VEREINFACHT: Ohne companyId-Filter
    */

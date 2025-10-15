@@ -264,6 +264,33 @@ export default function CompanySidebar({
   getCurrentView,
 }: CompanySidebarProps) {
   const pathname = usePathname();
+  const [hasBankConnection, setHasBankConnection] = useState(false);
+  const [checkingBankConnection, setCheckingBankConnection] = useState(true);
+
+  // Prüfe ob Bankkonten über FinAPI verbunden sind
+  useEffect(() => {
+    const checkBankConnections = async () => {
+      try {
+        setCheckingBankConnection(true);
+        const response = await fetch(`/api/finapi/accounts-enhanced?userId=${uid}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          // Wenn Accounts existieren und mindestens ein Account verbunden ist
+          const hasConnections = data.success && data.accounts && data.accounts.length > 0;
+          setHasBankConnection(hasConnections);
+        }
+      } catch (error) {
+        console.error('Fehler beim Prüfen der Bankverbindungen:', error);
+      } finally {
+        setCheckingBankConnection(false);
+      }
+    };
+
+    if (uid) {
+      checkBankConnections();
+    }
+  }, [uid]);
 
   const isExpanded = (itemValue: string) => expandedItems.includes(itemValue);
   const isItemActive = (item: NavigationItem) => {
@@ -481,8 +508,17 @@ export default function CompanySidebar({
           <nav className="flex-1 px-2 space-y-1">
             {navigationItems.map(item => {
               const isMainActive = isItemActive(item);
-              const hasSubItems = item.subItems && item.subItems.length > 0;
               const isItemExpanded = isExpanded(item.value);
+              
+              // Filtere SubItems für Banking: Blende "Dashboard" aus wenn Bankkonto verbunden
+              let filteredSubItems = item.subItems;
+              if (item.value === 'banking' && hasBankConnection && item.subItems) {
+                filteredSubItems = item.subItems.filter(
+                  subItem => subItem.value !== 'banking-overview'
+                );
+              }
+              
+              const hasSubItems = filteredSubItems && filteredSubItems.length > 0;
 
               return (
                 <div key={item.value}>
@@ -546,7 +582,7 @@ export default function CompanySidebar({
                         </>
                       )}
 
-                      {item.subItems?.map(subItem => {
+                      {filteredSubItems?.map(subItem => {
                         const isSubActive = isSubItemActive(subItem);
 
                         return (

@@ -363,13 +363,61 @@ export class RecurringInvoiceModel extends BaseModel<RecurringTemplate & import(
         };
     }
 
-    private async templateToInvoiceData(template: RecurringTemplate): Promise<any> {
-        // Template zu Invoice-Request konvertieren
+    private async templateToInvoiceData(template: any): Promise<any> {
+        // Template zu vollständigen Invoice-Daten konvertieren
+        const now = new Date();
+        const invoiceDate = Timestamp.fromDate(now);
+        
+        // Fälligkeitsdatum berechnen (Standard: 14 Tage)
+        const dueDate = new Date(now);
+        dueDate.setDate(dueDate.getDate() + 14);
+        const dueDateTimestamp = Timestamp.fromDate(dueDate);
+        
         return {
+            companyId: template.companyId,
             customerId: template.customerId,
-            templateName: template.templateName,
-            description: template.description,
+            customerName: template.customerName || '',
+            customerEmail: template.customerEmail || '',
+            customerAddress: template.customerAddress || '',
+            
+            // Rechnungsdetails
+            title: template.title || 'Wiederkehrende Rechnung',
+            invoiceDate,
+            validUntil: dueDateTimestamp,
+            
+            // Positionen
+            items: (template.items || []).map((item: any, index: number) => ({
+                id: `item-${index + 1}`,
+                description: item.description || '',
+                quantity: item.quantity || 1,
+                unitPrice: item.unitPrice || 0,
+                unit: item.unit || 'Stk',
+                taxRate: item.taxRate || template.taxRate || 19,
+                discountPercent: item.discountPercent || 0,
+                total: item.total || (item.quantity * item.unitPrice),
+                category: 'service',
+            })),
+            
+            // Texte
+            headTextHtml: template.headTextHtml || '',
+            footerText: template.footerText || '',
+            notes: template.notes || '',
+            paymentTerms: template.paymentTerms || 'Zahlbar innerhalb von 14 Tagen',
+            
+            // Steuer & Währung
+            currency: template.currency || 'EUR',
+            taxRate: template.taxRate || 19,
+            taxRule: template.taxRule || 'DE_TAXABLE',
+            
+            // Status & Metadata
+            status: 'paid', // Generierte Rechnungen sind initial "bezahlt" Status anzupassen
             type: 'STANDARD',
+            isRecurring: true,
+            recurringTemplateId: template.id,
+            
+            // Timestamps
+            createdAt: invoiceDate,
+            updatedAt: invoiceDate,
         };
     }
 
@@ -440,8 +488,45 @@ export class RecurringInvoiceModel extends BaseModel<RecurringTemplate & import(
         dueDate: Timestamp,
         companyId?: string
     ): Promise<RecurringTemplate[]> {
-        // Vereinfacht - würde echte Firestore-Query verwenden
-        // Sucht Templates mit nextExecutionDate <= dueDate und status = 'ACTIVE'
-        return [];
+        const { getDb } = await import('../../helpers');
+        const db = getDb();
+        
+        if (companyId) {
+            // Query für spezifische Company (Subcollection Pattern)
+            const templatesRef = db.collection('companies').doc(companyId).collection('recurringInvoices');
+            
+            const snapshot = await templatesRef
+                .where('status', '==', 'ACTIVE')
+                .where('nextExecutionDate', '<=', dueDate)
+                .get();
+            
+            return snapshot.docs.map((doc: import('firebase-admin/firestore').QueryDocumentSnapshot) => ({
+                id: doc.id,
+                ...doc.data()
+            } as RecurringTemplate));
+        } else {
+            // Query über alle Companies (für globale Scheduled Function)
+            const companiesSnapshot = await db.collection('companies').get();
+            const allTemplates: RecurringTemplate[] = [];
+            
+            for (const companyDoc of companiesSnapshot.docs) {
+                const templatesRef = companyDoc.ref.collection('recurringInvoices');
+                
+                const snapshot = await templatesRef
+                    .where('status', '==', 'ACTIVE')
+                    .where('nextExecutionDate', '<=', dueDate)
+                    .get();
+                
+                snapshot.docs.forEach((doc: import('firebase-admin/firestore').QueryDocumentSnapshot) => {
+                    allTemplates.push({
+                        id: doc.id,
+                        companyId: companyDoc.id,
+                        ...doc.data()
+                    } as RecurringTemplate);
+                });
+            }
+            
+            return allTemplates;
+        }
     }
 }

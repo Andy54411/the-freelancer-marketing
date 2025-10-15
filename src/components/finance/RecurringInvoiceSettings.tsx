@@ -13,11 +13,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Info, RefreshCw, X } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Info, RefreshCw, X, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { TextTemplateService } from '@/services/TextTemplateService';
 import type { TextTemplate } from '@/types/textTemplates';
+import TextTemplateModal from '@/components/settings/TextTemplateModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface RecurringInvoiceSettingsProps {
   // Automatische Generierung
@@ -45,6 +55,10 @@ export interface RecurringInvoiceSettingsProps {
   // Company ID für Templates
   companyId: string;
 
+  // Kunde (erforderlich für wiederkehrende Rechnungen)
+  customerId?: string;
+  customerName?: string;
+
   // Optional: Fehlerklasse für Validierung
   getFieldErrorClass?: (fieldName: string) => string;
 }
@@ -63,10 +77,15 @@ export function RecurringInvoiceSettings({
   emailTemplateId = 'standard',
   onEmailTemplateChange,
   companyId,
+  customerId,
+  customerName,
   getFieldErrorClass = () => '',
 }: RecurringInvoiceSettingsProps) {
+  const { user } = useAuth();
   const [emailTemplates, setEmailTemplates] = useState<TextTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showCustomerWarning, setShowCustomerWarning] = useState(false);
 
   // E-Mail-Vorlagen laden
   useEffect(() => {
@@ -75,12 +94,13 @@ export function RecurringInvoiceSettings({
       
       try {
         setLoadingTemplates(true);
-        // Lade E-Mail-Vorlagen für Rechnungen (INVOICE) mit Typ BODY
-        const templates = await TextTemplateService.getTextTemplatesByType(
+        // Lade E-Mail-Vorlagen für Rechnungen (category=EMAIL, objectType=INVOICE, textType=BODY)
+        const templates = await TextTemplateService.getEmailTemplatesByObjectType(
           companyId,
           'INVOICE',
           'BODY'
         );
+        console.log('E-Mail-Vorlagen geladen:', templates.length, templates);
         setEmailTemplates(templates);
       } catch (error) {
         console.error('Fehler beim Laden der E-Mail-Vorlagen:', error);
@@ -104,6 +124,7 @@ export function RecurringInvoiceSettings({
   };
 
   return (
+    <>
     <Card className="border-2 border-[#14ad9f]/20 bg-gradient-to-br from-white to-[#14ad9f]/5">
       <CardHeader>
         <CardTitle className="flex items-center text-[#14ad9f]">
@@ -128,7 +149,16 @@ export function RecurringInvoiceSettings({
 
             <RadioGroup
               value={autoGenerate ? 'enabled' : 'disabled'}
-              onValueChange={(value) => onAutoGenerateChange(value === 'enabled')}
+              onValueChange={(value) => {
+                if (value === 'enabled') {
+                  // Prüfe ob ein Kunde ausgewählt ist
+                  if (!customerId && !customerName) {
+                    setShowCustomerWarning(true);
+                    return;
+                  }
+                }
+                onAutoGenerateChange(value === 'enabled');
+              }}
               className="space-y-3"
             >
               <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-[#14ad9f]/50 hover:bg-[#14ad9f]/5 transition-colors">
@@ -215,13 +245,15 @@ export function RecurringInvoiceSettings({
               {/* E-Mail Text Template (conditional) */}
               {autoSendEmail && (
                 <div className="space-y-2 mt-3">
-                  <Label className="text-sm font-medium text-gray-700">
+                  <div className="text-sm font-medium text-gray-700">
                     E-Mail Text aus Vorlage
-                  </Label>
+                  </div>
                   <Select 
                     value={emailTemplateId} 
                     onValueChange={(value) => {
-                      if (onEmailTemplateChange) {
+                      if (value === 'create') {
+                        setShowTemplateModal(true);
+                      } else if (onEmailTemplateChange) {
                         onEmailTemplateChange(value);
                       }
                     }}
@@ -256,9 +288,17 @@ export function RecurringInvoiceSettings({
                     </SelectContent>
                   </Select>
                   {emailTemplates.length === 0 && !loadingTemplates && (
-                    <p className="text-xs text-gray-500">
-                      Erstellen Sie zuerst eine E-Mail-Vorlage unter Einstellungen → Textvorlagen
-                    </p>
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-xs text-yellow-800 font-medium mb-1">
+                        Keine E-Mail-Vorlagen gefunden
+                      </p>
+                      <p className="text-xs text-yellow-700">
+                        Erstellen Sie eine E-Mail-Vorlage unter <strong>Einstellungen → Textvorlagen</strong>:
+                        <br/>• Typ: <strong>E-Mail</strong>
+                        <br/>• Verwenden für: <strong>Rechnungen</strong>
+                        <br/>• Position: <strong>Nachricht</strong>
+                      </p>
+                    </div>
                   )}
                 </div>
               )}
@@ -273,10 +313,10 @@ export function RecurringInvoiceSettings({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Abrechnungsintervall */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">
+                  <div className="text-sm font-medium text-gray-700">
                     Abrechnungsintervall
                     <span className="text-red-500 ml-1">*</span>
-                  </Label>
+                  </div>
                   <Select value={interval} onValueChange={onIntervalChange}>
                     <SelectTrigger className={`w-full ${getFieldErrorClass('interval')}`}>
                       <SelectValue placeholder="Intervall wählen" />
@@ -291,11 +331,12 @@ export function RecurringInvoiceSettings({
 
                 {/* Startdatum */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">
+                  <label htmlFor="recurring-start-date" className="text-sm font-medium text-gray-700">
                     Startdatum
                     <span className="text-red-500 ml-1">*</span>
-                  </Label>
+                  </label>
                   <Input
+                    id="recurring-start-date"
                     type="date"
                     value={startDate?.toISOString().split('T')[0]}
                     onChange={(e) => onStartDateChange(new Date(e.target.value))}
@@ -306,11 +347,12 @@ export function RecurringInvoiceSettings({
 
                 {/* Enddatum (optional) */}
                 <div className="space-y-2 md:col-span-2">
-                  <Label className="text-sm font-medium text-gray-700">
+                  <label htmlFor="recurring-end-date" className="text-sm font-medium text-gray-700">
                     Enddatum (optional)
-                  </Label>
+                  </label>
                   <div className="flex items-center gap-2">
                     <Input
+                      id="recurring-end-date"
                       type="date"
                       value={endDate?.toISOString().split('T')[0] || ''}
                       onChange={(e) =>
@@ -355,6 +397,58 @@ export function RecurringInvoiceSettings({
         )}
       </CardContent>
     </Card>
+
+    {/* TextTemplateModal */}
+    {user && (
+      <TextTemplateModal
+        isOpen={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        onSave={async (templateData) => {
+          await TextTemplateService.createTextTemplate({
+            ...templateData,
+            category: 'EMAIL',
+            objectType: 'INVOICE',
+            textType: 'BODY',
+          });
+          // Reload templates
+          const templates = await TextTemplateService.getEmailTemplatesByObjectType(
+            companyId,
+            'INVOICE',
+            'BODY'
+          );
+          setEmailTemplates(templates);
+        }}
+        companyId={companyId}
+        userId={user.uid}
+      />
+    )}
+
+    {/* Kunden-Warnung AlertDialog */}
+    <AlertDialog open={showCustomerWarning} onOpenChange={setShowCustomerWarning}>
+      <AlertDialogContent className="max-w-md">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2 text-[#14ad9f]">
+            <AlertTriangle className="h-5 w-5" />
+            Kontakt erforderlich
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-gray-700 pt-2">
+            Wiederkehrende Rechnungen benötigen einen Kontakt aus der Subcollection.
+            <br />
+            <br />
+            Bitte wähle zuerst einen Kontakt aus, bevor du die automatische Generierung aktivierst.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <Button
+            onClick={() => setShowCustomerWarning(false)}
+            className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
+          >
+            Verstanden
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
 

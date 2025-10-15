@@ -6,3 +6,6 @@ export * from './finance-http';
 
 // Function exports für Firebase CLI
 export { financeApi } from './finance-http';
+
+// Export Models für programmatischen Zugriff
+export { RecurringInvoiceModel } from '../models/recurring.model';

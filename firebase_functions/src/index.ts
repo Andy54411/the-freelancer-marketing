@@ -171,6 +171,9 @@ export { gmailSyncHttp };
 import * as scheduledUsageCalculation from './scheduled-usage-calculation';
 export const dailyUsageCalculation = scheduledUsageCalculation.dailyUsageCalculation;
 
+import { scheduledRecurringInvoices } from './scheduled-recurring-invoices';
+export { scheduledRecurringInvoices };
+
 // Test Functions
 import * as testUsageCalculationModule from './test-usage-calculation';
 export const testUsageCalculation = testUsageCalculationModule.testUsageCalculation;

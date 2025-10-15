@@ -6,6 +6,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -16,7 +23,7 @@ import {
 import TextTemplateModal from '@/components/settings/TextTemplateModal';
 import { TextTemplateService } from '@/services/TextTemplateService';
 import { TextTemplate, DOCUMENT_USAGE_OPTIONS } from '@/types/textTemplates';
-import { FileText, Loader2, ArrowLeft, Plus, Edit, Trash2, Type } from 'lucide-react';
+import { FileText, Loader2, ArrowLeft, Plus, Edit, Trash2, Type, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -30,6 +37,8 @@ export default function TextvorlagenPage() {
   const [textTemplateModalOpen, setTextTemplateModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<TextTemplate | null>(null);
   const [loading, setLoading] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<TextTemplate | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     loadTextTemplates();
@@ -93,6 +102,16 @@ export default function TextvorlagenPage() {
   const closeModal = () => {
     setTextTemplateModalOpen(false);
     setEditingTemplate(null);
+  };
+
+  const openPreviewModal = (template: TextTemplate) => {
+    setPreviewTemplate(template);
+    setPreviewOpen(true);
+  };
+
+  const closePreviewModal = () => {
+    setPreviewOpen(false);
+    setPreviewTemplate(null);
   };
 
   // Hilfsfunktionen für SevDesk-ähnliches Layout
@@ -186,7 +205,7 @@ export default function TextvorlagenPage() {
                 </CardContent>
               </Card>
             ) : (
-              /* SevDesk-ähnliche Tabelle */
+              /* SevDesk-ähnliche Tabelle - Kompakt ohne Text-Vorschau */
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -201,39 +220,47 @@ export default function TextvorlagenPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[200px]">Name</TableHead>
-                        <TableHead className="w-[250px]">Typ</TableHead>
-                        <TableHead className="w-[300px]">Text-Vorschau</TableHead>
-                        <TableHead className="w-[100px]">Standard</TableHead>
-                        <TableHead className="w-[120px] text-right">Aktionen</TableHead>
+                        <TableHead className="w-[35%]">Name</TableHead>
+                        <TableHead className="w-[45%]">Typ</TableHead>
+                        <TableHead className="w-[10%] text-center">Standard</TableHead>
+                        <TableHead className="w-[10%] text-right">Aktionen</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {textTemplates.map(template => (
-                        <TableRow key={template.id} className="hover:bg-gray-50">
+                        <TableRow
+                          key={template.id}
+                          className="hover:bg-gray-50 cursor-pointer"
+                          onClick={() => openPreviewModal(template)}
+                        >
                           <TableCell className="font-medium">{template.name}</TableCell>
                           <TableCell>
                             <span className="text-sm">{getTemplateTypeDisplay(template)}</span>
                           </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-gray-600">
-                              {getTextPreview(template.text)}
-                            </span>
-                          </TableCell>
-                          <TableCell>
+                          <TableCell className="text-center">
                             {template.isDefault ? (
-                              <span className="text-[#14ad9f] font-medium text-sm">Standard</span>
+                              <span className="text-[#14ad9f] font-medium text-sm">✓</span>
                             ) : (
                               <span className="text-gray-400 text-sm">-</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end space-x-2">
+                          <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openPreviewModal(template)}
+                                className="h-8 w-8 p-0"
+                                title="Vorschau"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => openEditModal(template)}
                                 className="h-8 w-8 p-0"
+                                title="Bearbeiten"
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -242,6 +269,7 @@ export default function TextvorlagenPage() {
                                 size="sm"
                                 onClick={() => handleDeleteTextTemplate(template.id)}
                                 className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                title="Löschen"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -257,7 +285,7 @@ export default function TextvorlagenPage() {
           </>
         )}
 
-        {/* Modal */}
+        {/* Edit Modal */}
         <TextTemplateModal
           isOpen={textTemplateModalOpen}
           onClose={closeModal}
@@ -266,6 +294,52 @@ export default function TextvorlagenPage() {
           companyId={uid}
           userId={user?.uid || ''}
         />
+
+        {/* Preview Dialog */}
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Type className="h-5 w-5 text-[#14ad9f]" />
+                {previewTemplate?.name}
+              </DialogTitle>
+              <DialogDescription>
+                {previewTemplate && getTemplateTypeDisplay(previewTemplate)}
+                {previewTemplate?.isDefault && (
+                  <span className="ml-2 text-[#14ad9f] font-medium">(Standard)</span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4 space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Text-Inhalt:</h4>
+                <div
+                  className="prose prose-sm max-w-none p-4 bg-gray-50 rounded-lg border border-gray-200"
+                  dangerouslySetInnerHTML={{ __html: previewTemplate?.text || '' }}
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={closePreviewModal}
+                  className="bg-white hover:bg-gray-50"
+                >
+                  Schließen
+                </Button>
+                <Button
+                  onClick={() => {
+                    closePreviewModal();
+                    if (previewTemplate) openEditModal(previewTemplate);
+                  }}
+                  className="bg-[#14ad9f] hover:bg-teal-600"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Bearbeiten
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

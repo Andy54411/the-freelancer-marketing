@@ -59,7 +59,8 @@ import {
   Copy,
   Download,
   Settings,
-  Send } from
+  Send,
+  RefreshCw } from
 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
@@ -99,6 +100,14 @@ import {
   DialogFooter,
   DialogClose } from
 '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle } from
+'@/components/ui/alert-dialog';
 // ...
 // State für Dienstleistungs-Modal innerhalb der Komponente anlegen!
 import {
@@ -338,6 +347,14 @@ export default function CreateRecurringInvoicePage() {
     unit: 'Stk'
   });
   const [savingService, setSavingService] = useState(false);
+
+  // Recurring Invoice States
+  const [recurringAutoGenerate, setRecurringAutoGenerate] = useState(false);
+  const [recurringInterval, setRecurringInterval] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly');
+  const [recurringStartDate, setRecurringStartDate] = useState<Date>(new Date());
+  const [recurringEndDate, setRecurringEndDate] = useState<Date | undefined>(undefined);
+  const [recurringAutoSendEmail, setRecurringAutoSendEmail] = useState(false);
+  const [recurringEmailTemplateId, setRecurringEmailTemplateId] = useState<string>('standard');
 
   // Lade existierende Dienstleistungen
   useEffect(() => {
@@ -645,13 +662,9 @@ export default function CreateRecurringInvoicePage() {
   const [eInvoiceSettings, setEInvoiceSettings] = useState<any>(null);
   const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
 
-  // 🔄 Wiederkehrende Rechnung State
-  const [recurringAutoGenerate, setRecurringAutoGenerate] = useState(true);
-  const [recurringInterval, setRecurringInterval] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly');
-  const [recurringStartDate, setRecurringStartDate] = useState<Date>(new Date());
-  const [recurringEndDate, setRecurringEndDate] = useState<Date | undefined>(undefined);
-  const [recurringAutoSendEmail, setRecurringAutoSendEmail] = useState(false);
-  const [recurringEmailTemplateId, setRecurringEmailTemplateId] = useState('standard');
+  // Recurring Invoice Validation Dialog State
+  const [showRecurringValidationDialog, setShowRecurringValidationDialog] = useState(false);
+  const [recurringValidationErrors, setRecurringValidationErrors] = useState<string[]>([]);
 
   // Company Settings Banner State
   const [showCompanySettingsBanner, setShowCompanySettingsBanner] = useState(false);
@@ -2244,6 +2257,132 @@ export default function CreateRecurringInvoicePage() {
     setShowSendDocumentModal(true);
   };
 
+  const handleSaveRecurringInvoice = async () => {
+    if (loading) return;
+
+    // Sammle alle Validierungsfehler
+    const errors: string[] = [];
+
+    // Validierung: Kunde muss ausgewählt sein
+    if (!formData.customerName) {
+      errors.push('Bitte wählen Sie einen Kontakt aus');
+    }
+
+    // Validierung: Positionen vorhanden
+    const hasValidItems = items.some((it) => it.description && it.quantity > 0);
+    if (!hasValidItems) {
+      errors.push('Bitte fügen Sie mindestens eine gültige Position hinzu');
+    }
+
+    // Validierung: Automatische Generierung muss aktiviert sein
+    if (!recurringAutoGenerate) {
+      errors.push('Bitte aktivieren Sie die automatische Generierung im Abschnitt "Wiederkehrende Einstellungen"');
+    }
+
+    // Validierung: Startdatum darf nicht in der Vergangenheit liegen
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (recurringStartDate < today) {
+      errors.push('Das Startdatum darf nicht in der Vergangenheit liegen');
+    }
+
+    // Validierung: Enddatum muss nach Startdatum liegen
+    if (recurringEndDate && recurringEndDate <= recurringStartDate) {
+      errors.push('Das Enddatum muss nach dem Startdatum liegen');
+    }
+
+    // Wenn Fehler vorhanden sind, zeige Dialog
+    if (errors.length > 0) {
+      setRecurringValidationErrors(errors);
+      setShowRecurringValidationDialog(true);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Lade Kunden aus Subcollection
+      const customersRef = collection(db, 'companies', uid, 'customers');
+      const customersSnap = await getDocs(customersRef);
+      const loadedCustomers = customersSnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Customer[];
+
+      // Kundensuche für vollständige Daten
+      const selectedCustomer = loadedCustomers.find((c) => c.name === formData.customerName);
+      if (!selectedCustomer) {
+        setRecurringValidationErrors([
+          'Der ausgewählte Kontakt wurde nicht in der Datenbank gefunden',
+          'Bitte wählen Sie einen gültigen Kontakt aus oder erstellen Sie einen neuen Kontakt'
+        ]);
+        setShowRecurringValidationDialog(true);
+        setLoading(false);
+        return;
+      }
+
+      // Wiederkehrende Rechnung als Template in invoices Subcollection speichern
+      const recurringInvoiceData = {
+        companyId: uid,
+        customerId: selectedCustomer.id,
+        customerName: selectedCustomer.name,
+        customerEmail: selectedCustomer.email || formData.customerEmail || '',
+        customerAddress: formData.customerAddress || '',
+        
+        // Rechnungsdaten
+        title: formData.title || 'Wiederkehrende Rechnung',
+        items: items.map(item => ({
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.total,
+          unit: item.unit || 'Stk',
+          taxRate: item.taxRate || taxRate,
+          discountPercent: item.discountPercent || 0,
+        })),
+        headTextHtml: formData.headTextHtml || '',
+        footerText: formData.footerText || '',
+        notes: formData.notes || '',
+        paymentTerms: formData.paymentTerms || '',
+        currency: formData.currency || 'EUR',
+        taxRate: taxRate,
+        taxRule: formData.taxRule || TaxRuleType.DE_TAXABLE,
+        
+        // Wiederkehrende Rechnungs-spezifische Felder
+        isRecurringTemplate: true,
+        recurringInterval: recurringInterval,
+        recurringStartDate: recurringStartDate.toISOString(),
+        recurringEndDate: recurringEndDate?.toISOString() || null,
+        recurringNextExecutionDate: recurringStartDate.toISOString(),
+        recurringAutoSendEmail: recurringAutoSendEmail,
+        recurringEmailTemplateId: recurringEmailTemplateId,
+        recurringStatus: 'active',
+        recurringTotalGenerated: 0,
+        recurringLastGeneratedAt: null,
+        
+        // Standard-Rechnungsfelder
+        status: 'draft', // Templates sind immer draft
+        // invoiceNumber wird nicht gesetzt - Templates haben keine Rechnungsnummer
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      // In invoices Subcollection speichern (NICHT recurringInvoices!)
+      const invoicesRef = collection(db, 'companies', uid, 'invoices');
+      const docRef = await addDoc(invoicesRef, recurringInvoiceData);
+
+      toast.success('Wiederkehrende Rechnung wurde erfolgreich aktiviert');
+      
+      // Zurück zur Übersicht
+      router.push(`/dashboard/company/${uid}/finance/invoices/recurring`);
+      
+    } catch (error) {
+      console.error('Fehler beim Speichern der wiederkehrenden Rechnung:', error);
+      toast.error('Fehler beim Speichern der wiederkehrenden Rechnung');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (asDraft = true) => {
     if (loading) return;
     setLoading(true);
@@ -2277,23 +2416,17 @@ export default function CreateRecurringInvoicePage() {
       let finalInvoiceNumber = '';
       let finalSequentialNumber = 1;
 
-
-
-
-
-
-
       try {
 
         const numberResult = await InvoiceService.getNextInvoiceNumber(uid);
         finalInvoiceNumber = numberResult.formattedNumber;
         finalSequentialNumber = numberResult.sequentialNumber;
 
-      } catch (numberError) {
+      } catch (numberError: unknown) {
         console.error('❌ Fehler bei Rechnungsnummer-Generierung:', {
           error: numberError,
-          errorMessage: numberError?.message,
-          errorStack: numberError?.stack,
+          errorMessage: numberError instanceof Error ? numberError.message : String(numberError),
+          errorStack: numberError instanceof Error ? numberError.stack : undefined,
           uid
         });
         // Fallback nur im Notfall
@@ -3070,15 +3203,20 @@ export default function CreateRecurringInvoicePage() {
               <Button
                   className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                   size="default"
-                  onClick={handleOpenSendModal}
+                  onClick={handleSaveRecurringInvoice}
                   disabled={loading}>
 
-                {loading ?
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
-
-                  <Send className="w-4 h-4 mr-2" />
-                  }
-                Abo-Rechnung erstellen
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Speichert...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Speichern und aktivieren
+                  </>
+                )}
               </Button>
 
               {/* More Options Dropdown */}
@@ -3843,6 +3981,8 @@ export default function CreateRecurringInvoicePage() {
         emailTemplateId={recurringEmailTemplateId}
         onEmailTemplateChange={setRecurringEmailTemplateId}
         companyId={uid}
+        customerId={customers.find(c => c.name === formData.customerName)?.id}
+        customerName={formData.customerName}
         getFieldErrorClass={getFieldErrorClass}
       />
 
@@ -5320,6 +5460,41 @@ export default function CreateRecurringInvoicePage() {
           document={buildInvoiceDataForPreview()}
           documentType="invoice"
           companyId={uid} />
+
+      {/* Recurring Invoice Validation Dialog */}
+      <AlertDialog open={showRecurringValidationDialog} onOpenChange={setShowRecurringValidationDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Wiederkehrende Rechnung kann nicht aktiviert werden
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="text-left">
+                <p className="mb-3 text-gray-700">
+                  Bitte beheben Sie folgende Probleme, bevor Sie die wiederkehrende Rechnung aktivieren:
+                </p>
+                <ul className="space-y-2">
+                  {recurringValidationErrors.map((error, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm text-gray-800">
+                      <span className="text-red-500 font-bold mt-0.5">•</span>
+                      <span>{error}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              onClick={() => setShowRecurringValidationDialog(false)}
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white w-full"
+            >
+              Verstanden
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       </div>
     </>);
