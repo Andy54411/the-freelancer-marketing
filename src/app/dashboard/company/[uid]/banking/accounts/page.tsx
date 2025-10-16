@@ -230,7 +230,7 @@ export default function BankingAccountsPage() {
 
         if (data.success && data.data?.transactions) {
           // Convert FinAPI transactions to UI format
-          const convertedTransactions = data.data.transactions.map(
+          const convertedTransactions: Transaction[] = data.data.transactions.map(
             (finapiTx: FinAPITransaction) => {
               // Debug: Log FinAPI transaction with all enhanced data
 
@@ -265,7 +265,7 @@ export default function BankingAccountsPage() {
 
           // Prüfe auf doppelte IDs
           const seenIds = new Set<string>();
-          const duplicateIds = convertedTransactions.filter(tx => {
+          const duplicateIds = convertedTransactions.filter((tx: Transaction) => {
             if (seenIds.has(tx.id)) {
               console.warn('⚠️ Doppelte Transaction ID gefunden:', tx.id, tx);
               return true;
@@ -277,11 +277,11 @@ export default function BankingAccountsPage() {
           if (duplicateIds.length > 0) {
             console.error(
               '❌ Doppelte Transaction IDs gefunden:',
-              duplicateIds.map(tx => tx.id)
+              duplicateIds.map((tx: Transaction) => tx.id)
             );
             // Mache IDs eindeutig
-            convertedTransactions.forEach((tx, index) => {
-              if (duplicateIds.some(dup => dup.id === tx.id)) {
+            convertedTransactions.forEach((tx: Transaction, index: number) => {
+              if (duplicateIds.some((dup: Transaction) => dup.id === tx.id)) {
                 tx.id = `${tx.id}-${index}`;
               }
             });
@@ -326,6 +326,10 @@ export default function BankingAccountsPage() {
   );
   const [dateFromFilter, setDateFromFilter] = useState<string>('');
   const [dateToFilter, setDateToFilter] = useState<string>('');
+
+  // Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   // Link Transaction Modal State
   const [linkTransactionModal, setLinkTransactionModal] = useState<{
@@ -1010,6 +1014,24 @@ export default function BankingAccountsPage() {
   const accountTabs = generateAccountTabs();
   const filteredTransactions = getFilteredTransactions();
 
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchTerm,
+    transactionTypeFilter,
+    dateFromFilter,
+    dateToFilter,
+    activeAccountTab,
+    itemsPerPage,
+  ]);
+
   // Auto-reset active tab if selected account is no longer available
   useEffect(() => {
     if (activeAccountTab !== 'all' && !accountTabs.find(tab => tab.id === activeAccountTab)) {
@@ -1266,10 +1288,26 @@ export default function BankingAccountsPage() {
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-500">
                 {filteredTransactions.length} Transaktionen
               </span>
+
+              {/* Items per page selector */}
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-gray-500">Zeige:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={e => setItemsPerPage(Number(e.target.value))}
+                  className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+
               <button className="p-2 text-gray-400 hover:text-gray-500">
                 <Download className="h-4 w-4" />
               </button>
@@ -1496,7 +1534,7 @@ export default function BankingAccountsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
-                {filteredTransactions.map(transaction => (
+                {paginatedTransactions.map(transaction => (
                   <tr key={transaction.id} className="hover:bg-gray-50 h-12">
                     {/* Checkbox */}
                     <td className="px-2 py-2">
@@ -2055,6 +2093,129 @@ export default function BankingAccountsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {filteredTransactions.length > 0 && (
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                {/* Page Info */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-700">
+                    Zeige <span className="font-semibold">{startIndex + 1}</span> -{' '}
+                    <span className="font-semibold">
+                      {Math.min(endIndex, filteredTransactions.length)}
+                    </span>{' '}
+                    von <span className="font-semibold">{filteredTransactions.length}</span>{' '}
+                    Transaktionen
+                  </span>
+                </div>
+
+                {/* Pagination Buttons */}
+                <div className="flex items-center space-x-2">
+                  {/* Previous Button */}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      currentPage === 1
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                    }`}
+                  >
+                    <ChevronDown className="h-4 w-4 rotate-90" />
+                  </button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center space-x-1">
+                    {(() => {
+                      const pages = [];
+                      const maxVisiblePages = 5;
+
+                      let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+                      // Adjust startPage if we're near the end
+                      if (endPage - startPage < maxVisiblePages - 1) {
+                        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                      }
+
+                      // First page
+                      if (startPage > 1) {
+                        pages.push(
+                          <button
+                            key={1}
+                            onClick={() => setCurrentPage(1)}
+                            className="px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-100 border border-gray-300 bg-white"
+                          >
+                            1
+                          </button>
+                        );
+                        if (startPage > 2) {
+                          pages.push(
+                            <span key="ellipsis1" className="px-2 text-gray-500">
+                              ...
+                            </span>
+                          );
+                        }
+                      }
+
+                      // Visible pages
+                      for (let i = startPage; i <= endPage; i++) {
+                        pages.push(
+                          <button
+                            key={i}
+                            onClick={() => setCurrentPage(i)}
+                            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                              currentPage === i
+                                ? 'bg-[#14ad9f] text-white'
+                                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                            }`}
+                          >
+                            {i}
+                          </button>
+                        );
+                      }
+
+                      // Last page
+                      if (endPage < totalPages) {
+                        if (endPage < totalPages - 1) {
+                          pages.push(
+                            <span key="ellipsis2" className="px-2 text-gray-500">
+                              ...
+                            </span>
+                          );
+                        }
+                        pages.push(
+                          <button
+                            key={totalPages}
+                            onClick={() => setCurrentPage(totalPages)}
+                            className="px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-100 border border-gray-300 bg-white"
+                          >
+                            {totalPages}
+                          </button>
+                        );
+                      }
+
+                      return pages;
+                    })()}
+                  </div>
+
+                  {/* Next Button */}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      currentPage === totalPages
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                    }`}
+                  >
+                    <ChevronDown className="h-4 w-4 -rotate-90" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {filteredTransactions.length === 0 && (
