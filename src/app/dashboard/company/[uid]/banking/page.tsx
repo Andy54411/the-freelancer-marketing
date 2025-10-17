@@ -7,7 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import FinAPIWebFormModal from '@/components/FinAPIWebFormModal';
 import RevolutConnectModal from '@/components/RevolutConnectModal';
 import BankDisconnectDialog from '@/components/BankDisconnectDialog';
@@ -37,8 +43,8 @@ import {
   FileText,
   Link,
   ChevronDown,
-  Users } from
-'lucide-react';
+  Users,
+} from 'lucide-react';
 
 interface BankConnection {
   id: string;
@@ -77,7 +83,7 @@ export default function BankingDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [availableBanks, setAvailableBanks] = useState<Bank[]>([]);
   const [filteredBanks, setFilteredBanks] = useState<Bank[]>([]);
-  const [connectedBanks, setConnectedBanks] = useState<{[bankId: string]: boolean;}>({});
+  const [connectedBanks, setConnectedBanks] = useState<{ [bankId: string]: boolean }>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
   const [showBankSelection, setShowBankSelection] = useState(false);
@@ -93,7 +99,7 @@ export default function BankingDashboardPage() {
   // Bank Disconnect Dialog States
   const [isDisconnectDialogOpen, setIsDisconnectDialogOpen] = useState(false);
   const [selectedConnectionForDisconnect, setSelectedConnectionForDisconnect] =
-  useState<BankConnection | null>(null);
+    useState<BankConnection | null>(null);
 
   // Bank Search States
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -102,16 +108,16 @@ export default function BankingDashboardPage() {
 
   // Function to get the correct bank logo filename
   const getBankLogoPath = (name: string): string => {
-    const bankMappings: {[key: string]: string;} = {
-      'sparkasse': 'Sparkasse.png',
+    const bankMappings: { [key: string]: string } = {
+      sparkasse: 'Sparkasse.png',
       'deutsche bank': 'Deutsche_Bank.png',
-      'commerzbank': 'Commerzbank.png',
-      'volksbank': 'Volksbanken_Raiffeisenbanken.png',
-      'n26': 'N26.png',
-      'paypal': 'Paypal.png',
-      'qonto': 'Qonto.png',
-      'fyrst': 'Fyrst.png',
-      'norisbank': 'Deutsche_Bank.png' // norisbank gehört zur Deutsche Bank
+      commerzbank: 'Commerzbank.png',
+      volksbank: 'Volksbanken_Raiffeisenbanken.png',
+      n26: 'N26.png',
+      paypal: 'Paypal.png',
+      qonto: 'Qonto.png',
+      fyrst: 'Fyrst.png',
+      norisbank: 'Deutsche_Bank.png', // norisbank gehört zur Deutsche Bank
     };
 
     const normalizedName = name.toLowerCase();
@@ -119,6 +125,13 @@ export default function BankingDashboardPage() {
 
     return logoFile ? `/images/banks/${logoFile}` : '/images/banks/default-bank-logo.svg';
   };
+
+  // If we have connections, redirect to accounts page
+  useEffect(() => {
+    if (!loading && connections.length > 0) {
+      router.push(`/dashboard/company/${uid}/banking/accounts`);
+    }
+  }, [loading, connections.length, router, uid]);
 
   useEffect(() => {
     if (user && user.uid === uid) {
@@ -184,13 +197,12 @@ export default function BankingDashboardPage() {
 
     try {
       // Suche in FinAPI Sandbox mit Test-Banken
-      const response = await fetch(`/api/finapi/banks?search=${query}&perPage=20&includeTestBanks=true`);
+      const response = await fetch(
+        `/api/finapi/banks?search=${query}&perPage=20&includeTestBanks=true`
+      );
       const data = await response.json();
 
-
-
       if (data.success && data.banks) {
-
         // Priorisiere Test-Banken in den Ergebnissen
         const testBanks = data.banks.filter((bank: any) => bank.isTestBank);
         const realBanks = data.banks.filter((bank: any) => !bank.isTestBank);
@@ -199,10 +211,8 @@ export default function BankingDashboardPage() {
         const sortedBanks = [...testBanks, ...realBanks];
         setFilteredBanks(sortedBanks);
       } else if (data.data?.banks) {
-
         setFilteredBanks(data.data.banks);
       } else {
-
         setFilteredBanks([]);
       }
     } catch (error) {
@@ -216,7 +226,7 @@ export default function BankingDashboardPage() {
   // Lade alle verfügbaren Banken aus der FinAPI
   const loadAllAvailableBanks = async () => {
     setLoading(true);
-    setSearchTerm("Alle Banken");
+    setSearchTerm('Alle Banken');
 
     try {
       // Lade alle Banken ohne Suchfilter
@@ -225,41 +235,46 @@ export default function BankingDashboardPage() {
 
       // Debug: Zeige API-Response
 
-
-
       if (data.success && data.banks) {
-
         // Sortiere: Test-Banken zuerst, dann alphabetisch
-        const testBanks = data.banks.filter((bank: any) => bank.isTestBank).
-        sort((a: any, b: any) => a.name.localeCompare(b.name));
-        const realBanks = data.banks.filter((bank: any) => !bank.isTestBank).
-        sort((a: any, b: any) => a.name.localeCompare(b.name));
+        const testBanks = data.banks
+          .filter((bank: any) => bank.isTestBank)
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
+        const realBanks = data.banks
+          .filter((bank: any) => !bank.isTestBank)
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
 
         const allBanks = [...testBanks, ...realBanks];
 
         setFilteredBanks(allBanks);
       } else if (data.data?.banks) {
-
         // Fallback für andere API-Struktur
         const banks = data.data.banks;
-        const testBanks = banks.filter((bank: any) => bank.isTestBank || bank.name.toLowerCase().includes('test') || bank.name.toLowerCase().includes('demo')).
-        sort((a: any, b: any) => a.name.localeCompare(b.name));
-        const realBanks = banks.filter((bank: any) => !bank.isTestBank && !bank.name.toLowerCase().includes('test') && !bank.name.toLowerCase().includes('demo')).
-        sort((a: any, b: any) => a.name.localeCompare(b.name));
+        const testBanks = banks
+          .filter(
+            (bank: any) =>
+              bank.isTestBank ||
+              bank.name.toLowerCase().includes('test') ||
+              bank.name.toLowerCase().includes('demo')
+          )
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
+        const realBanks = banks
+          .filter(
+            (bank: any) =>
+              !bank.isTestBank &&
+              !bank.name.toLowerCase().includes('test') &&
+              !bank.name.toLowerCase().includes('demo')
+          )
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
 
         const allBanks = [...testBanks, ...realBanks];
 
         setFilteredBanks(allBanks);
       } else {
-
-
-
         // Versuche andere mögliche Strukturen
         if (data.banks && Array.isArray(data.banks)) {
-
           setFilteredBanks(data.banks);
         } else if (data.result?.banks) {
-
           setFilteredBanks(data.result.banks);
         } else {
           setFilteredBanks([]);
@@ -293,7 +308,7 @@ export default function BankingDashboardPage() {
         blz: bank.blz,
         finapiId: bank.finapiId?.toString() || bank.id,
         location: bank.location || '',
-        isTestBank: bank.isTestBank?.toString() || 'false'
+        isTestBank: bank.isTestBank?.toString() || 'false',
       });
 
       window.location.href = `/dashboard/company/${params.uid}/banking/connect?${queryParams.toString()}`;
@@ -305,17 +320,17 @@ export default function BankingDashboardPage() {
   useEffect(() => {
     if (searchTerm.length > 0) {
       const filtered = availableBanks.filter(
-        (bank) =>
-        bank.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        bank.city?.toLowerCase().includes(searchTerm.toLowerCase())
+        bank =>
+          bank.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          bank.city?.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredBanks(filtered.slice(0, 10));
     } else {
       // Show popular banks by default
-      const popular = availableBanks.
-      filter((bank) => bank.popularity && bank.popularity > 50).
-      sort((a, b) => (b.popularity || 0) - (a.popularity || 0)).
-      slice(0, 15);
+      const popular = availableBanks
+        .filter(bank => bank.popularity && bank.popularity > 50)
+        .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+        .slice(0, 15);
       setFilteredBanks(popular);
     }
   }, [searchTerm, availableBanks]);
@@ -332,8 +347,8 @@ export default function BankingDashboardPage() {
           {
             method: 'GET',
             headers: {
-              'Content-Type': 'application/json'
-            }
+              'Content-Type': 'application/json',
+            },
           }
         );
 
@@ -360,14 +375,14 @@ export default function BankingDashboardPage() {
           if (revolutData.success && revolutData.accounts && revolutData.accounts.length > 0) {
             // Transform Revolut accounts to connection format
             const revolutConnections: BankConnection[] = [
-            {
-              id: 'revolut_business',
-              bankName: 'Revolut Business',
-              status: 'connected' as const,
-              accountCount: revolutData.accounts.length,
-              lastSync: revolutData.accounts[0]?.lastUpdated || new Date().toISOString()
-            }];
-
+              {
+                id: 'revolut_business',
+                bankName: 'Revolut Business',
+                status: 'connected' as const,
+                accountCount: revolutData.accounts.length,
+                lastSync: revolutData.accounts[0]?.lastUpdated || new Date().toISOString(),
+              },
+            ];
 
             allConnections.push(...revolutConnections);
           }
@@ -386,19 +401,19 @@ export default function BankingDashboardPage() {
         {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json'
-          }
+            'Content-Type': 'application/json',
+          },
         }
       );
 
       if (accountsResponse.ok) {
         const accountsData = await accountsResponse.json();
         if (
-        accountsData.success &&
-        accountsData.accounts &&
-        accountsData.accounts.length > 0 &&
-        accountsData.source !== 'mock_data')
-        {
+          accountsData.success &&
+          accountsData.accounts &&
+          accountsData.accounts.length > 0 &&
+          accountsData.source !== 'mock_data'
+        ) {
           // Transform finAPI accounts data to connections format
           const bankGroups = accountsData.accountsByBank || {};
           const transformedConnections: BankConnection[] = Object.entries(bankGroups).map(
@@ -407,13 +422,13 @@ export default function BankingDashboardPage() {
               bankName: bankName,
               status: 'connected' as const,
               accountCount: Array.isArray(accounts) ? accounts.length : 0,
-              lastSync: accountsData.lastSync || new Date().toISOString()
+              lastSync: accountsData.lastSync || new Date().toISOString(),
             })
           );
 
           // Also enhance these with Firestore data
           const enhancedConnections =
-          await enhanceConnectionsWithFirestoreData(transformedConnections);
+            await enhanceConnectionsWithFirestoreData(transformedConnections);
           setConnections(enhancedConnections);
 
           return;
@@ -449,21 +464,21 @@ export default function BankingDashboardPage() {
             const updateResponse = await fetch('/api/user/bank-connections', {
               method: 'POST',
               headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
               },
               body: JSON.stringify({
                 userId: uid,
-                bankConnections: connections.map((conn) => ({
+                bankConnections: connections.map(conn => ({
                   id: conn.id,
                   bankName: conn.bankName,
                   status: 'connected',
                   accountCount: conn.accountCount,
                   lastSync: new Date().toISOString(),
-                  updatedAt: new Date().toISOString()
+                  updatedAt: new Date().toISOString(),
                 })),
                 lastSync: new Date().toISOString(),
-                syncStatus: 'connected'
-              })
+                syncStatus: 'connected',
+              }),
             });
 
             if (updateResponse.ok) {
@@ -472,7 +487,7 @@ export default function BankingDashboardPage() {
         }
 
         // Merge finAPI and Firestore data
-        return connections.map((connection) => {
+        return connections.map(connection => {
           const firestoreConnection = firestoreConnections.find(
             (fc: any) => fc.bankName === connection.bankName || fc.id === connection.id
           );
@@ -480,14 +495,14 @@ export default function BankingDashboardPage() {
           const enhancedConnection = {
             ...connection,
             status:
-            firestoreConnection?.status || (
-            connections.length > 0 ? 'connected' : connection.status),
+              firestoreConnection?.status ||
+              (connections.length > 0 ? 'connected' : connection.status),
             lastSync:
-            firestoreConnection?.lastSync ||
-            lastSync ||
-            connection.lastSync ||
-            new Date().toISOString(),
-            firestoreData: firestoreConnection || null
+              firestoreConnection?.lastSync ||
+              lastSync ||
+              connection.lastSync ||
+              new Date().toISOString(),
+            firestoreData: firestoreConnection || null,
           };
 
           return enhancedConnection;
@@ -497,10 +512,10 @@ export default function BankingDashboardPage() {
 
     // If Firestore data is unavailable, default to "connected" if we have finAPI connections
     if (connections.length > 0) {
-      return connections.map((connection) => ({
+      return connections.map(connection => ({
         ...connection,
         status: 'connected' as const,
-        lastSync: connection.lastSync || new Date().toISOString()
+        lastSync: connection.lastSync || new Date().toISOString(),
       }));
     }
 
@@ -511,19 +526,19 @@ export default function BankingDashboardPage() {
   const triggerAutoSyncAfterConnection = async () => {
     try {
       // Wait a moment for the connection to be fully established
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Try to import transactions (this will sync all bank data)
       const importResponse = await fetch('/api/finapi/import-transactions', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           userId: uid,
           credentialType: credentialType,
-          forceSync: true
-        })
+          forceSync: true,
+        }),
       });
 
       if (importResponse.ok) {
@@ -541,12 +556,12 @@ export default function BankingDashboardPage() {
         const syncResponse = await fetch('/api/finapi/sync-transactions', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             userId: uid,
-            credentialType: credentialType
-          })
+            credentialType: credentialType,
+          }),
         });
 
         if (syncResponse.ok) {
@@ -573,7 +588,6 @@ export default function BankingDashboardPage() {
       // Updated to match the new API response structure
       if (data.success && data.banks && Array.isArray(data.banks)) {
         setAvailableBanks(data.banks);
-
       } else if (data.data && Array.isArray(data.data.banks)) {
         // Fallback for old API structure
         setAvailableBanks(data.data.banks);
@@ -600,7 +614,7 @@ export default function BankingDashboardPage() {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.accounts && data.accounts.length > 0) {
-          const connected: {[bankId: string]: boolean;} = {};
+          const connected: { [bankId: string]: boolean } = {};
           data.accounts.forEach((account: any) => {
             if (account.bankId) {
               connected[account.bankId] = true;
@@ -628,14 +642,14 @@ export default function BankingDashboardPage() {
       const response = await fetch('/api/finapi/webform', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           bankId: bank.id,
           userId: user?.uid,
           credentialType: credentialType,
-          bankName: bank.name
-        })
+          bankName: bank.name,
+        }),
       });
 
       if (!response.ok) {
@@ -687,11 +701,11 @@ export default function BankingDashboardPage() {
       const response = await fetch('/api/finapi/disconnect', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          companyId: uid
-        })
+          companyId: uid,
+        }),
       });
 
       if (!response.ok) {
@@ -779,16 +793,9 @@ export default function BankingDashboardPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
           <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
         </div>
-      </div>);
-
+      </div>
+    );
   }
-
-  // If we have connections, redirect to accounts page
-  React.useEffect(() => {
-    if (!loading && connections.length > 0) {
-      router.push(`/dashboard/company/${uid}/banking/accounts`);
-    }
-  }, [loading, connections.length, router, uid]);
 
   if (!loading && connections.length > 0) {
     return (
@@ -808,15 +815,13 @@ export default function BankingDashboardPage() {
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Hero Section - Connected */}
           <section className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Banking Übersicht
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Banking Übersicht</h1>
             <p className="text-gray-600">Verbundene Bankkonten und Transaktionen</p>
           </section>
 
           {/* Connected Banks */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {connections.map((connection) => (
+            {connections.map(connection => (
               <Card key={connection.id} className="border border-gray-200">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -833,7 +838,9 @@ export default function BankingDashboardPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.location.href = `/dashboard/company/${uid}/banking/transactions`}
+                      onClick={() =>
+                        (window.location.href = `/dashboard/company/${uid}/banking/transactions`)
+                      }
                     >
                       Transaktionen
                     </Button>
@@ -861,7 +868,9 @@ export default function BankingDashboardPage() {
                 <h3 className="font-semibold mb-2">Transaktionen</h3>
                 <p className="text-sm text-gray-600 mb-4">Alle Banking-Transaktionen anzeigen</p>
                 <Button
-                  onClick={() => window.location.href = `/dashboard/company/${uid}/banking/transactions`}
+                  onClick={() =>
+                    (window.location.href = `/dashboard/company/${uid}/banking/transactions`)
+                  }
                   className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                 >
                   Transaktionen anzeigen
@@ -875,7 +884,9 @@ export default function BankingDashboardPage() {
                 <h3 className="font-semibold mb-2">Konten</h3>
                 <p className="text-sm text-gray-600 mb-4">Bankkonten und Salden verwalten</p>
                 <Button
-                  onClick={() => window.location.href = `/dashboard/company/${uid}/banking/accounts`}
+                  onClick={() =>
+                    (window.location.href = `/dashboard/company/${uid}/banking/accounts`)
+                  }
                   variant="outline"
                 >
                   Konten anzeigen
@@ -889,7 +900,9 @@ export default function BankingDashboardPage() {
                 <h3 className="font-semibold mb-2">Bank hinzufügen</h3>
                 <p className="text-sm text-gray-600 mb-4">Weitere Bankverbindung hinzufügen</p>
                 <Button
-                  onClick={() => window.location.href = `/dashboard/company/${uid}/banking/connect`}
+                  onClick={() =>
+                    (window.location.href = `/dashboard/company/${uid}/banking/connect`)
+                  }
                   variant="outline"
                 >
                   Bank verbinden
@@ -908,7 +921,8 @@ export default function BankingDashboardPage() {
         {/* Hero Section */}
         <section className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
-            Deine Finanzen immer im Blick.<br />
+            Deine Finanzen immer im Blick.
+            <br />
             Verbinde Taskilo mit deiner Bank.
           </h1>
         </section>
@@ -939,155 +953,172 @@ export default function BankingDashboardPage() {
                 placeholder="Bank suchen"
                 value={searchTerm}
                 onChange={handleSearchChange}
-                className="pl-10 w-full h-12 text-lg border-gray-300 rounded-lg focus:ring-[#14ad9f] focus:border-[#14ad9f]" />
+                className="pl-10 w-full h-12 text-lg border-gray-300 rounded-lg focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+              />
 
-              
               {/* Search Results Dropdown - PRODUCTION VERSION */}
-              {searchTerm.length > 0 &&
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
-                  {filteredBanks.length === 0 && !loading &&
-                <div className="p-4">
+              {searchTerm.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+                  {filteredBanks.length === 0 && !loading && (
+                    <div className="p-4">
                       <div className="text-sm text-gray-600 mb-3">
-                        {searchTerm === "Alle Banken" ?
-                    "Keine Banken in der FinAPI Sandbox verfügbar" :
-
-                    `Keine Banken gefunden für "${searchTerm}"`
-                    }
+                        {searchTerm === 'Alle Banken'
+                          ? 'Keine Banken in der FinAPI Sandbox verfügbar'
+                          : `Keine Banken gefunden für "${searchTerm}"`}
                       </div>
                       <div className="text-xs text-blue-600 mb-3">
-                        💡 FinAPI Sandbox kann limitierte Test-Daten haben. Nutze die Buttons unten zum Testen:
+                        💡 FinAPI Sandbox kann limitierte Test-Daten haben. Nutze die Buttons unten
+                        zum Testen:
                       </div>
                       <div className="text-xs text-gray-500 mb-2">
                         🔧 Öffne die Browser-Konsole (F12) für Debug-Informationen
                       </div>
                       <div className="mt-2">
                         <button
-                      onClick={() => {
-                        setSearchTerm("Demo Bank");
-                        searchBanks("Demo Bank");
-                      }}
-                      className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2">
-
+                          onClick={() => {
+                            setSearchTerm('Demo Bank');
+                            searchBanks('Demo Bank');
+                          }}
+                          className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2"
+                        >
                           Demo Bank testen
                         </button>
                         <button
-                      onClick={() => {
-                        setSearchTerm("FinAPI");
-                        searchBanks("FinAPI");
-                      }}
-                      className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2">
-
+                          onClick={() => {
+                            setSearchTerm('FinAPI');
+                            searchBanks('FinAPI');
+                          }}
+                          className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2"
+                        >
                           FinAPI testen
                         </button>
                         <button
-                      onClick={() => {
-                        setSearchTerm("Sparkasse");
-                        searchBanks("Sparkasse");
-                      }}
-                      className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2">
-
+                          onClick={() => {
+                            setSearchTerm('Sparkasse');
+                            searchBanks('Sparkasse');
+                          }}
+                          className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2"
+                        >
                           Sparkasse testen
                         </button>
                         <button
-                      onClick={loadAllAvailableBanks}
-                      className="text-xs bg-green-50 hover:bg-green-100 text-green-700 px-2 py-1 rounded mr-2">
-
+                          onClick={loadAllAvailableBanks}
+                          className="text-xs bg-green-50 hover:bg-green-100 text-green-700 px-2 py-1 rounded mr-2"
+                        >
                           Alle verfügbaren Banken anzeigen
                         </button>
                         <button
-                      onClick={() => {
-                        // Teste auch ohne Parameter
-                        setLoading(true);
-                        fetch('/api/finapi/banks').
-                        then((res) => res.json()).
-                        then((data) => {
-
-                          if (data.banks?.length > 0 || data.data?.banks?.length > 0) {
-                            setError(`✅ API funktioniert! Gefunden: ${data.banks?.length || data.data?.banks?.length || 0} Banken`);
-                          } else {
-                            setError(`ℹ️ API Response: ${JSON.stringify(data).substring(0, 200)}...`);
-                          }
-                        }).
-                        catch((err) => setError(`❌ API Fehler: ${err}`)).
-                        finally(() => setLoading(false));
-                      }}
-                      className="text-xs bg-yellow-50 hover:bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
-
+                          onClick={() => {
+                            // Teste auch ohne Parameter
+                            setLoading(true);
+                            fetch('/api/finapi/banks')
+                              .then(res => res.json())
+                              .then(data => {
+                                if (data.banks?.length > 0 || data.data?.banks?.length > 0) {
+                                  setError(
+                                    `✅ API funktioniert! Gefunden: ${data.banks?.length || data.data?.banks?.length || 0} Banken`
+                                  );
+                                } else {
+                                  setError(
+                                    `ℹ️ API Response: ${JSON.stringify(data).substring(0, 200)}...`
+                                  );
+                                }
+                              })
+                              .catch(err => setError(`❌ API Fehler: ${err}`))
+                              .finally(() => setLoading(false));
+                          }}
+                          className="text-xs bg-yellow-50 hover:bg-yellow-100 text-yellow-700 px-2 py-1 rounded"
+                        >
                           🧪 API testen
                         </button>
                       </div>
                     </div>
-                }
-                  {filteredBanks.length > 0 &&
-                <>
+                  )}
+                  {filteredBanks.length > 0 && (
+                    <>
                       <ul className="py-2">
-                        {filteredBanks.map((bank: any) =>
-                    <li key={bank.id}>
+                        {filteredBanks.map((bank: any) => (
+                          <li key={bank.id}>
                             <button
-                        type="button"
-                        onClick={() => handleBankSelect(bank)}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-3">
-
+                              type="button"
+                              onClick={() => handleBankSelect(bank)}
+                              className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-3"
+                            >
                               <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                                 <img
-                            src={getBankLogoPath(bank.name)}
-                            alt={bank.name}
-                            className="w-6 h-6 object-contain"
-                            onError={(e) => {
-                              // Fallback to text initial
-                              const target = e.currentTarget;
-                              target.style.display = 'none';
-                              target.parentElement!.innerHTML = `<div class="w-6 h-6 bg-[#14ad9f] rounded flex items-center justify-center text-white font-semibold text-xs">${bank.name.charAt(0).toUpperCase()}</div>`;
-                            }} />
-
+                                  src={getBankLogoPath(bank.name)}
+                                  alt={bank.name}
+                                  className="w-6 h-6 object-contain"
+                                  onError={e => {
+                                    // Fallback to text initial
+                                    const target = e.currentTarget;
+                                    target.style.display = 'none';
+                                    target.parentElement!.innerHTML = `<div class="w-6 h-6 bg-[#14ad9f] rounded flex items-center justify-center text-white font-semibold text-xs">${bank.name.charAt(0).toUpperCase()}</div>`;
+                                  }}
+                                />
                               </div>
                               <div className="flex-1">
                                 <div className="text-sm font-medium text-gray-900">
-                                  <span dangerouslySetInnerHTML={{
-                              __html: bank.name.replace(
-                                new RegExp(`(${searchTerm})`, 'gi'),
-                                '<mark class="bg-yellow-200">$1</mark>'
-                              )
-                            }} />
-                                  {bank.isTestBank &&
-                            <span className="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">
+                                  <span
+                                    dangerouslySetInnerHTML={{
+                                      __html: bank.name.replace(
+                                        new RegExp(`(${searchTerm})`, 'gi'),
+                                        '<mark class="bg-yellow-200">$1</mark>'
+                                      ),
+                                    }}
+                                  />
+                                  {bank.isTestBank && (
+                                    <span className="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">
                                       Test Bank
                                     </span>
-                            }
+                                  )}
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                  {bank.bic && `BIC: ${bank.bic}`} {bank.blz && `· BLZ: ${bank.blz}`}
+                                  {bank.bic && `BIC: ${bank.bic}`}{' '}
+                                  {bank.blz && `· BLZ: ${bank.blz}`}
                                   {bank.location && ` · ${bank.location}`}
                                 </div>
                               </div>
                               <div className="text-gray-400">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 5l7 7-7 7"
+                                  />
                                 </svg>
                               </div>
                             </button>
                           </li>
-                    )}
+                        ))}
                       </ul>
-                      
+
                       {/* +4000 weitere Banken Text */}
                       <div className="border-t border-gray-100 px-4 py-2 text-center">
-                        <span className="text-sm text-gray-500">+4000 weitere Banken in Deutschland und Österreich</span>
+                        <span className="text-sm text-gray-500">
+                          +4000 weitere Banken in Deutschland und Österreich
+                        </span>
                       </div>
                     </>
-                }
+                  )}
                 </div>
-              }
-              
+              )}
+
               {/* Loading indicator */}
-              {loading && searchTerm.length > 0 &&
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center">
+              {loading && searchTerm.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center">
                   <div className="flex items-center justify-center space-x-2">
                     <Loader2 className="h-4 w-4 animate-spin text-[#14ad9f]" />
                     <span className="text-sm text-gray-600">Suche Banken...</span>
                   </div>
                 </div>
-              }
+              )}
             </div>
           </div>
         </div>
@@ -1098,8 +1129,8 @@ export default function BankingDashboardPage() {
             {/* Datenimport-Konto */}
             <button
               type="button"
-              className="w-72 h-32 bg-white border border-gray-200 rounded-lg hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex flex-col items-center justify-center group p-4">
-
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex flex-col items-center justify-center group p-4"
+            >
               <Plus className="h-8 w-8 mb-2 text-gray-400 group-hover:text-[#14ad9f] transition-colors" />
               <span className="text-xs text-gray-600 group-hover:text-[#14ad9f] font-medium transition-colors text-center">
                 Datenimport-Konto
@@ -1109,103 +1140,105 @@ export default function BankingDashboardPage() {
             {/* Sparkasse */}
             <button
               type="button"
-              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center">
-
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
               <img
                 src="/images/banks/Sparkasse.png"
                 alt="Sparkasse"
-                className="max-w-full max-h-full object-contain p-4" />
-
+                className="max-w-full max-h-full object-contain p-4"
+              />
             </button>
 
             {/* PayPal */}
             <button
               type="button"
-              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center">
-
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
               <img
                 src="/images/banks/Paypal.png"
                 alt="PayPal"
-                className="max-w-full max-h-full object-contain p-4" />
-
+                className="max-w-full max-h-full object-contain p-4"
+              />
             </button>
 
             {/* Deutsche Bank */}
             <button
               type="button"
-              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center">
-
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
               <img
                 src="/images/banks/Deutsche_Bank.png"
                 alt="Deutsche Bank"
-                className="max-w-full max-h-full object-contain p-4" />
-
+                className="max-w-full max-h-full object-contain p-4"
+              />
             </button>
 
             {/* Commerzbank */}
             <button
               type="button"
-              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center">
-
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
               <img
                 src="/images/banks/Commerzbank.png"
                 alt="Commerzbank"
-                className="max-w-full max-h-full object-contain p-4" />
-
+                className="max-w-full max-h-full object-contain p-4"
+              />
             </button>
 
             {/* N26 */}
             <button
               type="button"
-              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center">
-
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
               <img
                 src="/images/banks/N26.png"
                 alt="N26"
-                className="max-w-full max-h-full object-contain p-4" />
-
+                className="max-w-full max-h-full object-contain p-4"
+              />
             </button>
 
             {/* Volksbank */}
             <button
               type="button"
-              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center">
-
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
               <img
                 src="/images/banks/Volksbanken_Raiffeisenbanken.png"
                 alt="Volksbank"
-                className="max-w-full max-h-full object-contain p-4" />
-
+                className="max-w-full max-h-full object-contain p-4"
+              />
             </button>
 
             {/* Qonto */}
             <button
               type="button"
-              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center">
-
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
               <img
                 src="/images/banks/Qonto.png"
                 alt="Qonto"
-                className="max-w-full max-h-full object-contain p-4" />
-
+                className="max-w-full max-h-full object-contain p-4"
+              />
             </button>
 
             {/* Fyrst */}
             <button
               type="button"
-              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center">
-
+              className="w-72 h-32 bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-[#14ad9f] hover:shadow-sm transition-all cursor-pointer flex items-center justify-center"
+            >
               <img
                 src="/images/banks/Fyrst.png"
                 alt="Fyrst"
-                className="max-w-full max-h-full object-contain p-4" />
-
+                className="max-w-full max-h-full object-contain p-4"
+              />
             </button>
           </div>
-          
+
           {/* +4000 weitere Banken Text */}
           <div className="text-center mt-6">
-            <span className="text-sm text-gray-500">+4000 weitere Banken in Deutschland und Österreich</span>
+            <span className="text-sm text-gray-500">
+              +4000 weitere Banken in Deutschland und Österreich
+            </span>
           </div>
         </div>
 
@@ -1223,7 +1256,9 @@ export default function BankingDashboardPage() {
                 <div className="flex-shrink-0">
                   <CheckCircle className="h-6 w-6 text-[#14ad9f]" />
                 </div>
-                <span className="text-gray-700">Tätige Überweisungen ohne Umwege direkt in Taskilo</span>
+                <span className="text-gray-700">
+                  Tätige Überweisungen ohne Umwege direkt in Taskilo
+                </span>
               </li>
               <li className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
@@ -1236,8 +1271,8 @@ export default function BankingDashboardPage() {
         </Card>
 
         {/* Error Display */}
-        {error && !error.includes('✅') &&
-        <Card className="border-red-200 bg-red-50">
+        {error && !error.includes('✅') && (
+          <Card className="border-red-200 bg-red-50">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <AlertCircle className="h-5 w-5 text-red-600" />
@@ -1248,11 +1283,11 @@ export default function BankingDashboardPage() {
               </div>
             </CardContent>
           </Card>
-        }
+        )}
 
         {/* Success Message */}
-        {error && error.includes('✅') &&
-        <Card className="border-[#14ad9f] border-opacity-30 bg-[#14ad9f] bg-opacity-10">
+        {error && error.includes('✅') && (
+          <Card className="border-[#14ad9f] border-opacity-30 bg-[#14ad9f] bg-opacity-10">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <CheckCircle className="h-5 w-5 text-[#14ad9f]" />
@@ -1263,8 +1298,8 @@ export default function BankingDashboardPage() {
               </div>
             </CardContent>
           </Card>
-        }
+        )}
       </div>
-    </main>);
-
+    </main>
+  );
 }
