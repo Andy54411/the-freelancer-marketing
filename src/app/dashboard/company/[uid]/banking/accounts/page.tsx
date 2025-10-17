@@ -20,7 +20,6 @@ import {
   MoreHorizontal,
   Eye,
   EyeOff,
-  RefreshCw,
   Check,
   X,
   Plus,
@@ -288,12 +287,6 @@ export default function BankingAccountsPage() {
           }
 
           setTransactions(convertedTransactions);
-
-          // Nach dem Laden der Transaktionen, lade auch die Links
-
-          setTimeout(() => {
-            loadTransactionLinks();
-          }, 100);
         } else {
           setTransactions([]);
         }
@@ -308,7 +301,6 @@ export default function BankingAccountsPage() {
   );
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
 
   // UI States
@@ -369,7 +361,7 @@ export default function BankingAccountsPage() {
       }
 
       const response = await fetch(
-        `/api/finapi/accounts-enhanced?userId=${user.uid}&credentialType=${credentialType}&forceRefresh=${refreshing}`
+        `/api/finapi/accounts-enhanced?userId=${user.uid}&credentialType=${credentialType}`
       );
 
       if (!response.ok) {
@@ -391,9 +383,8 @@ export default function BankingAccountsPage() {
       console.error('Error loading FinAPI accounts:', error);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  }, [user?.uid, credentialType, refreshing]);
+  }, [user?.uid, credentialType]);
 
   useEffect(() => {
     loadFinAPIAccounts();
@@ -406,7 +397,7 @@ export default function BankingAccountsPage() {
     }
   }, [accounts, loadFinAPITransactions]);
 
-  // Load existing transaction links (Enhanced für automatische Receipt-Links)
+  // Load ALL transaction links when transactions are loaded
   const loadTransactionLinks = useCallback(async () => {
     try {
       if (!uid) {
@@ -414,7 +405,7 @@ export default function BankingAccountsPage() {
         return;
       }
 
-      // Lade Transaction Links aus der transaction_links subcollection
+      // Lade ALL Transaction Links aus der transaction_links subcollection
       const { collection, getDocs } = await import('firebase/firestore');
       const { db } = await import('@/firebase/clients');
 
@@ -442,9 +433,6 @@ export default function BankingAccountsPage() {
 
           const hasLinks = linkedDocuments.length > 0;
 
-          if (hasLinks) {
-          }
-
           return {
             ...tx,
             verknuepfungen: linkedDocuments,
@@ -455,7 +443,6 @@ export default function BankingAccountsPage() {
       });
     } catch (error) {
       console.error('❌ Fehler beim Laden der Transaction Links:', error);
-      setTransactionLinks([]);
     }
   }, [uid]);
 
@@ -466,13 +453,82 @@ export default function BankingAccountsPage() {
     }
   }, [transactions, loadTransactionLinks]);
 
-  const handleRefresh = useCallback(() => {
-    setRefreshing(true);
-    loadFinAPIAccounts();
-    if (accounts.length > 0) {
-      loadFinAPITransactions();
-    }
-  }, [loadFinAPIAccounts, loadFinAPITransactions, accounts]);
+  // Load transaction links when page becomes visible again (user returns from invoice page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && transactions.length > 0) {
+        // Page became visible again - reload transaction links
+        loadTransactionLinks();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [transactions.length, loadTransactionLinks]);
+
+  // Also reload links when user navigates back to this page
+  useEffect(() => {
+    const handleFocus = () => {
+      if (transactions.length > 0) {
+        loadTransactionLinks();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [transactions.length, loadTransactionLinks]);
+
+  // Load transaction links ONLY when transaction is linked
+  const loadTransactionLinksForTransaction = useCallback(
+    async (transactionId: string) => {
+      try {
+        if (!uid) return;
+
+        const { collection, getDocs, query, where } = await import('firebase/firestore');
+        const { db } = await import('@/firebase/clients');
+
+        const transactionLinksRef = collection(db, 'companies', uid, 'transaction_links');
+        const q = query(transactionLinksRef, where('transactionId', '==', transactionId));
+        const snapshot = await getDocs(q);
+
+        const links = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as any[];
+
+        // Update nur diese eine Transaction
+        // Update transactions mit bestehenden Verknüpfungen
+        setTransactions(prevTransactions => {
+          return prevTransactions.map(tx => {
+            const txLinks = links.filter(link => link.transactionId === tx.id);
+
+            const linkedDocuments = txLinks.map(link => link.documentId);
+            const linkedInvoices = txLinks.map(link => ({
+              documentId: link.documentId,
+              documentNumber: link.documentNumber || link.documentData?.number || 'Unbekannt',
+              customerName: link.customerName || link.documentData?.customerName || 'Unbekannt',
+            }));
+
+            const hasLinks = linkedDocuments.length > 0;
+
+            return {
+              ...tx,
+              verknuepfungen: linkedDocuments,
+              linkedInvoices: linkedInvoices,
+              bookingStatus: hasLinks ? 'booked' : 'open',
+            };
+          });
+        });
+      } catch (error) {
+        console.error('❌ Fehler beim Laden der Transaction Links:', error);
+      }
+    },
+    [uid]
+  );
 
   // Handle bank transfer submission
   const handleBankTransfer = async (transferData: any) => {
@@ -514,10 +570,7 @@ export default function BankingAccountsPage() {
         // Show success message
         alert('Überweisung wurde erfolgreich eingereicht!');
 
-        // Refresh transactions to show the new outgoing transfer
-        setTimeout(() => {
-          handleRefresh();
-        }, 1000);
+        // No refresh needed - transaction links are loaded automatically
       } else if (result.requiresWebForm) {
         // Handle Web Form requirement
 
@@ -1117,17 +1170,6 @@ export default function BankingAccountsPage() {
           >
             <Send className="h-4 w-4 mr-2" />
             Überweisung
-          </button>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
-          >
-            <RefreshCw
-              className={`h-4 w-4 mr-2 ${refreshing || loadingTransactions ? 'animate-spin' : ''}`}
-            />
-
-            {loadingTransactions ? 'Transaktionen laden...' : 'Aktualisieren'}
           </button>
         </div>
       </div>
