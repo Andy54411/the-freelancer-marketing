@@ -35,6 +35,8 @@ interface ExpenseReceiptUploadProps {
   onFileUploaded?: (storageUrl: string) => void;
   showPreview?: boolean;
   enhancedMode?: boolean;
+  accept?: string;
+  maxSize?: number;
 }
 
 export function ExpenseReceiptUpload({
@@ -43,6 +45,8 @@ export function ExpenseReceiptUpload({
   onFileUploaded,
   showPreview = true,
   enhancedMode = true,
+  accept = '.pdf,.jpg,.jpeg,.png',
+  maxSize = 10 * 1024 * 1024, // 10MB default
 }: ExpenseReceiptUploadProps) {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [processingOCR, setProcessingOCR] = useState(false);
@@ -55,7 +59,7 @@ export function ExpenseReceiptUpload({
     if (!file) return;
 
     // Validate file type
-    const allowedTypes = accept.split(',').map(t => t.trim());
+    const allowedTypes = accept.split(',').map((t: string) => t.trim());
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
 
     if (
@@ -128,8 +132,8 @@ export function ExpenseReceiptUpload({
 
         // Callback to parent component
         setOcrProgress('Kategorien werden analysiert...');
-        await onDataExtracted(data, finalStorageUrl);
-        onFileUploaded?.(file, finalStorageUrl);
+        onDataExtracted?.(data);
+        onFileUploaded?.(finalStorageUrl);
 
         // Show completion
         setTimeout(() => {
@@ -336,3 +340,5 @@ export function ExpenseReceiptUpload({
     </div>
   );
 }
+
+export default ExpenseReceiptUpload;

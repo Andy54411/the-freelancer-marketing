@@ -89,6 +89,27 @@ export async function createCustomer(uid: string, customerData: any) {
   }
 }
 
+export async function updateCustomer(uid: string, customerId: string, customerData: any) {
+  try {
+    const response = await fetch(`/api/companies/${uid}/customers/${customerId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(customerData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Invoice API Functions
 export async function getInvoices(uid: string) {
   try {

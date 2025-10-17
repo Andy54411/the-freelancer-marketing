@@ -16,7 +16,22 @@ import {
 import { db } from '@/firebase/clients';
 import { Customer } from '@/components/finance/AddCustomerModal';
 import { InvoiceData } from '@/types/invoiceTypes';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import {
+  Loader2,
+  ArrowLeft,
+  MoreHorizontal,
+  Building2,
+  Receipt,
+  Users,
+  History,
+  FolderOpen,
+  ShoppingCart,
+  Ticket,
+  Mail,
+  Phone,
+  UserPlus,
+  FileEdit,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { updateCustomerStats } from '@/utils/customerStatsUtils';
 import { Button } from '@/components/ui/button';
@@ -26,6 +41,7 @@ import { CustomerContactCard } from '@/components/finance/customer-detail/Custom
 import { CustomerHistoryTab } from '@/components/finance/customer-detail/CustomerHistoryTab';
 import { CustomerDocumentsTab } from '@/components/finance/customer-detail/CustomerDocumentsTab';
 import CustomerOrdersTab from '@/components/finance/customer-detail/CustomerOrdersTab';
+import { EditContactPersonModal } from '@/components/finance/customer-detail/EditContactPersonModal';
 
 // Add style tag to hide scrollbar
 if (typeof document !== 'undefined') {
@@ -57,6 +73,8 @@ export default function ContactDetailPage({ params }: ContactDetailPageProps) {
   const [loading, setLoading] = useState(true);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
   const [syncingStats, setSyncingStats] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [customerToEdit, setCustomerToEdit] = useState<Customer | null>(null);
   const [calculatedStats, setCalculatedStats] = useState<{
     totalAmount: number;
     totalInvoices: number;
@@ -301,7 +319,17 @@ export default function ContactDetailPage({ params }: ContactDetailPageProps) {
   };
 
   const handleEditContact = () => {
-    window.dispatchEvent(new CustomEvent('openEditModal', { detail: customer }));
+    setCustomerToEdit(customer);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditModalClose = () => {
+    setIsEditModalOpen(false);
+    setCustomerToEdit(null);
+  };
+
+  const handleContactPersonsUpdate = async () => {
+    await reloadCustomerData();
   };
 
   // Initial load
@@ -321,6 +349,7 @@ export default function ContactDetailPage({ params }: ContactDetailPageProps) {
             name: data.name || '',
             email: data.email || '',
             phone: data.phone || '',
+            address: data.address || `${data.street || ''}, ${data.postalCode || ''} ${data.city || ''}`.trim(),
             street: data.street || '',
             postalCode: data.postalCode || '',
             city: data.city || '',
@@ -334,6 +363,35 @@ export default function ContactDetailPage({ params }: ContactDetailPageProps) {
             totalAmount: data.totalAmount || 0,
             totalInvoices: data.totalInvoices || 0,
             contactPersons: data.contactPersons || [],
+            website: data.website,
+            notes: data.notes,
+            paymentTerms: data.paymentTerms,
+            discount: data.discount,
+            currency: data.currency,
+            language: data.language,
+            companySize: data.companySize,
+            industry: data.industry,
+            legalForm: data.legalForm,
+            creditLimit: data.creditLimit,
+            debitorNumber: data.debitorNumber,
+            creditorNumber: data.creditorNumber,
+            bankName: data.bankName,
+            iban: data.iban,
+            bic: data.bic,
+            accountHolder: data.accountHolder,
+            preferredPaymentMethod: data.preferredPaymentMethod,
+            earlyPaymentDiscount: data.earlyPaymentDiscount,
+            earlyPaymentDays: data.earlyPaymentDays,
+            defaultInvoiceDueDate: data.defaultInvoiceDueDate,
+            reminderFee: data.reminderFee,
+            lateFee: data.lateFee,
+            automaticReminders: data.automaticReminders,
+            noReminders: data.noReminders,
+            reminderLevel: data.reminderLevel,
+            defaultTaxRate: data.defaultTaxRate,
+            reverseCharge: data.reverseCharge,
+            skontoProducts: data.skontoProducts || [],
+            tags: data.tags || [],
           };
 
           setCustomer(customerData);
@@ -402,6 +460,16 @@ export default function ContactDetailPage({ params }: ContactDetailPageProps) {
         onEditContact={handleEditContact}
         companyId={resolvedParams.uid}
       />
+
+      {/* Edit Contact Persons Modal */}
+      {customerToEdit && (
+        <EditContactPersonModal
+          isOpen={isEditModalOpen}
+          onClose={handleEditModalClose}
+          customer={customerToEdit}
+          onUpdate={handleContactPersonsUpdate}
+        />
+      )}
     </div>
   );
 }
@@ -432,190 +500,176 @@ function CustomerDetailPageContent({
     'overview' | 'invoices' | 'contacts' | 'history' | 'documents' | 'orders' | 'credits'
   >('overview');
   const [documentsCount, setDocumentsCount] = useState(0);
+  const [showMoreTabs, setShowMoreTabs] = useState(false);
 
   const tabs = [
     {
       id: 'overview' as const,
       label: 'Übersicht',
-      icon: '🏢',
+      icon: Building2,
       count: null,
+      primary: true,
     },
     {
       id: 'invoices' as const,
       label: 'Rechnungen',
-      icon: '🧾',
+      icon: Receipt,
       count: invoices.length,
+      primary: true,
     },
     {
       id: 'contacts' as const,
       label: 'Kontakte',
-      icon: '👥',
+      icon: Users,
       count: customer.contactPersons?.length || 0,
-    },
-    {
-      id: 'history' as const,
-      label: 'Verlauf',
-      icon: '📜',
-      count: null,
+      primary: true,
     },
     {
       id: 'documents' as const,
       label: 'Dokumente',
-      icon: '📁',
+      icon: FolderOpen,
       count: documentsCount,
+      primary: true,
     },
     {
       id: 'orders' as const,
       label: 'Aufträge',
-      icon: '📋',
+      icon: ShoppingCart,
       count: 0,
+      primary: true,
     },
     {
       id: 'credits' as const,
       label: 'Gutschriften',
-      icon: '💳',
+      icon: Ticket,
       count: 0,
+      primary: true,
+    },
+    {
+      id: 'history' as const,
+      label: 'Verlauf',
+      icon: History,
+      count: null,
+      primary: false,
     },
   ];
 
+  const primaryTabs = tabs.filter(tab => tab.primary);
+  const secondaryTabs = tabs.filter(tab => !tab.primary);
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      {/* Header */}
-      <div className="border-b border-gray-200 p-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-[#14ad9f]/10 rounded-lg">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="text-[#14ad9f]"
-            >
-              <path
-                d="M9.75027 5.52371L10.7168 4.55722C13.1264 2.14759 17.0332 2.14759 19.4428 4.55722C21.8524 6.96684 21.8524 10.8736 19.4428 13.2832L18.4742 14.2519M5.52886 9.74513L4.55722 10.7168C2.14759 13.1264 2.1476 17.0332 4.55722 19.4428C6.96684 21.8524 10.8736 21.8524 13.2832 19.4428L14.2478 18.4782M9.5 14.5L14.5 9.5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                vectorEffect="non-scaling-stroke"
-              ></path>
-            </svg>
-          </div>
+    <div className="bg-white">
+      {/* Compact Header */}
+      <div className="border-b border-gray-200 px-8 py-4">
+        <div className="max-w-[1600px] mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>
-            <p className="text-sm text-gray-600">
-              Kunde {customer.customerNumber} - Detailansicht und Verwaltung
-            </p>
+            <p className="text-sm text-gray-500">Kunde Nr. {customer.customerNumber}</p>
           </div>
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="flex space-x-0 overflow-x-auto px-6">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'border-[#14ad9f] text-[#14ad9f] bg-[#14ad9f]/5'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <span>{tab.icon}</span>
-              {tab.label}
-              {tab.count !== null && (
-                <span
-                  className={`ml-1 px-2 py-0.5 text-xs rounded-full ${
-                    activeTab === tab.id ? 'bg-[#14ad9f] text-white' : 'bg-gray-200 text-gray-600'
+      {/* Compact Tab Navigation */}
+      <div className="border-b border-gray-200 px-8">
+        <div className="max-w-[1600px] mx-auto">
+          <nav className="flex items-center gap-1">
+            {primaryTabs.map(tab => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                    activeTab === tab.id
+                      ? 'border-[#14ad9f] text-[#14ad9f]'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  {tab.count}
-                </span>
+                  <Icon className="h-4 w-4" />
+                  {tab.label}
+                  {tab.count !== null && tab.count > 0 && (
+                    <span
+                      className={`px-1.5 py-0.5 text-xs rounded font-medium ${
+                        activeTab === tab.id
+                          ? 'bg-[#14ad9f] text-white'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+            
+            {/* More Button */}
+            <div className="relative">
+              <button
+                onClick={() => setShowMoreTabs(!showMoreTabs)}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  secondaryTabs.some(t => t.id === activeTab)
+                    ? 'border-[#14ad9f] text-[#14ad9f]'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+              {showMoreTabs && (
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  {secondaryTabs.map(tab => {
+                    const Icon = tab.icon;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          setActiveTab(tab.id);
+                          setShowMoreTabs(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                          activeTab === tab.id
+                            ? 'bg-[#14ad9f]/10 text-[#14ad9f] font-medium'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {tab.label}
+                        {tab.count !== null && tab.count > 0 && (
+                          <span className="ml-auto px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-600">
+                            {tab.count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               )}
-            </button>
-          ))}
-        </nav>
+            </div>
+          </nav>
+        </div>
       </div>
 
-      {/* Tab Content */}
-      <div
-        className="p-6 overflow-auto hide-scrollbar"
-        style={
-          {
-            maxHeight: 'calc(100vh - 280px)',
-            msOverflowStyle: 'none',
-            scrollbarWidth: 'none',
-          } as React.CSSProperties
-        }
-      >
-        {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Linke Spalte: Kundeninformationen (2/3 der Breite) */}
-            <div className="lg:col-span-2">
-              <CustomerInfoCard customer={customer} calculatedStats={calculatedStats} />
+      {/* Content Area */}
+      <div className="px-8 py-6">
+        <div className="max-w-[1600px] mx-auto">
+          {activeTab === 'overview' && <CustomerInfoCard customer={customer} calculatedStats={calculatedStats} />}
+          {activeTab === 'invoices' && <CustomerInvoiceCard customer={customer} />}
+          {activeTab === 'contacts' && <CustomerContactCard customer={customer} onEditContact={onEditContact} />}
+          {activeTab === 'history' && <CustomerHistoryTab customer={customer} />}
+          {activeTab === 'documents' && (
+            <CustomerDocumentsTab customer={customer} companyId={companyId} onDocumentsCountChange={setDocumentsCount} />
+          )}
+          {activeTab === 'orders' && <CustomerOrdersTab customer={customer} companyId={companyId} />}
+          {activeTab === 'credits' && (
+            <div className="text-center py-20">
+              <Ticket className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Keine Gutschriften</h3>
+              <p className="text-gray-500 mb-6 text-sm">Für diesen Kunden wurden noch keine Gutschriften erstellt</p>
+              <button className="px-5 py-2 bg-[#14ad9f] text-white text-sm rounded-lg hover:bg-[#129488] transition-colors font-medium">
+                Gutschrift erstellen
+              </button>
             </div>
-
-            {/* Rechte Spalte: Schnellaktionen (1/3 der Breite) */}
-            <div className="space-y-4">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 mb-3">Schnellaktionen</h3>
-                <div className="space-y-2">
-                  <button
-                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-white rounded border hover:shadow-sm transition-all"
-                    onClick={() => setActiveTab('invoices')}
-                  >
-                    📄 Neue Rechnung erstellen
-                  </button>
-                  <button
-                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-white rounded border hover:shadow-sm transition-all"
-                    onClick={() => setActiveTab('contacts')}
-                  >
-                    👥 Kontakt hinzufügen
-                  </button>
-                  <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-white rounded border hover:shadow-sm transition-all">
-                    📧 E-Mail senden
-                  </button>
-                  <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-white rounded border hover:shadow-sm transition-all">
-                    📞 Anruf protokollieren
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'invoices' && <CustomerInvoiceCard customer={customer} />}
-
-        {activeTab === 'contacts' && (
-          <CustomerContactCard customer={customer} onEditContact={onEditContact} />
-        )}
-
-        {activeTab === 'history' && <CustomerHistoryTab customer={customer} />}
-
-        {activeTab === 'documents' && (
-          <CustomerDocumentsTab
-            customer={customer}
-            companyId={companyId}
-            onDocumentsCountChange={setDocumentsCount}
-          />
-        )}
-
-        {activeTab === 'orders' && <CustomerOrdersTab customer={customer} companyId={companyId} />}
-
-        {activeTab === 'credits' && (
-          <div className="text-center py-12 text-gray-500">
-            <span className="text-6xl mb-4 block">💳</span>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">Gutschriften (0)</h3>
-            <p className="text-sm mb-4">
-              Hier werden alle Gutschriften für diesen Kunden angezeigt
-            </p>
-            <button className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors">
-              Neue Gutschrift erstellen
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

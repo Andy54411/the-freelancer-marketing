@@ -44,6 +44,13 @@ interface NavigationSubItem {
   label: string;
   value: string;
   href?: string;
+  subItems?: NavigationSubSubItem[];
+}
+
+interface NavigationSubSubItem {
+  label: string;
+  value: string;
+  href?: string;
 }
 
 interface CompanySidebarProps {
@@ -62,49 +69,44 @@ const navigationItems: NavigationItem[] = [
     value: 'dashboard',
   },
   {
-    label: 'Aufträge',
+    label: 'Tasker',
     icon: FiClipboardList,
-    value: 'orders',
+    value: 'tasker',
     subItems: [
-      { label: 'Übersicht', value: 'orders-overview', href: 'orders/overview' },
-      { label: 'Eingehend', value: 'orders-incoming', href: 'orders/incoming' },
-      { label: 'Erstellt', value: 'orders-created', href: 'orders/created' },
-      { label: 'Abgeschlossen', value: 'orders-completed', href: 'orders/completed' },
-      { label: 'Storniert', value: 'orders-cancelled', href: 'orders/cancelled' },
-    ],
-  },
-  {
-    label: 'Projekt-Marktplatz',
-    icon: FiFolder,
-    value: 'marketplace',
-    subItems: [
-      { label: 'Verfügbare Projekte', value: 'marketplace-projects', href: 'marketplace/projects' },
-      { label: 'Meine Bewerbungen', value: 'marketplace-proposals', href: 'marketplace/proposals' },
-      { label: 'Direkte Anfragen', value: 'marketplace-quotes', href: 'marketplace/quotes' },
       {
-        label: 'Kategorie-Anfragen',
-        value: 'marketplace-project-quotes',
-        href: 'marketplace/project-quotes',
+        label: 'Aufträge',
+        value: 'orders',
+        href: 'orders/overview',
+        subItems: [
+          { label: 'Übersicht', value: 'orders-overview', href: 'orders/overview' },
+          { label: 'Eingehend', value: 'orders-incoming', href: 'orders/incoming' },
+          { label: 'Erstellt', value: 'orders-created', href: 'orders/created' },
+          { label: 'Abgeschlossen', value: 'orders-completed', href: 'orders/completed' },
+          { label: 'Storniert', value: 'orders-cancelled', href: 'orders/cancelled' },
+        ],
+      },
+      {
+        label: 'Projekt-Marktplatz',
+        value: 'marketplace',
+        href: 'marketplace/projects',
+        subItems: [
+          { label: 'Verfügbare Projekte', value: 'marketplace-projects', href: 'marketplace/projects' },
+          { label: 'Meine Bewerbungen', value: 'marketplace-proposals', href: 'marketplace/proposals' },
+          { label: 'Direkte Anfragen', value: 'marketplace-quotes', href: 'marketplace/quotes' },
+          { label: 'Kategorie-Anfragen', value: 'marketplace-project-quotes', href: 'marketplace/project-quotes' },
+        ],
+      },
+      {
+        label: 'Posteingang',
+        value: 'inbox',
+        href: 'inbox',
+      },
+      {
+        label: 'Bewertungen',
+        value: 'reviews',
+        href: 'reviews',
       },
     ],
-  },
-  {
-    label: 'Angebote',
-    icon: FiFileText,
-    value: 'quotes',
-    subItems: [
-      { label: 'Übersicht', value: 'quotes-overview', href: 'finance/quotes' },
-      { label: 'Neues Angebot', value: 'quotes-create', href: 'finance/quotes/create' },
-      { label: 'Entwürfe', value: 'quotes-drafts', href: 'finance/quotes/drafts' },
-      { label: 'Versendet', value: 'quotes-sent', href: 'finance/quotes/sent' },
-      { label: 'Angenommen', value: 'quotes-accepted', href: 'finance/quotes/accepted' },
-    ],
-  },
-  {
-    label: 'Posteingang',
-    icon: FiMail,
-    value: 'inbox',
-    href: 'inbox',
   },
   {
     label: 'Kalender',
@@ -126,26 +128,66 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
-    label: 'Rechnungen',
-    icon: FiFileText,
-    value: 'invoices',
-    subItems: [
-      { label: 'Alle Rechnungen', value: 'invoices-overview', href: 'finance/invoices' },
-      { label: 'Kassenbuch', value: 'invoices-other-income', href: 'finance/cashbook' },
-      { label: 'E-Rechnungen', value: 'invoices-einvoices', href: 'finance/einvoices' },
-      { label: 'Lieferscheine', value: 'invoices-delivery-notes', href: 'finance/delivery-notes' },
-      { label: 'Ausgaben', value: 'invoices-expenses', href: 'finance/expenses' },
-      { label: 'Wiederkehrend', value: 'invoices-recurring', href: 'finance/invoices/recurring' },
-      { label: 'Rechnung erstellen', value: 'invoices-create', href: 'finance/invoices/create' },
-      { label: 'Mahnungen', value: 'invoices-reminders', href: 'finance/reminders' },
-      { label: 'Gutschriften', value: 'invoices-credits', href: 'finance/credits' },
-    ],
-  },
-  {
-    label: 'Buchhaltungseinstellungen',
+    label: 'Buchhaltung',
     icon: FiCalculator,
-    value: 'accounting',
-    href: 'finance/accounting',
+    value: 'finance',
+    subItems: [
+      {
+        label: 'Angebote',
+        value: 'quotes',
+        href: 'finance/quotes',
+        subItems: [
+          { label: 'Angebot erstellen', value: 'quotes-create', href: 'finance/quotes/create' },
+          { label: 'Auftragsbestätigungen', value: 'quotes-confirmations', href: 'finance/order-confirmations' },
+          { label: 'Lieferscheine', value: 'quotes-delivery-notes', href: 'finance/delivery-notes' },
+        ],
+      },
+      {
+        label: 'Rechnungen',
+        value: 'invoices',
+        href: 'finance/invoices',
+        subItems: [
+          { label: 'Rechnung erstellen', value: 'invoices-create', href: 'finance/invoices/create' },
+          { label: 'Wiederkehrend', value: 'invoices-recurring', href: 'finance/invoices/recurring' },
+          { label: 'Mahnungen', value: 'invoices-reminders', href: 'finance/reminders' },
+          { label: 'Gutschriften', value: 'invoices-credits', href: 'finance/credits' },
+        ],
+      },
+      {
+        label: 'Ausgaben',
+        value: 'expenses',
+        href: 'finance/expenses',
+        subItems: [
+          { label: 'Wiederkehrend', value: 'expenses-recurring', href: 'finance/expenses/recurring' },
+          { label: 'Anlagen', value: 'expenses-assets', href: 'finance/expenses/assets' },
+        ],
+      },
+      {
+        label: 'Steuern',
+        value: 'taxes',
+        href: 'finance/taxes',
+      },
+      {
+        label: 'Auswertung',
+        value: 'reports',
+        href: 'finance/reports',
+      },
+      {
+        label: 'DATEV',
+        value: 'datev',
+        href: 'datev',
+      },
+      {
+        label: 'Buchhaltungseinstellungen',
+        value: 'accounting',
+        subItems: [
+          { label: 'Übersicht', value: 'accounting-overview', href: 'finance/accounting' },
+          { label: 'Kassenbuch', value: 'accounting-cashbook', href: 'finance/cashbook' },
+          { label: 'E-Rechnungen', value: 'accounting-einvoices', href: 'finance/einvoices' },
+          { label: 'Zahlungen', value: 'accounting-payments', href: 'finance/payments' },
+        ],
+      },
+    ],
   },
   {
     label: 'Geschäftspartner',
@@ -157,22 +199,7 @@ const navigationItems: NavigationItem[] = [
     label: 'Banking',
     icon: FiBanknote,
     value: 'banking',
-    subItems: [
-      { label: 'Dashboard', value: 'banking-overview', href: 'banking' },
-      { label: 'Konten', value: 'banking-accounts', href: 'banking/accounts' },
-      { label: 'Transaktionen', value: 'banking-transactions', href: 'banking/transactions' },
-      { label: 'Zahlungen', value: 'banking-payments', href: 'finance/payments' },
-      { label: 'Import & Sync', value: 'banking-import', href: 'banking/import' },
-      { label: 'Abgleich', value: 'banking-reconciliation', href: 'banking/reconciliation' },
-    ],
-  },
-  {
-    label: 'Projekte',
-    icon: FiFolderTree,
-    value: 'projects',
-    subItems: [
-      { label: 'Zeiterfassung', value: 'projects-time-tracking', href: 'finance/time-tracking' },
-    ],
+    href: 'banking',
   },
   {
     label: 'Lagerbestand',
@@ -207,26 +234,11 @@ const navigationItems: NavigationItem[] = [
       { label: 'Aufgaben', value: 'workspace-tasks', href: 'workspace?type=task' },
       { label: 'Dokumente', value: 'workspace-documents', href: 'workspace?type=document' },
       { label: 'Prozesse', value: 'workspace-processes', href: 'workspace?type=process' },
+      { label: 'Zeiterfassung', value: 'workspace-time-tracking', href: 'finance/time-tracking' },
       { label: 'Board-Ansicht', value: 'workspace-board', href: 'workspace?view=board' },
       { label: 'Listen-Ansicht', value: 'workspace-list', href: 'workspace?view=list' },
       { label: 'Kalender-Ansicht', value: 'workspace-calendar', href: 'workspace?view=calendar' },
     ],
-  },
-  {
-    label: 'Steuerportal',
-    icon: FiShield,
-    value: 'steuerportal',
-    subItems: [
-      { label: 'Steuern', value: 'steuerportal-taxes', href: 'finance/taxes' },
-      { label: 'Auswertung', value: 'steuerportal-reports', href: 'finance/reports' },
-      { label: 'DATEV', value: 'steuerportal-datev', href: 'datev' },
-    ],
-  },
-  {
-    label: 'Bewertungen',
-    icon: FiMessageSquare,
-    value: 'reviews',
-    href: 'reviews',
   },
   {
     label: 'Support',
@@ -584,34 +596,80 @@ export default function CompanySidebar({
 
                       {filteredSubItems?.map(subItem => {
                         const isSubActive = isSubItemActive(subItem);
+                        const hasSubSubItems = subItem.subItems && subItem.subItems.length > 0;
 
                         return (
-                          <button
-                            key={subItem.value}
-                            onClick={() => {
-                              if (subItem.href) {
-                                onNavigate(subItem.value, subItem.href);
-                              } else {
-                                onNavigate(subItem.value);
-                              }
-                            }}
-                            className={`${
-                              isSubActive
-                                ? 'bg-[#14ad9f] text-white'
-                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                            } group flex items-center justify-between px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
-                          >
-                            <div className="flex items-center">
-                              <FiChevronRight className="mr-2 h-4 w-4" />
-                              {subItem.label}
-                            </div>
-                            {/* E-Mail Zähler */}
-                            {item.value === 'email' && (
-                              <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-full">
-                                0
-                              </span>
+                          <div key={subItem.value}>
+                            <button
+                              onClick={() => {
+                                if (subItem.href) {
+                                  onNavigate(subItem.value, subItem.href);
+                                } else {
+                                  onNavigate(subItem.value);
+                                }
+                              }}
+                              className={`${
+                                isSubActive
+                                  ? 'bg-[#14ad9f] text-white'
+                                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                              } group flex items-center justify-between px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
+                            >
+                              <div className="flex items-center">
+                                {hasSubSubItems ? (
+                                  <span
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onToggleExpanded(subItem.value);
+                                    }}
+                                    className="mr-2 hover:bg-white/20 rounded p-0.5 cursor-pointer inline-flex"
+                                  >
+                                    {expandedItems.includes(subItem.value) ? (
+                                      <FiChevronDown className="h-4 w-4" />
+                                    ) : (
+                                      <FiChevronRight className="h-4 w-4" />
+                                    )}
+                                  </span>
+                                ) : (
+                                  <FiChevronRight className="mr-2 h-4 w-4" />
+                                )}
+                                {subItem.label}
+                              </div>
+                              {/* E-Mail Zähler */}
+                              {item.value === 'email' && (
+                                <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-full">
+                                  0
+                                </span>
+                              )}
+                            </button>
+
+                            {/* 3. Ebene: Sub-Sub-Items */}
+                            {hasSubSubItems && expandedItems.includes(subItem.value) && (
+                              <div className="ml-6 mt-1 space-y-1">
+                                {subItem.subItems?.map(subSubItem => {
+                                  const isSubSubActive = pathname?.includes(subSubItem.href || '');
+                                  
+                                  return (
+                                    <button
+                                      key={subSubItem.value}
+                                      onClick={() => {
+                                        if (subSubItem.href) {
+                                          onNavigate(subSubItem.value, subSubItem.href);
+                                        }
+                                      }}
+                                      className={`${
+                                        isSubSubActive
+                                          ? 'bg-[#14ad9f] text-white'
+                                          : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+                                      } group flex items-center px-2 py-1.5 text-xs rounded-md w-full transition-colors`}
+                                    >
+                                      <span className="mr-2">•</span>
+                                      {subSubItem.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             )}
-                          </button>
+                          </div>
                         );
                       })}
 

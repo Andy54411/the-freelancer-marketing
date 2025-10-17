@@ -34,10 +34,9 @@ export function CustomerContactCard({ customer, onEditContact }: CustomerContact
   const otherContacts = customer.contactPersons?.filter(cp => !cp.isPrimary) || [];
 
   const handleAddContact = () => {
-    // Öffne EditCustomerModal für Ansprechpartner-Verwaltung
-    window.dispatchEvent(
-      new CustomEvent('openEditModal', { detail: customer })
-    );
+    if (onEditContact) {
+      onEditContact();
+    }
   };
 
   return (

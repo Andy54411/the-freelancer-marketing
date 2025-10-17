@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,8 +28,67 @@ export default function ConnectBankPage() {
   const [isWebFormModalOpen, setIsWebFormModalOpen] = useState(false);
   const [webFormUrl, setWebFormUrl] = useState<string>('');
   const [webFormBankName, setWebFormBankName] = useState<string>('');
+  const [checkingConnection, setCheckingConnection] = useState(true);
 
   const credentialType = getFinAPICredentialType();
+
+  // Check for existing bank connections on component mount
+  React.useEffect(() => {
+    const checkExistingConnections = async () => {
+      try {
+        setCheckingConnection(true);
+        
+        // Check FinAPI connections
+        const finapiResponse = await fetch(
+          `/api/finapi/bank-connections?userId=${uid}&credentialType=${credentialType}`
+        );
+        
+        if (finapiResponse.ok) {
+          const finapiData = await finapiResponse.json();
+          if (finapiData.success && finapiData.connections && finapiData.connections.length > 0) {
+            // Already connected - redirect to banking accounts
+            router.push(`/dashboard/company/${uid}/banking/accounts`);
+            return;
+          }
+        }
+
+        // Check enhanced accounts API
+        const accountsResponse = await fetch(
+          `/api/finapi/accounts-enhanced?userId=${uid}&credentialType=${credentialType}`
+        );
+        
+        if (accountsResponse.ok) {
+          const accountsData = await accountsResponse.json();
+          if (accountsData.success && accountsData.accounts && accountsData.accounts.length > 0 && accountsData.source !== 'mock_data') {
+            // Already connected - redirect to banking accounts
+            router.push(`/dashboard/company/${uid}/banking/accounts`);
+            return;
+          }
+        }
+
+        // Check Revolut connections
+        const revolutResponse = await fetch(`/api/revolut/accounts?userId=${uid}`);
+        if (revolutResponse.ok) {
+          const revolutData = await revolutResponse.json();
+          if (revolutData.success && revolutData.accounts && revolutData.accounts.length > 0) {
+            // Already connected - redirect to banking accounts
+            router.push(`/dashboard/company/${uid}/banking/accounts`);
+            return;
+          }
+        }
+
+      } catch (error) {
+        console.error('Fehler beim Prüfen der Bankverbindungen:', error);
+        // Continue to show connect form on error
+      } finally {
+        setCheckingConnection(false);
+      }
+    };
+
+    if (uid) {
+      checkExistingConnections();
+    }
+  }, [uid, credentialType, router]);
 
   // Function to get the correct bank logo filename
   const getBankLogoPath = (name: string): string => {
@@ -133,6 +192,18 @@ export default function ConnectBankPage() {
   const handleCancel = () => {
     router.back();
   };
+
+  // Show loading while checking for existing connections
+  if (checkingConnection) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f] mx-auto mb-4"></div>
+          <p className="text-gray-600">Prüfe bestehende Bankverbindungen...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

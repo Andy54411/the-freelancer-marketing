@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -61,6 +61,7 @@ interface Bank {
 
 export default function BankingDashboardPage() {
   const params = useParams();
+  const router = useRouter();
   const { user } = useAuth();
   const uid = params?.uid as string;
 
@@ -401,11 +402,11 @@ export default function BankingDashboardPage() {
           // Transform finAPI accounts data to connections format
           const bankGroups = accountsData.accountsByBank || {};
           const transformedConnections: BankConnection[] = Object.entries(bankGroups).map(
-            ([bankName, accounts]: [string, any[]]) => ({
+            ([bankName, accounts]) => ({
               id: `bank_${bankName.replace(/\s+/g, '_').toLowerCase()}`,
               bankName: bankName,
               status: 'connected' as const,
-              accountCount: accounts.length,
+              accountCount: Array.isArray(accounts) ? accounts.length : 0,
               lastSync: accountsData.lastSync || new Date().toISOString()
             })
           );
@@ -780,6 +781,125 @@ export default function BankingDashboardPage() {
         </div>
       </div>);
 
+  }
+
+  // If we have connections, redirect to accounts page
+  React.useEffect(() => {
+    if (!loading && connections.length > 0) {
+      router.push(`/dashboard/company/${uid}/banking/accounts`);
+    }
+  }, [loading, connections.length, router, uid]);
+
+  if (!loading && connections.length > 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f] mx-auto mb-4"></div>
+          <p className="text-gray-600">Weiterleitung zu Bankkonten...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show banking overview for connected users (fallback)
+  if (false) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Hero Section - Connected */}
+          <section className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Banking Übersicht
+            </h1>
+            <p className="text-gray-600">Verbundene Bankkonten und Transaktionen</p>
+          </section>
+
+          {/* Connected Banks */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {connections.map((connection) => (
+              <Card key={connection.id} className="border border-gray-200">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">{connection.bankName}</h3>
+                    <Badge className={getStatusColor(connection.status)}>
+                      {connection.status === 'connected' ? 'Verbunden' : connection.status}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <p>Konten: {connection.accountCount}</p>
+                    <p>Letzte Synchronisation: {formatLastSync(connection.lastSync)}</p>
+                  </div>
+                  <div className="mt-4 flex justify-between">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.location.href = `/dashboard/company/${uid}/banking/transactions`}
+                    >
+                      Transaktionen
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedConnectionForDisconnect(connection);
+                        setIsDisconnectDialogOpen(true);
+                      }}
+                    >
+                      Trennen
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="border border-gray-200">
+              <CardContent className="p-6 text-center">
+                <Activity className="h-8 w-8 text-[#14ad9f] mx-auto mb-4" />
+                <h3 className="font-semibold mb-2">Transaktionen</h3>
+                <p className="text-sm text-gray-600 mb-4">Alle Banking-Transaktionen anzeigen</p>
+                <Button
+                  onClick={() => window.location.href = `/dashboard/company/${uid}/banking/transactions`}
+                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                >
+                  Transaktionen anzeigen
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-gray-200">
+              <CardContent className="p-6 text-center">
+                <CreditCard className="h-8 w-8 text-[#14ad9f] mx-auto mb-4" />
+                <h3 className="font-semibold mb-2">Konten</h3>
+                <p className="text-sm text-gray-600 mb-4">Bankkonten und Salden verwalten</p>
+                <Button
+                  onClick={() => window.location.href = `/dashboard/company/${uid}/banking/accounts`}
+                  variant="outline"
+                >
+                  Konten anzeigen
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-gray-200">
+              <CardContent className="p-6 text-center">
+                <Plus className="h-8 w-8 text-[#14ad9f] mx-auto mb-4" />
+                <h3 className="font-semibold mb-2">Bank hinzufügen</h3>
+                <p className="text-sm text-gray-600 mb-4">Weitere Bankverbindung hinzufügen</p>
+                <Button
+                  onClick={() => window.location.href = `/dashboard/company/${uid}/banking/connect`}
+                  variant="outline"
+                >
+                  Bank verbinden
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (

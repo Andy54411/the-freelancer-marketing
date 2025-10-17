@@ -492,6 +492,13 @@ export class NumberSequenceService {
           format: 'GU-{number}',
           prefix: 'GU-'
         };
+      case 'Produkt':
+        return {
+          ...baseData,
+          nextNumber: 1001,
+          format: '%NUMBER',
+          prefix: ''
+        };
       default:
         throw new Error(`Unbekannter Nummerkreis-Typ: ${type}`);
     }
@@ -559,6 +566,12 @@ export class NumberSequenceService {
           number: 1000,
           formattedNumber: 'GU-1000',
           format: 'GU-{number}'
+        };
+      case 'Produkt':
+        return {
+          number: 1001,
+          formattedNumber: '1001',
+          format: '%NUMBER'
         };
       default:
         return {
@@ -699,10 +712,64 @@ export class NumberSequenceService {
   }
 
   /**
+   * ✅ PRODUKT-SYNCHRONISATION: Synchronisiert Produkt-Nummernkreis mit existierendem Inventory
+   */
+  private static async syncProductNumberSequence(companyId: string): Promise<void> {
+    try {
+      // Prüfe existierende Produkte im Inventory
+      const inventoryRef = collection(db, 'companies', companyId, 'inventory');
+      const snapshot = await getDocs(inventoryRef);
+      
+      if (snapshot.empty) {
+        return; // Keine Produkte vorhanden
+      }
+
+      const products = snapshot.docs.map(doc => doc.data());
+      
+      // Extrahiere alle numerischen SKUs
+      const numbers: number[] = [];
+      
+      products.forEach((product) => {
+        if (product.sku) {
+          const num = parseInt(product.sku, 10);
+          if (!isNaN(num)) {
+            numbers.push(num);
+          }
+        }
+      });
+
+      if (numbers.length === 0) {
+        return; // Keine gültigen Nummern gefunden
+      }
+
+      // Berechne nächste Nummer
+      const highestNumber = Math.max(...numbers);
+      const nextNumber = highestNumber + 1;
+
+      // Update Nummernkreis
+      const docId = `${companyId}_Produkt`;
+
+      await this.updateNumberSequence(companyId, docId, {
+        nextNumber,
+        nextFormatted: this.formatNumber(nextNumber, '%NUMBER')
+      });
+
+    } catch (error) {
+      console.error('Fehler beim Synchronisieren des Produkt-Nummernkreises:', error);
+      // Fehler nicht weiterwerfen - Synchronisation ist optional
+    }
+  }
+
+  /**
    * ✅ EINMALIGE SYNCHRONISATION: Synchronisiert Nummernkreis mit echten Daten (nur beim Seitenladen)
    */
   static async syncSequenceWithRealData(companyId: string, type: string): Promise<void> {
     try {
+      // Spezielle Behandlung für Produkt-Typ
+      if (type === 'Produkt') {
+        return await this.syncProductNumberSequence(companyId);
+      }
+      
       // Nur für bestimmte Typen unterstützen
       if (!['Kunde', 'Lieferant', 'Partner', 'Interessenten'].includes(type)) {
         return;

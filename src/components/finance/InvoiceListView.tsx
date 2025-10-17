@@ -46,6 +46,11 @@ import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import { TransactionLinkService } from '@/services/transaction-link.service';
 import StornoInvoice from './StornoInvoice';
 import { EmailDialog } from './EmailDialog';
+import { toast } from 'sonner';
+import SelectBankingTransactionModal from './SelectBankingTransactionModal';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
+import { InvoiceStatusService } from '@/services/invoice-status.service';
 
 interface InvoiceListViewProps {
   invoices: InvoiceData[];
@@ -72,6 +77,8 @@ export function InvoiceListView({
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [selectedInvoiceForEmail, setSelectedInvoiceForEmail] = useState<InvoiceData | null>(null);
   const [linkedInvoices, setLinkedInvoices] = useState<Set<string>>(new Set());
+  const [showLinkTransactionModal, setShowLinkTransactionModal] = useState(false);
+  const [selectedInvoiceForLink, setSelectedInvoiceForLink] = useState<InvoiceData | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedContact, setSelectedContact] = useState('');
   const [minAmount, setMinAmount] = useState('');
@@ -125,10 +132,6 @@ export function InvoiceListView({
       style: 'currency',
       currency: 'EUR',
     }).format(amount);
-  };
-
-  const handleDownloadPdf = (invoiceId: string) => {
-    window.open(`/print/invoice/${invoiceId}`, '_blank');
   };
 
   const getStatusBadge = (invoice: InvoiceData) => {
@@ -224,13 +227,81 @@ export function InvoiceListView({
   };
 
   const handleMarkAsPaid = async (invoiceId: string) => {
+    // Finde die Rechnung
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (!invoice) {
+      toast.error('Rechnung nicht gefunden');
+      return;
+    }
+
+    // Öffne Banking Transaction Auswahl Modal
+    setSelectedInvoiceForLink(invoice);
+    setShowLinkTransactionModal(true);
+  };
+
+  const handleBankingTransactionSelected = async (bankingTransaction: any) => {
     try {
-      await FirestoreInvoiceService.updateInvoiceStatus(companyId, invoiceId, 'paid');
+      if (!selectedInvoiceForLink) {
+        toast.error('Rechnung nicht gefunden');
+        return;
+      }
+
+      // ECHTE Banking Transaction Daten verwenden!
+      const transactionData = {
+        id: bankingTransaction.id,
+        name: bankingTransaction.counterpartName || bankingTransaction.name || '',
+        verwendungszweck: bankingTransaction.purpose || bankingTransaction.verwendungszweck || '',
+        buchungstag: bankingTransaction.bookingDate || bankingTransaction.buchungstag || '',
+        betrag: bankingTransaction.amount || bankingTransaction.betrag || 0,
+        accountId: bankingTransaction.accountId || '',
+      };
+
+      const documentData = {
+        id: selectedInvoiceForLink.id,
+        documentNumber: selectedInvoiceForLink.invoiceNumber || selectedInvoiceForLink.number || '',
+        invoiceNumber: selectedInvoiceForLink.invoiceNumber,
+        customerName: selectedInvoiceForLink.customerName || '',
+        total: selectedInvoiceForLink.total || 0,
+        date: selectedInvoiceForLink.issueDate || selectedInvoiceForLink.createdAt?.toString() || '',
+        issueDate: selectedInvoiceForLink.issueDate,
+        isStorno: selectedInvoiceForLink.isStorno || false,
+      };
+
+      // Verknüpfung erstellen
+      const result = await TransactionLinkService.createLink(
+        companyId,
+        bankingTransaction.id,
+        selectedInvoiceForLink.id,
+        transactionData,
+        documentData,
+        companyId
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Fehler beim Erstellen der Verknüpfung');
+      }
+      
+      // Rechnung als bezahlt markieren mit realem transactionId
+      await InvoiceStatusService.markAsPaid(
+        companyId,
+        selectedInvoiceForLink.id,
+        selectedInvoiceForLink.total || 0,
+        bankingTransaction.id,
+        'Banküberweisung'
+      );
+      
+      toast.success('Rechnung wurde als bezahlt markiert und verknüpft');
+      
+      // Modal schließen und Liste aktualisieren
+      setShowLinkTransactionModal(false);
+      setSelectedInvoiceForLink(null);
+      
       if (onRefresh) {
         onRefresh();
       }
-    } catch (error) {
-      console.error('Fehler beim Markieren als bezahlt:', error);
+    } catch (error: any) {
+      console.error('Fehler beim Verknüpfen:', error);
+      toast.error(`Fehler beim Verknüpfen: ${error.message}`);
     }
   };
 
@@ -587,16 +658,6 @@ export function InvoiceListView({
                                 <DollarSign className="h-4 w-4" />
                               </Button>
                             )}
-                            {['sent', 'paid', 'finalized'].includes(invoice.status) && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Rechnung herunterladen"
-                                onClick={() => handleDownloadPdf(invoice.id)}
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            )}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="sm">
@@ -667,6 +728,21 @@ export function InvoiceListView({
           companyId={companyId}
         />
       )}
+
+      {showLinkTransactionModal && selectedInvoiceForLink && (
+        <SelectBankingTransactionModal
+          isOpen={showLinkTransactionModal}
+          companyId={companyId}
+          invoiceAmount={selectedInvoiceForLink.total || 0}
+          transactionType="CREDIT"
+          onClose={() => {
+            setShowLinkTransactionModal(false);
+            setSelectedInvoiceForLink(null);
+          }}
+          onSelect={handleBankingTransactionSelected}
+        />
+      )}
+
     </div>
   );
 }

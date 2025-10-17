@@ -29,6 +29,18 @@ export interface ContactPerson {
   isPrimary: boolean;
 }
 
+export interface SkontoProduct {
+  id: string;
+  productName: string;
+  sku?: string;
+  discount: number;
+  days: number;
+  inventoryId?: string;
+  customerId: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 export interface Customer {
   id: string;
   customerNumber: string;
@@ -51,6 +63,36 @@ export interface Customer {
   createdAt: string;
   contactPersons: ContactPerson[];
   companyId: string;
+  // Erweiterte Felder
+  website?: string;
+  notes?: string;
+  paymentTerms?: number;
+  discount?: number;
+  currency?: string;
+  language?: string;
+  companySize?: string;
+  industry?: string;
+  legalForm?: string;
+  creditLimit?: number;
+  debitorNumber?: string;
+  creditorNumber?: string;
+  bankName?: string;
+  iban?: string;
+  bic?: string;
+  accountHolder?: string;
+  preferredPaymentMethod?: string;
+  earlyPaymentDiscount?: number;
+  earlyPaymentDays?: number;
+  defaultInvoiceDueDate?: number;
+  reminderFee?: number;
+  lateFee?: number;
+  automaticReminders?: boolean;
+  noReminders?: boolean;
+  reminderLevel?: number;
+  defaultTaxRate?: number;
+  reverseCharge?: boolean;
+  skontoProducts?: SkontoProduct[];
+  tags?: string[];
 }
 
 interface AddCustomerModalProps {

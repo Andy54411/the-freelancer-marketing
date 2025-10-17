@@ -1,307 +1,2353 @@
 'use client';
 
-import React, { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, ArrowLeft, Save } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue } from
+'@/components/ui/select';
+import { useParams } from 'next/navigation';
+import {
+  Loader2,
+  Plus,
+  FileText,
+  Users,
+  CreditCard,
+  Info,
+  Check,
+  Building2,
+  User,
+  Settings,
+  ChevronDown,
+  X,
+  Phone,
+  Mail,
+  Globe,
+  MapPin,
+  Receipt,
+  Calculator,
+  Clock,
+  Euro,
+  Banknote,
+  AlertCircle,
+  Package } from
+'lucide-react';
 import { toast } from 'sonner';
+import { validateVATNumber } from '@/utils/vatValidation';
+import { NumberSequenceService, type NumberSequence } from '@/services/numberSequenceService';
+import { CustomerService } from '@/services/customerService';
+import NewCategoryModal from '@/components/finance/NewCategoryModal';
 import { db } from '@/firebase/clients';
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { Customer } from '@/components/finance/AddCustomerModal';
+import { doc, getDoc } from 'firebase/firestore';
 
-interface EditContactPageProps {
-  params: Promise<{
-    uid: string;
-    contactId: string;
-  }>;
+export interface ContactPerson {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  position?: string;
+  department?: string;
+  isPrimary: boolean;
 }
 
-export default function EditContactPage({ params }: EditContactPageProps) {
-  const router = useRouter();
-  const resolvedParams = use(params);
-  const { uid: companyId, contactId } = resolvedParams;
+interface Address {
+  id: string;
+  type: string;
+  street: string;
+  postalCode: string;
+  city: string;
+  country: string;
+}
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [customer, setCustomer] = useState<Customer | null>(null);
+interface SkontoProduct {
+  id: string;
+  productName: string;
+  sku?: string;
+  discount: number; // Spezifischer Skonto für dieses Produkt (%)
+  days: number; // Skontofrist für dieses Produkt (Tage)
+  inventoryId?: string; // Verknüpfung zur Firmen-Inventory (optional)
+  customerId: string; // Kundenzuordnung für Subcollection
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Erweiterte Form-Daten Struktur basierend auf der Create-Page
+interface ExtendedFormData {
+  // Allgemeine Felder
+  name: string;
+  email: string;
+  phone: string;
+  // Person-spezifische Felder
+  firstName: string;
+  lastName: string;
+  title: string; // Herr, Frau, Dr., etc.
+  academicTitle: string; // MBA, M.Sc., etc.
+  nameSuffix: string; // jun., sen., etc.
+  position: string;
+  // Organisation-spezifische Felder
+  companyName: string;
+  organizationType: string; // Kunde, Lieferant, Partner, Interessent
+  customerNumber: string; // Automatisch generiert
+  debitorNumber: string;
+  creditorNumber: string;
+  street: string;
+  city: string;
+  postalCode: string;
+  country: string;
+  taxNumber: string;
+  vatId: string;
+  vatValidated: boolean;
+  website: string;
+  notes: string;
+  paymentTerms: string;
+  discount: number;
+  currency: string;
+  language: string;
+  companySize: string;
+  industry: string;
+  creditLimit: number;
+  isSupplier: boolean;
+  // Zahlungsinformationen
+  bankName: string;
+  iban: string;
+  bic: string;
+  accountHolder: string;
+  preferredPaymentMethod: string;
+  earlyPaymentDiscount: number;
+  earlyPaymentDays: number;
+  defaultInvoiceDueDate: number;
+  reminderFee: number;
+  lateFee: number;
+  automaticReminders: boolean;
+  // E-Rechnung
+  eInvoiceEnabled: boolean;
+  customerReference: string;
+  leitwegId: string;
+  // Tags
+  tags: string[];
+  // Adressen
+  addresses: Address[];
+  // Skonto-Produkte
+  skontoProducts: SkontoProduct[];
+}
+
+type CustomerType = 'person' | 'organisation';
+type SubTabType = 'overview' | 'contacts' | 'payment' | 'skonto';
+
+// Tab Definitionen
+interface TabDefinition {
+  id: SubTabType;
+  label: string;
+  icon: any;
+  count?: number | null;
+}
+
+export interface NewCustomerModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  defaultValues?: Partial<{
+    name: string;
+    firstName?: string;
+    lastName?: string;
+  }>;
+  contactType?: 'organisation' | 'person';
+  saving?: boolean;
+  onSave?: (values: Record<string, unknown>) => Promise<void>;
+  persistDirectly?: boolean;
+  companyId: string; // Required für NumberSequenceService
+  onSaved?: (customerId: string) => void;
+}
+
+const createDefaultAddress = (): Address => ({
+  id: Math.random().toString(36).substr(2, 9),
+  type: 'Arbeit',
+  street: '',
+  postalCode: '',
+  city: '',
+  country: 'Deutschland'
+});
+
+const DEFAULT_FORM_DATA: ExtendedFormData = {
+  // Allgemeine Felder
+  name: '',
+  email: '',
+  phone: '',
+  // Person-spezifische Felder
+  firstName: '',
+  lastName: '',
+  title: '', // Herr, Frau, Dr., etc.
+  academicTitle: '', // MBA, M.Sc., etc.
+  nameSuffix: '', // jun., sen., etc.
+  position: '',
+  // Organisation-spezifische Felder
+  companyName: '',
+  organizationType: 'Kunde', // Kunde, Lieferant, Partner, Interessent
+  customerNumber: 'KD-001', // Automatisch generiert
+  debitorNumber: '',
+  creditorNumber: '',
+  street: '',
+  city: '',
+  postalCode: '',
+  country: 'Deutschland',
+  taxNumber: '',
+  vatId: '',
+  vatValidated: false,
+  website: '',
+  notes: '',
+  paymentTerms: '30 Tage netto',
+  discount: 0,
+  currency: 'EUR',
+  language: 'de',
+  companySize: '',
+  industry: '',
+  creditLimit: 0,
+  isSupplier: false,
+  // Zahlungsinformationen
+  bankName: '',
+  iban: '',
+  bic: '',
+  accountHolder: '',
+  preferredPaymentMethod: 'Überweisung',
+  earlyPaymentDiscount: 0,
+  earlyPaymentDays: 14,
+  defaultInvoiceDueDate: 30,
+  reminderFee: 5.00,
+  lateFee: 0,
+  automaticReminders: true,
+  // E-Rechnung
+  eInvoiceEnabled: true,
+  customerReference: '00',
+  leitwegId: '',
+  // Tags
+  tags: [],
+  // Adressen
+  addresses: [createDefaultAddress()],
+  // Skonto-Produkte
+  skontoProducts: []
+};
+
+const COUNTRY_OPTIONS = [
+'Deutschland',
+'Österreich',
+'Schweiz',
+'Niederlande',
+'Belgien',
+'Frankreich',
+'Italien',
+'Spanien',
+'Polen',
+'Tschechien',
+'Ungarn',
+'Slowenien',
+'Kroatien',
+'USA',
+'Andere'];
+
+
+// Tooltip-Komponente in Taskilo-Design mit intelligenter Positionierung
+const TooltipIcon = ({ text, icon: Icon = Info }: { text: string; icon?: any }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [position, setPosition] = useState<'top' | 'bottom' | 'left' | 'right'>('top');
+  const buttonRef = useRef<HTMLButtonElement>(null);
   
-  // Form-Daten
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    street: '',
-    city: '',
-    postalCode: '',
-    country: 'Deutschland',
-    taxNumber: '',
-    vatId: '',
-    website: '',
-    notes: '',
-  });
+  const handleMouseEnter = () => {
+    setShowTooltip(true);
+    
+    // Intelligente Positionierung basierend auf Viewport
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // Bestimme beste Position
+      if (rect.right + 256 > viewportWidth) {
+        setPosition('left');
+      } else if (rect.left - 256 < 0) {
+        setPosition('right');
+      } else if (rect.top - 100 < 0) {
+        setPosition('bottom');
+      } else {
+        setPosition('top');
+      }
+    }
+  };
+  
+  const getTooltipClasses = () => {
+    const baseClasses = "absolute z-50 w-64 p-3 text-sm bg-gray-900 text-white rounded-lg shadow-xl border border-gray-700";
+    
+    switch (position) {
+      case 'top':
+        return `${baseClasses} bottom-full left-1/2 transform -translate-x-1/2 mb-2`;
+      case 'bottom':
+        return `${baseClasses} top-full left-1/2 transform -translate-x-1/2 mt-2`;
+      case 'left':
+        return `${baseClasses} right-full top-1/2 transform -translate-y-1/2 mr-2`;
+      case 'right':
+        return `${baseClasses} left-full top-1/2 transform -translate-y-1/2 ml-2`;
+      default:
+        return `${baseClasses} bottom-full left-1/2 transform -translate-x-1/2 mb-2`;
+    }
+  };
+  
+  const getArrowClasses = () => {
+    const baseArrow = "absolute w-2 h-2 bg-gray-900 transform rotate-45";
+    
+    switch (position) {
+      case 'top':
+        return `${baseArrow} top-full left-1/2 -translate-x-1/2 -mt-1`;
+      case 'bottom':
+        return `${baseArrow} bottom-full left-1/2 -translate-x-1/2 -mb-1`;
+      case 'left':
+        return `${baseArrow} left-full top-1/2 -translate-y-1/2 -ml-1`;
+      case 'right':
+        return `${baseArrow} right-full top-1/2 -translate-y-1/2 -mr-1`;
+      default:
+        return `${baseArrow} top-full left-1/2 -translate-x-1/2 -mt-1`;
+    }
+  };
+  
+  return (
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        className="text-[#14ad9f] hover:text-[#129488] transition-colors p-1 rounded-full hover:bg-[#14ad9f]/10"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={() => setShowTooltip(false)}
+      >
+        <Icon className="h-4 w-4" />
+      </button>
+      {showTooltip && (
+        <div className={getTooltipClasses()}>
+          <div className="relative">
+            {text}
+            <div className={getArrowClasses()}></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
-  // Lade Kundendaten
+export default function EditContactPage() {
+  const params = useParams();
+  const companyId = params?.uid as string;
+  const contactId = params?.contactId as string;
+  
+  // Fixed values for page mode - EDIT MODE
+  const open = true;
+  const onOpenChange = () => {};
+  const defaultValues: Partial<{ name: string; firstName?: string; lastName?: string; }> | undefined = undefined;
+  const contactType: 'organisation' | 'person' = 'organisation';
+  const saving = false;
+  const onSave = undefined;
+  const persistDirectly = true;
+  const onSaved = undefined;
+
+  // State Management - MUSS vor jedem bedingten Return stehen
+  const [loading, setLoading] = useState(true); // Start with loading=true for edit mode
+  const [customerType, setCustomerType] = useState<CustomerType>('organisation');
+  const [activeSubTab, setActiveSubTab] = useState<SubTabType>('overview');
+  const [formData, setFormData] = useState<ExtendedFormData>(DEFAULT_FORM_DATA);
+  const [contacts, setContacts] = useState<ContactPerson[]>([]);
+  const [nextCustomerNumber, setNextCustomerNumber] = useState('KD-001');
+  const [currentNumberSequence, setCurrentNumberSequence] = useState<NumberSequence | null>(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [customCategories, setCustomCategories] = useState<
+    Array<{id: string;name: string;categoryType: string;}>>(
+    []);
+  const [referenceFieldType, setReferenceFieldType] = useState<'customerReference' | 'leitwegId'>('customerReference');
+  const [newTag, setNewTag] = useState('');
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [isEditMode] = useState(true); // NEW: Track edit mode
+  const [availableInventory, setAvailableInventory] = useState<Array<{id: string; name: string; sku: string}>>([]);
+
+  // Refs for outside click detection
+  const typeDropdownRef = useRef<HTMLDivElement>(null);
+  const [defaultValuesApplied, setDefaultValuesApplied] = useState(false);
+
+  if (!companyId || !contactId) {
+    return <div className="p-6">Lädt...</div>;
+  }
+
+  // Tab Definitionen - nur relevante Tabs für neue Kunden
+  const tabs: TabDefinition[] = [
+  { id: 'overview', label: 'Grunddaten', icon: FileText, count: null },
+  { id: 'contacts', label: 'Kontakte', icon: Users, count: contacts.length },
+  { id: 'payment', label: 'Zahlungsinformationen', icon: CreditCard, count: null },
+  { id: 'skonto', label: 'Skonto & Konditionen', icon: Calculator, count: null }];
+
+  // Load existing customer data
   useEffect(() => {
     const loadCustomer = async () => {
       try {
         setLoading(true);
         const customerRef = doc(db, 'companies', companyId, 'customers', contactId);
         const customerSnap = await getDoc(customerRef);
-
-        if (!customerSnap.exists()) {
+        
+        if (customerSnap.exists()) {
+          const data = customerSnap.data();
+          
+          // Determine customer type - check if it's a person or organisation
+          // If firstName and lastName exist, it's a person, otherwise organisation
+          const hasPersonData = data.firstName || data.lastName;
+          const hasOrgData = data.companyName || (!hasPersonData && data.name);
+          const type = hasOrgData ? 'organisation' : 'person';
+          setCustomerType(type);
+          
+          // For organisations, the name field might contain the company name
+          const companyNameValue = data.companyName || (type === 'organisation' ? data.name : '');
+          
+          // Map ALL fields from Firestore to formData
+          setFormData({
+            // Basic Info
+            name: data.name || '',
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            title: data.title || '',
+            academicTitle: data.academicTitle || '',
+            nameSuffix: data.nameSuffix || '',
+            position: data.position || '',
+            companyName: companyNameValue,
+            organizationType: data.organizationType || 'Kunde',
+            customerNumber: data.customerNumber || '',
+            debitorNumber: data.debitorNumber || '',
+            creditorNumber: data.creditorNumber || '',
+            
+            // Contact Info
+            email: data.email || '',
+            phone: data.phone || '',
+            website: data.website || '',
+            
+            // Address (both new structured and legacy)
+            street: data.street || '',
+            city: data.city || '',
+            postalCode: data.postalCode || '',
+            country: data.country || 'DE',
+            
+            // Additional metadata
+            notes: data.notes || '',
+            tags: data.tags || [],
+            
+            // Tax Information
+            taxNumber: data.taxNumber || '',
+            vatId: data.vatId || '',
+            vatValidated: data.vatValidated || false,
+            
+            // Payment Information
+            paymentTerms: data.paymentTerms || '30',
+            discount: data.discount || 0,
+            currency: data.currency || 'EUR',
+            creditLimit: data.creditLimit || 0,
+            language: data.language || 'Deutsch',
+            companySize: data.companySize || '',
+            industry: data.industry || '',
+            
+            // Banking Information
+            bankName: data.bankName || '',
+            iban: data.iban || '',
+            bic: data.bic || '',
+            accountHolder: data.accountHolder || '',
+            preferredPaymentMethod: data.preferredPaymentMethod || '',
+            
+            // Skonto & Reminder Information
+            earlyPaymentDiscount: data.earlyPaymentDiscount || 0,
+            earlyPaymentDays: data.earlyPaymentDays || 0,
+            defaultInvoiceDueDate: data.defaultInvoiceDueDate || 30,
+            reminderFee: data.reminderFee || 0,
+            lateFee: data.lateFee || 0,
+            automaticReminders: data.automaticReminders || false,
+            
+            // E-Invoice Information
+            eInvoiceEnabled: data.eInvoiceEnabled || false,
+            customerReference: data.customerReference || '',
+            leitwegId: data.leitwegId || '',
+            
+            // Flags
+            isSupplier: data.isSupplier || false,
+            
+            // Collections
+            addresses: data.addresses || [],
+            
+            // Skonto-Produkte
+            skontoProducts: data.skontoProducts || []
+          });
+          
+          // Set contacts array
+          setContacts(data.contactPersons || []);
+        } else {
           toast.error('Kontakt nicht gefunden');
-          router.push(`/dashboard/company/${companyId}/finance/contacts`);
-          return;
         }
-
-        const customerData = { id: customerSnap.id, ...customerSnap.data() } as Customer;
-        setCustomer(customerData);
-
-        // Fülle Formular mit bestehenden Daten
-        setFormData({
-          name: customerData.name || '',
-          email: customerData.email || '',
-          phone: customerData.phone || '',
-          street: customerData.street || '',
-          city: customerData.city || '',
-          postalCode: customerData.postalCode || '',
-          country: customerData.country || 'Deutschland',
-          taxNumber: customerData.taxNumber || '',
-          vatId: customerData.vatId || '',
-          website: (customerData as any).website || '',
-          notes: (customerData as any).notes || '',
-        });
       } catch (error) {
         console.error('Fehler beim Laden des Kontakts:', error);
         toast.error('Fehler beim Laden des Kontakts');
-        router.push(`/dashboard/company/${companyId}/finance/contacts`);
       } finally {
         setLoading(false);
       }
     };
+    
+    if (companyId && contactId) {
+      loadCustomer();
+    }
+  }, [companyId, contactId]);
 
-    loadCustomer();
-  }, [companyId, contactId, router]);
+  // Generate next customer number using NumberSequenceService
+  const generateNextCustomerNumber = async () => {
+    try {
+      if (!companyId) return;
 
-  // Handle Input Change
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+
+
+      // Synchronisation läuft im Hintergrund - Berechtigungsfehler sind normal in Development
+      Promise.all([
+      NumberSequenceService.syncSequenceWithRealData(companyId, 'Kunde'),
+      NumberSequenceService.syncSequenceWithRealData(companyId, 'Lieferant'),
+      NumberSequenceService.syncSequenceWithRealData(companyId, 'Partner'),
+      NumberSequenceService.syncSequenceWithRealData(companyId, 'Interessenten')]
+      ).catch(() => {
+
+        // Stille Behandlung - Berechtigungsfehler sind in Development normal
+      });
+      // Versuche bestehende Sequenzen zu laden
+      const sequences = await NumberSequenceService.getNumberSequences(companyId);
+      const customerSequence = sequences.find((seq) => seq.type === 'Kunde');
+
+      if (customerSequence && customerSequence.nextNumber) {
+        const previewNumber = NumberSequenceService.formatNumber(customerSequence.nextNumber, customerSequence.format);
+        setNextCustomerNumber(previewNumber);
+        handleInputChange('customerNumber', previewNumber);
+
+      } else {
+        // Intelligenter Fallback basierend auf aktueller Zeit
+        const now = new Date();
+        const timeId = `${now.getFullYear().toString().slice(-2)}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`.slice(-6);
+        const fallbackNumber = `KD-${timeId}`;
+
+        setNextCustomerNumber(fallbackNumber);
+        handleInputChange('customerNumber', fallbackNumber);
+
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Generieren der Kundennummer:', error);
+
+      // Ultimativer Fallback: Timestamp-basiert  
+      const timestamp = Date.now();
+      const shortId = timestamp.toString().slice(-6);
+      const emergencyNumber = `KD-${shortId}`;
+
+      setNextCustomerNumber(emergencyNumber);
+      handleInputChange('customerNumber', emergencyNumber);
+
+      console.warn(`⚠️ Emergency Fallback Kundennummer: ${emergencyNumber}`);
+    }
   };
 
-  // Speichern
-  const handleSave = async () => {
-    // Validierung
-    if (!formData.name.trim()) {
-      toast.error('Bitte geben Sie einen Namen ein');
-      return;
+  // 🔥 CRITICAL FIX: Separate category loading from tab changes
+  useEffect(() => {
+    if (open) {
+      loadCategories();
+      loadInventory(); // Lade auch Firmen-Inventory für Produktauswahl
+      // Don't generate new number in edit mode - use existing customerNumber from loaded data
+      if (!isEditMode) {
+        generateNextCustomerNumber();
+      }
+      // Synchronisiere Produkt-Nummernkreis mit existierendem Inventory
+      syncProductNumberSequence();
     }
+  }, [open, isEditMode]);
+
+  // Synchronisiere Produkt-Nummernkreis mit existierenden Produkten
+  const syncProductNumberSequence = async () => {
+    try {
+      await NumberSequenceService.syncSequenceWithRealData(companyId, 'Produkt');
+    } catch (error) {
+      console.error('Fehler beim Synchronisieren des Produkt-Nummernkreises:', error);
+      // Stille Behandlung - wird beim nächsten Seitenladen erneut versucht
+    }
+  };
+
+  // DefaultValues werden in einer Page nicht benötigt
+  // useEffect für defaultValues entfernt
+
+  // Input Handler
+  const handleInputChange = (field: string, value: string | number | boolean | string[]) => {
+    // Debug-Logging für organizationType Änderungen
+    if (field === 'organizationType') {
+
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Update isSupplier and customer number when organizationType changes
+  useEffect(() => {
+    const isSupplier = formData.organizationType === 'Lieferant';
+
+    setFormData((prev) => ({
+      ...prev,
+      isSupplier: isSupplier
+    }));
+
+    // Generate appropriate number sequence based on organizationType
+    const currentPrefix = formData.customerNumber.split('-')[0];
+    const expectedPrefix = {
+      'Kunde': 'KD',
+      'Lieferant': 'LF',
+      'Partner': 'PA',
+      'Interessenten': 'IN'
+    }[formData.organizationType];
+
+    if (expectedPrefix && currentPrefix !== expectedPrefix) {
+      generateNumberForType(formData.organizationType);
+    }
+  }, [formData.organizationType]);
+
+  // Generate number for any organization type
+  const generateNumberForType = async (type: string) => {
+    try {
+      if (!companyId) {
+        console.error('❌ Keine gültige Company-ID verfügbar');
+        return;
+      }
+
+      const fallbackNumbers = {
+        'Kunde': 'KD-001',
+        'Lieferant': 'LF-001',
+        'Partner': 'PA-001',
+        'Interessenten': 'IN-001'
+      };
+
+      const sequences = await NumberSequenceService.getNumberSequences(companyId);
+      const sequence = sequences.find((seq) => seq.type === type);
+
+      if (!sequence) {
+        const fallbackNumber = fallbackNumbers[type as keyof typeof fallbackNumbers] || `${type}-001`;
+        setFormData((prev) => ({
+          ...prev,
+          customerNumber: fallbackNumber
+        }));
+        toast.info(`${type}-Nummernkreis wird beim Speichern automatisch erstellt`);
+        return;
+      }
+
+      const result = await NumberSequenceService.getNextNumberForType(companyId, type);
+      setFormData((prev) => ({
+        ...prev,
+        customerNumber: result.formattedNumber
+      }));
+    } catch (error) {
+      console.error(`❌ Fehler beim Generieren der ${type}-Nummer:`, error);
+      toast.error(`Fehler beim Generieren der ${type}-Nummer`);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const { getCategories } = await import('@/utils/api/companyApi');
+      const response = await getCategories();
+      if (response.success && response.categories) {
+        setCustomCategories(response.categories);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Kategorien:', error);
+    }
+  };
+
+  // Load Firmen-Inventory für Produktauswahl
+  const loadInventory = async () => {
+    try {
+      const { collection, getDocs } = await import('firebase/firestore');
+      const inventoryRef = collection(db, 'companies', companyId, 'inventory');
+      const inventorySnap = await getDocs(inventoryRef);
+      
+      const items = inventorySnap.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name || '',
+        sku: doc.data().sku || ''
+      }));
+      
+      setAvailableInventory(items);
+    } catch (error) {
+      console.error('Fehler beim Laden der Inventory:', error);
+    }
+  };
+
+  // VAT Validation
+  const validateVAT = async () => {
+    if (!formData.vatId.trim()) return;
 
     try {
-      setSaving(true);
+      const result = await validateVATNumber(formData.vatId);
+      // Extract boolean from result if it's an object, otherwise use as boolean
+      const isValid = typeof result === 'boolean' ? result : result?.isValid || false;
 
-      const customerRef = doc(db, 'companies', companyId, 'customers', contactId);
-      await updateDoc(customerRef, {
-        ...formData,
-        updatedAt: serverTimestamp(),
-      });
+      setFormData((prev) => ({
+        ...prev,
+        vatValidated: isValid
+      }));
 
-      toast.success('Kontakt erfolgreich aktualisiert');
-      router.push(`/dashboard/company/${companyId}/finance/contacts/${contactId}`);
+      if (isValid) {
+        toast.success('USt-IdNr. erfolgreich validiert');
+      } else {
+        toast.error('USt-IdNr. konnte nicht validiert werden');
+      }
     } catch (error) {
-      console.error('Fehler beim Speichern:', error);
-      toast.error('Fehler beim Speichern des Kontakts');
-    } finally {
-      setSaving(false);
+      console.error('VAT validation error:', error);
+      toast.error('Fehler bei der USt-IdNr. Validierung');
+      // Set to false on error
+      setFormData((prev) => ({
+        ...prev,
+        vatValidated: false
+      }));
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-[#14ad9f]" />
-      </div>
-    );
-  }
+  // Tag Management
+  const addTag = () => {
+    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
+      setFormData((prev) => ({
+        ...prev,
+        tags: [...prev.tags, newTag.trim()]
+      }));
+      setNewTag('');
+    }
+  };
 
-  if (!customer) {
-    return null;
-  }
+  const removeTag = (tagToRemove: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((tag) => tag !== tagToRemove)
+    }));
+  };
+
+  // Contact Management
+  const addContact = () => {
+    const newContact: ContactPerson = {
+      id: Math.random().toString(36).substr(2, 9),
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      position: '',
+      department: '',
+      isPrimary: contacts.length === 0
+    };
+    setContacts((prev) => [...prev, newContact]);
+  };
+
+  const updateContact = (contactId: string, field: keyof ContactPerson, value: string | boolean) => {
+    setContacts((prev) => prev.map((contact) =>
+    contact.id === contactId ? { ...contact, [field]: value } : contact
+    ));
+  };
+
+  const removeContact = (contactId: string) => {
+    setContacts((prev) => {
+      const updated = prev.filter((contact) => contact.id !== contactId);
+      // If we removed the primary contact, make the first remaining contact primary
+      if (updated.length > 0 && !updated.some((c) => c.isPrimary)) {
+        updated[0].isPrimary = true;
+      }
+      return updated;
+    });
+  };
+
+  const addAddress = () => {
+    const newAddress = createDefaultAddress();
+    setFormData((prev) => ({
+      ...prev,
+      addresses: [...prev.addresses, newAddress]
+    }));
+  };
+
+  const updateAddress = (addressId: string, field: keyof Address, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      addresses: prev.addresses.map((addr) =>
+      addr.id === addressId ? { ...addr, [field]: value } : addr
+      )
+    }));
+  };
+
+  const removeAddress = (addressId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      addresses: prev.addresses.filter((addr) => addr.id !== addressId)
+    }));
+  };
+
+  // Validation
+  const isValid = () => {
+    if (customerType === 'person') {
+      return formData.firstName.trim() && formData.lastName.trim() && formData.customerNumber.trim();
+    } else {
+      return formData.companyName.trim() && formData.customerNumber.trim();
+    }
+  };
+
+  // Outside click handler for dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target as Node)) {
+        setShowTypeDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      {/* Header */}
+    <div className="max-w-6xl w-full p-6 bg-white min-h-screen">
       <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => router.push(`/dashboard/company/${companyId}/finance/contacts/${contactId}`)}
-          className="mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Zurück
-        </Button>
-        <h1 className="text-2xl font-bold text-gray-900">Kontakt bearbeiten</h1>
-        <p className="text-sm text-gray-600">
-          Bearbeiten Sie die Kontaktinformationen für {customer.name}
+        <h1 className="text-xl font-semibold text-gray-900">
+          {customerType === 'person' ? 'Person bearbeiten' : 'Organisation bearbeiten'}
+        </h1>
+        <p className="text-gray-600 mt-1">
+          Bearbeiten Sie den {customerType === 'person' ? 'Personenkontakt' : 'Organisationskontakt'}
         </p>
       </div>
 
-      {/* Formular */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
-        {/* Allgemeine Informationen */}
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Allgemeine Informationen</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Firmenname oder Name"
-              />
-            </div>
-            <div>
-              <Label htmlFor="email">E-Mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="kontakt@beispiel.de"
-              />
-            </div>
-            <div>
-              <Label htmlFor="phone">Telefon</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                placeholder="+49 123 456789"
-              />
-            </div>
-            <div>
-              <Label htmlFor="website">Website</Label>
-              <Input
-                id="website"
-                value={formData.website}
-                onChange={(e) => handleInputChange('website', e.target.value)}
-                placeholder="https://www.beispiel.de"
-              />
-            </div>
+        {/* Customer Type Toggle */}
+        <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+          <Label className="text-sm font-medium text-gray-700">Typ:</Label>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setCustomerType('person')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              customerType === 'person' ?
+              'bg-[#14ad9f] text-white shadow-sm' :
+              'bg-white text-gray-600 hover:text-gray-800 border border-gray-200'}`
+              }>
+
+              <User className="h-4 w-4" />
+              Person
+            </button>
+            <button
+              type="button"
+              onClick={() => setCustomerType('organisation')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              customerType === 'organisation' ?
+              'bg-[#14ad9f] text-white shadow-sm' :
+              'bg-white text-gray-600 hover:text-gray-800 border border-gray-200'}`
+              }>
+
+              <Building2 className="h-4 w-4" />
+              Organisation
+            </button>
           </div>
         </div>
 
-        {/* Adresse */}
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Adresse</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <Label htmlFor="street">Straße und Hausnummer</Label>
-              <Input
-                id="street"
-                value={formData.street}
-                onChange={(e) => handleInputChange('street', e.target.value)}
-                placeholder="Musterstraße 123"
-              />
+        {/* Sub-Tab Navigation */}
+        <div className="flex border-b border-gray-200">
+          {tabs.map((tab) => {
+            const IconComponent = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSubTab(tab.id)}
+                className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+                activeSubTab === tab.id ?
+                'border-[#14ad9f] text-[#14ad9f]' :
+                'border-transparent text-gray-500 hover:text-gray-700'}`
+                }>
+
+                <IconComponent className="h-4 w-4" />
+                {tab.label}
+                {typeof tab.count === 'number' && tab.count > 0 &&
+                <span className="ml-1 px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                    {tab.count}
+                  </span>
+                }
+              </button>);
+
+          })}
+        </div>
+
+        <div className="space-y-6 mt-6">
+          {/* Overview Tab - Grunddaten */}
+          {activeSubTab === 'overview' &&
+          <div className="space-y-6">
+              {customerType === 'person' ? (
+            /* Person Form */
+            <div className="space-y-6">
+                  {/* Persönliche Informationen */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Left Column */}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Anrede</Label>
+                          <Select
+                        value={formData.title}
+                        onValueChange={(val) => handleInputChange('title', val)}>
+
+                            <SelectTrigger>
+                              <SelectValue placeholder="Anrede wählen" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Herr">Herr</SelectItem>
+                              <SelectItem value="Frau">Frau</SelectItem>
+                              <SelectItem value="Divers">Divers</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Akademischer Titel</Label>
+                          <Input
+                        value={formData.academicTitle}
+                        onChange={(e) => handleInputChange('academicTitle', e.target.value)}
+                        placeholder="Dr., Prof., etc." />
+
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Vorname *</Label>
+                          <Input
+                        value={formData.firstName}
+                        onChange={(e) => handleInputChange('firstName', e.target.value)}
+                        placeholder="Max" />
+
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Nachname *</Label>
+                          <Input
+                        value={formData.lastName}
+                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                        placeholder="Mustermann" />
+
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Namenszusatz</Label>
+                        <Input
+                      value={formData.nameSuffix}
+                      onChange={(e) => handleInputChange('nameSuffix', e.target.value)}
+                      placeholder="jun., sen., MBA" />
+
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Position</Label>
+                        <Input
+                      value={formData.position}
+                      onChange={(e) => handleInputChange('position', e.target.value)}
+                      placeholder="Geschäftsführer" />
+
+                      </div>
+                    </div>
+
+                    {/* Right Column */}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Label>E-Mail</Label>
+                            <TooltipIcon 
+                              text="Haupt-E-Mail-Adresse für Rechnungen und Kommunikation. Diese wird auch für Rechnungsversand verwendet."
+                              icon={Mail}
+                            />
+                          </div>
+                          <Input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        placeholder="max@beispiel.de" />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Label>Telefon</Label>
+                            <TooltipIcon 
+                              text="Haupttelefonnummer für Rückfragen und Support. Im Format +49 123 456789 eingeben."
+                              icon={Phone}
+                            />
+                          </div>
+                          <Input
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        placeholder="+49 123 456789" />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label>Website</Label>
+                          <TooltipIcon 
+                            text="Offizielle Website des Unternehmens. Wird in Rechnungen und Dokumenten angezeigt."
+                            icon={Globe}
+                          />
+                        </div>
+                        <Input
+                      type="url"
+                      value={formData.website}
+                      onChange={(e) => handleInputChange('website', e.target.value)}
+                      placeholder="https://www.beispiel.de" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notizen - außerhalb des Grids für volle Breite */}
+                  <div className="space-y-2">
+                    <Label>Notizen</Label>
+                    <Textarea
+                      value={formData.notes}
+                      onChange={(e) => handleInputChange('notes', e.target.value)}
+                      placeholder="Weitere Informationen zur Person"
+                      rows={3} />
+                  </div>
+                </div>) : (
+
+            /* Organisation Form */
+            <div className="space-y-6">
+                  {/* Firmeninformationen */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Left Column */}
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Firmenname *</Label>
+                        <Input
+                      value={formData.companyName}
+                      onChange={(e) => handleInputChange('companyName', e.target.value)}
+                      placeholder="Musterfirma GmbH" />
+
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Firmengröße</Label>
+                          <Select
+                        value={formData.companySize}
+                        onValueChange={(val) => handleInputChange('companySize', val)}>
+
+                            <SelectTrigger>
+                              <SelectValue placeholder="Größe wählen" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Klein (1-10)">Klein (1-10 MA)</SelectItem>
+                              <SelectItem value="Mittel (11-50)">Mittel (11-50 MA)</SelectItem>
+                              <SelectItem value="Groß (51-250)">Groß (51-250 MA)</SelectItem>
+                              <SelectItem value="Konzern (250+)">Konzern (250+ MA)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Branche</Label>
+                          <Input
+                        value={formData.industry}
+                        onChange={(e) => handleInputChange('industry', e.target.value)}
+                        placeholder="IT, Handel, etc." />
+
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Website</Label>
+                        <Input
+                      type="url"
+                      value={formData.website}
+                      onChange={(e) => handleInputChange('website', e.target.value)}
+                      placeholder="https://www.musterfirma.de" />
+
+                      </div>
+                    </div>
+
+                    {/* Right Column */}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>E-Mail</Label>
+                          <Input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        placeholder="info@musterfirma.de" />
+
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Telefon</Label>
+                          <Input
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        placeholder="+49 123 456789" />
+
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Kreditlimit (€)</Label>
+                        <Input
+                      type="number"
+                      value={formData.creditLimit}
+                      onChange={(e) => handleInputChange('creditLimit', Number(e.target.value))}
+                      placeholder="10000"
+                      min="0" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Kommunikationssprache</Label>
+                        <Select
+                        value={formData.language}
+                        onValueChange={(val) => handleInputChange('language', val)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sprache wählen" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="de">Deutsch</SelectItem>
+                            <SelectItem value="en">English</SelectItem>
+                            <SelectItem value="fr">Français</SelectItem>
+                            <SelectItem value="es">Español</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notizen - außerhalb des Grids für volle Breite */}
+                  <div className="space-y-2">
+                    <Label>Notizen</Label>
+                    <Textarea
+                      value={formData.notes}
+                      onChange={(e) => handleInputChange('notes', e.target.value)}
+                      placeholder="Weitere Informationen zur Organisation"
+                      rows={3} />
+                  </div>
+                </div>)
+            }
+
+              {/* Gemeinsame Felder */}
+              <div className="border-t pt-6 space-y-6">
+                {/* Nummern und Typ */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Kundennummer *</Label>
+                        <Input
+                        value={formData.customerNumber}
+                        onChange={(e) => handleInputChange('customerNumber', e.target.value)}
+                        placeholder="KD-001" />
+
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Typ</Label>
+                        <div className="relative" ref={typeDropdownRef}>
+                          <Select
+                          value={formData.organizationType}
+                          onValueChange={(val: string) => {
+
+                            if (val === 'create-category') {
+                              setShowCategoryModal(true);
+                            } else {
+                              handleInputChange('organizationType', val);
+                            }
+                          }}>
+
+                            <SelectTrigger>
+                              <SelectValue placeholder="Typ wählen" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Kunde">Kunde</SelectItem>
+                              <SelectItem value="Lieferant">Lieferant</SelectItem>
+                              <SelectItem value="Partner">Partner</SelectItem>
+                              <SelectItem value="Interessenten">Interessenten</SelectItem>
+                              {customCategories.map((category) =>
+                            <SelectItem key={category.id} value={category.categoryType}>
+                                  {category.name} ({category.categoryType})
+                                </SelectItem>
+                            )}
+                              <SelectItem
+                              value="create-category"
+                              className="text-[#14ad9f] font-medium border-t">
+
+                                + Kategorie erstellen
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Buchhaltungsnummern */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label>Debitorennummer</Label>
+                          <TooltipIcon 
+                            text="Debitorennummer für die Buchhaltung (Kundenkonto). Eindeutige Kennzeichnung des Kunden in der Finanzbuchhaltung."
+                            icon={Calculator}
+                          />
+                        </div>
+                        <Input
+                        value={formData.debitorNumber}
+                        onChange={(e) => handleInputChange('debitorNumber', e.target.value)}
+                        placeholder="DEB001" />
+
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label>Kreditorennummer</Label>
+                          <TooltipIcon 
+                            text="Kreditorennummer für die Buchhaltung (Lieferantenkonto). Wird verwendet wenn dieser Kontakt auch als Lieferant auftritt."
+                            icon={Building2}
+                          />
+                        </div>
+                        <Input
+                        value={formData.creditorNumber}
+                        onChange={(e) => handleInputChange('creditorNumber', e.target.value)}
+                        placeholder="KRE001" />
+
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Adresse */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-gray-900">Adresse</h3>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label>Straße</Label>
+                          <TooltipIcon 
+                            text="Vollständige Adresse mit Straße und Hausnummer. Wird für Rechnungen und Lieferungen verwendet."
+                            icon={MapPin}
+                          />
+                        </div>
+                        <Input
+                        value={formData.street}
+                        onChange={(e) => handleInputChange('street', e.target.value)}
+                        placeholder="Musterstraße 123" />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>PLZ</Label>
+                          <Input
+                          value={formData.postalCode}
+                          onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                          placeholder="12345" />
+
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Stadt</Label>
+                          <Input
+                          value={formData.city}
+                          onChange={(e) => handleInputChange('city', e.target.value)}
+                          placeholder="Musterstadt" />
+
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Land</Label>
+                          <Select
+                          value={formData.country}
+                          onValueChange={(val) => handleInputChange('country', val)}>
+
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-72">
+                              {COUNTRY_OPTIONS.map((country) =>
+                            <SelectItem key={country} value={country}>
+                                  {country}
+                                </SelectItem>
+                            )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Steuerliche Informationen */}
+                <div className="border-t pt-6 space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900">Steuerliche Informationen</h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 min-h-[32px]">
+                        <Label>Steuernummer</Label>
+                        <TooltipIcon 
+                          text="Deutsche Steuernummer des Unternehmens. Format: 12345/67890. Wird für steuerliche Dokumentation benötigt."
+                          icon={Receipt}
+                        />
+                      </div>
+                      <Input
+                      value={formData.taxNumber}
+                      onChange={(e) => handleInputChange('taxNumber', e.target.value)}
+                      placeholder="12345/67890" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 min-h-[32px]">
+                        <Label>USt-IdNr.</Label>
+                        <TooltipIcon 
+                          text="Umsatzsteuer-Identifikationsnummer für EU-Geschäfte. Format: DE123456789. Klicken Sie auf 'Prüfen' zur Validierung."
+                          icon={Calculator}
+                        />
+                        <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={validateVAT}
+                        className="h-6 px-2 text-xs">
+                          Prüfen
+                        </Button>
+                        {formData.vatValidated &&
+                      <Check className="h-4 w-4 text-green-500" />
+                      }
+                      </div>
+                      <Input
+                      value={formData.vatId}
+                      onChange={(e) => handleInputChange('vatId', e.target.value)}
+                      placeholder="DE123456789" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* E-Rechnung */}
+                <div className="border-t pt-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <Label>E-Rechnung Standard</Label>
+                      <TooltipIcon 
+                        text="Aktiviert elektronische Rechnungsstellung für B2B-Kunden gemäß EU-Standard. Unterstützt XRechnung und ZUGFeRD-Format."
+                      />
+                      <button
+                      type="button"
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2 ${
+                      formData.eInvoiceEnabled ? 'bg-[#14ad9f]' : 'bg-gray-200'}`
+                      }
+                      onClick={() => handleInputChange('eInvoiceEnabled', !formData.eInvoiceEnabled)}>
+
+                        <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        formData.eInvoiceEnabled ? 'translate-x-6' : 'translate-x-1'}`
+                        } />
+
+                      </button>
+                    </div>
+                  </div>
+
+                  {formData.eInvoiceEnabled &&
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-3">
+                          <Label className="flex items-center gap-2">
+                            {referenceFieldType === 'customerReference' ? 'Kundenreferenz' : 'Leitweg-ID'}
+                            <TooltipIcon 
+                              text={referenceFieldType === 'customerReference' 
+                                ? "Ihre interne Referenznummer für diesen Kunden (z.B. K-001). Erscheint auf Rechnungen und Angeboten."
+                                : "Leitweg-ID für öffentliche Auftraggeber nach XRechnung Standard (Format: 991-12345-12). Pflichtfeld für B2G-Rechnungen."
+                              }
+                            />
+                          </Label>
+                          <button
+                        type="button"
+                        className="text-sm text-[#14ad9f] hover:text-[#129488] font-medium"
+                        onClick={() =>
+                        setReferenceFieldType(
+                          referenceFieldType === 'customerReference' ? 'leitwegId' : 'customerReference'
+                        )
+                        }>
+
+                            {referenceFieldType === 'customerReference' ?
+                        'Zu Leitweg-ID wechseln' :
+                        'Zu Kundenreferenz wechseln'}
+                          </button>
+                        </div>
+                        <Input
+                      value={
+                      referenceFieldType === 'customerReference' ?
+                      formData.customerReference :
+                      formData.leitwegId
+                      }
+                      onChange={(e) =>
+                      handleInputChange(
+                        referenceFieldType === 'customerReference' ? 'customerReference' : 'leitwegId',
+                        e.target.value
+                      )
+                      }
+                      placeholder={referenceFieldType === 'customerReference' ? '00' : '991-12345-12'} />
+
+                      </div>
+                    </div>
+                }
+                </div>
+
+                {/* Tags */}
+                <div className="border-t pt-6 space-y-4">
+                  <Label>Tags</Label>
+                  <div className="space-y-2">
+                    {formData.tags.length > 0 &&
+                  <div className="flex flex-wrap gap-2">
+                        {formData.tags.map((tag, index) =>
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-[#14ad9f] text-white text-sm rounded-full">
+
+                            {tag}
+                            <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="hover:bg-white/20 rounded-full p-0.5">
+
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                    )}
+                      </div>
+                  }
+                    <div className="flex gap-2">
+                      <Input
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      placeholder="Neues Tag eingeben"
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())} />
+
+                      <Button
+                      type="button"
+                      variant="outline"
+                      onClick={addTag}
+                      disabled={!newTag.trim()}>
+
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="postalCode">Postleitzahl</Label>
-              <Input
-                id="postalCode"
-                value={formData.postalCode}
-                onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                placeholder="12345"
-              />
+          }
+
+          {/* Contacts Tab */}
+          {activeSubTab === 'contacts' &&
+          <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">Kontaktpersonen</h3>
+                <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addContact}
+                className="flex items-center gap-2">
+
+                  <Plus className="w-4 h-4" />
+                  Kontakt hinzufügen
+                </Button>
+              </div>
+
+              {contacts.length === 0 ?
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Noch keine Kontaktpersonen hinzugefügt</p>
+                  <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addContact}
+                className="mt-4">
+
+                    Ersten Kontakt hinzufügen
+                  </Button>
+                </div> :
+
+            <div className="space-y-4">
+                  {contacts.map((contact, index) =>
+              <div key={contact.id} className="border rounded-lg p-4 space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-medium flex items-center gap-2">
+                          Kontakt {index + 1}
+                          {contact.isPrimary &&
+                    <span className="px-2 py-1 bg-[#14ad9f] text-white text-xs rounded-full">
+                              Hauptkontakt
+                            </span>
+                    }
+                        </h4>
+                        <div className="flex items-center gap-2">
+                          {!contact.isPrimary &&
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setContacts((prev) => prev.map((c) => ({ ...c, isPrimary: c.id === contact.id })));
+                      }}>
+
+                              Als Hauptkontakt
+                            </Button>
+                    }
+                          <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeContact(contact.id)}
+                      className="text-red-600 hover:text-red-700">
+
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Vorname</Label>
+                          <Input
+                      value={contact.firstName}
+                      onChange={(e) => updateContact(contact.id, 'firstName', e.target.value)}
+                      placeholder="Max" />
+
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Nachname</Label>
+                          <Input
+                      value={contact.lastName}
+                      onChange={(e) => updateContact(contact.id, 'lastName', e.target.value)}
+                      placeholder="Mustermann" />
+
+                        </div>
+                        <div className="space-y-2">
+                          <Label>E-Mail</Label>
+                          <Input
+                      type="email"
+                      value={contact.email}
+                      onChange={(e) => updateContact(contact.id, 'email', e.target.value)}
+                      placeholder="max@beispiel.de" />
+
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Telefon</Label>
+                          <Input
+                      value={contact.phone || ''}
+                      onChange={(e) => updateContact(contact.id, 'phone', e.target.value)}
+                      placeholder="+49 123 456789" />
+
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Position</Label>
+                          <Input
+                      value={contact.position || ''}
+                      onChange={(e) => updateContact(contact.id, 'position', e.target.value)}
+                      placeholder="Geschäftsführer" />
+
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Abteilung</Label>
+                          <Input
+                      value={contact.department || ''}
+                      onChange={(e) => updateContact(contact.id, 'department', e.target.value)}
+                      placeholder="Einkauf" />
+
+                        </div>
+                      </div>
+                    </div>
+              )}
+                </div>
+            }
             </div>
-            <div>
-              <Label htmlFor="city">Stadt</Label>
-              <Input
-                id="city"
-                value={formData.city}
-                onChange={(e) => handleInputChange('city', e.target.value)}
-                placeholder="Berlin"
-              />
+          }
+
+          {/* Payment Tab */}
+          {activeSubTab === 'payment' &&
+          <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-900">Zahlungsinformationen</h3>
+
+              {/* Zahlungsbedingungen */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label>Zahlungsbedingungen</Label>
+                      <TooltipIcon 
+                        text="Zeitraum bis zur Fälligkeit der Rechnung. Standard ist '30 Tage netto', also Zahlung innerhalb von 30 Tagen ohne Abzug."
+                        icon={Clock}
+                      />
+                    </div>
+                    <Select
+                    value={formData.paymentTerms}
+                    onValueChange={(val) => handleInputChange('paymentTerms', val)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Zahlungsbedingungen wählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Sofort">Sofort</SelectItem>
+                        <SelectItem value="7 Tage netto">7 Tage netto</SelectItem>
+                        <SelectItem value="14 Tage netto">14 Tage netto</SelectItem>
+                        <SelectItem value="30 Tage netto">30 Tage netto</SelectItem>
+                        <SelectItem value="60 Tage netto">60 Tage netto</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label>Bevorzugte Zahlungsart</Label>
+                      <TooltipIcon 
+                        text="Die bevorzugte Art der Zahlung für diesen Kunden. Wird als Standard für neue Rechnungen verwendet."
+                        icon={Banknote}
+                      />
+                    </div>
+                    <Select
+                    value={formData.preferredPaymentMethod}
+                    onValueChange={(val) => handleInputChange('preferredPaymentMethod', val)}>
+
+                      <SelectTrigger>
+                        <SelectValue placeholder="Zahlungsart wählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Überweisung">Überweisung</SelectItem>
+                        <SelectItem value="Lastschrift">Lastschrift</SelectItem>
+                        <SelectItem value="Vorkasse">Vorkasse</SelectItem>
+                        <SelectItem value="Kreditkarte">Kreditkarte</SelectItem>
+                        <SelectItem value="PayPal">PayPal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Zahlungsziel (Tage)</Label>
+                    <Input
+                    type="number"
+                    value={formData.defaultInvoiceDueDate}
+                    onChange={(e) => handleInputChange('defaultInvoiceDueDate', Number(e.target.value))}
+                    placeholder="30"
+                    min="1"
+                    max="365" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Standardrabatt (%)</Label>
+                    <Input
+                    type="number"
+                    value={formData.discount}
+                    onChange={(e) => handleInputChange('discount', Number(e.target.value))}
+                    placeholder="0"
+                    min="0"
+                    max="100"
+                    step="0.1" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Währung</Label>
+                    <Select
+                    value={formData.currency}
+                    onValueChange={(val) => handleInputChange('currency', val)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Währung wählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                        <SelectItem value="GBP">GBP (£)</SelectItem>
+                        <SelectItem value="CHF">CHF</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+
+
+              {/* Bankdaten */}
+              <div className="space-y-4">
+                <h4 className="text-md font-medium text-gray-800">Bankverbindung</h4>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Bank</Label>
+                    <Input
+                    value={formData.bankName}
+                    onChange={(e) => handleInputChange('bankName', e.target.value)}
+                    placeholder="Deutsche Bank" />
+
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Kontoinhaber</Label>
+                    <Input
+                    value={formData.accountHolder}
+                    onChange={(e) => handleInputChange('accountHolder', e.target.value)}
+                    placeholder="Max Mustermann" />
+
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label>IBAN</Label>
+                      <TooltipIcon 
+                        text="Internationale Bankkontonummer für SEPA-Überweisungen. Format: DE89 3704 0044 0532 0130 00"
+                        icon={CreditCard}
+                      />
+                    </div>
+                    <Input
+                    value={formData.iban}
+                    onChange={(e) => handleInputChange('iban', e.target.value)}
+                    placeholder="DE89 3704 0044 0532 0130 00" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label>BIC</Label>
+                      <TooltipIcon 
+                        text="Bank Identifier Code (SWIFT-Code). Beispiel: DEUTDEFF für Deutsche Bank Frankfurt"
+                        icon={Building2}
+                      />
+                    </div>
+                    <Input
+                    value={formData.bic}
+                    onChange={(e) => handleInputChange('bic', e.target.value)}
+                    placeholder="DEUTDEFF" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Mahnwesen */}
+              <div className="space-y-4">
+                <h4 className="text-md font-medium text-gray-800">Mahnwesen</h4>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Mahngebühr (€)</Label>
+                    <Input
+                    type="number"
+                    value={formData.reminderFee}
+                    onChange={(e) => handleInputChange('reminderFee', Number(e.target.value))}
+                    placeholder="5.00"
+                    min="0"
+                    step="0.01" />
+
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Verzugszinsen (% p.a.)</Label>
+                    <Input
+                    type="number"
+                    value={formData.lateFee}
+                    onChange={(e) => handleInputChange('lateFee', Number(e.target.value))}
+                    placeholder="8.0"
+                    min="0"
+                    step="0.1" />
+
+                  </div>
+                  <div className="space-y-2 flex items-center gap-3 col-span-1 lg:col-span-2">
+                    <Label>Automatische Mahnungen</Label>
+                    <button
+                    type="button"
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2 ${
+                    formData.automaticReminders ? 'bg-[#14ad9f]' : 'bg-gray-200'}`
+                    }
+                    onClick={() => handleInputChange('automaticReminders', !formData.automaticReminders)}>
+
+                      <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      formData.automaticReminders ? 'translate-x-6' : 'translate-x-1'}`
+                      } />
+
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="md:col-span-2">
-              <Label htmlFor="country">Land</Label>
-              <Input
-                id="country"
-                value={formData.country}
-                onChange={(e) => handleInputChange('country', e.target.value)}
-                placeholder="Deutschland"
-              />
+          }
+
+          {/* Skonto Tab */}
+          {activeSubTab === 'skonto' &&
+          <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-900">Skonto & Konditionen</h3>
+              
+              {/* Einführungstext */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Calculator className="h-5 w-5 text-[#14ad9f] mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-1">Was ist Skonto?</h4>
+                    <p className="text-sm text-gray-700">
+                      Skonto ist ein Preisnachlass, den Sie Ihren Kunden bei frühzeitiger Zahlung gewähren. 
+                      Dies verbessert Ihre Liquidität und reduziert das Ausfallrisiko. Übliche Konditionen sind "2% bei Zahlung innerhalb 14 Tagen".
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Skonto-Grundeinstellungen */}
+              <div className="space-y-4">
+                <h4 className="text-md font-medium text-gray-800">Skonto-Grundeinstellungen</h4>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label>Skonto (%)</Label>
+                      <TooltipIcon 
+                        text="Preisnachlass in Prozent bei Zahlung innerhalb der Skontofrist. Üblich sind 2-3%. Beispiel: 2% Skonto bedeutet bei 1000€ Rechnung nur 980€ bei frühzeitiger Zahlung."
+                      />
+                    </div>
+                    <Input
+                      type="number"
+                      value={formData.earlyPaymentDiscount}
+                      onChange={(e) => handleInputChange('earlyPaymentDiscount', Number(e.target.value))}
+                      placeholder="2"
+                      min="0"
+                      max="100"
+                      step="0.1" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label>Skontofrist (Tage)</Label>
+                      <TooltipIcon 
+                        text="Zeitraum in Tagen, in dem der Kunde den Skonto nutzen kann. Standard sind 8-14 Tage. Häufige Formulierung: '14 Tage 2% Skonto, 30 Tage netto'."
+                      />
+                    </div>
+                    <Input
+                      type="number"
+                      value={formData.earlyPaymentDays}
+                      onChange={(e) => handleInputChange('earlyPaymentDays', Number(e.target.value))}
+                      placeholder="14"
+                      min="0" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Erweiterte Skonto-Optionen */}
+              <div className="space-y-4">
+                <h4 className="text-md font-medium text-gray-800">Erweiterte Konditionen</h4>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label>Standardrabatt (%)</Label>
+                      <TooltipIcon 
+                        text="Genereller Rabatt für diesen Kunden, unabhängig vom Skonto. Wird automatisch auf alle Rechnungen angewendet."
+                      />
+                    </div>
+                    <Input
+                      type="number"
+                      value={formData.discount}
+                      onChange={(e) => handleInputChange('discount', Number(e.target.value))}
+                      placeholder="0"
+                      min="0"
+                      max="100"
+                      step="0.1" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label>Kreditlimit (€)</Label>
+                      <TooltipIcon 
+                        text="Maximaler Kreditbetrag für diesen Kunden. Bei Überschreitung werden keine weiteren Lieferungen ohne Vorauszahlung getätigt."
+                      />
+                    </div>
+                    <Input
+                      type="number"
+                      value={formData.creditLimit}
+                      onChange={(e) => handleInputChange('creditLimit', Number(e.target.value))}
+                      placeholder="10000"
+                      min="0" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Produktspezifische Skonto-Bedingungen */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-md font-medium text-gray-800">Produktspezifische Skonto-Bedingungen</h4>
+                    <TooltipIcon 
+                      text="Definieren Sie individuelle Skonto-Bedingungen für bestimmte Produkte. Diese überschreiben die Standard-Skonto-Einstellungen für die jeweiligen Artikel."
+                      icon={Package}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        // Generiere fortlaufende Produktnummer über NumberSequenceService
+                        const { NumberSequenceService } = await import('@/services/numberSequenceService');
+                        const productNumber = await NumberSequenceService.getNextNumberForType(companyId, 'Produkt');
+                        
+                        const newProduct: SkontoProduct = {
+                          id: productNumber.formattedNumber, // GoBD-konforme fortlaufende Nummer
+                          productName: '',
+                          sku: productNumber.formattedNumber, // SKU = Produktnummer
+                          discount: formData.earlyPaymentDiscount || 0,
+                          days: formData.earlyPaymentDays || 14,
+                          customerId: contactId, // WICHTIG: Kundenzuordnung
+                          createdAt: new Date()
+                        };
+                        setFormData(prev => ({
+                          ...prev,
+                          skontoProducts: [...prev.skontoProducts, newProduct]
+                        }));
+                      } catch (error) {
+                        console.error('Fehler beim Generieren der Produktnummer:', error);
+                        toast.error('Fehler beim Erstellen des Produkts');
+                      }
+                    }}
+                    className="flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Produkt hinzufügen
+                  </Button>
+                </div>
+
+                {formData.skontoProducts.length === 0 ? (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                    <Package className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-500 text-sm mb-2">Noch keine produktspezifischen Skonto-Bedingungen</p>
+                    <p className="text-gray-400 text-xs mb-4">
+                      Fügen Sie Produkte hinzu, um individuelle Skonto-Konditionen zu definieren
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          // Generiere fortlaufende Produktnummer über NumberSequenceService
+                          const { NumberSequenceService } = await import('@/services/numberSequenceService');
+                          const productNumber = await NumberSequenceService.getNextNumberForType(companyId, 'Produkt');
+                          
+                          const newProduct: SkontoProduct = {
+                            id: productNumber.formattedNumber, // GoBD-konforme fortlaufende Nummer
+                            productName: '',
+                            sku: productNumber.formattedNumber, // SKU = Produktnummer
+                            discount: formData.earlyPaymentDiscount || 0,
+                            days: formData.earlyPaymentDays || 14,
+                            customerId: contactId, // WICHTIG: Kundenzuordnung
+                            createdAt: new Date()
+                          };
+                          setFormData(prev => ({
+                            ...prev,
+                            skontoProducts: [...prev.skontoProducts, newProduct]
+                          }));
+                        } catch (error) {
+                          console.error('Fehler beim Generieren der Produktnummer:', error);
+                          toast.error('Fehler beim Erstellen des Produkts');
+                        }
+                      }}>
+                      Erstes Produkt hinzufügen
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {formData.skontoProducts.map((product, index) => (
+                      <div key={product.id} className="border rounded-lg p-4 space-y-4 bg-white">
+                        <div className="flex justify-between items-center">
+                          <h5 className="font-medium text-gray-900 flex items-center gap-2">
+                            <Package className="h-4 w-4 text-[#14ad9f]" />
+                            Produkt {index + 1}
+                          </h5>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                skontoProducts: prev.skontoProducts.filter(p => p.id !== product.id)
+                              }));
+                            }}
+                            className="text-red-600 hover:text-red-700">
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                          {/* Produktauswahl oder manuelle Eingabe */}
+                          <div className="space-y-2">
+                            <Label>Produkt auswählen oder manuell eingeben</Label>
+                            <div className="flex gap-2">
+                              <div className="flex-1">
+                                <Select
+                                  value={product.inventoryId || 'custom'}
+                                  onValueChange={(val) => {
+                                    if (val === 'custom') {
+                                      // Manueller Modus - leere Felder
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        skontoProducts: prev.skontoProducts.map(p =>
+                                          p.id === product.id 
+                                            ? { ...p, inventoryId: undefined, productName: '', sku: '' } 
+                                            : p
+                                        )
+                                      }));
+                                    } else {
+                                      // Produkt aus Inventory ausgewählt
+                                      const selectedItem = availableInventory.find(item => item.id === val);
+                                      if (selectedItem) {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          skontoProducts: prev.skontoProducts.map(p =>
+                                            p.id === product.id 
+                                              ? { 
+                                                  ...p, 
+                                                  inventoryId: val, 
+                                                  productName: selectedItem.name,
+                                                  sku: selectedItem.sku 
+                                                } 
+                                              : p
+                                          )
+                                        }));
+                                      }
+                                    }
+                                  }}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Aus Inventory wählen oder manuell eingeben" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="custom">
+                                      Manuell eingeben (kundenspezifisch)
+                                    </SelectItem>
+                                    {availableInventory.length > 0 && (
+                                      <>
+                                        <SelectItem value="_separator" disabled className="border-t my-1">
+                                          Aus Firmen-Inventory
+                                        </SelectItem>
+                                        {availableInventory.map((item) => (
+                                          <SelectItem key={item.id} value={item.id}>
+                                            {item.name} {item.sku ? `(${item.sku})` : ''}
+                                          </SelectItem>
+                                        ))}
+                                      </>
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Felder anzeigen basierend auf Auswahl */}
+                          {(!product.inventoryId || product.inventoryId === 'custom') && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Produktname * (kundenspezifisch)</Label>
+                                <Input
+                                  value={product.productName}
+                                  onChange={(e) => {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      skontoProducts: prev.skontoProducts.map(p =>
+                                        p.id === product.id ? { ...p, productName: e.target.value } : p
+                                      )
+                                    }));
+                                  }}
+                                  placeholder="z.B. Premium Widget"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Artikelnummer (SKU)</Label>
+                                <Input
+                                  value={product.sku || ''}
+                                  onChange={(e) => {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      skontoProducts: prev.skontoProducts.map(p =>
+                                        p.id === product.id ? { ...p, sku: e.target.value } : p
+                                      )
+                                    }));
+                                  }}
+                                  placeholder="z.B. SKU-001"
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Info wenn aus Inventory */}
+                          {product.inventoryId && product.inventoryId !== 'custom' && (
+                            <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+                              <Info className="h-3 w-3" />
+                              <span>Verknüpft mit Firmen-Inventory: {product.productName} ({product.sku})</span>
+                            </div>
+                          )}
+
+                          {/* Skonto-Konditionen */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Skonto (%)</Label>
+                              <Input
+                                type="number"
+                                value={product.discount}
+                                onChange={(e) => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    skontoProducts: prev.skontoProducts.map(p =>
+                                      p.id === product.id ? { ...p, discount: Number(e.target.value) } : p
+                                    )
+                                  }));
+                                }}
+                                placeholder="2"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Frist (Tage)</Label>
+                              <Input
+                                type="number"
+                                value={product.days}
+                                onChange={(e) => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    skontoProducts: prev.skontoProducts.map(p =>
+                                      p.id === product.id ? { ...p, days: Number(e.target.value) } : p
+                                    )
+                                  }));
+                                }}
+                                placeholder="14"
+                                min="0"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Produkt-Berechnungsbeispiel */}
+                        <div className="bg-gray-50 rounded p-3 text-xs">
+                          <div className="flex items-center gap-2 text-gray-700">
+                            <Calculator className="h-3 w-3 text-[#14ad9f]" />
+                            <span className="font-medium">Beispiel für dieses Produkt:</span>
+                            <span>Bei 1.000€ Produktwert → {product.discount}% Skonto ({product.days} Tage) = {(1000 - (1000 * product.discount) / 100).toFixed(2)}€</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {formData.skontoProducts.length > 0 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
+                      <div className="text-xs text-blue-800">
+                        <p className="font-medium mb-1">Wichtiger Hinweis</p>
+                        <p>
+                          Diese produktspezifischen Skonto-Bedingungen überschreiben die Standard-Einstellungen. 
+                          Stellen Sie sicher, dass die Konditionen wirtschaftlich sinnvoll sind und mit Ihrem Kunden vereinbart wurden.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Berechnungsbeispiel */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Euro className="h-5 w-5 text-[#14ad9f] mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900 mb-2">Berechnungsbeispiel</h4>
+                    <div className="space-y-1 text-sm text-gray-700">
+                      <div className="flex justify-between">
+                        <span>Rechnungsbetrag:</span>
+                        <span>1.000,00 €</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Skonto ({formData.earlyPaymentDiscount || 2}%):</span>
+                        <span>-{((1000 * (formData.earlyPaymentDiscount || 2)) / 100).toFixed(2)} €</span>
+                      </div>
+                      <hr className="border-gray-300" />
+                      <div className="flex justify-between font-medium">
+                        <span>Zu zahlen bei Skonto:</span>
+                        <span>{(1000 - (1000 * (formData.earlyPaymentDiscount || 2)) / 100).toFixed(2)} €</span>
+                      </div>
+                      <div className="text-xs text-gray-600 mt-2">
+                        Gültig bei Zahlung innerhalb von {formData.earlyPaymentDays || 14} Tagen
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Wirtschaftliche Bedeutung */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-[#14ad9f] mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-1">Wirtschaftliche Bedeutung</h4>
+                    <p className="text-sm text-gray-700">
+                      Ein {formData.earlyPaymentDiscount || 2}% Skonto bei {formData.earlyPaymentDays || 14} Tagen entspricht einem 
+                      Effektivzins von ca. {(((formData.earlyPaymentDiscount || 2) * 360) / (30 - (formData.earlyPaymentDays || 14))).toFixed(1)}% p.a. 
+                      Dies ist meist günstiger als Bankkredite und verbessert Ihre Liquidität erheblich.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
+          }
+
+          <div className="flex justify-end gap-3 pt-6 border-t">
+            <Button variant="outline" onClick={() => window.history.back()}>
+              Abbrechen
+            </Button>
+            <Button
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              disabled={Boolean(saving) || !isValid() || loading}
+              onClick={async () => {
+                try {
+                  setLoading(true);
+
+                  // In edit mode, keep the existing customer number
+                  const finalCustomerNumber = formData.customerNumber;
+
+                  // Generate display name based on customer type
+                  const displayName = customerType === 'person' ?
+                  `${formData.title ? formData.title + ' ' : ''}${formData.firstName} ${formData.lastName}`.trim() :
+                  formData.companyName;
+
+                  // Create legacy address string for compatibility
+                  const legacyAddress = `${formData.street}\n${formData.postalCode} ${formData.city}\n${formData.country}`;
+
+                  // Create comprehensive customer data object - ALL FIELDS MUST BE SAVED
+                  const customerData = {
+                    // Grunddaten
+                    customerNumber: finalCustomerNumber,
+                    name: displayName,
+                    email: formData.email,
+                    phone: formData.phone,
+                    website: formData.website,
+
+                    // Adressdaten
+                    address: legacyAddress, // Legacy-Feld für Kompatibilität
+                    street: formData.street,
+                    city: formData.city,
+                    postalCode: formData.postalCode,
+                    country: formData.country,
+
+                    // Steuerliche Daten
+                    taxNumber: formData.taxNumber,
+                    vatId: formData.vatId,
+                    vatValidated: formData.vatValidated,
+
+                    // Organisation/Person-spezifische Felder
+                    isSupplier: formData.organizationType === 'Lieferant',
+                    isCustomer: formData.organizationType === 'Kunde',
+                    organizationType: formData.organizationType,
+
+                    // Person-spezifische Felder (ALLE)
+                    firstName: customerType === 'person' ? formData.firstName : '',
+                    lastName: customerType === 'person' ? formData.lastName : '',
+                    title: customerType === 'person' ? formData.title : '',
+                    academicTitle: customerType === 'person' ? formData.academicTitle : '',
+                    nameSuffix: customerType === 'person' ? formData.nameSuffix : '',
+                    position: formData.position,
+
+                    // Organisation-spezifische Felder (ALLE)
+                    companyName: customerType === 'organisation' ? formData.companyName : '',
+                    companySize: formData.companySize,
+                    industry: formData.industry,
+
+                    // Buchhaltungskonten
+                    debitorNumber: formData.debitorNumber,
+                    creditorNumber: formData.creditorNumber,
+
+                    // Geschäftsbedingungen & Zahlungsinformationen (ALLE)
+                    paymentTerms: formData.paymentTerms,
+                    discount: formData.discount,
+                    creditLimit: formData.creditLimit,
+                    currency: formData.currency,
+                    language: formData.language,
+
+                    // Bankdaten (ALLE)
+                    bankName: formData.bankName,
+                    iban: formData.iban,
+                    bic: formData.bic,
+                    accountHolder: formData.accountHolder,
+                    preferredPaymentMethod: formData.preferredPaymentMethod,
+
+                    // Zahlungsbedingungen & Skonto (ALLE)
+                    defaultInvoiceDueDate: formData.defaultInvoiceDueDate,
+                    earlyPaymentDiscount: formData.earlyPaymentDiscount,
+                    earlyPaymentDays: formData.earlyPaymentDays,
+
+                    // Mahnwesen (ALLE)
+                    reminderFee: formData.reminderFee,
+                    lateFee: formData.lateFee,
+                    automaticReminders: formData.automaticReminders,
+
+                    // E-Rechnung (ALLE)
+                    eInvoiceEnabled: formData.eInvoiceEnabled,
+                    customerReference: formData.customerReference,
+                    leitwegId: formData.leitwegId,
+
+                    // Metadaten (ALLE)
+                    notes: formData.notes,
+                    tags: formData.tags,
+
+                    // Kontaktpersonen (WICHTIG: muss contactPersons heißen!)
+                    contactPersons: contacts,
+
+                    // Zusätzliche Adressen
+                    addresses: formData.addresses,
+
+                    // Skonto-Produkte (NEU)
+                    skontoProducts: formData.skontoProducts,
+
+                    // Timestamp für Aktualisierung
+                    updatedAt: new Date(),
+                    lastModifiedBy: companyId
+                  };
+
+                  if (persistDirectly && companyId && contactId) {
+                    try {
+                      // Use the correct API import for customer update
+                      const { updateCustomer } = await import('@/utils/api/companyApi');
+                      const response = await updateCustomer(companyId, contactId, customerData);
+
+                      if (response.success) {
+
+                        toast.success(`${displayName} wurde erfolgreich aktualisiert`);
+
+                        // Navigate back to detail page
+                        window.history.back();
+                        return;
+                      } else {
+                        throw new Error('Kunde konnte nicht aktualisiert werden');
+                      }
+                    } catch (error) {
+                      console.error('Fehler beim Speichern des Kunden:', error);
+                      toast.error('Fehler beim Speichern des Kunden');
+                      return;
+                    }
+                  }
+
+                  if (onSave) {
+                    // Custom save logic würde hier stehen
+                    toast.success('Änderungen erfolgreich gespeichert!');
+                  }
+                } catch (error) {
+                  console.error('Fehler beim Aktualisieren des Kunden:', error);
+                  toast.error('Fehler beim Aktualisieren des Kunden');
+                } finally {
+                  setLoading(false);
+                }
+              }}>
+
+              {saving || loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              {loading ? 'Wird aktualisiert...' : 'Änderungen speichern'}
+            </Button>
           </div>
         </div>
 
-        {/* Steuerinformationen */}
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Steuerinformationen</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="taxNumber">Steuernummer</Label>
-              <Input
-                id="taxNumber"
-                value={formData.taxNumber}
-                onChange={(e) => handleInputChange('taxNumber', e.target.value)}
-                placeholder="123/456/78900"
-              />
-            </div>
-            <div>
-              <Label htmlFor="vatId">USt-IdNr.</Label>
-              <Input
-                id="vatId"
-                value={formData.vatId}
-                onChange={(e) => handleInputChange('vatId', e.target.value)}
-                placeholder="DE123456789"
-              />
-            </div>
-          </div>
-        </div>
+      {/* Category Modal */}
+      {companyId &&
+      <NewCategoryModal
+        open={showCategoryModal}
+        onOpenChange={setShowCategoryModal}
+        companyId={companyId}
+        onSaved={(categoryId, categoryData) => {
+          // Setze die neue Kategorie als aktuellen Typ
+          handleInputChange('organizationType', categoryData.categoryType);
 
-        {/* Notizen */}
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Notizen</h3>
-          <Label htmlFor="notes">Interne Notizen</Label>
-          <textarea
-            id="notes"
-            value={formData.notes}
-            onChange={(e) => handleInputChange('notes', e.target.value)}
-            placeholder="Interne Notizen zum Kontakt..."
-            className="w-full min-h-[100px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-          />
-        </div>
+          // Lade Kategorien-Liste neu um die neue Kategorie zu erhalten
+          loadCategories();
+        }} />
 
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-          <Button
-            variant="outline"
-            onClick={() => router.push(`/dashboard/company/${companyId}/finance/contacts/${contactId}`)}
-            disabled={saving}
-          >
-            Abbrechen
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Speichert...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Speichern
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+      }
+    </div>);
+
 }

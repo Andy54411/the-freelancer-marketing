@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CustomerService } from '@/services/customerService';
 import { Customer } from '@/components/finance/AddCustomerModal';
+import { db } from '@/firebase/clients';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -90,11 +91,17 @@ export default function ContactsPage({ params }: ContactsPageProps) {
         CustomerService.getSuppliers(resolvedParams.uid),
       ]);
 
+      console.log('Loaded customers:', customers);
+      console.log('Loaded suppliers:', suppliers);
+
       // Kombiniere und markiere den Typ
       const allContacts = [
         ...customers.map(c => ({ ...c, type: 'customer' as const })),
         ...suppliers.map(s => ({ ...s, type: 'supplier' as const })),
       ];
+
+      // Synchronisiere Statistiken für alle Kontakte im Hintergrund
+      syncContactStats(allContacts);
 
       setContacts(allContacts);
     } catch (error) {
@@ -102,6 +109,73 @@ export default function ContactsPage({ params }: ContactsPageProps) {
       toast.error('Fehler beim Laden der Kontakte');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const syncContactStats = async (contactsList: (Customer & { type: 'customer' | 'supplier' })[]) => {
+    try {
+      const { collection: firestoreCollection, query: firestoreQuery, where: firestoreWhere, getDocs: firestoreGetDocs } = await import('firebase/firestore');
+      
+      // Für jeden Kontakt die Statistiken aus Rechnungen/Ausgaben berechnen
+      for (const contact of contactsList) {
+        try {
+          let totalAmount = 0;
+          let totalInvoices = 0;
+
+          if (contact.type === 'customer') {
+            // Rechnungen für Kunden laden
+            const invoicesQuery = firestoreQuery(
+              firestoreCollection(db, 'companies', resolvedParams.uid, 'invoices'),
+              firestoreWhere('customerNumber', '==', contact.customerNumber),
+              firestoreWhere('status', '!=', 'draft')
+            );
+            const invoicesSnapshot = await firestoreGetDocs(invoicesQuery);
+            
+            invoicesSnapshot.forEach((doc) => {
+              const data = doc.data();
+              if (data.status !== 'cancelled') {
+                totalAmount += data.isStorno ? -(data.total || 0) : (data.total || 0);
+                totalInvoices += 1;
+              }
+            });
+          } else {
+            // Ausgaben für Lieferanten laden
+            const expensesQuery = firestoreQuery(
+              firestoreCollection(db, 'companies', resolvedParams.uid, 'expenses'),
+              firestoreWhere('supplierId', '==', contact.id)
+            );
+            const expensesSnapshot = await firestoreGetDocs(expensesQuery);
+            
+            expensesSnapshot.forEach((doc) => {
+              const data = doc.data();
+              totalAmount += data.amount || 0;
+              totalInvoices += 1;
+            });
+          }
+
+          // Nur aktualisieren wenn Werte sich unterscheiden
+          if (contact.totalAmount !== totalAmount || contact.totalInvoices !== totalInvoices) {
+            contact.totalAmount = totalAmount;
+            contact.totalInvoices = totalInvoices;
+            
+            // In Datenbank aktualisieren (im Hintergrund)
+            const { doc: firestoreDoc, updateDoc: firestoreUpdateDoc } = await import('firebase/firestore');
+            const contactRef = firestoreDoc(db, 'companies', resolvedParams.uid, 'customers', contact.id);
+            await firestoreUpdateDoc(contactRef, {
+              totalAmount,
+              totalInvoices,
+              lastStatsUpdate: new Date(),
+            });
+          }
+        } catch (error) {
+          console.error(`Fehler beim Sync von ${contact.name}:`, error);
+        }
+      }
+
+      // State aktualisieren mit neuen Werten
+      setContacts([...contactsList]);
+    } catch (error) {
+      console.error('Fehler beim Synchronisieren der Statistiken:', error);
     }
   };
 
@@ -388,7 +462,11 @@ export default function ContactsPage({ params }: ContactsPageProps) {
                   </TableHeader>
                   <TableBody>
                     {filteredAndSortedContacts.map(contact => (
-                      <TableRow key={contact.id}>
+                      <TableRow 
+                        key={contact.id}
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => router.push(`/dashboard/company/${resolvedParams.uid}/finance/contacts/${contact.id}`)}
+                      >
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div
@@ -455,7 +533,7 @@ export default function ContactsPage({ params }: ContactsPageProps) {
                           <div className="text-sm text-gray-600">{contact.totalInvoices || 0}</div>
                         </TableCell>
 
-                        <TableCell className="text-right">
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm">
