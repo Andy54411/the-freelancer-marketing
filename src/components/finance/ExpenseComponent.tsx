@@ -32,13 +32,20 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Plus, Upload, FileText, Edit, Trash2, Mail, Phone, Eye, MoreHorizontal, Download, X } from 'lucide-react';
+  Plus,
+  Upload,
+  FileText,
+  Edit,
+  Trash2,
+  Mail,
+  Phone,
+  Eye,
+  MoreHorizontal,
+  Download,
+  X,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import ExpenseReceiptUpload from '@/components/finance/ExpenseReceiptUpload';
 
@@ -98,6 +105,8 @@ interface ExpenseComponentProps {
   onSave?: (expense: ExpenseData) => Promise<boolean>;
   onDelete?: (expenseId: string) => Promise<boolean>;
   onRefresh?: () => Promise<void>;
+  showForm?: boolean;
+  onFormToggle?: (show: boolean) => void;
 }
 
 export function ExpenseComponent({
@@ -106,10 +115,23 @@ export function ExpenseComponent({
   onSave,
   onDelete,
   onRefresh,
+  showForm: externalShowForm,
+  onFormToggle,
 }: ExpenseComponentProps) {
   const { user } = useAuth(); // User-Kontext für Authentication
   const router = useRouter();
-  const [showForm, setShowForm] = useState(false);
+
+  // Form State Management - verwende externe State wenn verfügbar
+  const [internalShowForm, setInternalShowForm] = useState(false);
+  const showForm = externalShowForm !== undefined ? externalShowForm : internalShowForm;
+  const setShowForm = (show: boolean) => {
+    if (onFormToggle) {
+      onFormToggle(show);
+    } else {
+      setInternalShowForm(show);
+    }
+  };
+
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
 
@@ -262,7 +284,7 @@ export function ExpenseComponent({
         ? `expense_${expenseId}_${sanitizedFileName}`
         : `expense_${timestamp}_${sanitizedFileName}`;
 
-      const storagePath = `expense-receipts/${companyId}/${fileName}`;
+      const storagePath = `companies/${companyId}/expenses/${fileName}`;
       const storageRef = ref(storage, storagePath);
 
       // Upload der Datei
@@ -428,7 +450,10 @@ export function ExpenseComponent({
       try {
         // Import dynamic to avoid circular dependencies
         const { NumberSequenceService } = await import('@/services/numberSequenceService');
-        const numberResult = await NumberSequenceService.getNextNumberForType(companyId, 'Lieferant');
+        const numberResult = await NumberSequenceService.getNextNumberForType(
+          companyId,
+          'Lieferant'
+        );
         nextSupplierNumber = numberResult.formattedNumber;
       } catch (error) {
         console.error('❌ Failed to get supplier number from NumberSequenceService:', error);
@@ -808,23 +833,6 @@ export function ExpenseComponent({
 
   return (
     <div className="space-y-6">
-      {/* Haupt-Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Ausgaben</h2>
-          <p className="text-gray-600">
-            Geschäftsausgaben erfassen und PDF-Belege automatisch verarbeiten
-          </p>
-        </div>
-        <Button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          {isEditMode ? 'Neue Ausgabe' : 'Ausgabe hinzufügen'}
-        </Button>
-      </div>
-
       {/* Form */}
       {showForm && (
         <Card className="bg-white/30 backdrop-blur-sm border-[#14ad9f]/20">
@@ -839,44 +847,58 @@ export function ExpenseComponent({
               manuell ein
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-6 space-y-6">
-            {/* OCR Upload mit ExpenseReceiptUpload */}
-            <ExpenseReceiptUpload
-              companyId={companyId}
-              onDataExtracted={async (data, storageUrl) => {
-                // Update form with extracted data
-                setFormData(prev => ({
-                  ...prev,
-                  title: data.title || prev.title,
-                  amount: data.amount ? data.amount.toString() : prev.amount,
-                  category: data.category || prev.category,
-                  description: data.description || prev.description,
-                  vendor: data.vendor || prev.vendor,
-                  date: data.date || prev.date,
-                  dueDate: data.dueDate || prev.dueDate,
-                  paymentTerms: data.paymentTerms || prev.paymentTerms,
-                  invoiceNumber: data.invoiceNumber || prev.invoiceNumber,
-                  vatAmount: data.vatAmount !== null && data.vatAmount !== undefined ? data.vatAmount.toString() : prev.vatAmount,
-                  netAmount: data.netAmount !== null && data.netAmount !== undefined ? data.netAmount.toString() : prev.netAmount,
-                  vatRate: data.vatRate !== null && data.vatRate !== undefined ? data.vatRate.toString() : prev.vatRate,
-                  companyName: data.vendor || prev.companyName,
-                  companyVatNumber: data.companyVatNumber || prev.companyVatNumber,
-                }));
+          <CardContent className="p-6">
+            {/* 2-Spalten Layout: Links Upload, Rechts Formular */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Linke Spalte: Upload & OCR */}
+              <div className="space-y-6">
+                <ExpenseReceiptUpload
+                  companyId={companyId}
+                  onDataExtracted={async (data: any) => {
+                    // Update form with extracted data
+                    setFormData(prev => ({
+                      ...prev,
+                      title: data.title || prev.title,
+                      amount: data.amount ? data.amount.toString() : prev.amount,
+                      category: data.category || prev.category,
+                      description: data.description || prev.description,
+                      vendor: data.vendor || prev.vendor,
+                      date: data.date || prev.date,
+                      dueDate: data.dueDate || prev.dueDate,
+                      paymentTerms: data.paymentTerms || prev.paymentTerms,
+                      invoiceNumber: data.invoiceNumber || prev.invoiceNumber,
+                      vatAmount:
+                        data.vatAmount !== null && data.vatAmount !== undefined
+                          ? data.vatAmount.toString()
+                          : prev.vatAmount,
+                      netAmount:
+                        data.netAmount !== null && data.netAmount !== undefined
+                          ? data.netAmount.toString()
+                          : prev.netAmount,
+                      vatRate:
+                        data.vatRate !== null && data.vatRate !== undefined
+                          ? data.vatRate.toString()
+                          : prev.vatRate,
+                      companyName: data.vendor || prev.companyName,
+                      companyVatNumber: data.companyVatNumber || prev.companyVatNumber,
+                    }));
 
-                toast.success('✅ OCR-Extraktion erfolgreich', {
-                  description: 'Daten wurden automatisch eingetragen',
-                });
-              }}
-              onFileUploaded={(file, storageUrl) => {
-                setCurrentReceipt(file);
-                setUploadingFile(false);
-              }}
-              showPreview={true}
-              enhancedMode={false}
-            />
+                    toast.success('✅ OCR-Extraktion erfolgreich', {
+                      description: 'Daten wurden automatisch eingetragen',
+                    });
+                  }}
+                  onFileUploaded={(storageUrl: string) => {
+                    // File Upload erfolgreich - setze Flag für Upload-Status
+                    setUploadingFile(false);
+                    toast.success('Datei erfolgreich hochgeladen');
+                  }}
+                  showPreview={true}
+                  enhancedMode={false}
+                />
+              </div>
 
-            {/* Form Fields */}
-            <div className="space-y-6">
+              {/* Rechte Spalte: Formular */}
+              <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
                   Grundinformationen
                 </h3>
@@ -1147,6 +1169,7 @@ export function ExpenseComponent({
                     Steuerlich absetzbar
                   </Label>
                 </div>
+              </div>
             </div>
 
             {/* Action Buttons */}
@@ -1208,7 +1231,7 @@ export function ExpenseComponent({
           <CardTitle>Alle Ausgaben</CardTitle>
           <CardDescription>
             {expenses.length === 0
-              ? 'Noch keine Ausgaben erfasst'
+              ? 'Übersicht aller erfassten Ausgaben'
               : `${expenses.length} ${expenses.length === 1 ? 'Ausgabe' : 'Ausgaben'} erfasst`}
           </CardDescription>
         </CardHeader>
@@ -1242,7 +1265,9 @@ export function ExpenseComponent({
                       className="cursor-pointer hover:bg-gray-50"
                       onClick={() => {
                         if (expense.id) {
-                          router.push(`/dashboard/company/${companyId}/finance/expenses/${expense.id}`);
+                          router.push(
+                            `/dashboard/company/${companyId}/finance/expenses/${expense.id}`
+                          );
                         }
                       }}
                     >
@@ -1251,7 +1276,7 @@ export function ExpenseComponent({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => {
+                            onClick={e => {
                               e.stopPropagation();
                               setViewingReceipt(expense.receipt!.downloadURL);
                             }}
@@ -1291,7 +1316,7 @@ export function ExpenseComponent({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={e => e.stopPropagation()}
                               className="h-8 w-8 p-0"
                             >
                               <MoreHorizontal className="h-4 w-4" />
@@ -1299,7 +1324,7 @@ export function ExpenseComponent({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
-                              onClick={(e) => {
+                              onClick={e => {
                                 e.stopPropagation();
                                 handleEditExpense(expense);
                               }}
@@ -1309,7 +1334,7 @@ export function ExpenseComponent({
                             </DropdownMenuItem>
                             {expense.receipt?.downloadURL && (
                               <DropdownMenuItem
-                                onClick={(e) => {
+                                onClick={e => {
                                   e.stopPropagation();
                                   window.open(expense.receipt!.downloadURL, '_blank');
                                 }}
@@ -1319,7 +1344,7 @@ export function ExpenseComponent({
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuItem
-                              onClick={(e) => {
+                              onClick={e => {
                                 e.stopPropagation();
                                 handleDeleteExpense(expense);
                               }}
@@ -1341,7 +1366,7 @@ export function ExpenseComponent({
       </Card>
 
       {/* PDF-Viewer-Dialog */}
-      <Dialog open={!!viewingReceipt} onOpenChange={(open) => !open && setViewingReceipt(null)}>
+      <Dialog open={!!viewingReceipt} onOpenChange={open => !open && setViewingReceipt(null)}>
         <DialogContent className="max-w-6xl h-[95vh] p-0">
           <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle className="flex justify-between items-center">
@@ -1355,11 +1380,7 @@ export function ExpenseComponent({
                   <Download className="h-4 w-4 mr-2" />
                   Neuer Tab
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setViewingReceipt(null)}
-                >
+                <Button variant="ghost" size="sm" onClick={() => setViewingReceipt(null)}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>

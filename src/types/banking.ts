@@ -33,6 +33,39 @@ export interface BankTransaction {
   isPending: boolean;
 }
 
+// Erweiterte Transaction-Interface für Modal-Komponenten
+export interface ModalTransaction {
+  id: string;
+  name: string;
+  verwendungszweck: string;
+  buchungstag: string;
+  betrag: number;
+  accountId: string;
+  // Erweiterte Felder (optional für Kompatibilität)
+  status?: 'processed' | 'pending' | 'failed' | 'duplicate' | 'adjustment' | 'linked';
+  offen?: boolean;
+  verknuepfungen?: string[];
+  linkedInvoices?: Array<{
+    documentId: string;
+    documentNumber: string;
+    customerName: string;
+  }>;
+  accountName?: string;
+  category?: string;
+  bookingStatus?: 'open' | 'booked';
+  empfaengerBank?: string;
+  empfaengerBic?: string;
+  empfaengerIban?: string;
+  transaktionsart?: string;
+  sepaPurpose?: string;
+  merchantCategory?: string;
+  primanota?: string;
+  labels?: string[];
+  isDuplicate?: boolean;
+  isAdjustment?: boolean;
+  importDate?: string;
+}
+
 export interface BankConnection {
   id: string;
   bankName: string;

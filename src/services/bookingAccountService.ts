@@ -10,6 +10,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
+import COMPLETE_DATEV_ACCOUNTS from '@/data/complete-datev-accounts';
 
 export interface BookingAccount {
   id: string;
@@ -31,22 +32,45 @@ export interface BookingAccountData {
 export class BookingAccountService {
   /**
    * Lädt alle Buchungskonten für eine Company
+   * Kombiniert Firestore-Konten mit DATEV-Standard-Konten
    */
   static async getBookingAccounts(companyUid: string): Promise<BookingAccount[]> {
     try {
+      // 1. Lade benutzerdefinierte Buchungskonten aus Firestore
       const bookingAccountsRef = collection(db, 'companies', companyUid, 'bookingAccounts');
       const q = query(bookingAccountsRef, orderBy('number', 'asc'));
       const querySnapshot = await getDocs(q);
 
-      const bookingAccounts: BookingAccount[] = [];
+      const customBookingAccounts: BookingAccount[] = [];
       querySnapshot.forEach(doc => {
-        bookingAccounts.push({
+        customBookingAccounts.push({
           id: doc.id,
           ...doc.data(),
         } as BookingAccount);
       });
 
-      return bookingAccounts;
+      // 2. Konvertiere DATEV-Konten zu BookingAccount Format
+      const datevAccounts: BookingAccount[] = COMPLETE_DATEV_ACCOUNTS.map(account => ({
+        id: `datev-${account.number}`,
+        number: account.number,
+        name: account.name,
+        type: account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE',
+        automaticBooking: false,
+      }));
+
+      // 3. Kombiniere beide Listen und entferne Duplikate
+      const allAccounts = [...customBookingAccounts];
+      const existingNumbers = new Set(customBookingAccounts.map(acc => acc.number));
+
+      // Füge DATEV-Konten hinzu, die nicht bereits als benutzerdefinierte Konten existieren
+      datevAccounts.forEach(datevAccount => {
+        if (!existingNumbers.has(datevAccount.number)) {
+          allAccounts.push(datevAccount);
+        }
+      });
+
+      // 4. Sortiere nach Kontonummer
+      return allAccounts.sort((a, b) => a.number.localeCompare(b.number));
     } catch (error) {
       console.error('Fehler beim Laden der Buchungskonten:', error);
       throw error;

@@ -48,6 +48,7 @@ import StornoInvoice from './StornoInvoice';
 import { EmailDialog } from './EmailDialog';
 import { toast } from 'sonner';
 import SelectBankingTransactionModal from './SelectBankingTransactionModal';
+import { BookingAccount } from '@/services/bookingAccountService';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { InvoiceStatusService } from '@/services/invoice-status.service';
@@ -239,7 +240,10 @@ export function InvoiceListView({
     setShowLinkTransactionModal(true);
   };
 
-  const handleBankingTransactionSelected = async (bankingTransaction: any) => {
+  const handleBankingTransactionSelected = async (
+    bankingTransaction: any,
+    bookingAccount?: BookingAccount
+  ) => {
     try {
       if (!selectedInvoiceForLink) {
         toast.error('Rechnung nicht gefunden');
@@ -262,25 +266,42 @@ export function InvoiceListView({
         invoiceNumber: selectedInvoiceForLink.invoiceNumber,
         customerName: selectedInvoiceForLink.customerName || '',
         total: selectedInvoiceForLink.total || 0,
-        date: selectedInvoiceForLink.issueDate || selectedInvoiceForLink.createdAt?.toString() || '',
+        date:
+          selectedInvoiceForLink.issueDate || selectedInvoiceForLink.createdAt?.toString() || '',
         issueDate: selectedInvoiceForLink.issueDate,
         isStorno: selectedInvoiceForLink.isStorno || false,
       };
 
-      // Verknüpfung erstellen
+      // Erweiterte Verknüpfung mit Buchungskonto erstellen
+      const linkData = {
+        transactionData,
+        documentData,
+        documentType: 'INVOICE' as const,
+        bookingAccount: bookingAccount
+          ? {
+              id: bookingAccount.id,
+              number: bookingAccount.number,
+              name: bookingAccount.name,
+              type: bookingAccount.type,
+            }
+          : undefined,
+      };
+
+      // Erweiterte Verknüpfung mit Buchungskonto erstellen
       const result = await TransactionLinkService.createLink(
         companyId,
         bankingTransaction.id,
         selectedInvoiceForLink.id,
         transactionData,
         documentData,
-        companyId
+        companyId,
+        linkData
       );
 
       if (!result.success) {
         throw new Error(result.error || 'Fehler beim Erstellen der Verknüpfung');
       }
-      
+
       // Rechnung als bezahlt markieren mit realem transactionId
       await InvoiceStatusService.markAsPaid(
         companyId,
@@ -289,13 +310,13 @@ export function InvoiceListView({
         bankingTransaction.id,
         'Banküberweisung'
       );
-      
+
       toast.success('Rechnung wurde als bezahlt markiert und verknüpft');
-      
+
       // Modal schließen und Liste aktualisieren
       setShowLinkTransactionModal(false);
       setSelectedInvoiceForLink(null);
-      
+
       if (onRefresh) {
         onRefresh();
       }
@@ -313,85 +334,90 @@ export function InvoiceListView({
     }
   };
 
-  const filteredInvoices = invoices.filter(invoice => {
-    // Tab filter
-    if (activeTab !== 'all') {
-      switch (activeTab) {
-        case 'draft':
-          if (invoice.status !== 'draft') return false;
-          break;
-        case 'open':
-          if (
-            !['sent', 'finalized'].includes(invoice.status) ||
-            invoice.status === 'paid' ||
-            isOverdue(invoice)
-          )
+  const filteredInvoices = invoices
+    .filter(invoice => {
+      // Tab filter
+      if (activeTab !== 'all') {
+        switch (activeTab) {
+          case 'draft':
+            if (invoice.status !== 'draft') return false;
+            break;
+          case 'open':
+            if (
+              !['sent', 'finalized'].includes(invoice.status) ||
+              invoice.status === 'paid' ||
+              isOverdue(invoice)
+            )
+              return false;
+            break;
+          case 'overdue':
+            if (!['sent', 'finalized'].includes(invoice.status) || !isOverdue(invoice))
+              return false;
+            break;
+          case 'finalized':
+            if (invoice.status !== 'finalized') return false;
+            break;
+          case 'paid':
+            if (invoice.status !== 'paid') return false;
+            break;
+          case 'partial':
+            // For partial payments - would need additional logic
             return false;
-          break;
-        case 'overdue':
-          if (!['sent', 'finalized'].includes(invoice.status) || !isOverdue(invoice)) return false;
-          break;
-        case 'finalized':
-          if (invoice.status !== 'finalized') return false;
-          break;
-        case 'paid':
-          if (invoice.status !== 'paid') return false;
-          break;
-        case 'partial':
-          // For partial payments - would need additional logic
-          return false;
-        case 'cancelled':
-          if (!['cancelled', 'storno'].includes(invoice.status)) return false;
-          break;
-        case 'recurring':
-          // For recurring invoices - would need additional logic
-          return false;
+          case 'cancelled':
+            if (!['cancelled', 'storno'].includes(invoice.status)) return false;
+            break;
+          case 'recurring':
+            // For recurring invoices - would need additional logic
+            return false;
+        }
       }
-    }
 
-    // Search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      if (
-        !invoice.customerName?.toLowerCase().includes(searchLower) &&
-        !invoice.number?.toLowerCase().includes(searchLower)
-      ) {
-        return false;
+      // Search filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        if (
+          !invoice.customerName?.toLowerCase().includes(searchLower) &&
+          !invoice.number?.toLowerCase().includes(searchLower)
+        ) {
+          return false;
+        }
       }
-    }
 
-    // Amount filter
-    if (minAmount && invoice.total < parseFloat(minAmount)) return false;
-    if (maxAmount && invoice.total > parseFloat(maxAmount)) return false;
+      // Amount filter
+      if (minAmount && invoice.total < parseFloat(minAmount)) return false;
+      if (maxAmount && invoice.total > parseFloat(maxAmount)) return false;
 
-    // Date filter
-    if (startDate && new Date(invoice.createdAt) < new Date(startDate)) return false;
-    if (endDate && new Date(invoice.createdAt) > new Date(endDate)) return false;
+      // Date filter
+      if (startDate && new Date(invoice.createdAt) < new Date(startDate)) return false;
+      if (endDate && new Date(invoice.createdAt) > new Date(endDate)) return false;
 
-    return true;
-  }).sort((a, b) => {
-    // Sort filtered invoices
-    let comparison = 0;
-    
-    switch (sortField) {
-      case 'dueDate':
-        comparison = new Date(a.dueDate || 0).getTime() - new Date(b.dueDate || 0).getTime();
-        break;
-      case 'number':
-        comparison = (a.invoiceNumber || a.number || '').localeCompare(b.invoiceNumber || b.number || '');
-        break;
-      case 'date':
-        const dateA = a.date || a.issueDate || a.createdAt;
-        const dateB = b.date || b.issueDate || b.createdAt;
-        comparison = new Date(dateA || 0).getTime() - new Date(dateB || 0).getTime();
-        break;
-      case 'amount':
-        comparison = (a.amount || 0) - (b.amount || 0);
-        break;
-    }
-    
-    return sortDirection === 'asc' ? comparison : -comparison;
-  });
+      return true;
+    })
+    .sort((a, b) => {
+      // Sort filtered invoices
+      let comparison = 0;
+
+      switch (sortField) {
+        case 'dueDate':
+          comparison = new Date(a.dueDate || 0).getTime() - new Date(b.dueDate || 0).getTime();
+          break;
+        case 'number':
+          comparison = (a.invoiceNumber || a.number || '').localeCompare(
+            b.invoiceNumber || b.number || ''
+          );
+          break;
+        case 'date':
+          const dateA = a.date || a.issueDate || a.createdAt;
+          const dateB = b.date || b.issueDate || b.createdAt;
+          comparison = new Date(dateA || 0).getTime() - new Date(dateB || 0).getTime();
+          break;
+        case 'amount':
+          comparison = (a.amount || 0) - (b.amount || 0);
+          break;
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
 
   const tabs = [
     { id: 'all', label: 'Alle', count: invoices.length },
@@ -579,26 +605,26 @@ export function InvoiceListView({
               <TableHeader>
                 <TableRow>
                   <TableHead>Status</TableHead>
-                  <TableHead 
+                  <TableHead
                     className="cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('dueDate')}
                   >
                     Fälligkeit {sortField === 'dueDate' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </TableHead>
-                  <TableHead 
+                  <TableHead
                     className="cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('number')}
                   >
                     Rechnungsnr. {sortField === 'number' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </TableHead>
                   <TableHead>Kunde</TableHead>
-                  <TableHead 
+                  <TableHead
                     className="cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('date')}
                   >
                     Datum {sortField === 'date' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </TableHead>
-                  <TableHead 
+                  <TableHead
                     className="text-right cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('amount')}
                   >
@@ -629,19 +655,22 @@ export function InvoiceListView({
                           invoice.invoiceNumber ||
                           (invoice.status === 'draft'
                             ? 'Entwurf'
-                            : `DOK-${invoice.id.substring(0, 8)}`)} {/* NumberSequenceService manages numbering */}
+                            : `DOK-${invoice.id.substring(0, 8)}`)}{' '}
+                        {/* NumberSequenceService manages numbering */}
                       </TableCell>
                       <TableCell>{invoice.customerName}</TableCell>
                       <TableCell>
-                        {invoice.date 
+                        {invoice.date
                           ? new Date(invoice.date).toLocaleDateString('de-DE')
                           : invoice.issueDate
-                          ? new Date(invoice.issueDate).toLocaleDateString('de-DE')
-                          : invoice.createdAt
-                          ? new Date(invoice.createdAt).toLocaleDateString('de-DE')
-                          : '-'}
+                            ? new Date(invoice.issueDate).toLocaleDateString('de-DE')
+                            : invoice.createdAt
+                              ? new Date(invoice.createdAt).toLocaleDateString('de-DE')
+                              : '-'}
                       </TableCell>
-                      <TableCell className="text-right">{formatCurrency(invoice.amount || 0)}</TableCell>
+                      <TableCell className="text-right">
+                        {formatCurrency(invoice.amount || 0)}
+                      </TableCell>
                       <TableCell className="text-right">
                         {invoice.status === 'paid' ? '0,00 €' : formatCurrency(invoice.total)}
                       </TableCell>
@@ -734,6 +763,8 @@ export function InvoiceListView({
           isOpen={showLinkTransactionModal}
           companyId={companyId}
           invoiceAmount={selectedInvoiceForLink.total || 0}
+          documentType="INVOICE"
+          documentNumber={selectedInvoiceForLink.invoiceNumber || selectedInvoiceForLink.number}
           transactionType="CREDIT"
           onClose={() => {
             setShowLinkTransactionModal(false);
@@ -742,7 +773,6 @@ export function InvoiceListView({
           onSelect={handleBankingTransactionSelected}
         />
       )}
-
     </div>
   );
 }

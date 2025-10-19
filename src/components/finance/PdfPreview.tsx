@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 
 // Lazy Loading für react-pdf
 const ReactPDFDocument = dynamic(
-  () => import('react-pdf').then((mod) => ({ default: mod.Document })),
+  () => import('react-pdf').then(mod => ({ default: mod.Document })),
   {
     ssr: false,
     loading: () => (
@@ -19,10 +19,9 @@ const ReactPDFDocument = dynamic(
   }
 );
 
-const ReactPDFPage = dynamic(
-  () => import('react-pdf').then((mod) => ({ default: mod.Page })),
-  { ssr: false }
-);
+const ReactPDFPage = dynamic(() => import('react-pdf').then(mod => ({ default: mod.Page })), {
+  ssr: false,
+});
 
 // Aliase für bessere Lesbarkeit
 const Document = ReactPDFDocument;
@@ -30,7 +29,7 @@ const Page = ReactPDFPage;
 
 // Worker-Konfiguration global
 if (typeof window !== 'undefined') {
-  import('pdfjs-dist').then((pdfjs) => {
+  import('pdfjs-dist').then(pdfjs => {
     pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
   });
 }
@@ -98,17 +97,10 @@ export function PdfPreview({ file, fileUrl, className = '' }: PdfPreviewProps) {
   }
 
   // Bestimme die PDF-Quelle und den Dateinamen
-  let pdfSource = file || fileUrl;
+  const pdfSource = file || fileUrl;
   const fileName = file?.name || (fileUrl ? 'Gespeicherter Beleg.pdf' : 'PDF-Datei');
 
-  // Für Firebase Storage URLs: Verwende Proxy-Route für CORS-kompatiblen Zugriff
-  if (
-    fileUrl &&
-    (fileUrl.includes('firebasestorage.googleapis.com') ||
-      fileUrl.includes('firebase.googleapis.com'))
-  ) {
-    pdfSource = `/api/pdf-proxy?url=${encodeURIComponent(fileUrl)}`;
-  }
+  // Firebase Storage URLs können direkt verwendet werden, da sie bereits CORS-konfiguriert sind
 
   return (
     <div className={`bg-white rounded-lg border border-gray-200 ${className}`}>

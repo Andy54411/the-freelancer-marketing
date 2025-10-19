@@ -1,8 +1,56 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, X } from 'lucide-react';
+import { Upload, FileText, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+/**
+ * Convert HEIC/HEIF to JPEG using heic2any library
+ * Supports iPhone HEIC images that browsers can't natively decode
+ */
+async function convertHeicToJpeg(file: File): Promise<File | null> {
+  try {
+    console.log('🔄 [HEIC Conversion] Starting conversion:', file.name);
+
+    // Dynamic import to avoid SSR issues
+    const heic2any = (await import('heic2any')).default;
+
+    // Convert HEIC to JPEG blob
+    const convertedBlob = await heic2any({
+      blob: file,
+      toType: 'image/jpeg',
+      quality: 0.92,
+    });
+
+    // Handle array or single blob response
+    const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+
+    // Create new File from converted blob
+    const convertedFile = new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpeg'), {
+      type: 'image/jpeg',
+    });
+
+    console.log('✅ [HEIC Conversion] Success:', {
+      originalSize: `${(file.size / 1024).toFixed(2)} KB`,
+      convertedSize: `${(convertedFile.size / 1024).toFixed(2)} KB`,
+    });
+
+    return convertedFile;
+  } catch (error) {
+    console.error('❌ [HEIC Conversion] Failed:', error);
+    return null;
+  }
+}
+
+// Line Items Interface
+interface LineItem {
+  position: string;
+  description: string;
+  quantity: number | null;
+  unitPrice: number | null;
+  totalPrice: number | null;
+  unit?: string;
+}
 
 // Expense-spezifische Datenstruktur
 interface ExtractedExpenseData {
@@ -18,6 +66,7 @@ interface ExtractedExpenseData {
   netAmount?: number;
   vatRate?: number;
   paymentTerms?: string;
+  lineItems?: LineItem[]; // NEW: Line items from invoice
   // Firmeninformationen aus OCR
   companyName?: string;
   companyAddress?: string;
@@ -33,24 +82,32 @@ interface ExpenseReceiptUploadProps {
   companyId: string;
   onDataExtracted?: (data: ExtractedExpenseData) => void;
   onFileUploaded?: (storageUrl: string) => void;
+  onFilesUploaded?: (storageUrls: string[]) => void; // NEW: Bundle of files
   showPreview?: boolean;
   enhancedMode?: boolean;
   accept?: string;
   maxSize?: number;
+  multiple?: boolean;
 }
 
 export function ExpenseReceiptUpload({
   companyId,
   onDataExtracted,
   onFileUploaded,
+  onFilesUploaded,
   showPreview = true,
   enhancedMode = true,
-  accept = '.pdf,.jpg,.jpeg,.png',
+  accept = '.pdf,.jpg,.jpeg,.png,.heic,.heif',
   maxSize = 10 * 1024 * 1024, // 10MB default
+  multiple = false,
 }: ExpenseReceiptUploadProps) {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [processingOCR, setProcessingOCR] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [storageUrls, setStorageUrls] = useState<string[]>([]); // Store all uploaded URLs
+  const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [ocrProgress, setOcrProgress] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,14 +118,42 @@ export function ExpenseReceiptUpload({
     // Validate file type
     const allowedTypes = accept.split(',').map((t: string) => t.trim());
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+    const isHeicFile = fileExtension === '.heic' || fileExtension === '.heif';
 
     if (
+      !isHeicFile &&
       !allowedTypes.includes(fileExtension) &&
       !file.type.includes('pdf') &&
       !file.type.includes('image')
     ) {
       alert('Dateiformat nicht unterstützt. Erlaubt: ' + allowedTypes.join(', '));
       return;
+    }
+
+    // Convert HEIC to JPEG client-side before upload
+    if (isHeicFile) {
+      setUploadingFile(true);
+      setProcessingOCR(true);
+      setOcrProgress('📱 iPhone-Format wird konvertiert...');
+
+      const convertedFile = await convertHeicToJpeg(file);
+
+      if (convertedFile) {
+        file = convertedFile;
+        setOcrProgress('✅ Erfolgreich zu JPEG konvertiert');
+        await new Promise(resolve => setTimeout(resolve, 800));
+      } else {
+        alert(
+          '📱 iPhone HEIC-Format konnte nicht konvertiert werden.\n\n' +
+            'Bitte konvertieren Sie das Bild manuell:\n' +
+            '1. Öffnen Sie das Foto → Teilen → "Als Datei sichern"\n' +
+            '2. Oder: Einstellungen → Kamera → Formate → "Maximale Kompatibilität"'
+        );
+        setOcrProgress('');
+        setUploadingFile(false);
+        setProcessingOCR(false);
+        return;
+      }
     }
 
     // Validate file size
@@ -159,10 +244,163 @@ export function ExpenseReceiptUpload({
     }
   };
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileUpload(file);
+  // Upload file and return storage URL (for bundling)
+  const handleFileBundleUpload = async (file: File): Promise<string | null> => {
+    try {
+      // Convert HEIC if needed
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      const isHeicFile = fileExtension === '.heic' || fileExtension === '.heif';
+
+      if (isHeicFile) {
+        const convertedFile = await convertHeicToJpeg(file);
+        if (convertedFile) {
+          file = convertedFile;
+        } else {
+          console.error('HEIC conversion failed for:', file.name);
+          return null;
+        }
+      }
+
+      // Upload to storage
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+      uploadFormData.append('companyId', companyId);
+
+      const uploadResponse = await fetch('/api/storage/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+
+      const uploadResult = await uploadResponse.json();
+
+      if (!uploadResult.success) {
+        console.error('Upload failed:', uploadResult.error);
+        return null;
+      }
+
+      const storageUrl = uploadResult.fileUrl || uploadResult.s3Path || uploadResult.gcsPath;
+
+      // Process with OCR (but don't callback yet - we'll bundle all results)
+      const formDataOCR = new FormData();
+      formDataOCR.append('file', file);
+      formDataOCR.append('companyId', companyId);
+
+      await fetch('/api/expenses/ocr-extract', {
+        method: 'POST',
+        body: formDataOCR,
+      });
+
+      return storageUrl;
+    } catch (error) {
+      console.error('Bundle upload error:', error);
+      return null;
+    }
+  };
+
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (multiple) {
+      const fileArray = Array.from(files);
+
+      // Start processing
+      setUploadingFile(true);
+      setProcessingOCR(true);
+      setOcrProgress('Bereite Dateien vor...');
+
+      // Convert HEIC files to JPEG for preview AND upload
+      const processedFiles: File[] = [];
+      const urls: string[] = [];
+
+      for (let i = 0; i < fileArray.length; i++) {
+        let file = fileArray[i];
+        const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+        const isHeicFile = fileExtension === '.heic' || fileExtension === '.heif';
+
+        if (isHeicFile) {
+          setOcrProgress(`Konvertiere ${file.name}...`);
+          const convertedFile = await convertHeicToJpeg(file);
+          if (convertedFile) {
+            file = convertedFile;
+          }
+        }
+
+        processedFiles.push(file);
+        urls.push(URL.createObjectURL(file));
+      }
+
+      // Set state with processed files
+      setUploadedFiles(processedFiles);
+      setPreviewUrls(urls);
+      setCurrentFileIndex(0);
+      setUploadedFile(processedFiles[0]);
+      setPreviewUrl(urls[0]);
+
+      // Upload ALL files to Storage first
+      setOcrProgress('Lade Dateien hoch...');
+      const uploadedStorageUrls: string[] = [];
+
+      for (let i = 0; i < processedFiles.length; i++) {
+        setOcrProgress(`Lade Datei ${i + 1} von ${processedFiles.length} hoch...`);
+
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', processedFiles[i]);
+        uploadFormData.append('companyId', companyId);
+
+        const uploadResponse = await fetch('/api/storage/upload', {
+          method: 'POST',
+          body: uploadFormData,
+        });
+
+        const uploadResult = await uploadResponse.json();
+        if (uploadResult.success) {
+          const storageUrl = uploadResult.fileUrl || uploadResult.s3Path || uploadResult.gcsPath;
+          uploadedStorageUrls.push(storageUrl);
+        }
+      }
+
+      // Store all URLs
+      setStorageUrls(uploadedStorageUrls);
+
+      // Now process ALL files as ONE multi-page document with OCR
+      setOcrProgress('Analysiere mehrseitiges Dokument...');
+      const formDataOCR = new FormData();
+
+      // Add all files to the same request
+      processedFiles.forEach((file, index) => {
+        formDataOCR.append('files', file); // Note: 'files' plural!
+      });
+      formDataOCR.append('companyId', companyId);
+      formDataOCR.append('isMultiPage', 'true');
+
+      const ocrResponse = await fetch('/api/expenses/ocr-extract', {
+        method: 'POST',
+        body: formDataOCR,
+      });
+
+      const ocrResult = await ocrResponse.json();
+
+      if (ocrResult.success) {
+        onDataExtracted?.(ocrResult.data);
+      }
+
+      // Notify parent with all URLs as a bundle
+      if (uploadedStorageUrls.length > 0) {
+        onFilesUploaded?.(uploadedStorageUrls);
+      }
+
+      setOcrProgress('✅ Alle Dateien verarbeitet');
+      setTimeout(() => {
+        setProcessingOCR(false);
+        setOcrProgress('');
+        setUploadingFile(false);
+      }, 1500);
+    } else {
+      const file = files[0];
+      if (file) {
+        handleFileUpload(file);
+      }
     }
   };
 
@@ -180,12 +418,38 @@ export function ExpenseReceiptUpload({
 
   const handleClear = () => {
     setUploadedFile(null);
+    setUploadedFiles([]);
+    setStorageUrls([]);
+    setCurrentFileIndex(0);
+
+    // Revoke all preview URLs
+    previewUrls.forEach(url => URL.revokeObjectURL(url));
+    setPreviewUrls([]);
+
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const goToNext = () => {
+    if (currentFileIndex < uploadedFiles.length - 1) {
+      const nextIndex = currentFileIndex + 1;
+      setCurrentFileIndex(nextIndex);
+      setUploadedFile(uploadedFiles[nextIndex]);
+      setPreviewUrl(previewUrls[nextIndex]);
+    }
+  };
+
+  const goToPrevious = () => {
+    if (currentFileIndex > 0) {
+      const prevIndex = currentFileIndex - 1;
+      setCurrentFileIndex(prevIndex);
+      setUploadedFile(uploadedFiles[prevIndex]);
+      setPreviewUrl(previewUrls[prevIndex]);
     }
   };
 
@@ -203,6 +467,7 @@ export function ExpenseReceiptUpload({
             ref={fileInputRef}
             type="file"
             accept={accept}
+            multiple={multiple}
             onChange={handleFileInputChange}
             className="hidden"
           />
@@ -306,7 +571,10 @@ export function ExpenseReceiptUpload({
           </div>
 
           {/* Document Preview */}
-          <div className="flex-1 p-3 overflow-auto bg-gray-50 min-h-0" style={{ height: '650px' }}>
+          <div
+            className="flex-1 p-3 overflow-auto bg-gray-50 min-h-0 relative"
+            style={{ height: '650px' }}
+          >
             {uploadedFile?.type.includes('image') ? (
               <img src={previewUrl} alt="Beleg Vorschau" className="w-full h-full object-contain" />
             ) : uploadedFile?.type.includes('pdf') ? (
@@ -320,6 +588,32 @@ export function ExpenseReceiptUpload({
               <div className="flex items-center justify-center h-full text-center text-gray-500 text-sm">
                 Vorschau nicht verfügbar für diesen Dateityp
               </div>
+            )}
+
+            {/* Navigation Arrows - only show when multiple files */}
+            {multiple && uploadedFiles.length > 1 && (
+              <>
+                <button
+                  onClick={goToPrevious}
+                  disabled={currentFileIndex === 0}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white hover:bg-gray-100 text-gray-800 rounded-full p-3 shadow-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed z-10"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+
+                <button
+                  onClick={goToNext}
+                  disabled={currentFileIndex === uploadedFiles.length - 1}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white hover:bg-gray-100 text-gray-800 rounded-full p-3 shadow-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed z-10"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+
+                {/* Counter */}
+                <div className="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm font-medium z-10">
+                  {currentFileIndex + 1} / {uploadedFiles.length}
+                </div>
+              </>
             )}
           </div>
 

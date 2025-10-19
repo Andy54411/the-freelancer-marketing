@@ -10,66 +10,149 @@ import { NextRequest, NextResponse } from 'next/server';
  * - Intelligente Kategorie-Erkennung für deutsche Ausgaben
  * - Fallback mit Dateinamen-Parsing
  */
+
+interface LineItem {
+  position: string;
+  description: string;
+  quantity: number | null;
+  unitPrice: number | null;
+  totalPrice: number | null;
+  unit?: string;
+}
+
+interface ExtractedExpenseData {
+  title: string;
+  amount: number | null;
+  category: string;
+  description: string;
+  vendor: string;
+  date: string;
+  vatRate: number;
+  taxDeductible?: boolean;
+  invoiceNumber?: string;
+  vatAmount?: number | null;
+  netAmount?: number | null;
+  companyName?: string;
+  companyAddress?: string;
+  companyCity?: string;
+  companyZip?: string;
+  companyCountry?: string;
+  companyVatNumber?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  lineItems?: LineItem[];
+  metadata?: {
+    isMultiPage: boolean;
+    totalPages: number;
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const companyId = formData.get('companyId') as string;
+    const isMultiPage = formData.get('isMultiPage') === 'true';
+
+    // Support both single file and multiple files
+    const files = formData.getAll('files') as File[];
     const file = formData.get('file') as File;
 
-    if (!companyId || !file) {
+    const inputFiles = files.length > 0 ? files : file ? [file] : [];
+
+    if (!companyId || inputFiles.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Company ID und Datei sind erforderlich',
+          error: 'Company ID und Datei(en) sind erforderlich',
         },
         { status: 400 }
       );
     }
 
-    if (!file.type.includes('pdf') && !file.type.includes('image')) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Nur PDF- oder Bilddateien sind erlaubt',
-        },
-        { status: 400 }
-      );
+    // Validate all files
+    for (const f of inputFiles) {
+      if (!f.type.includes('pdf') && !f.type.includes('image')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Datei ${f.name}: Nur PDF- oder Bilddateien sind erlaubt`,
+          },
+          { status: 400 }
+        );
+      }
+
+      if (f.size > 15 * 1024 * 1024) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Datei ${f.name} ist zu groß (max. 15MB)`,
+          },
+          { status: 400 }
+        );
+      }
     }
 
-    if (file.size > 15 * 1024 * 1024) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Datei ist zu groß (max. 15MB)',
-        },
-        { status: 400 }
-      );
+    console.log(
+      `💰 [Expense OCR] Processing ${inputFiles.length} file(s) as ${isMultiPage ? 'multi-page document' : 'separate files'}`
+    );
+
+    // If multiple files and isMultiPage flag, process as ONE document
+    if (isMultiPage && inputFiles.length > 1) {
+      console.log('📄 [Expense OCR] Processing as multi-page document');
+
+      // Process all files together through OCR
+      try {
+        const combinedOcrData = await tryMultiPageOCREnhancement(inputFiles, companyId);
+
+        console.log('💰 [Expense OCR] Multi-page extraction complete:', {
+          title: combinedOcrData.title,
+          vendor: combinedOcrData.vendor,
+          amount: combinedOcrData.amount,
+          category: combinedOcrData.category,
+          date: combinedOcrData.date,
+          pages: combinedOcrData.metadata?.totalPages,
+        });
+
+        return NextResponse.json({
+          success: true,
+          data: combinedOcrData,
+          extractionMethod: 'multi_page_ocr',
+        });
+      } catch (error) {
+        console.error('❌ [Expense OCR] Multi-page OCR failed:', error);
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'Multi-page OCR fehlgeschlagen: ' +
+              (error instanceof Error ? error.message : String(error)),
+          },
+          { status: 500 }
+        );
+      }
     }
 
-    const filename = file.name.toLowerCase();
+    // FALLBACK: Single file processing (original logic)
+    const singleFile = inputFiles[0];
+    const filename = singleFile.name.toLowerCase();
 
-    console.log('💰 [Expense OCR] Processing file:', {
+    console.log('💰 [Expense OCR] Processing single file:', {
       fileName: filename,
-      mimeType: file.type,
-      size: `${(file.size / 1024).toFixed(2)} KB`,
+      mimeType: singleFile.type,
+      size: `${(singleFile.size / 1024).toFixed(2)} KB`,
     });
 
-    // STRATEGIE: Versuche lokales Parsing ZUERST (schneller + offline)
-    // Dann Firebase OCR als Enhancement (teuer + langsam)
-
     // 1. Schnelles lokales Parsing
-    const localData = await extractExpenseFromFile(file, filename);
+    const localData = await extractExpenseFromFile(singleFile, filename);
 
     // 2. Versuche OCR Enhancement (optional, nur wenn nötig)
     let enhancedData = localData;
-
-    // Nur OCR wenn kritische Daten fehlen (aber immer versuchen für Betrag!)
-    const needsOCR = !localData.amount; // Betrag ist das Wichtigste!
+    const needsOCR = !localData.amount;
 
     if (needsOCR) {
       console.log('🔄 [Expense OCR] Local parsing incomplete, trying OCR enhancement...');
       try {
-        const ocrData = await tryOCREnhancement(file, companyId, filename);
+        const ocrData = await tryOCREnhancement(singleFile, companyId, filename);
         enhancedData = mergeExpenseData(localData, ocrData);
         console.log('✅ [Expense OCR] Enhanced with Firebase OCR:', {
           vendor: enhancedData.vendor,
@@ -82,7 +165,6 @@ export async function POST(request: NextRequest) {
           '⚠️ [Expense OCR] Firebase OCR unavailable, using local parsing:',
           errorMessage.substring(0, 100)
         );
-        // enhancedData bleibt = localData (Fallback funktioniert!)
       }
     } else {
       console.log('✅ [Expense OCR] Local parsing sufficient, skipping OCR');
@@ -128,8 +210,8 @@ export async function POST(request: NextRequest) {
  * 📄 LOKALES EXPENSE-PARSING
  * Extrahiert Expense-Daten aus Dateinamen ohne OCR
  */
-async function extractExpenseFromFile(file: File, filename: string) {
-  const data = {
+async function extractExpenseFromFile(file: File, filename: string): Promise<ExtractedExpenseData> {
+  const data: ExtractedExpenseData = {
     title: '',
     amount: null as number | null,
     category: 'Sonstiges',
@@ -209,20 +291,259 @@ async function extractExpenseFromFile(file: File, filename: string) {
 }
 
 /**
- * 🔄 ECHTER OCR MIT AWS TEXTRACT
- * KEINE FALLBACKS - GoBD compliant oder Error!
+ * � MULTI-PAGE OCR ENHANCEMENT
+ * Process multiple files as ONE document
  */
-async function tryOCREnhancement(file: File, _companyId: string, _filename: string) {
+async function tryMultiPageOCREnhancement(
+  files: File[],
+  companyId: string
+): Promise<ExtractedExpenseData> {
+  console.log(`🚀 [Multi-Page OCR] Processing ${files.length} files as one document...`);
+
+  const { extractExpenseWithTextract } = await import('@/lib/aws-textract-ocr');
+
+  // FILES ARE UPLOADED IN REVERSE ORDER!
+  // First file (files[0]) = Account statement/summary with amounts (Kontoblatt)
+  // Last file (files[files.length-1]) = Invoice header with company name
+
+  // Process FIRST file for AMOUNTS (Kontoblatt/Account Statement)
+  const summaryFile = files[0];
+  console.log(
+    `📄 [Multi-Page OCR] Processing file 1 (${summaryFile.name}) for amounts (Kontoblatt)`
+  );
+
+  const summaryFileBuffer = await summaryFile.arrayBuffer();
+  let summaryBuffer = Buffer.from(summaryFileBuffer);
+
+  if (summaryFile.type.includes('image')) {
+    const sharp = (await import('sharp')).default;
+    const metadata = await sharp(summaryBuffer).metadata();
+
+    if (metadata.format === 'heif') {
+      throw new Error('HEIF/HEIC Format wird nicht unterstützt.');
+    }
+
+    const processedBuffer = await sharp(summaryBuffer)
+      .resize(10000, 10000, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 92, progressive: false })
+      .toBuffer();
+
+    summaryBuffer = Buffer.from(processedBuffer);
+  }
+
+  const summaryPageData = await extractExpenseWithTextract(
+    summaryBuffer,
+    summaryFile.type.includes('image') ? 'image/jpeg' : summaryFile.type
+  );
+
+  console.log('📄 [Multi-Page OCR] Summary page data:', {
+    amount: summaryPageData.amount,
+    netAmount: summaryPageData.netAmount,
+    vatAmount: summaryPageData.vatAmount,
+    invoiceNumber: summaryPageData.invoiceNumber,
+    date: summaryPageData.date,
+  });
+
+  // Process LAST file for VENDOR (Invoice Header)
+  const headerFile = files[files.length - 1];
+  console.log(
+    `📄 [Multi-Page OCR] Processing file ${files.length} (${headerFile.name}) for vendor (Invoice Header)`
+  );
+
+  const headerFileBuffer = await headerFile.arrayBuffer();
+  let headerBuffer = Buffer.from(headerFileBuffer);
+
+  if (headerFile.type.includes('image')) {
+    const sharp = (await import('sharp')).default;
+    const processedBuffer = await sharp(headerBuffer)
+      .resize(10000, 10000, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 92, progressive: false })
+      .toBuffer();
+
+    headerBuffer = Buffer.from(processedBuffer);
+  }
+
+  const headerPageData = await extractExpenseWithTextract(
+    headerBuffer,
+    headerFile.type.includes('image') ? 'image/jpeg' : headerFile.type
+  );
+
+  console.log('📄 [Multi-Page OCR] Header page data:', {
+    vendor: headerPageData.vendor,
+    companyName: headerPageData.companyName,
+  });
+
+  // Process ALL middle pages for line items (skip first and last)
+  const allLineItems: LineItem[] = [];
+
+  // Add line items from summary page and header page
+  if (summaryPageData.lineItems) {
+    allLineItems.push(...summaryPageData.lineItems);
+  }
+  if (headerPageData.lineItems) {
+    allLineItems.push(...headerPageData.lineItems);
+  }
+
+  // Process middle pages for additional line items
+  if (files.length > 2) {
+    console.log(
+      `📄 [Multi-Page OCR] Processing ${files.length - 2} middle pages for line items...`
+    );
+
+    for (let i = 1; i < files.length - 1; i++) {
+      const middleFile = files[i];
+      console.log(
+        `📄 [Multi-Page OCR] Processing page ${i + 1} (${middleFile.name}) for line items`
+      );
+
+      const middleFileBuffer = await middleFile.arrayBuffer();
+      let middleBuffer = Buffer.from(middleFileBuffer);
+
+      if (middleFile.type.includes('image')) {
+        const sharp = (await import('sharp')).default;
+        const processedBuffer = await sharp(middleBuffer)
+          .resize(10000, 10000, { fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 92, progressive: false })
+          .toBuffer();
+
+        middleBuffer = Buffer.from(processedBuffer);
+      }
+
+      const middlePageData = await extractExpenseWithTextract(
+        middleBuffer,
+        middleFile.type.includes('image') ? 'image/jpeg' : middleFile.type
+      );
+
+      if (middlePageData.lineItems && middlePageData.lineItems.length > 0) {
+        console.log(`📋 [Page ${i + 1}] Found ${middlePageData.lineItems.length} line items`);
+        allLineItems.push(...middlePageData.lineItems);
+      }
+    }
+  }
+
+  console.log(`📋 [Multi-Page OCR] Total line items extracted: ${allLineItems.length}`);
+
+  // Combine data: amounts from first file (Kontoblatt), vendor from last file (header)
+  const filename = summaryFile.name.toLowerCase();
+  const category = detectExpenseCategory(filename, headerPageData.vendor || '');
+
+  const result: ExtractedExpenseData = {
+    title: `${headerPageData.vendor || 'Rechnung'} - ${summaryPageData.invoiceNumber || ''}`,
+    vendor: headerPageData.vendor || '',
+    amount: summaryPageData.amount || null,
+    date: summaryPageData.date || headerPageData.date || new Date().toISOString().split('T')[0],
+    description: `${files.length}-seitiges Dokument`,
+    category,
+    invoiceNumber: summaryPageData.invoiceNumber || '',
+    vatAmount: summaryPageData.vatAmount || null,
+    netAmount: summaryPageData.netAmount || null,
+    vatRate: summaryPageData.vatRate || 19,
+    companyName: headerPageData.companyName || headerPageData.vendor || '',
+    companyAddress: headerPageData.companyAddress || '',
+    companyCity: headerPageData.companyCity || '',
+    companyZip: headerPageData.companyZip || '',
+    companyCountry: headerPageData.companyCountry || '',
+    companyVatNumber: headerPageData.companyVatNumber || '',
+    contactEmail: headerPageData.companyEmail || '',
+    contactPhone: headerPageData.companyPhone || '',
+    taxDeductible: true,
+    lineItems: allLineItems.length > 0 ? allLineItems : undefined,
+    metadata: {
+      isMultiPage: true,
+      totalPages: files.length,
+    },
+  };
+
+  return result;
+}
+
+/**
+ * 🔄 ECHTER OCR MIT AWS TEXTRACT (Single File)
+ */
+async function tryOCREnhancement(
+  file: File,
+  _companyId: string,
+  _filename: string
+): Promise<Partial<ExtractedExpenseData>> {
   console.log('🚀 [Expense OCR] Starting AWS Textract extraction...');
 
   const { extractExpenseWithTextract } = await import('@/lib/aws-textract-ocr');
 
   // Convert File to Buffer
   const fileBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(fileBuffer);
+  let buffer = Buffer.from(fileBuffer);
+  let mimeType = file.type;
+
+  // Image validation and conversion for AWS Textract compatibility
+  if (file.type.includes('image')) {
+    console.log('🖼️  [Image Processing] Validating and converting image for AWS Textract...');
+
+    const sharp = (await import('sharp')).default;
+
+    try {
+      // Get image metadata first to detect actual format
+      const metadata = await sharp(buffer).metadata();
+      console.log('📊 [Image Metadata]:', {
+        format: metadata.format,
+        width: metadata.width,
+        height: metadata.height,
+        size: `${(buffer.length / 1024).toFixed(2)} KB`,
+      });
+
+      // Check if image is HEIF/HEIC (iPhone format)
+      if (metadata.format === 'heif') {
+        console.warn(
+          '⚠️  [Image Format] HEIF/HEIC format detected (iPhone). Sharp needs libheif support.'
+        );
+        console.log('💡 [Fallback] Trying to process with native format...');
+
+        // Try to use original buffer - Textract might accept it
+        // If not, user needs to convert on device
+        throw new Error(
+          'HEIF/HEIC Format wird nicht unterstützt. Bitte konvertieren Sie das Bild zu JPEG oder PNG auf Ihrem Gerät.'
+        );
+      }
+
+      // Convert image to standard JPEG format that Textract accepts
+      // - Max dimensions: 10000x10000 pixels
+      // - Baseline JPEG (not progressive)
+      // - RGB color space (no CMYK)
+      const processedBuffer = await sharp(buffer)
+        .resize(10000, 10000, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .jpeg({
+          quality: 92,
+          progressive: false,
+          chromaSubsampling: '4:2:0',
+        })
+        .toBuffer();
+
+      buffer = Buffer.from(processedBuffer);
+      mimeType = 'image/jpeg';
+
+      console.log('✅ [Image Processing] Image converted:', {
+        originalSize: `${(fileBuffer.byteLength / 1024).toFixed(2)} KB`,
+        processedSize: `${(buffer.length / 1024).toFixed(2)} KB`,
+        format: 'JPEG',
+      });
+    } catch (error: any) {
+      console.error('❌ [Image Processing] Failed to convert image:', error.message);
+
+      // Provide user-friendly error message
+      if (error.message.includes('HEIF') || error.message.includes('heif')) {
+        throw new Error(
+          '📱 iPhone HEIC-Format wird nicht unterstützt.\n\nBitte öffnen Sie das Bild und:\n1. Teilen → Speichern als JPEG\n2. Oder in Einstellungen → Kamera → "Kompatibel" wählen'
+        );
+      }
+
+      throw new Error(`Bild konnte nicht verarbeitet werden: ${error.message}`);
+    }
+  }
 
   // Call AWS Textract DIREKT - KEINE Firebase Function!
-  const result = await extractExpenseWithTextract(buffer, file.type);
+  const result = await extractExpenseWithTextract(buffer, mimeType);
 
   console.log('✅ [Expense OCR] AWS Textract full response:', {
     vendor: result.vendor,
@@ -232,13 +553,14 @@ async function tryOCREnhancement(file: File, _companyId: string, _filename: stri
     netAmount: result.netAmount,
     date: result.date,
     confidence: result.confidence,
+    metadata: result.metadata,
   });
 
   // Return structured data - KEINE Mappings, KEINE Fallbacks!
   return {
     vendor: result.vendor,
     amount: result.amount,
-    date: result.date,
+    date: result.date || undefined, // Convert null to undefined for consistency
     description: `${result.vendor} - ${result.invoiceNumber || 'Beleg'}`,
     category: 'Sonstiges', // Wird später durch intelligente Erkennung ersetzt
     invoiceNumber: result.invoiceNumber,
@@ -254,6 +576,8 @@ async function tryOCREnhancement(file: File, _companyId: string, _filename: stri
     companyVatNumber: result.companyVatNumber || '',
     contactEmail: result.companyEmail || '',
     contactPhone: result.companyPhone || '',
+    // Metadata (multi-page info)
+    metadata: result.metadata,
   };
 }
 
@@ -264,7 +588,7 @@ async function tryOCREnhancement(file: File, _companyId: string, _filename: stri
 function mergeExpenseData(
   localData: Partial<ExtractedExpenseData>,
   ocrData: Partial<ExtractedExpenseData>
-) {
+): ExtractedExpenseData {
   // Intelligente Kategorie-Auswahl: Lokale Kategorien-Erkennung hat Vorrang!
   const finalCategory =
     localData.category && localData.category !== 'Sonstiges'
@@ -297,7 +621,9 @@ function mergeExpenseData(
     companyVatNumber: ocrData.companyVatNumber || '',
     contactEmail: ocrData.contactEmail || '',
     contactPhone: ocrData.contactPhone || '',
-    taxDeductible: localData.taxDeductible,
+    taxDeductible: localData.taxDeductible ?? true,
+    // Metadata
+    metadata: ocrData.metadata,
   };
 }
 

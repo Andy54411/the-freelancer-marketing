@@ -22,6 +22,15 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import ExpenseReceiptUpload from '@/components/finance/ExpenseReceiptUpload';
 import Link from 'next/link';
 
+interface LineItem {
+  position: string;
+  description: string;
+  quantity: number | null;
+  unitPrice: number | null;
+  totalPrice: number | null;
+  unit?: string;
+}
+
 interface ExpenseFormData {
   title: string;
   amount: string;
@@ -55,6 +64,8 @@ export default function CreateExpensePage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [currentReceipt, setCurrentReceipt] = useState<File | null>(null);
+  const [currentReceipts, setCurrentReceipts] = useState<string[]>([]); // Multiple receipts support - stores URLs
+  const [extractedLineItems, setExtractedLineItems] = useState<LineItem[]>([]); // Store extracted line items
 
   const [formData, setFormData] = useState<ExpenseFormData>({
     title: '',
@@ -167,17 +178,33 @@ export default function CreateExpensePage() {
         });
       }
 
-      // PDF-Upload zu Firebase Storage
-      let pdfDownloadURL = '';
-      if (currentReceipt) {
+      // PDF-Upload zu Firebase Storage - Support für multiple receipts
+      const receipts: any[] = [];
+
+      if (currentReceipts.length > 0) {
+        receipts.push(
+          ...currentReceipts.map(url => ({
+            fileName: url.split('/').pop() || 'receipt.pdf',
+            downloadURL: url,
+            uploadDate: new Date().toISOString(),
+          }))
+        );
+      } else if (currentReceipt) {
         try {
-          toast.info('PDF wird hochgeladen...', {
+          toast.info('Beleg wird hochgeladen...', {
             description: 'Beleg wird für Steuerberater gespeichert',
           });
-          pdfDownloadURL = await uploadPdfToStorage(currentReceipt);
-          toast.success('PDF erfolgreich gespeichert!');
-        } catch {
-          toast.error('PDF-Upload fehlgeschlagen, Ausgabe wird trotzdem gespeichert');
+
+          const downloadURL = await uploadPdfToStorage(currentReceipt);
+          receipts.push({
+            fileName: currentReceipt.name,
+            downloadURL,
+            uploadDate: new Date().toISOString(),
+          });
+
+          toast.success('Beleg erfolgreich gespeichert!');
+        } catch (error) {
+          toast.error('Upload fehlgeschlagen, Ausgabe wird trotzdem gespeichert');
         }
       }
 
@@ -202,13 +229,8 @@ export default function CreateExpensePage() {
         contactPhone: formData.contactPhone || '',
         supplierId,
         taxDeductible: formData.taxDeductible,
-        receipt: currentReceipt
-          ? {
-              fileName: currentReceipt.name,
-              downloadURL: pdfDownloadURL,
-              uploadDate: new Date().toISOString(),
-            }
-          : null,
+        receipts: receipts.length > 0 ? receipts : null, // Multiple receipts support
+        receipt: receipts.length > 0 ? receipts[0] : null, // Backward compatibility
       };
 
       const response = await fetch('/api/expenses', {
@@ -566,7 +588,14 @@ export default function CreateExpensePage() {
               </h3>
               <ExpenseReceiptUpload
                 companyId={uid}
-                onDataExtracted={async (data, storageUrl) => {
+                multiple={true}
+                onDataExtracted={data => {
+                  // Store extracted line items
+                  if (data.lineItems && data.lineItems.length > 0) {
+                    setExtractedLineItems(data.lineItems);
+                    console.log(`📋 Extracted ${data.lineItems.length} line items`);
+                  }
+
                   setFormData(prev => ({
                     ...prev,
                     title: data.title || prev.title,
@@ -602,14 +631,76 @@ export default function CreateExpensePage() {
                   }));
                   toast.success('✅ OCR-Extraktion erfolgreich');
                 }}
-                onFileUploaded={file => {
-                  setCurrentReceipt(file);
+                onFilesUploaded={files => {
+                  setCurrentReceipts(files);
                 }}
                 showPreview={true}
                 enhancedMode={false}
               />
             </div>
           </div>
+
+          {/* Extracted Line Items Display */}
+          {extractedLineItems.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                Extrahierte Leistungspositionen ({extractedLineItems.length})
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full border border-gray-200 rounded-lg">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-b">
+                        Pos.
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-b">
+                        Beschreibung
+                      </th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 uppercase tracking-wider border-b">
+                        Menge
+                      </th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 uppercase tracking-wider border-b">
+                        Einzelpreis
+                      </th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 uppercase tracking-wider border-b">
+                        Gesamt
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {extractedLineItems.map((item, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                          {item.position}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{item.description}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap">
+                          {item.quantity !== null ? item.quantity.toLocaleString('de-DE') : '-'}
+                          {item.unit && ` ${item.unit}`}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap">
+                          {item.unitPrice !== null
+                            ? `${item.unitPrice.toLocaleString('de-DE', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })} €`
+                            : '-'}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right whitespace-nowrap">
+                          {item.totalPrice !== null
+                            ? `${item.totalPrice.toLocaleString('de-DE', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })} €`
+                            : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">

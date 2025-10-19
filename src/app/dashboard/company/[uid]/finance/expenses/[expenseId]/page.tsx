@@ -94,43 +94,61 @@ export default function ExpenseDetailPage() {
 
       setExpense(expenseData);
 
-      // Load PDF - Versuche verschiedene Felder
+      // Load PDF - Verwende die bestehende PDF-Proxy API
       const fileName = (rawData as any).fileName;
       const storageUrl = (rawData as any).storageUrl;
       const receiptDownloadUrl = expenseData.receipt?.downloadURL;
 
-      if (receiptDownloadUrl) {
-        // Bereits eine receipt.downloadURL vorhanden
-        setPdfUrl(receiptDownloadUrl);
-      } else if (storageUrl) {
-        // Parse den Storage-Pfad aus der alten storageUrl
+      let originalUrl: string | null = null;
+
+      // 1. Versuche receipt.downloadURL (modernste Variante)
+      if (receiptDownloadUrl && receiptDownloadUrl.includes('firebasestorage.googleapis.com')) {
+        originalUrl = receiptDownloadUrl;
+      }
+      // 2. Versuche storageUrl (legacy)
+      else if (storageUrl && storageUrl.includes('firebasestorage.googleapis.com')) {
         try {
-          // Extract path from URL: .../o/{path}?...
+          // Extract path from storage URL
           const match = storageUrl.match(/\/o\/(.+?)\?/);
           if (match && match[1]) {
             const storagePath = decodeURIComponent(match[1]);
             const storageRef = ref(storage, storagePath);
-            const freshUrl = await getDownloadURL(storageRef);
-            setPdfUrl(freshUrl);
+            originalUrl = await getDownloadURL(storageRef);
           } else {
-            setPdfUrl(storageUrl);
+            originalUrl = storageUrl;
           }
-        } catch (storageErr) {
-          console.error('Error loading PDF from storage:', storageErr);
-          setPdfUrl(storageUrl);
-        }
-      } else if (fileName) {
-        // Try to construct path from fileName
-        try {
-          const storageRef = ref(storage, `expense-receipts/${uid}/${fileName}`);
-          const freshUrl = await getDownloadURL(storageRef);
-          setPdfUrl(freshUrl);
         } catch (err) {
-          console.error('Error loading PDF from fileName:', err);
+          originalUrl = storageUrl;
         }
       }
+      // 3. Versuche fileName (construct path)
+      else if (fileName) {
+        try {
+          // Verschiedene mögliche Pfade probieren
+          const possiblePaths = [
+            `companies/${uid}/expenses/${fileName}`,
+            `expense-receipts/${uid}/${fileName}`, // Legacy support
+            `uploads/${uid}/${fileName}`,
+          ];
+
+          for (const path of possiblePaths) {
+            try {
+              const storageRef = ref(storage, path);
+              originalUrl = await getDownloadURL(storageRef);
+              break;
+            } catch (pathErr) {
+              // Continue to next path
+            }
+          }
+        } catch (err) {
+          // Path construction failed
+        }
+      }
+
+      // Verwende die sichere Expense-PDF API
+      const secureUrl = `/api/expenses/${uid}/${expenseId}/pdf`;
+      setPdfUrl(secureUrl);
     } catch (err: any) {
-      console.error('Error loading expense:', err);
       setError(err.message || 'Fehler beim Laden der Ausgabe');
     } finally {
       setLoading(false);
@@ -143,7 +161,7 @@ export default function ExpenseDetailPage() {
 
   const handleDelete = async () => {
     if (!expense) return;
-    
+
     if (!confirm('Möchten Sie diese Ausgabe wirklich löschen?')) return;
 
     try {
@@ -151,7 +169,6 @@ export default function ExpenseDetailPage() {
       toast.success('Ausgabe gelöscht');
       handleBackToExpenses();
     } catch (err: any) {
-      console.error('Error deleting expense:', err);
       toast.error('Fehler beim Löschen');
     }
   };
@@ -253,7 +270,9 @@ export default function ExpenseDetailPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => toast.info('Bearbeiten wird bald hinzugefügt')}>
+                    <DropdownMenuItem
+                      onClick={() => toast.info('Bearbeiten wird bald hinzugefügt')}
+                    >
                       <Edit className="h-4 w-4 mr-3" />
                       Bearbeiten
                     </DropdownMenuItem>
@@ -285,9 +304,7 @@ export default function ExpenseDetailPage() {
                     <Euro className="h-4 w-4 mr-2 text-gray-400" />
                     <p className="text-sm text-gray-600">Betrag</p>
                   </div>
-                  <p className="text-sm font-bold text-gray-900">
-                    {expense.amount.toFixed(2)} €
-                  </p>
+                  <p className="text-sm font-bold text-gray-900">{expense.amount.toFixed(2)} €</p>
                 </div>
 
                 {/* Category */}
@@ -352,9 +369,7 @@ export default function ExpenseDetailPage() {
                       </p>
                     </div>
                     <div className="flex justify-between items-center py-2">
-                      <p className="text-sm text-gray-600">
-                        MwSt. ({expense.vatRate || 19}%)
-                      </p>
+                      <p className="text-sm text-gray-600">MwSt. ({expense.vatRate || 19}%)</p>
                       <p className="text-sm font-medium text-gray-900">
                         {(expense.vatAmount || 0).toFixed(2)} €
                       </p>
@@ -373,13 +388,9 @@ export default function ExpenseDetailPage() {
 
           {/* PDF Preview */}
           <div className="lg:col-span-2">
-            <div className="bg-white border border-gray-200 rounded-lg h-[800px]">
+            <div className="bg-white border border-gray-200 rounded-lg h-[800px] overflow-hidden">
               {pdfUrl ? (
-                <iframe
-                  src={pdfUrl}
-                  className="w-full h-full rounded-lg"
-                  title="Beleg Vorschau"
-                />
+                <iframe src={pdfUrl} className="w-full h-full border-0" title="Beleg Vorschau" />
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center text-gray-500">

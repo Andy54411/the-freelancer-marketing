@@ -17,6 +17,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Search, ArrowDownRight, ArrowUpRight, Loader2, AlertTriangle } from 'lucide-react';
 import { TransactionLinkService, TransactionLink } from '@/services/transaction-link.service';
+import BookingAccountSelectionModal from './BookingAccountSelectionModal';
+import { BookingAccount } from '@/services/bookingAccountService';
+import { ModalTransaction } from '@/types/banking';
 
 // EXACT same interface as Banking Accounts Page - ERWEITERT
 interface FinAPITransaction {
@@ -50,52 +53,26 @@ interface FinAPITransaction {
 }
 
 // UI Transaction interface - EXACT same as Banking Accounts Page - ERWEITERT
-interface Transaction {
-  id: string;
-  status: 'processed' | 'pending' | 'failed' | 'duplicate' | 'adjustment' | 'linked';
-  name: string;
-  verwendungszweck: string;
-  buchungstag: string;
-  betrag: number;
-  offen: boolean;
-  verknuepfungen: string[];
-  linkedInvoices?: Array<{
-    documentId: string;
-    documentNumber: string;
-    customerName: string;
-  }>;
-  accountId: string;
-  accountName: string;
-  category?: string;
-  bookingStatus?: 'open' | 'booked';
-
-  // ERWEITERTE DATEN
-  empfaengerBank?: string;
-  empfaengerBic?: string;
-  empfaengerIban?: string;
-  transaktionsart?: string;
-  sepaPurpose?: string;
-  merchantCategory?: string;
-  primanota?: string;
-  labels?: string[];
-  isDuplicate?: boolean;
-  isAdjustment?: boolean;
-  importDate?: string;
-}
+// Transaction ist ein Alias für ModalTransaction (keine leere Interface-Declaration)
+type Transaction = ModalTransaction;
 
 interface SelectBankingTransactionModalProps {
   isOpen: boolean;
   companyId: string;
   invoiceAmount: number;
+  documentType: 'INVOICE' | 'EXPENSE';
+  documentNumber?: string;
   transactionType?: 'CREDIT' | 'DEBIT' | 'ALL';
   onClose: () => void;
-  onSelect: (transaction: Transaction) => void;
+  onSelect: (transaction: Transaction, bookingAccount?: BookingAccount) => void;
 }
 
 export default function SelectBankingTransactionModal({
   isOpen,
   companyId,
   invoiceAmount,
+  documentType,
+  documentNumber,
   transactionType = 'CREDIT',
   onClose,
   onSelect,
@@ -106,6 +83,15 @@ export default function SelectBankingTransactionModal({
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [transactionLinks, setTransactionLinks] = useState<TransactionLink[]>([]);
+
+  // Booking Account Selection Modal State
+  const [bookingAccountModal, setBookingAccountModal] = useState<{
+    isOpen: boolean;
+    transaction: ModalTransaction | null;
+  }>({
+    isOpen: false,
+    transaction: null,
+  });
 
   // Warning Modal State
   const [warningModal, setWarningModal] = useState<{
@@ -300,17 +286,27 @@ export default function SelectBankingTransactionModal({
           return dateB - dateA; // Newest first
         });
 
-        // Filter by transaction type if specified
+        // STRIKTE FILTERUNG basierend auf Document Type - KEINE GEMISCHTEN VERKNÜPFUNGEN
         let filteredTransactions = sortedTransactions;
-        if (transactionType !== 'ALL') {
-          filteredTransactions = sortedTransactions.filter((t: Transaction) => {
-            if (transactionType === 'CREDIT') {
-              return t.betrag > 0;
-            } else if (transactionType === 'DEBIT') {
-              return t.betrag < 0;
-            }
-            return true;
-          });
+
+        if (documentType === 'INVOICE') {
+          // NUR positive Transaktionen (Eingänge) für Einnahmen-Rechnungen
+          filteredTransactions = sortedTransactions.filter((t: Transaction) => t.betrag > 0);
+        } else if (documentType === 'EXPENSE') {
+          // NUR negative Transaktionen (Ausgänge) für Ausgaben-Belege
+          filteredTransactions = sortedTransactions.filter((t: Transaction) => t.betrag < 0);
+        } else {
+          // Fallback: verwende transactionType wenn documentType unbekannt
+          if (transactionType !== 'ALL') {
+            filteredTransactions = sortedTransactions.filter((t: Transaction) => {
+              if (transactionType === 'CREDIT') {
+                return t.betrag > 0;
+              } else if (transactionType === 'DEBIT') {
+                return t.betrag < 0;
+              }
+              return true;
+            });
+          }
         }
 
         console.log('Modal: Final filtered transactions count:', filteredTransactions.length);
@@ -450,6 +446,29 @@ export default function SelectBankingTransactionModal({
   });
 
   const handleSelectTransaction = (transaction: Transaction) => {
+    // Strikte Document-Type Validierung - BLOCKIERE falsche Zuordnungen
+    const isPositiveTransaction = transaction.betrag > 0;
+
+    if (documentType === 'INVOICE' && !isPositiveTransaction) {
+      setWarningModal({
+        isOpen: true,
+        transaction,
+        difference: 0,
+        tolerance: 0,
+      });
+      return; // STOPPE die Verknüpfung
+    }
+
+    if (documentType === 'EXPENSE' && isPositiveTransaction) {
+      setWarningModal({
+        isOpen: true,
+        transaction,
+        difference: 0,
+        tolerance: 0,
+      });
+      return; // STOPPE die Verknüpfung
+    }
+
     // Validiere Betragsübereinstimmung - BLOCKIERE bei großer Differenz
     const transactionAmount = Math.abs(transaction.betrag);
     const rechnungsBetrag = Math.abs(invoiceAmount);
@@ -467,7 +486,23 @@ export default function SelectBankingTransactionModal({
       return; // STOPPE die Verknüpfung
     }
 
-    onSelect(transaction);
+    // NEUE LOGIK: Öffne Buchungskonten-Modal anstatt direkte Verknüpfung
+    setBookingAccountModal({
+      isOpen: true,
+      transaction,
+    });
+  };
+
+  // Handle booking account selection
+  const handleBookingAccountSelection = (
+    transaction: ModalTransaction,
+    bookingAccount: BookingAccount
+  ) => {
+    setBookingAccountModal({ isOpen: false, transaction: null });
+
+    // Erweiterte Callback mit bookingAccount - Konvertiere ModalTransaction zu Transaction
+    const fullTransaction = transaction as Transaction;
+    onSelect(fullTransaction, bookingAccount);
   };
 
   const handleCloseWarningModal = () => {
@@ -495,7 +530,13 @@ export default function SelectBankingTransactionModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Banking-Transaktion auswählen</DialogTitle>
+          <DialogTitle>
+            {documentType === 'INVOICE'
+              ? 'Eingang für Rechnung auswählen'
+              : documentType === 'EXPENSE'
+                ? 'Ausgang für Beleg auswählen'
+                : 'Banking-Transaktion auswählen'}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col min-h-0">
@@ -509,15 +550,25 @@ export default function SelectBankingTransactionModal({
                 className="pl-9"
               />
             </div>
-            <Badge variant="outline">Rechnungsbetrag: {formatCurrency(invoiceAmount)}</Badge>
-            <Badge variant="default" className="bg-blue-100 text-blue-800">
-              {availableTransactions.length} verfügbare Transaktionen
+            <Badge variant="outline">
+              {documentType === 'INVOICE' ? 'Rechnungsbetrag' : 'Belegbetrag'}:{' '}
+              {formatCurrency(invoiceAmount)}
             </Badge>
-            {transactionType !== 'ALL' && (
-              <Badge variant="secondary">
-                {transactionType === 'CREDIT' ? 'Eingänge' : 'Ausgänge'}
-              </Badge>
-            )}
+            <Badge variant="default" className="bg-blue-100 text-blue-800">
+              {availableTransactions.length} verfügbare{' '}
+              {documentType === 'INVOICE' ? 'Eingänge' : 'Ausgänge'}
+            </Badge>
+            {documentNumber && <Badge variant="secondary">{documentNumber}</Badge>}
+            <Badge
+              variant={documentType === 'INVOICE' ? 'default' : 'destructive'}
+              className={
+                documentType === 'INVOICE'
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
+              }
+            >
+              {documentType === 'INVOICE' ? '💰 Einnahmen-Rechnung' : '💸 Ausgaben-Beleg'}
+            </Badge>
           </div>
 
           {error && (
@@ -663,53 +714,108 @@ export default function SelectBankingTransactionModal({
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
               <div>
-                <DialogTitle className="text-red-900">Verknüpfung nicht möglich</DialogTitle>
+                <DialogTitle className="text-red-900">
+                  {warningModal.difference === 0
+                    ? 'Falsche Transaktionsrichtung!'
+                    : 'Verknüpfung nicht möglich'}
+                </DialogTitle>
               </div>
             </div>
           </DialogHeader>
 
           <div className="space-y-4 pt-4">
-            <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-              <h4 className="font-medium text-red-900 mb-2">
-                Die Beträge weichen zu stark voneinander ab:
-              </h4>
+            {warningModal.difference === 0 ? (
+              // Document Type Mismatch Warning
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <h4 className="font-medium text-red-900 mb-2">
+                  {documentType === 'INVOICE'
+                    ? 'Einnahmen-Rechnungen können nur mit Eingängen verknüpft werden!'
+                    : 'Ausgaben-Belege können nur mit Ausgängen verknüpft werden!'}
+                </h4>
 
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Rechnungsbetrag:</span>
-                  <span className="font-medium">{formatCurrency(invoiceAmount)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Transaktionsbetrag:</span>
-                  <span className="font-medium">
-                    {warningModal.transaction
-                      ? formatCurrency(warningModal.transaction.betrag)
-                      : ''}
-                  </span>
-                </div>
-                <div className="border-t pt-2 mt-2">
+                <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Differenz:</span>
-                    <span className="font-medium text-red-600">
-                      {formatCurrency(warningModal.difference)}
+                    <span className="text-gray-600">Dokument-Typ:</span>
+                    <span className="font-medium">
+                      {documentType === 'INVOICE' ? '💰 Einnahmen-Rechnung' : '💸 Ausgaben-Beleg'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Maximal erlaubt:</span>
-                    <span className="font-medium text-gray-500">
-                      {formatCurrency(warningModal.tolerance)}
+                    <span className="text-gray-600">Transaktionsrichtung:</span>
+                    <span className="font-medium">
+                      {warningModal.transaction?.betrag && warningModal.transaction.betrag > 0
+                        ? '💰 Eingang'
+                        : '💸 Ausgang'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Transaktionsbetrag:</span>
+                    <span className="font-medium">
+                      {warningModal.transaction
+                        ? formatCurrency(warningModal.transaction.betrag)
+                        : ''}
                     </span>
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              // Amount Difference Warning (existing)
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <h4 className="font-medium text-red-900 mb-2">
+                  Die Beträge weichen zu stark voneinander ab:
+                </h4>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">
+                      {documentType === 'INVOICE' ? 'Rechnungsbetrag' : 'Belegbetrag'}:
+                    </span>
+                    <span className="font-medium">{formatCurrency(invoiceAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Transaktionsbetrag:</span>
+                    <span className="font-medium">
+                      {warningModal.transaction
+                        ? formatCurrency(warningModal.transaction.betrag)
+                        : ''}
+                    </span>
+                  </div>
+                  <div className="border-t pt-2 mt-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Differenz:</span>
+                      <span className="font-medium text-red-600">
+                        {formatCurrency(warningModal.difference)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Maximal erlaubt:</span>
+                      <span className="font-medium text-gray-500">
+                        {formatCurrency(warningModal.tolerance)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-blue-800">
-                <strong>Bitte wählen Sie eine Transaktion mit passendem Betrag.</strong>
-                <br />
-                Nur Transaktionen mit einer Differenz von maximal 5% oder 1€ können verknüpft
-                werden.
+                {warningModal.difference === 0 ? (
+                  <>
+                    <strong>Wählen Sie eine Transaktion in der richtigen Richtung:</strong>
+                    <br />
+                    {documentType === 'INVOICE'
+                      ? '• Einnahmen-Rechnungen (RE-) → nur Eingänge (positive Beträge)'
+                      : '• Ausgaben-Belege (BE-) → nur Ausgänge (negative Beträge)'}
+                  </>
+                ) : (
+                  <>
+                    <strong>Bitte wählen Sie eine Transaktion mit passendem Betrag.</strong>
+                    <br />
+                    Nur Transaktionen mit einer Differenz von maximal 5% oder 1€ können verknüpft
+                    werden.
+                  </>
+                )}
               </p>
             </div>
 
@@ -724,6 +830,17 @@ export default function SelectBankingTransactionModal({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Booking Account Selection Modal */}
+      <BookingAccountSelectionModal
+        isOpen={bookingAccountModal.isOpen}
+        companyId={companyId}
+        transaction={bookingAccountModal.transaction}
+        documentType={documentType}
+        documentNumber={documentNumber}
+        onClose={() => setBookingAccountModal({ isOpen: false, transaction: null })}
+        onSelect={handleBookingAccountSelection}
+      />
     </Dialog>
   );
 }

@@ -90,10 +90,22 @@ const navigationItems: NavigationItem[] = [
         value: 'marketplace',
         href: 'marketplace/projects',
         subItems: [
-          { label: 'Verfügbare Projekte', value: 'marketplace-projects', href: 'marketplace/projects' },
-          { label: 'Meine Bewerbungen', value: 'marketplace-proposals', href: 'marketplace/proposals' },
+          {
+            label: 'Verfügbare Projekte',
+            value: 'marketplace-projects',
+            href: 'marketplace/projects',
+          },
+          {
+            label: 'Meine Bewerbungen',
+            value: 'marketplace-proposals',
+            href: 'marketplace/proposals',
+          },
           { label: 'Direkte Anfragen', value: 'marketplace-quotes', href: 'marketplace/quotes' },
-          { label: 'Kategorie-Anfragen', value: 'marketplace-project-quotes', href: 'marketplace/project-quotes' },
+          {
+            label: 'Kategorie-Anfragen',
+            value: 'marketplace-project-quotes',
+            href: 'marketplace/project-quotes',
+          },
         ],
       },
       {
@@ -138,8 +150,16 @@ const navigationItems: NavigationItem[] = [
         href: 'finance/quotes',
         subItems: [
           { label: 'Angebot erstellen', value: 'quotes-create', href: 'finance/quotes/create' },
-          { label: 'Auftragsbestätigungen', value: 'quotes-confirmations', href: 'finance/order-confirmations' },
-          { label: 'Lieferscheine', value: 'quotes-delivery-notes', href: 'finance/delivery-notes' },
+          {
+            label: 'Auftragsbestätigungen',
+            value: 'quotes-confirmations',
+            href: 'finance/order-confirmations',
+          },
+          {
+            label: 'Lieferscheine',
+            value: 'quotes-delivery-notes',
+            href: 'finance/delivery-notes',
+          },
         ],
       },
       {
@@ -147,8 +167,16 @@ const navigationItems: NavigationItem[] = [
         value: 'invoices',
         href: 'finance/invoices',
         subItems: [
-          { label: 'Rechnung erstellen', value: 'invoices-create', href: 'finance/invoices/create' },
-          { label: 'Wiederkehrend', value: 'invoices-recurring', href: 'finance/invoices/recurring' },
+          {
+            label: 'Rechnung erstellen',
+            value: 'invoices-create',
+            href: 'finance/invoices/create',
+          },
+          {
+            label: 'Wiederkehrend',
+            value: 'invoices-recurring',
+            href: 'finance/invoices/recurring',
+          },
           { label: 'Mahnungen', value: 'invoices-reminders', href: 'finance/reminders' },
           { label: 'Gutschriften', value: 'invoices-credits', href: 'finance/credits' },
         ],
@@ -158,7 +186,11 @@ const navigationItems: NavigationItem[] = [
         value: 'expenses',
         href: 'finance/expenses',
         subItems: [
-          { label: 'Wiederkehrend', value: 'expenses-recurring', href: 'finance/expenses/recurring' },
+          {
+            label: 'Wiederkehrend',
+            value: 'expenses-recurring',
+            href: 'finance/expenses/recurring',
+          },
           { label: 'Anlagen', value: 'expenses-assets', href: 'finance/expenses/assets' },
         ],
       },
@@ -281,27 +313,75 @@ export default function CompanySidebar({
 
   // Prüfe ob Bankkonten über FinAPI verbunden sind
   useEffect(() => {
+    let isMounted = true; // Cleanup-Flag
+
     const checkBankConnections = async () => {
+      // Warte kurz bevor API-Call (für SSR-Kompatibilität)
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check if component is still mounted
+      if (!isMounted) return;
+
       try {
         setCheckingBankConnection(true);
-        const response = await fetch(`/api/finapi/accounts-enhanced?userId=${uid}`);
-        
+
+        // Prüfe ob wir im Browser sind
+        if (typeof window === 'undefined') {
+          if (isMounted) setHasBankConnection(false);
+          return;
+        }
+
+        // Prüfe ob die API verfügbar ist
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+        const response = await fetch(`/api/finapi/accounts-enhanced?userId=${uid}`, {
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        clearTimeout(timeoutId);
+
+        // Check if component is still mounted before updating state
+        if (!isMounted) return;
+
         if (response.ok) {
           const data = await response.json();
           // Wenn Accounts existieren und mindestens ein Account verbunden ist
           const hasConnections = data.success && data.accounts && data.accounts.length > 0;
           setHasBankConnection(hasConnections);
+        } else {
+          // API nicht verfügbar - setze Standard-Wert
+          setHasBankConnection(false);
         }
       } catch (error) {
-        console.error('Fehler beim Prüfen der Bankverbindungen:', error);
+        // Check if component is still mounted before updating state
+        if (!isMounted) return;
+
+        // Fehler ignorieren und Standard-Wert setzen (keine Bank-Connection)
+        setHasBankConnection(false);
+
+        // Nur loggen wenn es nicht ein AbortError ist
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.warn('Bank-Verbindung konnte nicht geprüft werden:', error.message);
+        }
       } finally {
-        setCheckingBankConnection(false);
+        if (isMounted) {
+          setCheckingBankConnection(false);
+        }
       }
     };
 
     if (uid) {
       checkBankConnections();
     }
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
   }, [uid]);
 
   const isExpanded = (itemValue: string) => expandedItems.includes(itemValue);
@@ -521,7 +601,7 @@ export default function CompanySidebar({
             {navigationItems.map(item => {
               const isMainActive = isItemActive(item);
               const isItemExpanded = isExpanded(item.value);
-              
+
               // Filtere SubItems für Banking: Blende "Dashboard" aus wenn Bankkonto verbunden
               let filteredSubItems = item.subItems;
               if (item.value === 'banking' && hasBankConnection && item.subItems) {
@@ -529,7 +609,7 @@ export default function CompanySidebar({
                   subItem => subItem.value !== 'banking-overview'
                 );
               }
-              
+
               const hasSubItems = filteredSubItems && filteredSubItems.length > 0;
 
               return (
@@ -617,7 +697,7 @@ export default function CompanySidebar({
                               <div className="flex items-center">
                                 {hasSubSubItems ? (
                                   <span
-                                    onClick={(e) => {
+                                    onClick={e => {
                                       e.stopPropagation();
                                       onToggleExpanded(subItem.value);
                                     }}
@@ -647,7 +727,7 @@ export default function CompanySidebar({
                               <div className="ml-6 mt-1 space-y-1">
                                 {subItem.subItems?.map(subSubItem => {
                                   const isSubSubActive = pathname?.includes(subSubItem.href || '');
-                                  
+
                                   return (
                                     <button
                                       key={subSubItem.value}
