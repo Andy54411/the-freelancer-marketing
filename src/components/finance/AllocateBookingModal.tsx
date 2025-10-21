@@ -76,14 +76,23 @@ export function AllocateBookingModal({
 
         const loadedInvoices: Invoice[] = snapshot.docs.map(doc => {
           const data = doc.data();
+
+          // Calculate open amount based on status and payments
+          let openAmount = data.total || 0;
+          if (data.status === 'paid') {
+            openAmount = 0;
+          } else if (data.paidAmount) {
+            openAmount = (data.total || 0) - (data.paidAmount || 0);
+          }
+
           return {
             id: doc.id,
             invoiceNumber: data.invoiceNumber || 'N/A',
             customerName: data.customerName || 'Unbekannt',
             date: data.date || new Date().toISOString().split('T')[0],
             dueDate: data.dueDate || '',
-            amount: data.totalAmount || 0,
-            openAmount: data.openAmount || data.totalAmount || 0,
+            amount: data.total || 0,
+            openAmount: openAmount,
             status: data.status || 'open',
             interval: data.interval,
           };

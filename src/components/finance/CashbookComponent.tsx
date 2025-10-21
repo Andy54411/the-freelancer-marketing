@@ -49,6 +49,8 @@ import {
   Circle,
   AlertCircle,
   ArrowLeftRight,
+  Filter,
+  Printer,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { OpenCashRegisterModal } from './OpenCashRegisterModal';
@@ -88,6 +90,12 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
   const [showCashMovementModal, setShowCashMovementModal] = useState(false);
   const [showAllocateBookingModal, setShowAllocateBookingModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchCategory, setSearchCategory] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [minAmount, setMinAmount] = useState('');
+  const [maxAmount, setMaxAmount] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('current-month');
   const [cashBalance, setCashBalance] = useState(0);
   const [openingBalance, setOpeningBalance] = useState(0);
@@ -203,12 +211,44 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
     }).format(amount);
   };
 
-  const filteredEntries = entries.filter(
-    entry =>
-      entry.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (entry.reference && entry.reference.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredEntries = entries.filter(entry => {
+    // Search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch =
+        entry.description.toLowerCase().includes(searchLower) ||
+        entry.category.toLowerCase().includes(searchLower) ||
+        (entry.reference && entry.reference.toLowerCase().includes(searchLower)) ||
+        (entry.counterpartyName && entry.counterpartyName.toLowerCase().includes(searchLower));
+
+      // Category-specific search
+      if (
+        searchCategory === 'name' &&
+        !entry.counterpartyName?.toLowerCase().includes(searchLower)
+      ) {
+        return false;
+      } else if (
+        searchCategory === 'reference' &&
+        !entry.reference?.toLowerCase().includes(searchLower)
+      ) {
+        return false;
+      } else if (searchCategory === 'links' && !entry.linkedDocuments?.length) {
+        return false;
+      } else if (searchCategory === 'all' && !matchesSearch) {
+        return false;
+      }
+    }
+
+    // Date range filter
+    if (startDate && entry.date < startDate) return false;
+    if (endDate && entry.date > endDate) return false;
+
+    // Amount range filter
+    if (minAmount && Math.abs(entry.amount) < parseFloat(minAmount)) return false;
+    if (maxAmount && Math.abs(entry.amount) > parseFloat(maxAmount)) return false;
+
+    return true;
+  });
 
   const handleAddEntry = async () => {
     try {
@@ -338,6 +378,45 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
     setShowAllocateBookingModal(true);
   };
 
+  const handleExportCSV = () => {
+    const csvData = filteredEntries.map(entry => ({
+      Datum: entry.date,
+      Typ: entry.type === 'income' ? 'Einnahme' : 'Ausgabe',
+      Betrag: entry.amount,
+      Beschreibung: entry.description,
+      Kategorie: entry.category,
+      Referenz: entry.reference || '',
+      Status: entry.status || 'open',
+    }));
+
+    const headers = Object.keys(csvData[0]);
+    const csv = [
+      headers.join(';'),
+      ...csvData.map(row => headers.map(header => row[header as keyof typeof row]).join(';')),
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `kassenbuch_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    toast.success('Kassenbuch wurde exportiert');
+  };
+
+  const handlePrintReport = () => {
+    window.print();
+    toast.success('Druckvorschau wird geöffnet');
+  };
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setSearchCategory('all');
+    setStartDate('');
+    setEndDate('');
+    setMinAmount('');
+    setMaxAmount('');
+  };
+
   const getStatusBadge = (status?: 'open' | 'linked' | 'processed') => {
     switch (status) {
       case 'linked':
@@ -439,7 +518,139 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="bg-white rounded-lg shadow-sm border">
+        {/* Card Head with Tabs and Buttons */}
+        <div className={`px-6 py-3 ${showFilters ? 'border-b' : ''}`}>
+          <div className="flex items-center justify-between">
+            {/* Tabs Section */}
+            <div className="flex items-center">
+              <button className="px-4 py-2 text-sm font-semibold text-[#14ad9f] border-b-2 border-[#14ad9f] -mb-3">
+                Kasse
+              </button>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowCashMovementModal(true)} size="sm">
+                Geldbewegung
+              </Button>
+
+              <Button variant="outline" onClick={handlePrintReport} size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Kassenbericht drucken
+              </Button>
+
+              <Button variant="outline" onClick={handleExportCSV} size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Exportieren
+              </Button>
+
+              <Button variant="outline" onClick={() => setShowFilters(!showFilters)} size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Filter
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Section */}
+        {showFilters && (
+          <div className="px-6 py-4 bg-gray-50">
+            <div className="flex gap-3 mb-3">
+              {/* Search Field - Big */}
+              <div className="flex-[2]">
+                <Label className="text-xs font-medium text-gray-700 mb-1 block">Suche</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="z. B. Name, Verwendungszweck, Verknüpfungen"
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Select value={searchCategory} onValueChange={setSearchCategory}>
+                    <SelectTrigger className="w-44">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Alle Spalten</SelectItem>
+                      <SelectItem value="name">Name</SelectItem>
+                      <SelectItem value="reference">Verwendungszweck</SelectItem>
+                      <SelectItem value="links">Verknüpfungen</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Start Date - Small */}
+              <div className="flex-1">
+                <Label className="text-xs font-medium text-gray-700 mb-1 block">Startdatum</Label>
+                <div className="relative">
+                  <Input
+                    type="date"
+                    value={startDate}
+                    onChange={e => setStartDate(e.target.value)}
+                    placeholder="TT.MM.JJJJ"
+                  />
+                  <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* End Date - Small */}
+              <div className="flex-1">
+                <Label className="text-xs font-medium text-gray-700 mb-1 block">Enddatum</Label>
+                <div className="relative">
+                  <Input
+                    type="date"
+                    value={endDate}
+                    onChange={e => setEndDate(e.target.value)}
+                    placeholder="TT.MM.JJJJ"
+                  />
+                  <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Amount Range - Small */}
+              <div className="flex-1">
+                <Label className="text-xs font-medium text-gray-700 mb-1 block">
+                  Betrag <span className="font-normal">(Brutto)</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="von"
+                    value={minAmount}
+                    onChange={e => setMinAmount(e.target.value)}
+                    className="w-full"
+                  />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="bis"
+                    value={maxAmount}
+                    onChange={e => setMaxAmount(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Reset Filter Link */}
+            <div className="flex items-center">
+              <Button
+                variant="link"
+                onClick={resetFilters}
+                className="text-[#14ad9f] hover:text-[#0f9d84] px-0 h-auto text-sm"
+              >
+                Filter zurücksetzen
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Title and Description - Moved below filter */}
+      <div className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Kassenbuch</h2>
           <p className="text-gray-600 mt-1">
@@ -447,15 +658,11 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowCashMovementModal(true)}>
-            <ArrowLeftRight className="h-4 w-4 mr-2" />
-            Geldbewegung
-          </Button>
-
           <Button
             variant="outline"
             onClick={handleLinkBooking}
             disabled={selectedEntries.length === 0}
+            size="sm"
           >
             <LinkIcon className="h-4 w-4 mr-2" />
             Buchung zuordnen
@@ -463,7 +670,7 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white">
+              <Button className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white" size="sm">
                 Rechnung erstellen
                 <ChevronDown className="h-4 w-4 ml-2" />
               </Button>
@@ -489,17 +696,6 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="current-month">Aktueller Monat</SelectItem>
-              <SelectItem value="current-quarter">Aktuelles Quartal</SelectItem>
-              <SelectItem value="current-year">Aktuelles Jahr</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
