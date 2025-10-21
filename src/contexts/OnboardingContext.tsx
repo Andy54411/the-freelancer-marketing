@@ -518,6 +518,15 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
       await updateDoc(companyDocRef, companyUpdates);
 
+      // Create default payment accounts (Kasse und Basiskonto)
+      try {
+        const { PaymentAccountService } = await import('@/services/paymentAccountService');
+        await PaymentAccountService.createDefaultAccounts(companyId);
+      } catch (error) {
+        console.error('Error creating default payment accounts:', error);
+        // Don't fail onboarding if payment accounts creation fails
+      }
+
       // SUCCESS: Onboarding abgeschlossen - companies-only architecture
 
       // Set cookies for middleware

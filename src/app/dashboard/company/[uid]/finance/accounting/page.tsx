@@ -4,7 +4,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 // Entfernt: Tabs Import - verwenden jetzt custom Tab-Leiste
 import { Button } from '@/components/ui/button';
-import { Calculator, Hash, CreditCard, Wallet, ArrowLeftRight, Building2, Shield, DollarSign, MoreHorizontal, ChevronDown } from 'lucide-react';
+import {
+  Calculator,
+  Hash,
+  CreditCard,
+  Wallet,
+  ArrowLeftRight,
+  Building2,
+  Shield,
+  DollarSign,
+  MoreHorizontal,
+  ChevronDown,
+} from 'lucide-react';
 
 // Import Tab Components
 import NumberSequencesTab from '@/components/accounting/NumberSequencesTab';
@@ -18,6 +29,7 @@ import FinanceSettingsTab from '@/components/accounting/FinanceSettingsTab';
 
 // Import Services
 import { NumberSequenceService, NumberSequence } from '@/services/numberSequenceService';
+import { PaymentAccountService } from '@/services/paymentAccountService';
 
 export default function AccountingPage() {
   const params = useParams();
@@ -29,6 +41,10 @@ export default function AccountingPage() {
   // State für Nummerkreise - wird aus der Datenbank geladen
   const [numberSequences, setNumberSequences] = useState<NumberSequence[]>([]);
   const [loadingSequences, setLoadingSequences] = useState(true);
+
+  // State für Zahlungskonten - wird aus der Datenbank geladen
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([]);
+  const [loadingPaymentAccounts, setLoadingPaymentAccounts] = useState(true);
 
   // Lade Nummerkreise aus der Datenbank
   useEffect(() => {
@@ -56,6 +72,32 @@ export default function AccountingPage() {
     loadNumberSequences();
   }, [uid]);
 
+  // Lade Zahlungskonten aus der Datenbank
+  useEffect(() => {
+    const loadPaymentAccounts = async () => {
+      if (!uid) return;
+
+      try {
+        setLoadingPaymentAccounts(true);
+        let accounts = await PaymentAccountService.getPaymentAccounts(uid);
+
+        // Erstelle Standard-Konten, falls noch keine existieren
+        if (accounts.length === 0) {
+          await PaymentAccountService.createDefaultAccounts(uid);
+          accounts = await PaymentAccountService.getPaymentAccounts(uid);
+        }
+
+        setPaymentAccounts(accounts);
+      } catch (error) {
+        console.error('Fehler beim Laden der Zahlungskonten:', error);
+      } finally {
+        setLoadingPaymentAccounts(false);
+      }
+    };
+
+    loadPaymentAccounts();
+  }, [uid]);
+
   // FUNKTIONIERENDER Click-outside Handler
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -70,8 +112,6 @@ export default function AccountingPage() {
     };
   }, []);
 
-
-
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
     {
       id: '1',
@@ -83,27 +123,6 @@ export default function AccountingPage() {
     { id: '2', name: 'Barzahlung', type: 'CASH', active: true, defaultAccount: '1000' },
     { id: '3', name: 'Kreditkarte', type: 'CARD', active: true },
     { id: '4', name: 'PayPal', type: 'PAYPAL', active: false },
-  ]);
-
-  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([
-    {
-      id: '1',
-      name: 'Geschäftskonto',
-      iban: 'DE89 3704 0044 0532 0130 00',
-      bic: 'COBADEFFXXX',
-      bankName: 'Commerzbank',
-      type: 'CHECKING',
-      active: true,
-    },
-    {
-      id: '2',
-      name: 'Sparkonto',
-      iban: 'DE12 5001 0517 0648 4898 72',
-      bic: 'INGDDEFFXXX',
-      bankName: 'ING Bank',
-      type: 'SAVINGS',
-      active: true,
-    },
   ]);
 
   const [costCenters, setCostCenters] = useState<CostCenter[]>([
@@ -156,7 +175,26 @@ export default function AccountingPage() {
 
   const handleEditPaymentAccount = (account: PaymentAccount) => {};
 
-  const handleDeletePaymentAccount = (account: PaymentAccount) => {};
+  const handleDeletePaymentAccount = async (account: PaymentAccount) => {
+    try {
+      await PaymentAccountService.deletePaymentAccount(uid, account.id);
+      setPaymentAccounts(prev => prev.filter(a => a.id !== account.id));
+    } catch (error) {
+      console.error('Fehler beim Löschen des Zahlungskontos:', error);
+    }
+  };
+
+  const handleAddPaymentAccount = async (account: Omit<PaymentAccount, 'id'>) => {
+    try {
+      const newId = await PaymentAccountService.createPaymentAccount(uid, account);
+      // Reload accounts from database to get the complete data
+      const accounts = await PaymentAccountService.getPaymentAccounts(uid);
+      setPaymentAccounts(accounts);
+    } catch (error) {
+      console.error('Fehler beim Hinzufügen des Zahlungskontos:', error);
+      throw error;
+    }
+  };
 
   const handleCreateTransactionRule = () => {};
 
@@ -183,7 +221,7 @@ export default function AccountingPage() {
       <div className="space-y-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
-            {/* Haupttabs */}  
+            {/* Haupttabs */}
             <button
               onClick={() => setActiveTab('sequences')}
               className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
@@ -194,7 +232,7 @@ export default function AccountingPage() {
             >
               Nummernkreise
             </button>
-            
+
             <button
               onClick={() => setActiveTab('accounts')}
               className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
@@ -205,7 +243,7 @@ export default function AccountingPage() {
             >
               Buchungskonten
             </button>
-            
+
             <button
               onClick={() => setActiveTab('payment-methods')}
               className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
@@ -216,7 +254,7 @@ export default function AccountingPage() {
             >
               Zahlungsmethoden
             </button>
-            
+
             <button
               onClick={() => setActiveTab('payment-accounts')}
               className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
@@ -227,7 +265,7 @@ export default function AccountingPage() {
             >
               Zahlungskonten
             </button>
-            
+
             <button
               onClick={() => setActiveTab('transaction-matching')}
               className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
@@ -312,6 +350,8 @@ export default function AccountingPage() {
               accounts={paymentAccounts}
               onEdit={handleEditPaymentAccount}
               onDelete={handleDeletePaymentAccount}
+              onAdd={handleAddPaymentAccount}
+              companyId={uid}
             />
           )}
           {activeTab === 'transaction-matching' && (
@@ -325,12 +365,8 @@ export default function AccountingPage() {
               onToggleActive={handleToggleCostCenter}
             />
           )}
-          {activeTab === 'gobd' && (
-            <GoBDSystem companyId={uid} />
-          )}
-          {activeTab === 'finance-settings' && (
-            <FinanceSettingsTab companyUid={uid} />
-          )}
+          {activeTab === 'gobd' && <GoBDSystem companyId={uid} />}
+          {activeTab === 'finance-settings' && <FinanceSettingsTab companyUid={uid} />}
         </div>
       </div>
     </div>

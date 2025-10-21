@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,12 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Wallet,
   Plus,
   Minus,
@@ -36,8 +42,19 @@ import {
   Receipt,
   Loader2,
   Search,
+  ChevronDown,
+  Link as LinkIcon,
+  FileText,
+  CheckCircle,
+  Circle,
+  AlertCircle,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { OpenCashRegisterModal } from './OpenCashRegisterModal';
+import { OpeningBalanceModal } from './OpeningBalanceModal';
+import { CashMovementModal } from './CashMovementModal';
+import { AllocateBookingModal } from './AllocateBookingModal';
 
 interface CashEntry {
   id: string;
@@ -48,6 +65,13 @@ interface CashEntry {
   category: string;
   reference?: string;
   createdAt: string;
+  status?: 'open' | 'linked' | 'processed';
+  linkedDocuments?: Array<{
+    id: string;
+    type: 'invoice' | 'expense';
+    number: string;
+  }>;
+  counterpartyName?: string;
 }
 
 interface CashbookComponentProps {
@@ -59,9 +83,17 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showOpenCashRegisterModal, setShowOpenCashRegisterModal] = useState(false);
+  const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false);
+  const [showCashMovementModal, setShowCashMovementModal] = useState(false);
+  const [showAllocateBookingModal, setShowAllocateBookingModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState('current-month');
   const [cashBalance, setCashBalance] = useState(0);
+  const [openingBalance, setOpeningBalance] = useState(0);
+  const [isCashRegisterOpen, setIsCashRegisterOpen] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [selectedEntries, setSelectedEntries] = useState<string[]>([]);
 
   // Form state for new entry
   const [newEntry, setNewEntry] = useState({
@@ -92,65 +124,72 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
 
   useEffect(() => {
     loadCashEntries();
+    checkCashRegisterStatus();
   }, [companyId, selectedPeriod]);
+
+  const checkCashRegisterStatus = async () => {
+    try {
+      // Check if cash register is already opened
+      // In production: fetch from Firestore
+      const isOpen = localStorage.getItem(`cashRegister_${companyId}_opened`) === 'true';
+      const savedOpeningBalance = localStorage.getItem(`cashRegister_${companyId}_openingBalance`);
+
+      setIsCashRegisterOpen(isOpen);
+      if (savedOpeningBalance) {
+        setOpeningBalance(parseFloat(savedOpeningBalance));
+      }
+    } catch (error) {
+      console.error('Error checking cash register status:', error);
+    }
+  };
 
   const loadCashEntries = async () => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Mock data
-      const mockEntries: CashEntry[] = [
-        {
-          id: '1',
-          date: '2025-02-01',
-          type: 'income',
-          amount: 45.5,
-          description: 'Barverkauf - Beratung',
-          category: 'Barverkäufe',
-          reference: 'BAR-001',
-          createdAt: '2025-02-01T10:30:00Z',
-        },
-        {
-          id: '2',
-          date: '2025-02-01',
-          type: 'expense',
-          amount: 12.9,
-          description: 'Büromaterial - Stifte',
-          category: 'Büromaterial',
-          reference: 'REI-001',
-          createdAt: '2025-02-01T14:15:00Z',
-        },
-        {
-          id: '3',
-          date: '2025-02-02',
-          type: 'income',
-          amount: 120.0,
-          description: 'Trinkgeld Kunde Meyer',
-          category: 'Trinkgelder',
-          createdAt: '2025-02-02T16:45:00Z',
-        },
-        {
-          id: '4',
-          date: '2025-02-02',
-          type: 'expense',
-          amount: 8.5,
-          description: 'Porto - Einschreiben',
-          category: 'Porto',
-          reference: 'POST-MOCK',
-          createdAt: '2025-02-02T11:20:00Z',
-        },
-      ];
+      // Load from Firestore subcollection
+      const { collection, query, orderBy, getDocs } = await import('firebase/firestore');
+      const { db } = await import('@/firebase/clients');
 
-      setEntries(mockEntries);
+      const cashbookRef = collection(db, 'companies', companyId, 'cashbook');
+      const q = query(cashbookRef, orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
 
-      // Calculate balance
-      const balance = mockEntries.reduce((acc, entry) => {
+      const loadedEntries: CashEntry[] = [];
+
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+
+        // Convert Firestore data to CashEntry format
+        const entry: CashEntry = {
+          id: doc.id,
+          date: data.date || new Date().toISOString().split('T')[0],
+          type:
+            data.type === 'opening_balance' ? 'income' : data.amount >= 0 ? 'income' : 'expense',
+          amount: Math.abs(data.amount || 0),
+          description: data.description || '',
+          category: data.category || '',
+          reference: data.reference,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          status: data.status || 'open',
+          linkedDocuments: data.linkedDocuments || [],
+          counterpartyName: data.counterpartyName,
+        };
+
+        loadedEntries.push(entry);
+      });
+
+      setEntries(loadedEntries);
+
+      // Calculate balance including opening balance
+      const balance = loadedEntries.reduce((acc, entry) => {
         return entry.type === 'income' ? acc + entry.amount : acc - entry.amount;
       }, 0);
       setCashBalance(balance);
+
+      console.log('Loaded entries from Firestore:', loadedEntries.length);
     } catch (error) {
+      console.error('Error loading cashbook entries:', error);
       toast.error('Kassenbuch-Einträge konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -178,15 +217,37 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
         return;
       }
 
+      const amount = parseFloat(newEntry.amount);
+
+      // Import Firestore functions
+      const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+      const { db } = await import('@/firebase/clients');
+
+      // Save to Firestore
+      const cashbookRef = collection(db, 'companies', companyId, 'cashbook');
+
+      const docRef = await addDoc(cashbookRef, {
+        type: newEntry.type,
+        amount: newEntry.type === 'income' ? amount : -amount,
+        description: newEntry.description,
+        category: newEntry.category,
+        reference: newEntry.reference || null,
+        date: new Date().toISOString().split('T')[0],
+        createdAt: serverTimestamp(),
+        status: 'open',
+      });
+
+      // Create entry for local state
       const entry: CashEntry = {
-        id: Date.now().toString(),
+        id: docRef.id,
         date: new Date().toISOString().split('T')[0],
         type: newEntry.type,
-        amount: parseFloat(newEntry.amount),
+        amount: amount,
         description: newEntry.description,
         category: newEntry.category,
         reference: newEntry.reference || undefined,
         createdAt: new Date().toISOString(),
+        status: 'open',
       };
 
       setEntries(prev => [entry, ...prev]);
@@ -206,6 +267,7 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
       setShowAddModal(false);
       toast.success('Kassenbuch-Eintrag wurde hinzugefügt');
     } catch (error) {
+      console.error('Error adding entry:', error);
       toast.error('Eintrag konnte nicht hinzugefügt werden');
     }
   };
@@ -218,6 +280,91 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
     .filter(entry => entry.type === 'expense')
     .reduce((sum, entry) => sum + entry.amount, 0);
 
+  // Drag & Drop handlers
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFiles(e.dataTransfer.files);
+    }
+  }, []);
+
+  const handleFiles = (files: FileList) => {
+    Array.from(files).forEach(file => {
+      if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
+        toast.success(`Datei "${file.name}" wird hochgeladen...`);
+        // In production: upload to storage and process with OCR
+      } else {
+        toast.error(`Dateityp von "${file.name}" wird nicht unterstützt`);
+      }
+    });
+  };
+
+  const handleAgreedToTerms = () => {
+    // Close terms modal and open opening balance modal
+    setShowOpenCashRegisterModal(false);
+    setShowOpeningBalanceModal(true);
+  };
+
+  const handleOpeningBalanceSubmit = (balance: number, date: string) => {
+    // In production: the balance is already saved to Firestore by OpeningBalanceModal
+    setOpeningBalance(balance);
+    setIsCashRegisterOpen(true);
+    setCashBalance(balance);
+
+    // Save to localStorage for persistence
+    localStorage.setItem(`cashRegister_${companyId}_opened`, 'true');
+    localStorage.setItem(`cashRegister_${companyId}_openingBalance`, balance.toString());
+    localStorage.setItem(`cashRegister_${companyId}_openingDate`, date);
+  };
+
+  const handleLinkBooking = () => {
+    if (selectedEntries.length === 0) {
+      toast.error('Bitte wählen Sie mindestens einen Eintrag aus');
+      return;
+    }
+    setShowAllocateBookingModal(true);
+  };
+
+  const getStatusBadge = (status?: 'open' | 'linked' | 'processed') => {
+    switch (status) {
+      case 'linked':
+        return (
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Verknüpft
+          </Badge>
+        );
+      case 'processed':
+        return (
+          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+            <Circle className="h-3 w-3 mr-1" />
+            Verarbeitet
+          </Badge>
+        );
+      case 'open':
+      default:
+        return (
+          <Badge variant="outline" className="text-gray-600">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            Offen
+          </Badge>
+        );
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -227,8 +374,70 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
     );
   }
 
+  // Show "Open Cash Register" prompt if not opened yet
+  if (!isCashRegisterOpen) {
+    return (
+      <>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Card className="max-w-md w-full">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wallet className="h-6 w-6 text-[#14ad9f]" />
+                Hast du eine Kasse?
+              </CardTitle>
+              <CardDescription>
+                Hier kannst du deine Kassenumsätze einpflegen.
+                <br />
+                Denke daran, dass der Anfangsbestand nach dem Eröffnen aus rechtlichen Gründen
+                unveränderlich ist.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                onClick={() => setShowOpenCashRegisterModal(true)}
+                className="w-full bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+              >
+                Kasse eröffnen
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        <OpenCashRegisterModal
+          isOpen={showOpenCashRegisterModal}
+          onClose={() => setShowOpenCashRegisterModal(false)}
+          onConfirm={handleAgreedToTerms}
+        />
+
+        <OpeningBalanceModal
+          isOpen={showOpeningBalanceModal}
+          onClose={() => setShowOpeningBalanceModal(false)}
+          onSuccess={handleOpeningBalanceSubmit}
+          companyId={companyId}
+        />
+      </>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div
+      className="space-y-6"
+      onDragEnter={handleDrag}
+      onDragLeave={handleDrag}
+      onDragOver={handleDrag}
+      onDrop={handleDrop}
+    >
+      {/* Drag & Drop Overlay */}
+      {dragActive && (
+        <div className="fixed inset-0 bg-[#14ad9f]/10 backdrop-blur-sm z-50 flex items-center justify-center border-4 border-dashed border-[#14ad9f]">
+          <div className="bg-white rounded-lg p-8 shadow-xl">
+            <Upload className="h-16 w-16 text-[#14ad9f] mx-auto mb-4" />
+            <p className="text-xl font-semibold text-gray-900 text-center">Dateien hier ablegen</p>
+            <p className="text-gray-600 text-center mt-2">Belege und Quittungen hochladen</p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -238,6 +447,49 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowCashMovementModal(true)}>
+            <ArrowLeftRight className="h-4 w-4 mr-2" />
+            Geldbewegung
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={handleLinkBooking}
+            disabled={selectedEntries.length === 0}
+          >
+            <LinkIcon className="h-4 w-4 mr-2" />
+            Buchung zuordnen
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white">
+                Rechnung erstellen
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  setNewEntry(prev => ({ ...prev, type: 'income' }));
+                  setShowAddModal(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Einnahme erfassen
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setNewEntry(prev => ({ ...prev, type: 'expense' }));
+                  setShowAddModal(true);
+                }}
+              >
+                <Minus className="h-4 w-4 mr-2" />
+                Ausgabe erfassen
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
             <SelectTrigger className="w-48">
               <SelectValue />
@@ -248,13 +500,6 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
               <SelectItem value="current-year">Aktuelles Jahr</SelectItem>
             </SelectContent>
           </Select>
-          <Button
-            onClick={() => setShowAddModal(true)}
-            className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Eintrag hinzufügen
-          </Button>
         </div>
       </div>
 
@@ -378,9 +623,12 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
                 className="pl-10"
               />
             </div>
+            {selectedEntries.length > 0 && (
+              <Badge variant="secondary">{selectedEntries.length} ausgewählt</Badge>
+            )}
           </div>
 
-          {/* Entries List */}
+          {/* Entries Table */}
           <Card>
             <CardHeader>
               <CardTitle>Alle Einträge</CardTitle>
@@ -408,51 +656,120 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
                   )}
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {filteredEntries.map(entry => (
-                    <div
-                      key={entry.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div
-                          className={`p-2 rounded-full ${
-                            entry.type === 'income' ? 'bg-green-100' : 'bg-red-100'
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-12">
+                          <input
+                            type="checkbox"
+                            checked={selectedEntries.length === filteredEntries.length}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setSelectedEntries(filteredEntries.map(entry => entry.id));
+                              } else {
+                                setSelectedEntries([]);
+                              }
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Status
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Name / Verwendungszweck
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                          Buchungstag
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                          Betrag (Brutto)
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Verknüpfungen
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                          Aktionen
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredEntries.map(entry => (
+                        <tr
+                          key={entry.id}
+                          className={`hover:bg-gray-50 transition-colors ${
+                            selectedEntries.includes(entry.id) ? 'bg-blue-50' : ''
                           }`}
                         >
-                          {entry.type === 'income' ? (
-                            <Plus className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <Minus className="h-4 w-4 text-red-600" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{entry.description}</p>
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
-                            <span>{entry.category}</span>
-                            {entry.reference && (
-                              <>
-                                <span>•</span>
-                                <span>Ref: {entry.reference}</span>
-                              </>
+                          <td className="px-4 py-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedEntries.includes(entry.id)}
+                              onChange={e => {
+                                if (e.target.checked) {
+                                  setSelectedEntries(prev => [...prev, entry.id]);
+                                } else {
+                                  setSelectedEntries(prev => prev.filter(id => id !== entry.id));
+                                }
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                          </td>
+                          <td className="px-4 py-4">{getStatusBadge(entry.status)}</td>
+                          <td className="px-4 py-4">
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {entry.counterpartyName || 'Unbekannt'}
+                              </p>
+                              <p className="text-sm text-gray-600 truncate max-w-md">
+                                {entry.description}
+                              </p>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-right text-sm text-gray-900">
+                            {new Date(entry.date).toLocaleDateString('de-DE')}
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <span
+                              className={`font-medium ${
+                                entry.type === 'income' ? 'text-green-600' : 'text-red-600'
+                              }`}
+                            >
+                              {entry.type === 'income' ? '+' : '-'}
+                              {formatCurrency(entry.amount)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4">
+                            {entry.linkedDocuments && entry.linkedDocuments.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {entry.linkedDocuments.map(doc => (
+                                  <Badge key={doc.id} variant="outline" className="text-xs">
+                                    <FileText className="h-3 w-3 mr-1" />
+                                    {doc.number}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-400">-</span>
                             )}
-                            <span>•</span>
-                            <span>{new Date(entry.date).toLocaleDateString('de-DE')}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p
-                          className={`font-medium ${
-                            entry.type === 'income' ? 'text-green-600' : 'text-red-600'
-                          }`}
-                        >
-                          {entry.type === 'income' ? '+' : '-'}
-                          {formatCurrency(entry.amount)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                // Handle view/edit entry
+                                toast.info('Eintrag-Details öffnen (in Entwicklung)');
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </CardContent>
@@ -582,6 +899,31 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Cash Movement Modal */}
+      <CashMovementModal
+        isOpen={showCashMovementModal}
+        onClose={() => setShowCashMovementModal(false)}
+        companyId={companyId}
+        onSuccess={() => {
+          loadCashEntries();
+        }}
+      />
+
+      {/* Allocate Booking Modal */}
+      <AllocateBookingModal
+        isOpen={showAllocateBookingModal}
+        onClose={() => {
+          setShowAllocateBookingModal(false);
+          setSelectedEntries([]);
+        }}
+        companyId={companyId}
+        selectedEntryIds={selectedEntries}
+        onSuccess={() => {
+          loadCashEntries();
+          setSelectedEntries([]);
+        }}
+      />
     </div>
   );
 }

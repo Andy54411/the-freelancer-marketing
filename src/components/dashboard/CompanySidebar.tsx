@@ -212,6 +212,7 @@ const navigationItems: NavigationItem[] = [
       {
         label: 'Buchhaltungseinstellungen',
         value: 'accounting',
+        href: 'finance/accounting',
         subItems: [
           { label: 'Übersicht', value: 'accounting-overview', href: 'finance/accounting' },
           { label: 'Kassenbuch', value: 'accounting-cashbook', href: 'finance/cashbook' },
@@ -231,7 +232,10 @@ const navigationItems: NavigationItem[] = [
     label: 'Banking',
     icon: FiBanknote,
     value: 'banking',
-    href: 'banking',
+    subItems: [
+      { label: 'Konten', value: 'banking-accounts', href: 'banking/accounts' },
+      { label: 'Kassenbuch', value: 'banking-cashbook', href: 'banking/cashbook' },
+    ],
   },
   {
     label: 'Lagerbestand',
