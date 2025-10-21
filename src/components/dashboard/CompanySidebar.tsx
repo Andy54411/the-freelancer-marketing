@@ -132,11 +132,11 @@ const navigationItems: NavigationItem[] = [
     value: 'email',
     href: 'emails',
     subItems: [
-      { label: 'Posteingang', value: 'email-inbox', href: 'emails?folder=inbox' },
-      { label: 'Gesendet', value: 'email-sent', href: 'emails?folder=sent' },
-      { label: 'Entwürfe', value: 'email-drafts', href: 'emails?folder=drafts' },
-      { label: 'Spam', value: 'email-spam', href: 'emails?folder=spam' },
-      { label: 'Papierkorb', value: 'email-trash', href: 'emails?folder=trash' },
+      { label: 'Posteingang', value: 'email-inbox', href: 'emails' },
+      { label: 'Gesendet', value: 'email-sent', href: 'emails/sent' },
+      { label: 'Entwürfe', value: 'email-drafts', href: 'emails/drafts' },
+      { label: 'Spam', value: 'email-spam', href: 'emails/spam' },
+      { label: 'Papierkorb', value: 'email-trash', href: 'emails/trash' },
     ],
   },
   {
@@ -313,6 +313,13 @@ export default function CompanySidebar({
 }: CompanySidebarProps) {
   const pathname = usePathname();
   const [hasBankConnection, setHasBankConnection] = useState(false);
+  const [unreadEmailCounts, setUnreadEmailCounts] = useState<Record<string, number>>({
+    inbox: 0,
+    sent: 0,
+    drafts: 0,
+    spam: 0,
+    trash: 0,
+  });
   const [checkingBankConnection, setCheckingBankConnection] = useState(true);
 
   // Prüfe ob Bankkonten über FinAPI verbunden sind
@@ -383,6 +390,55 @@ export default function CompanySidebar({
     }
 
     // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, [uid]);
+
+  // Load unread email counts for all folders
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadUnreadCounts = async () => {
+      const folders = ['inbox', 'sent', 'drafts', 'spam', 'trash', 'starred', 'archived'];
+      const counts: Record<string, number> = {};
+
+      try {
+        // Load counts for all folders in parallel
+        const promises = folders.map(async folder => {
+          try {
+            const response = await fetch(`/api/company/${uid}/emails?folder=${folder}&limit=1000`);
+            if (response.ok) {
+              const data = await response.json();
+              counts[folder] = data.unreadCount || 0;
+            } else {
+              counts[folder] = 0;
+            }
+          } catch {
+            counts[folder] = 0;
+          }
+        });
+
+        await Promise.all(promises);
+
+        if (isMounted) {
+          setUnreadEmailCounts(counts);
+        }
+      } catch (error) {
+        console.error('Error loading email counts:', error);
+      }
+    };
+
+    if (uid) {
+      loadUnreadCounts();
+      // Refresh counts every 60 seconds
+      const interval = setInterval(loadUnreadCounts, 60000);
+      return () => {
+        isMounted = false;
+        clearInterval(interval);
+      };
+    }
+
     return () => {
       isMounted = false;
     };
@@ -719,11 +775,25 @@ export default function CompanySidebar({
                                 {subItem.label}
                               </div>
                               {/* E-Mail Zähler */}
-                              {item.value === 'email' && (
-                                <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-full">
-                                  0
-                                </span>
-                              )}
+                              {item.value === 'email' &&
+                                (() => {
+                                  // Map subItem value to folder name
+                                  const folderMap: Record<string, string> = {
+                                    'email-inbox': 'inbox',
+                                    'email-sent': 'sent',
+                                    'email-drafts': 'drafts',
+                                    'email-spam': 'spam',
+                                    'email-trash': 'trash',
+                                  };
+                                  const folder = folderMap[subItem.value];
+                                  const count = folder ? unreadEmailCounts[folder] : 0;
+
+                                  return count > 0 ? (
+                                    <span className="bg-[#14ad9f] text-white text-xs px-2 py-0.5 rounded-full font-semibold">
+                                      {count}
+                                    </span>
+                                  ) : null;
+                                })()}
                             </button>
 
                             {/* 3. Ebene: Sub-Sub-Items */}
@@ -761,18 +831,32 @@ export default function CompanySidebar({
                       {item.value === 'email' && (
                         <div className="mt-3 pt-3 border-t border-gray-200">
                           <button
-                            onClick={() => onNavigate('email-favorites', 'emails?folder=starred')}
-                            className="text-gray-500 hover:bg-gray-50 hover:text-gray-700 group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors"
+                            onClick={() => onNavigate('email-favorites', 'emails/starred')}
+                            className="text-gray-500 hover:bg-gray-50 hover:text-gray-700 group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors justify-between"
                           >
-                            <FiChevronRight className="mr-2 h-4 w-4" />
-                            Favoriten
+                            <div className="flex items-center">
+                              <FiChevronRight className="mr-2 h-4 w-4" />
+                              Favoriten
+                            </div>
+                            {unreadEmailCounts.starred > 0 && (
+                              <span className="ml-auto bg-[#14ad9f] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                                {unreadEmailCounts.starred}
+                              </span>
+                            )}
                           </button>
                           <button
-                            onClick={() => onNavigate('email-archive', 'emails?folder=archived')}
-                            className="text-gray-500 hover:bg-gray-50 hover:text-gray-700 group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors"
+                            onClick={() => onNavigate('email-archive', 'emails/archived')}
+                            className="text-gray-500 hover:bg-gray-50 hover:text-gray-700 group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors justify-between"
                           >
-                            <FiChevronRight className="mr-2 h-4 w-4" />
-                            Archiv
+                            <div className="flex items-center">
+                              <FiChevronRight className="mr-2 h-4 w-4" />
+                              Archiv
+                            </div>
+                            {unreadEmailCounts.archived > 0 && (
+                              <span className="ml-auto bg-[#14ad9f] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                                {unreadEmailCounts.archived}
+                              </span>
+                            )}
                           </button>
                           <button
                             onClick={() => onNavigate('email-settings', 'email-integration')}

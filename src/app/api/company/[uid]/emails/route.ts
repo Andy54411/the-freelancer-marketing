@@ -42,6 +42,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           drafts: 'DRAFT',
           spam: 'SPAM',
           trash: 'TRASH',
+          starred: 'STARRED',
+          archived: 'ARCHIVED',
         };
 
         const targetLabel = folderLabelMap[folder.toLowerCase()] || 'INBOX';

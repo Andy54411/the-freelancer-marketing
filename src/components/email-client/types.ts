@@ -40,7 +40,7 @@ export interface EmailAttachment {
 export interface EmailFolder {
   id: string;
   name: string;
-  type: 'inbox' | 'sent' | 'drafts' | 'spam' | 'trash' | 'custom';
+  type: 'inbox' | 'sent' | 'drafts' | 'spam' | 'trash' | 'starred' | 'archived' | 'custom';
   count: number;
   unreadCount: number;
 }

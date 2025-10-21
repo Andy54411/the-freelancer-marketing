@@ -68,6 +68,7 @@ interface EmailItemProps {
   onMarkAsRead: (emailIds: string[], read: boolean) => void;
   onArchive: (emailIds: string[]) => void;
   onDelete: (emailIds: string[]) => void;
+  onMarkAsSpam?: (emailId: string, isSpam: boolean) => void;
 }
 
 const EmailItem = memo(
@@ -80,6 +81,7 @@ const EmailItem = memo(
     onMarkAsRead,
     onArchive,
     onDelete,
+    onMarkAsSpam,
   }: EmailItemProps) => {
     // DEBUG: Log wenn diese Email-Item-Komponente neu rendert
 
@@ -256,6 +258,15 @@ const EmailItem = memo(
                     <DropdownMenuItem onClick={() => onArchive([email.id])}>
                       Archivieren
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const isCurrentlySpam = email.labels?.includes('SPAM');
+                        onMarkAsSpam?.(email.id, !isCurrentlySpam);
+                      }}
+                      className="text-orange-600"
+                    >
+                      {email.labels?.includes('SPAM') ? 'Kein Spam' : 'Als Spam markieren'}
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onDelete([email.id])} className="text-red-600">
                       Löschen
                     </DropdownMenuItem>
@@ -298,6 +309,7 @@ interface EmailListProps {
   onArchiveEmails: (emailIds: string[]) => void;
   onDeleteEmails: (emailIds: string[]) => void;
   onMarkAsRead: (emailIds: string[], read: boolean) => void;
+  onMarkAsSpam?: (emailId: string, isSpam: boolean) => void;
   filter: EmailFilter;
   onFilterChange: (filter: EmailFilter) => void;
   onSync?: () => void;
@@ -320,6 +332,7 @@ export function EmailList({
   onArchiveEmails,
   onDeleteEmails,
   onMarkAsRead,
+  onMarkAsSpam,
   filter,
   onFilterChange,
   onSync,
@@ -621,6 +634,7 @@ export function EmailList({
                 onMarkAsRead={onMarkAsRead}
                 onArchive={onArchiveEmails}
                 onDelete={onDeleteEmails}
+                onMarkAsSpam={onMarkAsSpam}
               />
             ))}
           </div>

@@ -91,6 +91,8 @@ export function EmailClient({
     { id: 'drafts', name: 'Entwürfe', type: 'drafts', count: 0, unreadCount: 0 },
     { id: 'spam', name: 'Spam', type: 'spam', count: 0, unreadCount: 0 },
     { id: 'trash', name: 'Papierkorb', type: 'trash', count: 0, unreadCount: 0 },
+    { id: 'starred', name: 'Favoriten', type: 'starred', count: 0, unreadCount: 0 },
+    { id: 'archived', name: 'Archiv', type: 'archived', count: 0, unreadCount: 0 },
   ]);
 
   const [emails, setEmails] = useState<EmailMessage[]>([]);
@@ -277,6 +279,8 @@ export function EmailClient({
     if (cachedEmails.length > 0 && isInitialLoad) {
       setIsInitialLoad(false);
     }
+
+    return undefined;
   }, [cachedEmails.length, cacheLoading, isInitialLoad, refreshCachedEmails]);
 
   // Sync cached emails with component state
@@ -358,6 +362,10 @@ export function EmailClient({
             return !email.labels?.includes('TRASH') && !email.labels?.includes('SENT');
           if (selectedFolder === 'sent') return email.labels?.includes('SENT');
           if (selectedFolder === 'trash') return email.labels?.includes('TRASH');
+          if (selectedFolder === 'drafts') return email.labels?.includes('DRAFT');
+          if (selectedFolder === 'spam') return email.labels?.includes('SPAM');
+          if (selectedFolder === 'starred') return email.labels?.includes('STARRED');
+          if (selectedFolder === 'archived') return email.labels?.includes('ARCHIVED');
           return true;
         });
 
@@ -737,27 +745,79 @@ export function EmailClient({
         const email = emails.find(e => e.id === emailId);
         if (!email) return;
 
-        // TODO: Implement new star email API
+        // Optimistic UI update
+        const newStarredState = !email.starred;
+        setEmails(prev =>
+          prev.map(e => (e.id === emailId ? { ...e, starred: newStarredState } : e))
+        );
 
-        return;
+        if (selectedEmail?.id === emailId) {
+          setSelectedEmail(prev => (prev ? { ...prev, starred: newStarredState } : null));
+        }
+
+        // API call
         const response = await fetch(`/api/company/${companyId}/emails/${emailId}/star`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ starred: !email?.starred }),
+          body: JSON.stringify({ starred: newStarredState }),
         });
 
-        if (response.ok) {
-          setEmails(prev => prev.map(e => (e.id === emailId ? { ...e, starred: !e.starred } : e)));
-
+        if (!response.ok) {
+          // Revert on failure
+          setEmails(prev =>
+            prev.map(e => (e.id === emailId ? { ...e, starred: !newStarredState } : e))
+          );
           if (selectedEmail?.id === emailId) {
-            setSelectedEmail(prev => (prev ? { ...prev, starred: !prev.starred } : null));
+            setSelectedEmail(prev => (prev ? { ...prev, starred: !newStarredState } : null));
           }
+          toast.error('Fehler beim Markieren der E-Mail');
+        } else {
+          toast.success(newStarredState ? 'Als Favorit markiert' : 'Favorit entfernt');
+          // Reload emails to ensure correct filtering (especially for starred folder)
+          await loadEmails();
         }
       } catch (error) {
         console.error('Fehler beim Markieren mit Stern:', error);
+        toast.error('Fehler beim Markieren der E-Mail');
       }
     },
-    [emails, companyId, selectedEmail]
+    [emails, companyId, selectedEmail, loadEmails]
+  );
+
+  const handleMarkAsSpam = useCallback(
+    async (emailId: string, isSpam: boolean = true) => {
+      try {
+        const email = emails.find(e => e.id === emailId);
+        if (!email) return;
+
+        // Optimistic UI update
+        setEmails(prev => prev.filter(e => e.id !== emailId));
+        if (selectedEmail?.id === emailId) {
+          setSelectedEmail(null);
+        }
+
+        // API call
+        const response = await fetch(`/api/company/${companyId}/emails/${emailId}/spam`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ spam: isSpam }),
+        });
+
+        if (!response.ok) {
+          // Revert on failure
+          setEmails(prev => [...prev, email]);
+          toast.error('Fehler beim Markieren als Spam');
+        } else {
+          toast.success(isSpam ? 'Als Spam markiert' : 'Spam-Markierung entfernt');
+          // Reload emails to ensure correct filtering
+          await loadEmails();
+        }
+      } catch (error) {
+        console.error('Fehler beim Markieren als Spam:', error);
+        toast.error('Fehler beim Markieren als Spam');
+      }
+    },
+    [emails, companyId, selectedEmail, loadEmails]
   );
 
   const handleArchiveEmails = useCallback(
@@ -963,6 +1023,7 @@ export function EmailClient({
           onArchiveEmails={handleArchiveEmails}
           onDeleteEmails={handleDeleteEmails}
           onMarkAsRead={handleMarkAsRead}
+          onMarkAsSpam={handleMarkAsSpam}
           filter={filter}
           onFilterChange={setFilter}
           onSync={handleRefresh}
@@ -988,6 +1049,7 @@ export function EmailClient({
             onDelete={emailId => handleDeleteEmails([emailId])}
             onStar={handleStarEmail}
             onMarkAsRead={(emailId, read) => handleMarkAsRead([emailId], read)}
+            onMarkAsSpam={handleMarkAsSpam}
           />
         </div>
       )}
