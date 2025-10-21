@@ -100,8 +100,30 @@ export function AllocateBookingModal({
 
         setInvoices(loadedInvoices);
       } else {
-        // Load vouchers - similar logic
-        setInvoices([]);
+        // Load vouchers/expenses from Firestore
+        const { collection, getDocs, query, orderBy } = await import('firebase/firestore');
+        const { db } = await import('@/firebase/clients');
+
+        const expensesRef = collection(db, 'companies', companyId, 'expenses');
+        const q = query(expensesRef, orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+
+        const loadedExpenses: Invoice[] = snapshot.docs.map(doc => {
+          const data = doc.data();
+
+          return {
+            id: doc.id,
+            invoiceNumber: data.expenseNumber || data.receiptNumber || doc.id.slice(0, 8),
+            customerName: data.vendor || data.companyName || 'Unbekannt',
+            date: data.date || new Date().toISOString().split('T')[0],
+            dueDate: data.dueDate || '',
+            amount: data.totalAmount || data.amount || 0,
+            openAmount: data.totalAmount || data.amount || 0,
+            status: data.status || 'open',
+          };
+        });
+
+        setInvoices(loadedExpenses);
       }
     } catch (error) {
       console.error('Error loading documents:', error);

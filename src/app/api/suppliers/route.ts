@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 
-export async function GET(request: NextRequest, companyId: string) {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
@@ -48,17 +48,19 @@ export async function GET(request: NextRequest, companyId: string) {
       count: customers.length,
     });
   } catch (error) {
+    console.error('Error loading suppliers:', error);
     return NextResponse.json(
       {
         success: false,
         error: 'Fehler beim Laden der Kunden',
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
 }
 
-export async function POST(request: NextRequest, companyId: string) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
@@ -99,7 +101,7 @@ export async function POST(request: NextRequest, companyId: string) {
       country: country || 'Deutschland',
       vatId: vatId || '',
       customerNumber: customerNumber || '',
-      isSupplier: isSupplier || false,
+      isSupplier: isSupplier || true, // Default to true for supplier creation
       vatValidated: false,
       totalInvoices: 0,
       totalAmount: 0,
@@ -116,14 +118,17 @@ export async function POST(request: NextRequest, companyId: string) {
 
     return NextResponse.json({
       success: true,
+      supplierId: docRef.id, // Changed from customerId to match expected response
       customerId: docRef.id,
-      message: 'Kunde/Lieferant erfolgreich erstellt',
+      message: 'Lieferant erfolgreich erstellt',
     });
   } catch (error) {
+    console.error('Error creating supplier:', error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Fehler beim Erstellen des Kunden',
+        error: 'Fehler beim Erstellen des Lieferanten',
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

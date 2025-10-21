@@ -61,7 +61,7 @@ import { AllocateBookingModal } from './AllocateBookingModal';
 interface CashEntry {
   id: string;
   date: string;
-  type: 'income' | 'expense';
+  type: 'income' | 'expense' | 'opening_balance';
   amount: number;
   description: string;
   category: string;
@@ -102,6 +102,7 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
   const [isCashRegisterOpen, setIsCashRegisterOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [selectedEntries, setSelectedEntries] = useState<string[]>([]);
+  const [companyData, setCompanyData] = useState<any>(null);
 
   // Form state for new entry
   const [newEntry, setNewEntry] = useState({
@@ -133,7 +134,24 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
   useEffect(() => {
     loadCashEntries();
     checkCashRegisterStatus();
+    loadCompanyData();
   }, [companyId, selectedPeriod]);
+
+  const loadCompanyData = async () => {
+    try {
+      const { doc, getDoc } = await import('firebase/firestore');
+      const { db } = await import('@/firebase/clients');
+
+      const companyRef = doc(db, 'companies', companyId);
+      const companySnap = await getDoc(companyRef);
+
+      if (companySnap.exists()) {
+        setCompanyData(companySnap.data());
+      }
+    } catch (error) {
+      console.error('Error loading company data:', error);
+    }
+  };
 
   const checkCashRegisterStatus = async () => {
     try {
@@ -403,9 +421,254 @@ export function CashbookComponent({ companyId }: CashbookComponentProps) {
     toast.success('Kassenbuch wurde exportiert');
   };
 
-  const handlePrintReport = () => {
-    window.print();
-    toast.success('Druckvorschau wird geöffnet');
+  const handlePrintReport = async () => {
+    // Create print window with formatted report
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Popup wurde blockiert. Bitte erlauben Sie Popups für diese Seite.');
+      return;
+    }
+
+    // Load fresh company data if not available
+    let printCompanyData = companyData;
+    if (!printCompanyData) {
+      try {
+        const { doc, getDoc } = await import('firebase/firestore');
+        const { db } = await import('@/firebase/clients');
+
+        const companyRef = doc(db, 'companies', companyId);
+        const companySnap = await getDoc(companyRef);
+
+        if (companySnap.exists()) {
+          printCompanyData = companySnap.data();
+        }
+      } catch (error) {
+        console.error('Error loading company data for print:', error);
+      }
+    }
+
+    const today = new Date().toLocaleDateString('de-DE');
+    const startDateFormatted = startDate
+      ? new Date(startDate).toLocaleDateString('de-DE')
+      : new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('de-DE');
+    const endDateFormatted = endDate
+      ? new Date(endDate).toLocaleDateString('de-DE')
+      : new Date().toLocaleDateString('de-DE');
+
+    // Calculate totals
+    const openingBalance = entries.find(e => e.type === 'opening_balance')?.amount || 0;
+    const totalIncome = filteredEntries
+      .filter(e => e.type === 'income')
+      .reduce((sum, e) => sum + e.amount, 0);
+    const totalExpense = filteredEntries
+      .filter(e => e.type === 'expense')
+      .reduce((sum, e) => sum + e.amount, 0);
+    const finalBalance = openingBalance + totalIncome - totalExpense;
+
+    // Debug: Log company data
+    console.log('Print Company Data:', printCompanyData);
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Kassenbericht ${startDateFormatted} - ${endDateFormatted}</title>
+          <style>
+            @media print {
+              @page {
+                margin: 20mm;
+                size: A4;
+              }
+            }
+            body {
+              font-family: Arial, sans-serif;
+              font-size: 11pt;
+              line-height: 1.4;
+              color: #000;
+              margin: 0;
+              padding: 20px;
+            }
+            .header {
+              margin-bottom: 30px;
+            }
+            .header h1 {
+              font-size: 18pt;
+              margin: 0 0 10px 0;
+              font-weight: bold;
+            }
+            .company-info {
+              font-size: 10pt;
+              margin-bottom: 20px;
+            }
+            .report-info {
+              font-size: 10pt;
+              margin-bottom: 20px;
+              padding: 10px;
+              background: #f5f5f5;
+              border: 1px solid #ddd;
+            }
+            .report-info div {
+              margin: 3px 0;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 20px;
+              font-size: 10pt;
+            }
+            thead {
+              background: #14ad9f;
+              color: white;
+            }
+            th {
+              padding: 8px;
+              text-align: left;
+              font-weight: bold;
+              border: 1px solid #0f9d84;
+            }
+            td {
+              padding: 6px 8px;
+              border: 1px solid #ddd;
+            }
+            tbody tr:nth-child(even) {
+              background: #f9f9f9;
+            }
+            .text-right {
+              text-align: right;
+            }
+            .summary {
+              margin-top: 30px;
+              padding: 15px;
+              background: #f5f5f5;
+              border: 2px solid #14ad9f;
+            }
+            .summary-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 5px 0;
+              font-size: 11pt;
+            }
+            .summary-row.total {
+              font-weight: bold;
+              font-size: 12pt;
+              border-top: 2px solid #14ad9f;
+              padding-top: 10px;
+              margin-top: 5px;
+            }
+            .footer {
+              margin-top: 40px;
+              font-size: 9pt;
+              color: #666;
+              text-align: center;
+              border-top: 1px solid #ddd;
+              padding-top: 10px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Kassenbericht ${startDateFormatted} - ${endDateFormatted}</h1>
+          </div>
+
+          <div class="company-info">
+            ${printCompanyData?.companyName || printCompanyData?.name || ''}<br>
+            ${
+              printCompanyData?.companyStreet
+                ? `${printCompanyData.companyStreet}${printCompanyData.companyHouseNumber ? ' ' + printCompanyData.companyHouseNumber : ''}`
+                : printCompanyData?.street || ''
+            }<br>
+            ${printCompanyData?.companyPostalCode || printCompanyData?.postalCode || ''} ${printCompanyData?.companyCity || printCompanyData?.city || ''}<br>
+            ${printCompanyData?.contactEmail || printCompanyData?.email || ''}
+          </div>
+
+          <div class="report-info">
+            <div><strong>Datum:</strong> ${today}</div>
+            <div><strong>Zeitraum:</strong> ${startDateFormatted} - ${endDateFormatted}</div>
+            <div><strong>Anzahl Einträge:</strong> ${filteredEntries.length}</div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Datum</th>
+                <th>Name</th>
+                <th class="text-right">Einnahme</th>
+                <th class="text-right">Ausgabe</th>
+                <th class="text-right">Bestand</th>
+                <th>Kategorie</th>
+                <th>Referenz</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredEntries
+                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                .map((entry, index) => {
+                  let runningBalance = openingBalance;
+                  // Calculate running balance
+                  for (let i = 0; i <= index; i++) {
+                    const e = filteredEntries[i];
+                    if (e.type === 'income') runningBalance += e.amount;
+                    if (e.type === 'expense') runningBalance -= e.amount;
+                  }
+
+                  return `
+                    <tr>
+                      <td>${new Date(entry.date).toLocaleDateString('de-DE')}</td>
+                      <td>${entry.counterpartyName || entry.description || '-'}</td>
+                      <td class="text-right">${
+                        entry.type === 'income' ? formatCurrency(entry.amount) : '-'
+                      }</td>
+                      <td class="text-right">${
+                        entry.type === 'expense' ? formatCurrency(entry.amount) : '-'
+                      }</td>
+                      <td class="text-right">${formatCurrency(runningBalance)}</td>
+                      <td>${entry.category || '-'}</td>
+                      <td>${entry.reference || '-'}</td>
+                    </tr>
+                  `;
+                })
+                .join('')}
+            </tbody>
+          </table>
+
+          <div class="summary">
+            <div class="summary-row">
+              <span>Anfangsbestand:</span>
+              <span>${formatCurrency(openingBalance)}</span>
+            </div>
+            <div class="summary-row">
+              <span>Einnahmen:</span>
+              <span>${formatCurrency(totalIncome)}</span>
+            </div>
+            <div class="summary-row">
+              <span>Ausgaben:</span>
+              <span>${formatCurrency(totalExpense)}</span>
+            </div>
+            <div class="summary-row total">
+              <span>Endbestand:</span>
+              <span>${formatCurrency(finalBalance)}</span>
+            </div>
+          </div>
+
+          <div class="footer">
+            Erstellt am ${today} | Taskilo Kassenbuch
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+              // Close window after printing (optional)
+              // setTimeout(() => window.close(), 100);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    toast.success('Kassenbericht wird gedruckt...');
   };
 
   const resetFilters = () => {
