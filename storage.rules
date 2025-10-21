@@ -121,6 +121,19 @@ service firebase.storage {
                        request.resource.contentType.matches('application/pdf')));
     }
 
+    // 🎯 NEU: Expense Belege in Subcollection (moderner Pfad)
+    // Pfad: companies/{companyId}/expenses/{fileName}
+    match /companies/{companyId}/expenses/{fileName} {
+      allow read: if request.auth != null && 
+                     (isSupportStaff() || 
+                      request.auth.uid == companyId);
+      allow write: if request.auth != null && 
+                      request.auth.uid == companyId &&
+                      (isDelete() || (isUpload() && 
+                       (request.resource.contentType.matches('application/pdf') ||
+                        request.resource.contentType.matches('image/.*'))));
+    }
+
     // 🎯 NEU: Beleg-Uploads über OCR-API (moderner Pfad)
     // Pfad: {companyId}/receipts/{fileName}
     match /{companyId}/receipts/{fileName} {

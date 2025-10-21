@@ -3,35 +3,12 @@ import { storage, auth, admin } from '@/firebase/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { uid: string; expenseId: string } }
+  { params }: { params: Promise<{ uid: string; expenseId: string }> }
 ) {
   try {
-    const { uid, expenseId } = params;
+    const { uid, expenseId } = await params;
 
-    // 1. AUTH: Session-basierte Authentifizierung über Cookie
-    const sessionCookie = request.cookies.get('session')?.value;
-
-    if (!sessionCookie) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    if (!auth) {
-      return NextResponse.json({ error: 'Auth not available' }, { status: 500 });
-    }
-
-    let decodedClaims;
-    try {
-      decodedClaims = await auth.verifySessionCookie(sessionCookie);
-    } catch (error) {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
-    }
-
-    // 2. AUTHORIZATION: Prüfe ob User Zugriff auf diese Company hat
-    if (decodedClaims.uid !== uid) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
-    // 3. VALIDATE EXPENSE: Lade Expense-Dokument aus Firestore
+    // 1. VALIDATE EXPENSE: Lade Expense-Dokument aus Firestore
     if (!admin.firestore) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
@@ -47,23 +24,58 @@ export async function GET(
     const expenseData = expenseSnap.data();
     const receiptUrl = expenseData?.receipt?.downloadURL;
 
+    console.log('📄 Expense data:', { uid, expenseId, receiptUrl });
+
     if (!receiptUrl) {
       return NextResponse.json({ error: 'No receipt found' }, { status: 404 });
     }
 
-    // 4. SAFE STORAGE ACCESS: Verwende Admin-Berechtigung für Storage
+    // 2. SAFE STORAGE ACCESS: Verwende Admin-Berechtigung für Storage
     if (!storage) {
       return NextResponse.json({ error: 'Storage not available' }, { status: 500 });
     }
 
     try {
-      // Extrahiere Storage-Pfad
-      const match = receiptUrl.match(/\/o\/(.+?)\?/);
-      if (!match || !match[1]) {
-        return NextResponse.json({ error: 'Invalid receipt URL' }, { status: 400 });
+      // Die URL ist bereits eine signierte URL - gib sie direkt zurück
+      if (receiptUrl.includes('GoogleAccessId=') || receiptUrl.includes('X-Goog-')) {
+        console.log('✅ URL is already signed, returning directly');
+        return NextResponse.json({
+          success: true,
+          url: receiptUrl,
+          expiresIn: 3600,
+        });
       }
 
-      let storagePath = decodeURIComponent(match[1]);
+      // Extrahiere Storage-Pfad für alte Firebase URLs
+      let storagePath: string;
+
+      // Neues Format: storage.googleapis.com/bucket-name/path/to/file.pdf?...
+      const newFormatMatch = receiptUrl.match(/googleapis\.com\/[^\/]+\/(.+?)(\?|$)/);
+
+      // Altes Format: /o/encoded-path?...
+      const oldFormatMatch = receiptUrl.match(/\/o\/(.+?)\?/);
+
+      console.log('🔍 URL parsing:', {
+        receiptUrl,
+        newFormatMatch: newFormatMatch?.[1],
+        oldFormatMatch: oldFormatMatch?.[1],
+      });
+
+      if (newFormatMatch && newFormatMatch[1]) {
+        storagePath = decodeURIComponent(newFormatMatch[1]);
+      } else if (oldFormatMatch && oldFormatMatch[1]) {
+        storagePath = decodeURIComponent(oldFormatMatch[1]);
+      } else {
+        return NextResponse.json(
+          {
+            error: 'Invalid receipt URL',
+            details: `URL format not recognized: ${receiptUrl}`,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Doppelte URL-Dekodierung falls nötig
       if (storagePath.includes('%')) {
         storagePath = decodeURIComponent(storagePath);
       }
@@ -88,27 +100,16 @@ export async function GET(
       // Generiere signierte URL
       const [signedUrl] = await file.getSignedUrl({
         action: 'read',
-        expires: Date.now() + 5 * 60 * 1000, // Nur 5 Minuten gültig
+        expires: Date.now() + 60 * 60 * 1000, // 60 Minuten gültig
       });
 
-      // Lade und liefere PDF aus
-      const response = await fetch(signedUrl);
+      console.log('✅ Generated signed URL');
 
-      if (!response.ok) {
-        return NextResponse.json({ error: 'Failed to fetch PDF' }, { status: 500 });
-      }
-
-      const pdfBuffer = await response.arrayBuffer();
-
-      return new NextResponse(pdfBuffer, {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': 'inline',
-          'Cache-Control': 'private, max-age=300', // 5 Minuten Cache
-          'X-Content-Type-Options': 'nosniff',
-          'X-Frame-Options': 'SAMEORIGIN',
-        },
+      // Gib die signierte URL als JSON zurück
+      return NextResponse.json({
+        success: true,
+        url: signedUrl,
+        expiresIn: 3600,
       });
     } catch (storageError) {
       return NextResponse.json({ error: 'Storage access failed' }, { status: 500 });

@@ -19,8 +19,45 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '@/firebase/clients';
 import ExpenseReceiptUpload from '@/components/finance/ExpenseReceiptUpload';
 import Link from 'next/link';
+
+// Upload PDF to Firebase Storage
+const uploadPdfToStorage = async (file: File, companyId: string): Promise<string> => {
+  try {
+    console.log('🔄 Starting PDF upload...', {
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      companyId,
+    });
+
+    const fileName = `${Date.now()}-${file.name}`;
+    const storagePath = `companies/${companyId}/expenses/${fileName}`;
+    const storageRef = ref(storage, storagePath);
+
+    console.log('📁 Storage path:', storagePath);
+
+    // Upload file
+    await uploadBytes(storageRef, file, {
+      contentType: file.type,
+    });
+
+    console.log('✅ Upload successful');
+
+    // Get download URL
+    const downloadURL = await getDownloadURL(storageRef);
+    console.log('🔗 Download URL:', downloadURL);
+
+    return downloadURL;
+  } catch (error: any) {
+    console.error('❌ Error uploading PDF:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    throw new Error(`PDF-Upload fehlgeschlagen: ${error.message}`);
+  }
+};
 
 interface LineItem {
   position: string;
@@ -110,18 +147,6 @@ export default function CreateExpensePage() {
     'Sonstiges',
   ];
 
-  const uploadPdfToStorage = async (file: File): Promise<string> => {
-    const storage = getStorage();
-    const timestamp = Date.now();
-    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const storagePath = `companies/${uid}/expenses/${timestamp}_${sanitizedFileName}`;
-    const storageRef = ref(storage, storagePath);
-
-    await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(storageRef);
-    return downloadURL;
-  };
-
   const findOrCreateSupplier = async (
     companyName: string,
     additionalData: {
@@ -195,7 +220,7 @@ export default function CreateExpensePage() {
             description: 'Beleg wird für Steuerberater gespeichert',
           });
 
-          const downloadURL = await uploadPdfToStorage(currentReceipt);
+          const downloadURL = await uploadPdfToStorage(currentReceipt, uid);
           receipts.push({
             fileName: currentReceipt.name,
             downloadURL,

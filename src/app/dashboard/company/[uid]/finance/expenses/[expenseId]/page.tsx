@@ -147,7 +147,23 @@ export default function ExpenseDetailPage() {
 
       // Verwende die sichere Expense-PDF API
       const secureUrl = `/api/expenses/${uid}/${expenseId}/pdf`;
-      setPdfUrl(secureUrl);
+
+      // Lade die signierte URL von der API
+      try {
+        const pdfResponse = await fetch(secureUrl);
+        if (pdfResponse.ok) {
+          const pdfData = await pdfResponse.json();
+          if (pdfData.success && pdfData.url) {
+            setPdfUrl(pdfData.url);
+          } else {
+            setPdfUrl(secureUrl); // Fallback
+          }
+        } else {
+          setPdfUrl(secureUrl); // Fallback
+        }
+      } catch (err) {
+        setPdfUrl(secureUrl); // Fallback
+      }
     } catch (err: any) {
       setError(err.message || 'Fehler beim Laden der Ausgabe');
     } finally {

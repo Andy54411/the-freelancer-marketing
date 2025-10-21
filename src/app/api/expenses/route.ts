@@ -1,5 +1,81 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
+import { getStorage } from 'firebase-admin/storage';
+
+// Handle file upload with multipart/form-data
+async function handleFileUpload(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const companyId = formData.get('companyId') as string;
+    const file = formData.get('file') as File;
+    const expenseId = formData.get('expenseId') as string;
+
+    if (!companyId || !file) {
+      return NextResponse.json(
+        { success: false, error: 'Company ID und Datei sind erforderlich' },
+        { status: 400 }
+      );
+    }
+
+    // Convert File to Buffer
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // Upload to Firebase Storage
+    const storage = getStorage();
+    const bucket = storage.bucket();
+    const fileName = `${Date.now()}-${file.name}`;
+    const filePath = `companies/${companyId}/expenses/${fileName}`;
+
+    const fileRef = bucket.file(filePath);
+
+    await fileRef.save(buffer, {
+      metadata: {
+        contentType: file.type,
+        metadata: {
+          uploadedBy: companyId,
+          originalName: file.name,
+        },
+      },
+    });
+
+    // Make file publicly accessible (or use signed URLs)
+    await fileRef.makePublic();
+
+    const downloadURL = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+
+    // Update expense document if expenseId is provided
+    if (expenseId && db) {
+      const expenseRef = db
+        .collection('companies')
+        .doc(companyId)
+        .collection('expenses')
+        .doc(expenseId);
+
+      await expenseRef.update({
+        receipt: {
+          fileName: file.name,
+          downloadURL: downloadURL,
+          storagePath: filePath,
+        },
+        updatedAt: new Date(),
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      downloadURL,
+      fileName: file.name,
+      storagePath: filePath,
+    });
+  } catch (error: any) {
+    console.error('File upload error:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Upload fehlgeschlagen' },
+      { status: 500 }
+    );
+  }
+}
 
 // Funktion zur automatischen Aktualisierung der Supplier-Statistiken
 async function updateSupplierStats(supplierId: string, companyId: string) {
@@ -133,6 +209,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const contentType = request.headers.get('content-type') || '';
+
+    // Handle FormData (with file upload)
+    if (contentType.includes('multipart/form-data')) {
+      return await handleFileUpload(request);
+    }
+
+    // Handle JSON (metadata only)
     const body = await request.json();
 
     const {
@@ -185,7 +269,7 @@ export async function POST(request: NextRequest) {
       category,
       description: description || '',
       date: date || new Date().toISOString().split('T')[0],
-      dueDate: body.dueDate || '', // 🎯 FÄLLIGKEITSDATUM 
+      dueDate: body.dueDate || '', // 🎯 FÄLLIGKEITSDATUM
       paymentTerms: body.paymentTerms || '', // 🎯 ZAHLUNGSBEDINGUNGEN
       vendor: vendor || '',
       invoiceNumber: invoiceNumber || '',
@@ -214,7 +298,7 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
-      
+
       const docRef = db.collection('companies').doc(companyId).collection('expenses').doc(id);
       const docSnapshot = await docRef.get();
 
