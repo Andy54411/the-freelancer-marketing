@@ -320,6 +320,7 @@ export default function CompanySidebar({
     spam: 0,
     trash: 0,
   });
+  const [emailSearchQuery, setEmailSearchQuery] = useState('');
   const [checkingBankConnection, setCheckingBankConnection] = useState(true);
 
   // Prüfe ob Bankkonten über FinAPI verbunden sind
@@ -400,29 +401,23 @@ export default function CompanySidebar({
     let isMounted = true;
 
     const loadUnreadCounts = async () => {
-      const folders = ['inbox', 'sent', 'drafts', 'spam', 'trash', 'starred', 'archived'];
-      const counts: Record<string, number> = {};
-
       try {
-        // Load counts for all folders in parallel
-        const promises = folders.map(async folder => {
-          try {
-            const response = await fetch(`/api/company/${uid}/emails?folder=${folder}&limit=1000`);
-            if (response.ok) {
-              const data = await response.json();
-              counts[folder] = data.unreadCount || 0;
-            } else {
-              counts[folder] = 0;
+        // Use single API call to get all counts
+        const response = await fetch(`/api/company/${uid}/emails/counts`);
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.counts) {
+            // Extract unread counts from the response
+            const unreadCounts: Record<string, number> = {};
+            Object.keys(data.counts).forEach(folder => {
+              unreadCounts[folder] = data.counts[folder].unread || 0;
+            });
+
+            if (isMounted) {
+              setUnreadEmailCounts(unreadCounts);
             }
-          } catch {
-            counts[folder] = 0;
           }
-        });
-
-        await Promise.all(promises);
-
-        if (isMounted) {
-          setUnreadEmailCounts(counts);
         }
       } catch (error) {
         console.error('Error loading email counts:', error);
@@ -728,6 +723,17 @@ export default function CompanySidebar({
                             <input
                               type="text"
                               placeholder="E-Mails durchsuchen..."
+                              value={emailSearchQuery}
+                              onChange={e => setEmailSearchQuery(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter' && emailSearchQuery.trim()) {
+                                  // Navigate to inbox with search query
+                                  onNavigate(
+                                    'email-inbox',
+                                    `emails?search=${encodeURIComponent(emailSearchQuery.trim())}`
+                                  );
+                                }
+                              }}
                               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                             />
                           </div>

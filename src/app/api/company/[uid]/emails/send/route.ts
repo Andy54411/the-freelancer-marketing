@@ -135,6 +135,64 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       attachments: processedAttachments,
     });
 
+    // Save sent email to emailCache with SENT label
+    try {
+      const emailCacheRef = db.collection('companies').doc(companyId).collection('emailCache');
+
+      const now = new Date();
+      const internalDate = now.getTime().toString(); // Gmail-kompatibles Format (milliseconds as string)
+
+      const emailData = {
+        id: result.messageId,
+        threadId: result.messageId, // Gmail assigns same ID for new threads
+        subject,
+        snippet: emailBody.substring(0, 200), // First 200 chars as preview
+        from: {
+          email: emailConfigData.email,
+          name: emailConfigData.email,
+        },
+        to: toArray.map((email: string) => ({ email, name: email })),
+        cc: ccArray?.map((email: string) => ({ email, name: email })) || [],
+        bcc: bccArray?.map((email: string) => ({ email, name: email })) || [],
+        date: now.toISOString(),
+        internalDate, // Gmail-kompatibles Timestamp-Feld für korrekte Sortierung
+        body: emailBody,
+        htmlBody: htmlBody || emailBody.replace(/\n/g, '<br>'),
+        labels: ['SENT'],
+        labelIds: ['SENT'], // Alternative label format
+        isRead: true,
+        read: true, // Alternative read format
+        hasAttachments: processedAttachments.length > 0,
+        attachments: processedAttachments.map((att: any) => ({
+          filename: att.filename,
+          mimeType: att.mimeType,
+          size: att.content?.length || 0,
+        })),
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+      };
+
+      console.log('💾 Saving sent email to cache:', {
+        messageId: result.messageId,
+        subject,
+        to: toArray,
+        internalDate,
+      });
+
+      await emailCacheRef.doc(result.messageId).set(emailData);
+
+      console.log('✅ Sent email successfully saved to emailCache');
+    } catch (cacheError) {
+      console.error('❌ Error saving sent email to cache:', cacheError);
+      // Log the error but continue - email was sent successfully
+      console.error('Cache error details:', {
+        code: (cacheError as any)?.code,
+        message: (cacheError as any)?.message,
+        companyId,
+        messageId: result.messageId,
+      });
+    }
+
     return NextResponse.json({
       success: true,
       messageId: result.messageId,

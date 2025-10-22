@@ -49,9 +49,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const targetLabel = folderLabelMap[folder.toLowerCase()] || 'INBOX';
         console.log(`🔍 API: Filtering for label: ${targetLabel}`);
 
-        // Filtere E-Mails nach Label
+        // Filtere E-Mails nach Label mit Gmail-Logik
         emails = allEmails.filter((email: any) => {
           const labels = email.labels || email.labelIds || [];
+
+          // Spezielle Logik für INBOX: Spam und Trash haben Priorität
+          if (targetLabel === 'INBOX') {
+            return (
+              labels.includes('INBOX') && !labels.includes('SPAM') && !labels.includes('TRASH')
+            );
+          }
+
+          // Für alle anderen Ordner: Einfach prüfen ob Label vorhanden
           return labels.includes(targetLabel);
         });
 

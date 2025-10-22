@@ -62,6 +62,7 @@ export interface EmailFilter {
   starred?: boolean;
   from?: string;
   subject?: string;
+  search?: string;
   dateFrom?: string;
   dateTo?: string;
   hasAttachments?: boolean;

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { db } from '@/firebase/clients';
 import {
@@ -84,6 +85,9 @@ export function EmailClient({
   autoCompose = false,
   className,
 }: EmailClientProps) {
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams?.get('search') || '';
+
   // State
   const [folders, setFolders] = useState<EmailFolder[]>([
     { id: 'inbox', name: 'Posteingang', type: 'inbox', count: 0, unreadCount: 0 },
@@ -103,7 +107,9 @@ export function EmailClient({
   const [composeMode, setComposeMode] = useState<'new' | 'reply' | 'replyAll' | 'forward'>('new');
   const [replyToEmail, setReplyToEmail] = useState<EmailMessage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<EmailFilter>({});
+  const [filter, setFilter] = useState<EmailFilter>({
+    search: searchQuery, // Initialize with search query from URL
+  });
   const [authError, setAuthError] = useState<string | null>(null);
   const [requiresReauth, setRequiresReauth] = useState(false);
 
@@ -201,54 +207,10 @@ export function EmailClient({
           );
         }
 
-        // Fallback: Try to load from localStorage cache
-        try {
-          const cachedData = localStorage.getItem(`gmail_cache_${companyId}_${selectedFolder}`);
-          if (cachedData) {
-            const parsedData = JSON.parse(cachedData);
-            const emails = parsedData.emails || [];
-
-            // Sortiere auch Cache-E-Mails nach Datum (neueste zuerst)
-            const sortedEmails = emails.sort((a: any, b: any) => {
-              const getTimestamp = (email: any) => {
-                // PRIORITÄT 1: Gmail internalDate (unveränderlich!)
-                if (email.internalDate && typeof email.internalDate === 'string') {
-                  return parseInt(email.internalDate);
-                }
-                // PRIORITÄT 2: Firestore Timestamp
-                if (email.timestamp && email.timestamp._seconds) {
-                  return email.timestamp._seconds * 1000;
-                }
-                // FALLBACK 3: Date string
-                if (email.date) {
-                  return new Date(email.date).getTime();
-                }
-                // FALLBACK 4: Number timestamp
-                if (typeof email.timestamp === 'number') {
-                  // Wenn in Sekunden (< Jahr 2100), konvertiere zu Millisekunden
-                  return email.timestamp < 4102444800 ? email.timestamp * 1000 : email.timestamp;
-                }
-                return 0;
-              };
-
-              const timestampA = getTimestamp(a);
-              const timestampB = getTimestamp(b);
-
-              // Primärer Sort: Nach Timestamp (neueste zuerst)
-              if (timestampB !== timestampA) {
-                return timestampB - timestampA;
-              }
-
-              // Sekundärer Sort: Nach Email-ID (stabile Sortierung!)
-              return (b.id || '').localeCompare(a.id || '');
-            });
-
-            setCachedEmails(sortedEmails);
-            setCacheSource('cache');
-          }
-        } catch (cacheError) {
-          console.error('Cache fallback failed:', cacheError);
-        }
+        // NO localStorage fallback - always use fresh data from API
+        // This prevents showing stale data after email actions like spam marking
+        setCachedEmails([]);
+        console.warn('⚠️ Email loading failed, cleared cache to prevent stale data');
       } finally {
         setCacheLoading(false);
       }
@@ -294,13 +256,26 @@ export function EmailClient({
       }));
     }
 
-    setEmails(cachedEmails);
+    // Apply search filter if present
+    let filteredEmails = cachedEmails;
+    if (filter.search && filter.search.trim()) {
+      const searchLower = filter.search.toLowerCase();
+      filteredEmails = cachedEmails.filter(
+        email =>
+          email.subject?.toLowerCase().includes(searchLower) ||
+          email.body?.toLowerCase().includes(searchLower) ||
+          email.from?.email?.toLowerCase().includes(searchLower) ||
+          email.from?.name?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    setEmails(filteredEmails);
 
     // Nur loading beenden wenn wir nicht gerade laden
     if (!cacheLoading) {
       setIsLoading(false);
     }
-  }, [cachedEmails, cacheLoading]);
+  }, [cachedEmails, cacheLoading, filter.search]);
 
   // Performance Logging
   useEffect(() => {
@@ -462,6 +437,13 @@ export function EmailClient({
   useEffect(() => {
     setupGlobalPerformanceTracking(companyId);
   }, [companyId]);
+
+  // Update filter when search query changes
+  useEffect(() => {
+    if (searchQuery) {
+      setFilter(prev => ({ ...prev, search: searchQuery }));
+    }
+  }, [searchQuery]);
 
   // Initial load - einmalig beim Start, dann nur über Webhooks
   useEffect(() => {
@@ -809,6 +791,15 @@ export function EmailClient({
           toast.error('Fehler beim Markieren als Spam');
         } else {
           toast.success(isSpam ? 'Als Spam markiert' : 'Spam-Markierung entfernt');
+
+          // Clear localStorage cache to prevent stale data
+          try {
+            localStorage.removeItem(`gmail_cache_${companyId}_${selectedFolder}`);
+            console.log('🗑️ Cleared localStorage cache after spam action');
+          } catch (e) {
+            console.warn('Could not clear localStorage:', e);
+          }
+
           // Reload emails to ensure correct filtering
           await loadEmails();
         }
@@ -817,58 +808,93 @@ export function EmailClient({
         toast.error('Fehler beim Markieren als Spam');
       }
     },
-    [emails, companyId, selectedEmail, loadEmails]
+    [emails, companyId, selectedEmail, selectedFolder, loadEmails]
   );
 
   const handleArchiveEmails = useCallback(
     async (emailIds: string[]) => {
       try {
-        const response = await fetch(`/api/company/${companyId}/emails/archive`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ emailIds }),
-        });
+        // Archive emails one by one
+        for (const emailId of emailIds) {
+          const email = emails.find(e => e.id === emailId);
+          if (!email) continue;
 
-        if (response.ok) {
-          setEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
-          setSelectedEmails([]);
-          // @ts-ignore - selectedEmail is checked
-          if (selectedEmail && selectedEmail.id && emailIds.includes(selectedEmail.id)) {
+          // Optimistic UI update
+          setEmails(prev => prev.filter(e => e.id !== emailId));
+          if (selectedEmail?.id === emailId) {
             setSelectedEmail(null);
           }
+
+          // API call
+          const response = await fetch(`/api/company/${companyId}/emails/${emailId}/archive`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ archived: true }),
+          });
+
+          if (!response.ok) {
+            // Revert on failure
+            setEmails(prev => [...prev, email]);
+            toast.error('Fehler beim Archivieren');
+          }
         }
+
+        // Clear selection and reload emails
+        setSelectedEmails([]);
+        toast.success(
+          emailIds.length === 1 ? 'Archiviert' : `${emailIds.length} E-Mails archiviert`
+        );
+        await loadEmails();
       } catch (error) {
         console.error('Fehler beim Archivieren:', error);
+        toast.error('Fehler beim Archivieren');
       }
     },
-    [companyId, selectedEmail]
+    [emails, companyId, selectedEmail, loadEmails]
   );
 
   const handleDeleteEmails = useCallback(
     async (emailIds: string[]) => {
       try {
-        // TODO: Implement new delete email API
+        // Move emails to trash one by one
+        for (const emailId of emailIds) {
+          const email = emails.find(e => e.id === emailId);
+          if (!email) continue;
 
-        return;
-        const response = await fetch(`/api/company/${companyId}/emails/delete`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ emailIds }),
-        });
-
-        if (response.ok) {
-          setEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
-          setSelectedEmails([]);
-          // @ts-ignore - selectedEmail is checked
-          if (selectedEmail && selectedEmail.id && emailIds.includes(selectedEmail.id)) {
+          // Optimistic UI update
+          setEmails(prev => prev.filter(e => e.id !== emailId));
+          if (selectedEmail?.id === emailId) {
             setSelectedEmail(null);
           }
+
+          // API call
+          const response = await fetch(`/api/company/${companyId}/emails/${emailId}/trash`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trash: true }),
+          });
+
+          if (!response.ok) {
+            // Revert on failure
+            setEmails(prev => [...prev, email]);
+            toast.error('Fehler beim Verschieben in den Papierkorb');
+          }
         }
+
+        // Clear selection and reload emails
+        setSelectedEmails([]);
+        toast.success(
+          emailIds.length === 1
+            ? 'In Papierkorb verschoben'
+            : `${emailIds.length} E-Mails in Papierkorb verschoben`
+        );
+        await loadEmails();
       } catch (error) {
         console.error('Fehler beim Löschen:', error);
+        toast.error('Fehler beim Verschieben in den Papierkorb');
       }
     },
-    [companyId, selectedEmail]
+    [emails, companyId, selectedEmail, loadEmails]
   );
 
   // Handler für Gmail Neu-Authentifizierung
