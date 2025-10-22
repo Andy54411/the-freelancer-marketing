@@ -424,9 +424,14 @@ export default function CompanySidebar({
       }
     };
 
-    if (uid) {
+    // Only load counts when on email pages
+    const isEmailPage = pathname?.includes('/emails');
+
+    if (uid && isEmailPage) {
+      // Initial load
       loadUnreadCounts();
-      // Refresh counts every 60 seconds
+
+      // Auto-refresh every 60 seconds only on email pages
       const interval = setInterval(loadUnreadCounts, 60000);
       return () => {
         isMounted = false;
@@ -437,7 +442,7 @@ export default function CompanySidebar({
     return () => {
       isMounted = false;
     };
-  }, [uid]);
+  }, [uid, pathname]);
 
   const isExpanded = (itemValue: string) => expandedItems.includes(itemValue);
   const isItemActive = (item: NavigationItem) => {
