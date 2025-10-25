@@ -56,7 +56,7 @@ export function WhatsAppButton({
   // Prüfe ob Meta API konfiguriert ist
   const checkConfiguration = async () => {
     if (isConfigured === null) {
-      const configured = await WhatsAppService.isConfigured();
+      const configured = await WhatsAppService.isConfigured(companyId);
       setIsConfigured(configured);
       return configured;
     }
@@ -98,10 +98,11 @@ export function WhatsAppButton({
         setShowDialog(false);
         setMessage('');
       } else {
-        toast.error(result.error || 'Fehler beim Senden');
+        toast.error('Fehler beim Senden');
       }
     } catch (error) {
-      toast.error('Fehler beim Senden der Nachricht');
+      console.error('[WhatsApp Send Error]', error);
+      toast.error(error instanceof Error ? error.message : 'Fehler beim Senden der Nachricht');
     } finally {
       setSending(false);
     }

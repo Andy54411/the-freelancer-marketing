@@ -9,6 +9,9 @@ import {
   orderBy,
   getDocs,
   serverTimestamp,
+  doc,
+  setDoc,
+  getDoc,
 } from 'firebase/firestore';
 import { createClickToChatLink } from '@/lib/whatsapp';
 
@@ -34,10 +37,20 @@ export interface WhatsAppMessage {
   direction: 'outbound' | 'inbound';
   status: 'queued' | 'sent' | 'delivered' | 'read' | 'failed';
   body: string;
-  messageId?: string; // Meta/WhatsApp Message ID
+  messageId?: string;
   errorMessage?: string;
   metadata?: Record<string, any>;
   createdAt: any;
+}
+
+export interface WhatsAppConnection {
+  companyId: string;
+  phoneNumber: string;
+  isConnected: boolean;
+  qrCode?: string;
+  connectedAt?: string;
+  expiresAt?: string;
+  lastQrGeneratedAt?: string;
 }
 
 export class WhatsAppService {
@@ -56,8 +69,8 @@ export class WhatsAppService {
     window.open(link, '_blank');
   }
 
-  /**
-   * Sendet WhatsApp-Nachricht über Meta API (nur wenn konfiguriert)
+    /**
+   * Nachricht senden (über KUNDENEIGENE WhatsApp Business Nummer via Meta API)
    */
   static async sendMessage(
     companyId: string,
@@ -65,22 +78,30 @@ export class WhatsAppService {
     message: string,
     customerId?: string,
     customerName?: string
-  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  ): Promise<{ success: boolean; messageId?: string }> {
     try {
-      // Prüfe ob Meta API konfiguriert ist
-      const configCheck = await fetch('/api/whatsapp/status');
-      const config = await configCheck.json();
-
-      if (!config.configured) {
-        // Fallback: Öffne Click-to-Chat
-        this.openChat(toPhone, message);
-        return {
-          success: true,
-          messageId: 'click-to-chat',
-        };
+      // Validierung
+      if (!toPhone || toPhone.trim() === '') {
+        throw new Error('Telefonnummer ist erforderlich');
       }
 
-      // Meta API verfügbar - sende über Server
+      if (!message || message.trim() === '') {
+        throw new Error('Nachricht ist erforderlich');
+      }
+
+      if (!companyId || companyId.trim() === '') {
+        throw new Error('Company ID ist erforderlich');
+      }
+
+      console.log('Sending WhatsApp message from company number:', {
+        companyId,
+        toPhone,
+        message: message.substring(0, 50),
+        customerId,
+        customerName,
+      });
+
+      // Sende über Meta API mit KUNDENEIGENER Nummer
       const response = await fetch('/api/whatsapp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,23 +116,26 @@ export class WhatsAppService {
 
       if (!response.ok) {
         const error = await response.json();
+        console.error('WhatsApp API Error:', error);
         throw new Error(error.error || 'Fehler beim Senden');
       }
 
       const result = await response.json();
 
-      // Speichere in Firestore
-      await this.saveMessage({
-        companyId,
-        customerId,
-        customerName,
-        customerPhone: toPhone,
-        direction: 'outbound',
-        status: 'sent',
-        body: message,
-        messageId: result.messageId,
-        createdAt: serverTimestamp(),
-      });
+      // Speichere in Firestore für Historie (nur wenn companyId vorhanden)
+      if (companyId) {
+        await this.saveMessage({
+          companyId,
+          customerId,
+          customerName,
+          customerPhone: toPhone,
+          direction: 'outbound',
+          status: 'sent',
+          body: message,
+          messageId: result.messageId,
+          createdAt: serverTimestamp(),
+        });
+      }
 
       return {
         success: true,
@@ -120,23 +144,22 @@ export class WhatsAppService {
     } catch (error) {
       console.error('[WhatsApp] Send error:', error);
 
-      // Fehler loggen
-      await this.saveMessage({
-        companyId,
-        customerId,
-        customerName,
-        customerPhone: toPhone,
-        direction: 'outbound',
-        status: 'failed',
-        body: message,
-        errorMessage: error instanceof Error ? error.message : 'Unbekannter Fehler',
-        createdAt: serverTimestamp(),
-      });
+      // Fehler loggen (nur wenn companyId vorhanden)
+      if (companyId) {
+        await this.saveMessage({
+          companyId,
+          customerId,
+          customerName,
+          customerPhone: toPhone,
+          direction: 'outbound',
+          status: 'failed',
+          body: message,
+          errorMessage: error instanceof Error ? error.message : 'Unbekannter Fehler',
+          createdAt: serverTimestamp(),
+        });
+      }
 
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Fehler beim Senden',
-      };
+      throw error;
     }
   }
 
@@ -167,6 +190,30 @@ export class WhatsAppService {
   }
 
   /**
+   * Lädt alle Nachrichten einer Company
+   */
+  static async getCompanyMessages(companyId: string): Promise<WhatsAppMessage[]> {
+    try {
+      const messagesRef = collection(db, 'companies', companyId, 'whatsappMessages');
+      const q = query(messagesRef, orderBy('createdAt', 'desc'));
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          // Convert Firestore Timestamp to Date if needed
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+        };
+      }) as WhatsAppMessage[];
+    } catch (error) {
+      console.error('[WhatsApp] Load company messages error:', error);
+      return [];
+    }
+  }
+
+  /**
    * Speichert Nachricht in Firestore
    */
   private static async saveMessage(message: Omit<WhatsAppMessage, 'id'>): Promise<string> {
@@ -181,15 +228,109 @@ export class WhatsAppService {
   }
 
   /**
-   * Prüft ob Meta API konfiguriert ist
+   * Prüft ob WhatsApp für eine Company konfiguriert ist
    */
-  static async isConfigured(): Promise<boolean> {
+  static async isConfigured(companyId: string): Promise<boolean> {
     try {
-      const response = await fetch('/api/whatsapp/status');
+      const response = await fetch(`/api/whatsapp/status?companyId=${companyId}`);
       const data = await response.json();
       return data.configured;
-    } catch {
+    } catch (error) {
+      console.error('[WhatsApp] Config check error:', error);
       return false;
+    }
+  }
+
+  /**
+   * Lädt die WhatsApp-Verbindung einer Company
+   */
+  static async getConnection(companyId: string): Promise<WhatsAppConnection | null> {
+    try {
+      const connectionDoc = await getDoc(
+        doc(db, 'companies', companyId, 'whatsappConnection', 'current')
+      );
+      
+      if (!connectionDoc.exists()) {
+        return null;
+      }
+
+      return connectionDoc.data() as WhatsAppConnection;
+    } catch (error) {
+      console.error('[WhatsApp] Get connection error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Speichert QR-Code für eine Company
+   */
+  static async saveQRCode(
+    companyId: string,
+    qrCode: string,
+    expiresInSeconds: number = 120
+  ): Promise<void> {
+    try {
+      const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString();
+      
+      await setDoc(
+        doc(db, 'companies', companyId, 'whatsappConnection', 'current'),
+        {
+          companyId,
+          phoneNumber: '',
+          isConnected: false,
+          qrCode,
+          expiresAt,
+          lastQrGeneratedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error('[WhatsApp] Save QR code error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Speichert erfolgreiche Verbindung
+   */
+  static async saveConnection(
+    companyId: string,
+    phoneNumber: string
+  ): Promise<void> {
+    try {
+      await setDoc(
+        doc(db, 'companies', companyId, 'whatsappConnection', 'current'),
+        {
+          companyId,
+          phoneNumber,
+          isConnected: true,
+          qrCode: undefined,
+          connectedAt: new Date().toISOString(),
+        }
+      );
+    } catch (error) {
+      console.error('[WhatsApp] Save connection error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Trennt die WhatsApp-Verbindung
+   */
+  static async disconnectConnection(companyId: string): Promise<void> {
+    try {
+      await setDoc(
+        doc(db, 'companies', companyId, 'whatsappConnection', 'current'),
+        {
+          companyId,
+          phoneNumber: '',
+          isConnected: false,
+          qrCode: undefined,
+        }
+      );
+    } catch (error) {
+      console.error('[WhatsApp] Disconnect error:', error);
+      throw error;
     }
   }
 }

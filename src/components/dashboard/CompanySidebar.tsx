@@ -29,6 +29,7 @@ import {
   FolderTree as FiFolderTree,
   Boxes as FiBoxes,
   HelpCircle as FiHelpCircle,
+  MessageCircle as FiMessageCircle,
 } from 'lucide-react';
 import { StorageCardSidebar } from './StorageCardSidebar';
 
@@ -227,6 +228,12 @@ const navigationItems: NavigationItem[] = [
     icon: FiUsers,
     value: 'contacts',
     href: 'finance/contacts',
+  },
+  {
+    label: 'WhatsApp',
+    icon: FiMessageCircle,
+    value: 'whatsapp',
+    href: 'whatsapp',
   },
   {
     label: 'Banking',

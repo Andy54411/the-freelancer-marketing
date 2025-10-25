@@ -5,3 +5,9 @@ packages:
   - '.'
   # Das hier ist dein Unter-Projekt für die Firebase Functions
   - 'firebase_functions'
+
+# Fix für Dependency-Konflikte zwischen whatsapp-web.js und Next.js
+pnpm:
+  overrides:
+    # Stelle sicher dass ws kompatibel mit Next.js ist
+    ws: "^8.2.3"
