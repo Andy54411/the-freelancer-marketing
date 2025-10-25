@@ -500,35 +500,6 @@ export default function WhatsAppPage() {
                     </p>
                   </div>
                 </div>
-
-                {/* WhatsApp App öffnen Button */}
-                <Button
-                  onClick={() => {
-                    const message = messageText.trim() || 'Hallo';
-                    WhatsAppService.openChat(selectedCustomer.phone!, message);
-                    toast.success('WhatsApp wird geöffnet...');
-                  }}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <Phone className="h-4 w-4 mr-2" />
-                  In WhatsApp öffnen
-                </Button>
-              </div>
-            </div>
-
-            {/* Info Banner */}
-            <div className="bg-green-50 border-b border-green-200 p-3">
-              <div className="flex items-start gap-2">
-                <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center shrink-0 mt-0.5">
-                  <CheckCircle2 className="h-3 w-3 text-white" />
-                </div>
-                <div className="flex-1 text-sm">
-                  <p className="font-medium text-green-900">Frei schreiben ohne Einschränkungen</p>
-                  <p className="text-green-700 text-xs mt-0.5">
-                    Klicke auf &quot;In WhatsApp öffnen&quot; um direkt mit deiner WhatsApp Business
-                    App zu schreiben - keine Templates erforderlich!
-                  </p>
-                </div>
               </div>
             </div>
 
@@ -584,38 +555,37 @@ export default function WhatsAppPage() {
             <div className="bg-white border-t border-gray-200 p-4">
               <div className="flex gap-2">
                 <Textarea
-                  placeholder="Nachricht vorschreiben (öffnet in WhatsApp)..."
+                  placeholder="Nachricht schreiben..."
                   value={messageText}
                   onChange={e => setMessageText(e.target.value)}
                   onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
+                    if (e.key === 'Enter' && !e.shiftKey && !isSending) {
                       e.preventDefault();
-                      WhatsAppService.openChat(
-                        selectedCustomer.phone!,
-                        messageText.trim() || 'Hallo'
-                      );
-                      toast.success('WhatsApp wird geöffnet...');
+                      handleSendMessage();
                     }
                   }}
+                  disabled={isSending}
                   className="resize-none"
                   rows={2}
                 />
                 <Button
-                  onClick={() => {
-                    WhatsAppService.openChat(
-                      selectedCustomer.phone!,
-                      messageText.trim() || 'Hallo'
-                    );
-                    toast.success('WhatsApp wird geöffnet...');
-                  }}
-                  className="bg-green-600 hover:bg-green-700"
-                  title="In WhatsApp öffnen"
+                  onClick={handleSendMessage}
+                  disabled={isSending || !messageText.trim()}
+                  className="bg-teal-600 hover:bg-teal-700"
+                  title="Nachricht senden"
                 >
-                  <Send className="h-4 w-4" />
+                  {isSending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                Nachricht wird in WhatsApp geöffnet - du kannst sie dort bearbeiten und senden
+              <p className="text-xs text-gray-500 mt-2 flex items-center justify-between">
+                <span>✓ Direkt aus Taskilo senden</span>
+                <span className="text-teal-600">
+                  Verbunden mit {whatsappConnection?.phoneNumber}
+                </span>
               </p>
             </div>
           </>

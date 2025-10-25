@@ -230,7 +230,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
-            <Users className="h-5 w-5 mr-2 text-[#14ad9f]" />
+            <Users className="h-5 w-5 mr-2 text-taskilo" />
             Team-Mitglieder ({teamMembers.length})
           </div>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -258,7 +258,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
                 <div className="max-h-96 overflow-y-auto space-y-2">
                   {loading ? (
                     <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f] mx-auto"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-taskilo mx-auto"></div>
                       <p className="text-gray-500 mt-2">Lade Mitarbeiter...</p>
                     </div>
                   ) : filteredAvailableEmployees.length === 0 ? (
@@ -277,8 +277,8 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
                       >
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-[#14ad9f] bg-opacity-10 rounded-full flex items-center justify-center">
-                            <span className="text-[#14ad9f] font-medium">
+                          <div className="w-10 h-10 bg-taskilo bg-opacity-10 rounded-full flex items-center justify-center">
+                            <span className="text-taskilo font-medium">
                               {employee.firstName[0]}
                               {employee.lastName[0]}
                             </span>
@@ -305,7 +305,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
                             setShowAddDialog(false);
                             setSearchTerm('');
                           }}
-                          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                          className="bg-taskilo hover:bg-taskilo-hover text-white"
                         >
                           <UserCheck className="h-4 w-4 mr-2" />
                           Hinzufügen
@@ -335,8 +335,8 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
                 className="flex items-center justify-between p-3 border rounded-lg"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-[#14ad9f] bg-opacity-10 rounded-full flex items-center justify-center">
-                    <span className="text-[#14ad9f] font-medium">
+                  <div className="w-10 h-10 bg-taskilo bg-opacity-10 rounded-full flex items-center justify-center">
+                    <span className="text-taskilo font-medium">
                       {member.firstName[0]}
                       {member.lastName[0]}
                     </span>
@@ -352,7 +352,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
                         {getEmploymentTypeLabel(member.employmentType)}
                       </Badge>
                       {member.hourlyRate && (
-                        <span className="text-xs text-[#14ad9f] font-medium">
+                        <span className="text-xs text-taskilo font-medium">
                           {member.hourlyRate}€/h
                         </span>
                       )}
