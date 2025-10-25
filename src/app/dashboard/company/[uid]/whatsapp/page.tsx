@@ -195,10 +195,29 @@ export default function WhatsAppPage() {
   };
 
   useEffect(() => {
-    if (selectedCustomer) {
-      loadMessages();
+    if (selectedCustomer && uid) {
+      // Real-time Listener für Nachrichten
+      const unsubscribe = WhatsAppService.subscribeToMessages(
+        uid,
+        selectedCustomer.id,
+        (updatedMessages: WhatsAppMessage[]) => {
+          setMessages(updatedMessages);
+
+          // Auto-scroll zu neuer Nachricht
+          setTimeout(() => {
+            const chatContainer = document.getElementById('chat-messages-container');
+            if (chatContainer) {
+              chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+          }, 100);
+        }
+      );
+
+      return () => unsubscribe();
     }
-  }, [selectedCustomer]);
+
+    return undefined;
+  }, [selectedCustomer, uid]);
 
   const loadCustomers = async () => {
     if (!uid) return;
@@ -500,7 +519,7 @@ export default function WhatsAppPage() {
             {/* Info Banner */}
             <div className="bg-green-50 border-b border-green-200 p-3">
               <div className="flex items-start gap-2">
-                <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center shrink-0 mt-0.5">
                   <CheckCircle2 className="h-3 w-3 text-white" />
                 </div>
                 <div className="flex-1 text-sm">
@@ -514,7 +533,10 @@ export default function WhatsAppPage() {
             </div>
 
             {/* Nachrichten */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
+            <div
+              id="chat-messages-container"
+              className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"
+            >
               {messages.length === 0 ? (
                 <div className="text-center py-12">
                   <MessageCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />

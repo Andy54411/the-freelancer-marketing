@@ -12,6 +12,10 @@ import {
   doc,
   setDoc,
   getDoc,
+  onSnapshot,
+  QuerySnapshot,
+  DocumentData,
+  FirestoreError,
 } from 'firebase/firestore';
 import { createClickToChatLink } from '@/lib/whatsapp';
 
@@ -69,7 +73,7 @@ export class WhatsAppService {
     window.open(link, '_blank');
   }
 
-    /**
+  /**
    * Nachricht senden (über KUNDENEIGENE WhatsApp Business Nummer via Meta API)
    */
   static async sendMessage(
@@ -190,6 +194,49 @@ export class WhatsAppService {
   }
 
   /**
+   * Real-time Listener für Chat-Nachrichten
+   * Gibt Unsubscribe-Funktion zurück
+   */
+  static subscribeToMessages(
+    companyId: string,
+    customerId: string,
+    callback: (messages: WhatsAppMessage[]) => void
+  ): () => void {
+    try {
+      const messagesRef = collection(db, 'companies', companyId, 'whatsappMessages');
+      const q = query(
+        messagesRef,
+        where('customerId', '==', customerId),
+        orderBy('createdAt', 'asc')
+      );
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot: QuerySnapshot<DocumentData>) => {
+          const messages = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt?.toDate?.() || data.createdAt,
+            };
+          }) as WhatsAppMessage[];
+
+          callback(messages);
+        },
+        (error: FirestoreError) => {
+          console.error('[WhatsApp] Real-time listener error:', error);
+        }
+      );
+
+      return unsubscribe;
+    } catch (error) {
+      console.error('[WhatsApp] Subscribe to messages error:', error);
+      return () => {}; // Noop unsubscribe
+    }
+  }
+
+  /**
    * Lädt alle Nachrichten einer Company
    */
   static async getCompanyMessages(companyId: string): Promise<WhatsAppMessage[]> {
@@ -249,7 +296,7 @@ export class WhatsAppService {
       const connectionDoc = await getDoc(
         doc(db, 'companies', companyId, 'whatsappConnection', 'current')
       );
-      
+
       if (!connectionDoc.exists()) {
         return null;
       }
@@ -271,7 +318,7 @@ export class WhatsAppService {
   ): Promise<void> {
     try {
       const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString();
-      
+
       await setDoc(
         doc(db, 'companies', companyId, 'whatsappConnection', 'current'),
         {
@@ -293,21 +340,15 @@ export class WhatsAppService {
   /**
    * Speichert erfolgreiche Verbindung
    */
-  static async saveConnection(
-    companyId: string,
-    phoneNumber: string
-  ): Promise<void> {
+  static async saveConnection(companyId: string, phoneNumber: string): Promise<void> {
     try {
-      await setDoc(
-        doc(db, 'companies', companyId, 'whatsappConnection', 'current'),
-        {
-          companyId,
-          phoneNumber,
-          isConnected: true,
-          qrCode: undefined,
-          connectedAt: new Date().toISOString(),
-        }
-      );
+      await setDoc(doc(db, 'companies', companyId, 'whatsappConnection', 'current'), {
+        companyId,
+        phoneNumber,
+        isConnected: true,
+        qrCode: undefined,
+        connectedAt: new Date().toISOString(),
+      });
     } catch (error) {
       console.error('[WhatsApp] Save connection error:', error);
       throw error;
@@ -319,15 +360,12 @@ export class WhatsAppService {
    */
   static async disconnectConnection(companyId: string): Promise<void> {
     try {
-      await setDoc(
-        doc(db, 'companies', companyId, 'whatsappConnection', 'current'),
-        {
-          companyId,
-          phoneNumber: '',
-          isConnected: false,
-          qrCode: undefined,
-        }
-      );
+      await setDoc(doc(db, 'companies', companyId, 'whatsappConnection', 'current'), {
+        companyId,
+        phoneNumber: '',
+        isConnected: false,
+        qrCode: undefined,
+      });
     } catch (error) {
       console.error('[WhatsApp] Disconnect error:', error);
       throw error;
