@@ -3,12 +3,12 @@ import { db } from '@/firebase/server';
 
 /**
  * Twilio WhatsApp Webhook Handler
- * 
+ *
  * Empfängt eingehende WhatsApp-Nachrichten von Twilio
  * und speichert sie in Firestore
- * 
+ *
  * Webhook URL: https://yourdomain.com/api/whatsapp/messages
- * 
+ *
  * Twilio sendet POST-Requests mit diesen Parametern:
  * - MessageSid: Twilio Message ID
  * - From: Absender (whatsapp:+4915012345678)
@@ -20,7 +20,7 @@ import { db } from '@/firebase/server';
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    
+
     const messageSid = formData.get('MessageSid') as string;
     const from = formData.get('From') as string;
     const to = formData.get('To') as string;
@@ -28,20 +28,18 @@ export async function POST(request: NextRequest) {
     const numMedia = formData.get('NumMedia') as string;
 
     if (!messageSid || !from || !body) {
-      return NextResponse.json(
-        { error: 'Fehlende erforderliche Felder' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Fehlende erforderliche Felder' }, { status: 400 });
     }
 
     // Extrahiere Telefonnummer (entferne whatsapp: Prefix)
     const fromPhone = from.replace('whatsapp:', '');
-    
+
     // Finde zugehörigen Kunden anhand Telefonnummer
     // Suche in allen Companies (ineffizient, aber funktional für Start)
     const companiesSnapshot = await db!.collection('companies').get();
-    
-    let matchingCustomer: { companyId: string; customerId: string; customerName: string } | null = null;
+
+    let matchingCustomer: { companyId: string; customerId: string; customerName: string } | null =
+      null;
 
     for (const companyDoc of companiesSnapshot.docs) {
       const customersSnapshot = await db!
@@ -87,8 +85,21 @@ export async function POST(request: NextRequest) {
         .collection('whatsappMessages')
         .add(messageData);
     } else {
-      // Speichere in globaler Collection für unbekannte Absender
-      await db!.collection('whatsappMessagesUnknown').add(messageData);
+      // Log unbekannte Absender im System-Log
+      console.warn('[WhatsApp Unknown Sender]', {
+        from: fromPhone,
+        body,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Optional: Speichere in Admin-Logs für spätere Analyse
+      await db!.collection('admin_logs').add({
+        type: 'whatsapp_unknown_sender',
+        from: fromPhone,
+        body,
+        twilioSid: messageSid,
+        timestamp: new Date(),
+      });
     }
 
     // TwiML-Response für Twilio (bestätigt Empfang)

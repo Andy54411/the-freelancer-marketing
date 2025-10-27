@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { db, isFirebaseAvailable } from '@/firebase/server';
 
 const querySchema = z.object({
-  companyId: z.string().min(1, 'Company ID erforderlich')
+  companyId: z.string().min(1, 'Company ID erforderlich'),
 });
 
 export async function GET(request: NextRequest) {
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
         {
           success: false,
           error: 'Firebase nicht verfügbar',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         { status: 503 }
       );
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const companyId = searchParams.get('companyId');
 
     const { companyId: validatedCompanyId } = querySchema.parse({
-      companyId
+      companyId,
     });
 
     // Lade aktuelle Verbindung aus Firestore (admin SDK)
@@ -40,27 +40,28 @@ export async function GET(request: NextRequest) {
         phoneNumber: '',
         isConnected: false,
         qrCode: null,
-        connectedAt: null
+        connectedAt: null,
       });
     }
 
     const data = connectionDoc.data();
-    
+
     // Prüfe ob QR-Code abgelaufen ist
-    if (data?.expiresAt && new Date(data.expiresAt) < new Date()) {
-      return NextResponse.json({
-        phoneNumber: data.phoneNumber || '',
-        isConnected: data.isConnected || false,
-        qrCode: null,
-        connectedAt: data.connectedAt || null
-      });
-    }
+    const isQrExpired = data?.expiresAt && new Date(data.expiresAt) < new Date();
 
     return NextResponse.json({
       phoneNumber: data?.phoneNumber || '',
+      displayName: data?.displayName || '',
       isConnected: data?.isConnected || false,
-      qrCode: data?.qrCode || null,
-      connectedAt: data?.connectedAt || null
+      qrCode: isQrExpired ? null : data?.qrCode || null,
+      connectedAt: data?.connectedAt || null,
+      wabaId: data?.wabaId || null,
+      phoneNumberId: data?.phoneNumberId || null,
+      accessToken: data?.accessToken || null,
+      assignedCustomerId: data?.assignedCustomerId || null,
+      assignedCustomerName: data?.assignedCustomerName || null,
+      defaultCountryCode: data?.defaultCountryCode || 'DE',
+      status: data?.status || 'disconnected',
     });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
           success: false,
           error: 'Validierungsfehler',
           details: (error as any).errors[0]?.message || 'Ungültige Eingabe',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         { status: 400 }
       );
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
         success: false,
         error: 'Fehler beim Laden der Verbindung',
         details: error instanceof Error ? error.message : 'Unbekannter Fehler',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );
