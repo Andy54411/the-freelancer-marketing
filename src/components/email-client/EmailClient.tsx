@@ -289,6 +289,29 @@ export function EmailClient({
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [lastActivity, setLastActivity] = useState<Date | null>(null);
 
+  // ✅ GMAIL VERBINDUNGS-CHECK - Prüfe ob Gmail verbunden ist
+  useEffect(() => {
+    const checkGmailConnection = async () => {
+      if (!companyId) return;
+
+      try {
+        const response = await fetch(`/api/company/${companyId}/gmail-auth-status`);
+        const data = await response.json();
+
+        // Wenn keine gültigen Tokens vorhanden sind, zur Integration-Seite weiterleiten
+        if (!data.hasValidTokens || data.status === 'authentication_required') {
+          window.location.href = `/dashboard/company/${companyId}/email-integration`;
+        }
+      } catch (error) {
+        console.error('Gmail connection check failed:', error);
+        // Bei Fehler auch zur Integration-Seite
+        window.location.href = `/dashboard/company/${companyId}/email-integration`;
+      }
+    };
+
+    checkGmailConnection();
+  }, [companyId]);
+
   useEffect(() => {
     if (!companyId || !selectedFolder) {
       console.warn('⚠️ Direct email listener: No companyId or folder');

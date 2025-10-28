@@ -195,6 +195,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
       const unsubscribe = subscribeToRecentChats(currentUser.uid, firestoreUserData.user_type);
       return unsubscribe;
     }
+    return undefined;
   }, [currentUser, firestoreUserData, subscribeToRecentChats]);
 
   // 🔔 NEUE EMAIL NOTIFICATIONS: Listener für ungelesene E-Mails
@@ -248,20 +249,45 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
       return;
     }
     try {
-      // Versuche zuerst die Firestore-Benutzerdaten zu laden, um die direkte URL zu bekommen
+      // WICHTIG: Prüfe ZUERST companies Collection für Company-Logo
+      const companyDocRef = doc(db, 'companies', uid);
+      const companyDocSnap = await getDoc(companyDocRef);
+
+      if (companyDocSnap.exists()) {
+        const companyData = companyDocSnap.data();
+
+        // Company Logo: step3.profilePictureURL oder logoUrl
+        const companyLogoUrl =
+          companyData.step3?.profilePictureURL ||
+          companyData.profilePictureURL ||
+          companyData.logoUrl ||
+          companyData.photoURL;
+
+        if (companyLogoUrl) {
+          if (!companyLogoUrl.startsWith('http')) {
+            try {
+              const imageRef = storageRef(storage, companyLogoUrl);
+              const downloadUrl = await getDownloadURL(imageRef);
+              setProfilePictureURLFromStorage(downloadUrl);
+              setImageLoadError(false);
+              return;
+            } catch (storageError) {
+              console.error('Company logo storage error:', storageError);
+            }
+          }
+
+          // Direkte URL verwenden
+          setProfilePictureURLFromStorage(companyLogoUrl);
+          setImageLoadError(false);
+          return;
+        }
+      }
+
+      // Falls nicht in companies oder kein Logo, versuche users Collection
       const userDocRef = doc(db, 'users', uid);
       const userDocSnap = await getDoc(userDocRef);
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data();
-
-        // TEST: Versuche die URL direkt zu testen
-        const testUrl = userData.profilePictureFirebaseUrl;
-        if (testUrl) {
-          // Versuche die Firebase Storage URL direkt ohne Encoding zu verwenden
-          const directUrl = testUrl
-            .replace(/user_uploads%2F/, 'user_uploads/')
-            .replace(/%2F/g, '/');
-        }
 
         const profilePictureUrl =
           userData.profilePictureFirebaseUrl || userData.profilePictureURL || userData.photoURL;
@@ -291,7 +317,6 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
 
           return;
         }
-      } else {
       }
 
       // Fallback: Suche im Storage (für Rückwärtskompatibilität)
@@ -331,17 +356,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
       return;
     }
     try {
-      // Versuche zuerst users Collection
-      const userDocRef = doc(db, 'users', uid);
-      const userDocSnap = await getDoc(userDocRef);
-
-      if (userDocSnap.exists()) {
-        const userData = userDocSnap.data() as FirestoreUserData;
-        setFirestoreUserData(userData);
-        return;
-      }
-
-      // Falls nicht in users gefunden, versuche companies Collection
+      // WICHTIG: Prüfe ZUERST companies Collection, da Firmen Priorität haben
       const companyDocRef = doc(db, 'companies', uid);
       const companyDocSnap = await getDoc(companyDocRef);
 
@@ -349,12 +364,25 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
         const companyData = companyDocSnap.data();
         // Mappe Company-Daten auf User-Format
         const userData: FirestoreUserData = {
-          firstName: companyData.firstName || '',
+          firstName: companyData.firstName || companyData.companyName || '',
           lastName: companyData.lastName || '',
           user_type: 'firma',
         };
+        console.log('🏢 Company detected:', uid, userData);
+        setFirestoreUserData(userData);
+        return;
+      }
+
+      // Falls nicht in companies gefunden, versuche users Collection
+      const userDocRef = doc(db, 'users', uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data() as FirestoreUserData;
+        console.log('👤 User detected:', uid, userData);
         setFirestoreUserData(userData);
       } else {
+        console.log('❌ No user or company found:', uid);
         setFirestoreUserData(null);
       }
     } catch (error) {
@@ -677,8 +705,10 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                     {(profilePictureURLFromStorage || currentUser.photoURL) && !imageLoadError ? (
                       <img
                         src={profilePictureURLFromStorage || currentUser.photoURL || ''}
-                        alt="Avatar"
-                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover"
+                        alt={firestoreUserData?.user_type === 'firma' ? 'Company Logo' : 'Avatar'}
+                        className={`w-7 h-7 sm:w-8 sm:h-8 object-cover ${
+                          firestoreUserData?.user_type === 'firma' ? 'rounded-md' : 'rounded-full'
+                        }`}
                         onError={e => {
                           setImageLoadError(true);
                         }}
@@ -717,15 +747,26 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                             : currentUser.displayName || currentUser.email}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {firestoreUserData?.user_type
-                            ? firestoreUserData.user_type.charAt(0).toUpperCase() +
-                              firestoreUserData.user_type.slice(1)
-                            : 'Benutzer'}
+                          {(() => {
+                            console.log(
+                              '📊 Dropdown render - user_type:',
+                              firestoreUserData?.user_type
+                            );
+                            const userType = firestoreUserData?.user_type;
+                            if (userType === 'firma') return 'Unternehmen';
+                            if (userType === 'kunde') return 'Kunde';
+                            if (userType === 'admin') return 'Administrator';
+                            if (userType) {
+                              const typeStr = String(userType);
+                              return typeStr.charAt(0).toUpperCase() + typeStr.slice(1);
+                            }
+                            return 'Benutzer';
+                          })()}
                         </p>
                       </div>
                       <hr />
-                      {/* --- DYNAMISCHE LINKS BASIEREND AUF COMPANY STATUS --- */}
-                      {firestoreUserData && (firestoreUserData as any).companyName ? (
+                      {/* --- DYNAMISCHE LINKS BASIEREND AUF USER_TYPE --- */}
+                      {firestoreUserData?.user_type === 'firma' ? (
                         // Links für Companies
                         <>
                           <button
@@ -764,7 +805,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                               if (onSettingsClick) {
                                 onSettingsClick();
                               } else {
-                                router.push(`/dashboard/company/${currentUser.uid}`);
+                                router.push(`/dashboard/company/${currentUser.uid}/settings`);
                               }
                               setIsProfileDropdownOpen(false);
                             }}

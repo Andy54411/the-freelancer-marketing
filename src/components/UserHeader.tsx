@@ -90,6 +90,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   const [profilePictureFromFirestore, setProfilePictureFromFirestore] = useState<string | null>(
     null
   );
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
@@ -203,12 +204,14 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       if (companyDoc.exists()) {
         const companyData = companyDoc.data();
         const profileUrl =
+          companyData.step3?.profilePictureURL ||
           companyData.profilePictureURL ||
           companyData.profilePictureFirebaseUrl ||
           companyData.profileImage ||
           null;
 
-        // Debug-Log entfernt
+        // Company Logo laden
+        setCompanyLogo(profileUrl);
         setProfilePictureURLFromStorage(profileUrl);
         return;
       }
@@ -525,29 +528,30 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
   return (
     <>
-      <header className="bg-white relative">
+      <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex justify-between items-center">
             {/* Logo */}
-            <Link href="/" className="text-4xl font-bold text-[#14ad9f] flex items-center">
-              <div className="h-10 w-auto">
-                <Logo variant="default" />
-              </div>
+            <Link href="/" className="text-xl sm:text-2xl font-bold text-[#14ad9f]">
+              Taskilo
             </Link>
 
             {/* Suchleiste */}
-            <div className="relative flex-grow max-w-xl mx-4" ref={searchDropdownContainerRef}>
+            <div
+              className="relative flex-grow max-w-xl mx-2 sm:mx-4"
+              ref={searchDropdownContainerRef}
+            >
               <input
                 ref={searchInputRef}
                 type="search"
-                placeholder="Dienstleistung auswählen oder suchen..."
-                className="w-full p-3 pl-12 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent text-base"
+                placeholder="Dienstleistung auswählen..."
+                className="w-full p-2 pl-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent text-sm sm:text-base"
                 onFocus={() => setIsSearchDropdownOpen(true)}
                 onChange={e => setSearchTerm(e.target.value)}
                 value={searchTerm}
               />
 
-              <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
               {isSearchDropdownOpen && (
                 <div className="absolute top-full left-0 mt-1 w-full max-h-96 overflow-y-auto bg-white rounded-md shadow-lg z-30 ring-1 ring-black ring-opacity-5">
                   {filteredCategories.map((category: Category) => (
@@ -580,7 +584,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
             </div>
 
             {/* Icons und Benutzerprofil */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               {/* Quick Note Dialog - nur für Company-Benutzer */}
               {currentUser?.uid && authUser?.companyName && workspaces.length > 0 && (
                 <QuickNoteDialog
@@ -595,12 +599,12 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
               {/* NEU: Glocken-Icon mit Hover-Dropdown und Badge */}
               <div
-                className="relative"
+                className="relative hidden sm:block"
                 onMouseEnter={handleNotificationEnter}
                 onMouseLeave={handleNotificationLeave}
               >
-                <button className="text-gray-600 hover:text-[#14ad9f] block p-2 rounded-md hover:bg-gray-100">
-                  <FiBell size={24} />
+                <button className="text-gray-600 hover:text-[#14ad9f] p-1">
+                  <FiBell size={20} />
                 </button>
                 {(unreadNotificationsCount > 0 || unseenCount > 0 || unreadEmailsCount > 0) && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full px-1.5 py-0.5 text-xs font-medium z-10">
@@ -614,7 +618,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                       {unreadNotificationsCount > 0 && (
                         <button
                           onClick={handleMarkAllAsRead}
-                          className="text-xs text-[#14ad9f] hover:text-[#129488] font-medium"
+                          className="text-xs text-taskilo hover:text-taskilo-hover font-medium"
                         >
                           Alle als gelesen markieren
                         </button>
@@ -646,7 +650,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                             <Link
                               href={`/dashboard/company/${currentUid}/emails`}
                               onClick={() => setIsNotificationDropdownOpen(false)}
-                              className="text-xs text-[#14ad9f] hover:text-[#129488] font-medium"
+                              className="text-xs text-taskilo hover:text-taskilo-hover font-medium"
                             >
                               Alle anzeigen
                             </Link>
@@ -771,7 +775,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                                 setShowNotificationModal(true);
                                 setIsNotificationDropdownOpen(false);
                               }}
-                              className="text-xs text-[#14ad9f] hover:text-[#129488] font-medium"
+                              className="text-xs text-taskilo hover:text-taskilo-hover font-medium"
                             >
                               Alle anzeigen
                             </button>
@@ -824,7 +828,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                                         setIsNotificationDropdownOpen(false);
                                       }
                                     }}
-                                    className="text-xs text-[#14ad9f] hover:text-[#129488] font-medium"
+                                    className="text-xs text-taskilo hover:text-taskilo-hover font-medium"
                                   >
                                     Details anzeigen
                                   </button>
@@ -869,15 +873,15 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
               </div>
               {/* NEU: Posteingang-Icon mit Hover-Dropdown und Badge */}
               <div
-                className="relative"
+                className="relative hidden sm:block"
                 onMouseEnter={handleInboxEnter}
                 onMouseLeave={handleInboxLeave}
               >
                 <Link
                   href={currentUser ? `/dashboard/user/${currentUser.uid}/inbox` : '/login'}
-                  className="text-gray-600 hover:text-[#14ad9f] block p-2 rounded-md hover:bg-gray-100" // block, damit der Badge richtig positioniert wird
+                  className="text-gray-600 hover:text-[#14ad9f] p-1 block"
                 >
-                  <FiMail size={24} />
+                  <FiMail size={20} />
                 </Link>
                 {unreadMessagesCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-[#14ad9f] text-white rounded-full px-1.5 py-0.5 text-xs font-medium z-10">
@@ -944,10 +948,10 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
               </div>
               <button
                 onClick={handleHelpClick}
-                className="text-gray-600 hover:text-[#14ad9f] p-2 rounded-md hover:bg-gray-100"
+                className="text-gray-600 hover:text-[#14ad9f] p-1 hidden sm:block"
                 aria-label="Hilfe & Support Chatbot öffnen"
               >
-                <FiHelpCircle size={24} />
+                <FiHelpCircle size={20} />
               </button>
 
               {currentUser ? (
@@ -956,19 +960,23 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                     onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                     className="flex items-center"
                   >
-                    {profilePictureURLFromStorage || currentUser.photoURL ? (
+                    {companyLogo || profilePictureURLFromStorage || currentUser.photoURL ? (
                       <img
-                        src={profilePictureURLFromStorage || currentUser.photoURL || ''}
-                        alt="Avatar"
-                        className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                        src={
+                          companyLogo || profilePictureURLFromStorage || currentUser.photoURL || ''
+                        }
+                        alt={companyLogo ? 'Company Logo' : 'Avatar'}
+                        className={`w-7 h-7 sm:w-8 sm:h-8 object-cover ${
+                          companyLogo ? 'rounded-md' : 'rounded-full'
+                        }`}
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-300">
-                        <FiUser className="text-gray-500 w-5 h-5" />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                        <FiUser className="text-gray-500 w-4 h-4" />
                       </div>
                     )}
                     <FiChevronDown
-                      className={`ml-1 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`}
+                      className={`ml-1 transition-transform text-sm ${isProfileDropdownOpen ? 'rotate-180' : ''}`}
                     />
                   </button>
                   {isProfileDropdownOpen && (

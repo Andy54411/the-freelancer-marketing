@@ -1,0 +1,22 @@
+@theme {
+  /* Taskilo Brand Colors */
+  --color-taskilo: #14ad9f;
+  --color-taskilo-hover: #129488;
+  
+  /* Background variants */
+  --color-bg-taskilo: #14ad9f;
+  
+  /* Text variants */
+  --color-text-taskilo: #14ad9f;
+  
+  /* Border variants */
+  --color-border-taskilo: #14ad9f;
+  
+  /* Ring variants */
+  --color-ring-taskilo: #14ad9f;
+  
+  /* Gradient variants */
+  --color-from-taskilo: #14ad9f;
+  --color-to-taskilo: #14ad9f;
+  --color-via-taskilo: #14ad9f;
+}

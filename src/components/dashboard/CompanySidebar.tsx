@@ -683,7 +683,25 @@ export default function CompanySidebar({
                 <div key={item.value}>
                   {/* Main Button */}
                   <button
-                    onClick={() => {
+                    onClick={async () => {
+                      // ✅ Gmail-Verbindungsprüfung für E-Mail-Menü
+                      if (item.value === 'email') {
+                        try {
+                          const response = await fetch(`/api/company/${uid}/gmail-auth-status`);
+                          const data = await response.json();
+
+                          // Wenn keine gültigen Tokens, zur Integration weiterleiten
+                          if (!data.hasValidTokens || data.status === 'authentication_required') {
+                            window.location.href = `/dashboard/company/${uid}/email-integration`;
+                            return;
+                          }
+                        } catch (error) {
+                          console.error('Gmail connection check failed:', error);
+                          window.location.href = `/dashboard/company/${uid}/email-integration`;
+                          return;
+                        }
+                      }
+
                       if (hasSubItems) {
                         onToggleExpanded(item.value);
                       } else if (item.href) {

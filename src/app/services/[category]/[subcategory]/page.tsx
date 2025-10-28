@@ -206,7 +206,7 @@ export default function SubcategoryPage() {
             selectedCategory: data.selectedCategory || 'Hotel & Gastronomie', // Fallback basierend auf Skills
             selectedSubcategory:
               data.selectedSubcategory ||
-              (data.skills?.some(skill => skill.toLowerCase().includes('koch'))
+              (data.skills?.some((skill: string) => skill.toLowerCase().includes('koch'))
                 ? 'Mietkoch'
                 : null),
             // Diese werden später durch echte Reviews überschrieben - Standardwerte auf 0 setzen
@@ -761,24 +761,6 @@ export default function SubcategoryPage() {
           )}
 
           {/* Debug Info - können Sie später entfernen */}
-          {process.env.NODE_ENV === 'development' && (
-            <div
-              style={{
-                position: 'fixed',
-                bottom: '10px',
-                right: '10px',
-                background: 'black',
-                color: 'white',
-                padding: '10px',
-                fontSize: '12px',
-                borderRadius: '5px',
-                zIndex: 9999,
-              }}
-            >
-              <div>Selected Provider: {selectedProvider ? 'Yes' : 'No'}</div>
-              <div>Modal Open: {isBookingModalOpen ? 'Yes' : 'No'}</div>
-            </div>
-          )}
         </div>
       </div>
 

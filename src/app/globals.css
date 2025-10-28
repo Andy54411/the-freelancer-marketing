@@ -37,8 +37,15 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* Taskilo Brand Colors - Tailwind v4 Format */
   --color-taskilo: #14ad9f;
   --color-taskilo-hover: #129488;
+  --color-border-taskilo: #14ad9f;
+  --color-from-taskilo: #14ad9f;
+  --color-group-hover-taskilo: #14ad9f;
+
+  /* Radius */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -149,7 +156,7 @@
     background-color: var(--input);
     color: var(--foreground);
     border-color: var(--border);
-    @apply rounded-md p-2 border placeholder:text-[var(--muted-foreground)] transition-colors duration-300;
+    @apply rounded-md p-2 border placeholder:text-muted-foreground transition-colors duration-300;
   }
 
   input:disabled,
