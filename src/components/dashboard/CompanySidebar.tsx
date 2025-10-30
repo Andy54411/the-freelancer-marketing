@@ -242,6 +242,11 @@ const navigationItems: NavigationItem[] = [
     subItems: [
       { label: 'Konten', value: 'banking-accounts', href: 'banking/accounts' },
       { label: 'Kassenbuch', value: 'banking-cashbook', href: 'banking/cashbook' },
+      {
+        label: 'Unvollständige Zahlungen',
+        value: 'banking-incomplete',
+        href: 'banking/incomplete-transactions',
+      },
     ],
   },
   {

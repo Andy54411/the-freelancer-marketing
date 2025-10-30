@@ -29,7 +29,9 @@ import ProductsServicesCard from '@/components/dashboard/ProductsServicesCard';
 import ActivityHistoryCard from '@/components/dashboard/ActivityHistoryCard';
 import TopExpensesCard from '@/components/dashboard/TopExpensesCard';
 import TopCustomersCard from '@/components/dashboard/TopCustomersCard';
-import DraggableDashboardGrid, { DashboardComponent } from '@/components/dashboard/DraggableDashboardGrid';
+import DraggableDashboardGrid, {
+  DashboardComponent,
+} from '@/components/dashboard/DraggableDashboardGrid';
 import { useDashboardConfig } from '@/hooks/useDashboardConfig';
 
 type OrderData = {
@@ -152,17 +154,20 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
     netRevenue: 0,
     totalExpenses: 0,
     grossProfitBeforeTax: 0,
-    vatAmount: 0
+    vatAmount: 0,
   });
 
-  const handleFinancialDataChange = React.useCallback((data: {
-    netRevenue: number;
-    totalExpenses: number;
-    grossProfitBeforeTax: number;
-    vatAmount: number;
-  }) => {
-    setFinancialData(data);
-  }, []);
+  const handleFinancialDataChange = React.useCallback(
+    (data: {
+      netRevenue: number;
+      totalExpenses: number;
+      grossProfitBeforeTax: number;
+      vatAmount: number;
+    }) => {
+      setFinancialData(data);
+    },
+    []
+  );
 
   const companyName = userData?.companyName || userData?.step2?.companyName || 'Ihre Firma';
 
@@ -175,30 +180,32 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
 
   // Dashboard Configuration Hook
   // Dashboard Configuration Hook
-  const { 
-    components: dashboardComponents, 
-    setComponents: setDashboardComponents, 
-    isLoading: isLoadingConfig 
+  const {
+    components: dashboardComponents,
+    setComponents: setDashboardComponents,
+    isLoading: isLoadingConfig,
   } = useDashboardConfig(uid || '');
 
   // Dashboard-Komponenten mit echten React-Komponenten verknüpfen - ALLE KOMPONENTEN
   const getDashboardComponentsWithContent = React.useCallback((): DashboardComponent[] => {
     if (!dashboardComponents) return [];
-    
+
     return dashboardComponents.map(comp => ({
       ...comp,
       component: (() => {
         switch (comp.id) {
           case 'onboarding-banner':
-            return uid && (
-              <OnboardingBanner
-                key="onboarding-banner"
-                companyUid={uid}
-                needsOnboarding={needsOnboarding}
-                completionPercentage={completionPercentage}
-                currentStep={currentStep}
-                isLoading={isChecking}
-              />
+            return (
+              uid && (
+                <OnboardingBanner
+                  key="onboarding-banner"
+                  companyUid={uid}
+                  needsOnboarding={needsOnboarding}
+                  completionPercentage={completionPercentage}
+                  currentStep={currentStep}
+                  isLoading={isChecking}
+                />
+              )
             );
           case 'section-cards':
             return <SectionCards key="section-cards" />;
@@ -206,8 +213,8 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
             return (
               <div key="chart-interactive" className="bg-white rounded-lg border shadow-sm p-6">
                 {uid && isAuthorized && !isChecking ? (
-                  <ChartAreaInteractive 
-                    companyUid={uid} 
+                  <ChartAreaInteractive
+                    companyUid={uid}
                     onFinancialDataChange={handleFinancialDataChange}
                   />
                 ) : (
@@ -228,7 +235,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
           case 'bank-account':
             return uid ? <BankAccountCard key="bank-account" companyId={uid} /> : null;
           case 'accounting-score':
-            return <AccountingScoreCard key="accounting-score" />;
+            return uid ? <AccountingScoreCard key="accounting-score" companyId={uid} /> : null;
           case 'products-services':
             return <ProductsServicesCard key="products-services" />;
           case 'activity-history':
@@ -249,22 +256,35 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
               </div>
             );
           case 'view-all-orders':
-            return uid && (
-              <div key="view-all-orders" className="text-center p-6">
-                <Link
-                  href={`/dashboard/company/${uid}/orders/overview`}
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-[#129a8f]"
-                >
-                  Alle Aufträge anzeigen
-                </Link>
-              </div>
+            return (
+              uid && (
+                <div key="view-all-orders" className="text-center p-6">
+                  <Link
+                    href={`/dashboard/company/${uid}/orders/overview`}
+                    className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-[#129a8f]"
+                  >
+                    Alle Aufträge anzeigen
+                  </Link>
+                </div>
+              )
             );
           default:
             return <div key={comp.id}>Unbekannte Komponente: {comp.id}</div>;
         }
       })(),
     }));
-  }, [dashboardComponents, uid, needsOnboarding, completionPercentage, currentStep, isChecking, isAuthorized, handleFinancialDataChange, orders, loadingOrders]);
+  }, [
+    dashboardComponents,
+    uid,
+    needsOnboarding,
+    completionPercentage,
+    currentStep,
+    isChecking,
+    isAuthorized,
+    handleFinancialDataChange,
+    orders,
+    loadingOrders,
+  ]);
 
   const handleRowClick = (order: OrderData) => {
     setSelectedOrder(order);
@@ -368,11 +388,17 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
 
       case 'calendar':
         return (
-          <>{uid && isAuthorized && !isChecking && <CompanyCalendar companyUid={uid} selectedOrderId={selectedOrder?.id} />}</>
+          <>
+            {uid && isAuthorized && !isChecking && (
+              <CompanyCalendar companyUid={uid} selectedOrderId={selectedOrder?.id} />
+            )}
+          </>
         );
 
       case 'finance':
-        return <>{uid && isAuthorized && !isChecking && <FinanceComponent companyUid={uid || ''} />}</>;
+        return (
+          <>{uid && isAuthorized && !isChecking && <FinanceComponent companyUid={uid || ''} />}</>
+        );
 
       case 'banking':
         return (

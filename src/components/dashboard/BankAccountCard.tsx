@@ -43,6 +43,9 @@ export default function BankAccountCard({
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [transactionFilter, setTransactionFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalTransactions, setTotalTransactions] = useState(0);
+  const transactionsPerPage = 5;
 
   const credentialType = getFinAPICredentialType();
 
@@ -88,42 +91,92 @@ export default function BankAccountCard({
   // Load recent transactions
   const loadRecentTransactions = React.useCallback(async () => {
     try {
-      if (!user?.uid || selectedAccounts.length === 0) return;
+      if (!user?.uid || selectedAccounts.length === 0) {
+        console.log('🔍 BankAccountCard: Skipping transaction load - no user or selected accounts');
+        setTransactions([]);
+        setTotalTransactions(0);
+        return;
+      }
+
+      console.log(
+        '🔄 BankAccountCard: Loading transactions page',
+        currentPage,
+        'for accounts:',
+        selectedAccounts
+      );
 
       const response = await fetch(
-        `/api/finapi/transactions?userId=${user.uid}&accountIds=${selectedAccounts.join(',')}&credentialType=${credentialType}`
+        `/api/finapi/transactions?userId=${user.uid}&accountIds=${selectedAccounts.join(',')}&credentialType=${credentialType}&page=${currentPage}&perPage=${transactionsPerPage}`
       );
+
+      console.log('📡 BankAccountCard: API Response status:', response.status);
 
       if (!response.ok) {
         console.warn(`Transaction API returned ${response.status}: ${response.statusText}`);
-        // Setze leere Transaktionen statt Error zu werfen
         setTransactions([]);
+        setTotalTransactions(0);
         return;
       }
 
       const data = await response.json();
+      console.log('📦 BankAccountCard: API Data:', data);
 
-      if (data.success && data.transactions) {
-        const formattedTransactions: Transaction[] = data.transactions.map((tx: any) => ({
-          id: tx.id,
-          counterpartName: tx.counterpartName || 'Unbekannt',
-          amount: tx.amount || 0,
-          date: tx.date || new Date().toISOString(),
-          description: tx.purpose || tx.counterpartName || 'Transaktion',
-          type: tx.amount >= 0 ? 'income' : 'expense',
-          accountId: tx.accountId,
-        }));
+      if (data.success && data.data && data.data.transactions) {
+        console.log('✅ BankAccountCard: Found transactions:', data.data.transactions.length);
+
+        const formattedTransactions: Transaction[] = data.data.transactions.map((tx: any) => {
+          const account = accounts.find(acc => acc.id === String(tx.accountId));
+
+          return {
+            id: String(tx.id),
+            counterpartName: tx.counterpartName || 'Unbekannt',
+            amount: tx.amount || 0,
+            bookingDate:
+              tx.bankBookingDate || tx.bookingDate || tx.date || new Date().toISOString(),
+            purpose: tx.purpose || tx.counterpartName || 'Transaktion',
+            type: tx.amount >= 0 ? 'income' : 'expense',
+            accountName: account?.accountName || 'Unbekanntes Konto',
+          };
+        });
+
+        console.log('✅ BankAccountCard: Formatted transactions:', formattedTransactions.length);
+        setTransactions(formattedTransactions);
+        setTotalTransactions(data.data.totalCount || formattedTransactions.length);
+      } else if (data.success && data.transactions) {
+        // Legacy format fallback
+        console.log('⚠️ BankAccountCard: Using legacy format, found:', data.transactions.length);
+
+        const formattedTransactions: Transaction[] = data.transactions.map((tx: any) => {
+          const account = accounts.find(acc => acc.id === String(tx.accountId));
+
+          return {
+            id: String(tx.id),
+            counterpartName: tx.counterpartName || 'Unbekannt',
+            amount: tx.amount || 0,
+            bookingDate:
+              tx.bankBookingDate || tx.bookingDate || tx.date || new Date().toISOString(),
+            purpose: tx.purpose || tx.counterpartName || 'Transaktion',
+            type: tx.amount >= 0 ? 'income' : 'expense',
+            accountName: account?.accountName || 'Unbekanntes Konto',
+          };
+        });
 
         setTransactions(formattedTransactions);
+        setTotalTransactions(formattedTransactions.length);
+      } else {
+        console.log('⚠️ BankAccountCard: No transactions in response');
+        setTransactions([]);
+        setTotalTransactions(0);
       }
     } catch (error) {
-      console.error('Error loading transactions:', error);
+      console.error('💥 BankAccountCard: Error loading transactions:', error);
       setTransactions([]);
+      setTotalTransactions(0);
     }
-  }, [user?.uid, selectedAccounts, credentialType]);
+  }, [user?.uid, selectedAccounts, credentialType, accounts, currentPage, transactionsPerPage]);
 
   // Load saved account selection
-  const loadSavedAccountSelection = React.useCallback(async () => {
+  const loadSavedAccountSelection = React.useCallback(async (): Promise<string[]> => {
     try {
       if (!user?.uid || !companyId) return [];
 
@@ -133,7 +186,7 @@ export default function BankAccountCard({
         const data = await response.json();
         const savedSelection = data?.settings?.banking?.selectedAccounts;
         if (Array.isArray(savedSelection) && savedSelection.length > 0) {
-          return savedSelection;
+          return savedSelection as string[];
         }
       }
 
@@ -142,7 +195,7 @@ export default function BankAccountCard({
       if (localSelection) {
         const parsedSelection = JSON.parse(localSelection);
 
-        return parsedSelection;
+        return parsedSelection as string[];
       }
     } catch (error) {
       console.error('Fehler beim Laden der gespeicherten Konto-Auswahl:', error);
@@ -171,34 +224,50 @@ export default function BankAccountCard({
 
     const initializeAccountSelection = async () => {
       if (accounts.length > 0) {
+        console.log('🔧 BankAccountCard: Initializing account selection');
+
         // Lade gespeicherte Auswahl
         const savedSelection = await loadSavedAccountSelection();
 
         if (savedSelection.length > 0) {
           // Filtere nur die Konten, die noch existieren
-          const validSelection = savedSelection.filter(accountId =>
+          const validSelection = savedSelection.filter((accountId: string) =>
             accounts.some(acc => acc.id === accountId)
           );
 
           if (validSelection.length > 0) {
+            console.log('✅ BankAccountCard: Using saved selection:', validSelection);
             setSelectedAccounts(validSelection);
           } else {
             // Alle Konten auswählen, wenn keine gültige Auswahl gefunden
+            console.log('⚠️ BankAccountCard: Saved selection invalid, selecting all');
             setSelectedAccounts(accounts.map(acc => acc.id));
           }
         } else {
           // Standard: Alle Konten auswählen
+          console.log('ℹ️ BankAccountCard: No saved selection, selecting all accounts');
           setSelectedAccounts(accounts.map(acc => acc.id));
         }
-
-        // Lade Transaktionen
-        await loadRecentTransactions();
       }
     };
 
     initializeAccountSelection();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts, companyId]);
+
+  // Load transactions whenever selectedAccounts or currentPage changes
+  useEffect(() => {
+    if (selectedAccounts.length > 0) {
+      console.log('🔄 BankAccountCard: selectedAccounts or page changed, loading transactions');
+      loadRecentTransactions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccounts, currentPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [transactionFilter, selectedAccounts]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -678,6 +747,38 @@ export default function BankAccountCard({
                   </li>
                 )}
               </ul>
+
+              {/* Pagination */}
+              {filteredTransactions.length > 0 && totalTransactions > transactionsPerPage && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-gray-500">
+                      Seite {currentPage} von {Math.ceil(totalTransactions / transactionsPerPage)}
+                      <span className="ml-1">({totalTransactions} Transaktionen)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        ← Zurück
+                      </button>
+                      <button
+                        onClick={() =>
+                          setCurrentPage(prev =>
+                            Math.min(Math.ceil(totalTransactions / transactionsPerPage), prev + 1)
+                          )
+                        }
+                        disabled={currentPage >= Math.ceil(totalTransactions / transactionsPerPage)}
+                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Weiter →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
