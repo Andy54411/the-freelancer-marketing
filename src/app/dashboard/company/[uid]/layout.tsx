@@ -369,18 +369,21 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
               isSidebarCollapsed ? 'md:w-16' : 'md:w-64'
             }`}
           >
-            <div className="sticky top-0 bg-white overflow-hidden">
-              <CompanySidebar
-                companyName={companyDataForHeader?.companyName}
-                uid={uid}
-                expandedItems={expandedItems}
-                onToggleExpanded={toggleExpanded}
-                onNavigate={handleNavigation}
-                getCurrentView={getCurrentView}
-                isCollapsed={isSidebarCollapsed}
-                onToggleCollapsed={setIsSidebarCollapsed}
-              />
-            </div>
+            <aside className="sticky top-0 h-screen bg-white overflow-hidden border-r border-gray-200 flex flex-col">
+              <div className="h-16 flex-shrink-0"></div>
+              <div className="flex-1 overflow-y-auto">
+                <CompanySidebar
+                  companyName={companyDataForHeader?.companyName}
+                  uid={uid}
+                  expandedItems={expandedItems}
+                  onToggleExpanded={toggleExpanded}
+                  onNavigate={handleNavigation}
+                  getCurrentView={getCurrentView}
+                  isCollapsed={isSidebarCollapsed}
+                  onToggleCollapsed={setIsSidebarCollapsed}
+                />
+              </div>
+            </aside>
           </div>
 
           {/* Mobile Sidebar */}
