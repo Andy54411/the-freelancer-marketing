@@ -2460,29 +2460,41 @@ export class PersonalService {
       const startDateStr = startOfMonth.toISOString().split('T')[0];
       const endDateStr = endOfNextMonth.toISOString().split('T')[0];
 
+      console.log('🔍 Subscribing to shifts:', { companyId, startDateStr, endDateStr });
+      
       const q = query(
         collection(db, 'companies', companyId, 'shifts'),
         where('date', '>=', startDateStr),
-        where('date', '<=', endDateStr),
-        orderBy('date', 'asc'),
-        orderBy('startTime', 'asc')
+        where('date', '<=', endDateStr)
       );
 
       const unsubscribe = onSnapshot(
         q,
         querySnapshot => {
+          console.log('📥 Shifts snapshot received:', querySnapshot.size, 'documents');
           const shifts: Shift[] = [];
 
           querySnapshot.forEach(doc => {
+            const data = doc.data();
+            console.log('📄 Shift doc:', doc.id, data);
             shifts.push({
               id: doc.id,
-              ...doc.data(),
+              ...data,
             } as Shift);
           });
 
+          // Sort client-side (Firestore limitation - no orderBy with range queries without index)
+          shifts.sort((a, b) => {
+            const dateCompare = a.date.localeCompare(b.date);
+            if (dateCompare !== 0) return dateCompare;
+            return a.startTime.localeCompare(b.startTime);
+          });
+
+          console.log('✅ Shifts after sorting:', shifts);
           onUpdate(shifts);
         },
         error => {
+          console.error('❌ Subscription error:', error);
           onError?.(error as Error);
         }
       );

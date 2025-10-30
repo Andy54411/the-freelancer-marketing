@@ -30,6 +30,8 @@ import {
   Boxes as FiBoxes,
   HelpCircle as FiHelpCircle,
   MessageCircle as FiMessageCircle,
+  PanelLeftClose as FiPanelLeftClose,
+  PanelLeftOpen as FiPanelLeftOpen,
 } from 'lucide-react';
 import { StorageCardSidebar } from './StorageCardSidebar';
 
@@ -61,6 +63,8 @@ interface CompanySidebarProps {
   onToggleExpanded: (itemValue: string) => void;
   onNavigate: (value: string, href?: string) => void;
   getCurrentView: () => string;
+  isCollapsed?: boolean;
+  onToggleCollapsed?: (collapsed: boolean) => void;
 }
 
 const navigationItems: NavigationItem[] = [
@@ -322,6 +326,8 @@ export default function CompanySidebar({
   onToggleExpanded,
   onNavigate,
   getCurrentView,
+  isCollapsed: isCollapsedProp,
+  onToggleCollapsed,
 }: CompanySidebarProps) {
   const pathname = usePathname();
   const [hasBankConnection, setHasBankConnection] = useState(false);
@@ -334,6 +340,19 @@ export default function CompanySidebar({
   });
   const [emailSearchQuery, setEmailSearchQuery] = useState('');
   const [checkingBankConnection, setCheckingBankConnection] = useState(true);
+  
+  // Use prop if provided, otherwise use local state
+  const isCollapsed = isCollapsedProp ?? false;
+  
+  const handleToggleCollapsed = () => {
+    const newValue = !isCollapsed;
+    if (onToggleCollapsed) {
+      onToggleCollapsed(newValue);
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebar-collapsed', newValue.toString());
+    }
+  };
 
   // Prüfe ob Bankkonten über FinAPI verbunden sind
   useEffect(() => {
@@ -648,7 +667,11 @@ export default function CompanySidebar({
           display: none;
         }
       `}</style>
-      <div ref={sidebarRef} className="flex flex-col bg-white" style={{ maxHeight }}>
+      <div 
+        ref={sidebarRef} 
+        className="flex flex-col bg-white h-full w-full" 
+        style={{ maxHeight }}
+      >
         <div
           ref={scrollRef}
           className="sidebar-scroll flex flex-col flex-1 pt-5 pb-4 overflow-y-auto select-none"
@@ -663,9 +686,24 @@ export default function CompanySidebar({
           onMouseLeave={handleMouseLeave}
         >
           {/* Header */}
-          <div className="flex items-center flex-shrink-0 px-4 mb-5">
-            <h2 className="text-lg font-semibold text-gray-900">Dashboard</h2>
-            {companyName && <span className="ml-2 text-sm text-gray-500">{companyName}</span>}
+          <div className="flex items-center flex-shrink-0 px-4 mb-5 justify-between">
+            {!isCollapsed && (
+              <div className="flex items-center flex-1 min-w-0">
+                <h2 className="text-lg font-semibold text-gray-900 truncate">Dashboard</h2>
+                {companyName && <span className="ml-2 text-sm text-gray-500 truncate">{companyName}</span>}
+              </div>
+            )}
+            <button
+              onClick={handleToggleCollapsed}
+              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0"
+              title={isCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}
+            >
+              {isCollapsed ? (
+                <FiPanelLeftOpen className="h-5 w-5" />
+              ) : (
+                <FiPanelLeftClose className="h-5 w-5" />
+              )}
+            </button>
           </div>
 
           {/* Navigation */}
@@ -719,17 +757,18 @@ export default function CompanySidebar({
                       isMainActive
                         ? 'bg-[#14ad9f] text-white'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    } group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md w-full transition-colors`}
+                    } group flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-2 py-2 text-sm font-medium rounded-md w-full transition-colors relative`}
+                    title={isCollapsed ? item.label : undefined}
                   >
                     <div className="flex items-center">
                       <item.icon
                         className={`${
                           isMainActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
-                        } mr-3 flex-shrink-0 h-6 w-6`}
+                        } ${isCollapsed ? '' : 'mr-3'} flex-shrink-0 h-6 w-6`}
                       />
-                      {item.label}
+                      {!isCollapsed && item.label}
                     </div>
-                    {hasSubItems && (
+                    {hasSubItems && !isCollapsed && (
                       <FiChevronDown
                         className={`h-4 w-4 transition-transform ${
                           isItemExpanded ? 'rotate-180' : ''
@@ -739,7 +778,7 @@ export default function CompanySidebar({
                   </button>
 
                   {/* Sub Items */}
-                  {hasSubItems && isItemExpanded && (
+                  {hasSubItems && isItemExpanded && !isCollapsed && (
                     <div className="ml-6 mt-1 space-y-1">
                       {/* E-Mail spezifische Elemente */}
                       {item.value === 'email' && (
@@ -912,7 +951,7 @@ export default function CompanySidebar({
                   )}
 
                   {/* Storage Card direkt nach Einstellungen Button */}
-                  {item.value === 'settings' && (
+                  {item.value === 'settings' && !isCollapsed && (
                     <div className="mt-2 px-2">
                       <StorageCardSidebar companyId={uid} />
                     </div>

@@ -40,6 +40,29 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   const uid = typeof params?.uid === 'string' ? params.uid : '';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  
+  // Sidebar Collapsed State
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebar-collapsed');
+      if (saved !== null) return saved === 'true';
+      return window.innerWidth < 1536;
+    }
+    return true;
+  });
+
+  // Resize Listener für automatisches Einklappen
+  useEffect(() => {
+    const handleResize = () => {
+      const shouldCollapse = window.innerWidth < 1536;
+      setIsSidebarCollapsed(shouldCollapse);
+      // Speichere den neuen State
+      localStorage.setItem('sidebar-collapsed', shouldCollapse.toString());
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // AuthContext für zusätzliche Fallback-Daten
   const { user } = useAuth();
@@ -340,8 +363,12 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         <UserHeader currentUid={uid} />
 
         <div className="flex flex-1">
-          {/* Desktop Sidebar - Dynamic height stops before footer */}
-          <div className="hidden md:block md:w-64 md:flex-shrink-0">
+          {/* Desktop Sidebar - Dynamic width based on collapsed state */}
+          <div 
+            className={`hidden md:block md:flex-shrink-0 transition-all duration-300 ${
+              isSidebarCollapsed ? 'md:w-16' : 'md:w-64'
+            }`}
+          >
             <div className="sticky top-0 bg-white overflow-hidden">
               <CompanySidebar
                 companyName={companyDataForHeader?.companyName}
@@ -350,6 +377,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
                 onToggleExpanded={toggleExpanded}
                 onNavigate={handleNavigation}
                 getCurrentView={getCurrentView}
+                isCollapsed={isSidebarCollapsed}
+                onToggleCollapsed={setIsSidebarCollapsed}
               />
             </div>
           </div>

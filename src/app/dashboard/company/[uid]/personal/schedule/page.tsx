@@ -44,7 +44,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { ModernScheduleView } from '@/components/schedule/ModernScheduleView';
+import ModernScheduleView from '@/components/schedule/ModernScheduleView';
 import { cn } from '@/lib/utils';
 
 // Erweitere Window für Realtime-Subscriptions
@@ -146,6 +146,61 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
     };
   }, [shifts]);
 
+  // Cleanup Subscriptions
+  const cleanupSubscriptions = useCallback(() => {
+    if (window.employeesUnsubscribe) {
+      window.employeesUnsubscribe();
+      window.employeesUnsubscribe = undefined;
+    }
+    if (window.shiftsUnsubscribe) {
+      window.shiftsUnsubscribe();
+      window.shiftsUnsubscribe = undefined;
+    }
+  }, []);
+
+  // Realtime Subscriptions Setup
+  const setupRealtimeSubscriptions = useCallback(() => {
+    if (!resolvedParams?.uid) {
+      console.log('❌ No resolvedParams.uid');
+      return;
+    }
+
+    console.log('🔄 Setting up subscriptions for company:', resolvedParams.uid);
+    setLoading(true);
+
+    // Mitarbeiter Realtime Subscription
+    const employeesUnsubscribe = PersonalService.subscribeToEmployees(
+      resolvedParams.uid,
+      employeeList => {
+        console.log('👥 Employees loaded:', employeeList.length);
+        setEmployees(employeeList);
+      },
+      error => {
+        console.error('❌ Error loading employees:', error);
+        toast.error('Fehler beim Laden der Mitarbeiter');
+      }
+    );
+
+    // Schichten Realtime Subscription
+    const shiftsUnsubscribe = PersonalService.subscribeToShifts(
+      resolvedParams.uid,
+      shiftList => {
+        console.log('📅 Shifts loaded:', shiftList.length, shiftList);
+        setShifts(shiftList);
+        setLoading(false);
+      },
+      error => {
+        console.error('❌ Error loading shifts:', error);
+        toast.error('Fehler beim Laden der Schichten');
+        setLoading(false);
+      }
+    );
+
+    // Speichere Unsubscribe-Funktionen
+    window.employeesUnsubscribe = employeesUnsubscribe;
+    window.shiftsUnsubscribe = shiftsUnsubscribe;
+  }, [resolvedParams]);
+
   // Resolve params from Promise
   useEffect(() => {
     const resolveParams = async () => {
@@ -165,54 +220,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
     return () => {
       cleanupSubscriptions();
     };
-  }, [resolvedParams]);
-
-  // Realtime Subscriptions Setup
-  const setupRealtimeSubscriptions = useCallback(() => {
-    if (!resolvedParams?.uid) return;
-
-    setLoading(true);
-
-    // Mitarbeiter Realtime Subscription
-    const employeesUnsubscribe = PersonalService.subscribeToEmployees(
-      resolvedParams.uid,
-      employeeList => {
-        setEmployees(employeeList);
-      },
-      error => {
-        toast.error('Fehler beim Laden der Mitarbeiter');
-      }
-    );
-
-    // Schichten Realtime Subscription
-    const shiftsUnsubscribe = PersonalService.subscribeToShifts(
-      resolvedParams.uid,
-      shiftList => {
-        setShifts(shiftList);
-        setLoading(false);
-      },
-      error => {
-        toast.error('Fehler beim Laden der Schichten');
-        setLoading(false);
-      }
-    );
-
-    // Speichere Unsubscribe-Funktionen
-    window.employeesUnsubscribe = employeesUnsubscribe;
-    window.shiftsUnsubscribe = shiftsUnsubscribe;
-  }, [resolvedParams]);
-
-  // Cleanup Subscriptions
-  const cleanupSubscriptions = () => {
-    if (window.employeesUnsubscribe) {
-      window.employeesUnsubscribe();
-      window.employeesUnsubscribe = null;
-    }
-    if (window.shiftsUnsubscribe) {
-      window.shiftsUnsubscribe();
-      window.shiftsUnsubscribe = null;
-    }
-  };
+  }, [resolvedParams, setupRealtimeSubscriptions, cleanupSubscriptions]);
 
   const loadData = async () => {
     // Diese Methode wird nur noch für manuelle Refreshes verwendet
@@ -221,6 +229,11 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
 
   const handleCreateShift = async () => {
     try {
+      if (!resolvedParams?.uid) {
+        toast.error('Fehler: Firma nicht gefunden');
+        return;
+      }
+
       if (!newShiftForm.employeeId || !newShiftForm.position || !newShiftForm.department) {
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
         return;
@@ -238,7 +251,9 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
         status: newShiftForm.status,
       };
 
-      await PersonalService.createShift(shiftData);
+      console.log('Creating shift:', shiftData);
+      const shiftId = await PersonalService.createShift(shiftData);
+      console.log('Shift created with ID:', shiftId);
       toast.success('Schicht erfolgreich erstellt');
 
       // Daten werden automatisch über Realtime-Subscription aktualisiert
@@ -265,6 +280,11 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
     employeeId: string
   ) => {
     try {
+      if (!resolvedParams?.uid) {
+        toast.error('Fehler: Firma nicht gefunden');
+        return;
+      }
+
       // Finde den Mitarbeiter um seine Abteilung und Position zu verwenden
       const employee = employees.find(emp => emp.id === employeeId);
 
@@ -578,13 +598,23 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
                   <SelectValue placeholder="Mitarbeiter auswählen" />
                 </SelectTrigger>
                 <SelectContent>
-                  {employees
-                    .filter(emp => emp.isActive)
-                    .map(employee => (
-                      <SelectItem key={employee.id} value={employee.id!}>
-                        {employee.firstName} {employee.lastName} - {employee.position}
-                      </SelectItem>
-                    ))}
+                  {employees.length === 0 ? (
+                    <div className="px-2 py-6 text-center text-sm text-gray-500">
+                      Keine Mitarbeiter vorhanden
+                    </div>
+                  ) : (
+                    employees
+                      .filter(emp => emp.id)
+                      .map(employee => (
+                        <SelectItem key={employee.id} value={employee.id || ''}>
+                          {employee.firstName} {employee.lastName}
+                          {employee.position && ` - ${employee.position}`}
+                          {!employee.isActive && (
+                            <span className="text-gray-400 ml-2">(Inaktiv)</span>
+                          )}
+                        </SelectItem>
+                      ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
