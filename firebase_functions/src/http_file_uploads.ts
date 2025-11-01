@@ -202,10 +202,9 @@ export const uploadStripeFile = onRequest(
         const gcsFile = storageResponse[0];
         logger.info("[uploadStripeFile] GCS file object obtained from storage response.");
 
-        let fileUrl: string;
         // WORKAROUND: Temporarily make the file public to avoid signBlob permission issues.
         await gcsFile.makePublic();
-        fileUrl = gcsFile.publicUrl();
+        const fileUrl = gcsFile.publicUrl();
         logger.info(`[uploadStripeFile] File made temporarily public. URL: ${fileUrl}`);
 
         // Schedule a task to make the file private again after a short delay.
@@ -213,7 +212,7 @@ export const uploadStripeFile = onRequest(
         setTimeout(() => {
           gcsFile.makePrivate().then(() => {
             logger.info(`[uploadStripeFile] File ${gcsFile.name} has been made private again.`);
-          }).catch(err => {
+          }).catch((err: any) => {
             logger.error(`[uploadStripeFile] Failed to make file ${gcsFile.name} private again.`, err);
           });
         }, 60000); // 60 seconds delay

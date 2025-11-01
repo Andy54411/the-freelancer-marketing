@@ -512,15 +512,14 @@ export const createStripeAccountIfComplete = onCall(
       };
     }
 
-    if (payloadFromClient.iban && payloadFromClient.accountHolder) {
-      accountParams.external_account = {
-        object: "bank_account",
-        country: businessType === 'company' ? sanitizeForStripe(payloadFromClient.companyCountry)! : sanitizeForStripe(payloadFromClient.personalCountry || payloadFromClient.companyCountry)!,
-        currency: "eur",
-        account_number: (payloadFromClient.iban).replace(/\s/g, ""),
-        account_holder_name: payloadFromClient.accountHolder,
-      };
-    }
+    // 🔧 FIX: External Bank Account NICHT während Account-Erstellung hinzufügen
+    // In LIVE mode muss der Account erst vollständig verifiziert sein
+    // Bank Account wird separat hinzugefügt NACH Account-Erstellung
+    const pendingBankAccount = {
+      iban: payloadFromClient.iban,
+      accountHolder: payloadFromClient.accountHolder,
+      country: businessType === 'company' ? sanitizeForStripe(payloadFromClient.companyCountry)! : sanitizeForStripe(payloadFromClient.personalCountry || payloadFromClient.companyCountry)!,
+    };
 
     if (payloadFromClient.profilePictureFileId) {
       accountParams.settings = { ...accountParams.settings, branding: { icon: payloadFromClient.profilePictureFileId } };
@@ -681,6 +680,33 @@ export const createStripeAccountIfComplete = onCall(
       }
     }
 
+    // 🔧 FIX: Bank Account separat hinzufügen NACH Account-Erstellung
+    // In LIVE mode muss der Account erst verifiziert werden bevor External Accounts hinzugefügt werden können
+    let externalAccountAdded = false;
+    if (pendingBankAccount.iban && pendingBankAccount.accountHolder) {
+      try {
+        loggerV2.info(`Versuche Bank Account für ${account.id} hinzuzufügen...`);
+        await localStripe.accounts.createExternalAccount(account.id, {
+          external_account: {
+            object: "bank_account",
+            country: pendingBankAccount.country,
+            currency: "eur",
+            account_number: pendingBankAccount.iban.replace(/\s/g, ""),
+            account_holder_name: pendingBankAccount.accountHolder,
+          }
+        });
+        externalAccountAdded = true;
+        loggerV2.info(`✅ Bank Account erfolgreich hinzugefügt für ${account.id}`);
+      } catch (bankError: any) {
+        // Bank Account Fehler nicht fatal - kann später manuell hinzugefügt werden
+        loggerV2.warn(`⚠️ Bank Account konnte nicht hinzugefügt werden (nicht fatal):`, {
+          accountId: account.id,
+          error: bankError.message,
+          hint: 'Account wurde erstellt, Bank Account kann später über Stripe Dashboard hinzugefügt werden'
+        });
+      }
+    }
+
     const firestoreUpdateData: { [key: string]: any } = {
       stripeAccountId: account.id,
       stripeAccountDetailsSubmitted: account.details_submitted,
@@ -688,6 +714,7 @@ export const createStripeAccountIfComplete = onCall(
       stripeAccountChargesEnabled: account.charges_enabled,
       stripeAccountCreationDate: FieldValue.serverTimestamp(),
       stripeAccountError: FieldValue.delete(),
+      stripeExternalAccountAdded: externalAccountAdded, // Track if bank account was added
       "common.createdByCallable": "true",
       "step1.dateOfBirth": payloadFromClient.dateOfBirth || null,
       "step1.phoneNumber": payloadFromClient.phoneNumber || null,

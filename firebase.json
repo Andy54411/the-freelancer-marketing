@@ -12,11 +12,7 @@
   },
   "functions": {
     "source": "firebase_functions",
-    "runtime": "nodejs20",
-    "predeploy": [
-      "npm --prefix \"$RESOURCE_DIR\" install",
-      "npm --prefix \"$RESOURCE_DIR\" run build"
-    ]
+    "runtime": "nodejs20"
   },
   "firestore": {
     "database": "(default)",

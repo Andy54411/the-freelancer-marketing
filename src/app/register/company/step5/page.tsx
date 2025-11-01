@@ -1223,7 +1223,7 @@ export default function Step5CompanyPage() {
                 type="text"
                 id="accountHolder"
                 value={accountHolder || ''}
-                onChange={e => setAccountHolder(e.target.value.trim())}
+                onChange={e => setAccountHolder(e.target.value)}
                 className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !accountHolder?.trim() ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="Max Mustermann"
                 disabled={isLoading || isConvertingImage}
@@ -1257,7 +1257,7 @@ export default function Step5CompanyPage() {
                 type="text"
                 id="bic"
                 value={bic || ''}
-                onChange={e => setBic(e.target.value.toUpperCase().trim())}
+                onChange={e => setBic(e.target.value.toUpperCase())}
                 className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !bic?.trim() ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="COBADEFFXXX"
                 disabled={isLoading || isConvertingImage}
@@ -1274,7 +1274,7 @@ export default function Step5CompanyPage() {
                 type="text"
                 id="bankName"
                 value={bankName || ''}
-                onChange={e => setBankName(e.target.value.trim())}
+                onChange={e => setBankName(e.target.value)}
                 className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !bankName?.trim() ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="Commerzbank AG"
                 disabled={isLoading || isConvertingImage}

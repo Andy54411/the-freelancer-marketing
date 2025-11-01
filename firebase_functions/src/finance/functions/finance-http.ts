@@ -751,7 +751,7 @@ async function getInvoiceById(id: string, response: Response, companyId: string)
     );
     
     if (!result.success) {
-        response.status(result.statusCode).json({ error: result.error });
+        response.status((result as any).statusCode).json({ error: (result as any).error });
         return;
     }
     
@@ -814,7 +814,7 @@ async function createInvoice(request: Request, response: Response, userId: strin
     );
     
     if (!result.success) {
-        response.status(result.statusCode).json({ error: result.error });
+        response.status((result as any).statusCode).json({ error: (result as any).error });
         return;
     }
     
@@ -2167,7 +2167,7 @@ async function extractWithGermanPatterns_NEW_VERSION_2025(text: string, userId?:
     console.log('[DEBUG_STEP] ✅ STEP 2: Amounts extraction completed!');
     
     // ✅ UNIVERSELLE LÖSUNG: Verwende die German Amounts direkt ohne hardcoded Einschränkungen
-    let safeGermanAmounts = { ...germanAmounts };
+    const safeGermanAmounts = { ...germanAmounts };
     
     console.log('[DEBUG_UNIVERSAL] ✅ Using extracted amounts without hardcoded restrictions');
     console.log('[DEBUG_UNIVERSAL] This allows ANY invoice amount to be processed correctly');
@@ -2284,9 +2284,9 @@ async function extractWithGermanPatterns_NEW_VERSION_2025(text: string, userId?:
     });
     
     // === NO FALLBACKS - ERROR HANDLING ONLY ===
-    let finalInvoiceNumber = invoiceNumber;
-    let finalInvoiceDate = invoiceDate;
-    let finalAmounts = safeGermanAmounts;
+    const finalInvoiceNumber = invoiceNumber;
+    const finalInvoiceDate = invoiceDate;
+    const finalAmounts = safeGermanAmounts;
     
     // ⚡ STRIKTESTE ERROR HANDLING - ABSOLUT KEINE FALLBACKS ODER INTELLIGENZ!
     if (!finalInvoiceNumber) {

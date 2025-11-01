@@ -14,7 +14,7 @@ interface CompanyOnboardingWelcomePageProps {}
 export default function CompanyOnboardingWelcomePage(): JSX.Element {
   const router = useRouter();
   const params = useParams();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -22,8 +22,13 @@ export default function CompanyOnboardingWelcomePage(): JSX.Element {
 
   useEffect(() => {
     async function checkAuthorization() {
+      // Warte auf Auth-Initialisierung BEVOR du weiterleitest
+      if (authLoading) {
+        return;
+      }
+
       if (!user || !companyUid) {
-        router.push('/auth/login');
+        router.push('/login');
         return;
       }
 
@@ -57,7 +62,7 @@ export default function CompanyOnboardingWelcomePage(): JSX.Element {
     }
 
     checkAuthorization();
-  }, [user, companyUid, router]);
+  }, [user, companyUid, router, authLoading]);
 
   const handleStartOnboarding = () => {
     router.push(`/dashboard/company/${companyUid}/onboarding/step/1`);

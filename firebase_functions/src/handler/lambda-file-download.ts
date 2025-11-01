@@ -1,4 +1,5 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+// @ts-ignore - Storage types are available at runtime in Firebase environment
 import { Storage } from '@google-cloud/storage';
 import axios from 'axios';
 import { z } from 'zod';

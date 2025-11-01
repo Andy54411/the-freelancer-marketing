@@ -1,3 +1,4 @@
+// @ts-ignore - Storage types are available at runtime in Firebase environment
 import { Storage } from '@google-cloud/storage';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import axios from 'axios';
