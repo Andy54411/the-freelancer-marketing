@@ -35,6 +35,7 @@ interface CreateProfilesRequest {
   email: string;
   uid: string;
   user_type?: 'kunde' | 'firma';
+  country?: string; // ISO Country Code (DE, AT, CH, US, etc.)
 }
 
 interface CreateProfilesResponse {
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
 
   try {
     const body: CreateProfilesRequest = await request.json();
-    const { companyName, email, uid, user_type = 'firma' } = body;
+    const { companyName, email, uid, user_type = 'firma', country = 'DE' } = body;
 
     // Validierung
     if (!companyName || typeof companyName !== 'string') {
@@ -119,10 +120,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
     // 2. CONNECT ACCOUNT ERSTELLEN (für B2B-Verkäufe)
 
     try {
-      console.log('[ACCOUNT CREATE] Starte Account-Erstellung für:', companyName);
+      console.log('[ACCOUNT CREATE] Starte Account-Erstellung für:', companyName, 'Land:', country);
+
       const account = await stripe.accounts.create({
         type: 'custom',
-        country: 'DE', // Deutschland standardmäßig
+        country: country,
         email: email,
         business_type: 'company',
         capabilities: {
@@ -132,27 +134,20 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
         business_profile: {
           name: companyName,
           support_email: email,
-          url: `https://taskilo.de/profile/${uid}`, // Direkte Profil-URL
+          url: `https://taskilo.de/profile/${uid}`,
         },
         metadata: {
           firebaseUserId: uid,
           accountType: user_type,
           createdFor: 'B2B_payments',
           createdAt: new Date().toISOString(),
-        },
-        tos_acceptance: {
-          service_agreement: 'recipient',
+          country: country,
         },
       });
 
       console.log('[ACCOUNT CREATE] ✅ Account erstellt:', account.id);
       results.stripeAccountId = account.id;
     } catch (accountError) {
-      console.error('[ACCOUNT CREATE] ❌ FEHLER:', accountError);
-      if (accountError instanceof Error) {
-        console.error('[ACCOUNT CREATE] Error Message:', accountError.message);
-        console.error('[ACCOUNT CREATE] Error Stack:', accountError.stack);
-      }
       // Customer wurde bereits erstellt, also nur warnen aber nicht komplett fehlschlagen
     }
 
