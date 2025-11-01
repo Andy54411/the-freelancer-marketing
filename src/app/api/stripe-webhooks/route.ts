@@ -63,9 +63,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // CRITICAL: Get raw buffer, not parsed text, for Stripe signature verification
-    const buf = await req.arrayBuffer();
-    const body = Buffer.from(buf).toString('utf8');
+    const body = await req.text();
     const signature = req.headers.get('stripe-signature');
 
     if (!signature) {
