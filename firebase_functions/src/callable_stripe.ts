@@ -616,13 +616,22 @@ export const createStripeAccountIfComplete = onCall(
         payloadFromClient.email &&
         payloadFromClient.dateOfBirth &&
         payloadFromClient.identityFrontFileId &&
-        payloadFromClient.identityBackFileId &&
+        payloadFromClient.identityBackFileId;
+      
+      // 🔧 FIX: Fallback auf Firmenadresse wenn persönliche Adresse fehlt
+      const hasPersonalAddress = 
         payloadFromClient.personalStreet &&
         payloadFromClient.personalPostalCode &&
         payloadFromClient.personalCity &&
         payloadFromClient.personalCountry;
+      
+      const hasFirmAddress =
+        payloadFromClient.companyAddressLine1 &&
+        payloadFromClient.companyPostalCode &&
+        payloadFromClient.companyCity &&
+        payloadFromClient.companyCountry;
 
-      if (hasRequiredPersonData) {
+      if (hasRequiredPersonData && (hasPersonalAddress || hasFirmAddress)) {
         const personRelationship: Stripe.AccountCreatePersonParams['relationship'] = {
           representative: true,
           director: payloadFromClient.isActualDirector,
@@ -639,6 +648,21 @@ export const createStripeAccountIfComplete = onCall(
           personRelationship.percent_ownership = payloadFromClient.ownershipPercentage;
         }
 
+        // 🔧 FIX: Verwende persönliche Adresse oder Firmenadresse als Fallback
+        const usePersonalAddress = hasPersonalAddress;
+        const addressLine1 = usePersonalAddress
+          ? `${payloadFromClient.personalStreet!} ${payloadFromClient.personalHouseNumber ?? ''}`.trim()
+          : payloadFromClient.companyAddressLine1!;
+        const addressPostalCode = usePersonalAddress 
+          ? payloadFromClient.personalPostalCode!
+          : payloadFromClient.companyPostalCode!;
+        const addressCity = usePersonalAddress
+          ? payloadFromClient.personalCity!
+          : payloadFromClient.companyCity!;
+        const addressCountry = usePersonalAddress
+          ? payloadFromClient.personalCountry!
+          : payloadFromClient.companyCountry!;
+
         const personPayload: Stripe.AccountCreatePersonParams = {
           first_name: payloadFromClient.firstName!,
           last_name: payloadFromClient.lastName!,
@@ -648,10 +672,10 @@ export const createStripeAccountIfComplete = onCall(
           verification: { document: { front: payloadFromClient.identityFrontFileId!, back: payloadFromClient.identityBackFileId! } },
           dob: { day: dayDob, month: monthDob, year: yearDob },
           address: {
-            line1: `${payloadFromClient.personalStreet!} ${payloadFromClient.personalHouseNumber ?? ''}`.trim(),
-            postal_code: payloadFromClient.personalPostalCode!,
-            city: payloadFromClient.personalCity!,
-            country: payloadFromClient.personalCountry!,
+            line1: addressLine1,
+            postal_code: addressPostalCode,
+            city: addressCity,
+            country: addressCountry,
           },
         };
 
@@ -690,10 +714,16 @@ export const createStripeAccountIfComplete = onCall(
     if (pendingBankAccount.iban && pendingBankAccount.accountHolder) {
       try {
         loggerV2.info(`Versuche Bank Account für ${account.id} hinzuzufügen...`);
+        
+        // 🔧 FIX: Land aus IBAN extrahieren statt Firmen-Land zu verwenden
+        // IBAN beginnt immer mit 2-stelligem Ländercode (z.B. LT, DE, CY)
+        const ibanCountry = pendingBankAccount.iban.substring(0, 2).toUpperCase();
+        loggerV2.info(`IBAN Land erkannt: ${ibanCountry} (von IBAN: ${pendingBankAccount.iban.substring(0, 4)}...)`);
+        
         await localStripe.accounts.createExternalAccount(account.id, {
           external_account: {
             object: "bank_account",
-            country: pendingBankAccount.country,
+            country: ibanCountry, // 🔧 FIX: IBAN-Land statt Firmen-Land
             currency: "eur",
             account_number: pendingBankAccount.iban.replace(/\s/g, ""),
             account_holder_name: pendingBankAccount.accountHolder,

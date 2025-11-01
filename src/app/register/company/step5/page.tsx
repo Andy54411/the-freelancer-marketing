@@ -1124,6 +1124,24 @@ export default function Step5CompanyPage() {
         const step4Data = {
           availabilityType: 'flexible',
           maxDistance: radiusKm || 30,
+          // 🔧 FIX: Banking-Daten aus Step5 hier speichern
+          iban: iban || '',
+          bic: bic || '',
+          bankName: bankName || '',
+          accountHolder: accountHolder?.trim() || '',
+        };
+
+        const step5Data = {
+          // 🔧 FIX: Dokument-URLs aus Step5 Registration speichern
+          identityFrontStripeId: idFrontResult.stripeFileId,
+          identityBackStripeId: idBackResult.stripeFileId,
+          businessLicenseStripeId: businessLicResult.stripeFileId,
+          masterCraftsmanCertificateStripeId: masterCertStripeFileId || null,
+          identityFrontUrl: idFrontResult.firebaseStorageUrl || null,
+          identityBackUrl: idBackResult.firebaseStorageUrl || null,
+          businessLicenseUrl: businessLicResult.firebaseStorageUrl || null,
+          masterCraftsmanCertificateUrl: masterCertResult?.firebaseStorageUrl || null,
+          documentsCompleted: true,
         };
 
         await updateDoc(doc(db, 'companies', currentAuthUserUID), {
@@ -1139,6 +1157,7 @@ export default function Step5CompanyPage() {
           step2: step2Data,
           step3: step3Data,
           step4: step4Data,
+          step5: step5Data,
         });
 
         // ✅ NEU: Standard-Nummerkreise für neue Company erstellen

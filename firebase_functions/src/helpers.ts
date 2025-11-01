@@ -165,8 +165,11 @@ export function getStripeInstance(stripeKey: string): Stripe {
 
   if (stripeKey) {
     try {
+      // Trim newlines und whitespace vom Secret (Firebase fügt automatisch \n hinzu)
+      const cleanKey = stripeKey.trim();
+      
       // Erstelle und gib immer eine neue Instanz zurück.
-      const stripeInstance = new Stripe(stripeKey, {
+      const stripeInstance = new Stripe(cleanKey, {
         typescript: true,
         apiVersion: "2024-06-20",
         timeout: 60000, // 60 Sekunden Timeout für alle Anfragen
