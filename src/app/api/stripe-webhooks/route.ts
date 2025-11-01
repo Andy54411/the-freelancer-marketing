@@ -28,7 +28,7 @@ const stripe = stripeSecretKey
     })
   : null;
 
-export async function POST(req: NextRequest, companyId: string) {
+export async function POST(req: NextRequest) {
   // Check if Firebase is properly initialized
   if (!isFirebaseAvailable() || !db) {
     console.error('Firebase not initialized');
@@ -598,8 +598,9 @@ export async function POST(req: NextRequest, companyId: string) {
           const quoteId = paymentIntentSucceeded.metadata?.quote_id;
           const proposalId = paymentIntentSucceeded.metadata?.proposal_id;
           const customerUid = paymentIntentSucceeded.metadata?.customerUid;
+          const companyId = paymentIntentSucceeded.metadata?.companyId;
 
-          if (!quoteId || !proposalId || !customerUid) {
+          if (!quoteId || !proposalId || !customerUid || !companyId) {
             return NextResponse.json({
               received: true,
               message: 'Quote payment metadata incomplete.',
@@ -1231,6 +1232,6 @@ export async function POST(req: NextRequest, companyId: string) {
 }
 
 // Andere HTTP-Methoden nicht erlaubt
-export async function GET(companyId: string) {
+export async function GET() {
   return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
 }
