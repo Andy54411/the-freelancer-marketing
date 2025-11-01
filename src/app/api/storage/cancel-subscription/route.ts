@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripeKey = (process.env.STRIPE_SECRET_KEY || '').trim().replace(/\r?\n/g, '');
+const stripe = new Stripe(stripeKey, {
   apiVersion: '2024-06-20',
 });
 
@@ -12,6 +13,10 @@ export async function POST(request: NextRequest) {
 
     if (!companyId) {
       return NextResponse.json({ error: 'Company ID ist erforderlich' }, { status: 400 });
+    }
+
+    if (!db) {
+      return NextResponse.json({ error: 'Database nicht verfügbar' }, { status: 500 });
     }
 
     // Get company document

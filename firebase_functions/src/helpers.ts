@@ -165,8 +165,8 @@ export function getStripeInstance(stripeKey: string): Stripe {
 
   if (stripeKey) {
     try {
-      // Trim newlines und whitespace vom Secret (Firebase fügt automatisch \n hinzu)
-      const cleanKey = stripeKey.trim();
+      // KRITISCH: Trim newlines und whitespace vom Secret (Firebase/Vercel fügen automatisch \n hinzu)
+      const cleanKey = stripeKey.trim().replace(/\r?\n/g, '');
       
       // Erstelle und gib immer eine neue Instanz zurück.
       const stripeInstance = new Stripe(cleanKey, {

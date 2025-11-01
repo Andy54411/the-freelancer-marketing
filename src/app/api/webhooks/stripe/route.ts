@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { db as adminDb } from '@/firebase/server';
+import { db } from '@/firebase/server';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripeKey = (process.env.STRIPE_SECRET_KEY || '').trim().replace(/\r?\n/g, '');
+const stripe = new Stripe(stripeKey, {
   apiVersion: '2024-06-20',
 });
 
@@ -56,8 +57,9 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleBalanceUpdate(balance: Stripe.Balance) {
+  if (!db) return;
   // Update cached balance in Firestore
-  const balanceDoc = adminDb.collection('stripe_cache').doc('platform_balance');
+  const balanceDoc = db.collection('stripe_cache').doc('platform_balance');
   await balanceDoc.set(
     {
       available: balance.available,
@@ -72,8 +74,9 @@ async function handleBalanceUpdate(balance: Stripe.Balance) {
 }
 
 async function handlePayoutEvent(payout: Stripe.Payout, eventType: string) {
+  if (!db) return;
   // Update payout in Firestore
-  const payoutDoc = adminDb.collection('stripe_payouts').doc(payout.id);
+  const payoutDoc = db.collection('stripe_payouts').doc(payout.id);
   await payoutDoc.set(
     {
       id: payout.id,
@@ -97,8 +100,9 @@ async function handlePayoutEvent(payout: Stripe.Payout, eventType: string) {
 }
 
 async function handleTransferEvent(transfer: Stripe.Transfer, eventType: string) {
+  if (!db) return;
   // Update transfer in Firestore
-  const transferDoc = adminDb.collection('stripe_transfers').doc(transfer.id);
+  const transferDoc = db.collection('stripe_transfers').doc(transfer.id);
   await transferDoc.set(
     {
       id: transfer.id,
@@ -116,8 +120,9 @@ async function handleTransferEvent(transfer: Stripe.Transfer, eventType: string)
 }
 
 async function handleApplicationFeeEvent(fee: Stripe.ApplicationFee) {
+  if (!db) return;
   // Update fee in Firestore
-  const feeDoc = adminDb.collection('stripe_fees').doc(fee.id);
+  const feeDoc = db.collection('stripe_fees').doc(fee.id);
   await feeDoc.set(
     {
       id: fee.id,
@@ -133,8 +138,9 @@ async function handleApplicationFeeEvent(fee: Stripe.ApplicationFee) {
 }
 
 async function triggerRealtimeUpdate(eventType: string, data: any) {
+  if (!db) return;
   // Trigger real-time updates via Firestore
-  const realtimeDoc = adminDb.collection('realtime_events').doc();
+  const realtimeDoc = db.collection('realtime_events').doc();
   await realtimeDoc.set({
     event_type: eventType,
     data,
