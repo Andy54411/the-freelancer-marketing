@@ -483,6 +483,10 @@ export const createStripeAccountIfComplete = onCall(
         tax_id: sanitizeForStripe(payloadFromClient.taxNumber),
         vat_id: sanitizeForStripe(payloadFromClient.vatId),
         structure: companyStructure,
+        // 🔧 CRITICAL: Sage Stripe, dass alle Geschäftsführer/Eigentümer angegeben wurden
+        owners_provided: true,
+        executives_provided: true,
+        directors_provided: true,
       };
       if (payloadFromClient.businessLicenseFileId && accountParams.company) {
         if (!accountParams.company.verification) accountParams.company.verification = { document: {} };

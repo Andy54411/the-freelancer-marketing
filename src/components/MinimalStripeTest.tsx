@@ -5,14 +5,16 @@ import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-// Stripe Promise initialisieren mit KORREKTEM KEY
-const STRIPE_PUBLISHABLE_KEY =
-  'pk_test_51RXvRUD5Lvjon30aMzieGY1n513cwTd8wUGf6cmYphSWfdTpsbKAHLFs5C17xubatZkLdMYRgBPRlWUMXMQZPrJK00N3Rtf7Dk';
+// Stripe Promise initialisieren - verwende Environment Variable
+const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
 
 // Debug-Logs entfernt
 
 // Nur im Browser ausführen
-const stripePromise = typeof window !== 'undefined' ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;
+const stripePromise =
+  typeof window !== 'undefined' && STRIPE_PUBLISHABLE_KEY
+    ? loadStripe(STRIPE_PUBLISHABLE_KEY)
+    : null;
 
 // Debug: Prüfe ob Stripe Promise funktioniert (nur im Browser)
 if (typeof window !== 'undefined' && stripePromise) {
