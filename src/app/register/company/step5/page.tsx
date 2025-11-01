@@ -173,6 +173,7 @@ export default function Step5CompanyPage() {
     actualOwnershipPercentage,
     isActualExecutive,
     actualRepresentativeTitle,
+    selectedSkills,
     resetRegistrationData,
   } = registration;
 
@@ -1083,6 +1084,47 @@ export default function Step5CompanyPage() {
         // 🔧 NUR COMPANIES COLLECTION - KEINE users Updates!
 
         // COMPANIES COLLECTION: Vollständige Onboarding-Daten
+        // 🔧 FIX: Übertrage Registration-Daten in Onboarding-Struktur
+        const step1Data = {
+          companyName: companyName || '',
+          legalForm: legalForm || '',
+          address: {
+            street: companyStreet || '',
+            houseNumber: companyHouseNumber || '',
+            postalCode: companyPostalCode || '',
+            city: companyCity || '',
+            country: companyCountry || 'DE',
+          },
+          companyRegister: companyRegister || '',
+        };
+
+        const step2Data = {
+          contactPerson: {
+            firstName: firstName || '',
+            lastName: lastName || '',
+            email: email || '',
+            phone: phoneNumber || '',
+            dateOfBirth: dateOfBirth || '',
+          },
+          businessAddress: {
+            street: personalStreet || '',
+            houseNumber: personalHouseNumber || '',
+            postalCode: personalPostalCode || '',
+            city: personalCity || '',
+            country: personalCountry || 'DE',
+          },
+        };
+
+        const step3Data = {
+          skills: selectedSkills || {},
+          category: selectedCategory || '',
+          subcategory: selectedSubcategory || '',
+        };
+
+        const step4Data = {
+          availabilityType: 'flexible',
+          maxDistance: radiusKm || 30,
+        };
 
         await updateDoc(doc(db, 'companies', currentAuthUserUID), {
           onboardingStartedAt: serverTimestamp(),
@@ -1092,6 +1134,11 @@ export default function Step5CompanyPage() {
           onboardingCompleted: false,
           profileComplete: false,
           profileStatus: 'pending_onboarding',
+          // Übertrage Registration-Daten in Step-Struktur
+          step1: step1Data,
+          step2: step2Data,
+          step3: step3Data,
+          step4: step4Data,
         });
 
         // ✅ NEU: Standard-Nummerkreise für neue Company erstellen
