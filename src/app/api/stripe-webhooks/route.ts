@@ -82,6 +82,35 @@ export async function POST(req: NextRequest) {
       hasWhitespace: webhookSecret?.includes(' ') || webhookSecret?.includes('\n'),
     });
 
+    // EXTRA DEBUG: Compute expected v1 signature locally and compare
+    try {
+      const sigHeader = signature || '';
+      console.log('🔍 stripe-signature header full:', sigHeader);
+      const parts = sigHeader.split(',').map(p => p.trim());
+      const tPart = parts.find(p => p.startsWith('t='));
+      const v1Part = parts.find(p => p.includes('v1='));
+      const timestamp = tPart ? tPart.split('=')[1] : null;
+      const receivedV1 = v1Part ? v1Part.split('=')[1] : null;
+
+      // compute our own signature
+      const crypto = await import('crypto');
+      const payloadToSign = timestamp ? `${timestamp}.${body}` : `.${body}`;
+      const computed = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(payloadToSign)
+        .digest('hex');
+      console.log('🔍 computed v1:', computed);
+      console.log('🔍 received v1:', receivedV1);
+      console.log('🔍 timestamp:', timestamp);
+      if (receivedV1 && computed && receivedV1 === computed) {
+        console.log('✅ Local signature matches received v1 signature');
+      } else {
+        console.log('❌ Local signature DOES NOT match received v1 signature');
+      }
+    } catch (sigErr) {
+      console.error('⚠️ Signature compute error:', sigErr);
+    }
+
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
