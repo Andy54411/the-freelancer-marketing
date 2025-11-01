@@ -169,6 +169,8 @@ export function getStripeInstance(stripeKey: string): Stripe {
       const stripeInstance = new Stripe(stripeKey, {
         typescript: true,
         apiVersion: "2024-06-20",
+        timeout: 60000, // 60 Sekunden Timeout für alle Anfragen
+        maxNetworkRetries: 3, // 3 Versuche bei Netzwerkfehlern
       });
       logger.info("[getStripeInstance] Stripe-Client erfolgreich initialisiert.");
       return stripeInstance;

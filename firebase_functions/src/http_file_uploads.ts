@@ -188,6 +188,9 @@ export const uploadStripeFile = onRequest(
         const stripePromise = stripe.files.create({
           purpose: purpose,
           file: { data: fileBuffer, name: filename, type: mimeType },
+        }, {
+          timeout: 60000, // 60 Sekunden Timeout
+          maxNetworkRetries: 3, // 3 Versuche bei Netzwerkfehlern
         });
 
         const storagePath = `user_uploads/${userId}/${purpose}_${uuidv4()}_${filename}`;
