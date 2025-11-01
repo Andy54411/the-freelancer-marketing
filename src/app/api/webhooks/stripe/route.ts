@@ -7,7 +7,7 @@ const stripe = new Stripe(stripeKey, {
   apiVersion: '2024-06-20',
 });
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const webhookSecret = (process.env.STRIPE_WEBHOOK_SECRET || '').trim().replace(/\r?\n/g, '');
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
