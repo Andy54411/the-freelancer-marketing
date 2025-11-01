@@ -401,13 +401,20 @@ export default function Step5CompanyPage() {
 
       // WICHTIG: Logging des Tokens vor dem Senden
 
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: formData,
-      });
+      let response: Response;
+      try {
+        response = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: formData,
+        });
+      } catch (networkError: any) {
+        // Netzwerkausfall oder CORS-Blocker führen hier zu einem TypeError: Failed to fetch
+        const msg = networkError?.message || String(networkError);
+        throw new Error(`Netzwerkfehler beim Upload von ${fileNameForLog}: ${msg}`);
+      }
 
       if (!response.ok) {
         const errTxt = await response.text();
