@@ -4,6 +4,10 @@ import Stripe from 'stripe';
 import { db, admin, isFirebaseAvailable } from '@/firebase/server';
 import { OrderNotificationService } from '../../../lib/order-notifications';
 
+// CRITICAL: Disable body parsing to get raw body for Stripe signature verification
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
