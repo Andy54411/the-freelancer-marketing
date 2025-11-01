@@ -7,11 +7,23 @@ function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecret) {
+    console.error('[STRIPE INIT] FEHLER: STRIPE_SECRET_KEY nicht gefunden!');
     return null;
   }
 
+  console.log('[STRIPE INIT] Original Key Länge:', stripeSecret.length);
+  console.log('[STRIPE INIT] Key beginnt mit:', stripeSecret.substring(0, 15));
+  console.log('[STRIPE INIT] Enthält Newlines:', /\n/.test(stripeSecret));
+
   // KRITISCH: Zeilenumbrüche entfernen (Vercel speichert Keys mit Newlines)
   const cleanKey = stripeSecret.trim().replace(/\r?\n/g, '');
+
+  console.log('[STRIPE INIT] Cleaned Key Länge:', cleanKey.length);
+  console.log('[STRIPE INIT] Cleaned Key beginnt mit:', cleanKey.substring(0, 15));
+  console.log(
+    '[STRIPE INIT] Key Type:',
+    cleanKey.startsWith('sk_live_') ? 'LIVE' : cleanKey.startsWith('sk_test_') ? 'TEST' : 'UNKNOWN'
+  );
 
   return new Stripe(cleanKey, {
     apiVersion: '2024-06-20',
@@ -107,6 +119,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
     // 2. CONNECT ACCOUNT ERSTELLEN (für B2B-Verkäufe)
 
     try {
+      console.log('[ACCOUNT CREATE] Starte Account-Erstellung für:', companyName);
       const account = await stripe.accounts.create({
         type: 'custom',
         country: 'DE', // Deutschland standardmäßig
@@ -132,6 +145,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
         },
       });
 
+      console.log('[ACCOUNT CREATE] ✅ Account erstellt:', account.id);
       results.stripeAccountId = account.id;
     } catch (accountError) {
       // Customer wurde bereits erstellt, also nur warnen aber nicht komplett fehlschlagen
