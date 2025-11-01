@@ -148,6 +148,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
       console.log('[ACCOUNT CREATE] ✅ Account erstellt:', account.id);
       results.stripeAccountId = account.id;
     } catch (accountError) {
+      console.error('[ACCOUNT CREATE] ❌ FEHLER:', accountError);
+      if (accountError instanceof Error) {
+        console.error('[ACCOUNT CREATE] Error Message:', accountError.message);
+        console.error('[ACCOUNT CREATE] Error Stack:', accountError.stack);
+      }
       // Customer wurde bereits erstellt, also nur warnen aber nicht komplett fehlschlagen
     }
 
