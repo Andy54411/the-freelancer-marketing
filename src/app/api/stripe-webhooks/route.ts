@@ -73,6 +73,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: false, error: 'Keine Signatur' }, { status: 400 });
     }
 
+    // DEBUG: Log body and signature info for troubleshooting
+    console.log('🔍 Webhook Debug:', {
+      bodyLength: body.length,
+      signaturePresent: !!signature,
+      secretPresent: !!webhookSecret,
+      secretLength: webhookSecret?.length,
+      hasWhitespace: webhookSecret?.includes(' ') || webhookSecret?.includes('\n'),
+    });
+
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
@@ -83,6 +92,11 @@ export async function POST(req: NextRequest) {
       }
       const errorKey = `webhook_verification_${errorMessage.slice(0, 20)}`;
       if (shouldLogError(errorKey)) {
+        console.error('❌ Webhook Verification Failed:', {
+          error: errorMessage,
+          bodyPreview: body.substring(0, 100),
+          signaturePreview: signature?.substring(0, 50),
+        });
       }
       return NextResponse.json({ received: false, error: errorMessage }, { status: 400 });
     }
