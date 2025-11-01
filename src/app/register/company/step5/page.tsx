@@ -674,7 +674,7 @@ export default function Step5CompanyPage() {
 
       const profilePicResult = await uploadFileToStripeAndStorage(
         profilePictureFile,
-        'business_logo',
+        'account_requirement',
         'Profilbild',
         currentAuthUserUID,
         idToken
