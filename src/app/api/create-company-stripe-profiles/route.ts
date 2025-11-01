@@ -10,7 +10,10 @@ function getStripeInstance() {
     return null;
   }
 
-  return new Stripe(stripeSecret, {
+  // KRITISCH: Zeilenumbrüche entfernen (Vercel speichert Keys mit Newlines)
+  const cleanKey = stripeSecret.trim().replace(/\r?\n/g, '');
+
+  return new Stripe(cleanKey, {
     apiVersion: '2024-06-20',
   });
 }
