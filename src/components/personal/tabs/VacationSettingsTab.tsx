@@ -71,16 +71,25 @@ export default function VacationSettingsTab({
     if (!employee.id) {
       // Update das Employee-Objekt lokal
       const updatedVacation = {
-        ...employee.vacation,
-        settings,
         totalDays: settings.annualVacationDays,
+        usedDays: employee.vacation?.usedDays || 0,
         remainingDays: PersonalService.calculateAvailableVacationDays({
           ...employee,
           vacation: {
             ...employee.vacation,
+            totalDays: settings.annualVacationDays,
+            usedDays: employee.vacation?.usedDays || 0,
+            remainingDays: 0,
+            yearStart: employee.vacation?.yearStart || new Date().getFullYear().toString(),
             settings,
+            requests: employee.vacation?.requests || [],
+            history: employee.vacation?.history || [],
           },
         }),
+        yearStart: employee.vacation?.yearStart || new Date().getFullYear().toString(),
+        settings,
+        requests: employee.vacation?.requests || [],
+        history: employee.vacation?.history || [],
       };
 
       onUpdate({ vacation: updatedVacation });
@@ -202,7 +211,7 @@ export default function VacationSettingsTab({
                   onClick={handleSaveSettings}
                   disabled={isLoading}
                   size="sm"
-                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                  className="bg-taskilo-primary hover:bg-taskilo-hover text-white"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {isLoading ? 'Speichern...' : 'Speichern'}
