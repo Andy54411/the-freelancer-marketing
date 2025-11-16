@@ -266,9 +266,9 @@ export function SectionCards() {
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {/* Guthaben Card */}
       <Card className="h-[140px] flex flex-col bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-200">
-        <CardHeader className="pb-1 flex-shrink-0">
+        <CardHeader className="pb-1 shrink-0">
           <CardDescription className="flex items-center gap-1 text-green-700 dark:text-green-300 text-xs font-medium">
-            <IconWallet size={14} className="flex-shrink-0" />
+            <IconWallet size={14} className="shrink-0" />
             <span className="truncate">Guthaben</span>
           </CardDescription>
           <CardTitle className="text-lg font-bold tabular-nums text-green-800 dark:text-green-200 break-words leading-tight">
@@ -306,7 +306,7 @@ export function SectionCards() {
                 <span>...</span>
               ) : (
                 <>
-                  <IconDownload size={8} className="mr-0.5 flex-shrink-0" />
+                  <IconDownload size={8} className="mr-0.5 shrink-0" />
                   <span>Verwalten</span>
                 </>
               )}
@@ -319,7 +319,7 @@ export function SectionCards() {
       <Card className="h-[140px] flex flex-col hover:shadow-md transition-all duration-200 border-blue-200 dark:border-blue-800">
         <CardHeader className="pb-2 flex-grow">
           <CardDescription className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-xs font-medium">
-            <IconCurrencyEuro size={14} className="flex-shrink-0" />
+            <IconCurrencyEuro size={14} className="shrink-0" />
             <span className="truncate">Umsatz</span>
           </CardDescription>
           <CardTitle className="text-lg font-bold tabular-nums text-blue-800 dark:text-blue-200 break-words">
@@ -334,7 +334,7 @@ export function SectionCards() {
         <Card className="h-[140px] flex flex-col hover:shadow-md transition-all duration-200 group-hover:scale-[1.01] border-orange-200 dark:border-orange-800 cursor-pointer">
           <CardHeader className="pb-2 flex-grow">
             <CardDescription className="flex items-center gap-1 text-orange-600 dark:text-orange-400 text-xs font-medium">
-              <IconPackage size={14} className="flex-shrink-0" />
+              <IconPackage size={14} className="shrink-0" />
               <span className="truncate">Bestellungen</span>
             </CardDescription>
             <CardTitle className="text-lg font-bold tabular-nums text-orange-800 dark:text-orange-200">
@@ -357,7 +357,7 @@ export function SectionCards() {
         <Card className="h-[140px] flex flex-col hover:shadow-md transition-all duration-200 group-hover:scale-[1.01] border-purple-200 dark:border-purple-800 cursor-pointer">
           <CardHeader className="pb-2 flex-grow">
             <CardDescription className="flex items-center gap-1 text-purple-600 dark:text-purple-400 text-xs font-medium">
-              <IconPackage size={14} className="flex-shrink-0" />
+              <IconPackage size={14} className="shrink-0" />
               <span className="truncate">Aufträge</span>
             </CardDescription>
             <CardTitle className="text-lg font-bold tabular-nums text-purple-800 dark:text-purple-200">
@@ -383,7 +383,7 @@ export function SectionCards() {
         <Card className="h-[140px] flex flex-col hover:shadow-md transition-all duration-200 group-hover:scale-[1.01] border-red-200 dark:border-red-800 cursor-pointer">
           <CardHeader className="pb-2 flex-grow">
             <CardDescription className="flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-medium">
-              <IconCreditCard size={14} className="flex-shrink-0" />
+              <IconCreditCard size={14} className="shrink-0" />
               <span className="truncate">Ausgaben</span>
             </CardDescription>
             <CardTitle className="text-lg font-bold tabular-nums text-red-800 dark:text-red-200">

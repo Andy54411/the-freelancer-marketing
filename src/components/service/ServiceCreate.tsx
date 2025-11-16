@@ -339,7 +339,7 @@ export const ServiceCreate: React.FC<ServiceCreateProps> = ({
       {/* Info-Hinweis */}
       <div className="bg-[#14ad9f]/10 border border-[#14ad9f]/30 rounded-lg p-4">
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <svg className="h-5 w-5 text-[#14ad9f] mt-0.5" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"

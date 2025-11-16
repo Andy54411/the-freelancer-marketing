@@ -151,7 +151,7 @@ export default function AdminDashboardPage() {
                       key={activity.id}
                       className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"
                     >
-                      <div className="flex-shrink-0">
+                      <div className="shrink-0">
                         {activity.type === 'user' && <Users className="h-4 w-4 text-blue-600" />}
                         {activity.type === 'company' && (
                           <Building2 className="h-4 w-4 text-green-600" />

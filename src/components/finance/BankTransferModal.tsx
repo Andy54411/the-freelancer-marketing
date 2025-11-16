@@ -614,7 +614,7 @@ const BankTransferModal: React.FC<BankTransferModalProps> = ({
                 </div>
               </label>
               <div className="flex items-center border border-gray-300 rounded-md">
-                <div className="w-6 h-6 bg-blue-500 rounded-sm mx-3 flex-shrink-0"></div>
+                <div className="w-6 h-6 bg-blue-500 rounded-sm mx-3 shrink-0"></div>
                 <select
                   value={formData.selectedAccount?.id || ''}
                   onChange={e => {

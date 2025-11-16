@@ -162,7 +162,7 @@ export default function RechnungsstellungTippsPage() {
             <div className="flex-1 max-w-4xl">
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8 shadow-xl">
                 <div className="flex items-start space-x-3">
-                  <AlertTriangle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-1" />
+                  <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-1" />
                   <div>
                     <h2 className="text-lg font-bold text-amber-800 mb-2">Wichtiger Hinweis</h2>
                     <p className="text-amber-700">
@@ -637,7 +637,7 @@ Bei Kleinunternehmern:
             </div>
 
             {/* Sidebar */}
-            <aside className="w-80 flex-shrink-0">
+            <aside className="w-80 shrink-0">
               <div className="sticky top-20 space-y-6" style={{ position: 'sticky', top: '5rem' }}>
                 <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-white/20 p-6 shadow-xl">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Inhaltsverzeichnis</h3>

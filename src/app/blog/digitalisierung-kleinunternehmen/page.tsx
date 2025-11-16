@@ -163,7 +163,7 @@ export default function DigitalisierungKleinunternehmenPage() {
               {/* Wichtiger Hinweis */}
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8 shadow-xl">
                 <div className="flex items-start space-x-3">
-                  <AlertTriangle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                  <AlertTriangle className="w-6 h-6 text-blue-600 shrink-0 mt-1" />
                   <div>
                     <h2 className="text-lg font-bold text-blue-800 mb-2">Wichtiger Hinweis</h2>
                     <p className="text-blue-700">
@@ -365,7 +365,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                     </h3>
                     <div className="space-y-4">
                       <div className="flex items-start space-x-3">
-                        <div className="w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center shrink-0">
                           <span className="text-white font-bold text-sm">1</span>
                         </div>
                         <div>
@@ -378,7 +378,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                       </div>
 
                       <div className="flex items-start space-x-3">
-                        <div className="w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center shrink-0">
                           <span className="text-white font-bold text-sm">2</span>
                         </div>
                         <div>
@@ -391,7 +391,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                       </div>
 
                       <div className="flex items-start space-x-3">
-                        <div className="w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center shrink-0">
                           <span className="text-white font-bold text-sm">3</span>
                         </div>
                         <div>
@@ -404,7 +404,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                       </div>
 
                       <div className="flex items-start space-x-3">
-                        <div className="w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center shrink-0">
                           <span className="text-white font-bold text-sm">4</span>
                         </div>
                         <div>
@@ -499,23 +499,23 @@ export default function DigitalisierungKleinunternehmenPage() {
                       </h3>
                       <ul className="space-y-2 text-gray-700">
                         <li className="flex items-start">
-                          <CheckCircle className="w-4 h-4 text-green-600 mt-1 mr-2 flex-shrink-0" />
+                          <CheckCircle className="w-4 h-4 text-green-600 mt-1 mr-2 shrink-0" />
                           Geringe Startkosten
                         </li>
                         <li className="flex items-start">
-                          <CheckCircle className="w-4 h-4 text-green-600 mt-1 mr-2 flex-shrink-0" />
+                          <CheckCircle className="w-4 h-4 text-green-600 mt-1 mr-2 shrink-0" />
                           Skalierbarkeit nach Bedarf
                         </li>
                         <li className="flex items-start">
-                          <CheckCircle className="w-4 h-4 text-green-600 mt-1 mr-2 flex-shrink-0" />
+                          <CheckCircle className="w-4 h-4 text-green-600 mt-1 mr-2 shrink-0" />
                           Automatische Updates
                         </li>
                         <li className="flex items-start">
-                          <CheckCircle className="w-4 h-4 text-green-600 mt-1 mr-2 flex-shrink-0" />
+                          <CheckCircle className="w-4 h-4 text-green-600 mt-1 mr-2 shrink-0" />
                           Ortsunabhängiger Zugriff
                         </li>
                         <li className="flex items-start">
-                          <CheckCircle className="w-4 h-4 text-green-600 mt-1 mr-2 flex-shrink-0" />
+                          <CheckCircle className="w-4 h-4 text-green-600 mt-1 mr-2 shrink-0" />
                           Professionelle Sicherheit
                         </li>
                       </ul>
@@ -766,7 +766,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                     </h3>
                     <ol className="space-y-3">
                       <li className="flex items-start space-x-3">
-                        <span className="w-6 h-6 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+                        <span className="w-6 h-6 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
                           1
                         </span>
                         <span className="text-gray-700">
@@ -774,7 +774,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                         </span>
                       </li>
                       <li className="flex items-start space-x-3">
-                        <span className="w-6 h-6 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+                        <span className="w-6 h-6 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
                           2
                         </span>
                         <span className="text-gray-700">
@@ -782,7 +782,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                         </span>
                       </li>
                       <li className="flex items-start space-x-3">
-                        <span className="w-6 h-6 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+                        <span className="w-6 h-6 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
                           3
                         </span>
                         <span className="text-gray-700">
@@ -790,7 +790,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                         </span>
                       </li>
                       <li className="flex items-start space-x-3">
-                        <span className="w-6 h-6 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+                        <span className="w-6 h-6 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
                           4
                         </span>
                         <span className="text-gray-700">
@@ -798,7 +798,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                         </span>
                       </li>
                       <li className="flex items-start space-x-3">
-                        <span className="w-6 h-6 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+                        <span className="w-6 h-6 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
                           5
                         </span>
                         <span className="text-gray-700">
@@ -835,7 +835,7 @@ export default function DigitalisierungKleinunternehmenPage() {
             </div>
 
             {/* Table of Contents Sidebar */}
-            <aside className="w-80 flex-shrink-0">
+            <aside className="w-80 shrink-0">
               <div className="sticky top-20 space-y-6" style={{ position: 'sticky', top: '5rem' }}>
                 <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-white/20 p-6 shadow-xl">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Inhaltsverzeichnis</h3>

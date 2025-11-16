@@ -330,7 +330,7 @@ export default function CategoryAutocomplete({
                 onMouseEnter={() => setActiveIndex(index)}>
 
                       {/* Icon */}
-                      <div className="flex-shrink-0 mt-0.5 text-gray-400">{category.icon}</div>
+                      <div className="shrink-0 mt-0.5 text-gray-400">{category.icon}</div>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">

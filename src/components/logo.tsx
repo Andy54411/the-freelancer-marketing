@@ -17,7 +17,7 @@ export const Logo = ({
         viewBox="0 0 28 28"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="flex-shrink-0"
+        className="shrink-0"
       >
         {/* Hauptform des T-Logos */}
         <rect x="2" y="2" width="24" height="6" rx="1" fill={isWhite ? '#FFFFFF' : '#14B8A6'} />

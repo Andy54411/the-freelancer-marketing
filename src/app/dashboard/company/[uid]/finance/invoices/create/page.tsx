@@ -3124,7 +3124,7 @@ export default function CreateQuotePage() {
       {showCompanySettingsBanner &&
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-6 w-6 text-orange-600 mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="h-6 w-6 text-orange-600 mt-0.5 shrink-0" />
             <div className="flex-1">
               <div className="font-medium text-orange-800 mb-1">Angaben zu deinem Unternehmen</div>
               <div className="text-sm text-orange-700 mb-3">

@@ -606,7 +606,7 @@ export default function ActivityHistoryCard({
         <div className="space-y-4">
             {filteredActivities.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((activity) =>
           <div key={activity.id} className="flex gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                <div className="flex-shrink-0 mt-1">
+                <div className="shrink-0 mt-1">
                   {getActivityIcon(activity.type)}
                 </div>
                 <div className="flex-1 min-w-0">

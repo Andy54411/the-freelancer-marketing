@@ -177,25 +177,25 @@ export default function KundenkommunikationPage() {
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">🎯 Bedarfsanalyse</h4>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
                         Aktiv nachfragen: "Welches Ergebnis stellen Sie sich vor?"
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
                         Budget erfragen: "Haben Sie einen groben Kostenrahmen im Kopf?"
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
                         Zeitplan klären: "Bis wann soll das Projekt fertig sein?"
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
                         Besonderheiten beachten: "Gibt es spezielle Wünsche?"
                       </span>
@@ -474,35 +474,35 @@ export default function KundenkommunikationPage() {
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
                         <strong>Aktiv zuhören:</strong> "Verstehe ich richtig, dass Sie sich Sorgen
                         machen wegen..."
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
                         <strong>Empathie zeigen:</strong> "Ich kann Ihren Ärger absolut
                         verstehen..."
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
                         <strong>Verantwortung übernehmen:</strong> "Das war mein Fehler, ich kümmere
                         mich sofort darum."
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
                         <strong>Lösungen anbieten:</strong> "Hier sind 3 Wege, wie wir das lösen
                         können..."
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
                         <strong>Timeline setzen:</strong> "Bis morgen Abend haben Sie eine Lösung
                         von mir."
@@ -768,25 +768,25 @@ export default function KundenkommunikationPage() {
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">Wöchentliche Bewertungsanalyse durchführen</span>
                     </div>
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">Kundenfeedback systematisch sammeln</span>
                     </div>
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
                         Erfolgreiche Kommunikationspatterns dokumentieren
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">Regelmäßig Konkurrenz-Profile studieren</span>
                     </div>
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">Taskilo-Webinare und Schulungen besuchen</span>
                     </div>
                   </div>

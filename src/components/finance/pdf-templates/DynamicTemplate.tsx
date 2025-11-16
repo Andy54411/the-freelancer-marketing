@@ -141,7 +141,7 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
                 </div>
               </div>
 
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 {data.companyLogo && (
                   <div className="relative">
                     <div
@@ -411,7 +411,7 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     {data.companyLogo && (
                       <div className="relative">
                         <div

@@ -1247,13 +1247,13 @@ export default function BankingDashboardPage() {
           <CardContent className="p-8">
             <ul className="space-y-4">
               <li className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <CheckCircle className="h-6 w-6 text-[#14ad9f]" />
                 </div>
                 <span className="text-gray-700">Zahlungseingänge werden automatisch verbucht</span>
               </li>
               <li className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <CheckCircle className="h-6 w-6 text-[#14ad9f]" />
                 </div>
                 <span className="text-gray-700">
@@ -1261,7 +1261,7 @@ export default function BankingDashboardPage() {
                 </span>
               </li>
               <li className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <CheckCircle className="h-6 w-6 text-[#14ad9f]" />
                 </div>
                 <span className="text-gray-700">Sehen, wenn ein Beleg vergessen wurde</span>

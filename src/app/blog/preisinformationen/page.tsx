@@ -82,7 +82,7 @@ export default function PreisinformationenGuide() {
             <section>
               <div className="bg-amber-50 border-l-4 border-amber-400 rounded-lg shadow-lg p-6">
                 <div className="flex items-start gap-4">
-                  <FiInfo className="text-amber-600 text-xl mt-1 flex-shrink-0" />
+                  <FiInfo className="text-amber-600 text-xl mt-1 shrink-0" />
                   <div>
                     <h3 className="font-semibold text-amber-900 mb-2">Wichtiger Hinweis</h3>
                     <p className="text-amber-800 mb-3">
@@ -91,15 +91,15 @@ export default function PreisinformationenGuide() {
                     </p>
                     <ul className="space-y-2 text-amber-800">
                       <li className="flex items-center gap-2">
-                        <FiCheck className="text-amber-600 flex-shrink-0" />
+                        <FiCheck className="text-amber-600 shrink-0" />
                         <span>Direkte Anfrage bei den Dienstleistern</span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <FiCheck className="text-amber-600 flex-shrink-0" />
+                        <FiCheck className="text-amber-600 shrink-0" />
                         <span>Nutzung unseres Kostenvoranschlag-Systems</span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <FiCheck className="text-amber-600 flex-shrink-0" />
+                        <FiCheck className="text-amber-600 shrink-0" />
                         <span>Vergleich mehrerer Angebote</span>
                       </li>
                     </ul>
@@ -130,15 +130,15 @@ export default function PreisinformationenGuide() {
                     </p>
                     <ul className="space-y-2 text-sm text-gray-600">
                       <li className="flex items-center gap-2">
-                        <FiCheck className="text-green-500 flex-shrink-0" />
+                        <FiCheck className="text-green-500 shrink-0" />
                         <span>Transparente Preisangabe vorab</span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <FiCheck className="text-green-500 flex-shrink-0" />
+                        <FiCheck className="text-green-500 shrink-0" />
                         <span>Keine versteckten Kosten</span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <FiCheck className="text-green-500 flex-shrink-0" />
+                        <FiCheck className="text-green-500 shrink-0" />
                         <span>Sofortige Buchung möglich</span>
                       </li>
                     </ul>
@@ -155,15 +155,15 @@ export default function PreisinformationenGuide() {
                     </p>
                     <ul className="space-y-2 text-sm text-gray-600">
                       <li className="flex items-center gap-2">
-                        <FiCheck className="text-green-500 flex-shrink-0" />
+                        <FiCheck className="text-green-500 shrink-0" />
                         <span>Flexibel anpassbar</span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <FiCheck className="text-green-500 flex-shrink-0" />
+                        <FiCheck className="text-green-500 shrink-0" />
                         <span>Präzise Zeiterfassung</span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <FiCheck className="text-green-500 flex-shrink-0" />
+                        <FiCheck className="text-green-500 shrink-0" />
                         <span>Faire Abrechnung</span>
                       </li>
                     </ul>
@@ -315,7 +315,7 @@ export default function PreisinformationenGuide() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">Grundfaktoren</h3>
                     <div className="space-y-3">
                       <div className="flex items-start gap-3">
-                        <FiStar className="text-[#14ad9f] mt-1 flex-shrink-0" />
+                        <FiStar className="text-[#14ad9f] mt-1 shrink-0" />
                         <div>
                           <h4 className="font-medium text-gray-900">Erfahrung & Qualifikation</h4>
                           <p className="text-gray-600 text-sm">
@@ -324,7 +324,7 @@ export default function PreisinformationenGuide() {
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
-                        <FiUsers className="text-[#14ad9f] mt-1 flex-shrink-0" />
+                        <FiUsers className="text-[#14ad9f] mt-1 shrink-0" />
                         <div>
                           <h4 className="font-medium text-gray-900">Nachfrage & Verfügbarkeit</h4>
                           <p className="text-gray-600 text-sm">
@@ -333,7 +333,7 @@ export default function PreisinformationenGuide() {
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
-                        <FiShield className="text-[#14ad9f] mt-1 flex-shrink-0" />
+                        <FiShield className="text-[#14ad9f] mt-1 shrink-0" />
                         <div>
                           <h4 className="font-medium text-gray-900">Versicherung & Garantie</h4>
                           <p className="text-gray-600 text-sm">
@@ -348,7 +348,7 @@ export default function PreisinformationenGuide() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">Zusatzkosten</h3>
                     <div className="space-y-3">
                       <div className="flex items-start gap-3">
-                        <FiTool className="text-[#14ad9f] mt-1 flex-shrink-0" />
+                        <FiTool className="text-[#14ad9f] mt-1 shrink-0" />
                         <div>
                           <h4 className="font-medium text-gray-900">Material & Werkzeug</h4>
                           <p className="text-gray-600 text-sm">
@@ -357,14 +357,14 @@ export default function PreisinformationenGuide() {
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
-                        <FiArrowRight className="text-[#14ad9f] mt-1 flex-shrink-0" />
+                        <FiArrowRight className="text-[#14ad9f] mt-1 shrink-0" />
                         <div>
                           <h4 className="font-medium text-gray-900">Anfahrt & Logistik</h4>
                           <p className="text-gray-600 text-sm">Fahrtkosten und Transportaufwand</p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
-                        <FiHelpCircle className="text-[#14ad9f] mt-1 flex-shrink-0" />
+                        <FiHelpCircle className="text-[#14ad9f] mt-1 shrink-0" />
                         <div>
                           <h4 className="font-medium text-gray-900">Komplexität & Dringlichkeit</h4>
                           <p className="text-gray-600 text-sm">Schwierigkeitsgrad und Zeitdruck</p>
@@ -394,19 +394,19 @@ export default function PreisinformationenGuide() {
                     </h3>
                     <ul className="space-y-3 text-sm text-gray-600">
                       <li className="flex items-start gap-2">
-                        <FiCheck className="text-green-500 mt-1 flex-shrink-0" />
+                        <FiCheck className="text-green-500 mt-1 shrink-0" />
                         <span>Mehrere Angebote einholen und vergleichen</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <FiCheck className="text-green-500 mt-1 flex-shrink-0" />
+                        <FiCheck className="text-green-500 mt-1 shrink-0" />
                         <span>Detaillierte Leistungsbeschreibung anfordern</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <FiCheck className="text-green-500 mt-1 flex-shrink-0" />
+                        <FiCheck className="text-green-500 mt-1 shrink-0" />
                         <span>Bewertungen und Referenzen prüfen</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <FiCheck className="text-green-500 mt-1 flex-shrink-0" />
+                        <FiCheck className="text-green-500 mt-1 shrink-0" />
                         <span>Kostenvoranschlag schriftlich bestätigen lassen</span>
                       </li>
                     </ul>
@@ -419,19 +419,19 @@ export default function PreisinformationenGuide() {
                     </h3>
                     <ul className="space-y-3 text-sm text-gray-600">
                       <li className="flex items-start gap-2">
-                        <FiCheck className="text-green-500 mt-1 flex-shrink-0" />
+                        <FiCheck className="text-green-500 mt-1 shrink-0" />
                         <span>Transparente Preisgestaltung kommunizieren</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <FiCheck className="text-green-500 mt-1 flex-shrink-0" />
+                        <FiCheck className="text-green-500 mt-1 shrink-0" />
                         <span>Alle Kostenpunkte klar aufschlüsseln</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <FiCheck className="text-green-500 mt-1 flex-shrink-0" />
+                        <FiCheck className="text-green-500 mt-1 shrink-0" />
                         <span>Marktübliche Preise recherchieren</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <FiCheck className="text-green-500 mt-1 flex-shrink-0" />
+                        <FiCheck className="text-green-500 mt-1 shrink-0" />
                         <span>Qualität und Service als Mehrwert hervorheben</span>
                       </li>
                     </ul>

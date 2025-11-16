@@ -768,7 +768,7 @@ export default function ProfilePage() {
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-6">
                             {/* Profile Image */}
-                            <div className="flex-shrink-0">
+                            <div className="shrink-0">
                               {profile.profilePictureFirebaseUrl ? (
                                 <Image
                                   src={profile.profilePictureFirebaseUrl}
@@ -1216,7 +1216,7 @@ export default function ProfilePage() {
                                     <summary className="flex items-center justify-between cursor-pointer p-5 hover:bg-gray-50/50 rounded-lg transition-colors">
                                       <div className="flex items-start gap-3 flex-1">
                                         {faq.featured && (
-                                          <div className="flex-shrink-0 mt-1">
+                                          <div className="shrink-0 mt-1">
                                             <div className="w-2 h-2 bg-[#14ad9f] rounded-full"></div>
                                           </div>
                                         )}
@@ -1235,7 +1235,7 @@ export default function ProfilePage() {
                                           )}
                                         </div>
                                       </div>
-                                      <div className="flex-shrink-0 ml-4">
+                                      <div className="shrink-0 ml-4">
                                         <svg
                                           className={`w-5 h-5 transform transition-transform group-open:rotate-180 ${
                                             faq.featured ? 'text-[#14ad9f]' : 'text-gray-400'
@@ -1649,7 +1649,7 @@ export default function ProfilePage() {
                                         (feature: string, idx: number) => (
                                           <li key={idx} className="flex items-center gap-2">
                                             <FiCheckCircle
-                                              className="text-green-500 flex-shrink-0"
+                                              className="text-green-500 shrink-0"
                                               size={16}
                                             />
                                             <span className="text-sm text-gray-700">{feature}</span>
@@ -1675,7 +1675,7 @@ export default function ProfilePage() {
                                               >
                                                 <div className="flex items-center gap-2">
                                                   <svg
-                                                    className="w-3.5 h-3.5 text-[#14ad9f] flex-shrink-0"
+                                                    className="w-3.5 h-3.5 text-[#14ad9f] shrink-0"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24"
@@ -1812,7 +1812,7 @@ export default function ProfilePage() {
                 <div className="fixed inset-0 bg-transparent backdrop-blur-md z-50 flex items-start justify-center p-4 overflow-y-auto">
                   <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full my-8 max-h-[calc(100vh-4rem)] flex flex-col">
                     {/* Fixed Header */}
-                    <div className="flex items-center justify-between p-6 border-b bg-white rounded-t-lg flex-shrink-0 sticky top-0 z-10">
+                    <div className="flex items-center justify-between p-6 border-b bg-white rounded-t-lg shrink-0 sticky top-0 z-10">
                       <h2 className="text-2xl font-bold text-gray-900">Auftrag erstellen</h2>
                       <button
                         onClick={handleCloseCreateOrderModal}

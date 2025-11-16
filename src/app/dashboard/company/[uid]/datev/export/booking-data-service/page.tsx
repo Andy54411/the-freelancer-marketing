@@ -70,7 +70,7 @@ export default function DatevBookingDataServicePage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Übertragungsart</h2>
               
               <div className="flex items-start gap-4">
-                <div className="w-16 h-16 flex-shrink-0">
+                <div className="w-16 h-16 shrink-0">
                   <svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation">
                     <mask id="a" maskUnits="userSpaceOnUse" x="2" y="5" width="43" height="26">
                       <path d="M17.1662 13.3331L16.962 14.0702L16.4583 13.7921C15.308 13.1234 14.0322 12.711 12.7147 12.5821C11.5391 12.4818 10.3556 12.6192 9.23207 12.9866C8.1085 13.3539 7.06686 13.944 6.16675 14.7231C5.26664 15.5021 4.52571 16.4548 3.98638 17.5267C3.44704 18.5986 3.11987 19.7686 3.02359 20.9697C2.92731 22.1709 3.0638 23.3797 3.42527 24.5269C3.78673 25.6742 4.36607 26.7373 5.13013 27.6556C5.8942 28.5739 6.82799 29.3292 7.87809 29.8784C8.92819 30.4276 10.074 30.7599 11.2499 30.8563C11.4936 30.8772 11.7373 30.8869 11.9796 30.8869H38.6205C39.4279 30.89 40.2279 30.7306 40.9748 30.4177C41.7218 30.1048 42.4011 29.6446 42.9739 29.0634C43.5467 28.4822 44.0019 27.7914 44.3132 27.0305C44.6246 26.2695 44.7862 25.4534 44.7887 24.6286C44.79 24.4192 44.7805 24.2098 44.7601 24.0014C44.4606 20.8862 41.8605 18.4663 38.7975 18.3828C38.5292 18.3773 38.2608 18.3912 37.9943 18.4246L37.232 18.508L37.3409 17.7292C37.4198 17.2045 37.4608 16.6746 37.4634 16.1438C37.4633 13.5892 36.5567 11.1213 34.9116 9.19752C33.2664 7.27372 30.9944 6.02447 28.5165 5.68135C26.0386 5.33823 23.523 5.92449 21.436 7.33148C19.3489 8.73847 17.8319 10.8708 17.1662 13.3331Z" fill="white"/>
@@ -227,7 +227,7 @@ export default function DatevBookingDataServicePage() {
                     onClick={() => setFormData({...formData, exportType: 'both'})}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 mt-0.5">
+                      <div className="shrink-0 mt-0.5">
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                           formData.exportType === 'both'
                             ? 'border-[#14ad9f] bg-[#14ad9f]'
@@ -259,7 +259,7 @@ export default function DatevBookingDataServicePage() {
                     onClick={() => setFormData({...formData, exportType: 'bookings-only'})}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 mt-0.5">
+                      <div className="shrink-0 mt-0.5">
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                           formData.exportType === 'bookings-only'
                             ? 'border-[#14ad9f] bg-[#14ad9f]'
@@ -291,7 +291,7 @@ export default function DatevBookingDataServicePage() {
                     onClick={() => setFormData({...formData, exportType: 'documents-only'})}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 mt-0.5">
+                      <div className="shrink-0 mt-0.5">
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                           formData.exportType === 'documents-only'
                             ? 'border-[#14ad9f] bg-[#14ad9f]'

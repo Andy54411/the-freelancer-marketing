@@ -134,8 +134,10 @@ export function EmailClient({
       setCacheError(null);
 
       try {
-        // Lade E-Mails von der API
-        const apiUrl = `/api/company/${companyId}/emails?folder=${selectedFolder}`;
+        // Lade E-Mails von der API - IMMER mit force=true für neueste E-Mails
+        const apiUrl = `/api/company/${companyId}/emails?folder=${selectedFolder}&force=true`;
+        
+        console.log(`🔄 RefreshCachedEmails: IMMER force=true, URL=${apiUrl}`);
 
         const response = await fetch(apiUrl, {
           method: 'GET',
@@ -297,10 +299,22 @@ export function EmailClient({
       try {
         const response = await fetch(`/api/company/${companyId}/gmail-auth-status`);
         const data = await response.json();
+        
+        console.log('📧 EmailClient Gmail-Status:', data);
 
-        // Wenn keine gültigen Tokens vorhanden sind, zur Integration-Seite weiterleiten
-        if (!data.hasValidTokens || data.status === 'authentication_required') {
+        // Prüfe auf gültige Verbindung (gleiche Logik wie in CompanySidebar)
+        const hasValidConnection = data.hasConfig && 
+                                 data.hasTokens && 
+                                 !data.tokenExpired && 
+                                 data.status !== 'authentication_required';
+        
+        console.log('📧 EmailClient Verbindung gültig:', hasValidConnection);
+        
+        if (!hasValidConnection) {
+          console.log('📧 EmailClient: Weiterleitung zur Integration');
           window.location.href = `/dashboard/company/${companyId}/email-integration`;
+        } else {
+          console.log('📧 EmailClient: Verbindung OK, lade E-Mails');
         }
       } catch (error) {
         console.error('Gmail connection check failed:', error);
@@ -459,6 +473,16 @@ export function EmailClient({
   // Performance Tracking Setup
   useEffect(() => {
     setupGlobalPerformanceTracking(companyId);
+    
+    // Expose debug functions to window for browser console
+    if (typeof window !== 'undefined') {
+      (window as any).emailDebug = {
+        refresh: handleRefresh,
+        resync: forceResync,
+        companyId: companyId
+      };
+      console.log('🔧 Email debug functions available: window.emailDebug.refresh() or window.emailDebug.resync()');
+    }
   }, [companyId]);
 
   // Update filter when search query changes
@@ -559,7 +583,8 @@ export function EmailClient({
 
   // Manual refresh function
   const handleRefresh = () => {
-    loadEmails(true);
+    console.log('🔄 HandleRefresh: Force refresh triggered');
+    refreshCachedEmails(true);
   };
 
   // Debug function für Webhook-Testing (nur für Development)
@@ -567,7 +592,24 @@ export function EmailClient({
     loadEmails(true).then(() => {});
   };
 
-  // Expose test function to window for browser console testing
+  // EINFACHE Lösung - Lade die neuesten E-Mails direkt
+  const forceResync = async () => {
+    console.log('🔄 Lade neueste E-Mails...');
+    setIsLoading(true);
+    setCachedEmails([]);
+    
+    try {
+      // Lade E-Mails mit force refresh
+      await refreshCachedEmails(true);
+      console.log('✅ E-Mails neu geladen');
+    } catch (error) {
+      console.error('❌ Laden fehlgeschlagen:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Expose test functions to window for browser console testing
   useEffect(() => {
     if (typeof window !== 'undefined') {
       (window as any).testWebhookRefresh = testWebhookRefresh;
@@ -970,7 +1012,7 @@ export function EmailClient({
             <div className="space-y-3">
               <button
                 onClick={handleReconnectGmail}
-                className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                className="w-full bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
               >
                 Gmail neu verbinden
               </button>

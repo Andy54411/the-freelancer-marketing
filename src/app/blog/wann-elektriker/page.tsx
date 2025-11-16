@@ -73,7 +73,7 @@ export default function ElektrikerRatgeberPage() {
           {/* Warning Box */}
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-12">
             <div className="flex items-start space-x-3">
-              <AlertTriangle className="w-8 h-8 text-red-500 flex-shrink-0 mt-1" />
+              <AlertTriangle className="w-8 h-8 text-red-500 shrink-0 mt-1" />
               <div>
                 <h2 className="text-xl font-bold text-red-800 mb-2">⚠️ SICHERHEITSHINWEIS</h2>
                 <p className="text-red-700 text-lg">
@@ -377,23 +377,23 @@ export default function ElektrikerRatgeberPage() {
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">✅ IMMER beachten:</h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Hauptschalter ausschalten vor jeder Arbeit</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Spannungsprüfer verwenden - nie "blind" vertrauen</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Isolierte Werkzeuge verwenden</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Bei Feuchtigkeit NIEMALS arbeiten</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Arbeiten niemals alleine durchführen</span>
                     </div>
                   </div>
@@ -403,23 +403,23 @@ export default function ElektrikerRatgeberPage() {
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">🚫 NIEMALS machen:</h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <XCircle className="w-5 h-5 text-red-500 mt-1 flex-shrink-0" />
+                      <XCircle className="w-5 h-5 text-red-500 mt-1 shrink-0" />
                       <span>Mit nassen Händen oder Füßen arbeiten</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <XCircle className="w-5 h-5 text-red-500 mt-1 flex-shrink-0" />
+                      <XCircle className="w-5 h-5 text-red-500 mt-1 shrink-0" />
                       <span>Sicherungen oder FI-Schalter überbrücken</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <XCircle className="w-5 h-5 text-red-500 mt-1 flex-shrink-0" />
+                      <XCircle className="w-5 h-5 text-red-500 mt-1 shrink-0" />
                       <span>Billige Baumarkt-Kabel für Festinstallation</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <XCircle className="w-5 h-5 text-red-500 mt-1 flex-shrink-0" />
+                      <XCircle className="w-5 h-5 text-red-500 mt-1 shrink-0" />
                       <span>An 400V-Anschlüssen (Herd, etc.) arbeiten</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <XCircle className="w-5 h-5 text-red-500 mt-1 flex-shrink-0" />
+                      <XCircle className="w-5 h-5 text-red-500 mt-1 shrink-0" />
                       <span>Arbeiten unter Zeitdruck durchführen</span>
                     </div>
                   </div>

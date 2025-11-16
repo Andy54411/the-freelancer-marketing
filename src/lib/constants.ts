@@ -16,8 +16,8 @@ export const DATA_FOR_SUBCATEGORY_API_URL = `${FIREBASE_FUNCTIONS_BASE_URL}/getD
 export const REVIEWS_API_URL_BASE = `${FIREBASE_FUNCTIONS_BASE_URL}/getReviewsByProvider`;
 export const CREATE_JOB_API_URL = `${FIREBASE_FUNCTIONS_BASE_URL}/createJobPosting`;
 
-// NEU: Hinzufügen der UPLOAD_STRIPE_FILE_API_URL in die Konstanten
-export const UPLOAD_STRIPE_FILE_API_URL = `${FIREBASE_FUNCTIONS_BASE_URL}/uploadStripeFile`;
+// Upload-URL für Stripe Dateien jetzt über Next.js API Route
+export const UPLOAD_STRIPE_FILE_API_URL = `${process.env.NEXT_PUBLIC_APP_URL || 'https://taskilo.de'}/api/stripe/file`;
 
 export const GLOBAL_FALLBACK_MIN_PRICE = 10;
 export const GLOBAL_FALLBACK_MAX_PRICE = 150;

@@ -920,7 +920,7 @@ export default function ReceiptPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
-      <header className="bg-[#14ad9f] text-white px-6 py-4 flex-shrink-0">
+      <header className="bg-[#14ad9f] text-white px-6 py-4 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -1312,7 +1312,7 @@ export default function ReceiptPage() {
                 {selectedCategory && formData.kategorie && (
                   <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
                     <div className="flex items-start gap-2">
-                      <div className="flex-shrink-0 text-blue-400">
+                      <div className="shrink-0 text-blue-400">
                         <Info className="h-4 w-4" />
                       </div>
                       <div className="text-sm text-blue-800">

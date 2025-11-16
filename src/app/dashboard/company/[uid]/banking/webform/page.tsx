@@ -77,7 +77,7 @@ export default function BankingWebFormPage() {
       {/* WebForm Information */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
         <div className="flex">
-          <Shield className="h-6 w-6 text-blue-600 flex-shrink-0" />
+          <Shield className="h-6 w-6 text-blue-600 shrink-0" />
           <div className="ml-3">
             <h3 className="text-lg font-medium text-blue-800">
               Sichere finAPI WebForm Integration
@@ -180,7 +180,7 @@ export default function BankingWebFormPage() {
         <h3 className="text-lg font-medium text-gray-900 mb-4">So funktioniert es:</h3>
         <div className="space-y-4">
           <div className="flex">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="flex items-center justify-center h-8 w-8 rounded-full bg-[#14ad9f] text-white text-sm font-medium">
                 1
               </div>
@@ -195,7 +195,7 @@ export default function BankingWebFormPage() {
           </div>
 
           <div className="flex">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="flex items-center justify-center h-8 w-8 rounded-full bg-[#14ad9f] text-white text-sm font-medium">
                 2
               </div>
@@ -209,7 +209,7 @@ export default function BankingWebFormPage() {
           </div>
 
           <div className="flex">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="flex items-center justify-center h-8 w-8 rounded-full bg-[#14ad9f] text-white text-sm font-medium">
                 3
               </div>
@@ -223,7 +223,7 @@ export default function BankingWebFormPage() {
           </div>
 
           <div className="flex">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="flex items-center justify-center h-8 w-8 rounded-full bg-[#14ad9f] text-white text-sm font-medium">
                 4
               </div>

@@ -44,10 +44,10 @@ export default function VacationContainer({
             employee={employee}
             companyId={companyId}
             isEditing={isEditing}
-            onUpdate={onUpdate}
-            onSave={onSave}
-            onCancel={onCancel}
-            onEdit={onEdit}
+            onUpdate={onUpdate || (() => {})}
+            onSave={onSave || (() => {})}
+            onCancel={onCancel || (() => {})}
+            onEdit={onEdit || (() => {})}
           />
         </TabsContent>
       </Tabs>

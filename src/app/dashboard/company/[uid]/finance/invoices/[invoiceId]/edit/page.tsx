@@ -3045,7 +3045,7 @@ export default function EditInvoicePage() {
       {showCompanySettingsBanner && (
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-6 w-6 text-orange-600 mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="h-6 w-6 text-orange-600 mt-0.5 shrink-0" />
             <div className="flex-1">
               <div className="font-medium text-orange-800 mb-1">Angaben zu deinem Unternehmen</div>
               <div className="text-sm text-orange-700 mb-3">
@@ -3201,7 +3201,7 @@ export default function EditInvoicePage() {
                   <div className="mb-4 p-4 bg-[#14ad9f]/10 border-2 border-[#14ad9f] rounded-lg">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-start gap-3 flex-1">
-                        <Info className="h-5 w-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <Info className="h-5 w-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <div className="flex-1">
                           <p className="text-sm text-gray-700">
                             <span className="font-semibold text-[#14ad9f]">"{formData.customerName}"</span> ist noch nicht in Ihrer Kundenverwaltung.
@@ -3211,7 +3211,7 @@ export default function EditInvoicePage() {
                       <Button
                         type="button"
                         onClick={() => setCreateCustomerOpen(true)}
-                        className="bg-[#14ad9f] hover:bg-[#129488] text-white flex-shrink-0"
+                        className="bg-[#14ad9f] hover:bg-[#129488] text-white shrink-0"
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Kunde anlegen

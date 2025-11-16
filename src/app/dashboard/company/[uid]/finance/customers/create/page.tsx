@@ -1903,7 +1903,7 @@ export default function CreateCustomerPage() {
                   {/* Compliance Hinweis */}
                   <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
                     <div className="flex items-start gap-3">
-                      <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                       <div className="text-sm">
                         <h4 className="font-medium text-amber-900 mb-1">Gesetzliche Vorgaben (§14 UStG)</h4>
                         <p className="text-amber-800">

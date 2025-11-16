@@ -404,7 +404,7 @@ export default function CompanyMobileSidebar({
                       <item.icon
                         className={`${
                           isMainActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
-                        } mr-3 flex-shrink-0 h-6 w-6`}
+                        } mr-3 shrink-0 h-6 w-6`}
                       />
                       {item.label}
                     </div>

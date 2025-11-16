@@ -99,7 +99,7 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
             }}
           >
             <div className="flex items-start gap-3">
-              <div className="flex-shrink-0">{getAlertIcon(alert.type)}</div>
+              <div className="shrink-0">{getAlertIcon(alert.type)}</div>
 
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-semibold mb-1">{alert.title}</h4>
@@ -108,7 +108,7 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
 
               <button
                 onClick={() => hideAlert(alert.id)}
-                className="flex-shrink-0 ml-2 opacity-60 hover:opacity-100 transition-opacity"
+                className="shrink-0 ml-2 opacity-60 hover:opacity-100 transition-opacity"
               >
                 <FiX size={16} />
               </button>

@@ -1257,7 +1257,7 @@ export default function InvoiceDetailPage() {
         {((invoice as any).gobdStatus?.isLocked || (invoice as any).isLocked) && (
           <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mx-6 mt-6">
             <div className="flex">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <CheckCircle className="h-5 w-5 text-amber-400" />
               </div>
               <div className="ml-3">

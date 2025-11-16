@@ -62,7 +62,7 @@ export function InvoiceTaxRuleSelector({
                           {rule.requirements && (
                             <Tooltip>
                               <TooltipTrigger>
-                                <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-1" />
+                                <Info className="w-4 h-4 text-blue-500 shrink-0 mt-1" />
                               </TooltipTrigger>
                               <TooltipContent side="right" className="max-w-sm">
                                 <div className="text-sm">

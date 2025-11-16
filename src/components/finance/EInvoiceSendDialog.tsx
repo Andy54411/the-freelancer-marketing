@@ -1025,7 +1025,7 @@ Mit freundlichen Grüßen`,
                       <Button
                         size="sm"
                         variant="outline"
-                        className="flex-shrink-0"
+                        className="shrink-0"
                         onClick={() => {
                           navigator.clipboard.writeText(transmissionLogId || '');
                           toast.success('Protokoll-ID kopiert');

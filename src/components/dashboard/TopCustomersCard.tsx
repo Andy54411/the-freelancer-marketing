@@ -404,7 +404,7 @@ export default function TopCustomersCard() {
                 onClick={() => handleCustomerClick(entry.fullName)}>
 
                     <div
-                  className="w-3 h-3 rounded-sm flex-shrink-0"
+                  className="w-3 h-3 rounded-sm shrink-0"
                   style={{ backgroundColor: entry.color }} />
 
                     <span className="text-gray-600 font-medium truncate">{entry.name}</span>

@@ -730,7 +730,7 @@ export function EmailSendModalNormal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 gap-0 flex flex-col [&>button]:hidden">
         {/* Header mit Taskilo Branding - Fixed */}
-        <div className="bg-gradient-to-r from-[#14ad9f] to-[#129488] text-white p-6 flex-shrink-0">
+        <div className="bg-gradient-to-r from-[#14ad9f] to-[#129488] text-white p-6 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white/20 rounded-lg">
@@ -1105,7 +1105,7 @@ export function EmailSendModalNormal({
         </div>
 
         {/* Footer mit verbessertem Design - Fixed */}
-        <div className="border-t bg-gradient-to-r from-gray-50 to-gray-100 flex-shrink-0">
+        <div className="border-t bg-gradient-to-r from-gray-50 to-gray-100 shrink-0">
           <div className="p-6">
             {/* Options */}
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">

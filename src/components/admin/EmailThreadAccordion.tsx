@@ -130,12 +130,12 @@ export function EmailThreadAccordion({
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
                   {isOpen ? (
-                    <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <ChevronDown className="h-4 w-4 text-gray-500 shrink-0" />
                   ) : (
-                    <ChevronRight className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <ChevronRight className="h-4 w-4 text-gray-500 shrink-0" />
                   )}
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0 ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0 ${
                       outgoing ? 'bg-[#14ad9f]' : 'bg-blue-500'
                     }`}
                   >
@@ -173,7 +173,7 @@ export function EmailThreadAccordion({
                     <div className="text-xs text-gray-500 truncate">{getEmailPreview(email)}</div>
                   </div>
                 </div>
-                <div className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                <div className="text-xs text-gray-400 shrink-0 ml-2">
                   {formatDate(email.receivedAt)}
                 </div>
               </div>

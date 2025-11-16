@@ -188,7 +188,7 @@ export function RecurringInvoiceSettings({
             {autoGenerate && (
               <div className="bg-[#14ad9f]/10 border border-[#14ad9f]/20 rounded-lg p-4">
                 <div className="flex gap-2">
-                  <Info className="h-5 w-5 text-[#14ad9f] flex-shrink-0 mt-0.5" />
+                  <Info className="h-5 w-5 text-[#14ad9f] shrink-0 mt-0.5" />
                   <div className="text-sm">
                     <p className="font-medium text-gray-900 mb-1">
                       Automatische Erstellung aktiv
@@ -367,7 +367,7 @@ export function RecurringInvoiceSettings({
                         variant="ghost"
                         size="sm"
                         onClick={() => onEndDateChange(undefined)}
-                        className="flex-shrink-0"
+                        className="shrink-0"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -383,7 +383,7 @@ export function RecurringInvoiceSettings({
             {/* Weitere Hinweise */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <div className="flex gap-2">
-                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
                 <div className="text-sm text-blue-900">
                   <p className="font-medium mb-1">Wichtiger Hinweis</p>
                   <p>

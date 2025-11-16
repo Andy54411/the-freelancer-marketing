@@ -117,7 +117,7 @@ export default function ContractTermsModal({
 
             {/* Vertragsbedingungen */}
             <label className="flex items-start space-x-3 cursor-pointer group">
-              <div className="relative flex-shrink-0 mt-0.5">
+              <div className="relative shrink-0 mt-0.5">
                 <input
                   type="checkbox"
                   checked={termsAccepted}
@@ -151,7 +151,7 @@ export default function ContractTermsModal({
 
             {/* Datenschutz */}
             <label className="flex items-start space-x-3 cursor-pointer group">
-              <div className="relative flex-shrink-0 mt-0.5">
+              <div className="relative shrink-0 mt-0.5">
                 <input
                   type="checkbox"
                   checked={dataProtectionAccepted}
@@ -185,7 +185,7 @@ export default function ContractTermsModal({
 
             {/* Stornierungsbedingungen */}
             <label className="flex items-start space-x-3 cursor-pointer group">
-              <div className="relative flex-shrink-0 mt-0.5">
+              <div className="relative shrink-0 mt-0.5">
                 <input
                   type="checkbox"
                   checked={cancellationTermsAccepted}

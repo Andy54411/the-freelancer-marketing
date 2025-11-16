@@ -429,7 +429,7 @@ export default function ReceivedQuotesPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-8 w-8">
+                        <div className="shrink-0 h-8 w-8">
                           {quote.provider?.avatar ? (
                             <img
                               className="h-8 w-8 rounded-full object-cover"

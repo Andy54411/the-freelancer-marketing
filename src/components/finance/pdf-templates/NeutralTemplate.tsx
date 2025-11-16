@@ -143,7 +143,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
 
             <div className="flex justify-between items-start">
               {/* Firmenlogo links */}
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 {data.companyLogo &&
                 <img
                   src={data.companyLogo}
@@ -162,7 +162,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
               <div className="flex flex-col items-end space-y-2">
                 {/* QR-Code klein oben rechts */}
                 {documentSettings?.showQRCode &&
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                     {data.qrCodeUrl || documentSettings?.qrCodeUrl ?
                   <img
                     src={data.qrCodeUrl || documentSettings?.qrCodeUrl}
@@ -407,7 +407,7 @@ export const NeutralTemplate: React.FC<NeutralTemplateProps> = ({
               style={{ minHeight: data.companyLogo ? '120px' : '80px', borderColor: color }}>
 
                 <div className="flex justify-between items-start">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     {data.companyLogo &&
                   <img
                     src={data.companyLogo}

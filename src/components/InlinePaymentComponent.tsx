@@ -263,9 +263,9 @@ function CheckoutForm({
           }`}
         >
           {message.includes('erfolgreich') ? (
-            <FiCheckCircle className="mr-2 flex-shrink-0" />
+            <FiCheckCircle className="mr-2 shrink-0" />
           ) : (
-            <FiAlertCircle className="mr-2 flex-shrink-0" />
+            <FiAlertCircle className="mr-2 shrink-0" />
           )}
           {message}
         </div>

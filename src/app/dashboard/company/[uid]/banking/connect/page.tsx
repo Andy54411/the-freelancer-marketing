@@ -334,7 +334,7 @@ export default function ConnectBankPage() {
                     Deine Bankdaten werden mit militärischer 256-Bit-Verschlüsselung geschützt und ausschließlich in deutschen, BaFin-regulierten Rechenzentren gespeichert. Weder Taskilo noch finAPI haben Zugriff auf deine Kontoinformationen - nur du behältst die volle Kontrolle über deine Finanzdaten.
                   </p>
                 </div>
-                <div className="flex-shrink-0 relative">
+                <div className="shrink-0 relative">
                   <div className="w-24 h-24 bg-white rounded-lg shadow-sm flex items-center justify-center p-2">
                     <img
                       src="/images/banks/finAPI_Logo.png.webp"

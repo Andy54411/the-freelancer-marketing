@@ -606,7 +606,7 @@ export default function BestaetigungsPage() {
             {/* Payment Message */}
             {error && (
               <div className="my-4 p-3 rounded-md text-sm bg-red-100 text-red-700 flex items-center">
-                <AlertCircle className="mr-2 flex-shrink-0" />
+                <AlertCircle className="mr-2 shrink-0" />
                 {error}
               </div>
             )}

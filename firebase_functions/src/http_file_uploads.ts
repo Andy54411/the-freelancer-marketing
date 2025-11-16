@@ -161,15 +161,38 @@ export const uploadStripeFile = onRequest(
         const { filepath: uploadedFilePath, mimeType, filename } = uploadedFile;
         logger.info(`[uploadStripeFile] Processing file: ${filename} (${mimeType}) from ${uploadedFilePath} for purpose: ${purpose}`);
 
-        // Zurück zur korrekten Methode für v2 Secrets
-        const stripeKey = STRIPE_SECRET_KEY_UPLOADS.value();
+        logger.info("[uploadStripeFile] Attempting to get Stripe key");
+        const stripeKey = process.env.STRIPE_SECRET_KEY_UPLOADS || process.env.STRIPE_SECRET_KEY;
+        
         if (!stripeKey) {
-          logger.error("[uploadStripeFile] Stripe secret key is not available from Secret Manager.");
-          throw { status: 500, message: "Stripe ist auf dem Server nicht korrekt konfiguriert (Secret fehlt)." };
+          logger.error("[uploadStripeFile] Stripe key is not available");
+          throw new Error("Stripe key is not available");
         }
 
-        const stripe = getStripeInstance(stripeKey);
-        logger.info("[uploadStripeFile] Stripe instance obtained.");
+        // Bereinige den Key von Whitespace
+        const cleanKey = stripeKey.trim();
+        
+        if (!cleanKey.startsWith('sk_')) {
+          logger.error("[uploadStripeFile] Invalid Stripe key format");
+          throw new Error("Invalid Stripe key format");
+        }
+
+        logger.info("[uploadStripeFile] Successfully obtained Stripe key:", {
+          keyType: cleanKey.startsWith('sk_live_') ? 'LIVE' : 'TEST',
+          keyLength: cleanKey.length
+        });
+
+        logger.info("[uploadStripeFile] Using Stripe key type:", 
+          stripeKey.startsWith('sk_live_') ? 'LIVE' : 'TEST'
+        );
+        // Direktes Stripe-Instanz erstellen für bessere Kontrolle
+        const stripe = new Stripe(cleanKey, {
+          typescript: true,
+          maxNetworkRetries: 5,
+          timeout: 120000
+        });
+        logger.info("[uploadStripeFile] Stripe instance created");
+
         const bucket = getStorageInstance().bucket('tilvo-f142f-storage');
         logger.info("[uploadStripeFile] Firebase Storage bucket obtained.");
 
@@ -185,12 +208,35 @@ export const uploadStripeFile = onRequest(
           throw { status: 500, message: "Failed to read uploaded file." };
         }
         
+        logger.info('[uploadStripeFile] Creating Stripe file with:', {
+          purpose,
+          filename,
+          mimeType,
+          fileSize: fileBuffer.length,
+          stripeKeyType: stripeKey.startsWith('sk_live_') ? 'LIVE' : 'TEST'
+        });
+
         const stripePromise = stripe.files.create({
           purpose: purpose,
-          file: { data: fileBuffer, name: filename, type: mimeType },
+          file: { 
+            data: fileBuffer, 
+            name: filename, 
+            type: mimeType 
+          }
         }, {
           timeout: 60000, // 60 Sekunden Timeout
           maxNetworkRetries: 3, // 3 Versuche bei Netzwerkfehlern
+        }).catch(stripeError => {
+          logger.error('[uploadStripeFile] Stripe API Error:', {
+            type: stripeError.type,
+            code: stripeError.code,
+            param: stripeError.param,
+            message: stripeError.message,
+            raw: stripeError.raw,
+            statusCode: stripeError.statusCode,
+            requestId: stripeError.requestId
+          });
+          throw stripeError;
         });
 
         const storagePath = `user_uploads/${userId}/${purpose}_${uuidv4()}_${filename}`;
@@ -229,10 +275,38 @@ export const uploadStripeFile = onRequest(
         });
 
       } catch (error: any) {
-        logger.error("[uploadStripeFile] Error during processing:", error);
+        logger.error("[uploadStripeFile] Error during processing:", {
+          name: error.name,
+          message: error.message,
+          code: error.code,
+          type: error.type,
+          statusCode: error.statusCode,
+          requestId: error.requestId, // Stripe specific
+          param: error.param, // Stripe specific
+          raw: error.raw, // Stripe specific
+          stack: error.stack
+        });
+
+        // Spezifische Fehlerbehandlung für Stripe-Fehler
+        if (error.type && error.type.startsWith('Stripe')) {
+          const stripeError = error as Stripe.errors.StripeError;
+          return res.status(error.statusCode || 500).send({
+            success: false,
+            message: `Stripe-Fehler: ${stripeError.message}`,
+            code: stripeError.code,
+            type: stripeError.type,
+            requestId: stripeError.requestId
+          });
+        }
+
         const status = error.status || 500;
         const message = error.message || "Interner Serverfehler beim Upload.";
-        res.status(status).send({ success: false, message: message });
+        res.status(status).send({ 
+          success: false, 
+          message: message,
+          type: error.type || 'InternalError',
+          code: error.code
+        });
 
       } finally {
         logger.info("[uploadStripeFile] Cleaning up temporary files.");

@@ -235,7 +235,7 @@ export default function DatevMainPage() {
                 </div>
                 
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 flex-shrink-0">
+                  <div className="w-16 h-16 shrink-0">
                     <svg width="100%" height="100%" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" role="presentation">
                       <g stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">
                         <g transform="translate(2.000000, 3.000000)">
@@ -274,7 +274,7 @@ export default function DatevMainPage() {
               <div className="bg-white rounded-lg border-2 border-gray-200 hover:border-[#14ad9f] hover:shadow-lg transition-all">
                 <div className="p-8">
                   <div className="flex items-start gap-4 mb-6">
-                    <div className="w-16 h-16 flex-shrink-0">
+                    <div className="w-16 h-16 shrink-0">
                       <svg width="100%" height="100%" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" role="presentation">
                         <g stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">
                           <g transform="translate(0.000000, 8.000000)">
@@ -319,7 +319,7 @@ export default function DatevMainPage() {
               <div className="bg-white rounded-lg border-2 border-gray-200 hover:border-[#14ad9f] hover:shadow-lg transition-all">
                 <div className="p-8">
                   <div className="flex items-start gap-4 mb-6">
-                    <div className="w-16 h-16 flex-shrink-0">
+                    <div className="w-16 h-16 shrink-0">
                       <svg width="100%" height="100%" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" role="presentation">
                         <g stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">
                           <g transform="translate(2.000000, 3.000000)">
@@ -370,7 +370,7 @@ export default function DatevMainPage() {
             <div className="bg-white rounded-lg border-2 border-gray-200 hover:border-[#14ad9f] hover:shadow-lg transition-all">
               <div className="p-8">
                 <div className="flex items-start gap-4 mb-6">
-                  <div className="w-16 h-16 flex-shrink-0">
+                  <div className="w-16 h-16 shrink-0">
                     {/* Cloud Sync Icon from sevDesk */}
                     <svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation">
                       <mask id="a" maskUnits="userSpaceOnUse" x="2" y="5" width="43" height="26">
@@ -453,7 +453,7 @@ export default function DatevMainPage() {
             <div className="bg-white rounded-lg border-2 border-gray-200 hover:border-[#14ad9f] hover:shadow-lg transition-all">
               <div className="p-8">
                 <div className="flex items-start gap-4 mb-6">
-                  <div className="w-16 h-16 flex-shrink-0">
+                  <div className="w-16 h-16 shrink-0">
                     {/* Folder Icon */}
                     <svg width="100%" height="100%" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" role="presentation">
                       <g stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">

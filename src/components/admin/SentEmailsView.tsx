@@ -235,7 +235,7 @@ export default function SentEmailsView({ onEmailClick, refreshTrigger }: SentEma
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center space-x-2 mb-1">
-                              <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <User className="h-4 w-4 text-gray-500 shrink-0" />
                               <span className="text-sm font-medium text-gray-900 truncate">
                                 {email.to}
                               </span>

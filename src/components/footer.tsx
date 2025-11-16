@@ -385,7 +385,7 @@ export default function FooterSection() {
                   id="newsletter-consent"
                   checked={consentGiven}
                   onChange={e => setConsentGiven(e.target.checked)}
-                  className="mt-1 h-5 w-5 rounded border-white/20 bg-white/10 text-[#14ad9f] focus:ring-[#14ad9f] focus:ring-2 flex-shrink-0"
+                  className="mt-1 h-5 w-5 rounded border-white/20 bg-white/10 text-[#14ad9f] focus:ring-[#14ad9f] focus:ring-2 shrink-0"
                   disabled={isLoading}
                 />
                 <label

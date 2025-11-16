@@ -467,7 +467,7 @@ export function DatevDebugComponent() {
             <ul className="space-y-2 text-sm">
               {validation.recommendations.map((rec, index) => (
                 <li key={index} className="flex items-start gap-2">
-                  <FiCheck className="text-[#14ad9f] mt-0.5 flex-shrink-0" size={16} />
+                  <FiCheck className="text-[#14ad9f] mt-0.5 shrink-0" size={16} />
                   {rec}
                 </li>
               ))}

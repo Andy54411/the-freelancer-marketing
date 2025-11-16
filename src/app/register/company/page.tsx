@@ -197,7 +197,7 @@ export default function Step1() {
               </label>
               <div className="flex gap-2 w-full">
                 <select
-                  className="w-24 flex-shrink-0 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800 text-sm"
+                  className="w-24 shrink-0 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-800 text-sm"
                   value={localPhoneCountryCode}
                   onChange={e => setLocalPhoneCountryCode(e.target.value)}
                 >

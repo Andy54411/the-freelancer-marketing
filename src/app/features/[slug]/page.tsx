@@ -90,7 +90,7 @@ export default function FeatureDetailPage({ params }: { params: Promise<{ slug: 
                   <ul className="space-y-4">
                     {feature.benefits.map((benefit, index) => (
                       <li key={index} className="flex items-start">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mr-3 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mr-3 mt-0.5 shrink-0" />
                         <span className="text-gray-700">{benefit}</span>
                       </li>
                     ))}
@@ -110,7 +110,7 @@ export default function FeatureDetailPage({ params }: { params: Promise<{ slug: 
                   <ul className="space-y-4">
                     {feature.useCases.map((useCase, index) => (
                       <li key={index} className="flex items-start">
-                        <Star className="w-5 h-5 text-[#14ad9f] mr-3 mt-0.5 flex-shrink-0" />
+                        <Star className="w-5 h-5 text-[#14ad9f] mr-3 mt-0.5 shrink-0" />
                         <span className="text-gray-700">{useCase}</span>
                       </li>
                     ))}
@@ -136,7 +136,7 @@ export default function FeatureDetailPage({ params }: { params: Promise<{ slug: 
                 <Card key={index} className="bg-white/95 backdrop-blur-sm border-0 shadow-xl">
                   <CardContent className="p-6">
                     <div className="flex items-start">
-                      <div className="flex-shrink-0 w-10 h-10 bg-[#14ad9f] text-white rounded-full flex items-center justify-center font-bold mr-4">
+                      <div className="shrink-0 w-10 h-10 bg-[#14ad9f] text-white rounded-full flex items-center justify-center font-bold mr-4">
                         {index + 1}
                       </div>
                       <div className="flex-1">

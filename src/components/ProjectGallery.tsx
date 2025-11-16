@@ -80,7 +80,7 @@ export default function ProjectGallery({ userId }: Props) {
             {images.map((url, index) => (
               <div
                 key={index}
-                className="h-[100px] rounded overflow-hidden shadow-sm flex-shrink-0 cursor-pointer"
+                className="h-[100px] rounded overflow-hidden shadow-sm shrink-0 cursor-pointer"
                 style={{
                   minWidth: 'calc((100% - 2rem) / 3)',
                   scrollSnapAlign: 'start',

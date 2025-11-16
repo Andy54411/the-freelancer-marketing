@@ -204,19 +204,19 @@ export default function PerfektesAngebotPage() {
                       </h4>
                       <div className="space-y-3">
                         <div className="flex items-start space-x-2">
-                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                           <span>Kunden mit Namen ansprechen</span>
                         </div>
                         <div className="flex items-start space-x-2">
-                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                           <span>Bezug zur ursprünglichen Anfrage</span>
                         </div>
                         <div className="flex items-start space-x-2">
-                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                           <span>Verständnis für die Situation zeigen</span>
                         </div>
                         <div className="flex items-start space-x-2">
-                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                           <span>Eigene Kompetenz kurz einordnen</span>
                         </div>
                       </div>
@@ -445,19 +445,19 @@ export default function PerfektesAngebotPage() {
                       </h4>
                       <div className="space-y-3">
                         <div className="flex items-start space-x-2">
-                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                           <span>Konkrete Starttermine anbieten</span>
                         </div>
                         <div className="flex items-start space-x-2">
-                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                           <span>Realistische Projektdauer angeben</span>
                         </div>
                         <div className="flex items-start space-x-2">
-                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                           <span>Pufferzeiten für Unvorhergesehenes einplanen</span>
                         </div>
                         <div className="flex items-start space-x-2">
-                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                          <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                           <span>Alternative Termine als Backup anbieten</span>
                         </div>
                       </div>
@@ -652,7 +652,7 @@ export default function PerfektesAngebotPage() {
               </div>
             </div>
 
-            <aside className="hidden lg:block w-80 flex-shrink-0">
+            <aside className="hidden lg:block w-80 shrink-0">
               <div className="sticky top-24 space-y-6">
                 <div className="bg-white/95 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/20">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Inhalt</h3>

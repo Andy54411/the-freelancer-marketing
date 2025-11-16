@@ -135,7 +135,7 @@ export default function CompanyCard({
         {company.highlightReview && (
           <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-start text-sm">
-              <FiMessageCircle className="w-8 h-8 text-gray-400 dark:text-gray-500 mr-2 mt-1 flex-shrink-0" />
+              <FiMessageCircle className="w-8 h-8 text-gray-400 dark:text-gray-500 mr-2 mt-1 shrink-0" />
               <div>
                 <p className="text-gray-700 dark:text-gray-300">{`"${company.highlightReview.text}"`}</p>
                 {/* ODER <p className="text-gray-700 dark:text-gray-300">&quot;{company.highlightReview.text}&quot;</p> */}

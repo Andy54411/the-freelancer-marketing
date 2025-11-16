@@ -99,7 +99,7 @@ export default function BankingImportPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-start space-x-3">
-              <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-sm font-medium text-red-800">Information</h3>
                 <p className="mt-1 text-sm text-red-700">{error}</p>

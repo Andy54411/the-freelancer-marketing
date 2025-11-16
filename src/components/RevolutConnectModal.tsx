@@ -187,7 +187,7 @@ export default function RevolutConnectModal({
         <div className="p-6">
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
-              <FiAlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <FiAlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
               <div>
                 <h3 className="text-sm font-medium text-red-800">Fehler beim Verbinden</h3>
                 <p className="text-sm text-red-700 mt-1">{error}</p>
@@ -224,21 +224,21 @@ export default function RevolutConnectModal({
             {/* Features */}
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
-                <FiCheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <FiCheckCircle className="w-5 h-5 text-green-500 shrink-0" />
                 <span className="text-sm text-gray-700">Sichere OAuth-Verbindung</span>
               </div>
               <div className="flex items-center space-x-3">
-                <FiCheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <FiCheckCircle className="w-5 h-5 text-green-500 shrink-0" />
                 <span className="text-sm text-gray-700">Echtzeit-Kontostände</span>
               </div>
               <div className="flex items-center space-x-3">
-                <FiCheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <FiCheckCircle className="w-5 h-5 text-green-500 shrink-0" />
                 <span className="text-sm text-gray-700">
                   Automatische Transaktionssynchronisation
                 </span>
               </div>
               <div className="flex items-center space-x-3">
-                <FiCheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <FiCheckCircle className="w-5 h-5 text-green-500 shrink-0" />
                 <span className="text-sm text-gray-700">Multi-Währungsunterstützung</span>
               </div>
             </div>
@@ -247,7 +247,7 @@ export default function RevolutConnectModal({
             {process.env.NODE_ENV === 'development' && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <div className="flex items-start space-x-2">
-                  <FiCheckCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                  <FiCheckCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
                   <div>
                     <h4 className="text-sm font-medium text-yellow-900">Sandbox Test-Account</h4>
                     <p className="text-xs text-yellow-700 mt-1">
@@ -269,7 +269,7 @@ export default function RevolutConnectModal({
             {/* Security Info */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-start space-x-2">
-                <FiCheckCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                <FiCheckCircle className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
                 <div>
                   <h4 className="text-sm font-medium text-blue-900">Sicher & Verschlüsselt</h4>
                   <p className="text-xs text-blue-700 mt-1">

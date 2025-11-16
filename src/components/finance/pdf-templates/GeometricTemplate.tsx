@@ -111,7 +111,7 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
                 </div>
               </div>
 
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 {data.companyLogo && (
                   <img
                     src={data.companyLogo}
@@ -340,7 +340,7 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     {data.companyLogo && (
                       <img
                         src={data.companyLogo}

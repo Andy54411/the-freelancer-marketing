@@ -169,7 +169,7 @@ export function CancelPlanModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+        <DialogHeader className="shrink-0">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-red-600" />
             <DialogTitle className="text-lg">Plan kündigen</DialogTitle>
@@ -183,7 +183,7 @@ export function CancelPlanModal({
           {/* Current Usage Warning */}
           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
             <div className="flex items-start gap-2">
-              <FileX className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+              <FileX className="h-4 w-4 text-red-600 mt-0.5 shrink-0" />
               <div className="text-xs text-red-800">
                 Sie nutzen <strong>{formatBytes(currentUsage)}</strong>. Nach Kündigung werden{' '}
                 <strong>alle Daten unwiderruflich gelöscht</strong>.
@@ -289,7 +289,7 @@ export function CancelPlanModal({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 flex-shrink-0 pt-3 border-t">
+        <DialogFooter className="gap-2 shrink-0 pt-3 border-t">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

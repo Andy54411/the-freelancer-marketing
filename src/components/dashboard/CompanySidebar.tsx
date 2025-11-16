@@ -686,7 +686,7 @@ export default function CompanySidebar({
           onMouseLeave={handleMouseLeave}
         >
           {/* Header */}
-          <div className="flex items-center flex-shrink-0 px-4 mb-5 justify-between">
+          <div className="flex items-center shrink-0 px-4 mb-5 justify-between">
             {!isCollapsed && (
               <div className="flex items-center flex-1 min-w-0">
                 <h2 className="text-lg font-semibold text-gray-900 truncate">Dashboard</h2>
@@ -695,7 +695,7 @@ export default function CompanySidebar({
             )}
             <button
               onClick={handleToggleCollapsed}
-              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0"
+              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors shrink-0"
               title={isCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}
             >
               {isCollapsed ? (
@@ -729,28 +729,94 @@ export default function CompanySidebar({
                     onClick={async () => {
                       // ✅ Gmail-Verbindungsprüfung für E-Mail-Menü
                       if (item.value === 'email') {
+                        console.log('🔍 E-Mail Icon geklickt, prüfe Gmail-Status...');
                         try {
-                          const response = await fetch(`/api/company/${uid}/gmail-auth-status`);
+                          const apiUrl = `/api/company/${uid}/gmail-auth-status`;
+                          console.log('📡 API-Aufruf:', apiUrl);
+                          
+                          const response = await fetch(apiUrl);
+                          console.log('📨 Response Status:', response.status, response.statusText);
+                          
+                          if (!response.ok) {
+                            console.error('❌ API-Response nicht OK:', response.status, response.statusText);
+                            onNavigate('email-integration', 'email-integration');
+                            return;
+                          }
+                          
                           const data = await response.json();
+                          console.log('📋 Gmail auth status response:', JSON.stringify(data, null, 2));
 
-                          // Wenn keine gültigen Tokens, zur Integration weiterleiten
-                          if (!data.hasValidTokens || data.status === 'authentication_required') {
-                            window.location.href = `/dashboard/company/${uid}/email-integration`;
+                          // Prüfe auf gültige Verbindung
+                          const hasValidConnection = data.hasConfig && 
+                                                   data.hasTokens && 
+                                                   !data.tokenExpired && 
+                                                   data.status !== 'authentication_required';
+
+                          console.log('🔐 Verbindungs-Check:', {
+                            hasConfig: data.hasConfig,
+                            hasTokens: data.hasTokens,
+                            tokenExpired: data.tokenExpired,
+                            status: data.status,
+                            hasValidConnection
+                          });
+
+                          if (!hasValidConnection) {
+                            console.log('❌ Keine gültige Verbindung, weiterleitung zur Integration');
+                            onNavigate('email-integration', 'email-integration');
+                            return;
+                          } else {
+                            console.log('✅ Gültige Verbindung, navigiere zum Posteingang');
+                            onNavigate('email-inbox', 'emails');
+                            onToggleExpanded(item.value);
                             return;
                           }
                         } catch (error) {
-                          console.error('Gmail connection check failed:', error);
-                          window.location.href = `/dashboard/company/${uid}/email-integration`;
+                          console.error('💥 Gmail connection check failed:', error);
+                          console.error('💥 Error details:', {
+                            name: (error as Error).name,
+                            message: (error as Error).message,
+                            stack: (error as Error).stack
+                          });
+                          // Bei Fehler zur Integration weiterleiten
+                          onNavigate('email-integration', 'email-integration');
                           return;
                         }
                       }
 
-                      if (hasSubItems) {
-                        onToggleExpanded(item.value);
-                      } else if (item.href) {
+                      // ✅ Immer zuerst navigieren, auch bei Items mit SubItems
+                      if (item.href) {
                         onNavigate(item.value, item.href);
+                      } else if (item.value === 'dashboard') {
+                        // Dashboard hat keine href, also explizit navigieren
+                        onNavigate(item.value);
+                      } else if (item.value === 'finance') {
+                        // Finance zur Hauptseite navigieren
+                        onNavigate(item.value, 'finance');
+                      } else if (item.value === 'tasker') {
+                        // Tasker zur Orders Overview navigieren
+                        onNavigate(item.value, 'orders/overview');
+                      } else if (item.value === 'contacts') {
+                        // Contacts hat bereits href
+                        onNavigate(item.value, item.href);
+                      } else if (item.value === 'banking') {
+                        // Banking zur Accounts-Seite navigieren
+                        onNavigate(item.value, 'banking/accounts');
+                      } else if (item.value === 'personal') {
+                        // Personal zur Übersicht navigieren
+                        onNavigate(item.value, 'personal');
+                      } else if (item.value === 'workspace') {
+                        // Workspace zur Übersicht navigieren
+                        onNavigate(item.value, 'workspace');
+                      } else if (item.value === 'settings') {
+                        // Settings zur Allgemein-Seite navigieren
+                        onNavigate('settings-general');
                       } else {
                         onNavigate(item.value);
+                      }
+
+                      // ✅ Zusätzlich SubItems expandieren falls vorhanden
+                      if (hasSubItems) {
+                        onToggleExpanded(item.value);
                       }
                     }}
                     className={`${
@@ -764,7 +830,7 @@ export default function CompanySidebar({
                       <item.icon
                         className={`${
                           isMainActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
-                        } ${isCollapsed ? '' : 'mr-3'} flex-shrink-0 h-6 w-6`}
+                        } ${isCollapsed ? '' : 'mr-3'} shrink-0 h-6 w-6`}
                       />
                       {!isCollapsed && item.label}
                     </div>

@@ -295,7 +295,7 @@ export default function EmailIntegrationPage() {
         <Card className="border-blue-200 bg-blue-50">
           <CardContent className="pt-6">
             <div className="flex gap-3">
-              <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+              <Info className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
               <div className="space-y-3">
                 <p className="font-medium text-blue-900">Sie haben noch keinen E-Mail-Provider?</p>
                 <p className="text-sm text-blue-800">
@@ -701,7 +701,7 @@ export default function EmailIntegrationPage() {
       <Card className="border-blue-200 bg-blue-50">
         <CardContent className="pt-6">
           <div className="flex gap-3">
-            <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+            <Info className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
             <div className="space-y-2 text-sm">
               <p className="font-medium text-blue-900">Wichtige Hinweise:</p>
               <ul className="list-disc list-inside space-y-1 text-blue-800">

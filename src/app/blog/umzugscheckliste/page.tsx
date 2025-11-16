@@ -121,19 +121,19 @@ export default function UmzugschecklistePage() {
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Neue Wohnung/Haus besichtigen und Mietvertrag prüfen</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Kündigungsfristen der aktuellen Wohnung beachten (meist 3 Monate)</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Umzugstermin festlegen (am besten außerhalb der Hauptsaison)</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>
                         Budget für den Umzug kalkulieren (inkl. Umzugsunternehmen, Renovierung,
                         Kautionen)
@@ -148,19 +148,19 @@ export default function UmzugschecklistePage() {
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Umzugsangebote einholen (mindestens 3 Vergleichsangebote)</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Entscheiden: Vollservice, Teilservice oder Eigenregie mit Helfern</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Umzugswagen reservieren (falls Eigenregie)</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Umzugshelfer über Taskilo finden und Termine vereinbaren</span>
                     </div>
                   </div>
@@ -195,19 +195,19 @@ export default function UmzugschecklistePage() {
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 shrink-0" />
                       <span>Nachsendeantrag bei der Post stellen (3-12 Monate)</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 shrink-0" />
                       <span>Anmeldeformular vom neuen Wohnort besorgen</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 shrink-0" />
                       <span>Arbeitgeber über Adressänderung informieren</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 shrink-0" />
                       <span>Krankenkasse, Versicherungen und Bank kontaktieren</span>
                     </div>
                   </div>
@@ -219,19 +219,19 @@ export default function UmzugschecklistePage() {
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 shrink-0" />
                       <span>Strom- und Gasanbieter wechseln/ummelden</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 shrink-0" />
                       <span>Internetanbieter über Umzug informieren (Vorlaufzeit beachten!)</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 shrink-0" />
                       <span>Wasser- und Müllabfuhr beim neuen Versorger anmelden</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 shrink-0" />
                       <span>Telefon und TV-Anschluss für neuen Wohnort beantragen</span>
                     </div>
                   </div>
@@ -243,19 +243,19 @@ export default function UmzugschecklistePage() {
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 shrink-0" />
                       <span>Kinder in neuer Schule/Kita anmelden</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 shrink-0" />
                       <span>Arzt, Zahnarzt, Tierarzt in der neuen Umgebung suchen</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 shrink-0" />
                       <span>GEZ/Rundfunkbeitrag ummelden</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-blue-500 mt-1 shrink-0" />
                       <span>
                         Abos und Mitgliedschaften (Fitnessstudio, Zeitungen, etc.) ummelden
                       </span>
@@ -283,19 +283,19 @@ export default function UmzugschecklistePage() {
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 shrink-0" />
                       <span>Kartons besorgen und systematisch packen (Raum für Raum)</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 shrink-0" />
                       <span>Kartons beschriften (Inhalt + Zielraum in neuer Wohnung)</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 shrink-0" />
                       <span>Erste-Hilfe-Kiste packen (wichtige Dinge für die ersten Tage)</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 shrink-0" />
                       <span>Wertsachen und wichtige Dokumente separat transportieren</span>
                     </div>
                   </div>
@@ -307,19 +307,19 @@ export default function UmzugschecklistePage() {
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 shrink-0" />
                       <span>Entrümpelung: Ausmisten und entsorgen was nicht mitkommt</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 shrink-0" />
                       <span>Renovierungsarbeiten planen (Malerarbeiten, Reparaturen)</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 shrink-0" />
                       <span>Übernahmeprotokoll mit Vermieter/Nachmieter vorbereiten</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-orange-500 mt-1 shrink-0" />
                       <span>Schlüssel für Umzugshelfer organisieren</span>
                     </div>
                   </div>
@@ -352,19 +352,19 @@ export default function UmzugschecklistePage() {
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">🌅 Morgens</h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Früh aufstehen und ausreichend frühstücken</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Letzte Gegenstände einpacken und Kühlschrank leeren</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Umzugswagen und Helfer pünktlich in Empfang nehmen</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Zählerstände (Strom, Gas, Wasser) ablesen und dokumentieren</span>
                     </div>
                   </div>
@@ -376,19 +376,19 @@ export default function UmzugschecklistePage() {
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Transport koordinieren und auf Beschädigungen achten</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Helfer mit Getränken und Snacks versorgen</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Inventarliste führen (was wurde transportiert)</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Nachbarn in der neuen Wohnung begrüßen</span>
                     </div>
                   </div>
@@ -398,19 +398,19 @@ export default function UmzugschecklistePage() {
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">🏡 Abends</h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Wohnungsübergabe alte Wohnung (Protokoll + Schlüssel)</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Neue Zählerstände ablesen und dem Versorger melden</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Umzugshelfer bezahlen und bewerten (bei Taskilo-Buchung)</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span>Erste Einrichtung: Bett aufbauen, Kühlschrank anschließen</span>
                     </div>
                   </div>
@@ -431,21 +431,21 @@ export default function UmzugschecklistePage() {
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">🏛️ Behördengänge</h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <Clock className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
+                      <Clock className="w-5 h-5 text-gray-300 mt-1 shrink-0" />
                       <span>
                         <strong>Binnen 14 Tagen:</strong> Anmeldung beim Einwohnermeldeamt
                       </span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <Clock className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
+                      <Clock className="w-5 h-5 text-gray-300 mt-1 shrink-0" />
                       <span>Führerschein und Fahrzeugpapiere ummelden</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <Clock className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
+                      <Clock className="w-5 h-5 text-gray-300 mt-1 shrink-0" />
                       <span>Wahlberechtigung ummelden</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <Clock className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
+                      <Clock className="w-5 h-5 text-gray-300 mt-1 shrink-0" />
                       <span>Finanzamt über Adressänderung informieren</span>
                     </div>
                   </div>
@@ -455,19 +455,19 @@ export default function UmzugschecklistePage() {
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">🏠 Eingewöhnung</h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-gray-300 mt-1 shrink-0" />
                       <span>Möbel aufbauen und Wohnung einrichten</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-gray-300 mt-1 shrink-0" />
                       <span>Neue Umgebung erkunden (Supermärkte, Ärzte, etc.)</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-gray-300 mt-1 shrink-0" />
                       <span>Kontakt zu neuen Nachbarn aufbauen</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-gray-300 mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-gray-300 mt-1 shrink-0" />
                       <span>Einweihungsfeier planen</span>
                     </div>
                   </div>

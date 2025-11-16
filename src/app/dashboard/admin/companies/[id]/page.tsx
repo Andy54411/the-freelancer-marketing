@@ -784,7 +784,7 @@ export default function AdminCompanyDetailsPage() {
                     <div className="flex items-start space-x-4">
                       {/* Hauptbild */}
                       {project.imageUrl && (
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                           <img
                             src={project.imageUrl}
                             alt={project.title}
@@ -1557,7 +1557,7 @@ export default function AdminCompanyDetailsPage() {
                                   onClick={() =>
                                     openDocument(company.identityFrontUrl!, 'Ausweis Vorderseite')
                                   }
-                                  className="flex-shrink-0"
+                                  className="shrink-0"
                                   title="Anzeigen"
                                 >
                                   <Eye className="h-4 w-4" />
@@ -1571,7 +1571,7 @@ export default function AdminCompanyDetailsPage() {
                                       'ausweis_vorderseite.jpg'
                                     )
                                   }
-                                  className="flex-shrink-0"
+                                  className="shrink-0"
                                   title="Download"
                                 >
                                   <Download className="h-4 w-4" />
@@ -1599,7 +1599,7 @@ export default function AdminCompanyDetailsPage() {
                                   onClick={() =>
                                     openDocument(company.identityBackUrl!, 'Ausweis Rückseite')
                                   }
-                                  className="flex-shrink-0"
+                                  className="shrink-0"
                                   title="Anzeigen"
                                 >
                                   <Eye className="h-4 w-4" />
@@ -1613,7 +1613,7 @@ export default function AdminCompanyDetailsPage() {
                                       'ausweis_rueckseite.jpg'
                                     )
                                   }
-                                  className="flex-shrink-0"
+                                  className="shrink-0"
                                   title="Download"
                                 >
                                   <Download className="h-4 w-4" />

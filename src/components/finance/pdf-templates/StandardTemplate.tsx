@@ -121,7 +121,7 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
               className="pt-6 flex justify-between items-start"
               style={{ minHeight: data.companyLogo ? '160px' : '80px' }}
             >
-              <div className="text-left flex-shrink-0">
+              <div className="text-left shrink-0">
                 <div className="text-2xl font-bold mb-2">{config.title}</div>
               </div>
 
@@ -352,7 +352,7 @@ export const StandardTemplate: React.FC<StandardTemplateProps> = ({
                   className="pt-6 flex justify-between items-start"
                   style={{ minHeight: data.companyLogo ? '160px' : '80px' }}
                 >
-                  <div className="text-left flex-shrink-0">
+                  <div className="text-left shrink-0">
                     <div className="text-2xl font-bold mb-2">{data.documentLabel}</div>
                   </div>
 

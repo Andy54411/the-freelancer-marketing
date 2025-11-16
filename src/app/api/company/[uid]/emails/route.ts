@@ -1,20 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, withFirebase } from '@/firebase/server';
 
-// SIMPLE EMAIL API - NO GMAIL SERVICE DEPENDENCIES
+// EMAIL API WITH DIRECT GMAIL FALLBACK
 export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
     const { uid } = await params;
     const { searchParams } = new URL(request.url);
     const folder = searchParams.get('folder') || 'inbox';
-    const limit = parseInt(searchParams.get('limit') || '500'); // Erhöhtes Standard-Limit auf 500
+    const limit = parseInt(searchParams.get('limit') || '500');
     const offset = parseInt(searchParams.get('offset') || '0');
+    const forceRefresh = searchParams.get('force') === 'true';
 
     console.log(
-      `📦 API: Loading emails for ${uid}, folder: ${folder}, limit: ${limit}, offset: ${offset}`
+      `📦 API: Loading emails for ${uid}, folder: ${folder}, limit: ${limit}, offset: ${offset}, force: ${forceRefresh}`
     );
 
-    // Suche E-Mails in verschiedenen Collections
+    // Wenn force refresh, triggere Gmail Sync Function
+    if (forceRefresh) {
+      console.log('🔄 API: Force refresh - triggering Gmail sync');
+      try {
+        const functionUrl = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
+                           'https://europe-west1-tilvo-f142f.cloudfunctions.net';
+        
+        console.log(`📞 API: Calling Firebase Function: ${functionUrl}/gmailSyncHttp`);
+        
+        const syncResponse = await fetch(`${functionUrl}/gmailSyncHttp`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            companyId: uid,
+            force: true,
+            action: 'sync'
+          }),
+
+        });
+        
+        console.log(`📞 API: Firebase Function response status: ${syncResponse.status} ${syncResponse.statusText}`);
+        
+        if (syncResponse.ok) {
+          const syncResult = await syncResponse.json();
+          console.log('✅ API: Gmail sync triggered successfully:', syncResult);
+          
+          // Warte kurz und lade dann aus dem Cache
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } else {
+          console.warn('⚠️ API: Gmail sync failed:', syncResponse.statusText);
+        }
+      } catch (syncError) {
+        console.warn('⚠️ API: Gmail sync error:', syncError);
+      }
+    }
+
+    // Fallback: Suche E-Mails im Cache
     let emails: any[] = [];
 
     try {

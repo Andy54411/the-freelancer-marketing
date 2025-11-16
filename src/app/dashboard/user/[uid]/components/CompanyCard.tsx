@@ -40,7 +40,7 @@ export default function CompanyCard({
       }`}
     >
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-shrink-0 flex flex-col items-center sm:w-1/4 space-y-2">
+        <div className="shrink-0 flex flex-col items-center sm:w-1/4 space-y-2">
           <Image
             src={company.profilePictureURL || '/default-avatar.png'}
             alt={`Profil von ${company.companyName}`}

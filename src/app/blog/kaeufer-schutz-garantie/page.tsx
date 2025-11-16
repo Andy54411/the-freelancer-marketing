@@ -188,7 +188,7 @@ export default function KaeuferschutzPage() {
 
                 <div className="space-y-6">
                   <div className="flex items-start space-x-4">
-                    <div className="bg-[#14ad9f] text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                    <div className="bg-[#14ad9f] text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shrink-0">
                       1
                     </div>
                     <div>
@@ -203,7 +203,7 @@ export default function KaeuferschutzPage() {
                   </div>
 
                   <div className="flex items-start space-x-4">
-                    <div className="bg-[#14ad9f] text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                    <div className="bg-[#14ad9f] text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shrink-0">
                       2
                     </div>
                     <div>
@@ -217,7 +217,7 @@ export default function KaeuferschutzPage() {
                   </div>
 
                   <div className="flex items-start space-x-4">
-                    <div className="bg-[#14ad9f] text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                    <div className="bg-[#14ad9f] text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shrink-0">
                       3
                     </div>
                     <div>
@@ -256,28 +256,28 @@ export default function KaeuferschutzPage() {
                     </h3>
                     <ul className="space-y-2">
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Vollständige Rückerstattung</strong> bei Nichterfüllung des
                           Services
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Teilerstattung</strong> bei unvollständiger oder mangelhafter
                           Leistung
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Schadensersatz</strong> bei nachweisbaren Schäden durch den
                           Service
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Zusätzliche Kosten</strong> für Nachbesserungen werden übernommen
                         </span>
@@ -290,20 +290,20 @@ export default function KaeuferschutzPage() {
                     <h3 className="text-xl font-bold text-gray-900 mb-3">⭐ Qualitätsgarantie</h3>
                     <ul className="space-y-2">
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
                         <span>
                           <strong>30 Tage Nachbesserungsrecht</strong> bei Qualitätsmängeln
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
                         <span>
                           <strong>Kostenlose Nacharbeiten</strong> bei nicht-zufriedenstellenden
                           Ergebnissen
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
                         <span>
                           <strong>Alternative Anbieter</strong> bei wiederholten Qualitätsproblemen
                         </span>
@@ -316,20 +316,20 @@ export default function KaeuferschutzPage() {
                     <h3 className="text-xl font-bold text-gray-900 mb-3">⏰ Termingarantie</h3>
                     <ul className="space-y-2">
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-orange-500 mt-0.5 shrink-0" />
                         <span>
                           <strong>Entschädigung</strong> bei verspäteter Fertigstellung ohne
                           triftige Gründe
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-orange-500 mt-0.5 shrink-0" />
                         <span>
                           <strong>Kostenfreie Stornierung</strong> bei Nichterscheinen des Anbieters
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-orange-500 mt-0.5 shrink-0" />
                         <span>
                           <strong>Prioritätsbehandlung</strong> bei Nachbuchungen nach
                           Terminversäumnissen
@@ -398,7 +398,7 @@ export default function KaeuferschutzPage() {
 
                 <div className="bg-red-50 p-4 rounded-lg mt-6">
                   <p className="text-red-800 flex items-start space-x-2">
-                    <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                    <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0" />
                     <span>
                       <strong>Wichtig:</strong> Während des gesamten Schlichtungsverfahrens bleibt
                       Ihr Geld gesperrt. Es wird erst nach finaler Einigung freigegeben.

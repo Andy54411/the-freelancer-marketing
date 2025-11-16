@@ -388,21 +388,38 @@ export default function Step5CompanyPage() {
       formData.append('purpose', purpose);
       formData.append('userId', userId);
 
-      const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'tilvo-f142f';
-      const region = 'europe-west1';
+      const { UPLOAD_STRIPE_FILE_API_URL } = await import('@/lib/constants');
+      const uploadUrl = UPLOAD_STRIPE_FILE_API_URL;
 
-      const uploadUrl = `https://${region}-${projectId}.cloudfunctions.net/uploadStripeFile`;
+      console.log(`[DEBUG ${fileNameForLog}] Upload-Request vorbereiten:`, {
+        uploadUrl,
+        purpose,
+        userId,
+        fileSize: file.size,
+        fileType: file.type,
+        environment: process.env.NODE_ENV,
+        NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL: process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL
+      });
 
       if (!uploadUrl || uploadUrl.includes('undefined')) {
+        console.error('[ERROR] Upload URL Konfigurationsfehler:', {
+          uploadUrl,
+          UPLOAD_STRIPE_FILE_API_URL,
+          NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL: process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL
+        });
         throw new Error(
-          'Upload URL ist nicht korrekt konfiguriert oder konnte nicht generiert werden.'
+          'Upload URL ist nicht korrekt konfiguriert oder konnte nicht generiert werden. ' +
+          'Bitte prüfen Sie die Umgebungsvariable NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL.'
         );
       }
 
-      // WICHTIG: Logging des Tokens vor dem Senden
-
       let response: Response;
       try {
+        // Token-Debug (erste 10 Zeichen)
+        console.log(`[DEBUG ${fileNameForLog}] Auth-Token (gekürzt):`, idToken.substring(0, 10) + '...');
+        
+        console.log(`[DEBUG ${fileNameForLog}] Starte Upload-Request...`);
+        const startTime = Date.now();
         response = await fetch(uploadUrl, {
           method: 'POST',
           headers: {
@@ -410,14 +427,61 @@ export default function Step5CompanyPage() {
           },
           body: formData,
         });
+        const duration = Date.now() - startTime;
+        
+        console.log(`[DEBUG ${fileNameForLog}] Response erhalten nach ${duration}ms:`, {
+          ok: response.ok,
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          timing: {
+            duration,
+            timestamp: new Date().toISOString()
+          }
+        });
       } catch (networkError: any) {
-        // Netzwerkausfall oder CORS-Blocker führen hier zu einem TypeError: Failed to fetch
         const msg = networkError?.message || String(networkError);
+        // Detailliertes Error-Logging mit Stack Trace und Request-Details
+        console.error(`[ERROR ${fileNameForLog}] Netzwerkfehler beim Upload:`, {
+          error: {
+            name: networkError?.name,
+            message: msg,
+            stack: networkError?.stack?.split('\n'),
+            type: networkError?.type,
+            code: networkError?.code,
+            raw: String(networkError)
+          },
+          requestDetails: {
+            url: uploadUrl,
+            purpose,
+            fileInfo: {
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              lastModified: new Date(file.lastModified).toISOString()
+            }
+          },
+          environment: {
+            node_env: process.env.NODE_ENV,
+            baseUrl: process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL,
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+            origin: typeof window !== 'undefined' ? window.location.origin : 'SSR',
+            userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'SSR'
+          }
+        });
         throw new Error(`Netzwerkfehler beim Upload von ${fileNameForLog}: ${msg}`);
       }
 
       if (!response.ok) {
         const errTxt = await response.text();
+        console.error(`[ERROR ${fileNameForLog}] Upload-Response nicht OK:`, {
+          status: response.status,
+          statusText: response.statusText,
+          responseText: errTxt,
+          headers: Object.fromEntries(response.headers.entries()),
+          url: response.url
+        });
+        
         // Bessere Fehlermeldungen für häufige Probleme
         let userFriendlyMessage = `Upload-Fehler für ${fileNameForLog}: ${response.status}`;
         if (response.status === 500) {
@@ -426,6 +490,8 @@ export default function Step5CompanyPage() {
           userFriendlyMessage = `Datei ${fileNameForLog} ist zu groß. Bitte verwenden Sie eine kleinere Datei.`;
         } else if (response.status === 401) {
           userFriendlyMessage = `Authentifizierungsfehler beim Upload von ${fileNameForLog}. Bitte laden Sie die Seite neu.`;
+        } else if (response.status === 403) {
+          userFriendlyMessage = `CORS oder Berechtigungsfehler beim Upload von ${fileNameForLog}. Bitte Support kontaktieren.`;
         }
         throw new Error(`${userFriendlyMessage} Details: ${errTxt}`);
       }
@@ -1055,31 +1121,31 @@ export default function Step5CompanyPage() {
         dataForStripeCallable.personalCountry = dataForStripeCallable.companyCountry;
       }
 
-      const createStripeAccountCallable = httpsCallable<
-        CreateStripeAccountClientData,
-        CreateStripeAccountCallableResult
-      >(firebaseFunctions, 'createStripeAccountIfComplete');
-      const result = await createStripeAccountCallable(dataForStripeCallable);
+      // Stripe Account über API-Route erstellen
+      const response = await fetch('/api/stripe/create-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify(dataForStripeCallable)
+      });
 
-      interface UserStripeUpdateData {
-        stripeAccountId?: string;
-        stripeRepresentativePersonId?: string | FieldValue;
-        stripeAccountDetailsSubmitted?: boolean;
-        stripeAccountPayoutsEnabled?: boolean;
-        updatedAt?: FieldValue;
-        'common.createdByCallable'?: string;
-        'common.stripeVerificationStatus'?: string;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Fehler bei der Stripe Account Erstellung');
       }
 
-      if (result.data.success) {
-        const companyStripeUpdate: UserStripeUpdateData = {
-          stripeAccountId: result.data.accountId,
-          stripeRepresentativePersonId: result.data.personId || deleteField(),
-          stripeAccountDetailsSubmitted: result.data.detailsSubmitted ?? false,
-          stripeAccountPayoutsEnabled: result.data.payoutsEnabled ?? false,
+      const result = await response.json();
+
+      if (result.success) {
+        const companyStripeUpdate = {
+          stripeAccountId: result.accountId,
+          stripeRepresentativePersonId: result.personId || deleteField(),
+          stripeAccountDetailsSubmitted: result.detailsSubmitted ?? false,
+          stripeAccountPayoutsEnabled: result.payoutsEnabled ?? false,
           updatedAt: serverTimestamp(),
-          'common.createdByCallable': 'true',
-          'common.stripeVerificationStatus': result.data.detailsSubmitted
+          'common.stripeVerificationStatus': result.detailsSubmitted
             ? 'details_submitted'
             : 'pending',
         };

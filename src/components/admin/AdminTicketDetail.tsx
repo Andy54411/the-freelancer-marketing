@@ -435,7 +435,7 @@ export default function AdminTicketDetail({
                         : 'bg-green-50 border-green-200'
                   }`}
                 >
-                  <div className="flex-shrink-0 mt-1">{getAuthorIcon(reply.authorType)}</div>
+                  <div className="shrink-0 mt-1">{getAuthorIcon(reply.authorType)}</div>
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">

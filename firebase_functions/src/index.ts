@@ -23,7 +23,7 @@ import * as httpOrders from './http_orders';
 
 // Explicitly import and export functions to ensure Firebase CLI can correctly parse them.
 
-import * as callableStripe from './callable_stripe';
+// Stripe import entfernt - migriert zu Next.js API Routes
 import * as callableGeneral from './callable_general';
 import * as httpGeneral from './http_general';
 import * as httpWebhooks from './http_webhooks';
@@ -48,15 +48,7 @@ import * as quoteNotifications from './quote_notifications';
 import * as chatNotifications from './chat_notifications';
 import * as offerPushNotifications from './offer_push_notifications';
 
-// Stripe Callables
-export const createStripeAccountIfComplete = callableStripe.createStripeAccountIfComplete;
-export const getOrCreateStripeCustomer = callableStripe.getOrCreateStripeCustomer;
-export const updateStripeCompanyDetails = callableStripe.updateStripeCompanyDetails;
-export const getOrderParticipantDetails = callableStripe.getOrderParticipantDetails;
-export const createSetupIntent = callableStripe.createSetupIntent;
-export const getSavedPaymentMethods = callableStripe.getSavedPaymentMethods;
-export const getStripeAccountStatus = callableStripe.getStripeAccountStatus;
-export const getProviderStripeAccountId = callableStripe.getProviderStripeAccountId;
+// Stripe Functions wurden nach Next.js API Routes migriert
 
 // General Callables
 export const getClientIp = callableGeneral.getClientIp;

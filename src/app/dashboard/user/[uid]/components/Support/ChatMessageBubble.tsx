@@ -45,7 +45,7 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, isCurren
   if (message.senderType === 'system' && message.systemPayload) {
     return (
       <div className="flex justify-center items-center my-4 gap-2">
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           {message.systemPayload.agentAvatarUrl ? (
             <Image
               src={message.systemPayload.agentAvatarUrl}

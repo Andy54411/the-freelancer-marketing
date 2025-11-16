@@ -313,7 +313,7 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
       <Card className="bg-gradient-to-r from-[#14ad9f] to-[#129488] text-white">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <FiShield className="text-white w-8 h-8 mt-1 flex-shrink-0" />
+            <FiShield className="text-white w-8 h-8 mt-1 shrink-0" />
             <div className="flex-1">
               <h2 className="text-2xl font-bold mb-2">Steuerberater-Kollaboration</h2>
               <p className="text-white/90 mb-4">

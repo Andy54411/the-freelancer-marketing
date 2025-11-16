@@ -1327,7 +1327,7 @@ export default function CreateReminderPage() {
       <header className="w-full" style={{ maxWidth: '1440px' }}>
         <div className="flex items-center justify-between py-4 border-b border-gray-200 gap-4">
           {/* Left side - Title */}
-          <div className="flex items-center flex-shrink-0">
+          <div className="flex items-center shrink-0">
             <h2 className="text-2xl font-bold text-gray-900">Neue Mahnung</h2>
           </div>
 

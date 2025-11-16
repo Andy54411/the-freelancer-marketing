@@ -282,7 +282,7 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
 
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <div>
                 <h4 className="font-medium text-red-800 mb-1">Wichtige Hinweise zur Stornierung</h4>
                 <ul className="text-sm text-red-700 space-y-1">

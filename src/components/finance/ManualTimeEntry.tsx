@@ -229,7 +229,7 @@ export function ManualTimeEntry({
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
         {/* Breiter: max-w-2xl statt max-w-lg */}
-        <DialogHeader className="flex-shrink-0">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Clock size={20} />
             Zeiteintrag hinzufügen

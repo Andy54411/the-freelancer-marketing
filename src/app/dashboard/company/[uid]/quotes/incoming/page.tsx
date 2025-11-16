@@ -382,7 +382,7 @@ export default function IncomingQuotesPage() {
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <FiClock className="h-6 w-6 text-yellow-600" />
               </div>
               <div className="ml-3">
@@ -396,7 +396,7 @@ export default function IncomingQuotesPage() {
 
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <FiFileText className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-3">
@@ -410,7 +410,7 @@ export default function IncomingQuotesPage() {
 
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <FiCheckCircle className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-3">
@@ -424,7 +424,7 @@ export default function IncomingQuotesPage() {
 
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <FiXCircle className="h-6 w-6 text-red-600" />
               </div>
               <div className="ml-3">
@@ -438,7 +438,7 @@ export default function IncomingQuotesPage() {
 
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <FiBuilding className="h-6 w-6 text-purple-600" />
               </div>
               <div className="ml-3">
@@ -452,7 +452,7 @@ export default function IncomingQuotesPage() {
 
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <FiUser className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-3">
@@ -522,7 +522,7 @@ export default function IncomingQuotesPage() {
                       </td>
                       <td className="px-3 py-4">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-6 w-6">
+                          <div className="shrink-0 h-6 w-6">
                             {quote.customer.avatar ? (
                               <img
                                 className="h-6 w-6 rounded-full"

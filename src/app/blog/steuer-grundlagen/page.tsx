@@ -72,7 +72,7 @@ export default function SteuerGrundlagenPage() {
           {/* Wichtiger Hinweis */}
           <div className="bg-white/95 backdrop-blur-sm border border-[#14ad9f]/30 rounded-xl p-6 mb-12 shadow-xl">
             <div className="flex items-start space-x-3">
-              <AlertTriangle className="w-8 h-8 text-[#14ad9f] flex-shrink-0 mt-1" />
+              <AlertTriangle className="w-8 h-8 text-[#14ad9f] shrink-0 mt-1" />
               <div>
                 <h2 className="text-xl font-bold text-[#14ad9f] mb-2">⚠️ WICHTIGER HINWEIS</h2>
                 <p className="text-gray-700 text-lg">
@@ -173,7 +173,7 @@ export default function SteuerGrundlagenPage() {
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <div className="w-6 h-6 bg-[#14ad9f] rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <div className="w-6 h-6 bg-[#14ad9f] rounded-full flex items-center justify-center shrink-0 mt-1">
                         <span className="text-white text-xs font-bold">1</span>
                       </div>
                       <div>
@@ -185,7 +185,7 @@ export default function SteuerGrundlagenPage() {
                     </div>
 
                     <div className="flex items-start space-x-3">
-                      <div className="w-6 h-6 bg-[#14ad9f] rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <div className="w-6 h-6 bg-[#14ad9f] rounded-full flex items-center justify-center shrink-0 mt-1">
                         <span className="text-white text-xs font-bold">2</span>
                       </div>
                       <div>
@@ -197,7 +197,7 @@ export default function SteuerGrundlagenPage() {
                     </div>
 
                     <div className="flex items-start space-x-3">
-                      <div className="w-6 h-6 bg-[#14ad9f] rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <div className="w-6 h-6 bg-[#14ad9f] rounded-full flex items-center justify-center shrink-0 mt-1">
                         <span className="text-white text-xs font-bold">3</span>
                       </div>
                       <div>
@@ -207,7 +207,7 @@ export default function SteuerGrundlagenPage() {
                     </div>
 
                     <div className="flex items-start space-x-3">
-                      <div className="w-6 h-6 bg-[#14ad9f] rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <div className="w-6 h-6 bg-[#14ad9f] rounded-full flex items-center justify-center shrink-0 mt-1">
                         <span className="text-white text-xs font-bold">4</span>
                       </div>
                       <div>

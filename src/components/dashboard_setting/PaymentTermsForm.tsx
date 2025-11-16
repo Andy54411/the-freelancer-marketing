@@ -239,9 +239,9 @@ const PaymentTermsForm: React.FC<PaymentTermsFormProps> = ({ formData, handleCha
           }`}
         >
           {message.type === 'success' ? (
-            <FiCheck className="flex-shrink-0" size={16} />
+            <FiCheck className="shrink-0" size={16} />
           ) : (
-            <FiAlertCircle className="flex-shrink-0" size={16} />
+            <FiAlertCircle className="shrink-0" size={16} />
           )}
           {message.text}
         </div>
@@ -250,7 +250,7 @@ const PaymentTermsForm: React.FC<PaymentTermsFormProps> = ({ formData, handleCha
       {/* Info Note */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <div className="flex items-start gap-2">
-          <FiClock className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" size={16} />
+          <FiClock className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" size={16} />
           <div className="text-sm text-blue-800 dark:text-blue-200">
             <p className="font-medium mb-1">Automatische Anwendung</p>
             <p>

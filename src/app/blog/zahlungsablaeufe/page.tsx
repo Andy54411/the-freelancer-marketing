@@ -191,17 +191,17 @@ export default function ZahlungsablaeufeGuide() {
                   </h4>
                   <ul className="space-y-2">
                     <li className="flex items-center gap-3 text-blue-800">
-                      <FiCheck className="text-blue-600 flex-shrink-0" />
+                      <FiCheck className="text-blue-600 shrink-0" />
                       <span className="text-sm">
                         Geld wird erst nach Ihrer Bestätigung freigegeben
                       </span>
                     </li>
                     <li className="flex items-center gap-3 text-blue-800">
-                      <FiCheck className="text-blue-600 flex-shrink-0" />
+                      <FiCheck className="text-blue-600 shrink-0" />
                       <span className="text-sm">Transparente Aufschlüsselung aller Kosten</span>
                     </li>
                     <li className="flex items-center gap-3 text-blue-800">
-                      <FiCheck className="text-blue-600 flex-shrink-0" />
+                      <FiCheck className="text-blue-600 shrink-0" />
                       <span className="text-sm">Dispute-Management bei Problemen</span>
                     </li>
                   </ul>
@@ -367,15 +367,15 @@ export default function ZahlungsablaeufeGuide() {
                     <h3 className="font-semibold text-green-900 mb-3">Für Kunden</h3>
                     <ul className="space-y-2">
                       <li className="flex items-center gap-3 text-green-800">
-                        <FiCheck className="text-green-600 flex-shrink-0" />
+                        <FiCheck className="text-green-600 shrink-0" />
                         <span className="text-sm">Keine versteckten Kosten</span>
                       </li>
                       <li className="flex items-center gap-3 text-green-800">
-                        <FiCheck className="text-green-600 flex-shrink-0" />
+                        <FiCheck className="text-green-600 shrink-0" />
                         <span className="text-sm">Transparente Preisgestaltung</span>
                       </li>
                       <li className="flex items-center gap-3 text-green-800">
-                        <FiCheck className="text-green-600 flex-shrink-0" />
+                        <FiCheck className="text-green-600 shrink-0" />
                         <span className="text-sm">Stripe-Gebühren bereits eingerechnet</span>
                       </li>
                     </ul>
@@ -385,15 +385,15 @@ export default function ZahlungsablaeufeGuide() {
                     <h3 className="font-semibold text-blue-900 mb-3">Für Dienstleister</h3>
                     <ul className="space-y-2">
                       <li className="flex items-center gap-3 text-blue-800">
-                        <FiCheck className="text-blue-600 flex-shrink-0" />
+                        <FiCheck className="text-blue-600 shrink-0" />
                         <span className="text-sm">5-10% Platform-Gebühr</span>
                       </li>
                       <li className="flex items-center gap-3 text-blue-800">
-                        <FiCheck className="text-blue-600 flex-shrink-0" />
+                        <FiCheck className="text-blue-600 shrink-0" />
                         <span className="text-sm">Kostenlose Auszahlungen</span>
                       </li>
                       <li className="flex items-center gap-3 text-blue-800">
-                        <FiCheck className="text-blue-600 flex-shrink-0" />
+                        <FiCheck className="text-blue-600 shrink-0" />
                         <span className="text-sm">Detaillierte Abrechnungen</span>
                       </li>
                     </ul>

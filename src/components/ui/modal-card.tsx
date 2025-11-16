@@ -44,7 +44,7 @@ const ModalCardHeader = React.forwardRef<HTMLDivElement, ModalCardHeaderProps>(
   ({ className, children, icon, ...props }, ref) => (
     <div ref={ref} className={cn('p-6 pb-4', className)} {...props}>
       <div className="flex items-center gap-3">
-        {icon && <div className="p-2 bg-amber-100 rounded-full flex-shrink-0">{icon}</div>}
+        {icon && <div className="p-2 bg-amber-100 rounded-full shrink-0">{icon}</div>}
         <div className="flex-1">{children}</div>
       </div>
     </div>

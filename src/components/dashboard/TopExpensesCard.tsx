@@ -258,7 +258,7 @@ export default function TopExpensesCard() {
                 {chartData.map((entry, index) =>
               <div key={`legend-${index}`} className="flex items-center gap-2 text-sm">
                     <div
-                  className="w-3 h-3 rounded-sm flex-shrink-0"
+                  className="w-3 h-3 rounded-sm shrink-0"
                   style={{ backgroundColor: entry.color }} />
 
                     <span className="text-gray-600 font-medium truncate">{entry.name}</span>

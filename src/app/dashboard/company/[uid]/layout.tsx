@@ -365,12 +365,12 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         <div className="flex flex-1">
           {/* Desktop Sidebar - Dynamic width based on collapsed state */}
           <div 
-            className={`hidden md:block md:flex-shrink-0 transition-all duration-300 ${
+            className={`hidden md:block md:shrink-0 transition-all duration-300 ${
               isSidebarCollapsed ? 'md:w-16' : 'md:w-64'
             }`}
           >
             <aside className="sticky top-0 h-screen bg-white overflow-hidden border-r border-gray-200 flex flex-col">
-              <div className="h-16 flex-shrink-0"></div>
+              <div className="h-16 shrink-0"></div>
               <div className="flex-1 overflow-y-auto">
                 <CompanySidebar
                   companyName={companyDataForHeader?.companyName}

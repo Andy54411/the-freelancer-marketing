@@ -141,7 +141,7 @@ export default function DatevFileExportPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Übertragungsart</h2>
               
               <div className="flex items-start gap-4">
-                <div className="w-16 h-16 flex-shrink-0">
+                <div className="w-16 h-16 shrink-0">
                   {/* Folder Icon SVG from sevDesk */}
                   <svg width="100%" height="100%" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation">
                     <path d="M43.0769 19.2308V38.7692C43.0769 39.3017 42.8655 39.8123 42.4885 40.1893C42.1115 40.5663 41.6009 40.7777 41.0684 40.7777H6.93162C6.39908 40.7777 5.88848 40.5663 5.51149 40.1893C5.1345 39.8123 4.92308 39.3017 4.92308 38.7692V9.23085C4.92308 8.69831 5.1345 8.18771 5.51149 7.81072C5.88848 7.43373 6.39908 7.22232 6.93162 7.22232H18.6154L22.6308 12.2431H41.0684C41.6009 12.2431 42.1115 12.4545 42.4885 12.8315C42.8655 13.2085 43.0769 13.7191 43.0769 14.2516V19.2308Z" fill="#FFD766"/>
@@ -158,15 +158,15 @@ export default function DatevFileExportPage() {
 
               <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
                 <div className="flex items-start gap-2 text-sm text-gray-600">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 shrink-0"></div>
                   <span>Einmalige Exporte</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm text-gray-600">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 shrink-0"></div>
                   <span>Flexible Zeitraumwahl</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm text-gray-600">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 shrink-0"></div>
                   <span>Keine DATEV-Anmeldung erforderlich</span>
                 </div>
               </div>

@@ -345,7 +345,7 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
             <Button
               onClick={getDebugOAuthUrl}
               variant="outline"
-              className="flex-shrink-0 border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2"
+              className="shrink-0 border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2"
               aria-label="Debug OAuth URL in Zwischenablage kopieren"
             >
               <FiSettings className="mr-2 h-4 w-4" aria-hidden="true" />

@@ -77,7 +77,7 @@ export default function ProviderStornoWarning({ order, companyUid }: ProviderSto
     >
       <div className="flex items-start gap-3">
         <FiAlertTriangle
-          className={`h-6 w-6 mt-1 flex-shrink-0 ${
+          className={`h-6 w-6 mt-1 shrink-0 ${
             stornoRisk.riskLevel === 'critical' ? 'text-red-600' : 'text-yellow-600'
           }`}
         />

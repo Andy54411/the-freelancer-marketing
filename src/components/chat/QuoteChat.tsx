@@ -368,7 +368,7 @@ export default function QuoteChat({
                 className={`flex items-start gap-3 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}
               >
                 {/* Avatar */}
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   {userProfile?.avatar ? (
                     <Image
                       src={userProfile.avatar}
@@ -396,7 +396,7 @@ export default function QuoteChat({
                     {/* Name und Text in einer Reihe */}
                     <div className="flex items-start gap-2">
                       {!isOwnMessage && (
-                        <span className="text-xs font-semibold opacity-75 flex-shrink-0">
+                        <span className="text-xs font-semibold opacity-75 shrink-0">
                           {userProfile?.name || message.senderName}:
                         </span>
                       )}
@@ -433,7 +433,7 @@ export default function QuoteChat({
         {/* Validierungsfehler anzeigen */}
         {validationError && (
           <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
             <p className="text-sm text-red-700">{validationError}</p>
           </div>
         )}

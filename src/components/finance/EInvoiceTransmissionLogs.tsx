@@ -183,7 +183,7 @@ export function EInvoiceTransmissionLogs({ companyId }: EInvoiceTransmissionLogs
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className="flex-shrink-0 flex items-center gap-2">
+                    <div className="shrink-0 flex items-center gap-2">
                       {getStatusIcon(log.transmissionStatus)}
                       {getTransmissionIcon(log.transmissionMethod)}
                     </div>

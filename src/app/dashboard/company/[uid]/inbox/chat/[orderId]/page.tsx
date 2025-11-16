@@ -271,19 +271,19 @@ export default function CompanyChatPage() {
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Auftragsdetails</h2>
           <div className="space-y-4 text-sm text-gray-600">
             <div className="flex items-center">
-              <FiFileText className="mr-3 text-gray-400 flex-shrink-0" />
+              <FiFileText className="mr-3 text-gray-400 shrink-0" />
               <span className="truncate">Auftrag #{order.id}</span>
             </div>
             <div className="flex items-center">
-              <FiDollarSign className="mr-3 text-gray-400 flex-shrink-0" />
+              <FiDollarSign className="mr-3 text-gray-400 shrink-0" />
               <span>{formatPrice(order.priceInCents)}</span>
             </div>
             <div className="flex items-center">
-              <FiCalendar className="mr-3 text-gray-400 flex-shrink-0" />
+              <FiCalendar className="mr-3 text-gray-400 shrink-0" />
               <span>Bestellt am: {formatOrderDate(order.orderDate)}</span>
             </div>
             <div className="flex items-center">
-              <FiClock className="mr-3 text-gray-400 flex-shrink-0" />
+              <FiClock className="mr-3 text-gray-400 shrink-0" />
               <span>
                 {formatJobDateRange(order.jobDateFrom, order.jobDateTo, order.jobTimePreference)}
               </span>

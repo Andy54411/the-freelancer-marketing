@@ -1314,7 +1314,7 @@ export function ChartAreaInteractive({
                           : 'bg-gray-50/50 border-gray-100 hover:bg-gray-100 hover:border-gray-200'
                       }`}
                     >
-                      <div className="flex-shrink-0">
+                      <div className="shrink-0">
                         <div
                           className={`w-3.5 h-3.5 rounded-full border-2 transition-all ${
                             isActive ? 'border-white shadow-sm' : 'border-gray-300'
@@ -1347,7 +1347,7 @@ export function ChartAreaInteractive({
                         </div>
                       </div>
                       {key === 'rechnungen' && (
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                           <svg
                             className="w-3 h-3 text-gray-400"
                             fill="none"
@@ -1424,7 +1424,7 @@ export function ChartAreaInteractive({
                     : 'bg-gray-50/50 border-gray-100 hover:bg-gray-100 hover:border-gray-200'
                 }`}
               >
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <div
                     className={`w-3.5 h-3.5 rounded-full border-2 transition-all ${
                       activeCategories.stornos || activeCategories.rueckerstattungen
@@ -1463,7 +1463,7 @@ export function ChartAreaInteractive({
                     )}
                   </div>
                 </div>
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <svg
                     className="w-3 h-3 text-gray-400"
                     fill="none"

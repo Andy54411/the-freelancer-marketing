@@ -746,7 +746,7 @@ export default function OrderDetailPage() {
               </div>
 
               {/* Rechte Sidebar - UserInfoCard */}
-              <div className="w-full lg:w-80 lg:flex-shrink-0">
+              <div className="w-full lg:w-80 lg:shrink-0">
                 <div className="lg:sticky lg:top-6">
                   <UserInfoCard
                     userId={cardUser.id}

@@ -176,7 +176,7 @@ export default function SidebarFilters({
   }, [isLoaded]); // NUR isLoaded als Abhängigkeit
 
   return (
-    <div className="w-full lg:w-1/3 bg-white rounded-lg shadow-md p-4 space-y-6 flex-shrink-0 self-start">
+    <div className="w-full lg:w-1/3 bg-white rounded-lg shadow-md p-4 space-y-6 shrink-0 self-start">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">Filter & Standort</h2>
       <div>
         <Label className="text-base font-medium text-gray-800 dark:text-white">

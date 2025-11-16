@@ -1,6 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 
+async function refreshGoogleTokens(refreshToken: string, clientId: string, clientSecret: string) {
+  try {
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Token refresh failed:', response.statusText);
+      return null;
+    }
+
+    const tokens = await response.json();
+    return {
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token || refreshToken, // Keep old refresh token if no new one
+      expires_in: tokens.expires_in,
+      token_type: tokens.token_type,
+    };
+  } catch (error) {
+    console.error('Error refreshing tokens:', error);
+    return null;
+  }
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ uid: string }> }
@@ -8,32 +41,92 @@ export async function GET(
   try {
     const { uid } = await params;
     
-    // Check Gmail configuration in company document
-    const companyDoc = await db.collection('companies').doc(uid).get();
+    // Check Gmail configuration in emailConfigs subcollection (same as email-config API)
+    if (!db) {
+      return NextResponse.json({ error: 'Database not available' }, { status: 500 });
+    }
+    
+    const emailConfigsSnapshot = await db.collection('companies').doc(uid).collection('emailConfigs').get();
 
-    if (!companyDoc.exists) {
+    if (emailConfigsSnapshot.empty) {
       return NextResponse.json({
         hasConfig: false,
-        error: 'Company not found'
+        error: 'No Gmail configuration found in emailConfigs'
       });
     }
 
-    const gmailConfig = companyDoc.data()?.gmailConfig;
-
-    if (!gmailConfig) {
-      return NextResponse.json({
-        hasConfig: false,
-        error: 'No Gmail configuration found'
+    // Take the first (and usually only) Gmail configuration
+    const emailConfigDoc = emailConfigsSnapshot.docs[0];
+    const gmailConfig = emailConfigDoc.data();
+    
+    // Debug: Log current tokens
+    console.log('🔍 Current Gmail config for company:', uid);
+    console.log('📧 Email:', gmailConfig.email);
+    console.log('🔑 Has tokens object:', !!gmailConfig.tokens);
+    console.log('🔄 Refresh token present:', !!gmailConfig.tokens?.refresh_token);
+    console.log('🔑 Access token present:', !!gmailConfig.tokens?.access_token);
+    console.log('📊 Current status:', gmailConfig.status);
+    
+    // Check if we have a refresh token
+    const hasRefreshToken = gmailConfig.tokens?.refresh_token && 
+                           gmailConfig.tokens.refresh_token !== 'invalid';
+    
+    console.log('✅ Has valid refresh token:', hasRefreshToken);
+    
+    let currentTokens = gmailConfig.tokens;
+    let status = gmailConfig.status || 'disconnected';
+    
+    // Try to refresh tokens if we have a refresh token and the current status indicates problems
+    if (hasRefreshToken && (status === 'disconnected' || status === 'authentication_required' || !gmailConfig.tokens?.access_token || gmailConfig.tokens.access_token === 'invalid')) {
+      console.log('🔄 Attempting to refresh Gmail tokens for company:', uid);
+      
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+      
+      console.log('🔧 Google Client ID available:', !!clientId);
+      console.log('🔧 Google Client Secret available:', !!clientSecret);
+      
+      if (clientId && clientSecret) {
+        const refreshedTokens = await refreshGoogleTokens(
+          gmailConfig.tokens.refresh_token,
+          clientId,
+          clientSecret
+        );
+        
+        if (refreshedTokens) {
+          console.log('✅ Successfully refreshed Gmail tokens');
+          
+          // Update tokens in database
+          await db.collection('companies').doc(uid).update({
+            'gmailConfig.tokens': refreshedTokens,
+            'gmailConfig.status': 'connected',
+            'gmailConfig.lastRefresh': new Date().toISOString(),
+          });
+          
+          currentTokens = refreshedTokens;
+          status = 'connected';
+        } else {
+          console.log('❌ Failed to refresh Gmail tokens');
+          status = 'authentication_required';
+        }
+      } else {
+        console.log('❌ Missing Google OAuth credentials');
+      }
+    } else {
+      console.log('⏭️ Skipping token refresh:', {
+        hasRefreshToken,
+        hasAccessToken: !!gmailConfig.tokens?.access_token,
+        accessTokenValid: gmailConfig.tokens?.access_token !== 'invalid'
       });
     }
     
-    // Check token validity
-    const hasValidTokens = gmailConfig.tokens?.refresh_token && 
-                          gmailConfig.tokens.refresh_token !== 'invalid' &&
-                          gmailConfig.tokens.access_token &&
-                          gmailConfig.tokens.access_token !== 'invalid';
+    // Check token validity after potential refresh
+    const hasValidTokens = currentTokens?.refresh_token && 
+                          currentTokens.refresh_token !== 'invalid' &&
+                          currentTokens.access_token &&
+                          currentTokens.access_token !== 'invalid';
     
-    const isExpired = !hasValidTokens || gmailConfig.status === 'authentication_required';
+    const isExpired = !hasValidTokens || status === 'authentication_required';
     
     return NextResponse.json({
       hasConfig: true,
@@ -41,10 +134,20 @@ export async function GET(
       provider: gmailConfig.provider || 'gmail',
       hasTokens: hasValidTokens,
       tokenExpired: isExpired,
-      status: gmailConfig.status || (hasValidTokens ? 'connected' : 'authentication_required'),
+      status: status,
       lastError: gmailConfig.lastError,
       needsReauth: isExpired,
-      reauthorizeUrl: `/api/company/${uid}/gmail-connect`
+      reauthorizeUrl: `/api/company/${uid}/gmail-connect`,
+      // Debug info
+      debug: {
+        hasRefreshTokenInDb: !!gmailConfig.tokens?.refresh_token,
+        hasAccessTokenInDb: !!gmailConfig.tokens?.access_token,
+        refreshTokenValue: gmailConfig.tokens?.refresh_token ? 'present' : 'missing',
+        accessTokenValue: gmailConfig.tokens?.access_token ? 'present' : 'missing',
+        originalStatus: gmailConfig.status,
+        clientIdAvailable: !!process.env.GOOGLE_CLIENT_ID,
+        clientSecretAvailable: !!process.env.GOOGLE_CLIENT_SECRET
+      }
     });
     
   } catch (error) {

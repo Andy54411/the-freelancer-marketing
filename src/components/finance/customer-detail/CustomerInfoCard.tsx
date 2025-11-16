@@ -102,7 +102,7 @@ export function CustomerInfoCard({ customer, calculatedStats }: CustomerInfoCard
     if (!value) return null;
     return (
       <div className="flex items-start gap-3 py-2">
-        <Icon className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
+        <Icon className="h-4 w-4 text-gray-500 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-xs text-gray-500 font-medium">{label}</div>
           <div className="text-sm text-gray-900 break-words">{value}</div>
@@ -194,7 +194,7 @@ export function CustomerInfoCard({ customer, calculatedStats }: CustomerInfoCard
             <InfoRow icon={Globe} label="Website" value={getCustomerData('website')} />
             {(customer.street || customer.city) && (
               <div className="flex items-start gap-3 py-2">
-                <MapPin className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                <MapPin className="h-4 w-4 text-gray-500 mt-0.5 shrink-0" />
                 <div className="flex-1">
                   <div className="text-xs text-gray-500 font-medium">Adresse</div>
                   <div className="text-sm text-gray-900">

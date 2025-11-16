@@ -48,7 +48,7 @@ export default function WhatsAppSetupPage() {
           {/* Option 1: Meta Business Manager */}
           <div className="space-y-4">
             <div className="flex items-start gap-3 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
-              <CheckCircle2 className="h-6 w-6 text-green-600 mt-0.5 flex-shrink-0" />
+              <CheckCircle2 className="h-6 w-6 text-green-600 mt-0.5 shrink-0" />
               <div className="flex-1">
                 <h3 className="font-semibold text-green-900 mb-2">Option 1: Automatische Einrichtung (Empfohlen)</h3>
                 <p className="text-sm text-green-800 mb-3">
@@ -90,7 +90,7 @@ export default function WhatsAppSetupPage() {
           {/* Option 2: Manuelle Einrichtung */}
           <div className="space-y-4">
             <div className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-              <AlertCircle className="h-6 w-6 text-gray-600 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="h-6 w-6 text-gray-600 mt-0.5 shrink-0" />
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900 mb-2">Option 2: Manuelle Konfiguration</h3>
                 <p className="text-sm text-gray-700 mb-3">

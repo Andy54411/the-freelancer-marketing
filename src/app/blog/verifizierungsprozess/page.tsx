@@ -86,20 +86,20 @@ export default function VerifizierungsprozessPage() {
                     <h3 className="text-lg font-semibold text-gray-800">Was wir prüfen:</h3>
                     <ul className="space-y-2">
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Personalausweis oder Reisepass:</strong> Vollständige
                           Identitätsprüfung mit Abgleich der persönlichen Daten
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Meldebestätigung:</strong> Nachweis der aktuellen Wohnadresse
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Video-Verifizierung:</strong> Persönliche Identitätsprüfung per
                           Videocall
@@ -132,28 +132,28 @@ export default function VerifizierungsprozessPage() {
                     <h3 className="text-lg font-semibold text-gray-800">Was wir prüfen:</h3>
                     <ul className="space-y-2">
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Gewerbeschein/Handwerkskarte:</strong> Nachweis der gewerblichen
                           Berechtigung
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Berufszertifikate:</strong> Branchenspezifische
                           Qualifikationsnachweise
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Versicherungsnachweise:</strong> Haftpflicht- und
                           Berufshaftpflichtversicherung
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Referenzen & Portfolio:</strong> Nachweis bisheriger Arbeiten und
                           Kundenbewertungen
@@ -187,21 +187,21 @@ export default function VerifizierungsprozessPage() {
                     <h3 className="text-lg font-semibold text-gray-800">Was wir prüfen:</h3>
                     <ul className="space-y-2">
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Führungszeugnis:</strong> Bei sicherheitsrelevanten Services (z.B.
                           Haushaltsnahe Dienstleistungen)
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Schufa-Auskunft:</strong> Finanzielle Zuverlässigkeit bei größeren
                           Projekten
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Referenz-Validierung:</strong> Überprüfung von Kundenbewertungen
                           und Referenzen
@@ -234,21 +234,21 @@ export default function VerifizierungsprozessPage() {
                     <h3 className="text-lg font-semibold text-gray-800">Was wir prüfen:</h3>
                     <ul className="space-y-2">
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Probeauftrag:</strong> Bei Premium-Anbietern führen wir
                           Testaufträge durch
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Portfolio-Bewertung:</strong> Fachliche Beurteilung bisheriger
                           Arbeiten
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-0.5 shrink-0" />
                         <span>
                           <strong>Kommunikationstest:</strong> Überprüfung der Kundenorientierung
                         </span>

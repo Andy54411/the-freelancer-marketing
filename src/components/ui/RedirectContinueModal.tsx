@@ -54,7 +54,7 @@ const RedirectContinueModal: React.FC<RedirectContinueModalProps> = ({
               {title}
             </h1>
           </div>
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <button
               onClick={handleClose}
               className="close-modal p-2 hover:bg-gray-200 rounded-full transition-colors"
@@ -70,7 +70,7 @@ const RedirectContinueModal: React.FC<RedirectContinueModalProps> = ({
           <div className="content--scroll content--padding p-6 pb-4">
             <div className="flex items-start space-x-3">
               {/* Icon */}
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="w-10 h-10 bg-[#14ad9f]/10 rounded-full flex items-center justify-center">
                   <ExternalLink className="h-5 w-5 text-[#14ad9f]" />
                 </div>
@@ -87,7 +87,7 @@ const RedirectContinueModal: React.FC<RedirectContinueModalProps> = ({
             {/* Security Note */}
             <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-start space-x-2">
-                <div className="w-2 h-2 bg-[#14ad9f] rounded-full mt-2 flex-shrink-0"></div>
+                <div className="w-2 h-2 bg-[#14ad9f] rounded-full mt-2 shrink-0"></div>
                 <p className="text-sm text-green-800">
                   <strong>Sicherheitshinweis:</strong> Die Übertragung erfolgt verschlüsselt 
                   über eine sichere Verbindung zu unserem vertrauenswürdigen {partnerName}.

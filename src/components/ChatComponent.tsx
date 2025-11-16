@@ -444,7 +444,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
           <h3 className="text-lg font-semibold text-gray-800 truncate">Chat: {orderId}</h3>
           {/* Zeige den Status-Badge nur an, wenn ein Status übergeben wurde */}
           {orderStatus && (
-            <Badge variant="outline" className="flex-shrink-0">
+            <Badge variant="outline" className="shrink-0">
               {formatStatus(orderStatus)}
             </Badge>
           )}
@@ -461,7 +461,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
             return (
               <div key={msg.id} className={`flex items-start gap-3`}>
                 {/* Profilbild - immer links */}
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   {userProfile?.avatar ? (
                     <Image
                       src={userProfile.avatar}
@@ -494,7 +494,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
                     {/* Name und Text in einer Reihe */}
                     <div className="flex items-start gap-2">
                       <span
-                        className={`text-xs font-semibold flex-shrink-0 ${isOwnMessage ? 'text-teal-100' : 'text-gray-600'}`}
+                        className={`text-xs font-semibold shrink-0 ${isOwnMessage ? 'text-teal-100' : 'text-gray-600'}`}
                       >
                         {userProfile?.name || msg.senderName}
                         <span className="ml-1 opacity-75">
@@ -524,7 +524,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
         {/* Validierungsfehler anzeigen */}
         {validationError && (
           <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
             <p className="text-sm text-red-700">{validationError}</p>
           </div>
         )}

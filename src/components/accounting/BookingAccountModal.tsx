@@ -132,7 +132,7 @@ function BookingAccountModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[900px] max-w-none h-[600px] flex flex-col">
-        <DialogHeader className="flex-shrink-0 bg-[#14ad9f] text-white p-4 -m-6 mb-4 rounded-t-lg">
+        <DialogHeader className="shrink-0 bg-[#14ad9f] text-white p-4 -m-6 mb-4 rounded-t-lg">
           <DialogTitle className="text-lg">{modalTitle}</DialogTitle>
         </DialogHeader>
 
@@ -272,7 +272,7 @@ function BookingAccountModal({
           )}
         </div>
 
-        <DialogFooter className="flex-shrink-0 mt-4">
+        <DialogFooter className="shrink-0 mt-4">
           <Button type="button" variant="outline" onClick={handleCancel}>
             Abbrechen
           </Button>

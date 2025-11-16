@@ -45,7 +45,7 @@ export default async function DatevSetupPage({ params }: DatevSetupPageProps) {
         <Card className="border-[#14ad9f]/20">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-[#14ad9f]/10 rounded-full flex-shrink-0">
+              <div className="p-3 bg-[#14ad9f]/10 rounded-full shrink-0">
                 <FiFileText className="w-6 h-6 text-[#14ad9f]" />
               </div>
               <div>
@@ -61,7 +61,7 @@ export default async function DatevSetupPage({ params }: DatevSetupPageProps) {
         <Card className="border-[#14ad9f]/20">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-[#14ad9f]/10 rounded-full flex-shrink-0">
+              <div className="p-3 bg-[#14ad9f]/10 rounded-full shrink-0">
                 <FiUsers className="w-6 h-6 text-[#14ad9f]" />
               </div>
               <div>

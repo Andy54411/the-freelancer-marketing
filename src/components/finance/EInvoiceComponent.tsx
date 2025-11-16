@@ -504,7 +504,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                     >
                       <div className="flex items-center space-x-4">
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                           <FileText className="h-8 w-8 text-[#14ad9f]" />
                         </div>
                         <div>

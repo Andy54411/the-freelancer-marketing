@@ -591,7 +591,7 @@ Haben Sie bereits das nächste Projekt im Kopf? Ich helfe gerne wieder!`,
             {/* Validierungsfehler anzeigen */}
             {validationError && (
               <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                 <p className="text-sm text-red-700">{validationError}</p>
               </div>
             )}

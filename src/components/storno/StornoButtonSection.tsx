@@ -211,7 +211,7 @@ export default function StornoButtonSection({
       {/* LIEFERVERZUG STORNO-RECHT */}
       <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4 mb-4">
         <div className="flex items-start gap-3">
-          <FiAlertTriangle className="h-6 w-6 text-red-600 mt-1 flex-shrink-0" />
+          <FiAlertTriangle className="h-6 w-6 text-red-600 mt-1 shrink-0" />
           <div className="flex-1">
             <h3 className="font-bold text-red-800 text-lg mb-2">
               🚨 LIEFERVERZUG - STORNO-RECHT AKTIV!

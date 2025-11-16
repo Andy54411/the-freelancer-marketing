@@ -383,7 +383,7 @@ const CompanyOrdersOverviewPage = () => {
                           <span className="ml-2 text-gray-600">- {order.projectTitle}</span>
                         )}
                       </p>
-                      <div className="ml-2 flex-shrink-0 flex">
+                      <div className="ml-2 shrink-0 flex">
                         <p
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}
                         >
@@ -395,26 +395,26 @@ const CompanyOrdersOverviewPage = () => {
                     <div className="mt-2 sm:flex sm:justify-between">
                       <div className="sm:flex">
                         <p className="flex items-center text-sm text-gray-500">
-                          <FiUser className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                          <FiUser className="shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                           {orderType === 'EINGEGANGEN'
                             ? order.customerName || 'Unbekannter Kunde'
                             : 'Anbieter: ' + (order.providerName || 'Unbekannt')}
                         </p>
                         {order.projectName && (
                           <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                            <FiFolder className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                            <FiFolder className="shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                             Projekt: {order.projectName}
                           </p>
                         )}
                         {order.paymentType === 'b2b_project' && (
                           <p className="mt-2 flex items-center text-sm text-blue-600 sm:mt-0 sm:ml-6">
-                            <FiPackage className="flex-shrink-0 mr-1.5 h-5 w-5 text-blue-400" />
+                            <FiPackage className="shrink-0 mr-1.5 h-5 w-5 text-blue-400" />
                             B2B-Projekt
                           </p>
                         )}
                       </div>
                       <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                        <FiClock className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                        <FiClock className="shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                         <p>
                           {orderType === 'EINGEGANGEN' ? 'Bestellt' : 'Erstellt'} am{' '}
                           <time

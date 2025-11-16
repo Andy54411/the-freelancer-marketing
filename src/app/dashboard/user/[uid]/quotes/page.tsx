@@ -326,7 +326,7 @@ export default function CustomerQuotesOverviewPage() {
                             <p className="text-sm font-medium text-[#14ad9f] truncate">
                               {quote.projectTitle || quote.service || 'Angebotsanfrage'}
                             </p>
-                            <div className="ml-2 flex-shrink-0 flex space-x-2">
+                            <div className="ml-2 shrink-0 flex space-x-2">
                               {quote.response && (
                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#14ad9f] text-white">
                                   Angebot verfügbar
@@ -342,19 +342,19 @@ export default function CustomerQuotesOverviewPage() {
                           <div className="mt-2 sm:flex sm:justify-between">
                             <div className="sm:flex space-y-2 sm:space-y-0 sm:space-x-6">
                               <p className="flex items-center text-sm text-gray-500">
-                                <FiBuilding className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                                <FiBuilding className="shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
                                 {quote.projectCategory && quote.projectSubcategory
                                   ? `${quote.projectCategory} - ${quote.projectSubcategory}`
                                   : 'Kategorie nicht angegeben'}
                               </p>
                               {quote.budgetRange && (
                                 <p className="flex items-center text-sm text-gray-500">
-                                  <FiEuro className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                                  <FiEuro className="shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
                                   Budget: {quote.budgetRange}
                                 </p>
                               )}
                               <p className="flex items-center text-sm text-gray-500">
-                                <FiClock className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                                <FiClock className="shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
                                 {quote.createdAt
                                   ? new Date(quote.createdAt._seconds * 1000).toLocaleDateString(
                                       'de-DE'
@@ -380,7 +380,7 @@ export default function CustomerQuotesOverviewPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="ml-4 flex-shrink-0">
+                        <div className="ml-4 shrink-0">
                           <FiEye className="h-5 w-5 text-gray-400" />
                         </div>
                       </div>

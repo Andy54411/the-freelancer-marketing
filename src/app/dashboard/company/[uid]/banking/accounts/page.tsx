@@ -1195,7 +1195,7 @@ export default function BankingAccountsPage() {
                       activeAccountTab === tab.id
                         ? 'border-blue-500 text-blue-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 flex-shrink-0`}
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 shrink-0`}
                   >
                     <div className="flex items-center gap-1">
                       {tab.id !== 'all' && isConnected && (
@@ -1219,7 +1219,7 @@ export default function BankingAccountsPage() {
 
             {/* Dropdown für weitere Konten */}
             {accountTabs.length > 6 && (
-              <div className="relative flex-shrink-0 ml-4" data-dropdown="account-dropdown">
+              <div className="relative shrink-0 ml-4" data-dropdown="account-dropdown">
                 <button
                   onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
                   className={`${
@@ -1864,7 +1864,7 @@ export default function BankingAccountsPage() {
                                         invoice.documentId
                                       );
                                     }}
-                                    className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 transition-colors duration-200 shadow-sm hover:shadow-md flex-shrink-0"
+                                    className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 transition-colors duration-200 shadow-sm hover:shadow-md shrink-0"
                                     title="Verknüpfung lösen und Dokument löschen"
                                   >
                                     <X className="w-3 h-3" />
@@ -2016,7 +2016,7 @@ export default function BankingAccountsPage() {
                                   <div className="absolute right-0 top-full mt-1 w-80 bg-white border border-gray-200 rounded-md shadow-lg z-50">
                                     <div className="py-1">
                                       <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3">
-                                        <div className="flex-shrink-0">
+                                        <div className="shrink-0">
                                           <svg
                                             width="20"
                                             height="20"
@@ -2043,7 +2043,7 @@ export default function BankingAccountsPage() {
                                       </button>
 
                                       <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3">
-                                        <div className="flex-shrink-0">
+                                        <div className="shrink-0">
                                           <svg
                                             width="20"
                                             height="20"
@@ -2077,7 +2077,7 @@ export default function BankingAccountsPage() {
                                       </button>
 
                                       <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3">
-                                        <div className="flex-shrink-0">
+                                        <div className="shrink-0">
                                           <svg
                                             width="20"
                                             height="20"
@@ -2105,7 +2105,7 @@ export default function BankingAccountsPage() {
                                       <hr className="my-1 border-gray-200" />
 
                                       <button className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3">
-                                        <div className="flex-shrink-0">
+                                        <div className="shrink-0">
                                           <svg
                                             width="20"
                                             height="20"

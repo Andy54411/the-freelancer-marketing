@@ -181,9 +181,9 @@ function FAQItem({ faq }: { faq: { question: string; answer: string } }) {
       >
         <span className="font-medium text-gray-900">{faq.question}</span>
         {isOpen ? (
-          <FiChevronUp className="text-[#14ad9f] flex-shrink-0 ml-2" />
+          <FiChevronUp className="text-[#14ad9f] shrink-0 ml-2" />
         ) : (
-          <FiChevronDown className="text-[#14ad9f] flex-shrink-0 ml-2" />
+          <FiChevronDown className="text-[#14ad9f] shrink-0 ml-2" />
         )}
       </button>
       {isOpen && (

@@ -351,7 +351,7 @@ export function ComplianceDashboard({ companyId, userRole = 'user' }: Compliance
                 <div className="space-y-2">
                   {report.recommendations.map((recommendation, index) => (
                     <div key={index} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
-                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
                       <p className="text-sm text-green-800">{recommendation}</p>
                     </div>
                   ))}

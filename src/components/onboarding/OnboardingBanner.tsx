@@ -121,7 +121,7 @@ const OnboardingBanner: React.FC<OnboardingBannerProps> = ({
         {completionPercentage < 50 && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
             <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
               <div>
                 <p className="text-amber-800 font-medium">Wichtiger Hinweis:</p>
                 <p className="text-amber-700 mt-1">

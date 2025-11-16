@@ -159,38 +159,55 @@ export async function getChatParticipantDetails(db: Firestore, userId: string): 
 // --- Bestehende Getter-Funktionen (JETZT MIT KORRIGIERTER LOGIK) ---
 
 export function getStripeInstance(stripeKey: string): Stripe {
-  // Die Singleton-Logik wird entfernt. Jede Funktion, die diese Hilfsfunktion aufruft,
-  // ist nun dafür verantwortlich, den korrekten Schlüssel bereitzustellen.
-  // if (!stripeClientInstance) {
-
-  if (stripeKey) {
-    try {
-      // KRITISCH: Trim newlines und whitespace vom Secret (Firebase/Vercel fügen automatisch \n hinzu)
-      const cleanKey = stripeKey.trim().replace(/\r?\n/g, '');
-      
-      // Erstelle und gib immer eine neue Instanz zurück.
-      const stripeInstance = new Stripe(cleanKey, {
-        typescript: true,
-        apiVersion: "2024-06-20",
-        timeout: 60000, // 60 Sekunden Timeout für alle Anfragen
-        maxNetworkRetries: 3, // 3 Versuche bei Netzwerkfehlern
-      });
-      logger.info("[getStripeInstance] Stripe-Client erfolgreich initialisiert.");
-      return stripeInstance;
-    } catch (e: unknown) {
-      let errorMessage = "Unbekannter Fehler bei der Initialisierung des Stripe-Clients.";
-      if (e instanceof Error) {
-        errorMessage = e.message;
-      }
-      logger.error("KRITISCH: Fehler bei der Initialisierung des Stripe-Clients.", { error: errorMessage, at: 'getStripeInstance' });
-      throw new HttpsError("internal", `Stripe ist auf dem Server nicht korrekt konfiguriert: ${errorMessage}`);
-    }
-  } else {
+  if (!stripeKey) {
     logger.error("KRITISCH: STRIPE_SECRET_KEY nicht verfügbar!", { at: 'getStripeInstance' });
     throw new HttpsError("internal", "Stripe ist auf dem Server nicht korrekt konfiguriert (Secret fehlt).");
   }
-  // }
-  // return stripeClientInstance!;
+
+  try {
+    // Entferne Whitespace und Newlines
+    const cleanKey = stripeKey.trim().replace(/\r?\n/g, '');
+    
+    // Detaillierte Schlüsselvalidierung
+    if (!cleanKey) {
+      logger.error("[getStripeInstance] Key is empty after cleaning");
+      throw new Error('Empty key after cleaning');
+    }
+    
+    if (!cleanKey.startsWith('sk_')) {
+      logger.error("[getStripeInstance] Invalid key format:", {
+        keyStart: cleanKey.substring(0, 3),
+        length: cleanKey.length,
+        possibleNewlines: stripeKey.includes('\n')
+      });
+      throw new Error('Invalid key format: Must start with sk_');
+    }
+    
+    if (cleanKey.length < 20) {
+      logger.error("[getStripeInstance] Key is too short:", {
+        length: cleanKey.length
+      });
+      throw new Error('Key is too short to be valid');
+    }
+
+    logger.info("[getStripeInstance] Creating Stripe instance with key type:", 
+      cleanKey.startsWith('sk_live_') ? 'LIVE' : 'TEST'
+    );
+    
+        // Neues Stripe Client-Objekt mit minimaler Konfiguration
+    return new Stripe(cleanKey, {
+      typescript: true,
+      timeout: 120000, // 120 Sekunden Timeout für alle Anfragen
+      maxNetworkRetries: 5 // 5 Versuche bei Netzwerkfehlern
+    });
+  } catch (e: unknown) {
+    let errorMessage = "Unbekannter Fehler bei der Initialisierung des Stripe-Clients.";
+    if (e instanceof Error) {
+      errorMessage = e.message;
+    }
+    logger.error("KRITISCH: Fehler bei der Initialisierung des Stripe-Clients.", { error: errorMessage, at: 'getStripeInstance' });
+    throw new HttpsError("internal", `Stripe ist auf dem Server nicht korrekt konfiguriert: ${errorMessage}`);
+  }
 }
 
 /**

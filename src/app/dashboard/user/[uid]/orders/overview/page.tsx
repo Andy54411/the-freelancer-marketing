@@ -286,7 +286,7 @@ const OrdersOverviewPage = () => {
                           <p className="text-sm font-medium text-teal-600 truncate w-2/3">
                             {order.selectedSubcategory}
                           </p>
-                          <div className="ml-2 flex-shrink-0 flex">
+                          <div className="ml-2 shrink-0 flex">
                             <p
                               className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}
                             >
@@ -297,18 +297,18 @@ const OrdersOverviewPage = () => {
                         <div className="mt-2 sm:flex sm:justify-between">
                           <div className="sm:flex">
                             <p className="flex items-center text-sm text-gray-500">
-                              <FiPackage className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                              <FiPackage className="shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                               {order.providerName}
                             </p>
                             {order.projectName && (
                               <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                                <FiFolder className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                                <FiFolder className="shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                                 Projekt: {order.projectName}
                               </p>
                             )}
                           </div>
                           <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                            <FiClock className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                            <FiClock className="shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                             <p>
                               Bestellt am{' '}
                               <time

@@ -195,7 +195,7 @@ const EmailItem = memo(
                     {getSenderDisplay(email.from)}
                   </span>
                   {email.attachments && email.attachments.length > 0 && (
-                    <Paperclip className="h-2.5 w-2.5 text-gray-400 flex-shrink-0" />
+                    <Paperclip className="h-2.5 w-2.5 text-gray-400 shrink-0" />
                   )}
                   {email.priority === 'high' && (
                     <Badge variant="destructive" className="text-[9px] h-3 px-0.5">
@@ -224,7 +224,7 @@ const EmailItem = memo(
                 </div>
               </div>
 
-              <div className="flex flex-col items-end flex-shrink-0 ml-2">
+              <div className="flex flex-col items-end shrink-0 ml-2">
                 <span
                   className={cn(
                     'text-[10px] whitespace-nowrap leading-tight',
@@ -470,7 +470,7 @@ export function EmailList({
   return (
     <Card className={cn('h-[800px] flex flex-col overflow-hidden bg-white', className)}>
       {/* Toolbar - Kompakt oder Normal */}
-      <div className={cn('border-b bg-gray-50/50 flex-shrink-0', isCompact ? 'p-2' : 'p-4')}>
+      <div className={cn('border-b bg-gray-50/50 shrink-0', isCompact ? 'p-2' : 'p-4')}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Checkbox

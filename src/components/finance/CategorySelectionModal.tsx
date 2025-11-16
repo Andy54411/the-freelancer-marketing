@@ -691,7 +691,7 @@ export default function CategorySelectionModal({
         aria-modal="true">
 
         {/* Header */}
-        <header className="flex-shrink-0 p-6 border-b border-gray-200 bg-gray-50">
+        <header className="shrink-0 p-6 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Kategorie auswählen</h2>
@@ -734,7 +734,7 @@ export default function CategorySelectionModal({
         <main className="flex-1 overflow-hidden">
           <div className="flex h-full">
             {/* Left Column - Category Lists */}
-            <div className="w-[30%] border-r border-gray-200 overflow-y-auto flex-shrink-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div className="w-[30%] border-r border-gray-200 overflow-y-auto shrink-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               <div className="p-6">
                 <ul className="categoryGroupList space-y-6">
                   {filteredGroups.map((group) =>
@@ -764,13 +764,13 @@ export default function CategorySelectionModal({
                             role="menuitem"
                             type="button">
 
-                              <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+                              <div className="shrink-0 w-5 h-5 flex items-center justify-center">
                                 {category.icon}
                               </div>
                               <div className="flex-1 flex items-center justify-between">
                                 <div className="font-medium text-sm">{category.name}</div>
                                 {hasAvailableCards &&
-                              <div className="flex-shrink-0">
+                              <div className="shrink-0">
                                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                       {hasDatevCards ? (category as any).datevCards.length :
                                   isIncomeCategory ? datevCards.filter((card) => card.type === 'INCOME').length :
@@ -842,7 +842,7 @@ export default function CategorySelectionModal({
                           onClick={() => handleDatevCardSelect(card)}>
 
                                 {/* Icon + Radio */}
-                                <div className="flex items-center gap-2 flex-shrink-0 pt-1">
+                                <div className="flex items-center gap-2 shrink-0 pt-1">
                                   <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded">
                                     {getIconComponent(card.iconName)}
                                   </div>
@@ -866,7 +866,7 @@ export default function CategorySelectionModal({
                                 </div>
                                 
                                 {/* Favoriten-Stern */}
-                                <div className="flex-shrink-0 pt-1">
+                                <div className="shrink-0 pt-1">
                                   <button
                               onClick={(e) => handleToggleFavorite(card.id, e)}
                               className={`p-1 transition-colors ${
@@ -967,7 +967,7 @@ export default function CategorySelectionModal({
                         onClick={() => handleDatevCardSelect(card)}>
 
                               {/* Icon + Radio */}
-                              <div className="flex items-center gap-2 flex-shrink-0 pt-1">
+                              <div className="flex items-center gap-2 shrink-0 pt-1">
                                 <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded">
                                   {getIconComponent(card.iconName)}
                                 </div>
@@ -991,7 +991,7 @@ export default function CategorySelectionModal({
                               </div>
                               
                               {/* Favoriten-Stern */}
-                              <div className="flex-shrink-0 pt-1">
+                              <div className="shrink-0 pt-1">
                                 <button
                             onClick={(e) => handleToggleFavorite(card.id, e)}
                             className={`p-1 transition-colors ${
@@ -1064,7 +1064,7 @@ export default function CategorySelectionModal({
         </main>
 
         {/* Footer */}
-        <footer className="flex-shrink-0 p-6 border-t border-gray-200 bg-gray-50">
+        <footer className="shrink-0 p-6 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center justify-end gap-3">
             <button
               onClick={onClose}

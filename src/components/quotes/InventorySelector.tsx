@@ -331,7 +331,7 @@ export default function InventorySelector({
           {/* Info-Text */}
           <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
             <div className="flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
               <div>
                 <p className="font-medium text-blue-800">Hinweise:</p>
                 <ul className="mt-1 space-y-1 list-disc list-inside">

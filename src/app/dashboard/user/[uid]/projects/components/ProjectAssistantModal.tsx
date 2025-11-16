@@ -399,10 +399,10 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
                     >
                       <div className="flex items-start gap-2">
                         {message.type === 'bot' && (
-                          <Bot className="h-5 w-5 mt-0.5 text-[#14ad9f] flex-shrink-0" />
+                          <Bot className="h-5 w-5 mt-0.5 text-[#14ad9f] shrink-0" />
                         )}
                         {message.type === 'user' && (
-                          <User className="h-5 w-5 mt-0.5 text-white flex-shrink-0" />
+                          <User className="h-5 w-5 mt-0.5 text-white shrink-0" />
                         )}
                         <div className="flex-1">
                           <p className="text-sm leading-relaxed">{message.content}</p>
@@ -484,7 +484,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
                       >
                         <div className="flex items-start gap-3">
                           {/* Profilbild */}
-                          <div className="flex-shrink-0">
+                          <div className="shrink-0">
                             {provider.profilePictureURL &&
                             provider.profilePictureURL !== 'null' &&
                             provider.profilePictureURL !== '' ? (
@@ -538,7 +538,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
                                   </div>
                                 )}
                               </div>
-                              <div className="ml-4 flex-shrink-0">
+                              <div className="ml-4 shrink-0">
                                 {selectedProviders.includes(provider.id) ? (
                                   <CheckCircle className="h-5 w-5 text-[#14ad9f]" />
                                 ) : (

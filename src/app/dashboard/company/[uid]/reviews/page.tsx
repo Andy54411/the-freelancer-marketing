@@ -112,7 +112,7 @@ function ReviewItem({ review, onReplySubmitted }: ReviewItemProps) {
   return (
     <div className="p-6">
       <div className="flex items-start space-x-4">
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
             <span className="text-sm font-medium text-gray-700">
               {review.customerName.charAt(0).toUpperCase()}

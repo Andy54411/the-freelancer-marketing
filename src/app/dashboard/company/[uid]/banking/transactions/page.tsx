@@ -474,7 +474,7 @@ export default function TransactionsPage() {
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <ArrowUpRight className="h-6 w-6 text-green-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -494,7 +494,7 @@ export default function TransactionsPage() {
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <ArrowDownRight className="h-6 w-6 text-red-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -512,7 +512,7 @@ export default function TransactionsPage() {
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <DollarSign className="h-6 w-6 text-[#14ad9f]" />
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -652,7 +652,7 @@ export default function TransactionsPage() {
               <li key={transaction.id} className="px-6 py-4 hover:bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       {getTransactionIcon(
                         transaction.amount > 0 ? 'CREDIT' : 'DEBIT',
                         transaction.amount
@@ -663,7 +663,7 @@ export default function TransactionsPage() {
                         <p className="text-sm font-medium text-gray-900 truncate">
                           {transaction.purpose}
                         </p>
-                        <div className="ml-2 flex-shrink-0 flex">
+                        <div className="ml-2 shrink-0 flex">
                           <p
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                               !transaction.isPotentialDuplicate
@@ -784,7 +784,7 @@ export default function TransactionsPage() {
               <div className="space-y-6">
                 {/* Transaction Overview */}
                 <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     {getTransactionIcon(
                       selectedTransaction.amount > 0 ? 'CREDIT' : 'DEBIT',
                       selectedTransaction.amount

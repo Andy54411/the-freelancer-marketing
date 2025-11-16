@@ -178,7 +178,7 @@ const ConnectedDocumentsModal: React.FC<ConnectedDocumentsModalProps> = ({
                 >
                   {/* Checkbox */}
                   {allowUnlink && (
-                    <div className="flex-shrink-0 mr-4">
+                    <div className="shrink-0 mr-4">
                       <input
                         type="checkbox"
                         checked={document.selected}
@@ -192,7 +192,7 @@ const ConnectedDocumentsModal: React.FC<ConnectedDocumentsModalProps> = ({
                   {/* Document Info */}
                   <div className="flex-1 flex items-center justify-between">
                     <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      <FileText className="h-8 w-8 text-gray-400 flex-shrink-0" />
+                      <FileText className="h-8 w-8 text-gray-400 shrink-0" />
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis">
                           {getDocumentTypeLabel(document.type)} {document.documentNumber}
@@ -203,7 +203,7 @@ const ConnectedDocumentsModal: React.FC<ConnectedDocumentsModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-6 flex-shrink-0 ml-4">
+                    <div className="flex items-center space-x-6 shrink-0 ml-4">
                       <div className={`font-semibold whitespace-nowrap ${
                         document.amount >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}>

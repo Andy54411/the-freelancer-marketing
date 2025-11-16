@@ -263,7 +263,7 @@ function CheckoutForm({
       {message && (
         <div className="p-3 rounded-lg border">
           <div className="flex items-center">
-            <FiAlertCircle className="mr-2 flex-shrink-0" size={16} />
+            <FiAlertCircle className="mr-2 shrink-0" size={16} />
             <span className="text-sm">{message}</span>
           </div>
         </div>

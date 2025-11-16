@@ -63,7 +63,7 @@ export function OpenCashRegisterModal({ isOpen, onClose, onConfirm }: OpenCashRe
                 id="terms"
                 checked={agreedToTerms}
                 onCheckedChange={checked => setAgreedToTerms(checked as boolean)}
-                className="mt-1 flex-shrink-0"
+                className="mt-1 shrink-0"
               />
               <label htmlFor="terms" className="text-sm cursor-pointer text-gray-700 flex-1">
                 Ich habe den Artikel{' '}

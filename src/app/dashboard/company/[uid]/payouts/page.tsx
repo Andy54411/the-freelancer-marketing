@@ -1063,19 +1063,19 @@ export default function PayoutOverviewPage() {
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-start space-x-2">
-                <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
                 <span>Auszahlungen erfolgen automatisch auf Ihr hinterlegtes Bankkonto</span>
               </div>
               <div className="flex items-start space-x-2">
-                <Clock className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <Clock className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
                 <span>Bearbeitungszeit: 1-2 Werktage für SEPA-Überweisungen</span>
               </div>
               <div className="flex items-start space-x-2">
-                <CreditCard className="h-4 w-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                <CreditCard className="h-4 w-4 text-gray-600 mt-0.5 shrink-0" />
                 <span>Nur abgeschlossene und bewertete Aufträge sind auszahlungsbereit</span>
               </div>
               <div className="flex items-start space-x-2">
-                <Euro className="h-4 w-4 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                <Euro className="h-4 w-4 text-[#14ad9f] mt-0.5 shrink-0" />
                 <span>Platform-Gebühren werden automatisch abgezogen</span>
               </div>
             </div>

@@ -800,7 +800,7 @@ export default function CompanyOrderDetailPage() {
               {order.status === 'AKTIV' && isViewerProvider && !successMessage && (
                 <div className="bg-white shadow rounded-lg p-6">
                   <div className="flex items-start">
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       <FiCheckCircle className="h-6 w-6 text-green-500" aria-hidden="true" />
                     </div>
                     <div className="ml-4">
@@ -856,7 +856,7 @@ export default function CompanyOrderDetailPage() {
               {order.status === 'PROVIDER_COMPLETED' && isViewerProvider && (
                 <div className="bg-white shadow rounded-lg p-6">
                   <div className="flex items-start">
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       <FiClock className="h-6 w-6 text-amber-500" aria-hidden="true" />
                     </div>
                     <div className="ml-4">
@@ -891,7 +891,7 @@ export default function CompanyOrderDetailPage() {
               {order.status === 'zahlung_erhalten_clearing' && isViewerProvider && (
                 <div className="bg-white shadow rounded-lg p-6">
                   <div className="flex items-start">
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       <FiAlertTriangle className="h-6 w-6 text-[#14ad9f]" aria-hidden="true" />
                     </div>
                     <div className="ml-4">
@@ -927,7 +927,7 @@ export default function CompanyOrderDetailPage() {
               {order.status === 'ABGESCHLOSSEN' && (
                 <div className="bg-white shadow rounded-lg p-6">
                   <div className="flex items-start">
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       <FiCheckCircle className="h-6 w-6 text-green-500" aria-hidden="true" />
                     </div>
                     <div className="ml-4">
@@ -992,7 +992,7 @@ export default function CompanyOrderDetailPage() {
             </div>
 
             {/* Rechte Sidebar - UserInfoCard */}
-            <div className="w-full lg:w-80 lg:flex-shrink-0">
+            <div className="w-full lg:w-80 lg:shrink-0">
               <div className="lg:sticky lg:top-6">
                 <UserInfoCard
                   userId={cardUser.id}

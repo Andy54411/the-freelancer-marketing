@@ -548,7 +548,7 @@ export function ExpenseReceiptUpload({
       {uploadedFile && showPreview && previewUrl && (
         <div className="flex flex-col bg-white overflow-hidden relative rounded-lg border border-gray-200">
           {/* File Info Header */}
-          <div className="bg-[#14ad9f]/5 px-4 py-3 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
+          <div className="bg-[#14ad9f]/5 px-4 py-3 border-b border-gray-200 flex justify-between items-center shrink-0">
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-[#14ad9f]" />
               <div>
@@ -618,7 +618,7 @@ export function ExpenseReceiptUpload({
           </div>
 
           {/* New Upload Button */}
-          <div className="p-3 border-t border-gray-100 flex-shrink-0 bg-white">
+          <div className="p-3 border-t border-gray-100 shrink-0 bg-white">
             <Button
               variant="outline"
               size="sm"

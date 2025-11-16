@@ -591,7 +591,7 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
   return (
     <div className="space-y-6 h-full">
       <Tabs defaultValue="activities" className="w-full h-full flex flex-col">
-        <TabsList className="grid w-full grid-cols-3 bg-gray-100 p-1 rounded-lg flex-shrink-0">
+        <TabsList className="grid w-full grid-cols-3 bg-gray-100 p-1 rounded-lg shrink-0">
           <TabsTrigger
             value="activities"
             className="flex items-center gap-2 data-[state=active]:bg-[#14ad9f] data-[state=active]:text-white data-[state=active]:shadow-sm transition-all duration-200"

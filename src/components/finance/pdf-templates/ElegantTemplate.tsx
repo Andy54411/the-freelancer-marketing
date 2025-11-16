@@ -118,7 +118,7 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
 
             <div className="flex justify-between items-start pt-4">
               {/* Logo Section */}
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 {data.companyLogo && (
                   <div className="relative">
                     <img
@@ -382,7 +382,7 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
                 />
 
                 <div className="flex justify-between items-start pt-6">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     {data.companyLogo && (
                       <div className="relative">
                         <img

@@ -313,7 +313,7 @@ export default function DirectChatModal({
                   className={`flex items-start gap-3 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}
                 >
                   {/* Avatar */}
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     {userProfile?.avatar ? (
                       <Image
                         src={userProfile.avatar}
@@ -343,7 +343,7 @@ export default function DirectChatModal({
                       {/* Name und Text in einer Reihe */}
                       <div className="flex items-start gap-2">
                         <span
-                          className={`text-xs font-semibold flex-shrink-0 ${
+                          className={`text-xs font-semibold shrink-0 ${
                             isOwnMessage ? 'text-teal-100' : 'text-gray-600 dark:text-gray-400'
                           }`}
                         >
@@ -377,7 +377,7 @@ export default function DirectChatModal({
           {/* Validierungsfehler anzeigen */}
           {validationError && (
             <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-red-500 dark:text-red-400 mt-0.5 flex-shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-red-500 dark:text-red-400 mt-0.5 shrink-0" />
               <p className="text-sm text-red-700 dark:text-red-300">{validationError}</p>
             </div>
           )}

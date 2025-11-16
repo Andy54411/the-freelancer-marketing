@@ -377,7 +377,7 @@ const ManagingDirectorModal: React.FC<ManagingDirectorModalProps> = ({
               <div key={director.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       <User className="h-8 w-8 text-gray-400" />
                     </div>
                     <div>

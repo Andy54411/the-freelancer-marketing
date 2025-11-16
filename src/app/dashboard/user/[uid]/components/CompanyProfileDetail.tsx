@@ -57,7 +57,7 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({
             <Image
               src={company.profilePictureURL || '/default-avatar.png'}
               alt={`Profilbild von ${company.companyName}`}
-              className="w-28 h-28 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-md"
+              className="w-28 h-28 rounded-full object-cover shrink-0 border-2 border-white shadow-md"
               width={112}
               height={112}
             />

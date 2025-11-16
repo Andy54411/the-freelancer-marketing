@@ -601,23 +601,23 @@ export default function RenovierungsfehlerPage() {
                   <h3 className="text-xl font-semibold mb-4">📋 Vor der Renovierung</h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Detaillierte Planung mit Fachberatung</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Realistisches Budget mit 20% Puffer</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Qualifizierte Handwerker auswählen</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Genehmigungen beantragen</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Materialien sorgfältig auswählen</span>
                     </div>
                   </div>
@@ -627,23 +627,23 @@ export default function RenovierungsfehlerPage() {
                   <h3 className="text-xl font-semibold mb-4">🔧 Während der Renovierung</h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Regelmäßige Qualitätskontrollen</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Dokumentation mit Fotos</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Regelmäßige Abstimmung mit Handwerkern</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Flexible Reaktion auf Probleme</span>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-[#14ad9f] mt-1 shrink-0" />
                       <span>Sicherheitsbestimmungen beachten</span>
                     </div>
                   </div>

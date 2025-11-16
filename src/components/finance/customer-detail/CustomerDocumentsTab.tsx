@@ -986,7 +986,7 @@ export function CustomerDocumentsTab({
                       }}
                     >
                       {/* File Icon */}
-                      <div className="flex-shrink-0">{getFileIcon(document.type)}</div>
+                      <div className="shrink-0">{getFileIcon(document.type)}</div>
 
                       {/* File Info */}
                       <div className="flex-1 min-w-0">
@@ -1166,7 +1166,7 @@ export function CustomerDocumentsTab({
             <div className="space-y-4 text-sm">
               {/* Type */}
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-5">
+                <div className="shrink-0 w-5">
                   <File className="h-5 w-5 text-gray-400" />
                 </div>
                 <div className="flex-1">
@@ -1180,7 +1180,7 @@ export function CustomerDocumentsTab({
               {/* Size - nur für Dokumente */}
               {selectedItemType === 'document' && (
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-5">
+                  <div className="shrink-0 w-5">
                     <HardDrive className="h-5 w-5 text-gray-400" />
                   </div>
                   <div className="flex-1">
@@ -1194,7 +1194,7 @@ export function CustomerDocumentsTab({
 
               {/* Owner */}
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-5">
+                <div className="shrink-0 w-5">
                   <User className="h-5 w-5 text-gray-400" />
                 </div>
                 <div className="flex-1">
@@ -1211,7 +1211,7 @@ export function CustomerDocumentsTab({
 
               {/* Date */}
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-5">
+                <div className="shrink-0 w-5">
                   <Clock className="h-5 w-5 text-gray-400" />
                 </div>
                 <div className="flex-1">
@@ -1228,7 +1228,7 @@ export function CustomerDocumentsTab({
 
               {/* Location */}
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-5">
+                <div className="shrink-0 w-5">
                   <Folder className="h-5 w-5 text-gray-400" />
                 </div>
                 <div className="flex-1">

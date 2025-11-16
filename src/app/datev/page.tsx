@@ -31,7 +31,7 @@ export default function DatevPage() {
       <Card className="border-[#14ad9f]/20 bg-[#14ad9f]/5">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <FiInfo className="text-[#14ad9f] w-6 h-6 mt-1 flex-shrink-0" />
+            <FiInfo className="text-[#14ad9f] w-6 h-6 mt-1 shrink-0" />
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">
                 DATEV-Schnittstelle für professionelle Buchhaltung

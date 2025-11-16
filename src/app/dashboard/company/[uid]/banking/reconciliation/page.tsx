@@ -390,7 +390,7 @@ export default function BankingReconciliationPage() {
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <FileText className="h-6 w-6 text-blue-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -408,7 +408,7 @@ export default function BankingReconciliationPage() {
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <CheckCircle className="h-6 w-6 text-green-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -428,7 +428,7 @@ export default function BankingReconciliationPage() {
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <ArrowUpRight className="h-6 w-6 text-[#14ad9f]" />
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -450,7 +450,7 @@ export default function BankingReconciliationPage() {
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <DollarSign className="h-6 w-6 text-yellow-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -596,7 +596,7 @@ export default function BankingReconciliationPage() {
                       </p>
                       <p className="text-xs text-gray-400">{formatDate(invoice.issueDate || '')}</p>
                     </div>
-                    <div className="ml-4 flex-shrink-0 text-right">
+                    <div className="ml-4 shrink-0 text-right">
                       <p className="text-sm font-semibold text-gray-900">
                         {formatCurrency(invoice.total || 0)}
                       </p>
@@ -690,7 +690,7 @@ export default function BankingReconciliationPage() {
                         {formatDate(transaction.bookingDate || '')}
                       </p>
                     </div>
-                    <div className="ml-4 flex-shrink-0 text-right">
+                    <div className="ml-4 shrink-0 text-right">
                       <p
                         className={`text-sm font-semibold ${
                           transaction.transactionType === 'CREDIT'
@@ -724,7 +724,7 @@ export default function BankingReconciliationPage() {
       {(selectedInvoice || selectedTransaction) && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <CheckCircle className="h-5 w-5 text-blue-400" />
             </div>
             <div className="ml-3 flex-1">

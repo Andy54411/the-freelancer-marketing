@@ -160,7 +160,7 @@ export function CompanyStorageCard({ companyId }: CompanyStorageCardProps) {
               }`}
             >
               <AlertCircle
-                className={`h-5 w-5 mt-0.5 flex-shrink-0 ${
+                className={`h-5 w-5 mt-0.5 shrink-0 ${
                   isOverLimit ? 'text-red-600' : 'text-orange-600'
                 }`}
               />

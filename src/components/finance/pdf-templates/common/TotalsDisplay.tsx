@@ -154,7 +154,7 @@ export const TotalsDisplay: React.FC<TotalsDisplayProps> = ({
 
   // Standard variant
   return (
-    <div className={`w-64 flex-shrink-0 ${className}`}>
+    <div className={`w-64 shrink-0 ${className}`}>
       <div className="flex justify-between py-2">
         <span>{t('subtotal')}:</span>
         <span>{formatCurrency(data.subtotal)}</span>

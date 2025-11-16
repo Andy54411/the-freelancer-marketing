@@ -341,7 +341,7 @@ export default function ReceiptPreviewUpload({
       {uploadedFile && showPreview && previewUrl && (
         <div className="flex-1 flex flex-col bg-white overflow-hidden relative">
           {/* File Info Header */}
-          <div className="bg-[#14ad9f]/5 px-4 py-3 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
+          <div className="bg-[#14ad9f]/5 px-4 py-3 border-b border-gray-200 flex justify-between items-center shrink-0">
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-[#14ad9f]" />
               <div>
@@ -381,7 +381,7 @@ export default function ReceiptPreviewUpload({
           </div>
 
           {/* Neuen Beleg hochladen Button - am unteren Rand */}
-          <div className="p-3 border-t border-gray-100 flex-shrink-0">
+          <div className="p-3 border-t border-gray-100 shrink-0">
             <Button
               variant="outline"
               size="sm"

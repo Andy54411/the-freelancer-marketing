@@ -58,7 +58,7 @@ const CompanyProfileDetail: React.FC<CompanyProfileDetailProps> = ({
             <Image
               src={company.profilePictureURL || '/default-avatar.jpg'}
               alt={`Profilbild von ${company.companyName}`}
-              className="w-24 h-24 rounded-full object-cover flex-shrink-0 border"
+              className="w-24 h-24 rounded-full object-cover shrink-0 border"
               width={96} // Entspricht w-24 (24 * 4px = 96px)
               height={96} // Entspricht h-24 (24 * 4px = 96px)
               priority // Dieses Bild ist wahrscheinlich wichtig für LCP
