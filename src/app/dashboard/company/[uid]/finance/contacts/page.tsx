@@ -297,7 +297,7 @@ export default function ContactsPage({ params }: ContactsPageProps) {
               onClick={() =>
                 router.push(`/dashboard/company/${resolvedParams.uid}/finance/contacts/new`)
               }
-              className="flex items-center gap-2 bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="flex items-center gap-2 bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               <Plus className="h-4 w-4" />
               Neuer Kontakt
@@ -440,7 +440,7 @@ export default function ContactsPage({ params }: ContactsPageProps) {
                     onClick={() =>
                       router.push(`/dashboard/company/${resolvedParams.uid}/finance/contacts/new`)
                     }
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                    className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Ersten Kontakt erstellen

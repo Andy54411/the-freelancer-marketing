@@ -86,7 +86,7 @@ export default function AuthModal({
           <div className="space-y-3">
             <button
               onClick={handleLogin}
-              className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white py-3 px-4 rounded-lg font-medium transition-colors"
+              className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white py-3 px-4 rounded-lg font-medium transition-colors"
             >
               Anmelden
             </button>

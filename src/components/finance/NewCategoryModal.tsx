@@ -173,7 +173,7 @@ export default function NewCategoryModal({
               Abbrechen
             </Button>
             <Button
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               disabled={Boolean(saving) || !isValid()}
               onClick={handleSave}
             >

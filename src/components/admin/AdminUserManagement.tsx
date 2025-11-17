@@ -216,7 +216,7 @@ export default function AdminUserManagement() {
 
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
-            <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+            <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
               <UserPlus className="h-4 w-4 mr-2" />
               Neuer Admin
             </Button>
@@ -335,7 +335,7 @@ export default function AdminUserManagement() {
               </Button>
               <Button
                 onClick={createAdminUser}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                 disabled={!newUser.name || !newUser.email || !newUser.roleId}
               >
                 Admin erstellen

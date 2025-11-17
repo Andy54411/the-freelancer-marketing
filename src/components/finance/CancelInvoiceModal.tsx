@@ -60,7 +60,7 @@ export const CancelInvoiceModal: React.FC<CancelInvoiceModalProps> = ({
           <Button
             onClick={onConfirm}
             disabled={isLoading}
-            className="px-4 py-2 bg-[#14ad9f] hover:bg-[#129488] text-white"
+            className="px-4 py-2 bg-[#14ad9f] hover:bg-taskilo-hover text-white"
           >
             {isLoading ? 'Storniere...' : 'Rechnung stornieren'}
           </Button>

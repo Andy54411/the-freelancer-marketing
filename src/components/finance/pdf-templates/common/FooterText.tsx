@@ -24,7 +24,7 @@ export const FooterText: React.FC<FooterTextProps> = ({
 
   if (variant === 'elegant') {
     return (
-      <div className="mt-4 bg-gradient-to-r from-gray-50 to-white p-3 rounded">
+      <div className="mt-4 bg-linear-to-r from-gray-50 to-white p-3 rounded">
         <div
           className="text-sm text-gray-700 leading-relaxed"
           dangerouslySetInnerHTML={{

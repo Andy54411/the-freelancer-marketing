@@ -87,7 +87,7 @@ export default function Step1() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br p-4 sm:p-6 font-sans">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br p-4 sm:p-6 font-sans">
       {/* Top-Bereich: Abbrechen-Button, Fortschrittsbalken, Schritt-Header */}
       <div className="w-full max-w-xl lg:max-w-4xl mx-auto mb-6 px-4">
         {' '}

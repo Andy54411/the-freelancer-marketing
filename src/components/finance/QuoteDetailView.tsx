@@ -450,7 +450,7 @@ export default function QuoteDetailView() {
           <div className="text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-2">Fehler</h2>
             <p className="text-gray-600 mb-4">{error || 'Angebot nicht gefunden'}</p>
-            <Button onClick={handleBackToQuotes} className="bg-[#14ad9f] hover:bg-[#129488]">
+            <Button onClick={handleBackToQuotes} className="bg-[#14ad9f] hover:bg-taskilo-hover">
               Zurück zu Angeboten
             </Button>
           </div>
@@ -515,7 +515,7 @@ export default function QuoteDetailView() {
                   <Button
                     onClick={handleMarkAsAccepted}
                     disabled={updating}
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                    className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                   >
                     {updating ? 'Markiere...' : 'Als angenommen markieren'}
                   </Button>
@@ -763,7 +763,7 @@ export default function QuoteDetailView() {
                         <button
                           onClick={handleCustomerClick}
                           disabled={customerLoading}
-                          className="text-sm font-medium text-[#14ad9f] hover:text-[#129488] hover:underline transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="text-sm font-medium text-[#14ad9f] hover:text-taskilo-hover hover:underline transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {customerLoading ? 'Lade...' : quote.customerName}
                         </button>
@@ -785,7 +785,7 @@ export default function QuoteDetailView() {
                   <div className="flex items-center space-x-2">
                     <Button
                       onClick={() => setShowLivePreview(true)}
-                      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                      className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       Vollbild-Vorschau
@@ -820,7 +820,7 @@ export default function QuoteDetailView() {
                         <p className="text-red-500 mb-4">Fehler beim Laden der Vorschau</p>
                         <Button
                           onClick={() => window.location.reload()}
-                          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                          className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                         >
                           <FileText className="h-4 w-4 mr-2" />
                           Seite neu laden

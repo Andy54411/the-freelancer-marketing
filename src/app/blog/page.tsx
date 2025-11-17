@@ -201,7 +201,7 @@ function FAQSection({ section }: { section: (typeof faqSections)[0] }) {
     <section className="mb-12">
       <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-12 h-12 bg-gradient-to-br from-[#14ad9f] to-teal-600 rounded-full flex items-center justify-center">
+          <div className="w-12 h-12 bg-linear-to-br from-[#14ad9f] to-teal-600 rounded-full flex items-center justify-center">
             <section.icon className="text-white text-xl" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900">{section.title}</h2>
@@ -219,8 +219,8 @@ function FAQSection({ section }: { section: (typeof faqSections)[0] }) {
 
 export default function BlogPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-linear-to-br from-black/10 to-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         <HeroHeader />
 
@@ -284,8 +284,8 @@ export default function BlogPage() {
                   href={`#${section.id}`}
                   className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-[#14ad9f] hover:bg-[#14ad9f]/5 transition-all group"
                 >
-                  <section.icon className="text-[#14ad9f] group-hover:text-[#129488]" />
-                  <span className="text-sm font-medium text-gray-700 group-hover:text-[#129488]">
+                  <section.icon className="text-[#14ad9f] group-hover:text-taskilo-hover" />
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-taskilo-hover">
                     {section.title}
                   </span>
                 </a>
@@ -308,8 +308,8 @@ export default function BlogPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="text-center p-6 bg-gradient-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="text-center p-6 bg-linear-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
+                  <div className="w-16 h-16 bg-linear-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiHome className="text-white text-xl" />
                   </div>
                   <h3 className="font-semibold mb-2 text-gray-900">Haushaltsservices</h3>
@@ -318,8 +318,8 @@ export default function BlogPage() {
                   </p>
                 </div>
 
-                <div className="text-center p-6 bg-gradient-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="text-center p-6 bg-linear-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
+                  <div className="w-16 h-16 bg-linear-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiTool className="text-white text-xl" />
                   </div>
                   <h3 className="font-semibold mb-2 text-gray-900">Handwerk</h3>
@@ -328,8 +328,8 @@ export default function BlogPage() {
                   </p>
                 </div>
 
-                <div className="text-center p-6 bg-gradient-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="text-center p-6 bg-linear-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
+                  <div className="w-16 h-16 bg-linear-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiZap className="text-white text-xl" />
                   </div>
                   <h3 className="font-semibold mb-2 text-gray-900">Digitale Services</h3>
@@ -338,8 +338,8 @@ export default function BlogPage() {
                   </p>
                 </div>
 
-                <div className="text-center p-6 bg-gradient-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="text-center p-6 bg-linear-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
+                  <div className="w-16 h-16 bg-linear-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiBriefcase className="text-white text-xl" />
                   </div>
                   <h3 className="font-semibold mb-2 text-gray-900">Business Services</h3>
@@ -370,7 +370,7 @@ export default function BlogPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <a
                   href="/blog/zahlungsablaeufe"
-                  className="block bg-gradient-to-r from-[#14ad9f] to-teal-600 hover:from-[#129488] hover:to-teal-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                  className="block bg-linear-to-r from-[#14ad9f] to-teal-600 hover:from-[#129488] hover:to-teal-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
                 >
                   <div className="flex items-start gap-4">
                     <FiCreditCard className="text-2xl mt-1" />
@@ -392,7 +392,7 @@ export default function BlogPage() {
 
                 <a
                   href="/blog/preisinformationen"
-                  className="block bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                  className="block bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
                 >
                   <div className="flex items-start gap-4">
                     <FiDollarSign className="text-2xl mt-1" />
@@ -416,7 +416,7 @@ export default function BlogPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <a
                   href="/blog/verifizierungsprozess"
-                  className="block bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                  className="block bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
                 >
                   <div className="flex items-start gap-4">
                     <FiShield className="text-2xl mt-1" />
@@ -438,7 +438,7 @@ export default function BlogPage() {
 
                 <a
                   href="/blog/kaeufer-schutz-garantie"
-                  className="block bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                  className="block bg-linear-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
                 >
                   <div className="flex items-start gap-4">
                     <FiShield className="text-2xl mt-1" />
@@ -462,7 +462,7 @@ export default function BlogPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <a
                   href="/blog/umzugscheckliste"
-                  className="block bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                  className="block bg-linear-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
                 >
                   <div className="flex items-start gap-4">
                     <FiHome className="text-2xl mt-1" />
@@ -484,7 +484,7 @@ export default function BlogPage() {
 
                 <a
                   href="/blog/renovierungsfehler"
-                  className="block bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                  className="block bg-linear-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
                 >
                   <div className="flex items-start gap-4">
                     <FiTool className="text-2xl mt-1" />
@@ -510,7 +510,7 @@ export default function BlogPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <a
                   href="/blog/wann-elektriker"
-                  className="block bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                  className="block bg-linear-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
                 >
                   <div className="flex items-start gap-4">
                     <FiZap className="text-2xl mt-1" />
@@ -532,7 +532,7 @@ export default function BlogPage() {
                   </div>
                 </a>
 
-                <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg p-6 border-2 border-dashed border-gray-300">
+                <div className="bg-linear-to-r from-gray-100 to-gray-200 rounded-lg p-6 border-2 border-dashed border-gray-300">
                   <div className="flex items-start gap-4">
                     <FiBookOpen className="text-2xl text-gray-500 mt-1" />
                     <div>
@@ -561,7 +561,7 @@ export default function BlogPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <a
                   href="/blog/perfektes-angebot"
-                  className="block bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                  className="block bg-linear-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
                 >
                   <div className="flex items-start gap-4">
                     <FiBriefcase className="text-2xl mt-1" />
@@ -585,7 +585,7 @@ export default function BlogPage() {
 
                 <a
                   href="/blog/kundenkommunikation"
-                  className="block bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                  className="block bg-linear-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
                 >
                   <div className="flex items-start gap-4">
                     <FiMessageSquare className="text-2xl mt-1" />
@@ -611,7 +611,7 @@ export default function BlogPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <a
                   href="/blog/steuer-grundlagen"
-                  className="block bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                  className="block bg-linear-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
                 >
                   <div className="flex items-start gap-4">
                     <FiDollarSign className="text-2xl mt-1" />
@@ -635,7 +635,7 @@ export default function BlogPage() {
 
                 <a
                   href="/blog/e-rechnung-leitfaden"
-                  className="block bg-gradient-to-r from-[#14ad9f] to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                  className="block bg-linear-to-r from-[#14ad9f] to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
                 >
                   <div className="flex items-start gap-4">
                     <FiBriefcase className="text-2xl mt-1" />
@@ -659,7 +659,7 @@ export default function BlogPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg p-6 border-2 border-dashed border-gray-300">
+                <div className="bg-linear-to-r from-gray-100 to-gray-200 rounded-lg p-6 border-2 border-dashed border-gray-300">
                   <div className="flex items-start gap-4">
                     <FiBookOpen className="text-2xl text-gray-500 mt-1" />
                     <div>
@@ -691,18 +691,18 @@ export default function BlogPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center p-6 bg-gradient-to-br from-[#14ad9f]/10 to-teal-100 rounded-lg border border-[#14ad9f]/20">
+                <div className="text-center p-6 bg-linear-to-br from-[#14ad9f]/10 to-teal-100 rounded-lg border border-[#14ad9f]/20">
                   <div className="w-12 h-12 bg-[#14ad9f] rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiMessageSquare className="text-white text-xl" />
                   </div>
                   <h3 className="font-semibold mb-2 text-gray-900">Live Chat</h3>
                   <p className="text-sm text-gray-600 mb-4">Mo-Fr 9:00-18:00 Uhr</p>
-                  <button className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  <button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                     Chat starten
                   </button>
                 </div>
 
-                <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                <div className="text-center p-6 bg-linear-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
                   <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiMail className="text-white text-xl" />
                   </div>
@@ -716,7 +716,7 @@ export default function BlogPage() {
                   </a>
                 </div>
 
-                <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
+                <div className="text-center p-6 bg-linear-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
                   <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiPhone className="text-white text-xl" />
                   </div>

@@ -530,7 +530,7 @@ export default function BestaetigungsPage() {
           <p>{error}</p>
           <button
             onClick={() => router.push('/auftrag/get-started')}
-            className="mt-4 bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded"
+            className="mt-4 bg-[#14ad9f] hover:bg-taskilo-hover text-white px-4 py-2 rounded"
           >
             Auftrag neu starten
           </button>
@@ -560,7 +560,7 @@ export default function BestaetigungsPage() {
           <p className="text-gray-600 mb-4">Bitte starten Sie den Auftrag erneut.</p>
           <button
             onClick={() => router.push('/auftrag/get-started')}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white px-6 py-3 rounded"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white px-6 py-3 rounded"
           >
             Neuen Auftrag starten
           </button>

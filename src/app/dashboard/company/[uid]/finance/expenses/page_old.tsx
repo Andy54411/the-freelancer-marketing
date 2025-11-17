@@ -210,7 +210,7 @@ export default function ExpensesPage() {
           </Button>
           <Button
             onClick={() => router.push(`/dashboard/company/${uid}/finance/expenses/create`)}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
             Neue Ausgabe
@@ -245,7 +245,7 @@ export default function ExpensesPage() {
               <p className="text-gray-500 mb-6">Erfassen Sie Ihre erste Ausgabe um zu beginnen</p>
               <Button
                 onClick={() => router.push(`/dashboard/company/${uid}/finance/expenses/create`)}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Erste Ausgabe erfassen

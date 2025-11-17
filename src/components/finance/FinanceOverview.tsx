@@ -321,7 +321,7 @@ export function FinanceOverview({ stats }: FinanceOverviewProps) {
       </div>
 
       {/* Schnellzugriff */}
-      <Card className="bg-gradient-to-r from-[#14ad9f]/5 to-blue-50 border-[#14ad9f]/20">
+      <Card className="bg-linear-to-r from-[#14ad9f]/5 to-blue-50 border-[#14ad9f]/20">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-gray-900">Schnellzugriff</CardTitle>
           <CardDescription>Häufig verwendete Finanzfunktionen</CardDescription>

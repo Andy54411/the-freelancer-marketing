@@ -17,7 +17,7 @@ export default function ComingSoonBanner() {
         initial={{ opacity: 0, y: -100 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -100 }}
-        className="bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white py-3 px-4 relative overflow-hidden"
+        className="bg-linear-to-r from-[#14ad9f] to-teal-600 text-white py-3 px-4 relative overflow-hidden"
       >
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="max-w-7xl mx-auto flex items-center justify-between relative z-10">

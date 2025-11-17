@@ -118,7 +118,7 @@ export default function CategoryPage() {
     return (
       <>
         <Header />
-        <div className="bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 min-h-screen">
+        <div className="bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 min-h-screen">
           <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
           <div className="relative z-10 pt-8">
             <div className="max-w-2xl mx-auto text-center p-8">
@@ -215,7 +215,7 @@ export default function CategoryPage() {
                     {/* Card Header */}
                     <div className="p-6 pb-4">
                       <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-[#14ad9f] to-[#129488] rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <div className="w-12 h-12 bg-linear-to-br from-[#14ad9f] to-[#129488] rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                           <span className="text-white font-bold text-lg">
                             {subcategory.charAt(0).toUpperCase()}
                           </span>
@@ -262,7 +262,7 @@ export default function CategoryPage() {
                     {/* Card Footer */}
                     <div className="px-6 py-4 bg-gray-50 group-hover:bg-[#14ad9f]/5 transition-colors">
                       <div className="flex items-center justify-between">
-                        <span className="text-[#14ad9f] text-sm font-medium group-hover:text-[#129488] transition-colors">
+                        <span className="text-[#14ad9f] text-sm font-medium group-hover:text-taskilo-hover transition-colors">
                           Services durchstöbern
                         </span>
                         <ArrowLeft className="w-4 h-4 text-[#14ad9f] rotate-180 group-hover:translate-x-1 transition-transform" />
@@ -275,7 +275,7 @@ export default function CategoryPage() {
           </div>
 
           {/* CTA Section */}
-          <div className="mt-16 bg-gradient-to-r from-[#14ad9f] to-[#129488] rounded-2xl p-8 text-center text-white">
+          <div className="mt-16 bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-2xl p-8 text-center text-white">
             <h3 className="text-2xl font-bold mb-4">Sind Sie Anbieter?</h3>
             <p className="text-white/90 mb-6 max-w-2xl mx-auto">
               Werden Sie Teil der Taskilo-Community und erreichen Sie tausende potenzielle Kunden.

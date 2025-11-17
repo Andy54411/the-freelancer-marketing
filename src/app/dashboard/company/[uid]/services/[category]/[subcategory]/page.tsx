@@ -426,7 +426,7 @@ export default function CompanyServiceSubcategoryPage() {
             </p>
             <button
               onClick={() => router.push(`/dashboard/company/${uid}`)}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white py-2 px-4 rounded-lg font-medium transition-colors"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white py-2 px-4 rounded-lg font-medium transition-colors"
             >
               Zurück zum Dashboard
             </button>

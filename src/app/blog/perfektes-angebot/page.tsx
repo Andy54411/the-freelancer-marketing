@@ -34,8 +34,8 @@ const tableOfContents = [
 
 export default function PerfektesAngebotPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-linear-to-br from-black/10 to-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         <HeroHeader />
 
@@ -587,7 +587,7 @@ export default function PerfektesAngebotPage() {
 
               <section
                 id="erfolg-messen"
-                className="scroll-mt-24 bg-gradient-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white mb-8"
+                className="scroll-mt-24 bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white mb-8"
               >
                 <h2 className="text-3xl font-bold mb-6">Ihren Angebots-Erfolg messen</h2>
 
@@ -638,7 +638,7 @@ export default function PerfektesAngebotPage() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link
                     href="/anbieter/dashboard"
-                    className="bg-[#14ad9f] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#129488] transition-colors"
+                    className="bg-[#14ad9f] text-white px-8 py-3 rounded-lg font-semibold hover:bg-taskilo-hover transition-colors"
                   >
                     Angebot erstellen
                   </Link>
@@ -675,7 +675,7 @@ export default function PerfektesAngebotPage() {
                     <li>
                       <Link
                         href="/blog/e-rechnung-leitfaden"
-                        className="text-[#14ad9f] hover:text-[#129488]"
+                        className="text-[#14ad9f] hover:text-taskilo-hover"
                       >
                         E-Rechnung 2025: Der komplette Leitfaden
                       </Link>
@@ -683,7 +683,7 @@ export default function PerfektesAngebotPage() {
                     <li>
                       <Link
                         href="/blog/rechnungsstellung-tipps"
-                        className="text-[#14ad9f] hover:text-[#129488]"
+                        className="text-[#14ad9f] hover:text-taskilo-hover"
                       >
                         Rechnungsstellung: 15 Profi-Tipps
                       </Link>
@@ -691,7 +691,7 @@ export default function PerfektesAngebotPage() {
                     <li>
                       <Link
                         href="/blog/digitalisierung-kleinunternehmen"
-                        className="text-[#14ad9f] hover:text-[#129488]"
+                        className="text-[#14ad9f] hover:text-taskilo-hover"
                       >
                         Digitalisierung für Kleinunternehmen
                       </Link>
@@ -699,7 +699,7 @@ export default function PerfektesAngebotPage() {
                     <li>
                       <Link
                         href="/blog/zahlungsablaeufe"
-                        className="text-[#14ad9f] hover:text-[#129488]"
+                        className="text-[#14ad9f] hover:text-taskilo-hover"
                       >
                         Zahlungsabläufe auf Taskilo
                       </Link>

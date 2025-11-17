@@ -150,7 +150,7 @@ export default function TextTemplateModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#14ad9f] to-teal-600 px-6 py-5 shrink-0">
+        <div className="bg-linear-to-r from-[#14ad9f] to-teal-600 px-6 py-5 shrink-0">
           <DialogTitle className="text-2xl font-bold text-white">
             {template ? 'Textvorlage bearbeiten' : 'Neue Textvorlage'}
           </DialogTitle>
@@ -418,7 +418,7 @@ Tipp: Verwenden Sie Platzhalter wie [%KUNDENNAME%], [%RECHNUNGSNUMMER%] etc."
           <Button 
             onClick={handleSave} 
             disabled={loading}
-            className="bg-gradient-to-r from-[#14ad9f] to-teal-600 hover:from-teal-600 hover:to-[#14ad9f] text-white shadow-md"
+            className="bg-linear-to-r from-[#14ad9f] to-teal-600 hover:from-teal-600 hover:to-[#14ad9f] text-white shadow-md"
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {template ? 'Aktualisieren' : 'Erstellen'}

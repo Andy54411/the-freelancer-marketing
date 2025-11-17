@@ -42,7 +42,7 @@ export default function ManualAddonManager({
           <Button
             onClick={onAddAddon}
             size="sm"
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
           >
             <Plus className="mr-2 h-4 w-4" />
             Add-on hinzufügen

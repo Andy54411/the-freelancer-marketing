@@ -282,7 +282,7 @@ export default function PayrollPage({ params }: { params: { uid: string } }) {
             <Download className="h-4 w-4" />
             Alle exportieren
           </Button>
-          <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
+          <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Abrechnung erstellen
           </Button>
@@ -710,7 +710,7 @@ export default function PayrollPage({ params }: { params: { uid: string } }) {
                     Schließen
                   </Button>
                   {selectedPayroll.status === 'CALCULATED' && (
-                    <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                    <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
                       Genehmigen
                     </Button>
                   )}
@@ -731,7 +731,7 @@ export default function PayrollPage({ params }: { params: { uid: string } }) {
               Für {getMonthName(selectedMonth.month)} {selectedMonth.year} wurden noch keine
               Gehaltsabrechnungen erstellt.
             </p>
-            <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+            <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
               Abrechnungen erstellen
             </Button>
           </CardContent>

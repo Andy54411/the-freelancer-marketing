@@ -303,7 +303,7 @@ export default function DatevMainPage() {
                     onClick={() => setSelectedExportType('accounting')}
                     className={`w-full h-11 transition-all ${
                       selectedExportType === 'accounting'
-                        ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                        ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white'
                         : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
                     }`}
                   >
@@ -348,7 +348,7 @@ export default function DatevMainPage() {
                     onClick={() => setSelectedExportType('invoices')}
                     className={`w-full h-11 transition-all ${
                       selectedExportType === 'invoices'
-                        ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                        ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white'
                         : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
                     }`}
                   >
@@ -442,7 +442,7 @@ export default function DatevMainPage() {
                       router.push(`/dashboard/company/${uid}/datev/export?type=invoices&method=service`);
                     }
                   }}
-                  className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white h-11"
+                  className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white h-11"
                 >
                   {selectedExportType === 'accounting' ? 'Buchungsdatenservice aktivieren' : 'Rechnungsdatenservice 1.0 aktivieren'}
                 </Button>

@@ -121,7 +121,7 @@ const ServicePackagesManager: React.FC<ProfileTabProps> = ({ profile, setProfile
         </div>
         <button
           onClick={addServicePackage}
-          className="mt-4 bg-[#14ad9f] text-white px-4 py-2 rounded-md hover:bg-[#129488] transition-colors flex items-center gap-2"
+          className="mt-4 bg-[#14ad9f] text-white px-4 py-2 rounded-md hover:bg-taskilo-hover transition-colors flex items-center gap-2"
         >
           <FiPlus /> Hinzufügen
         </button>

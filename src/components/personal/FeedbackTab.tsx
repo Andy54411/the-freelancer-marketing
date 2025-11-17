@@ -299,7 +299,7 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ employeeId, companyId }) => {
             <Button
               onClick={saveFeedback}
               disabled={loading}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               <Save className="h-4 w-4 mr-2" />
               {loading ? 'Speichern...' : 'Feedback speichern'}

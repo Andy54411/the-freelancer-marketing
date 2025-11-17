@@ -496,7 +496,7 @@ export default function MultiPlatformAdvertisingDashboard({
         <div className="flex space-x-3">
           <Button
             onClick={() => setActiveTab('create-campaign')}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
             Neue Kampagne
@@ -735,7 +735,7 @@ export default function MultiPlatformAdvertisingDashboard({
             <h2 className="text-xl font-semibold">Alle Kampagnen</h2>
             <Button
               onClick={() => setActiveTab('create-campaign')}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
               Neue Kampagne
@@ -884,7 +884,7 @@ export default function MultiPlatformAdvertisingDashboard({
                           <Button
                             size="sm"
                             onClick={() => connectPlatform(connection.platform)}
-                            className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
+                            className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                           >
                             Verbinden
                           </Button>

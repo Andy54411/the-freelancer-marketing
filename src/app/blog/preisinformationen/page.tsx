@@ -30,7 +30,7 @@ import Link from 'next/link';
 
 export default function PreisinformationenGuide() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         <HeroHeader />
@@ -112,7 +112,7 @@ export default function PreisinformationenGuide() {
             <section>
               <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-[#14ad9f] to-teal-500 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-linear-to-br from-[#14ad9f] to-teal-500 rounded-full flex items-center justify-center">
                     <FiBarChart className="text-white text-xl" />
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900">Unsere Preismodelle</h2>
@@ -176,7 +176,7 @@ export default function PreisinformationenGuide() {
             <section>
               <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                     <FiBriefcase className="text-white text-xl" />
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900">
@@ -304,7 +304,7 @@ export default function PreisinformationenGuide() {
             <section>
               <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-linear-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
                     <FiTrendingUp className="text-white text-xl" />
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900">Faktoren der Preisbildung</h2>
@@ -380,7 +380,7 @@ export default function PreisinformationenGuide() {
             <section>
               <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-linear-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
                     <FiHelpCircle className="text-white text-xl" />
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900">Tipps für faire Preise</h2>
@@ -442,7 +442,7 @@ export default function PreisinformationenGuide() {
 
             {/* CTA */}
             <section>
-              <div className="bg-gradient-to-br from-[#14ad9f] to-teal-600 rounded-lg shadow-xl p-8 text-white text-center">
+              <div className="bg-linear-to-br from-[#14ad9f] to-teal-600 rounded-lg shadow-xl p-8 text-white text-center">
                 <h2 className="text-2xl font-bold mb-4">Bereit für Ihren nächsten Service?</h2>
                 <p className="text-lg mb-6 text-white/90">
                   Finden Sie qualifizierte Dienstleister mit fairen Preisen

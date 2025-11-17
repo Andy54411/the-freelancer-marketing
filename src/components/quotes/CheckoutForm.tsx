@@ -134,7 +134,7 @@ export default function CheckoutForm({
       <button
         type="submit"
         disabled={!stripe || !elements || isLoading}
-        className="w-full bg-[#14ad9f] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#129488] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+        className="w-full bg-[#14ad9f] text-white py-3 px-4 rounded-lg font-medium hover:bg-taskilo-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
       >
         {isLoading ? (
           <>

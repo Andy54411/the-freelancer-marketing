@@ -91,7 +91,7 @@ function CardForm({ clientSecret, amount, anbieterDetails, jobDetails }: CardFor
   return (
     <div className="w-full">
       {/* PAYMENT SUMMARY HEADER */}
-      <div className="mb-4 p-3 bg-gradient-to-r from-[#14ad9f] to-[#129488] rounded-lg text-white">
+      <div className="mb-4 p-3 bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-lg text-white">
         <div className="flex items-center justify-between">
           <div>
             <h4 className="text-base font-semibold">Zahlungsübersicht</h4>
@@ -148,7 +148,7 @@ function CardForm({ clientSecret, amount, anbieterDetails, jobDetails }: CardFor
         <button
           type="submit"
           disabled={!stripe || isProcessing}
-          className="w-full bg-gradient-to-r from-[#14ad9f] to-[#129488] hover:from-[#129488] hover:to-[#0f8a7e] text-white font-semibold py-3 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
+          className="w-full bg-linear-to-r from-[#14ad9f] to-[#129488] hover:from-[#129488] hover:to-[#0f8a7e] text-white font-semibold py-3 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
         >
           {isProcessing ? (
             <>

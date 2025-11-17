@@ -795,7 +795,7 @@ export default function QuoteResponseForm({
           <button
             type="submit"
             disabled={loading || !formData.message.trim()}
-            className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-taskilo-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <FiLoader className="animate-spin mr-2 h-4 w-4" />

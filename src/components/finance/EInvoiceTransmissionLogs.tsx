@@ -212,7 +212,7 @@ export function EInvoiceTransmissionLogs({ companyId }: EInvoiceTransmissionLogs
                       <Button
                         size="sm"
                         onClick={() => toast.info('Wiederholung würde gestartet')}
-                        className="bg-[#14ad9f] hover:bg-[#129488]"
+                        className="bg-[#14ad9f] hover:bg-taskilo-hover"
                       >
                         Wiederholen
                       </Button>

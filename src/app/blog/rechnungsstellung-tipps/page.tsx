@@ -47,8 +47,8 @@ const tableOfContents = [
 
 export default function RechnungsstellungTippsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-linear-to-br from-black/10 to-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         <HeroHeader />
 
@@ -742,7 +742,7 @@ Bei Kleinunternehmern:
 
         {/* Call to Action */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          <div className="bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white rounded-lg p-8 text-center">
+          <div className="bg-linear-to-r from-[#14ad9f] to-teal-600 text-white rounded-lg p-8 text-center">
             <h2 className="text-2xl font-bold mb-4">Bereit für professionelle Rechnungen?</h2>
             <p className="text-lg mb-6">
               Starten Sie jetzt mit Taskilo: Vorlagen, Automatisierung und GoBD-konforme

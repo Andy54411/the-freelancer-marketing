@@ -1131,7 +1131,7 @@ export default function CreateCustomerPage() {
                       type="button"
                       onClick={handleVATValidation}
                       disabled={!formData.vatId || loading}
-                      className="rounded-l-none bg-[#14ad9f] hover:bg-[#129488] text-white">
+                      className="rounded-l-none bg-[#14ad9f] hover:bg-taskilo-hover text-white">
 
                       {loading ?
                       <Loader2 className="h-4 w-4 animate-spin" /> :
@@ -1210,7 +1210,7 @@ export default function CreateCustomerPage() {
                     type="button"
                     onClick={addTag}
                     disabled={!newTag.trim()}
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4">
+                    className="bg-[#14ad9f] hover:bg-taskilo-hover text-white px-4">
 
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -1235,7 +1235,7 @@ export default function CreateCustomerPage() {
                         <button
                       type="button"
                       onClick={() => removeTag(tag)}
-                      className="ml-1 hover:bg-[#129488] rounded-full p-0.5 transition-colors">
+                      className="ml-1 hover:bg-taskilo-hover rounded-full p-0.5 transition-colors">
 
                           <X className="h-3 w-3" />
                         </button>
@@ -1260,7 +1260,7 @@ export default function CreateCustomerPage() {
                 <h3 className="text-lg font-semibold text-gray-900">Kontaktpersonen</h3>
                 <Button
                   onClick={addContact}
-                  className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                  className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
 
                   <UserPlus className="h-4 w-4 mr-2" />
                   Person hinzufügen
@@ -1826,7 +1826,7 @@ export default function CreateCustomerPage() {
                       onClick={() => {
                         setReferenceFieldType(referenceFieldType === 'customerReference' ? 'leitwegId' : 'customerReference');
                       }}
-                      className="text-sm text-[#14ad9f] hover:text-[#129488] font-medium">
+                      className="text-sm text-[#14ad9f] hover:text-taskilo-hover font-medium">
 
                         {referenceFieldType === 'customerReference' ? 'Leitweg-ID' : 'Kundenreferenz'}
                       </button>

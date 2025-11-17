@@ -125,7 +125,7 @@ export default function ServiceHeader({
               </select>
 
               {/* Filter Button */}
-              <button className="bg-[#14ad9f] text-white px-4 py-2.5 rounded-lg hover:bg-[#129488] transition-colors font-medium text-sm">
+              <button className="bg-[#14ad9f] text-white px-4 py-2.5 rounded-lg hover:bg-taskilo-hover transition-colors font-medium text-sm">
                 Filter anwenden
               </button>
             </div>

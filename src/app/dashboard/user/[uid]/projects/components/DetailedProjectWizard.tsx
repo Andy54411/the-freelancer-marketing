@@ -271,7 +271,7 @@ const DetailedProjectWizard: React.FC<DetailedProjectWizardProps> = ({
         <Button
           onClick={() => setCurrentStep('review')}
           disabled={!canProceedToReview()}
-          className="bg-[#14ad9f] hover:bg-[#129488]"
+          className="bg-[#14ad9f] hover:bg-taskilo-hover"
         >
           Projekt erstellen
           <ArrowRight className="w-4 h-4 ml-2" />
@@ -315,7 +315,7 @@ const DetailedProjectWizard: React.FC<DetailedProjectWizardProps> = ({
         <Button
           onClick={createDetailedProject}
           disabled={loading}
-          className="bg-[#14ad9f] hover:bg-[#129488]"
+          className="bg-[#14ad9f] hover:bg-taskilo-hover"
         >
           {loading ? (
             <>

@@ -98,7 +98,7 @@ export default function GeminiTestPage() {
                   <button
                     onClick={fetchBlogContent}
                     disabled={loading}
-                    className="flex items-center px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] disabled:opacity-50 transition-colors"
+                    className="flex items-center px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover disabled:opacity-50 transition-colors"
                   >
                     <FiRefreshCw className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
                     {loading ? 'Lädt...' : 'API Testen'}
@@ -184,7 +184,7 @@ export default function GeminiTestPage() {
                   <button
                     onClick={fetchSyncData}
                     disabled={loading}
-                    className="flex items-center px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] disabled:opacity-50 transition-colors"
+                    className="flex items-center px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover disabled:opacity-50 transition-colors"
                   >
                     <FiRefreshCw className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
                     {loading ? 'Synchronisiert...' : 'Sync Testen'}

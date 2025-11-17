@@ -191,7 +191,7 @@ export default function BookingAccountsTab({ companyUid }: BookingAccountsTabPro
             <Button onClick={handleDeleteAll} variant="destructive" size="sm">
               Alle löschen
             </Button>
-            <Button onClick={handleAdd} className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+            <Button onClick={handleAdd} className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
               <Plus className="h-4 w-4 mr-2" />
               Buchungskonto hinzufügen
             </Button>
@@ -217,7 +217,7 @@ export default function BookingAccountsTab({ companyUid }: BookingAccountsTabPro
                     <Badge
                       className={`${
                         account.type === 'ASSET'
-                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                          ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white'
                           : account.type === 'LIABILITY'
                             ? 'bg-orange-500 hover:bg-orange-600 text-white'
                             : account.type === 'INCOME'
@@ -234,7 +234,7 @@ export default function BookingAccountsTab({ companyUid }: BookingAccountsTabPro
                     <Badge
                       className={`${
                         account.automaticBooking
-                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                          ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white'
                           : 'bg-gray-500 hover:bg-gray-600 text-white'
                       }`}
                     >

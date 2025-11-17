@@ -239,7 +239,7 @@ export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
       {/* Validierungsanzeige */}
       {!hideSubmitButton && !isValid && (
         <div className="text-center">
-          <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
+          <div className="inline-flex items-center py-3 px-5 bg-linear-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5 mr-3 text-[#14ad9f]"

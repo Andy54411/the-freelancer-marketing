@@ -1381,7 +1381,7 @@ export default function CreateReminderPage() {
               </Button>
 
               <Button
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                 size="default"
                 onClick={() => setSendModalOpen(true)}
                 disabled={saving || !selectedInvoice}
@@ -1411,7 +1411,7 @@ export default function CreateReminderPage() {
                     <div className="w-full">
                       <Button
                         variant="default"
-                        className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white justify-center"
+                        className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white justify-center"
                         size="sm"
                       >
                         Aufgabe erstellen
@@ -1468,7 +1468,7 @@ export default function CreateReminderPage() {
                       size="sm"
                       className={`rounded-r-none ${
                         contactType === 'organisation'
-                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                          ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white'
                           : 'hover:bg-gray-50'
                       }`}
                       disabled={true}
@@ -1481,7 +1481,7 @@ export default function CreateReminderPage() {
                       size="sm"
                       className={`rounded-l-none ${
                         contactType === 'person'
-                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                          ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white'
                           : 'hover:bg-gray-50'
                       }`}
                       disabled={true}
@@ -2025,7 +2025,7 @@ export default function CreateReminderPage() {
               <Button
                 type="button"
                 variant={showNet ? 'default' : 'outline'}
-                className={showNet ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' : ''}
+                className={showNet ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white' : ''}
                 onClick={() => setShowNet(true)}
                 size="sm"
               >
@@ -2034,7 +2034,7 @@ export default function CreateReminderPage() {
               <Button
                 type="button"
                 variant={!showNet ? 'default' : 'outline'}
-                className={!showNet ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' : ''}
+                className={!showNet ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white' : ''}
                 onClick={() => setShowNet(false)}
                 size="sm"
               >
@@ -2288,7 +2288,7 @@ export default function CreateReminderPage() {
                   </div>
                   <DialogFooter>
                     <Button
-                      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                      className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                       onClick={async () => {
                         if (!serviceDraft.name.trim() || !serviceDraft.price) return;
 
@@ -2406,7 +2406,7 @@ export default function CreateReminderPage() {
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                                 onClick={() => {
                                   const rate = Number.isFinite(taxRate) ? taxRate : 19;
                                   const name = item.description || '';

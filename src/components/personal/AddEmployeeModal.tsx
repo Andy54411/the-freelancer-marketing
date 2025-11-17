@@ -409,7 +409,7 @@ export function AddEmployeeModal({
             <Button
               type="submit"
               disabled={loading}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               {loading ? 'Wird hinzugefügt...' : 'Mitarbeiter hinzufügen'}
             </Button>

@@ -273,7 +273,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
           ) : (
             <div
               className={cn(
-                'bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center ring-2 ring-gray-100',
+                'bg-linear-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center ring-2 ring-gray-100',
                 currentSize.avatar
               )}
             >

@@ -109,7 +109,7 @@ export default async function DatevSetupPage({ params }: DatevSetupPageProps) {
       </Card>
 
       {/* Simple Next Steps */}
-      <Card className="bg-gradient-to-r from-[#14ad9f]/5 to-[#14ad9f]/10 border-[#14ad9f]/20">
+      <Card className="bg-linear-to-r from-[#14ad9f]/5 to-[#14ad9f]/10 border-[#14ad9f]/20">
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
             <div className="p-2 bg-[#14ad9f] rounded-full">

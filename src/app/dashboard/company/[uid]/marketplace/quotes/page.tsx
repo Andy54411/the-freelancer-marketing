@@ -365,14 +365,14 @@ export default function MarketplaceQuotesPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-[#14ad9f] hover:text-[#129488] hover:bg-[#14ad9f]/10"
+                      className="text-[#14ad9f] hover:text-taskilo-hover hover:bg-[#14ad9f]/10"
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       Ansehen
                     </Button>
 
                     {quote.status === 'pending' && (
-                      <Button size="sm" className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                      <Button size="sm" className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
                         <MessageSquare className="h-4 w-4 mr-2" />
                         Antworten
                       </Button>

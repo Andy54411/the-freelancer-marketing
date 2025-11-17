@@ -246,7 +246,7 @@ export const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
           {/* Header Text (Kopftext) */}
           {data.processedHeaderText && (
             <div
-              className="mb-2 p-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border-l-4"
+              className="mb-2 p-2 bg-linear-to-r from-amber-50 to-yellow-50 rounded-lg border-l-4"
               style={{ borderColor: color }}
             >
               <div

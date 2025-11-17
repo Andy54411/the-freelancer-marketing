@@ -253,7 +253,7 @@ export default function BookingAccountSelectionModal({
               <Button
                 onClick={handleSelectAccount}
                 disabled={!selectedAccount}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               >
                 Verknüpfen
               </Button>

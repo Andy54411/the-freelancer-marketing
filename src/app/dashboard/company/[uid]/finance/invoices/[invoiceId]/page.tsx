@@ -923,7 +923,7 @@ export default function InvoiceDetailPage() {
           <div className="text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-2">Fehler</h2>
             <p className="text-gray-600 mb-4">{error || 'Rechnung nicht gefunden'}</p>
-            <Button onClick={handleBackToInvoices} className="bg-[#14ad9f] hover:bg-[#129488]">
+            <Button onClick={handleBackToInvoices} className="bg-[#14ad9f] hover:bg-taskilo-hover">
               Zurück zu Rechnungen
             </Button>
           </div>
@@ -1034,7 +1034,7 @@ export default function InvoiceDetailPage() {
                   <Button
                     onClick={handleMarkAsPaid}
                     disabled={updating}
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                    className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                   >
                     {updating ? 'Markiere...' : 'Als bezahlt markieren'}
                   </Button>
@@ -1521,7 +1521,7 @@ export default function InvoiceDetailPage() {
                     </div>
                     <div className="right column">
                       <p className="sublabel text-sm text-gray-500">nicht exportiert</p>
-                      <div className="upgrade-icon-wrapper mt-1 flex items-center gap-2 text-xs text-[#14ad9f] cursor-pointer hover:text-[#129488]">
+                      <div className="upgrade-icon-wrapper mt-1 flex items-center gap-2 text-xs text-[#14ad9f] cursor-pointer hover:text-taskilo-hover">
                         <span className="upgrade-text">Zum Export</span>
                         <Sparkles className="h-3 w-3" />
                       </div>
@@ -1542,7 +1542,7 @@ export default function InvoiceDetailPage() {
                   <div className="flex items-center space-x-2">
                     <Button
                       onClick={() => setShowLivePreview(true)}
-                      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                      className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       Vollbild-Vorschau
@@ -1577,7 +1577,7 @@ export default function InvoiceDetailPage() {
                         <p className="text-red-500 mb-4">Fehler beim Laden der Vorschau</p>
                         <Button
                           onClick={() => window.location.reload()}
-                          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                          className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                         >
                           <FileText className="h-4 w-4 mr-2" />
                           Seite neu laden
@@ -1612,7 +1612,7 @@ export default function InvoiceDetailPage() {
                                         setShowPdfSelector(false);
                                         toast.success(`PDF "${pdf.name}" geladen!`);
                                       }}
-                                      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                                      className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                                     >
                                       Laden
                                     </Button>

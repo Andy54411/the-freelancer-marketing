@@ -339,7 +339,7 @@ export default function PersonalAbsencePage() {
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button onClick={handleCreateRequest} className="bg-[#14ad9f] hover:bg-[#129488]">
+          <Button onClick={handleCreateRequest} className="bg-[#14ad9f] hover:bg-taskilo-hover">
             <Plus className="h-4 w-4 mr-2" />
             Neuer Antrag
           </Button>

@@ -713,7 +713,7 @@ export default function ProfilePage() {
   return (
     <>
       <DynamicHeader />
-      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
         <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
         <div className="relative z-10 pt-20">
           <main>
@@ -1077,7 +1077,7 @@ export default function ProfilePage() {
                                             href={item.projectUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="flex items-center gap-2 bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-lg text-xs font-semibold transition-colors"
+                                            className="flex items-center gap-2 bg-[#14ad9f] hover:bg-taskilo-hover text-white px-4 py-2 rounded-lg text-xs font-semibold transition-colors"
                                           >
                                             <span>Live ansehen</span>
                                             <svg

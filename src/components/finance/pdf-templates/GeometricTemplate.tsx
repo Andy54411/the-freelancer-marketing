@@ -199,7 +199,7 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
           {/* Header Text (Kopftext) */}
           {data.processedHeaderText && (
             <div
-              className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-white border-l-4 rounded-r"
+              className="mb-6 p-4 bg-linear-to-r from-blue-50 to-white border-l-4 rounded-r"
               style={{ borderColor: color }}
             >
               <div className="font-medium text-sm mb-2" style={{ color }}>
@@ -245,7 +245,7 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
               <div className="flex justify-between items-start gap-8 mb-6 mt-6">
                 <div className="flex-1">
                   <div
-                    className="p-4 border-l-4 bg-gradient-to-r from-blue-50 to-white rounded-r"
+                    className="p-4 border-l-4 bg-linear-to-r from-blue-50 to-white rounded-r"
                     style={{ borderColor: color }}
                   >
                     <div className="font-medium text-sm mb-2" style={{ color }}>
@@ -411,7 +411,7 @@ export const GeometricTemplate: React.FC<GeometricTemplateProps> = ({
               <div className="flex justify-between items-start gap-8 mb-8">
                 <div className="flex-1">
                   <div
-                    className="p-4 border-l-4 bg-gradient-to-r from-blue-50 to-white"
+                    className="p-4 border-l-4 bg-linear-to-r from-blue-50 to-white"
                     style={{ borderColor: color }}
                   >
                     <div className="font-medium text-sm mb-2" style={{ color }}>

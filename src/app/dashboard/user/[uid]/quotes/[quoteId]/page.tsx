@@ -239,7 +239,7 @@ export default function CustomerQuoteDetailPage() {
           <div className="mt-6">
             <Link
               href={`/dashboard/user/${uid}/quotes`}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-taskilo-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
             >
               <FiArrowLeft className="-ml-1 mr-2 h-4 w-4" />
               Zurück zur Übersicht
@@ -501,7 +501,7 @@ export default function CustomerQuoteDetailPage() {
                 <button
                   onClick={() => handleQuoteAction('accept')}
                   disabled={accepting || declining}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-taskilo-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50"
                 >
                   {accepting ? (
                     <FiLoader className="animate-spin mr-2 h-4 w-4" />
@@ -581,7 +581,7 @@ export default function CustomerQuoteDetailPage() {
             </div>
             <Link
               href={`/provider/${quote.providerId}`}
-              className="inline-flex items-center text-sm text-[#14ad9f] hover:text-[#129488]"
+              className="inline-flex items-center text-sm text-[#14ad9f] hover:text-taskilo-hover"
             >
               <FiBuilding className="mr-1 h-4 w-4" />
               Anbieterprofil anzeigen

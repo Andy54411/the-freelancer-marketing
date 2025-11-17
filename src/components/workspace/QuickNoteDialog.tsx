@@ -264,7 +264,7 @@ export function QuickNoteDialog({
             <Button
               type="submit"
               disabled={!selectedWorkspaceId || !noteTitle.trim() || loading}
-              className="flex-1 bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="flex-1 bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               {loading ? (
                 <>Wird hinzugefügt...</>

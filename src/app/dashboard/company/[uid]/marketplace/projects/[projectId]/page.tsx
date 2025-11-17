@@ -316,7 +316,7 @@ export default function ProjectDetailPage() {
           </Badge>
           <Button
             onClick={() => setShowProposalModal(true)}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
           >
             <Send className="h-4 w-4 mr-2" />
             Angebot abgeben

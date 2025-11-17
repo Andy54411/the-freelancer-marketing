@@ -17,7 +17,7 @@ import { HeroHeader } from '@/components/hero8-header';
 
 export default function ZahlungsablaeufeGuide() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         <HeroHeader />
@@ -39,7 +39,7 @@ export default function ZahlungsablaeufeGuide() {
             <section>
               <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-[#14ad9f] to-teal-500 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-linear-to-br from-[#14ad9f] to-teal-500 rounded-full flex items-center justify-center">
                     <FiShield className="text-white text-xl" />
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900">Sichere Zahlungen mit Stripe</h2>
@@ -74,7 +74,7 @@ export default function ZahlungsablaeufeGuide() {
             <section>
               <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                     <FiUser className="text-white text-xl" />
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900">Für Kunden</h2>
@@ -213,7 +213,7 @@ export default function ZahlungsablaeufeGuide() {
             <section>
               <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-linear-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
                     <FiUsers className="text-white text-xl" />
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900">Für Dienstleister</h2>
@@ -356,7 +356,7 @@ export default function ZahlungsablaeufeGuide() {
             <section>
               <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-linear-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
                     <FiDollarSign className="text-white text-xl" />
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900">Gebühren & Transparenz</h2>
@@ -414,7 +414,7 @@ export default function ZahlungsablaeufeGuide() {
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <a
                       href="mailto:support@taskilo.de"
-                      className="bg-[#14ad9f] hover:bg-[#129488] text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md"
+                      className="bg-[#14ad9f] hover:bg-taskilo-hover text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md"
                     >
                       E-Mail Support
                     </a>

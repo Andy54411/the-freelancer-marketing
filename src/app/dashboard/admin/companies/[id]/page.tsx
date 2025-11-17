@@ -400,7 +400,7 @@ export default function AdminCompanyDetailsPage() {
           )}
           {loading ? 'Lädt...' : 'Aktualisieren'}
         </Button>
-        <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+        <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
           <Edit className="h-4 w-4 mr-2" />
           Bearbeiten
         </Button>

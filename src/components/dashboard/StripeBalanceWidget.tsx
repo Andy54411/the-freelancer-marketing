@@ -204,7 +204,7 @@ export default function StripeBalanceWidget({
                 onClick={handleRequestPayout}
                 disabled={payoutLoading}
                 size="sm"
-                className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               >
                 {payoutLoading ? (
                   <>
@@ -273,7 +273,7 @@ export default function StripeBalanceWidget({
             <Button
               onClick={handleRequestPayout}
               disabled={payoutLoading}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               {payoutLoading ? (
                 <>

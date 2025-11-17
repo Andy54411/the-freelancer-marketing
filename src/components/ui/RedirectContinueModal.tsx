@@ -125,7 +125,7 @@ const RedirectContinueModal: React.FC<RedirectContinueModalProps> = ({
               <Button
                 variant="default"
                 onClick={handleContinue}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               >
                 {continueText}
               </Button>

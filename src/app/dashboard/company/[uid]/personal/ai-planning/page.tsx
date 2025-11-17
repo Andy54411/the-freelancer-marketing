@@ -238,7 +238,7 @@ export default function AISchedulePlanningPage({ params }: { params: Promise<{ u
           </Button>
           <Button
             onClick={runAIOptimization}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
           >
             <Sparkles className="h-4 w-4 mr-2" />
             Optimierung starten
@@ -380,7 +380,7 @@ export default function AISchedulePlanningPage({ params }: { params: Promise<{ u
                       <div className="flex items-center gap-2">
                         <Button
                           onClick={() => applySuggestion(suggestion.id)}
-                          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                          className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                           size="sm"
                         >
                           Anwenden
@@ -563,7 +563,7 @@ export default function AISchedulePlanningPage({ params }: { params: Promise<{ u
                     <option>Vollautomatisch</option>
                   </select>
                 </div>
-                <Button className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white">
+                <Button className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white">
                   Einstellungen speichern
                 </Button>
               </CardContent>

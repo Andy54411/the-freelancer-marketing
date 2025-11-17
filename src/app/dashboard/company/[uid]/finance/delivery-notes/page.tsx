@@ -37,7 +37,7 @@ export default function DeliveryNotesPage() {
         </div>
         <Button
           onClick={() => setShowCreateModal(true)}
-          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+          className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
           Neuer Lieferschein

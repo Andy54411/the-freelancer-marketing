@@ -310,7 +310,7 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
   return (
     <div className="space-y-6">
       {/* Header mit Statistiken */}
-      <Card className="bg-gradient-to-r from-[#14ad9f] to-[#129488] text-white">
+      <Card className="bg-linear-to-r from-[#14ad9f] to-[#129488] text-white">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
             <FiShield className="text-white w-8 h-8 mt-1 shrink-0" />
@@ -477,7 +477,7 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
 
             <Button
               onClick={sendInvite}
-              className="w-full bg-[#14ad9f] hover:bg-[#129488]"
+              className="w-full bg-[#14ad9f] hover:bg-taskilo-hover"
               disabled={!newInviteEmail || !newInviteName}
             >
               <FiMail className="w-4 h-4 mr-2" />
@@ -578,7 +578,7 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Button
                   onClick={() => generateReport('Monatsbericht')}
-                  className="bg-[#14ad9f] hover:bg-[#129488]"
+                  className="bg-[#14ad9f] hover:bg-taskilo-hover"
                 >
                   <FiFileText className="w-4 h-4 mr-2" />
                   Monatsbericht

@@ -775,7 +775,7 @@ export function LivePreviewModal({
                       <Button
                       onClick={() => handleSend('download')}
                       disabled={sending}
-                      className="w-full bg-[#14ad9f] hover:bg-[#129488]">
+                      className="w-full bg-[#14ad9f] hover:bg-taskilo-hover">
 
                         {sending ?
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :

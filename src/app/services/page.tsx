@@ -45,7 +45,7 @@ export default function ServicesPage() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-[#129488] to-[#0f8a7e]">
+      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-[#129488] to-[#0f8a7e]">
         <div className="absolute inset-0 bg-black/10" />
 
         <div className="relative z-10 py-20">
@@ -164,7 +164,7 @@ export default function ServicesPage() {
                       <div className="text-sm text-gray-500">
                         {category.subcategories.length} Services
                       </div>
-                      <div className="text-[#14ad9f] text-sm font-medium group-hover:text-[#129488] transition-colors duration-300">
+                      <div className="text-[#14ad9f] text-sm font-medium group-hover:text-taskilo-hover transition-colors duration-300">
                         Anzeigen →
                       </div>
                     </div>
@@ -184,7 +184,7 @@ export default function ServicesPage() {
                   </p>
                   <button
                     onClick={() => setSearchTerm('')}
-                    className="bg-[#14ad9f] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#129488] transition-colors duration-300"
+                    className="bg-[#14ad9f] text-white px-6 py-3 rounded-xl font-medium hover:bg-taskilo-hover transition-colors duration-300"
                   >
                     Alle Kategorien anzeigen
                   </button>
@@ -234,7 +234,7 @@ export default function ServicesPage() {
 
             {/* CTA Section */}
             <div className="mt-20">
-              <div className="bg-gradient-to-r from-[#14ad9f] to-[#129488] rounded-3xl p-12 text-center">
+              <div className="bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-3xl p-12 text-center">
                 <h2 className="text-4xl font-bold text-white mb-4">Als Anbieter registrieren</h2>
                 <p className="text-white/90 mb-8 max-w-2xl mx-auto text-lg">
                   Werden Sie Teil der Taskilo Community! Bieten Sie Ihre Services an und erreichen

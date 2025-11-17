@@ -226,7 +226,7 @@ Achte darauf, dass:
             <Button
               onClick={handleGenerateClick}
               disabled={isGeneratingAi || !aiDescription.trim()}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               {isGeneratingAi ? (
                 <>
@@ -332,7 +332,7 @@ Achte darauf, dass:
                                     addon.price === suggestion.price
                                 )
                                   ? 'bg-gray-400 hover:bg-gray-500 text-white'
-                                  : 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                                  : 'bg-[#14ad9f] hover:bg-taskilo-hover text-white'
                               }
                             >
                               <Plus className="h-4 w-4 mr-1" />

@@ -809,7 +809,7 @@ export function CustomerDocumentsTab({
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             size="sm"
-            className="bg-[#14ad9f] hover:bg-[#129488]"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover"
           >
             <Upload className="h-4 w-4 mr-2" />
             {uploading ? 'Lädt hoch...' : 'Dokument hochladen'}
@@ -1096,7 +1096,7 @@ export function CustomerDocumentsTab({
                 size="sm"
                 onClick={handleCreateFolder}
                 disabled={!newFolderName.trim()}
-                className="bg-[#14ad9f] hover:bg-[#129488]"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover"
               >
                 <FolderPlus className="h-4 w-4 mr-2" />
                 Erstellen

@@ -367,7 +367,7 @@ const UserProfilePage = () => {
             <section className="md:col-span-2 space-y-8">
               {/* Schnell-Buchung Banner für Dienstleister */}
               {services.length > 0 && !isOwnProfile && (
-                <div className="bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white p-6 rounded-lg shadow-lg">
+                <div className="bg-linear-to-r from-[#14ad9f] to-teal-600 text-white p-6 rounded-lg shadow-lg">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-xl font-bold mb-2">Bereit für Ihr Projekt?</h3>

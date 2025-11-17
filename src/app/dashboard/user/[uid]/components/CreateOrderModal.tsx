@@ -468,7 +468,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
   return (
     <>
-      <div className="p-8 max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-50 to-white">
+      <div className="p-8 max-h-[90vh] overflow-y-auto bg-linear-to-br from-gray-50 to-white">
         <div className="text-center mb-8">
           <h3 className="text-3xl font-bold text-gray-900 mb-2">Neuen Auftrag erstellen</h3>
           <p className="text-gray-600">Finden Sie den perfekten Tasker für Ihr Projekt</p>
@@ -603,7 +603,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
               <h4 className="text-xl font-semibold text-gray-800">Zahlung abschließen</h4>
             </div>
 
-            <div className="bg-gradient-to-r from-[#14ad9f]/5 to-teal-50 p-6 border border-[#14ad9f]/20 rounded-xl">
+            <div className="bg-linear-to-r from-[#14ad9f]/5 to-teal-50 p-6 border border-[#14ad9f]/20 rounded-xl">
               <h5 className="font-semibold text-gray-800 mb-4 flex items-center">
                 <div className="w-2 h-2 bg-[#14ad9f] rounded-full mr-3"></div>
                 Auftragsübersicht

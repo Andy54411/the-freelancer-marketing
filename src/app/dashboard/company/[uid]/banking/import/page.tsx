@@ -77,7 +77,7 @@ export default function BankingImportPage() {
             <div className="flex space-x-3">
               <Button
                 onClick={() => router.push(`/dashboard/company/${uid}/banking`)}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               >
                 <CreditCard className="h-4 w-4 mr-2" />
                 Banking Dashboard

@@ -716,7 +716,7 @@ export function RichTextEditor({
             </div>
           ) : (
             <div
-              className="h-32 bg-gradient-to-r from-[#14ad9f] to-[#129488] cursor-pointer flex items-center justify-center group hover:from-[#129488] hover:to-[#0f8a7e] transition-all"
+              className="h-32 bg-linear-to-r from-[#14ad9f] to-[#129488] cursor-pointer flex items-center justify-center group hover:from-[#129488] hover:to-[#0f8a7e] transition-all"
               onClick={() => coverInputRef.current?.click()}
             >
               <div className="text-center text-white">

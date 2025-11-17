@@ -237,7 +237,7 @@ export default function ExpenseDetailPage() {
           <div className="text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-2">Fehler</h2>
             <p className="text-gray-600 mb-4">{error || 'Ausgabe nicht gefunden'}</p>
-            <Button onClick={handleBackToExpenses} className="bg-[#14ad9f] hover:bg-[#129488]">
+            <Button onClick={handleBackToExpenses} className="bg-[#14ad9f] hover:bg-taskilo-hover">
               Zurück zu Ausgaben
             </Button>
           </div>
@@ -272,7 +272,7 @@ export default function ExpenseDetailPage() {
                 {pdfUrl && (
                   <Button
                     onClick={handleDownloadReceipt}
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                    className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Beleg herunterladen

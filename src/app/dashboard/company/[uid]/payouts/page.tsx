@@ -716,7 +716,7 @@ export default function PayoutOverviewPage() {
                               payoutLoading || !stripeBalance || stripeBalance.available <= 0
                             }
                             onClick={() => handleRequestPayout(false)}
-                            className="bg-[#14ad9f] hover:bg-[#129488] text-white w-full"
+                            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white w-full"
                           >
                             {payoutLoading ? (
                               <>

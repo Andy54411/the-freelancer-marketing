@@ -404,7 +404,7 @@ export default function CreateProjectRequestPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowDatePlanning(!showDatePlanning)}
-                  className="text-[#14ad9f] hover:text-[#129488]"
+                  className="text-[#14ad9f] hover:text-taskilo-hover"
                 >
                   {showDatePlanning ? (
                     <ChevronUp className="h-4 w-4" />
@@ -887,7 +887,7 @@ export default function CreateProjectRequestPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
       <div className="absolute inset-0 bg-black/20"></div>
 
       <div className="relative z-10 pt-20 pb-12 px-4 lg:px-6">
@@ -980,7 +980,7 @@ export default function CreateProjectRequestPage() {
                       disabled={
                         !!(currentStep === 2 && formData.subcategory && !subcategoryFormValid)
                       }
-                      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                      className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                     >
                       Weiter
                     </Button>
@@ -988,7 +988,7 @@ export default function CreateProjectRequestPage() {
                     <Button
                       onClick={handleSubmit}
                       disabled={isSubmitting}
-                      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                      className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                     >
                       {isSubmitting ? (
                         <>

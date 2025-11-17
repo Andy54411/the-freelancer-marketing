@@ -27,7 +27,7 @@ const ModalCard = React.forwardRef<HTMLDivElement, ModalCardProps>(
     const baseClasses = 'bg-white rounded-3xl border overflow-hidden';
     const variantClasses = {
       default: 'border-gray-200 shadow-lg',
-      gradient: 'border-gray-100 shadow-xl bg-gradient-to-br from-white to-gray-50',
+      gradient: 'border-gray-100 shadow-xl bg-linear-to-br from-white to-gray-50',
       elevated: 'border-gray-200 shadow-2xl ring-1 ring-gray-100',
     };
 
@@ -93,9 +93,9 @@ const ModalCardSection = React.forwardRef<HTMLDivElement, ModalCardSectionProps>
   ({ className, children, title, variant = 'default', ...props }, ref) => {
     const variantClasses = {
       default: 'bg-gray-50 border-gray-100',
-      success: 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200',
-      warning: 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200',
-      info: 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200',
+      success: 'bg-linear-to-r from-green-50 to-emerald-50 border-green-200',
+      warning: 'bg-linear-to-r from-amber-50 to-yellow-50 border-amber-200',
+      info: 'bg-linear-to-r from-blue-50 to-indigo-50 border-blue-200',
     };
 
     const titleColors = {

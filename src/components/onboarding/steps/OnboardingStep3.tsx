@@ -166,7 +166,7 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
                   <button
                     type="button"
                     onClick={() => document.getElementById('profileBannerImage')?.click()}
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-md flex items-center gap-2"
+                    className="bg-[#14ad9f] hover:bg-taskilo-hover text-white px-4 py-2 rounded-md flex items-center gap-2"
                   >
                     <Camera className="h-4 w-4" />
                     Banner hochladen
@@ -330,7 +330,7 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
         </Button>
         <Button 
           onClick={handleNext} 
-          className="px-6 bg-[#14ad9f] hover:bg-[#129488] text-white"
+          className="px-6 bg-[#14ad9f] hover:bg-taskilo-hover text-white"
           disabled={!isValidForNext()}
         >
           Weiter

@@ -236,7 +236,7 @@ export default function IntegrationsPage({ params }: { params: Promise<{ uid: st
             <RefreshCw className="h-4 w-4 mr-2" />
             Alle synchronisieren
           </Button>
-          <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+          <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
             <Plus className="h-4 w-4 mr-2" />
             Integration hinzufügen
           </Button>
@@ -407,7 +407,7 @@ export default function IntegrationsPage({ params }: { params: Promise<{ uid: st
                             ) : (
                               <Button
                                 onClick={() => handleConnect(integration.id)}
-                                className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
+                                className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                                 size="sm"
                               >
                                 {integration.status === 'pending'

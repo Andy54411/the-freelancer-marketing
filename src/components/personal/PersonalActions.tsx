@@ -207,7 +207,7 @@ export function PersonalActions({
     <>
       {/* Primary Action Buttons */}
       <div className="flex flex-wrap gap-3">
-        <Button onClick={handleAddEmployee} className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+        <Button onClick={handleAddEmployee} className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
           <UserPlus className="h-4 w-4 mr-2" />
           Mitarbeiter hinzufügen
         </Button>

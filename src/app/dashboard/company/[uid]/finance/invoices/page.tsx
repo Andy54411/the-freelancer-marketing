@@ -81,7 +81,7 @@ export default function InvoicesPage() {
               E-Rechnung lesen
             </Button>
             <Link href={`/dashboard/company/${uid}/finance/invoices/create`}>
-              <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
+              <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Rechnung schreiben
               </Button>
@@ -122,7 +122,7 @@ export default function InvoicesPage() {
               E-Rechnung lesen
             </Button>
             <Link href={`/dashboard/company/${uid}/finance/invoices/create`}>
-              <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
+              <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Rechnung schreiben
               </Button>
@@ -142,7 +142,7 @@ export default function InvoicesPage() {
           <div className="text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-2">Fehler</h2>
             <p className="text-gray-600 mb-4">{error}</p>
-            <Button onClick={loadInvoices} className="bg-[#14ad9f] hover:bg-[#129488]">
+            <Button onClick={loadInvoices} className="bg-[#14ad9f] hover:bg-taskilo-hover">
               Erneut versuchen
             </Button>
           </div>
@@ -165,7 +165,7 @@ export default function InvoicesPage() {
             E-Rechnung lesen
           </Button>
           <Link href={`/dashboard/company/${uid}/finance/invoices/create`}>
-            <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
+            <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Rechnung schreiben
             </Button>

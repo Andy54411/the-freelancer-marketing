@@ -412,13 +412,13 @@ export default function Step4() {
   const closeStepsModal = () => setIsStepsModalOpen(false);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br p-4 sm:p-6 font-sans">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br p-4 sm:p-6 font-sans">
       {/* Top-Bereich */}
       <div className="w-full max-w-xl lg:max-w-4xl mx-auto mb-6 px-4">
         <div className="flex justify-between mb-4">
           <button
             onClick={() => router.push('/register/company/step3')}
-            className="text-[#14ad9f] hover:text-[#129488] text-base sm:text-lg flex items-center transition-colors duration-200"
+            className="text-[#14ad9f] hover:text-taskilo-hover text-base sm:text-lg flex items-center transition-colors duration-200"
           >
             <span className="mr-2">← Zurück zu Schritt 3</span>
           </button>

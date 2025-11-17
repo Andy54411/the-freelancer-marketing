@@ -71,7 +71,7 @@ export default function PDFViewer({ pdfUrl, title = 'PDF Vorschau', onDownload }
             <div className="space-y-2">
               <Button
                 onClick={() => window.open(pdfUrl, '_blank')}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               >
                 <FileText className="h-4 w-4 mr-2" />
                 PDF in neuem Tab öffnen
@@ -113,7 +113,7 @@ export default function PDFViewer({ pdfUrl, title = 'PDF Vorschau', onDownload }
               <p className="text-gray-600 mb-4">PDF-Plugin nicht verfügbar</p>
               <Button
                 onClick={() => window.open(pdfUrl, '_blank')}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               >
                 <FileText className="h-4 w-4 mr-2" />
                 PDF in neuem Tab öffnen

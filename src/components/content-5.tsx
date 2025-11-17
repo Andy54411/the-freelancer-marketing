@@ -56,7 +56,7 @@ export default function ContentSection() {
           </div>
 
           <div className="relative">
-            <div className="aspect-[4/3] overflow-hidden rounded-xl bg-gradient-to-br from-[#14ad9f]/10 to-[#14ad9f]/20">
+            <div className="aspect-[4/3] overflow-hidden rounded-xl bg-linear-to-br from-[#14ad9f]/10 to-[#14ad9f]/20">
               <div className="flex h-full w-full items-center justify-center">
                 <div className="text-center">
                   <Users className="mx-auto h-16 w-16 text-[#14ad9f]" />

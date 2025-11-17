@@ -634,7 +634,7 @@ export default function AdminTaskDetailSlider({
                               <Button
                                 onClick={handleSubmit}
                                 disabled={loading}
-                                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                               >
                                 <Save className="h-4 w-4 mr-2" />
                                 {loading ? 'Speichern...' : 'Speichern'}
@@ -1457,7 +1457,7 @@ Was sollen deine Follower tun?</p>
                         <Button
                           type="submit"
                           disabled={loading || !formData.title.trim()}
-                          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                          className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                         >
                           <Save className="h-4 w-4 mr-2" />
                           {loading ? 'Speichern...' : 'Speichern'}
@@ -1527,7 +1527,7 @@ Was sollen deine Follower tun?</p>
                               onClick={handleAddComment}
                               disabled={!newComment.trim()}
                               size="sm"
-                              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                             >
                               <Send className="h-4 w-4 mr-2" />
                               Senden

@@ -29,10 +29,10 @@ export const OrdersOverviewCard: React.FC<OrdersOverviewCardProps> = ({
     <DashboardCard>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-800 flex items-center">
-          <span className="w-3 h-3 bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-full mr-3"></span>
+          <span className="w-3 h-3 bg-linear-to-r from-[#14ad9f] to-teal-600 rounded-full mr-3"></span>
           Meine Aufträge
         </h2>
-        <div className="px-3 py-1 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white text-sm font-medium rounded-full">
+        <div className="px-3 py-1 bg-linear-to-r from-[#14ad9f] to-teal-600 text-white text-sm font-medium rounded-full">
           {userOrders.length} {userOrders.length === 1 ? 'Auftrag' : 'Aufträge'}
         </div>
       </div>
@@ -49,7 +49,7 @@ export const OrdersOverviewCard: React.FC<OrdersOverviewCardProps> = ({
         </div>
       ) : userOrders.length === 0 ? (
         <div className="text-center py-8">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-full flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-linear-to-r from-[#14ad9f] to-teal-600 rounded-full flex items-center justify-center">
             <FiMessageSquare className="w-8 h-8 text-white" />
           </div>
           <h3 className="text-lg font-semibold text-gray-800 mb-2">Noch keine Aufträge</h3>
@@ -62,7 +62,7 @@ export const OrdersOverviewCard: React.FC<OrdersOverviewCardProps> = ({
           {userOrders.map(order => (
             <div
               key={order.id}
-              className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 hover:border-[#14ad9f]/30"
+              className="bg-linear-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 hover:border-[#14ad9f]/30"
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
@@ -101,7 +101,7 @@ export const OrdersOverviewCard: React.FC<OrdersOverviewCardProps> = ({
       <div className="flex gap-3 mt-6">
         <button
           onClick={onCreateNewOrder}
-          className="flex-1 flex items-center justify-center px-4 py-3 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-[#129a8f] hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl"
+          className="flex-1 flex items-center justify-center px-4 py-3 bg-linear-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-[#129a8f] hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl"
         >
           <FiPlusCircle className="mr-2 w-4 h-4" />
           Neuen Auftrag erstellen

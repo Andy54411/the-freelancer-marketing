@@ -157,7 +157,7 @@ export function FilteredQuoteComponent({
           onClick={() =>
             (window.location.href = `/dashboard/company/${companyId}/finance/quotes/create`)
           }
-          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+          className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
           Neues Angebot
@@ -199,7 +199,7 @@ export function FilteredQuoteComponent({
                 onClick={() =>
                   (window.location.href = `/dashboard/company/${companyId}/finance/quotes/create`)
                 }
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Erstes Angebot erstellen

@@ -12,19 +12,19 @@ export default function DashboardRedirectClient() {
 
   // Simuliere einen progressiven Ladebalken
   useEffect(() => {
-    if (redirecting) {
-      const interval = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(interval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 100);
+    if (!redirecting) return;
+    
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(interval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 100);
 
-      return () => clearInterval(interval);
-    }
+    return () => clearInterval(interval);
   }, [redirecting]);
 
   useEffect(() => {
@@ -93,7 +93,7 @@ export default function DashboardRedirectClient() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#14ad9f]/5 via-teal-50 to-blue-50">
+    <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-[#14ad9f]/5 via-teal-50 to-blue-50">
       <div className="text-center space-y-6 max-w-md mx-auto p-8">
         {/* Icon mit Animation */}
         <div className="flex justify-center">

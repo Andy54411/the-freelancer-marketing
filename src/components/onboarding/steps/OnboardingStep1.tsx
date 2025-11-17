@@ -177,7 +177,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white py-8 px-4">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-white py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -373,7 +373,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                         setFormData(prev => ({ ...prev, managerData }));
                         setShowManagerModal(false);
                       }}
-                      className="flex-1 px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors"
+                      className="flex-1 px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover transition-colors"
                     >
                       Speichern
                     </button>
@@ -409,7 +409,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
               disabled={!isValidForNext() || isSaving}
               className={`px-6 py-2 text-white rounded-lg transition-colors flex items-center gap-2 ${
                 isValidForNext() && !isSaving
-                  ? 'bg-[#14ad9f] hover:bg-[#129488] cursor-pointer'
+                  ? 'bg-[#14ad9f] hover:bg-taskilo-hover cursor-pointer'
                   : 'bg-gray-300 cursor-not-allowed'
               }`}
             >

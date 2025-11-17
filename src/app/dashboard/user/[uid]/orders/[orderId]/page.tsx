@@ -408,7 +408,7 @@ export default function OrderDetailPage() {
 
   if (overallLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex justify-center items-center">
+      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex justify-center items-center">
         <FiLoader className="animate-spin text-4xl text-white mr-3" />
         {authLoading ? 'Authentifizierung wird geprüft...' : 'Lade Auftragsdetails...'}
       </div>
@@ -417,7 +417,7 @@ export default function OrderDetailPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex flex-col justify-center items-center p-4 text-center">
+      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex flex-col justify-center items-center p-4 text-center">
         <div
           className="bg-white/90 border border-white/20 text-red-700 px-4 py-3 rounded relative max-w-md"
           role="alert"
@@ -435,7 +435,7 @@ export default function OrderDetailPage() {
 
   if (!order || !currentUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex justify-center items-center">
+      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex justify-center items-center">
         <FiAlertCircle className="text-4xl text-white mr-3" />
         Fehler: Auftrag konnte nicht angezeigt werden oder Sie sind nicht angemeldet.
       </div>
@@ -462,12 +462,12 @@ export default function OrderDetailPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex justify-center items-center">
+        <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex justify-center items-center">
           <FiLoader className="animate-spin text-4xl text-white mr-3" /> Lade Benutzeroberfläche...
         </div>
       }
     >
-      <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+      <main className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
         <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
         <div className="relative z-10 pt-20 px-4 lg:px-6 pb-6">
           <div className="max-w-7xl mx-auto">
@@ -643,7 +643,7 @@ export default function OrderDetailPage() {
                       <div className="md:col-span-2 mt-4">
                         <button
                           onClick={handleCompleteOrder}
-                          className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center gap-2"
+                          className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center gap-2"
                         >
                           <FiCheckCircle className="h-5 w-5" />
                           Auftrag als erledigt markieren
@@ -685,7 +685,7 @@ export default function OrderDetailPage() {
                           </div>
                           <button
                             onClick={handleCompleteOrder}
-                            className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center gap-2"
+                            className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center gap-2"
                           >
                             <FiCheckCircle className="h-5 w-5" />
                             Auftrag bestätigen & bewerten

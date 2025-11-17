@@ -417,7 +417,7 @@ export function AdminWorkspaceCalendar({
                 variant={view === 'month' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setView('month')}
-                className={view === 'month' ? 'bg-[#14ad9f] hover:bg-[#129488]' : ''}
+                className={view === 'month' ? 'bg-[#14ad9f] hover:bg-taskilo-hover' : ''}
               >
                 Monat
               </Button>
@@ -425,7 +425,7 @@ export function AdminWorkspaceCalendar({
                 variant={view === 'week' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setView('week')}
-                className={view === 'week' ? 'bg-[#14ad9f] hover:bg-[#129488]' : ''}
+                className={view === 'week' ? 'bg-[#14ad9f] hover:bg-taskilo-hover' : ''}
               >
                 Woche
               </Button>
@@ -433,7 +433,7 @@ export function AdminWorkspaceCalendar({
                 variant={view === 'day' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setView('day')}
-                className={view === 'day' ? 'bg-[#14ad9f] hover:bg-[#129488]' : ''}
+                className={view === 'day' ? 'bg-[#14ad9f] hover:bg-taskilo-hover' : ''}
               >
                 Tag
               </Button>

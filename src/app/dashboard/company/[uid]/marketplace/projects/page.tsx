@@ -539,7 +539,7 @@ export default function CompanyMarketplacePage() {
                     <Button
                       size="sm"
                       onClick={() => handleSubmitProposal(project)}
-                      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                      className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                     >
                       Angebot abgeben
                     </Button>

@@ -543,7 +543,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           <Button
             onClick={handleConnect}
             disabled={connecting}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white px-8 py-2"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white px-8 py-2"
           >
             {connecting ? (
               <>

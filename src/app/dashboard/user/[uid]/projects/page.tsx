@@ -421,7 +421,7 @@ const ProjectsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative z-10 flex items-center justify-center pt-32">
           <div className="text-center">
@@ -434,7 +434,7 @@ const ProjectsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
       <div className="absolute inset-0 bg-black/20"></div>
       <div className="relative z-10 pt-20 pb-12 px-4 lg:px-6">
         {/* Header */}
@@ -532,7 +532,7 @@ const ProjectsPage: React.FC = () => {
               </p>
               <Button
                 onClick={handleNewProject}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               >
                 <PlusCircle className="h-4 w-4 mr-2" />
                 Erstes Projekt erstellen
@@ -660,7 +660,7 @@ const ProjectsPage: React.FC = () => {
                               <div className="flex items-center gap-2">
                                 <Link
                                   href={`/dashboard/user/${uid}/projects/${project.id}`}
-                                  className="text-[#14ad9f] hover:text-[#129488] font-medium text-sm"
+                                  className="text-[#14ad9f] hover:text-taskilo-hover font-medium text-sm"
                                 >
                                   Details ansehen →
                                 </Link>
@@ -772,7 +772,7 @@ const ProjectsPage: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <Link
                             href={`/dashboard/user/${uid}/projects/${project.id}`}
-                            className="text-[#14ad9f] hover:text-[#129488] font-medium text-sm"
+                            className="text-[#14ad9f] hover:text-taskilo-hover font-medium text-sm"
                           >
                             Details ansehen →
                           </Link>

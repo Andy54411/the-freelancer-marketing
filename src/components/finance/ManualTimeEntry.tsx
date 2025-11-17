@@ -537,7 +537,7 @@ export function ManualTimeEntry({
               <Button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-[#14ad9f] hover:bg-[#129488]"
+                className="flex-1 bg-[#14ad9f] hover:bg-taskilo-hover"
               >
                 {loading ? 'Speichern...' : 'Speichern'}
               </Button>

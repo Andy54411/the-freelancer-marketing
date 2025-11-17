@@ -568,7 +568,7 @@ const ProjectDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative z-10 flex items-center justify-center pt-32">
           <div className="text-center">
@@ -582,7 +582,7 @@ const ProjectDetailPage: React.FC = () => {
 
   if (error || !project) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative z-10 flex items-center justify-center pt-32">
           <div className="text-center">
@@ -605,7 +605,7 @@ const ProjectDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
       <div className="absolute inset-0 bg-black/20"></div>
 
       {/* Header */}
@@ -925,7 +925,7 @@ const ProjectDetailPage: React.FC = () => {
                                           '_blank'
                                         )
                                       }
-                                      className="text-[#14ad9f] hover:text-[#129488] hover:underline transition-colors"
+                                      className="text-[#14ad9f] hover:text-taskilo-hover hover:underline transition-colors"
                                     >
                                       {proposal.providerName || 'Anbieter'}
                                     </button>

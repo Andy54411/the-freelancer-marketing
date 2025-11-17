@@ -390,7 +390,7 @@ const CompletedOrdersPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Link
                         href={`/dashboard/company/${uidFromParams}/orders/${order.id}`}
-                        className="text-[#14ad9f] hover:text-[#129488] transition-colors"
+                        className="text-[#14ad9f] hover:text-taskilo-hover transition-colors"
                       >
                         Details
                       </Link>

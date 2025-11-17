@@ -238,7 +238,7 @@ export const ServiceEdit: React.FC<ServiceEditProps> = ({
         </div>
         <Button
           onClick={handleSave}
-          className="flex items-center gap-2 bg-[#14ad9f] hover:bg-[#129488] text-white border-0"
+          className="flex items-center gap-2 bg-[#14ad9f] hover:bg-taskilo-hover text-white border-0"
         >
           <Save className="h-4 w-4" />
           Speichern
@@ -498,7 +498,7 @@ export const ServiceEdit: React.FC<ServiceEditProps> = ({
       </div>
 
       {/* Price Overview */}
-      <Card className="mb-6 border-[#14ad9f]/20 bg-gradient-to-r from-[#14ad9f]/5 to-[#14ad9f]/10">
+      <Card className="mb-6 border-[#14ad9f]/20 bg-linear-to-r from-[#14ad9f]/5 to-[#14ad9f]/10">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Euro className="h-5 w-5 text-[#14ad9f]" />

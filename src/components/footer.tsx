@@ -183,7 +183,7 @@ export default function FooterSection() {
   ];
 
   return (
-    <footer className="bg-gradient-to-tr from-[#14ad9f] via-teal-600 to-blue-600 text-white pt-20 relative overflow-hidden">
+    <footer className="bg-linear-to-tr from-[#14ad9f] via-teal-600 to-blue-600 text-white pt-20 relative overflow-hidden">
       <div className="absolute inset-0 bg-black/20"></div>
       <div className="relative z-10 mb-8 border-b border-white/20 md:mb-12">
         <div className="mx-auto flex max-w-5xl flex-wrap items-end justify-between gap-6 px-6 pb-6">

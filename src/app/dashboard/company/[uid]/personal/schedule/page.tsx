@@ -375,7 +375,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
 
           <Button
             onClick={() => setShowCreateDialog(true)}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
             Neue Schicht
@@ -709,7 +709,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
               </Button>
               <Button
                 onClick={handleCreateShift}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               >
                 Schicht erstellen
               </Button>

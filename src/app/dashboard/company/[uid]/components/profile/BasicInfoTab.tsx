@@ -128,7 +128,7 @@ const BasicInfoTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
             <button
               onClick={generateDescription}
               disabled={isGeneratingDescription}
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-linear-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               {isGeneratingDescription ? (
                 <FiLoader className="animate-spin" size={16} />

@@ -175,7 +175,7 @@ export function FinApiTaskManager({
               <Button
                 onClick={handleCreateUpdateTask}
                 disabled={creating}
-                className="bg-[#14ad9f] hover:bg-[#129488]"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover"
               >
                 <RefreshCw className="h-4 w-4 mr-1" />
                 Bank-Verbindungen aktualisieren
@@ -273,7 +273,7 @@ export function FinApiTaskManager({
             <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Tasks vorhanden</h3>
             <p className="text-gray-600 mb-4">Erstelle deine erste Banking-Task um zu beginnen.</p>
             {showCreateActions && (
-              <Button onClick={handleCreateUpdateTask} className="bg-[#14ad9f] hover:bg-[#129488]">
+              <Button onClick={handleCreateUpdateTask} className="bg-[#14ad9f] hover:bg-taskilo-hover">
                 Erste Task erstellen
               </Button>
             )}

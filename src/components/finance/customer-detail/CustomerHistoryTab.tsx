@@ -734,7 +734,7 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
                         size="sm"
                         onClick={handleAddNote}
                         disabled={!newNote.trim() || addingActivity}
-                        className="bg-[#14ad9f] hover:bg-[#129488]"
+                        className="bg-[#14ad9f] hover:bg-taskilo-hover"
                       >
                         {addingActivity ? (
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -774,7 +774,7 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
                         size="sm"
                         onClick={handleAddCall}
                         disabled={!newCallNote.trim() || addingActivity}
-                        className="bg-[#14ad9f] hover:bg-[#129488]"
+                        className="bg-[#14ad9f] hover:bg-taskilo-hover"
                       >
                         {addingActivity ? (
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -963,7 +963,7 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
                 </div>
                 <Button
                   onClick={() => handleCalendarDateClick(new Date())}
-                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                  className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Neuer Termin

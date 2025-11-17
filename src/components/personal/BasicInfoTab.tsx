@@ -402,12 +402,12 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
             <Button variant="outline" onClick={onCancel}>
               Abbrechen
             </Button>
-            <Button onClick={onSave} className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+            <Button onClick={onSave} className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
               Speichern
             </Button>
           </>
         ) : (
-          <Button onClick={onEdit} className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+          <Button onClick={onEdit} className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
             Bearbeiten
           </Button>
         )}

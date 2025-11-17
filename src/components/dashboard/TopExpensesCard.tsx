@@ -281,7 +281,7 @@ export default function TopExpensesCard() {
           </div>
           <Link
             href={`/dashboard/company/${user?.uid}/finance/expenses`}
-            className="inline-flex items-center text-sm font-medium text-[#14ad9f] hover:text-[#129488] transition-colors">
+            className="inline-flex items-center text-sm font-medium text-[#14ad9f] hover:text-taskilo-hover transition-colors">
 
             Ausgabe erfassen
             <ArrowRight className="ml-1 h-4 w-4" />

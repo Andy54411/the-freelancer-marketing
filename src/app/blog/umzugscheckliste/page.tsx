@@ -17,8 +17,8 @@ export const metadata: Metadata = {
 
 export default function UmzugschecklistePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-linear-to-br from-black/10 to-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         {/* Navigation */}
         <nav className="bg-white/95 backdrop-blur-sm border-b border-white/20 sticky top-0 z-50">
@@ -478,7 +478,7 @@ export default function UmzugschecklistePage() {
 
           {/* Kosten & Budget */}
           <div className="mb-12">
-            <div className="bg-gradient-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white">
+            <div className="bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white">
               <h2 className="text-3xl font-bold mb-6 flex items-center">
                 <Euro className="w-8 h-8 mr-2" />
                 Umzugskosten im Überblick
@@ -523,7 +523,7 @@ export default function UmzugschecklistePage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/services/umzug"
-                className="bg-[#14ad9f] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#129488] transition-colors"
+                className="bg-[#14ad9f] text-white px-8 py-3 rounded-lg font-semibold hover:bg-taskilo-hover transition-colors"
               >
                 Umzugshelfer finden
               </Link>

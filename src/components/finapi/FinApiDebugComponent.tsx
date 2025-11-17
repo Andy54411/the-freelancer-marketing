@@ -137,7 +137,7 @@ export default function FinApiDebugComponent() {
             <Button
               onClick={() => runFinApiTest('all')}
               disabled={isLoading}
-              className="bg-[#14ad9f] hover:bg-[#129488]"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover"
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Alle Tests ausführen

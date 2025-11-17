@@ -94,7 +94,7 @@ export function WorkspaceFilters({
               variant="ghost"
               size="sm"
               onClick={clearAllFilters}
-              className="text-[#14ad9f] hover:text-[#129488]"
+              className="text-[#14ad9f] hover:text-taskilo-hover"
             >
               Alle löschen
             </Button>

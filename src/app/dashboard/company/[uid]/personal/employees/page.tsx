@@ -214,7 +214,7 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
             Exportieren
           </Button>
           <Link href={`/dashboard/company/${resolvedParams.uid}/personal/add`}>
-            <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+            <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
               <Plus className="h-4 w-4 mr-2" />
               Mitarbeiter hinzufügen
             </Button>
@@ -354,14 +354,14 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
                 <Link
                   href={`/dashboard/company/${resolvedParams.uid}/personal/employees/${employee.id}`}
                 >
-                  <Button variant="ghost" size="sm" className="text-[#14ad9f] hover:text-[#129488]">
+                  <Button variant="ghost" size="sm" className="text-[#14ad9f] hover:text-taskilo-hover">
                     <Eye className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link
                   href={`/dashboard/company/${resolvedParams.uid}/personal/edit/${employee.id}`}
                 >
-                  <Button size="sm" className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                  <Button size="sm" className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
                     Bearbeiten
                   </Button>
                 </Link>
@@ -425,7 +425,7 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
             </p>
             {employees.length === 0 && (
               <Link href={`/dashboard/company/${resolvedParams.uid}/personal/add`}>
-                <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
                   Ersten Mitarbeiter hinzufügen
                 </Button>
               </Link>

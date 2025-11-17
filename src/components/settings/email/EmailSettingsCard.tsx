@@ -129,7 +129,7 @@ export function EmailSettingsCard({
           <Button
             onClick={handleSave}
             disabled={isSaving}
-            className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
+            className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white"
           >
             <Save className="h-4 w-4 mr-2" />
             {isSaving ? 'Speichere...' : 'Einstellungen speichern'}

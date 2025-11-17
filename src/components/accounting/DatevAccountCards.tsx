@@ -216,7 +216,7 @@ export function DatevAccountCards({
                       variant={isSelected ? "default" : "outline"}
                       className={cn(
                         "w-full mt-3",
-                        isSelected && "bg-[#14ad9f] hover:bg-[#129488]"
+                        isSelected && "bg-[#14ad9f] hover:bg-taskilo-hover"
                       )}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -271,7 +271,7 @@ export function DatevAccountCards({
                         size="sm"
                         onClick={() => setCurrentPage(pageNum)}
                         className={cn(
-                          currentPage === pageNum && "bg-[#14ad9f] hover:bg-[#129488]"
+                          currentPage === pageNum && "bg-[#14ad9f] hover:bg-taskilo-hover"
                         )}
                       >
                         {pageNum}

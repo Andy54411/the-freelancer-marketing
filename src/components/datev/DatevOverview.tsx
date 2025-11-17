@@ -117,7 +117,7 @@ export function DatevOverview({ companyId }: DatevOverviewProps) {
           <CardDescription>Bitte richten Sie zuerst die DATEV-Integration ein.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button className="bg-[#14ad9f] hover:bg-[#129488]">DATEV einrichten</Button>
+          <Button className="bg-[#14ad9f] hover:bg-taskilo-hover">DATEV einrichten</Button>
         </CardContent>
       </Card>
     );
@@ -199,7 +199,7 @@ export function DatevOverview({ companyId }: DatevOverviewProps) {
               <Badge
                 variant={organization.status === 'active' ? 'default' : 'secondary'}
                 className={
-                  organization.status === 'active' ? 'bg-[#14ad9f] hover:bg-[#129488]' : ''
+                  organization.status === 'active' ? 'bg-[#14ad9f] hover:bg-taskilo-hover' : ''
                 }
               >
                 {organization.status === 'active' ? 'Aktiv' : 'Inaktiv'}
@@ -223,7 +223,7 @@ export function DatevOverview({ companyId }: DatevOverviewProps) {
           </CardHeader>
           <CardContent className="space-y-3">
             <Button
-              className="w-full bg-[#14ad9f] hover:bg-[#129488]"
+              className="w-full bg-[#14ad9f] hover:bg-taskilo-hover"
               onClick={() => toast.info('Rechnungsexport wird vorbereitet...')}
             >
               Offene Rechnungen exportieren
@@ -245,7 +245,7 @@ export function DatevOverview({ companyId }: DatevOverviewProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button className="w-full bg-[#14ad9f] hover:bg-[#129488]" onClick={loadOverviewData}>
+            <Button className="w-full bg-[#14ad9f] hover:bg-taskilo-hover" onClick={loadOverviewData}>
               Buchungen synchronisieren
             </Button>
             <Button
@@ -266,7 +266,7 @@ export function DatevOverview({ companyId }: DatevOverviewProps) {
           </CardHeader>
           <CardContent className="space-y-3">
             <Button
-              className="w-full bg-[#14ad9f] hover:bg-[#129488]"
+              className="w-full bg-[#14ad9f] hover:bg-taskilo-hover"
               onClick={() => toast.info('Bericht wird erstellt...')}
             >
               Monatsbericht erstellen

@@ -403,7 +403,7 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
                       Schließen
                     </Button>
                     <Button
-                      className="bg-[#14ad9f] hover:bg-[#129488]"
+                      className="bg-[#14ad9f] hover:bg-taskilo-hover"
                       onClick={handleDownloadStornoPdf}
                     >
                       <Download className="w-4 h-4 mr-2" />

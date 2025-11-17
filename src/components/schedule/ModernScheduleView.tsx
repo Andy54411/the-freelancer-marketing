@@ -238,7 +238,7 @@ export default function ModernScheduleView({
             <p className="text-gray-500 mb-4">
               Es sind noch keine Mitarbeiter oder Schichten angelegt.
             </p>
-            <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+            <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
               <Users className="h-4 w-4 mr-2" />
               Mitarbeiter hinzufügen
             </Button>

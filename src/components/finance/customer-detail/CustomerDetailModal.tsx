@@ -237,7 +237,7 @@ export function CustomerDetailModal({
               <CreditCard className="h-12 w-12 text-gray-300 mx-auto mb-3" />
               <h3 className="text-lg font-medium text-gray-900 mb-1">Gutschriften (0)</h3>
               <p className="text-sm mb-4">Hier werden alle Gutschriften für diesen Kunden angezeigt</p>
-              <button className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors">
+              <button className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover transition-colors">
                 Neue Gutschrift erstellen
               </button>
             </div>

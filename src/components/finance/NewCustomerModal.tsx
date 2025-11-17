@@ -299,7 +299,7 @@ const TooltipIcon = ({ text, icon: Icon = Info }: { text: string; icon?: any }) 
       <button
         ref={buttonRef}
         type="button"
-        className="text-[#14ad9f] hover:text-[#129488] transition-colors p-1 rounded-full hover:bg-[#14ad9f]/10"
+        className="text-[#14ad9f] hover:text-taskilo-hover transition-colors p-1 rounded-full hover:bg-[#14ad9f]/10"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setShowTooltip(false)}
       >
@@ -1223,7 +1223,7 @@ export default function NewCustomerModal({
                           </Label>
                           <button
                         type="button"
-                        className="text-sm text-[#14ad9f] hover:text-[#129488] font-medium"
+                        className="text-sm text-[#14ad9f] hover:text-taskilo-hover font-medium"
                         onClick={() =>
                         setReferenceFieldType(
                           referenceFieldType === 'customerReference' ? 'leitwegId' : 'customerReference'
@@ -1764,7 +1764,7 @@ export default function NewCustomerModal({
               Abbrechen
             </Button>
             <Button
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               disabled={Boolean(saving) || !isValid() || loading}
               onClick={async () => {
                 try {

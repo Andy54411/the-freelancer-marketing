@@ -251,7 +251,7 @@ export default function FinAPIWebFormModal({
                   <div className="flex gap-3 justify-center">
                     <button
                       onClick={handleOpenWebFormPopup}
-                      className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors"
+                      className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover transition-colors"
                     >
                       In Popup öffnen
                     </button>
@@ -284,7 +284,7 @@ export default function FinAPIWebFormModal({
                   <button
                     onClick={handleOpenWebFormPopup}
                     disabled={isLoading}
-                    className="w-full px-6 py-3 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full px-6 py-3 bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isLoading ? (
                       <>

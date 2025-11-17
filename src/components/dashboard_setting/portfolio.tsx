@@ -441,7 +441,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
         <button
           onClick={() => setIsAdding(true)}
           disabled={portfolioItems.length >= 5}
-          className="px-3 py-2 text-sm bg-[#14ad9f] text-white rounded-md hover:bg-[#129488] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-2 text-sm bg-[#14ad9f] text-white rounded-md hover:bg-taskilo-hover disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
         >
           Hinzufügen ({portfolioItems.length}/5)
         </button>
@@ -549,7 +549,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
               <button
                 onClick={addPortfolioItem}
                 disabled={!newItem.imageUrl || !newItem.title.trim()}
-                className="px-3 py-2 text-sm bg-[#14ad9f] text-white rounded-md hover:bg-[#129488] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-2 text-sm bg-[#14ad9f] text-white rounded-md hover:bg-taskilo-hover disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 Hinzufügen
               </button>
@@ -694,7 +694,7 @@ const PortfolioItemCard: React.FC<PortfolioItemCardProps> = ({
               onClick={() => onToggleFeatured(item.id)}
               className={`p-1 rounded text-xs transition-colors ${
                 item.featured
-                  ? 'bg-[#14ad9f] text-white hover:bg-[#129488]'
+                  ? 'bg-[#14ad9f] text-white hover:bg-taskilo-hover'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
               title={item.featured ? 'Featured entfernen' : 'Als Featured markieren'}

@@ -1076,7 +1076,7 @@ export default function CategorySelectionModal({
             <button
               onClick={handleConfirm}
               disabled={!selectedCategoryId}
-              className="px-4 py-2 text-sm font-medium text-white bg-[#14ad9f] border border-transparent rounded-md hover:bg-[#129488] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-[#14ad9f] border border-transparent rounded-md hover:bg-taskilo-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               type="button">
 
               Übernehmen

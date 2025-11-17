@@ -27,8 +27,8 @@ export const metadata: Metadata = {
 
 export default function ElektrikerRatgeberPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-linear-to-br from-black/10 to-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         {/* Navigation */}
         <nav className="bg-white/95 backdrop-blur-sm border-b border-white/20 sticky top-0 z-50">
@@ -52,7 +52,7 @@ export default function ElektrikerRatgeberPage() {
         </nav>
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-16">
+        <section className="bg-linear-to-r from-yellow-500 to-orange-500 text-white py-16">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center space-x-3 mb-6">
               <Zap className="w-12 h-12" />
@@ -325,7 +325,7 @@ export default function ElektrikerRatgeberPage() {
 
           {/* Kosten */}
           <div className="mb-12">
-            <div className="bg-gradient-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white">
+            <div className="bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white">
               <h2 className="text-3xl font-bold mb-6">💰 Was kostet ein Elektriker?</h2>
 
               <div className="grid md:grid-cols-3 gap-6">
@@ -576,7 +576,7 @@ export default function ElektrikerRatgeberPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/services/elektriker"
-                className="bg-[#14ad9f] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#129488] transition-colors"
+                className="bg-[#14ad9f] text-white px-8 py-3 rounded-lg font-semibold hover:bg-taskilo-hover transition-colors"
               >
                 Elektriker finden
               </Link>

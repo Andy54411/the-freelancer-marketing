@@ -1055,7 +1055,7 @@ export default function ReceiptPage() {
                       </span>
                       <button
                         type="button"
-                        className="text-[#14ad9f] hover:text-[#129488] font-normal"
+                        className="text-[#14ad9f] hover:text-taskilo-hover font-normal"
                       >
                         Zeitraum
                       </button>
@@ -1197,7 +1197,7 @@ export default function ReceiptPage() {
                             <button
                               type="button"
                               onClick={saveNewKostenstelle}
-                              className="px-3 py-2 text-xs bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors"
+                              className="px-3 py-2 text-xs bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover transition-colors"
                             >
                               <Plus className="h-4 w-4" />
                             </button>
@@ -1338,7 +1338,7 @@ export default function ReceiptPage() {
                     </span>
                     <button
                       onClick={() => setIsNettoMode(!isNettoMode)}
-                      className={`text-sm font-normal ${isNettoMode ? 'text-gray-600' : 'text-[#14ad9f] hover:text-[#129488]'}`}
+                      className={`text-sm font-normal ${isNettoMode ? 'text-gray-600' : 'text-[#14ad9f] hover:text-taskilo-hover'}`}
                       type="button"
                     >
                       {isNettoMode ? 'Brutto' : 'Netto'}
@@ -1402,7 +1402,7 @@ export default function ReceiptPage() {
               </div>
               {/* Position hinzufügen Button */}
               <div className="mt-6">
-                <button className="inline-flex items-center text-sm text-[#14ad9f] hover:text-[#129488]">
+                <button className="inline-flex items-center text-sm text-[#14ad9f] hover:text-taskilo-hover">
                   <Plus className="h-4 w-4 mr-1" />
                   Position hinzufügen
                 </button>
@@ -1439,7 +1439,7 @@ export default function ReceiptPage() {
                   <label className="absolute -top-2 left-3 px-1 bg-white text-xs font-medium text-gray-700">
                     Erstattung der Umsatzsteuer
                   </label>
-                  <button className="absolute -top-2 right-3 px-1 bg-white text-xs text-[#14ad9f] hover:text-[#129488]">
+                  <button className="absolute -top-2 right-3 px-1 bg-white text-xs text-[#14ad9f] hover:text-taskilo-hover">
                     Hilfe
                   </button>
                 </div>

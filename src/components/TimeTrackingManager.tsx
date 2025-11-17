@@ -588,7 +588,7 @@ export default function TimeTrackingManager({
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Kompakter Header ohne große Überschrift */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="bg-gradient-to-r from-[#14ad9f]/10 to-teal-50 px-6 py-4 border-b border-gray-100">
+        <div className="bg-linear-to-r from-[#14ad9f]/10 to-teal-50 px-6 py-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="p-2 bg-[#14ad9f] rounded-lg shadow-lg">
@@ -628,7 +628,7 @@ export default function TimeTrackingManager({
                     setShowAddForm(true);
                     setEditingEntry(null);
                   }}
-                  className="flex items-center gap-2 px-5 py-3 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors shadow-md hover:shadow-lg font-medium"
+                  className="flex items-center gap-2 px-5 py-3 bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover transition-colors shadow-md hover:shadow-lg font-medium"
                 >
                   <FiPlus size={18} />
                   Zeit hinzufügen
@@ -799,7 +799,7 @@ export default function TimeTrackingManager({
                 <div className="text-center pt-4 border-t border-gray-100">
                   <button
                     onClick={() => setShowAllEntries(!showAllEntries)}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-[#14ad9f] hover:text-[#129488] hover:bg-[#14ad9f]/5 rounded-lg transition-colors font-medium"
+                    className="inline-flex items-center gap-2 px-4 py-2 text-[#14ad9f] hover:text-taskilo-hover hover:bg-[#14ad9f]/5 rounded-lg transition-colors font-medium"
                   >
                     {showAllEntries ? (
                       <>
@@ -1071,7 +1071,7 @@ export default function TimeTrackingManager({
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-3 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors font-medium"
+                    className="flex-1 px-4 py-3 bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover transition-colors font-medium"
                   >
                     {editingEntry ? 'Aktualisieren' : 'Hinzufügen'}
                   </button>

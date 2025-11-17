@@ -664,7 +664,7 @@ function CustomerDetailPageContent({
               <Ticket className="h-16 w-16 mx-auto mb-4 text-gray-300" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Keine Gutschriften</h3>
               <p className="text-gray-500 mb-6 text-sm">Für diesen Kunden wurden noch keine Gutschriften erstellt</p>
-              <button className="px-5 py-2 bg-[#14ad9f] text-white text-sm rounded-lg hover:bg-[#129488] transition-colors font-medium">
+              <button className="px-5 py-2 bg-[#14ad9f] text-white text-sm rounded-lg hover:bg-taskilo-hover transition-colors font-medium">
                 Gutschrift erstellen
               </button>
             </div>

@@ -82,6 +82,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
       try {
         if (fbUser) {
+          console.log('[AuthContext] 🔥 onAuthStateChanged triggered for:', fbUser.uid);
+          console.log('[AuthContext] 🔥 Current user state:', { 
+            hasUser: !!user, 
+            userUid: user?.uid, 
+            userType: user?.user_type,
+            fbUserUid: fbUser.uid 
+          });
+          
           // Token aktualisieren nur bei tatsächlichen Änderungen, nicht bei jedem Call
           const idTokenResult = await fbUser.getIdTokenResult(false); // false = cached token verwenden
           setFirebaseUser(fbUser);
@@ -92,11 +100,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           // Performance-Optimierung: User-Daten nur laden, wenn noch nicht vorhanden oder geändert
           if (user?.uid === fbUser.uid && user?.email === fbUser.email) {
+            console.log('[AuthContext] 🟡 CACHED - User already loaded:', {
+              uid: user.uid,
+              user_type: user.user_type,
+              email: user.email
+            });
             // User ist bereits geladen und unverändert, skip DB queries
             setLoading(false);
             return;
           }
 
+          console.log('[AuthContext] 🔵 LOADING user data from Firestore for:', fbUser.uid);
           // Versuche zuerst users collection
           const userDocRef = doc(db, 'users', fbUser.uid);
           const userDocSnap = await getDoc(userDocRef);
@@ -107,7 +121,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (userDocSnap.exists()) {
             profileData = userDocSnap.data();
             userFound = true;
+            console.log('[AuthContext] ✅ User found in USERS collection:', {
+              uid: fbUser.uid,
+              user_type: profileData.user_type,
+              firstName: profileData.firstName
+            });
           } else {
+            console.log('[AuthContext] ❌ Not in users collection, checking COMPANIES...');
             // FALLBACK: Prüfe companies collection (wie UserHeader)
             const companyDocRef = doc(db, 'companies', fbUser.uid);
             const companyDocSnap = await getDoc(companyDocRef);
@@ -115,6 +135,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (companyDocSnap.exists()) {
               profileData = companyDocSnap.data();
               userFound = true;
+              console.log('[AuthContext] ✅ User found in COMPANIES collection:', {
+                uid: fbUser.uid,
+                user_type: profileData.user_type,
+                companyName: profileData.companyName
+              });
             }
           }
 
@@ -135,16 +160,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             const finalRole = roleFromClaim || roleFromDb;
 
-            // Debug: Rollen loggen
+            console.log('[AuthContext] 🎯 FINAL ROLE DETERMINED:', {
+              roleFromClaim,
+              roleFromDb,
+              finalRole,
+              uid: fbUser.uid,
+              willSetUserType: finalRole
+            });
 
-            setUser({
+            const userData = {
               uid: fbUser.uid,
               email: fbUser.email,
               user_type: finalRole,
               firstName: profileData.firstName,
               lastName: profileData.lastName,
               profilePictureURL: profileData.profilePictureURL || undefined,
-            });
+            };
+
+            console.log('[AuthContext] 🚀 Setting user state with:', userData);
+            setUser(userData);
 
             // KRITISCH: AUTO-REDIRECT nach LOGIN basierend auf user_type
             if (!isRedirecting) {

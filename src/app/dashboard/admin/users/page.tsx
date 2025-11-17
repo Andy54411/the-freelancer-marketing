@@ -106,7 +106,7 @@ export default function AdminUsersPage() {
           <h1 className="text-3xl font-bold text-gray-900">Benutzer-Verwaltung</h1>
           <p className="text-gray-600">Verwalte alle Taskilo Benutzer</p>
         </div>
-        <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+        <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
           <Plus className="h-4 w-4 mr-2" />
           Neuer Benutzer
         </Button>

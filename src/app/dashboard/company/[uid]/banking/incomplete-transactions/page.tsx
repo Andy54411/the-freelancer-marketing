@@ -626,7 +626,7 @@ export default function IncompleteTransactionsPage() {
                 onClick={() => setFilterIsOpen(!filterIsOpen)}
                 className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                   dateFromFilter || dateToFilter
-                    ? 'bg-[#14ad9f] text-white hover:bg-[#129488]'
+                    ? 'bg-[#14ad9f] text-white hover:bg-taskilo-hover'
                     : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -688,7 +688,7 @@ export default function IncompleteTransactionsPage() {
                   </button>
                   <button
                     onClick={() => setFilterIsOpen(false)}
-                    className="px-4 py-1.5 bg-[#14ad9f] text-white text-sm font-medium rounded-md hover:bg-[#129488]"
+                    className="px-4 py-1.5 bg-[#14ad9f] text-white text-sm font-medium rounded-md hover:bg-taskilo-hover"
                   >
                     Fertig
                   </button>

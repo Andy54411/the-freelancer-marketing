@@ -446,7 +446,7 @@ export default function CreateAdminWorkspacePage() {
             <Button
               type="submit"
               disabled={loading || !formData.title.trim() || !formData.type}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               <Save className="h-4 w-4 mr-2" />
               {loading ? 'Wird erstellt...' : 'Workspace erstellen'}

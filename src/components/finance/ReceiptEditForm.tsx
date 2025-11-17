@@ -172,7 +172,7 @@ export default function ReceiptEditForm({ onSave, onCancel, initialData, company
                     <label htmlFor="lieferdatum" className="block text-xs font-medium text-gray-700">
                       Lieferdatum <span className="text-red-500">*</span>
                     </label>
-                    <button className="text-xs text-[#14ad9f] hover:text-[#129488]">
+                    <button className="text-xs text-[#14ad9f] hover:text-taskilo-hover">
                       Zeitraum
                     </button>
                   </div>
@@ -235,7 +235,7 @@ export default function ReceiptEditForm({ onSave, onCancel, initialData, company
                     </label>
                     <button 
                       onClick={() => setIsNettoMode(!isNettoMode)}
-                      className="text-xs text-[#14ad9f] hover:text-[#129488]"
+                      className="text-xs text-[#14ad9f] hover:text-taskilo-hover"
                     >
                       {isNettoMode ? 'Brutto' : 'Netto'}
                     </button>
@@ -279,7 +279,7 @@ export default function ReceiptEditForm({ onSave, onCancel, initialData, company
 
               {/* Position hinzufügen */}
               <div className="border-t pt-3 mt-3">
-                <button className="inline-flex items-center text-xs text-[#14ad9f] hover:text-[#129488]">
+                <button className="inline-flex items-center text-xs text-[#14ad9f] hover:text-taskilo-hover">
                   <Plus className="h-3 w-3 mr-1" />
                   Position hinzufügen
                 </button>

@@ -139,7 +139,7 @@ export default function AdminLoginPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               >
                 {loading ? (
                   <div className="flex items-center">
@@ -164,7 +164,7 @@ export default function AdminLoginPage() {
             Probleme beim Anmelden?{' '}
             <a
               href="mailto:support@taskilo.de"
-              className="text-[#14ad9f] hover:text-[#129488] font-medium"
+              className="text-[#14ad9f] hover:text-taskilo-hover font-medium"
             >
               Support kontaktieren
             </a>

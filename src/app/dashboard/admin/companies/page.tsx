@@ -82,7 +82,7 @@ export default function AdminCompaniesPage() {
           <h1 className="text-3xl font-bold text-gray-900">Unternehmen-Verwaltung</h1>
           <p className="text-gray-600">Verwalte alle registrierten Unternehmen</p>
         </div>
-        <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+        <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
           <Plus className="h-4 w-4 mr-2" />
           Neues Unternehmen
         </Button>
@@ -234,7 +234,7 @@ export default function AdminCompaniesPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => router.push(`/dashboard/admin/companies/${company.id}`)}
-                        className="bg-[#14ad9f] hover:bg-[#129488] text-white border-[#14ad9f]"
+                        className="bg-[#14ad9f] hover:bg-taskilo-hover text-white border-[#14ad9f]"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>

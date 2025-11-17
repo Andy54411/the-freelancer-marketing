@@ -477,7 +477,7 @@ export default function UserDashboardPage() {
           <p className="text-gray-600 mb-6">{error || ordersError}</p>
           <button
             onClick={() => window.location.reload()}
-            className="w-full px-4 py-3 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-[#129a8f] hover:to-teal-700 transition-all duration-300 font-semibold"
+            className="w-full px-4 py-3 bg-linear-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-[#129a8f] hover:to-teal-700 transition-all duration-300 font-semibold"
           >
             Erneut versuchen
           </button>
@@ -488,7 +488,7 @@ export default function UserDashboardPage() {
 
   if (!currentUser || !userProfile) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600">
+      <div className="flex flex-col justify-center items-center min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600">
         <div className="text-center">
           <FiLoader className="animate-spin text-6xl text-white mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-white mb-2">Weiterleitung...</h2>
@@ -499,7 +499,7 @@ export default function UserDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10 pt-20 px-4 lg:px-6 pb-6">
         <div className="max-w-6xl mx-auto space-y-6">
@@ -521,11 +521,11 @@ export default function UserDashboardPage() {
             <div className="lg:col-span-2">
               <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-6 hover:shadow-3xl transition-all duration-300 h-fit">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-[#14ad9f] to-teal-600 bg-clip-text text-transparent flex items-center">
+                  <h2 className="text-2xl font-bold bg-linear-to-r from-[#14ad9f] to-teal-600 bg-clip-text text-transparent flex items-center">
                     <FiMessageSquare className="mr-3 text-[#14ad9f]" />
                     Meine Aufträge
                   </h2>
-                  <div className="px-3 py-1 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white text-sm font-medium rounded-full">
+                  <div className="px-3 py-1 bg-linear-to-r from-[#14ad9f] to-teal-600 text-white text-sm font-medium rounded-full">
                     {userOrders.length} {userOrders.length === 1 ? 'Auftrag' : 'Aufträge'}
                   </div>
                 </div>
@@ -542,7 +542,7 @@ export default function UserDashboardPage() {
                   </div>
                 ) : userOrders.length === 0 ? (
                   <div className="text-center py-8">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-full flex items-center justify-center">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-linear-to-r from-[#14ad9f] to-teal-600 rounded-full flex items-center justify-center">
                       <FiMessageSquare className="w-8 h-8 text-white" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-800 mb-2">
@@ -557,7 +557,7 @@ export default function UserDashboardPage() {
                     {userOrders.map(order => (
                       <div
                         key={order.id}
-                        className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 hover:border-[#14ad9f]/30"
+                        className="bg-linear-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 hover:border-[#14ad9f]/30"
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
@@ -619,7 +619,7 @@ export default function UserDashboardPage() {
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={handleCreateNewOrder}
-                    className="flex-1 flex items-center justify-center px-4 py-3 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-[#129a8f] hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl"
+                    className="flex-1 flex items-center justify-center px-4 py-3 bg-linear-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-[#129a8f] hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl"
                   >
                     <FiPlusCircle className="mr-2 w-4 h-4" />
                     Neuen Auftrag erstellen
@@ -645,7 +645,7 @@ export default function UserDashboardPage() {
               {/* Support Card */}
               <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-4 hover:shadow-3xl transition-all duration-300 h-fit">
                 <div className="text-center">
-                  <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-linear-to-r from-[#14ad9f] to-teal-600 rounded-full flex items-center justify-center">
                     <FiHelpCircle className="w-6 h-6 text-white" />
                   </div>
                   <h3 className="text-lg font-bold text-gray-800 mb-2">Hilfe & Support</h3>
@@ -654,7 +654,7 @@ export default function UserDashboardPage() {
                   </p>
                   <button
                     onClick={handleOpenSupportChat}
-                    className="w-full px-3 py-2 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-[#129a8f] hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl text-sm"
+                    className="w-full px-3 py-2 bg-linear-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-[#129a8f] hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl text-sm"
                   >
                     Support kontaktieren
                   </button>
@@ -664,11 +664,11 @@ export default function UserDashboardPage() {
               {/* Quick Stats Card */}
               <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-4 hover:shadow-3xl transition-all duration-300 h-fit">
                 <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
-                  <span className="w-3 h-3 bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-full mr-2"></span>
+                  <span className="w-3 h-3 bg-linear-to-r from-[#14ad9f] to-teal-600 rounded-full mr-2"></span>
                   Übersicht
                 </h3>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center p-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                  <div className="flex justify-between items-center p-2 bg-linear-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
                     <span className="text-sm font-medium text-gray-700">Aktive Aufträge</span>
                     <span className="text-lg font-bold text-green-600">
                       {
@@ -682,7 +682,7 @@ export default function UserDashboardPage() {
                       }
                     </span>
                   </div>
-                  <div className="flex justify-between items-center p-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
+                  <div className="flex justify-between items-center p-2 bg-linear-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
                     <span className="text-sm font-medium text-gray-700">Gesamt investiert</span>
                     <span className="text-lg font-bold text-blue-600">
                       {(

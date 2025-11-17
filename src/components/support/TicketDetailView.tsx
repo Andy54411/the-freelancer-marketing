@@ -306,7 +306,7 @@ export default function TicketDetailView({
               <Button
                 onClick={sendReply}
                 disabled={sending || !replyMessage.trim()}
-                className="bg-[#14ad9f] hover:bg-[#129488]"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover"
               >
                 {sending ? (
                   <>

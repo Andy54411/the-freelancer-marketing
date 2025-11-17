@@ -157,7 +157,7 @@ const SkillsEducationTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) 
             placeholder="Neue Fähigkeit hinzufügen..."
             className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
           />
-          <Button onClick={addSkill} className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+          <Button onClick={addSkill} className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
             <Plus className="w-4 h-4" />
           </Button>
         </div>
@@ -202,7 +202,7 @@ const SkillsEducationTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) 
               </option>
             ))}
           </select>
-          <Button onClick={addLanguage} className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+          <Button onClick={addLanguage} className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
             <Plus className="w-4 h-4 mr-2" />
             Hinzufügen
           </Button>
@@ -268,7 +268,7 @@ const SkillsEducationTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) 
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
             />
           </div>
-          <Button onClick={addEducation} className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+          <Button onClick={addEducation} className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
             <Plus className="w-4 h-4 mr-2" />
             Ausbildung hinzufügen
           </Button>
@@ -328,7 +328,7 @@ const SkillsEducationTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) 
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
             />
           </div>
-          <Button onClick={addCertification} className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+          <Button onClick={addCertification} className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
             <Plus className="w-4 h-4 mr-2" />
             Zertifizierung hinzufügen
           </Button>

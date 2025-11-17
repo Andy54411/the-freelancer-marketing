@@ -680,7 +680,7 @@ export default function SelectBankingTransactionModal({
                         <td className="px-4 py-3 text-center">
                           <Button
                             size="sm"
-                            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                             onClick={e => {
                               e.stopPropagation();
                               handleSelectTransaction(transaction);
@@ -822,7 +822,7 @@ export default function SelectBankingTransactionModal({
             <div className="flex justify-end pt-4">
               <Button
                 onClick={handleCloseWarningModal}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               >
                 Verstanden
               </Button>

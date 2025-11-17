@@ -239,7 +239,7 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
           {/* Header Text (Kopftext) */}
           {data.processedHeaderText && (
             <div
-              className="mb-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border-l-4"
+              className="mb-4 p-4 bg-linear-to-r from-gray-50 to-white rounded-lg border-l-4"
               style={{ borderColor: color }}
             >
               <div
@@ -264,11 +264,11 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
           )}
 
           <div className="flex items-center justify-center mb-6">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+            <div className="h-px flex-1 bg-linear-to-r from-transparent via-gray-300 to-transparent" />
             <div className="mx-4">
               <div className="w-3 h-3 rounded-full dynamic-accent" />
             </div>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+            <div className="h-px flex-1 bg-linear-to-r from-transparent via-gray-300 to-transparent" />
           </div>
         </div>
 
@@ -481,11 +481,11 @@ export const DynamicTemplate: React.FC<DynamicTemplateProps> = ({
               </div>
 
               <div className="flex items-center justify-center mb-6">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+                <div className="h-px flex-1 bg-linear-to-r from-transparent via-gray-300 to-transparent" />
                 <div className="mx-4">
                   <div className="w-3 h-3 rounded-full dynamic-accent" />
                 </div>
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+                <div className="h-px flex-1 bg-linear-to-r from-transparent via-gray-300 to-transparent" />
               </div>
             </div>
 

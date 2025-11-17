@@ -510,7 +510,7 @@ export default function AdminTicketDetail({
             <Button
               onClick={sendReply}
               disabled={sending || !newReply.trim()}
-              className="bg-[#14ad9f] hover:bg-[#129488]"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover"
             >
               {sending ? (
                 <>
@@ -564,7 +564,7 @@ export default function AdminTicketDetail({
             <Button
               onClick={assignTicket}
               disabled={!selectedAssignee}
-              className="bg-[#14ad9f] hover:bg-[#129488]"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover"
             >
               <UserPlus className="w-4 h-4 mr-2" />
               Zuweisen

@@ -11,7 +11,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   return (
     <RegistrationProvider>
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-blue-100 to-teal-200 p-6">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-r from-blue-100 to-teal-200 p-6">
         <header className="register-header text-center py-8">
           <div className="mx-auto mb-6 flex justify-center">
             <Logo variant="default" className="scale-150" />

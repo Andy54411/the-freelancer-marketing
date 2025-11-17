@@ -1304,7 +1304,7 @@ export default function Step5CompanyPage() {
         <div className="flex justify-between mb-4">
           <button
             onClick={() => router.push('/register/company/step4')}
-            className="text-[#14ad9f] hover:text-[#129488] text-base sm:text-lg flex items-center transition-colors duration-200"
+            className="text-[#14ad9f] hover:text-taskilo-hover text-base sm:text-lg flex items-center transition-colors duration-200"
             disabled={isLoading || isConvertingImage || isRedirecting}
           >
             <span className="mr-2">← Zurück zu Schritt 4</span>

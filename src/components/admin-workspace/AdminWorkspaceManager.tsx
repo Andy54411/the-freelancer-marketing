@@ -250,7 +250,7 @@ export default function AdminWorkspaceManager() {
                 variant={viewMode === 'board' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('board')}
-                className={viewMode === 'board' ? 'bg-[#14ad9f] hover:bg-[#129488]' : ''}
+                className={viewMode === 'board' ? 'bg-[#14ad9f] hover:bg-taskilo-hover' : ''}
               >
                 <Grid className="h-4 w-4" />
               </Button>
@@ -258,7 +258,7 @@ export default function AdminWorkspaceManager() {
                 variant={viewMode === 'list' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('list')}
-                className={viewMode === 'list' ? 'bg-[#14ad9f] hover:bg-[#129488]' : ''}
+                className={viewMode === 'list' ? 'bg-[#14ad9f] hover:bg-taskilo-hover' : ''}
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -266,7 +266,7 @@ export default function AdminWorkspaceManager() {
                 variant={viewMode === 'calendar' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('calendar')}
-                className={viewMode === 'calendar' ? 'bg-[#14ad9f] hover:bg-[#129488]' : ''}
+                className={viewMode === 'calendar' ? 'bg-[#14ad9f] hover:bg-taskilo-hover' : ''}
               >
                 <Calendar className="h-4 w-4" />
               </Button>
@@ -286,7 +286,7 @@ export default function AdminWorkspaceManager() {
               )}
 
               <Link href={`/dashboard/admin/workspace/create`}>
-                <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
                   <Plus className="h-4 w-4 mr-2" />
                   Neuer Admin Workspace
                 </Button>
@@ -364,7 +364,7 @@ export default function AdminWorkspaceManager() {
                 setSelectedStatus([]);
                 setSelectedPriority([]);
               }}
-              className="text-[#14ad9f] hover:text-[#129488]"
+              className="text-[#14ad9f] hover:text-taskilo-hover"
             >
               Alle Filter löschen
             </Button>

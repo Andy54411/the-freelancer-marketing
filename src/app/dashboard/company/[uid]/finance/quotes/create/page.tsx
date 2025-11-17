@@ -442,7 +442,7 @@ export default function CreateQuotePage() {
 
       {selectedService ?
     <Button
-      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+      className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
       onClick={saveServiceToSubcollection}
       disabled={savingService}>
 
@@ -2494,7 +2494,7 @@ export default function CreateQuotePage() {
               </Button>
 
               <Button
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                 size="default"
                 onClick={handleOpenSendModal}
                 disabled={loading}>
@@ -2525,7 +2525,7 @@ export default function CreateQuotePage() {
                     <div className="w-full">
                       <Button
                         variant="default"
-                        className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white justify-center"
+                        className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white justify-center"
                         size="sm">
 
                         Aufgabe erstellen
@@ -2569,7 +2569,7 @@ export default function CreateQuotePage() {
               </div>
               <Button
               onClick={() => setShowCompanySettingsModal(true)}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               size="sm">
 
                 Angaben vervollständigen
@@ -2614,7 +2614,7 @@ export default function CreateQuotePage() {
                       size="sm"
                       className={`rounded-r-none ${
                       contactType === 'organisation' ?
-                      'bg-[#14ad9f] hover:bg-[#129488] text-white' :
+                      'bg-[#14ad9f] hover:bg-taskilo-hover text-white' :
                       'hover:bg-gray-50'}`
                       }
                       onClick={() => setContactType('organisation')}>
@@ -2627,7 +2627,7 @@ export default function CreateQuotePage() {
                       size="sm"
                       className={`rounded-l-none ${
                       contactType === 'person' ?
-                      'bg-[#14ad9f] hover:bg-[#129488] text-white' :
+                      'bg-[#14ad9f] hover:bg-taskilo-hover text-white' :
                       'hover:bg-gray-50'}`
                       }
                       onClick={() => setContactType('person')}>
@@ -2850,7 +2850,7 @@ export default function CreateQuotePage() {
                     </div>
                     <button
                       type="button"
-                      className="text-sm text-[#14ad9f] hover:text-[#129488] font-medium"
+                      className="text-sm text-[#14ad9f] hover:text-taskilo-hover font-medium"
                       onClick={() => setShowAddressAddition(true)}>
 
                       Adresszusatz +
@@ -3209,7 +3209,7 @@ export default function CreateQuotePage() {
               <Button
                 type="button"
                 variant={showNet ? 'default' : 'outline'}
-                className={showNet ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' : ''}
+                className={showNet ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white' : ''}
                 onClick={() => setShowNet(true)}
                 size="sm">
 
@@ -3218,7 +3218,7 @@ export default function CreateQuotePage() {
               <Button
                 type="button"
                 variant={!showNet ? 'default' : 'outline'}
-                className={!showNet ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' : ''}
+                className={!showNet ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white' : ''}
                 onClick={() => setShowNet(false)}
                 size="sm">
 
@@ -3475,7 +3475,7 @@ export default function CreateQuotePage() {
                 </div>
                 <DialogFooter>
                   <Button
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                    className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                     onClick={async () => {
                       if (!serviceDraft.name.trim() || !serviceDraft.price) return;
 
@@ -3619,7 +3619,7 @@ export default function CreateQuotePage() {
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                                 onClick={() => {
                                   const rate = Number.isFinite(taxRate) ? taxRate : 19;
                                   const name = item.description || '';
@@ -4284,7 +4284,7 @@ export default function CreateQuotePage() {
             </Button>
             <Button
               onClick={handleCompanySettingsSave}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
 
               Speichern
             </Button>
@@ -4434,7 +4434,7 @@ export default function CreateQuotePage() {
                 Abbrechen
               </Button>
               <Button
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                 onClick={async () => {
                   try {
                     // Nummernkreis-Einstellungen werden jetzt automatisch durch NumberSequenceService verwaltet

@@ -78,7 +78,7 @@ export default function RecurringInvoicesPage() {
           </div>
           <div className="flex gap-2">
             <Link href={`/dashboard/company/${uid}/finance/invoices/recurring/create`}>
-              <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
+              <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Abo-Rechnung erstellen
               </Button>
@@ -108,7 +108,7 @@ export default function RecurringInvoicesPage() {
           </div>
           <div className="flex gap-2">
             <Link href={`/dashboard/company/${uid}/finance/invoices/recurring/create`}>
-              <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
+              <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Abo-Rechnung erstellen
               </Button>
@@ -120,7 +120,7 @@ export default function RecurringInvoicesPage() {
           <div className="text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-2">Fehler</h2>
             <p className="text-gray-600 mb-4">{error}</p>
-            <Button onClick={loadRecurringInvoices} className="bg-[#14ad9f] hover:bg-[#129488]">
+            <Button onClick={loadRecurringInvoices} className="bg-[#14ad9f] hover:bg-taskilo-hover">
               Erneut versuchen
             </Button>
           </div>
@@ -148,7 +148,7 @@ export default function RecurringInvoicesPage() {
             Aktualisieren
           </Button>
           <Link href={`/dashboard/company/${uid}/finance/invoices/recurring/create`}>
-            <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
+            <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Abo-Rechnung erstellen
             </Button>
@@ -214,7 +214,7 @@ export default function RecurringInvoicesPage() {
             Wartungsverträge oder regelmäßige Dienstleistungen.
           </p>
           <Link href={`/dashboard/company/${uid}/finance/invoices/recurring/create`}>
-            <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+            <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
               <Plus className="w-4 h-4 mr-2" />
               Abo-Rechnung erstellen
             </Button>

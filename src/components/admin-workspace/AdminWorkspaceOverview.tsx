@@ -155,7 +155,7 @@ export default function AdminWorkspaceOverview() {
               variant="ghost"
               size="sm"
               onClick={handleBackToSelector}
-              className="text-[#14ad9f] hover:text-[#129488] hover:bg-[#14ad9f]/10"
+              className="text-[#14ad9f] hover:text-taskilo-hover hover:bg-[#14ad9f]/10"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Zurück zur Workspace-Auswahl

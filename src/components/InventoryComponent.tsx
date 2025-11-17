@@ -671,7 +671,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                     window.location.href = `/dashboard/company/${companyId}/finance/invoices/create?addService=true`;
                   }}
                   disabled={savingInlineService || !newServiceForm.name.trim()}
-                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                  className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                 >
                   {savingInlineService ? (
                     <>
@@ -685,7 +685,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                 <Button
                   onClick={handleSaveInlineService}
                   disabled={savingInlineService || !newServiceForm.name.trim()}
-                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                  className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                 >
                   {savingInlineService ? (
                     <>
@@ -787,7 +787,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                     setIsCreatingNewService(true);
                     setInlineServiceDialogOpen(true);
                   }}
-                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                  className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Neue Dienstleistung
@@ -847,7 +847,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
-                            className="text-[#14ad9f] hover:text-[#129488] p-1"
+                            className="text-[#14ad9f] hover:text-taskilo-hover p-1"
                             title="Bearbeiten"
                             onClick={() => {
                               setEditingService(service);
@@ -935,7 +935,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
 
               <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
                 <DialogTrigger asChild>
-                  <Button className="bg-[#14ad9f] hover:bg-[#129488]">
+                  <Button className="bg-[#14ad9f] hover:bg-taskilo-hover">
                     <Plus className="h-4 w-4 mr-2" />
                     Artikel hinzufügen
                   </Button>
@@ -1094,7 +1094,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
                     </Button>
                     <Button
                       onClick={handleAddItem}
-                      className="bg-[#14ad9f] hover:bg-[#129488]"
+                      className="bg-[#14ad9f] hover:bg-taskilo-hover"
                       disabled={!newItem.name}
                     >
                       Artikel hinzufügen
@@ -1496,7 +1496,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
             </Button>
             <Button
               onClick={handleStockAdjustment}
-              className="bg-[#14ad9f] hover:bg-[#129488]"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover"
               disabled={!stockAdjustment.reason}
             >
               Bestand anpassen

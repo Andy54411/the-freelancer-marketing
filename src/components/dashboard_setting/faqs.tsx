@@ -94,7 +94,7 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
         </div>
         <button
           onClick={() => setIsAdding(true)}
-          className="flex items-center px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors"
+          className="flex items-center px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover transition-colors"
         >
           <Plus className="w-4 h-4 mr-2" />
           FAQ hinzufügen
@@ -160,7 +160,7 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
               <button
                 onClick={addFAQ}
                 disabled={!newFAQ.question.trim() || !newFAQ.answer.trim()}
-                className="flex items-center px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 <Save className="w-4 h-4 mr-2" />
                 Hinzufügen
@@ -313,7 +313,7 @@ const FAQItem: React.FC<FAQItemProps> = ({
             <button
               onClick={() => onSave(faq.id, editData)}
               disabled={!editData.question.trim() || !editData.answer.trim()}
-              className="flex items-center px-3 py-1.5 bg-[#14ad9f] text-white rounded hover:bg-[#129488] disabled:bg-gray-400 disabled:cursor-not-allowed text-sm transition-colors"
+              className="flex items-center px-3 py-1.5 bg-[#14ad9f] text-white rounded hover:bg-taskilo-hover disabled:bg-gray-400 disabled:cursor-not-allowed text-sm transition-colors"
             >
               <Save className="w-4 h-4 mr-1" />
               Übernehmen
@@ -355,7 +355,7 @@ const FAQItem: React.FC<FAQItemProps> = ({
             onClick={() => onToggleFeatured(faq.id)}
             className={`p-1.5 rounded text-xs transition-colors ${
               faq.featured
-                ? 'bg-[#14ad9f] text-white hover:bg-[#129488]'
+                ? 'bg-[#14ad9f] text-white hover:bg-taskilo-hover'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
             title={faq.featured ? 'Als Featured entfernen' : 'Als Featured markieren'}

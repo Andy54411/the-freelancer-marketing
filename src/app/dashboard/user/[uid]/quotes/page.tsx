@@ -206,7 +206,7 @@ export default function CustomerQuotesOverviewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex items-center justify-center">
         <FiLoader className="animate-spin h-8 w-8 text-white" />
       </div>
     );
@@ -214,7 +214,7 @@ export default function CustomerQuotesOverviewPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
         <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
         <div className="relative z-10 pt-20 px-4 lg:px-6 pb-6">
           <div className="max-w-7xl mx-auto">
@@ -239,7 +239,7 @@ export default function CustomerQuotesOverviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10 pt-20 px-4 lg:px-6 pb-6">
         <div className="max-w-7xl mx-auto">

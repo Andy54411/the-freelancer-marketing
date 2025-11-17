@@ -281,7 +281,7 @@ function CustomerOrdersTab({ customer, companyId }: CustomerOrdersTabProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Auftragsverwaltung</CardTitle>
-            <Button className="bg-[#14ad9f] hover:bg-[#129488]" onClick={handleCreateOrder}>
+            <Button className="bg-[#14ad9f] hover:bg-taskilo-hover" onClick={handleCreateOrder}>
               <Plus className="h-4 w-4 mr-2" />
               Neuen Auftrag erstellen
             </Button>
@@ -326,7 +326,7 @@ function CustomerOrdersTab({ customer, companyId }: CustomerOrdersTabProps) {
                 <Folder className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                 <h3 className="text-lg font-medium text-gray-900 mb-1">Keine Aufträge gefunden</h3>
                 <p className="text-sm mb-4">Erstellen Sie den ersten Auftrag für diesen Kunden</p>
-                <Button className="bg-[#14ad9f] hover:bg-[#129488]" onClick={handleCreateOrder}>
+                <Button className="bg-[#14ad9f] hover:bg-taskilo-hover" onClick={handleCreateOrder}>
                   <Plus className="h-4 w-4 mr-2" />
                   Ersten Auftrag erstellen
                 </Button>

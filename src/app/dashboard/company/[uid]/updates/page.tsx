@@ -193,7 +193,7 @@ export default function CompanyUpdatesPage() {
         {unseenUpdates.length > 0 && (
           <Button
             onClick={handleMarkAllAsSeen}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
           >
             <CheckCircle className="h-4 w-4 mr-2" />
             Alle als gelesen markieren ({unseenUpdates.length})
@@ -202,7 +202,7 @@ export default function CompanyUpdatesPage() {
       </div>
 
       {/* Info Banner für Company Dashboard */}
-      <Card className="bg-gradient-to-r from-[#14ad9f]/10 to-[#14ad9f]/5 border-[#14ad9f]/20">
+      <Card className="bg-linear-to-r from-[#14ad9f]/10 to-[#14ad9f]/5 border-[#14ad9f]/20">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
             <Building2 className="h-6 w-6 text-[#14ad9f] mt-0.5" />
@@ -378,7 +378,7 @@ function UpdateCard({ update, onMarkAsSeen, onDismiss, isNew }: UpdateCardProps)
                 variant="ghost"
                 size="sm"
                 onClick={() => onMarkAsSeen(update.id, update.version || '1.0.0')}
-                className="flex items-center gap-2 text-[#14ad9f] hover:text-[#129488]"
+                className="flex items-center gap-2 text-[#14ad9f] hover:text-taskilo-hover"
               >
                 <CheckCircle className="h-4 w-4" />
                 Als gelesen markieren

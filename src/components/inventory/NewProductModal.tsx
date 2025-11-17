@@ -450,7 +450,7 @@ export default function NewProductModal({
               Abbrechen
             </Button>
             <Button
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               disabled={Boolean(saving) || !values.name.trim()}
               onClick={async () => {
                 // Wenn direkte Persistierung gewünscht und companyId vorhanden

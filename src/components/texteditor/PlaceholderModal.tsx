@@ -237,7 +237,7 @@ export default function PlaceholderModal({
             <Button
               onClick={handleInsert}
               disabled={selectedTokens.size === 0}
-              className="bg-[#14ad9f] hover:bg-[#129488]"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover"
             >
               Einfügen ({selectedTokens.size})
             </Button>

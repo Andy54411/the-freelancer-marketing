@@ -1945,7 +1945,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                       <Button
                       onClick={() => handleSend('download')}
                       disabled={sending}
-                      className="w-full bg-[#14ad9f] hover:bg-[#129488]">
+                      className="w-full bg-[#14ad9f] hover:bg-taskilo-hover">
 
                         {sending ?
                       <>

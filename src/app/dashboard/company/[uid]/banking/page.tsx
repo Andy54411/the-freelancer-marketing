@@ -871,7 +871,7 @@ export default function BankingDashboardPage() {
                   onClick={() =>
                     (window.location.href = `/dashboard/company/${uid}/banking/transactions`)
                   }
-                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                  className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                 >
                   Transaktionen anzeigen
                 </Button>

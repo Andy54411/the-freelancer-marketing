@@ -528,7 +528,7 @@ export default function QualificationsTab({
       {/* Action Buttons */}
       {isEditing ? (
         <div className="flex gap-3">
-          <Button onClick={handleSave} className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+          <Button onClick={handleSave} className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
             Speichern
           </Button>
           <Button variant="outline" onClick={onCancel}>
@@ -536,7 +536,7 @@ export default function QualificationsTab({
           </Button>
         </div>
       ) : (
-        <Button onClick={onEdit} className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+        <Button onClick={onEdit} className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
           Bearbeiten
         </Button>
       )}

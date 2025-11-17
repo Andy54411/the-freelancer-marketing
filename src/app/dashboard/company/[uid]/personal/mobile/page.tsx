@@ -196,7 +196,7 @@ export default function MobileAppPage({ params }: { params: Promise<{ uid: strin
           </Button>
           <Button
             onClick={sendAppInvitation}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
           >
             <Download className="h-4 w-4 mr-2" />
             App-Einladung senden
@@ -409,7 +409,7 @@ export default function MobileAppPage({ params }: { params: Promise<{ uid: strin
                   <label className="text-sm font-medium">Primärfarbe</label>
                   <Input defaultValue="#14ad9f" />
                 </div>
-                <Button className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white">
+                <Button className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white">
                   Einstellungen speichern
                 </Button>
               </CardContent>

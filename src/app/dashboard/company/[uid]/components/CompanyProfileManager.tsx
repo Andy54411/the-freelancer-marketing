@@ -234,7 +234,7 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-2 bg-[#14ad9f] hover:bg-[#129488] text-white rounded-md font-medium flex items-center space-x-2 disabled:opacity-50"
+            className="px-6 py-2 bg-[#14ad9f] hover:bg-taskilo-hover text-white rounded-md font-medium flex items-center space-x-2 disabled:opacity-50"
           >
             {saving ? <FiLoader className="animate-spin" /> : <FiSave />}
             <span>{saving ? 'Speichert...' : 'Speichern'}</span>

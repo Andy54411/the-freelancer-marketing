@@ -27,6 +27,7 @@ function LoginPageContent() {
 
   const handleEmailPasswordLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    
     if (!email.trim() || !password.trim()) {
       setError('Bitte E-Mail und Passwort eingeben.');
       return;
@@ -120,7 +121,7 @@ function LoginPageContent() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+    <main className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10 w-full max-w-md space-y-6">
         <div className="text-center">
@@ -151,7 +152,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+        <main className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
           <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md">
             <div className="text-center">
               <Logo />

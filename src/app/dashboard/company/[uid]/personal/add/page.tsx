@@ -309,7 +309,7 @@ export default function AddEmployeePage() {
         </div>
 
         {/* Kostenübersicht */}
-        <Card className="mb-8 bg-gradient-to-r from-[#14ad9f] to-[#0f9d84] text-white">
+        <Card className="mb-8 bg-linear-to-r from-[#14ad9f] to-[#0f9d84] text-white">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center">

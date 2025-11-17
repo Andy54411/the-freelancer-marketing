@@ -119,7 +119,7 @@ const PortfolioManager: React.FC<ProfileTabProps> = ({ profile, setProfile }) =>
         <h3 className="text-lg font-semibold text-gray-900">Portfolio</h3>
         <Button
           onClick={handleAddPortfolioItem}
-          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+          className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
           Projekt hinzufügen

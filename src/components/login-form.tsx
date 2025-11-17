@@ -150,7 +150,7 @@ export function LoginForm({
                   </a>
                   <a
                     href="/register/company"
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm text-center"
+                    className="bg-[#14ad9f] hover:bg-taskilo-hover text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm text-center"
                   >
                     Firma
                   </a>

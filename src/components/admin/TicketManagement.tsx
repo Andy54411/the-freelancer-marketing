@@ -355,7 +355,7 @@ const TicketManagement: React.FC<TicketManagementProps> = ({ onTicketUpdate }) =
 
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+              <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
                 <Plus className="h-4 w-4 mr-2" />
                 Neues Ticket
               </Button>
@@ -482,7 +482,7 @@ const TicketManagement: React.FC<TicketManagementProps> = ({ onTicketUpdate }) =
                 </Button>
                 <Button
                   onClick={createTicket}
-                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                  className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                   disabled={!newTicket.title.trim() || !newTicket.description.trim()}
                 >
                   Ticket erstellen
@@ -798,7 +798,7 @@ const TicketManagement: React.FC<TicketManagementProps> = ({ onTicketUpdate }) =
                           <Button
                             onClick={addComment}
                             disabled={!newComment.content.trim()}
-                            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                           >
                             Kommentar hinzufügen
                           </Button>

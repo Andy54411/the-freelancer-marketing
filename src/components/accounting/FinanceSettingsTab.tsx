@@ -151,7 +151,7 @@ export default function FinanceSettingsTab({ companyUid }: FinanceSettingsTabPro
         </CardHeader>
         <CardContent className="space-y-6">
           {/* 1. Mahnung */}
-          <div className="border border-gray-200 rounded-lg p-6 bg-gradient-to-r from-[#14ad9f]/5 to-transparent">
+          <div className="border border-gray-200 rounded-lg p-6 bg-linear-to-r from-[#14ad9f]/5 to-transparent">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#14ad9f]/10">
@@ -196,7 +196,7 @@ export default function FinanceSettingsTab({ companyUid }: FinanceSettingsTabPro
           </div>
 
           {/* 2. Mahnung */}
-          <div className="border border-gray-200 rounded-lg p-6 bg-gradient-to-r from-yellow-50 to-transparent">
+          <div className="border border-gray-200 rounded-lg p-6 bg-linear-to-r from-yellow-50 to-transparent">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100">
@@ -241,7 +241,7 @@ export default function FinanceSettingsTab({ companyUid }: FinanceSettingsTabPro
           </div>
 
           {/* 3. Mahnung */}
-          <div className="border border-gray-200 rounded-lg p-6 bg-gradient-to-r from-red-50 to-transparent">
+          <div className="border border-gray-200 rounded-lg p-6 bg-linear-to-r from-red-50 to-transparent">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100">
@@ -382,7 +382,7 @@ export default function FinanceSettingsTab({ companyUid }: FinanceSettingsTabPro
         <Button
           onClick={handleSave}
           disabled={saving}
-          className="bg-[#14ad9f] hover:bg-[#129488] text-white px-8 py-3"
+          className="bg-[#14ad9f] hover:bg-taskilo-hover text-white px-8 py-3"
         >
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Alle Einstellungen speichern

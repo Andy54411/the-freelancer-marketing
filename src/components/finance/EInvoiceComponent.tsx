@@ -542,7 +542,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
                             setShowSendDialog(true);
                           }}
                           disabled={invoice.validationStatus !== 'valid'}
-                          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                          className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                         >
                           <Send className="h-4 w-4 mr-1" />
                           Versenden
@@ -888,7 +888,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
                         </Button>
                         <Button
                           size="sm"
-                          className="bg-[#14ad9f] hover:bg-[#129488]"
+                          className="bg-[#14ad9f] hover:bg-taskilo-hover"
                           onClick={() => {
                             // Hier könnte man die validierte E-Rechnung importieren
                             toast.success('Import-Funktion folgt in zukünftiger Version');

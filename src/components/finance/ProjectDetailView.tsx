@@ -932,7 +932,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
             <Button
               onClick={handleSaveEdit}
               disabled={savingEdit}
-              className="bg-[#14ad9f] hover:bg-[#129488]"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover"
             >
               {savingEdit ? (
                 <>

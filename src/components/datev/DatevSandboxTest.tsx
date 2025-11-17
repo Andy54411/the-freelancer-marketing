@@ -326,7 +326,7 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
             <Button
               onClick={startOAuthFlow}
               disabled={loading}
-              className="flex-1 bg-[#14ad9f] hover:bg-[#129488] text-white focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2"
+              className="flex-1 bg-[#14ad9f] hover:bg-taskilo-hover text-white focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2"
               aria-describedby="oauth-flow-description"
             >
               {loading ? (

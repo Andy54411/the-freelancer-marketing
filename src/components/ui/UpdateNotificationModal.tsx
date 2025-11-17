@@ -264,7 +264,7 @@ export default function UpdateNotificationModal({
                         variant="ghost"
                         size="sm"
                         onClick={() => onMarkAsSeen(update.id, update.version)}
-                        className="flex items-center gap-2 text-[#14ad9f] hover:text-[#129488]"
+                        className="flex items-center gap-2 text-[#14ad9f] hover:text-taskilo-hover"
                       >
                         <CheckCircle className="h-4 w-4" />
                         Als gelesen markieren

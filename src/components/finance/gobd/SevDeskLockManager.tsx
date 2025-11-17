@@ -216,7 +216,7 @@ export function SevDeskLockManager({ companyId, onLockComplete }: SevDeskLockMan
               <Button
                 onClick={handleSubmit}
                 disabled={!isFormValid || isLocking}
-                className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white font-medium py-3"
+                className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white font-medium py-3"
                 size="lg"
               >
                 {isLocking ? (

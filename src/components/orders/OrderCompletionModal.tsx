@@ -204,7 +204,7 @@ const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
             <Button
               onClick={handleSubmit}
               disabled={isLoading}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               {isLoading ? 'Wird abgeschlossen...' : 'Auftrag abschließen'}
             </Button>
@@ -232,7 +232,7 @@ const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleComplete}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               Ja, abschließen
             </AlertDialogAction>

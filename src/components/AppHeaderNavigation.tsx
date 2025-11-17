@@ -347,7 +347,7 @@ const AppHeaderNavigation: React.FC = () => {
               {/* Alle Services Button - Direkter Link zu Services-Seite */}
               <Link
                 href="/services"
-                className="flex items-center text-white bg-[#14ad9f] hover:bg-[#129488] px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg border border-[#14ad9f]"
+                className="flex items-center text-white bg-[#14ad9f] hover:bg-taskilo-hover px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg border border-[#14ad9f]"
               >
                 Alle Services
               </Link>
@@ -391,7 +391,7 @@ const AppHeaderNavigation: React.FC = () => {
                   <div className="mt-8 pt-6 border-t border-gray-100 text-center">
                     <Link
                       href={getServiceUrl(hoveredCategory)}
-                      className="inline-block bg-[#14ad9f] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#129488] transition-colors duration-200 shadow-md hover:shadow-lg"
+                      className="inline-block bg-[#14ad9f] text-white px-8 py-3 rounded-lg font-medium hover:bg-taskilo-hover transition-colors duration-200 shadow-md hover:shadow-lg"
                       onClick={() => setHoveredCategory(null)}
                     >
                       Alle {hoveredCategory} Services anzeigen

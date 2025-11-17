@@ -593,7 +593,7 @@ export default function TimeBasedQuoteForm({
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center px-6 py-2 border border-transparent rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center px-6 py-2 border border-transparent rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-taskilo-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? (
               <FiLoader className="animate-spin -ml-1 mr-2 h-4 w-4" />

@@ -210,7 +210,7 @@ export function EInvoiceComplianceDashboard({
 
           {/* Action Button */}
           <div className="pt-2">
-            <Button onClick={onConfigureClick} className="w-full bg-[#14ad9f] hover:bg-[#129488]">
+            <Button onClick={onConfigureClick} className="w-full bg-[#14ad9f] hover:bg-taskilo-hover">
               <Settings className="h-4 w-4 mr-2" />
               {complianceData?.overallCompliance < 100
                 ? 'Compliance vervollständigen'
@@ -281,7 +281,7 @@ export function EInvoiceComplianceDashboard({
 
       {/* Erfolg-Indikator bei 100% */}
       {complianceData?.overallCompliance >= 100 && (
-        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+        <Card className="bg-linear-to-r from-green-50 to-emerald-50 border-green-200">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-green-100 rounded-full">

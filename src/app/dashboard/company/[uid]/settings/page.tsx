@@ -296,7 +296,7 @@ export default function SettingsPage() {
               </p>
               <button
                 onClick={() => (window.location.href = `/dashboard/company/${uid}/payouts`)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-taskilo-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
               >
                 Zur Auszahlungsübersicht
               </button>

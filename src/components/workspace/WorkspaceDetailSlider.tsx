@@ -459,7 +459,7 @@ export function WorkspaceDetailSlider({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full justify-start bg-[#14ad9f] text-white hover:bg-[#129488]"
+                      className="w-full justify-start bg-[#14ad9f] text-white hover:bg-taskilo-hover"
                       onClick={() => onView(workspace)}
                     >
                       <ChevronRight className="h-4 w-4 mr-2" />

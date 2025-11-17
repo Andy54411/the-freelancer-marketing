@@ -249,7 +249,7 @@ export function EditContactPersonModal({
           <Button variant="outline" onClick={onClose} disabled={loading}>
             Abbrechen
           </Button>
-          <Button onClick={handleSave} disabled={loading} className="bg-[#14ad9f] hover:bg-[#129488]">
+          <Button onClick={handleSave} disabled={loading} className="bg-[#14ad9f] hover:bg-taskilo-hover">
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Änderungen speichern
           </Button>

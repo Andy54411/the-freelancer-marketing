@@ -55,7 +55,7 @@ function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeP
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
@@ -140,7 +140,7 @@ function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeP
               </p>
               <Button
                 size="lg"
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white px-8 py-3 text-lg"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white px-8 py-3 text-lg"
                 onClick={onStartOnboarding}
               >
                 Onboarding starten

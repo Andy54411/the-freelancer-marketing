@@ -282,7 +282,7 @@ function UserRegisterFormContent() {
 
   return (
     <>
-      <main className="bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative grid place-items-center min-h-screen mx-auto p-6 md:p-12">
+      <main className="bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative grid place-items-center min-h-screen mx-auto p-6 md:p-12">
         <div className="absolute inset-0 bg-black/20"></div>
         <Card className="relative z-10 w-full max-w-md shadow-lg rounded-lg bg-white">
           <CardHeader className="text-center">
@@ -578,7 +578,7 @@ export default function UserRegisterPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+        <div className="flex justify-center items-center min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
           <div className="absolute inset-0 bg-black/20"></div>
           <div className="relative z-10 text-white font-semibold">Lade Registrierungsseite...</div>
         </div>

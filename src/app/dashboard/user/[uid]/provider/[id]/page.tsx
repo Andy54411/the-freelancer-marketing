@@ -375,7 +375,7 @@ export default function UserProviderProfilePage() {
                         {/* Benutzer-Header */}
                         <div className="flex items-start space-x-4">
                           <div className="shrink-0">
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                            <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
                               {review.reviewerName.charAt(0).toUpperCase()}
                             </div>
                           </div>

@@ -66,7 +66,7 @@ export function EmailTemplates({
           </CardTitle>
           <Button
             onClick={() => setIsCreating(true)}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
             Neue Vorlage
@@ -115,7 +115,7 @@ export function EmailTemplates({
                   <Button variant="outline" onClick={() => setIsCreating(false)}>
                     Abbrechen
                   </Button>
-                  <Button onClick={handleCreate} className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                  <Button onClick={handleCreate} className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
                     Erstellen
                   </Button>
                 </div>

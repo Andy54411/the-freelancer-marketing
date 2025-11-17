@@ -121,7 +121,7 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
             <p className="text-gray-600 mb-4">Sie werden zur Anmeldung weitergeleitet...</p>
             <Button
               onClick={() => router.push('/login')}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               Zur Anmeldung
             </Button>
@@ -151,7 +151,7 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
           </p>
           <Button
             onClick={() => router.back()}
-            className="mt-4 bg-[#14ad9f] hover:bg-[#129488] text-white"
+            className="mt-4 bg-[#14ad9f] hover:bg-taskilo-hover text-white"
           >
             Zurück
           </Button>

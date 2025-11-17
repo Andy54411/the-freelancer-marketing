@@ -399,7 +399,7 @@ export function EInvoiceIntegration({
               settings.defaultFormat === 'zugferd' ? generateZUGFeRDXML : generateXRechnungXML
             }
             disabled={generating || !invoiceData}
-            className="bg-[#14ad9f] hover:bg-[#129488]"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover"
           >
             {generating ? (
               <>

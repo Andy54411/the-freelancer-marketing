@@ -736,7 +736,7 @@ export default function EmailAdminPage() {
                       <Button
                         onClick={handleSendEmail}
                         disabled={loading}
-                        className="flex-1 bg-[#14ad9f] hover:bg-[#129488] text-white"
+                        className="flex-1 bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                       >
                         {loading ? 'Wird gesendet...' : 'E-Mail senden'}
                       </Button>
@@ -1057,7 +1057,7 @@ export default function EmailAdminPage() {
                                 }}
                                 variant="default"
                                 size="sm"
-                                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                               >
                                 <Eye className="h-4 w-4 mr-2" />
                                 E-Mail öffnen
@@ -1187,7 +1187,7 @@ export default function EmailAdminPage() {
                     <Button
                       onClick={handleSaveTemplate}
                       disabled={loading}
-                      className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
+                      className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                     >
                       {loading ? 'Wird gespeichert...' : 'Template speichern'}
                     </Button>

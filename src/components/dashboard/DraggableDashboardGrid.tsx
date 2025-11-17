@@ -205,7 +205,7 @@ export default function DraggableDashboardGrid({
           onClick={() => setIsEditMode(!isEditMode)}
           className={cn(
             'transition-colors',
-            isEditMode && 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+            isEditMode && 'bg-[#14ad9f] hover:bg-taskilo-hover text-white'
           )}
         >
           <Settings className="h-4 w-4 mr-2" />

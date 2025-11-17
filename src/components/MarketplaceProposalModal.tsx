@@ -258,7 +258,7 @@ export default function MarketplaceProposalModal({
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 bg-[#14ad9f] hover:bg-[#129488] text-white"
+                    className="flex-1 bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                   >
                     {isSubmitting ? (
                       <>

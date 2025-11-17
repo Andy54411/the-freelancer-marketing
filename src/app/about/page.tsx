@@ -4,7 +4,7 @@ import { HeroHeader } from '@/components/hero8-header';
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         <HeroHeader />
@@ -61,19 +61,19 @@ export default function AboutPage() {
               <section>
                 <h2 className="text-2xl font-semibold text-gray-900 mb-4">Unsere Zahlen</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                  <div className="bg-gradient-to-br from-[#14ad9f]/10 to-teal-500/10 p-4 rounded-lg">
+                  <div className="bg-linear-to-br from-[#14ad9f]/10 to-teal-500/10 p-4 rounded-lg">
                     <div className="text-3xl font-bold text-[#14ad9f]">56.582+</div>
                     <div className="text-gray-600">Dienstleister</div>
                   </div>
-                  <div className="bg-gradient-to-br from-[#14ad9f]/10 to-teal-500/10 p-4 rounded-lg">
+                  <div className="bg-linear-to-br from-[#14ad9f]/10 to-teal-500/10 p-4 rounded-lg">
                     <div className="text-3xl font-bold text-[#14ad9f]">994.012+</div>
                     <div className="text-gray-600">Bewertungen</div>
                   </div>
-                  <div className="bg-gradient-to-br from-[#14ad9f]/10 to-teal-500/10 p-4 rounded-lg">
+                  <div className="bg-linear-to-br from-[#14ad9f]/10 to-teal-500/10 p-4 rounded-lg">
                     <div className="text-3xl font-bold text-[#14ad9f]">1.2M+</div>
                     <div className="text-gray-600">Projekte</div>
                   </div>
-                  <div className="bg-gradient-to-br from-[#14ad9f]/10 to-teal-500/10 p-4 rounded-lg">
+                  <div className="bg-linear-to-br from-[#14ad9f]/10 to-teal-500/10 p-4 rounded-lg">
                     <div className="text-3xl font-bold text-[#14ad9f]">4.8/5</div>
                     <div className="text-gray-600">Kundenzufriedenheit</div>
                   </div>
@@ -88,7 +88,7 @@ export default function AboutPage() {
                   verbessern und das beste Erlebnis für unsere Nutzer zu schaffen.
                 </p>
 
-                <div className="bg-gradient-to-r from-[#14ad9f]/10 to-teal-500/10 border border-[#14ad9f]/20 rounded-lg p-6">
+                <div className="bg-linear-to-r from-[#14ad9f]/10 to-teal-500/10 border border-[#14ad9f]/20 rounded-lg p-6">
                   <h3 className="font-semibold text-gray-900 mb-2">Werde Teil des Teams</h3>
                   <p className="text-gray-700 mb-4">
                     Wir suchen immer nach talentierten Menschen, die mit uns die Zukunft der

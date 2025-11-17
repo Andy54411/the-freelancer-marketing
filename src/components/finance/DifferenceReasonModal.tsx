@@ -122,7 +122,7 @@ export default function DifferenceReasonModal({
                           setDropdownOpen(false);
                         }}
                         className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors duration-150 ${
-                          selectedReason === reason.value ? 'bg-[#14ad9f] text-white hover:bg-[#129488]' : 'text-gray-900'
+                          selectedReason === reason.value ? 'bg-[#14ad9f] text-white hover:bg-taskilo-hover' : 'text-gray-900'
                         } ${index === 0 ? 'rounded-t-xl' : ''} ${index === DIFFERENCE_REASONS.length - 1 ? 'rounded-b-xl' : ''}`}
                       >
                         {reason.label}
@@ -149,7 +149,7 @@ export default function DifferenceReasonModal({
                 disabled={!selectedReason}
                 className={`px-6 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${
                   selectedReason
-                    ? 'bg-[#14ad9f] text-white hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2 shadow-sm hover:shadow-md'
+                    ? 'bg-[#14ad9f] text-white hover:bg-taskilo-hover focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2 shadow-sm hover:shadow-md'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
                 type="button"

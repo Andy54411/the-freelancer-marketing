@@ -47,8 +47,8 @@ const tableOfContents = [
 
 export default function ERechnungLeitfadenPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-linear-to-br from-black/10 to-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         {/* Use existing HeroHeader */}
         <HeroHeader />
@@ -739,7 +739,7 @@ export default function ERechnungLeitfadenPage() {
               </section>
 
               {/* Call to Action */}
-              <div className="bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white rounded-lg p-8 text-center">
+              <div className="bg-linear-to-r from-[#14ad9f] to-teal-600 text-white rounded-lg p-8 text-center">
                 <h2 className="text-2xl font-bold mb-4">Bereit für die E-Rechnung?</h2>
                 <p className="text-lg mb-6">
                   Starten Sie noch heute mit Taskilo und seien Sie optimal auf die

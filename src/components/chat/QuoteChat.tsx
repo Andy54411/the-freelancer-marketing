@@ -286,7 +286,7 @@ export default function QuoteChat({
 
   if (!isExpanded) {
     return (
-      <div className="bg-gradient-to-r from-[#14ad9f] to-[#129488] rounded-lg shadow-lg border-2 border-[#14ad9f] p-4 hover:shadow-xl transition-all duration-200 cursor-pointer">
+      <div className="bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-lg shadow-lg border-2 border-[#14ad9f] p-4 hover:shadow-xl transition-all duration-200 cursor-pointer">
         <button
           onClick={() => setIsExpanded(true)}
           className="w-full flex items-center justify-between text-left group"
@@ -318,7 +318,7 @@ export default function QuoteChat({
   return (
     <div className="bg-white rounded-lg shadow-lg border border-[#14ad9f] overflow-hidden w-full max-w-none">
       {/* Chat Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-[#14ad9f]/10 to-[#129488]/10">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-linear-to-r from-[#14ad9f]/10 to-[#129488]/10">
         <div className="flex items-center gap-3">
           <div>
             <h3 className="text-lg font-bold text-gray-900">
@@ -455,7 +455,7 @@ export default function QuoteChat({
           <button
             type="submit"
             disabled={!newMessage.trim() || loading || !!validationError}
-            className="bg-[#14ad9f] hover:bg-[#129488] disabled:bg-gray-300 disabled:cursor-not-allowed text-white w-10 h-10 rounded-lg transition-colors flex items-center justify-center shrink-0"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover disabled:bg-gray-300 disabled:cursor-not-allowed text-white w-10 h-10 rounded-lg transition-colors flex items-center justify-center shrink-0"
             title={loading ? 'Sende...' : 'Nachricht senden'}
           >
             {loading ? '⋯' : '→'}

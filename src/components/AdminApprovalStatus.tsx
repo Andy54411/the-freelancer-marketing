@@ -292,7 +292,7 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
         status.accountSuspended
           ? 'border-red-200 bg-red-50'
           : isRecentlyApproved
-            ? 'border-green-200 bg-gradient-to-r from-green-50 to-blue-50'
+            ? 'border-green-200 bg-linear-to-r from-green-50 to-blue-50'
             : !status.isApproved
               ? 'border-orange-200 bg-orange-50'
               : 'border-green-200 bg-green-50'

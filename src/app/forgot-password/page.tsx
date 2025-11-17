@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+    <main className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10 w-full max-w-md space-y-6">
         <div className="text-center">
@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#14ad9f] hover:bg-[#129488]"
+                className="w-full bg-[#14ad9f] hover:bg-taskilo-hover"
                 disabled={isLoading}
               >
                 {isLoading ? (

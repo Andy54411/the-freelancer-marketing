@@ -652,7 +652,7 @@ export default function RequestQuoteModal({
             <Button
               onClick={step === 'review' ? handleSubmit : handleNext}
               disabled={loading}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               {loading ? (
                 <>
@@ -673,7 +673,7 @@ export default function RequestQuoteModal({
 
         {step === 'success' && (
           <div className="flex justify-center pt-6 border-t">
-            <Button onClick={onClose} className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+            <Button onClick={onClose} className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
               Schließen
             </Button>
           </div>

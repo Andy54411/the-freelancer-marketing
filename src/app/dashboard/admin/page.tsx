@@ -187,7 +187,7 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <button className="w-full flex items-center justify-between p-3 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors">
+                <button className="w-full flex items-center justify-between p-3 bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover transition-colors">
                   <span className="flex items-center">
                     <Ticket className="h-4 w-4 mr-2" />
                     Ticket erstellen

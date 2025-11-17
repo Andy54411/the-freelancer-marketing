@@ -64,7 +64,7 @@ const OnboardingBanner: React.FC<OnboardingBannerProps> = ({
   };
 
   return (
-    <Card className="border-l-4 border-l-[#14ad9f] bg-gradient-to-r from-[#14ad9f]/5 to-transparent mb-6">
+    <Card className="border-l-4 border-l-[#14ad9f] bg-linear-to-r from-[#14ad9f]/5 to-transparent mb-6">
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ const OnboardingBanner: React.FC<OnboardingBannerProps> = ({
               </Button>
             </Link>
             <Link href={`/dashboard/company/${companyUid}/onboarding/step/${currentStep}`}>
-              <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white" size="sm">
+              <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white" size="sm">
                 Weiter <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </Link>

@@ -166,7 +166,7 @@ export default function SmoothRedirectOverlay() {
   return (
     <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
       {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#14ad9f]/10 via-teal-50 to-blue-50"></div>
+      <div className="absolute inset-0 bg-linear-to-br from-[#14ad9f]/10 via-teal-50 to-blue-50"></div>
 
       {/* Content */}
       <div className="relative z-10 text-center space-y-8 max-w-lg mx-auto p-8">
@@ -190,7 +190,7 @@ export default function SmoothRedirectOverlay() {
         <div className="w-full max-w-sm mx-auto space-y-3">
           <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
             <div
-              className="bg-gradient-to-r from-[#14ad9f] to-teal-500 h-3 rounded-full transition-all duration-300 ease-out shadow-sm"
+              className="bg-linear-to-r from-[#14ad9f] to-teal-500 h-3 rounded-full transition-all duration-300 ease-out shadow-sm"
               style={{ width: `${progress}%` }}
             />
           </div>

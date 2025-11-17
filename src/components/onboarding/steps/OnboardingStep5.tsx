@@ -496,7 +496,7 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
           disabled={!canComplete || isSubmitting || isOffline}
           className={`px-8 ${
             canComplete && !isOffline
-              ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+              ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }`}
         >

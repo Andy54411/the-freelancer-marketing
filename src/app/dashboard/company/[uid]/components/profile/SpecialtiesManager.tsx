@@ -65,7 +65,7 @@ const SpecialtiesManager: React.FC<ProfileTabProps> = ({ profile, setProfile }) 
         />
         <button
           onClick={addSpecialty}
-          className="bg-[#14ad9f] text-white px-4 py-2 rounded-md hover:bg-[#129488] transition-colors"
+          className="bg-[#14ad9f] text-white px-4 py-2 rounded-md hover:bg-taskilo-hover transition-colors"
         >
           <FiPlus />
         </button>

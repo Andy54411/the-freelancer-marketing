@@ -104,7 +104,7 @@ export default function DatevExportPage() {
                 <Button 
                   variant="ghost"
                   onClick={handleChangeExportType}
-                  className="text-[#14ad9f] hover:text-[#129488] hover:bg-[#14ad9f]/10"
+                  className="text-[#14ad9f] hover:text-taskilo-hover hover:bg-[#14ad9f]/10"
                 >
                   Ändern
                 </Button>
@@ -174,7 +174,7 @@ export default function DatevExportPage() {
               
               <Button 
                 onClick={handleActivateBDS}
-                className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white h-11"
+                className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white h-11"
               >
                 Buchungsdatenservice aktivieren
               </Button>

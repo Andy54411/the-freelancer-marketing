@@ -333,7 +333,7 @@ export default function HoursBillingOverview({
       {/* Übersicht-Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {/* Original-Auftrag */}
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+        <div className="bg-linear-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
           <div className="flex items-center justify-between mb-2">
             <FiCheckCircle className="text-blue-600 text-xl" />
             <span className="text-xs font-medium text-blue-600 bg-blue-200 px-2 py-1 rounded">
@@ -348,7 +348,7 @@ export default function HoursBillingOverview({
         </div>
 
         {/* Bezahlte zusätzliche Stunden */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+        <div className="bg-linear-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
           <div className="flex items-center justify-between mb-2">
             <FiCheckCircle className="text-green-600 text-xl" />
             <span className="text-xs font-medium text-green-600 bg-green-200 px-2 py-1 rounded">
@@ -363,7 +363,7 @@ export default function HoursBillingOverview({
         </div>
 
         {/* Offene Zahlungen (genehmigte Stunden) */}
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
+        <div className="bg-linear-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
           <div className="flex items-center justify-between mb-2">
             <FiAlertCircle className="text-orange-600 text-xl" />
             <span className="text-xs font-medium text-orange-600 bg-orange-200 px-2 py-1 rounded">
@@ -379,7 +379,7 @@ export default function HoursBillingOverview({
 
         {/* Geloggte Stunden (zur Freigabe) */}
         {finalLoggedAdditionalHours > 0 && (
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+          <div className="bg-linear-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
             <div className="flex items-center justify-between mb-2">
               <FiClock className="text-purple-600 text-xl" />
               <span className="text-xs font-medium text-purple-600 bg-purple-200 px-2 py-1 rounded">
@@ -396,7 +396,7 @@ export default function HoursBillingOverview({
       </div>
 
       {/* Gesamtübersicht */}
-      <div className="bg-gradient-to-r from-[#14ad9f] to-[#0f8b7a] text-white rounded-lg p-4 mb-6">
+      <div className="bg-linear-to-r from-[#14ad9f] to-[#0f8b7a] text-white rounded-lg p-4 mb-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div>
             <p className="text-sm opacity-90">Geloggte Stunden</p>
@@ -677,7 +677,7 @@ export default function HoursBillingOverview({
 
       {/* Zahlung/Freigabe erforderlich Hinweis */}
       {(pendingAdditionalEntries.length > 0 || finalLoggedAdditionalHours > 0) && (
-        <div className="mt-6 p-4 bg-gradient-to-r from-orange-100 to-red-100 border border-orange-300 rounded-lg">
+        <div className="mt-6 p-4 bg-linear-to-r from-orange-100 to-red-100 border border-orange-300 rounded-lg">
           <div className="flex items-center mb-2">
             <FiAlertCircle className="mr-2 text-orange-600 text-xl" />
             <h3 className="font-semibold text-orange-900">
@@ -772,7 +772,7 @@ export default function HoursBillingOverview({
             {userRole === 'customer' && onPaymentRequest && pendingAdditionalHours > 0 && (
               <button
                 onClick={onPaymentRequest}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 <span className="text-xl">💳</span>
                 <div className="text-left">

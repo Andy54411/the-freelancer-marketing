@@ -144,7 +144,7 @@ export default function OnboardingStep4({ companyUid }: OnboardingStep4Props) {
               <Button
                 onClick={addServiceArea}
                 size="sm"
-                className="bg-[#14ad9f] hover:bg-[#129488]"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover"
               >
                 Hinzufügen
               </Button>
@@ -381,7 +381,7 @@ export default function OnboardingStep4({ companyUid }: OnboardingStep4Props) {
         <Button
           onClick={handleNext}
           disabled={!isValidForNext()}
-          className="px-6 bg-[#14ad9f] hover:bg-[#129488] text-white disabled:bg-gray-300"
+          className="px-6 bg-[#14ad9f] hover:bg-taskilo-hover text-white disabled:bg-gray-300"
         >
           Weiter
         </Button>

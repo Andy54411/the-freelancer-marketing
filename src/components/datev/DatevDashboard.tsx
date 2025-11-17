@@ -204,7 +204,7 @@ export function DatevDashboard({ companyId }: DatevDashboardProps) {
                 onClick={handleSync}
                 disabled={syncing}
                 size="sm"
-                className="bg-[#14ad9f] hover:bg-[#129488]"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover"
               >
                 {syncing ? (
                   <FiRefreshCw className="w-4 h-4 animate-spin" />
@@ -365,7 +365,7 @@ export function DatevDashboard({ companyId }: DatevDashboardProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <Button
-                  className="w-full bg-[#14ad9f] hover:bg-[#129488]"
+                  className="w-full bg-[#14ad9f] hover:bg-taskilo-hover"
                   onClick={() => exportToDatev('example-invoice-id')}
                 >
                   <FiUpload className="w-4 h-4 mr-2" />

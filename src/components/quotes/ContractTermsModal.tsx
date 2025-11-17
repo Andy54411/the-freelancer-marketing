@@ -140,7 +140,7 @@ export default function ContractTermsModal({
                   <Link
                     href="/agb/vertragsabschluss"
                     target="_blank"
-                    className="text-[#14ad9f] hover:text-[#129488] underline"
+                    className="text-[#14ad9f] hover:text-taskilo-hover underline"
                   >
                     Vertragsbedingungen für Dienstleistungsaufträge
                   </Link>{' '}
@@ -174,7 +174,7 @@ export default function ContractTermsModal({
                   <Link
                     href="/datenschutz"
                     target="_blank"
-                    className="text-[#14ad9f] hover:text-[#129488] underline"
+                    className="text-[#14ad9f] hover:text-taskilo-hover underline"
                   >
                     Datenschutzbestimmungen
                   </Link>{' '}
@@ -271,7 +271,7 @@ export default function ContractTermsModal({
               disabled={!allTermsAccepted}
               className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
                 allTermsAccepted
-                  ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                  ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >

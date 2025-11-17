@@ -90,7 +90,7 @@ export default function AdminSettingsPage() {
         <Button
           onClick={checkSystemStatus}
           disabled={loading}
-          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+          className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Status aktualisieren

@@ -251,11 +251,11 @@ export default function Step2CompanyPage() {
   const currentRadiusKmForMap = localRadiusKm ?? 0;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-blue-100 to-teal-200 p-6">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-r from-blue-100 to-teal-200 p-6">
       <div className="w-full max-w-7xl mb-6 flex justify-between px-6">
         <button
           onClick={() => router.push('/register/company')}
-          className="text-[#14ad9f] text-lg flex items-center hover:text-[#129488]"
+          className="text-[#14ad9f] text-lg flex items-center hover:text-taskilo-hover"
         >
           <span className="mr-2">← Zurück zu Schritt 1</span>
         </button>

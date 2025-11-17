@@ -249,7 +249,7 @@ export default function CustomerDetailModal({ customer, isOpen, onClose }: Custo
               </div>
               <button
                 onClick={onClose}
-                className="bg-[#14ad9f] text-white px-4 py-2 rounded-lg hover:bg-[#129488] transition-colors"
+                className="bg-[#14ad9f] text-white px-4 py-2 rounded-lg hover:bg-taskilo-hover transition-colors"
               >
                 Schließen
               </button>

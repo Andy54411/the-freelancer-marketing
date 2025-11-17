@@ -222,7 +222,7 @@ export default function EnhancedTicketAnalytics() {
 
           <Button
             onClick={triggerAIClassification}
-            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+            className="bg-linear-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
           >
             <Brain className="w-4 h-4 mr-2" />
             AI Klassifizierung
@@ -246,7 +246,7 @@ export default function EnhancedTicketAnalytics() {
 
       {/* AWS Metrics Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100">
+        <Card className="border-blue-200 bg-linear-to-br from-blue-50 to-blue-100">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-blue-700">Resend E-Mails</CardTitle>
@@ -267,7 +267,7 @@ export default function EnhancedTicketAnalytics() {
           </CardContent>
         </Card>
 
-        <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-purple-100">
+        <Card className="border-purple-200 bg-linear-to-br from-purple-50 to-purple-100">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-purple-700">AI Accuracy</CardTitle>
@@ -291,7 +291,7 @@ export default function EnhancedTicketAnalytics() {
           </CardContent>
         </Card>
 
-        <Card className="border-green-200 bg-gradient-to-br from-green-50 to-green-100">
+        <Card className="border-green-200 bg-linear-to-br from-green-50 to-green-100">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-green-700">
@@ -314,7 +314,7 @@ export default function EnhancedTicketAnalytics() {
           </CardContent>
         </Card>
 
-        <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100">
+        <Card className="border-orange-200 bg-linear-to-br from-orange-50 to-orange-100">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-orange-700">Resolution Rate</CardTitle>

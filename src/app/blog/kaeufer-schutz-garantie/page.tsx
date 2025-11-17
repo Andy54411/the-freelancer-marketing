@@ -45,8 +45,8 @@ const tableOfContents = [
 
 export default function KaeuferschutzPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-linear-to-br from-black/10 to-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         {/* Use existing HeroHeader */}
         <HeroHeader />
@@ -515,7 +515,7 @@ export default function KaeuferschutzPage() {
               {/* Contact Information */}
               <section
                 id="kontakt"
-                className="bg-gradient-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white scroll-mt-24"
+                className="bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white scroll-mt-24"
               >
                 <div className="text-center">
                   <Phone className="w-12 h-12 mx-auto mb-4" />
@@ -619,7 +619,7 @@ export default function KaeuferschutzPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/register"
-                className="bg-[#14ad9f] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#129488] transition-colors"
+                className="bg-[#14ad9f] text-white px-8 py-3 rounded-lg font-semibold hover:bg-taskilo-hover transition-colors"
               >
                 Jetzt kostenlos registrieren
               </Link>

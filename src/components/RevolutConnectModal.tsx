@@ -284,7 +284,7 @@ export default function RevolutConnectModal({
             <button
               onClick={handleConnectRevolut}
               disabled={isLoading}
-              className="w-full bg-[#14ad9f] hover:bg-[#129488] disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
+              className="w-full bg-[#14ad9f] hover:bg-taskilo-hover disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
             >
               {isLoading ? (
                 <>

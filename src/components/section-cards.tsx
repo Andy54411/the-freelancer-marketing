@@ -265,7 +265,7 @@ export function SectionCards() {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {/* Guthaben Card */}
-      <Card className="h-[140px] flex flex-col bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-200">
+      <Card className="h-[140px] flex flex-col bg-linear-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-200">
         <CardHeader className="pb-1 shrink-0">
           <CardDescription className="flex items-center gap-1 text-green-700 dark:text-green-300 text-xs font-medium">
             <IconWallet size={14} className="shrink-0" />
@@ -299,7 +299,7 @@ export function SectionCards() {
               size="sm"
               onClick={handleWithdraw}
               disabled={isWithdrawing}
-              className={`w-full text-[9px] h-5 px-1 font-medium shadow-sm hover:shadow-md transition-all leading-tight bg-[#14ad9f] hover:bg-[#129488] text-white`}
+              className={`w-full text-[9px] h-5 px-1 font-medium shadow-sm hover:shadow-md transition-all leading-tight bg-[#14ad9f] hover:bg-taskilo-hover text-white`}
               title="Zur Auszahlungsseite"
             >
               {isWithdrawing ? (

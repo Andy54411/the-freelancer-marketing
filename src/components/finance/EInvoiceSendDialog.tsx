@@ -454,25 +454,25 @@ Mit freundlichen Grüßen`,
           <div className="flex items-center gap-2 mb-6">
             <Badge
               variant={step === 'compliance' ? 'default' : 'outline'}
-              className="bg-[#14ad9f] hover:bg-[#129488]"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover"
             >
               1. Compliance-Prüfung
             </Badge>
             <Badge
               variant={step === 'recipient' ? 'default' : 'outline'}
-              className="bg-[#14ad9f] hover:bg-[#129488]"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover"
             >
               2. Empfänger-Einstellungen
             </Badge>
             <Badge
               variant={step === 'sending' ? 'default' : 'outline'}
-              className="bg-[#14ad9f] hover:bg-[#129488]"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover"
             >
               3. Versendung
             </Badge>
             <Badge
               variant={step === 'completed' ? 'default' : 'outline'}
-              className="bg-[#14ad9f] hover:bg-[#129488]"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover"
             >
               4. Abgeschlossen
             </Badge>
@@ -621,7 +621,7 @@ Mit freundlichen Grüßen`,
                   <Button
                     onClick={() => setStep('recipient')}
                     disabled={!complianceCheck?.isCompliant}
-                    className="bg-[#14ad9f] hover:bg-[#129488]"
+                    className="bg-[#14ad9f] hover:bg-taskilo-hover"
                   >
                     Weiter zur Versendung
                   </Button>
@@ -930,7 +930,7 @@ Mit freundlichen Grüßen`,
                 <Button
                   type="submit"
                   disabled={isSending}
-                  className="bg-[#14ad9f] hover:bg-[#129488]"
+                  className="bg-[#14ad9f] hover:bg-taskilo-hover"
                 >
                   {isSending ? (
                     <>
@@ -987,7 +987,7 @@ Mit freundlichen Grüßen`,
                   Schließen
                 </Button>
                 <Button
-                  className="bg-[#14ad9f] hover:bg-[#129488]"
+                  className="bg-[#14ad9f] hover:bg-taskilo-hover"
                   onClick={handleShowTransmissionLog}
                 >
                   Übertragungsprotokoll anzeigen
@@ -1150,7 +1150,7 @@ Mit freundlichen Grüßen`,
               Schließen
             </Button>
             <Button
-              className="bg-[#14ad9f] hover:bg-[#129488]"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover"
               onClick={async () => {
                 try {
                   generateTransmissionLogPDF();

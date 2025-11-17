@@ -179,7 +179,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ profile, setPro
         {/* Upload Controls */}
         <div className="flex-1">
           <div className="flex gap-3">
-            <label className="inline-flex items-center gap-2 px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] cursor-pointer transition-colors disabled:opacity-50">
+            <label className="inline-flex items-center gap-2 px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover cursor-pointer transition-colors disabled:opacity-50">
               {isUploadingProfileImage ? (
                 <FiLoader className="animate-spin" size={16} />
               ) : (

@@ -833,7 +833,7 @@ export function CalendarEventModal({
                     <Button
                       onClick={handleAddNote}
                       disabled={!newNote.trim() || addingNote || !(event?.id || formData.id)}
-                      className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                      className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
 
                       {addingNote && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                       Notiz hinzufügen
@@ -1033,7 +1033,7 @@ export function CalendarEventModal({
               <Button
                 onClick={handleSaveEvent}
                 disabled={loading || !formData.title?.trim()}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
 
                 {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                 <Save className="h-4 w-4 mr-2" />

@@ -576,7 +576,7 @@ export default function IncomingQuotesPage() {
                           onClick={() =>
                             router.push(`/dashboard/company/${uid}/quotes/incoming/${quote.id}`)
                           }
-                          className="text-[#14ad9f] hover:text-[#129488] font-medium text-xs"
+                          className="text-[#14ad9f] hover:text-taskilo-hover font-medium text-xs"
                         >
                           Details
                         </button>

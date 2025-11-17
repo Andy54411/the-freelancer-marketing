@@ -87,7 +87,7 @@ export const TotalsDisplay: React.FC<TotalsDisplayProps> = ({
                 <span>{formatCurrency(tax.taxAmount)}</span>
               </div>
             ))}
-            <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-3" />
+            <div className="h-px bg-linear-to-r from-transparent via-gray-300 to-transparent my-3" />
             <div className="flex justify-between py-2 font-bold text-lg" style={{ color }}>
               <span>{t('totalAmount')}:</span>
               <span>{formatCurrency(data.total)}</span>
@@ -115,7 +115,7 @@ export const TotalsDisplay: React.FC<TotalsDisplayProps> = ({
   if (variant === 'compact') {
     return (
       <div className={`w-60 ${className}`}>
-        <div className="bg-gradient-to-br from-gray-50 to-white p-3 rounded border border-gray-200 shadow-sm">
+        <div className="bg-linear-to-br from-gray-50 to-white p-3 rounded border border-gray-200 shadow-sm">
           <div className="space-y-2">
             <div className="flex justify-between py-0.5 text-xs">
               <span>{t('subtotal')}:</span>
@@ -127,7 +127,7 @@ export const TotalsDisplay: React.FC<TotalsDisplayProps> = ({
                 <span>{formatCurrency(tax.taxAmount)}</span>
               </div>
             ))}
-            <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-2" />
+            <div className="h-px bg-linear-to-r from-transparent via-gray-300 to-transparent my-2" />
             <div className="flex justify-between py-1 font-bold text-sm" style={{ color }}>
               <span>{t('totalAmount')}:</span>
               <span>{formatCurrency(data.total)}</span>

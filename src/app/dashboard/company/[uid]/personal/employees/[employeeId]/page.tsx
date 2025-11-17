@@ -246,7 +246,7 @@ export default function EmployeeDetailPage({
           </p>
           <Link
             href={`/dashboard/company/${resolvedParams.uid}/personal/employees`}
-            className="inline-flex items-center gap-2 mt-4 text-[#14ad9f] hover:text-[#129488]"
+            className="inline-flex items-center gap-2 mt-4 text-[#14ad9f] hover:text-taskilo-hover"
           >
             <ArrowLeft className="h-4 w-4" />
             Zurück zur Mitarbeiterübersicht
@@ -290,7 +290,7 @@ export default function EmployeeDetailPage({
               </Button>
               <Button
                 onClick={handleSaveEdit}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
               >
                 <Save className="h-4 w-4 mr-2" />
                 Speichern
@@ -300,7 +300,7 @@ export default function EmployeeDetailPage({
             <Link
               href={`/dashboard/company/${resolvedParams.uid}/personal/edit/${resolvedParams.employeeId}`}
             >
-              <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+              <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
                 <Edit className="h-4 w-4 mr-2" />
                 Bearbeiten
               </Button>
@@ -486,7 +486,7 @@ export default function EmployeeDetailPage({
                     Verwalten Sie alle wichtigen Mitarbeiterdokumente
                   </CardDescription>
                 </div>
-                <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
                   <Upload className="h-4 w-4 mr-2" />
                   Dokument hochladen
                 </Button>
@@ -547,7 +547,7 @@ export default function EmployeeDetailPage({
                     Übersicht über Urlaub, Krankenstand und andere Abwesenheiten
                   </CardDescription>
                 </div>
-                <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
                   <Plus className="h-4 w-4 mr-2" />
                   Abwesenheit hinzufügen
                 </Button>
@@ -594,7 +594,7 @@ export default function EmployeeDetailPage({
                   </CardTitle>
                   <CardDescription>Mitarbeiterbeurteilungen und Entwicklungsziele</CardDescription>
                 </div>
-                <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
                   <Plus className="h-4 w-4 mr-2" />
                   Bewertung hinzufügen
                 </Button>
@@ -671,7 +671,7 @@ export default function EmployeeDetailPage({
                 </p>
                 <Link
                   href={`/dashboard/company/${resolvedParams.uid}/personal/schedule`}
-                  className="inline-flex items-center gap-2 bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-lg"
+                  className="inline-flex items-center gap-2 bg-[#14ad9f] hover:bg-taskilo-hover text-white px-4 py-2 rounded-lg"
                 >
                   <Calendar className="h-4 w-4" />
                   Zum Dienstplan

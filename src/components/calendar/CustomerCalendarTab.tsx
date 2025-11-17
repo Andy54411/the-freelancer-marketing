@@ -40,7 +40,7 @@ export function CustomerCalendarTab({ customer }: CustomerCalendarTabProps) {
             </div>
             <Button
               onClick={() => handleCreateEvent(new Date())}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               <Plus className="h-4 w-4 mr-2" />
               Neuer Termin

@@ -384,7 +384,7 @@ export function DatevDocumentSync({ companyId }: DatevDocumentSyncProps) {
             <Button
               onClick={() => document.getElementById('file-upload')?.click()}
               disabled={uploading}
-              className="bg-[#14ad9f] hover:bg-[#129488]"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover"
             >
               {uploading ? (
                 <FiRefreshCw className="w-4 h-4 mr-2 animate-spin" />

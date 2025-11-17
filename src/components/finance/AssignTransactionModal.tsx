@@ -128,7 +128,7 @@ export default function AssignTransactionModal({
           <Button
             type="button"
             onClick={onAssign}
-            className="w-full sm:w-auto bg-[#14ad9f] hover:bg-[#129488] text-white">
+            className="w-full sm:w-auto bg-[#14ad9f] hover:bg-taskilo-hover text-white">
             Transaktion zuordnen
           </Button>
         </DialogFooter>

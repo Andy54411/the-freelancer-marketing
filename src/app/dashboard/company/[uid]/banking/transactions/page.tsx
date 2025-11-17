@@ -430,7 +430,7 @@ export default function TransactionsPage() {
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={loadTransactions}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-taskilo-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Erneut versuchen
@@ -461,7 +461,7 @@ export default function TransactionsPage() {
               <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshing ? 'Aktualisiere...' : 'Aktualisieren'}
             </button>
-            <button className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]">
+            <button className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-[#14ad9f] hover:bg-taskilo-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]">
               <Download className="h-4 w-4 mr-2" />
               Exportieren
             </button>
@@ -742,7 +742,7 @@ export default function TransactionsPage() {
                   onClick={() =>
                     (window.location.href = `/dashboard/company/${uid}/finance/banking/import`)
                   }
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-taskilo-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
                 >
                   Bank verbinden
                 </button>
@@ -986,7 +986,7 @@ ID: ${selectedTransaction.id}
                   `.trim();
                   navigator.clipboard.writeText(details);
                 }}
-                className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+                className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-[#14ad9f] hover:bg-taskilo-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
               >
                 <Copy className="h-4 w-4 mr-2 inline" />
                 Kopieren
@@ -1101,7 +1101,7 @@ ID: ${selectedTransaction.id}
                   }
                 }}
                 disabled={!customDate}
-                className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-[#14ad9f] hover:bg-taskilo-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Anwenden
               </button>

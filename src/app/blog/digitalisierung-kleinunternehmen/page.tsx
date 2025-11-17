@@ -47,8 +47,8 @@ const tableOfContents = [
 
 export default function DigitalisierungKleinunternehmenPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-black/20 pointer-events-none"></div>
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="absolute inset-0 bg-linear-to-br from-black/10 to-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         {/* Use existing HeroHeader */}
         <HeroHeader />
@@ -432,7 +432,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                 </h2>
 
                 <div className="grid md:grid-cols-3 gap-6">
-                  <div className="bg-gradient-to-br from-[#14ad9f]/10 to-teal-50 border border-[#14ad9f]/20 rounded-lg p-6">
+                  <div className="bg-linear-to-br from-[#14ad9f]/10 to-teal-50 border border-[#14ad9f]/20 rounded-lg p-6">
                     <h3 className="font-bold text-[#14ad9f] mb-3">📊 Buchhaltung & Finanzen</h3>
                     <ul className="text-sm text-gray-700 space-y-2">
                       <li>• Online-Buchhaltungssoftware</li>
@@ -442,7 +442,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                     </ul>
                   </div>
 
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                  <div className="bg-linear-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
                     <h3 className="font-bold text-blue-800 mb-3">👥 Kundenmanagement</h3>
                     <ul className="text-sm text-gray-700 space-y-2">
                       <li>• CRM-System einführen</li>
@@ -452,7 +452,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                     </ul>
                   </div>
 
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
+                  <div className="bg-linear-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
                     <h3 className="font-bold text-green-800 mb-3">📁 Dokumentenmanagement</h3>
                     <ul className="text-sm text-gray-700 space-y-2">
                       <li>• Cloud-Speicher nutzen</li>
@@ -729,7 +729,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                   </p>
 
                   <div className="grid md:grid-cols-3 gap-6">
-                    <div className="bg-gradient-to-br from-[#14ad9f]/10 to-teal-50 border border-[#14ad9f]/20 rounded-lg p-6">
+                    <div className="bg-linear-to-br from-[#14ad9f]/10 to-teal-50 border border-[#14ad9f]/20 rounded-lg p-6">
                       <h3 className="font-bold text-[#14ad9f] mb-3">💼 Geschäftsverwaltung</h3>
                       <ul className="text-sm text-gray-700 space-y-2">
                         <li>• Digitale Rechnungsstellung</li>
@@ -739,7 +739,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                       </ul>
                     </div>
 
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                    <div className="bg-linear-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
                       <h3 className="font-bold text-blue-800 mb-3">⚡ Automatisierung</h3>
                       <ul className="text-sm text-gray-700 space-y-2">
                         <li>• Wiederkehrende Rechnungen</li>
@@ -749,7 +749,7 @@ export default function DigitalisierungKleinunternehmenPage() {
                       </ul>
                     </div>
 
-                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
+                    <div className="bg-linear-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
                       <h3 className="font-bold text-green-800 mb-3">📱 Mobile Lösung</h3>
                       <ul className="text-sm text-gray-700 space-y-2">
                         <li>• Überall verfügbar</li>
@@ -811,7 +811,7 @@ export default function DigitalisierungKleinunternehmenPage() {
               </section>
 
               {/* Call to Action */}
-              <div className="bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white rounded-lg p-8 text-center">
+              <div className="bg-linear-to-r from-[#14ad9f] to-teal-600 text-white rounded-lg p-8 text-center">
                 <h2 className="text-2xl font-bold mb-4">Bereit für die Digitalisierung?</h2>
                 <p className="text-lg mb-6">
                   Starten Sie noch heute mit Taskilo und digitalisieren Sie Ihr Kleinunternehmen

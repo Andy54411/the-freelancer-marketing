@@ -121,7 +121,7 @@ const OnboardingProgressBar: React.FC<OnboardingProgressBarProps> = ({
             <button
               className={`px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                 canGoNext
-                  ? 'bg-[#14ad9f] text-white hover:bg-[#129488] hover:shadow-md transform hover:-translate-y-0.5'
+                  ? 'bg-[#14ad9f] text-white hover:bg-taskilo-hover hover:shadow-md transform hover:-translate-y-0.5'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
               disabled={!canGoNext}

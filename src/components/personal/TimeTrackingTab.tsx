@@ -236,7 +236,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
     <div className="space-y-6">
       {/* Heutige Schicht Info */}
       {todaysShift && (
-        <Card className="border-[#14ad9f] bg-gradient-to-r from-[#14ad9f]/5 to-transparent">
+        <Card className="border-[#14ad9f] bg-linear-to-r from-[#14ad9f]/5 to-transparent">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -290,7 +290,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
                   <Badge
                     variant={shift.status === 'CONFIRMED' ? 'default' : 'secondary'}
                     className={
-                      shift.status === 'CONFIRMED' ? 'bg-[#14ad9f] hover:bg-[#129488]' : ''
+                      shift.status === 'CONFIRMED' ? 'bg-[#14ad9f] hover:bg-taskilo-hover' : ''
                     }
                   >
                     {shift.status === 'PLANNED'
@@ -420,7 +420,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
             <Button
               onClick={handleAddEntry}
               disabled={loading}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               <Plus className="h-4 w-4 mr-2" />
               {loading ? 'Hinzufügen...' : 'Eintrag hinzufügen'}

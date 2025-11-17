@@ -79,7 +79,7 @@ export function GmailConnectionCard({
         <h3 className="text-xl font-bold text-gray-900 mb-2">Gmail</h3>
         <p className="text-gray-600 mb-4">Verbinden Sie Ihr Gmail-Konto direkt mit Taskilo</p>
         <Button 
-          className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
+          className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white"
         >
           <Mail className="h-4 w-4 mr-2" />
           Mit Gmail verbinden

@@ -443,7 +443,7 @@ export default function CompanyAIAssistantPage() {
                 </div>
 
                 <Button
-                  className="w-full bg-[#14ad9f] hover:bg-[#129488]"
+                  className="w-full bg-[#14ad9f] hover:bg-taskilo-hover"
                   onClick={() => setActiveAssistant(assistant.id)}
                 >
                   Assistent aktivieren

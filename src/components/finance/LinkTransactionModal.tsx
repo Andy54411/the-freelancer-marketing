@@ -616,7 +616,7 @@ export default function LinkTransactionModal({
                       </p>
                       <button
                     onClick={() => setSearchTerm('')}
-                    className="mt-4 px-4 py-2 bg-[#14ad9f] text-white text-sm font-medium rounded-md hover:bg-[#129488]">
+                    className="mt-4 px-4 py-2 bg-[#14ad9f] text-white text-sm font-medium rounded-md hover:bg-taskilo-hover">
 
                         Filter zurücksetzen
                       </button>
@@ -706,7 +706,7 @@ export default function LinkTransactionModal({
           <button
             onClick={handleLinkTransaction}
             disabled={!selectedDocument}
-            className="px-6 py-2 bg-[#14ad9f] text-white font-medium rounded-md hover:bg-[#129488] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            className="px-6 py-2 bg-[#14ad9f] text-white font-medium rounded-md hover:bg-taskilo-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
 
             Transaktion zuordnen
           </button>

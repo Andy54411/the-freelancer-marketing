@@ -1166,7 +1166,7 @@ export default function BankingAccountsPage() {
         <div className="flex gap-3">
           <button
             onClick={() => setBankTransferModal({ visible: true })}
-            className="flex items-center px-4 py-2 text-sm font-medium text-white bg-[#14ad9f] border border-[#14ad9f] rounded-md hover:bg-[#129488] transition-colors whitespace-nowrap"
+            className="flex items-center px-4 py-2 text-sm font-medium text-white bg-[#14ad9f] border border-[#14ad9f] rounded-md hover:bg-taskilo-hover transition-colors whitespace-nowrap"
           >
             <Send className="h-4 w-4 mr-2" />
             Überweisung
@@ -1305,7 +1305,7 @@ export default function BankingAccountsPage() {
                   onClick={() => setFilterIsOpen(!filterIsOpen)}
                   className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                     transactionTypeFilter !== 'ALL' || dateFromFilter || dateToFilter
-                      ? 'bg-[#14ad9f] text-white hover:bg-[#129488]'
+                      ? 'bg-[#14ad9f] text-white hover:bg-taskilo-hover'
                       : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
                   }`}
                 >
@@ -1499,7 +1499,7 @@ export default function BankingAccountsPage() {
                     </button>
                     <button
                       onClick={() => setFilterIsOpen(false)}
-                      className="px-4 py-1.5 bg-[#14ad9f] text-white text-sm font-medium rounded-md hover:bg-[#129488] transition-colors"
+                      className="px-4 py-1.5 bg-[#14ad9f] text-white text-sm font-medium rounded-md hover:bg-taskilo-hover transition-colors"
                     >
                       Fertig
                     </button>
@@ -1837,7 +1837,7 @@ export default function BankingAccountsPage() {
                                         window.open(href, '_blank');
                                       }
                                     }}
-                                    className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold bg-[#14ad9f] text-white hover:bg-[#129488] transition-colors duration-200 shadow-sm hover:shadow-md whitespace-nowrap flex-1"
+                                    className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold bg-[#14ad9f] text-white hover:bg-taskilo-hover transition-colors duration-200 shadow-sm hover:shadow-md whitespace-nowrap flex-1"
                                     title={title}
                                   >
                                     <svg

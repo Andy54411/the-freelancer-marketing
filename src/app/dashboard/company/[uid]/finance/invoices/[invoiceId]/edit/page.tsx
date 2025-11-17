@@ -422,7 +422,7 @@ export default function EditInvoicePage() {
 
       {selectedService ? (
         <Button
-          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+          className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
           onClick={saveServiceToSubcollection}
           disabled={savingService}
         >
@@ -2909,7 +2909,7 @@ export default function EditInvoicePage() {
             </p>
             <Button
               onClick={() => router.push(`/dashboard/company/${uid}/finance/invoices`)}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               Zurück zu Rechnungen
             </Button>
@@ -2985,7 +2985,7 @@ export default function EditInvoicePage() {
               </Button>
 
               <Button
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                 size="default"
                 onClick={() => handleSubmit(false)}
                 disabled={loading || loadingInvoice}
@@ -3011,7 +3011,7 @@ export default function EditInvoicePage() {
                     <div className="w-full">
                       <Button
                         variant="default"
-                        className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white justify-center"
+                        className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white justify-center"
                         size="sm"
                       >
                         Aufgabe erstellen
@@ -3054,7 +3054,7 @@ export default function EditInvoicePage() {
               </div>
               <Button
                 onClick={() => setShowCompanySettingsModal(true)}
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                 size="sm"
               >
                 Angaben vervollständigen
@@ -3125,7 +3125,7 @@ export default function EditInvoicePage() {
               <Button
                 onClick={() => setShowCompliancePanel(false)}
                 variant="default"
-                className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                 size="sm"
                 style={{
                   backgroundColor: '#14ad9f',
@@ -3173,7 +3173,7 @@ export default function EditInvoicePage() {
                       size="sm"
                       className={`rounded-r-none ${
                         contactType === 'organisation'
-                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                          ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white'
                           : 'hover:bg-gray-50'
                       }`}
                       onClick={() => setContactType('organisation')}
@@ -3186,7 +3186,7 @@ export default function EditInvoicePage() {
                       size="sm"
                       className={`rounded-l-none ${
                         contactType === 'person'
-                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                          ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white'
                           : 'hover:bg-gray-50'
                       }`}
                       onClick={() => setContactType('person')}
@@ -3211,7 +3211,7 @@ export default function EditInvoicePage() {
                       <Button
                         type="button"
                         onClick={() => setCreateCustomerOpen(true)}
-                        className="bg-[#14ad9f] hover:bg-[#129488] text-white shrink-0"
+                        className="bg-[#14ad9f] hover:bg-taskilo-hover text-white shrink-0"
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Kunde anlegen
@@ -3416,7 +3416,7 @@ export default function EditInvoicePage() {
                     </div>
                     <button
                       type="button"
-                      className="text-sm text-[#14ad9f] hover:text-[#129488] font-medium"
+                      className="text-sm text-[#14ad9f] hover:text-taskilo-hover font-medium"
                       onClick={() => setShowAddressAddition(true)}
                     >
                       Adresszusatz +
@@ -3765,7 +3765,7 @@ export default function EditInvoicePage() {
               <Button
                 type="button"
                 variant={showNet ? 'default' : 'outline'}
-                className={showNet ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' : ''}
+                className={showNet ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white' : ''}
                 onClick={() => setShowNet(true)}
                 size="sm"
               >
@@ -3774,7 +3774,7 @@ export default function EditInvoicePage() {
               <Button
                 type="button"
                 variant={!showNet ? 'default' : 'outline'}
-                className={!showNet ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' : ''}
+                className={!showNet ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white' : ''}
                 onClick={() => setShowNet(false)}
                 size="sm"
               >
@@ -4010,7 +4010,7 @@ export default function EditInvoicePage() {
                 </div>
                 <DialogFooter>
                   <Button
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                    className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                     onClick={async () => {
                       if (!serviceDraft.name.trim() || !serviceDraft.price) return;
 
@@ -4123,7 +4123,7 @@ export default function EditInvoicePage() {
                           <div className="flex gap-2">
                             <Button
                               size="sm"
-                              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                               onClick={() => {
                                 const rate = Number.isFinite(taxRate) ? taxRate : 19;
                                 const name = item.description || '';
@@ -4512,7 +4512,7 @@ export default function EditInvoicePage() {
           type="button"
           onClick={() => setEmailCardOpen(v => !v)}
           variant="default"
-          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+          className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
         >
           <Mail className="w-4 h-4 mr-2" />
           Als E-Mail versenden
@@ -4580,7 +4580,7 @@ export default function EditInvoicePage() {
                     type="button"
                     onClick={sendEmailWithPdf}
                     disabled={sendingEmail}
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                    className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                   >
                     {sendingEmail ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -4911,7 +4911,7 @@ export default function EditInvoicePage() {
             </Button>
             <Button
               onClick={handleCompanySettingsSave}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               Speichern
             </Button>
@@ -5045,7 +5045,7 @@ export default function EditInvoicePage() {
                 Abbrechen
               </Button>
               <Button
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                 onClick={async () => {
                   try {
                     // Speichere die Nummernkreis-Einstellungen in Firestore

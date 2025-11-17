@@ -362,7 +362,7 @@ export function QuoteListView({
           </Button>
           <Button
             onClick={() => router.push(`/dashboard/company/${companyId}/finance/quotes/create`)}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
 
             <FileText className="h-4 w-4 mr-2" />
             Neues Angebot

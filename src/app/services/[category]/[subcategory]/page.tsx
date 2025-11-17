@@ -528,7 +528,7 @@ export default function SubcategoryPage() {
             </div>
             <button
               onClick={() => router.push('/services')}
-              className="mt-6 bg-[#14ad9f] hover:bg-[#129488] text-white py-2 px-4 rounded-lg font-medium transition-colors"
+              className="mt-6 bg-[#14ad9f] hover:bg-taskilo-hover text-white py-2 px-4 rounded-lg font-medium transition-colors"
             >
               Zu allen Services
             </button>
@@ -541,7 +541,7 @@ export default function SubcategoryPage() {
   return (
     <>
       {/* Dynamic Gradient Background */}
-      <div className="fixed inset-0 bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 -z-10"></div>
+      <div className="fixed inset-0 bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 -z-10"></div>
       <div className="fixed inset-0 bg-black/20 -z-10"></div>
 
       <div className="min-h-screen relative z-10">
@@ -594,7 +594,7 @@ export default function SubcategoryPage() {
                   </p>
                   <button
                     onClick={() => router.push(`/services/${decodedCategory}`)}
-                    className="text-[#14ad9f] hover:text-[#129488] font-medium"
+                    className="text-[#14ad9f] hover:text-taskilo-hover font-medium"
                   >
                     Alle {categoryInfo.title} Anbieter anzeigen
                   </button>
@@ -736,7 +736,7 @@ export default function SubcategoryPage() {
                             e.stopPropagation();
                             handleBookNow(provider);
                           }}
-                          className="bg-[#14ad9f] hover:bg-[#129488] text-white px-3 py-1.5 rounded-lg font-medium transition-colors text-xs whitespace-nowrap"
+                          className="bg-[#14ad9f] hover:bg-taskilo-hover text-white px-3 py-1.5 rounded-lg font-medium transition-colors text-xs whitespace-nowrap"
                           type="button"
                         >
                           {user ? 'Jetzt buchen' : 'Anmelden & buchen'}

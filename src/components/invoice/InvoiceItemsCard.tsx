@@ -45,13 +45,13 @@ export function InvoiceItemsCard({
           <div className="text-sm text-gray-600">Preisanzeige</div>
           <div className="flex gap-2">
             <Button
-              className={cn(showNet ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' : 'border')}
+              className={cn(showNet ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white' : 'border')}
               onClick={() => setShowNet(true)}
             >
               Netto
             </Button>
             <Button
-              className={cn(!showNet ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' : 'border')}
+              className={cn(!showNet ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white' : 'border')}
               onClick={() => setShowNet(false)}
             >
               Brutto

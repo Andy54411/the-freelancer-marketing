@@ -20,7 +20,7 @@ export default function TermsPage() {
   return (
     <>
       <HeroHeader />
-      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
         <div className="absolute inset-0 bg-black/20" />
 
         <div className="relative z-10 py-20">

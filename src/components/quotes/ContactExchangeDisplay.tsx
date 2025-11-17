@@ -304,7 +304,7 @@ export function ContactExchangeDisplay({
                   {provisionPaid ? (
                     <a
                       href={`mailto:${otherContact.email}`}
-                      className="text-[#14ad9f] hover:text-[#129488] hover:underline"
+                      className="text-[#14ad9f] hover:text-taskilo-hover hover:underline"
                     >
                       {otherContact.email}
                     </a>
@@ -323,7 +323,7 @@ export function ContactExchangeDisplay({
                   {provisionPaid ? (
                     <a
                       href={`tel:${otherContact.phone}`}
-                      className="text-[#14ad9f] hover:text-[#129488] hover:underline"
+                      className="text-[#14ad9f] hover:text-taskilo-hover hover:underline"
                     >
                       {otherContact.phone}
                     </a>

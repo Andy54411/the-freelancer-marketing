@@ -156,7 +156,7 @@ function ReviewItem({ review, onReplySubmitted }: ReviewItemProps) {
             {!showReplyForm ? (
               <button
                 onClick={() => setShowReplyForm(true)}
-                className="text-sm text-[#14ad9f] hover:text-[#129488] font-medium flex items-center gap-2"
+                className="text-sm text-[#14ad9f] hover:text-taskilo-hover font-medium flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -182,7 +182,7 @@ function ReviewItem({ review, onReplySubmitted }: ReviewItemProps) {
                   <button
                     onClick={handleSubmitReply}
                     disabled={submittingReply || !replyText.trim()}
-                    className="px-4 py-2 bg-[#14ad9f] hover:bg-[#129488] disabled:bg-gray-300 text-white text-sm font-medium rounded-md transition-colors"
+                    className="px-4 py-2 bg-[#14ad9f] hover:bg-taskilo-hover disabled:bg-gray-300 text-white text-sm font-medium rounded-md transition-colors"
                   >
                     {submittingReply ? 'Sendet...' : 'Antworten'}
                   </button>

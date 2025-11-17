@@ -261,7 +261,7 @@ function FileUploadItem({ uploadFile, categories, onUpload, onRemove }: FileUplo
           {uploadFile.status === 'pending' && (
             <button
               onClick={() => setShowMetadata(!showMetadata)}
-              className="text-sm text-[#14ad9f] hover:text-[#129488]"
+              className="text-sm text-[#14ad9f] hover:text-taskilo-hover"
             >
               {showMetadata ? 'Weniger' : 'Konfigurieren'}
             </button>
@@ -358,7 +358,7 @@ function FileUploadItem({ uploadFile, categories, onUpload, onRemove }: FileUplo
 
           <button
             onClick={handleUpload}
-            className="w-full bg-[#14ad9f] text-white py-2 px-4 rounded-md hover:bg-[#129488] transition-colors"
+            className="w-full bg-[#14ad9f] text-white py-2 px-4 rounded-md hover:bg-taskilo-hover transition-colors"
           >
             Dokument hochladen
           </button>

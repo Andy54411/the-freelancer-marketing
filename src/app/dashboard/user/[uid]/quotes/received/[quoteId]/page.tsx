@@ -293,7 +293,7 @@ export default function CustomerQuoteDetailsPage({
           </p>
           <button
             onClick={() => router.push(`/dashboard/user/${uid}`)}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-lg"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white px-4 py-2 rounded-lg"
           >
             Zurück zum Dashboard
           </button>
@@ -303,7 +303,7 @@ export default function CustomerQuoteDetailsPage({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6">
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6">
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -570,7 +570,7 @@ export default function CustomerQuoteDetailsPage({
                             <button
                               onClick={() => handleProposalAction(proposal.companyUid, 'accept')}
                               disabled={processing}
-                              className="flex-1 bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-lg flex items-center justify-center disabled:opacity-50"
+                              className="flex-1 bg-[#14ad9f] hover:bg-taskilo-hover text-white px-4 py-2 rounded-lg flex items-center justify-center disabled:opacity-50"
                             >
                               <FiCreditCard className="mr-2 h-4 w-4" />
                               Angebot bezahlen

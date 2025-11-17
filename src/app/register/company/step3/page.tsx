@@ -505,7 +505,7 @@ export default function Step3CompanyPage() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br p-4 sm:p-6 font-sans">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br p-4 sm:p-6 font-sans">
       {isProcessingImage && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
           <div className="bg-white p-4 rounded-lg shadow-xl flex items-center">
@@ -518,7 +518,7 @@ export default function Step3CompanyPage() {
         <div className="flex justify-between mb-4">
           <button
             onClick={() => router.push('/register/company/step2')}
-            className="text-[#14ad9f] hover:text-[#129488] text-base sm:text-lg flex items-center transition-colors duration-200"
+            className="text-[#14ad9f] hover:text-taskilo-hover text-base sm:text-lg flex items-center transition-colors duration-200"
             disabled={isProcessingImage}
           >
             <span className="mr-2">← Zurück zu Schritt 2</span>

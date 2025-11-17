@@ -279,7 +279,7 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
   return (
     <div className="space-y-6">
       {/* Dienstplan Integration Info */}
-      <Card className="border-[#14ad9f] bg-gradient-to-r from-[#14ad9f]/5 to-transparent">
+      <Card className="border-[#14ad9f] bg-linear-to-r from-[#14ad9f]/5 to-transparent">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
             <CalendarDays className="h-5 w-5 text-[#14ad9f]" />
@@ -385,7 +385,7 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
             {employee.id && (
               <Button
                 size="sm"
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                 onClick={() => setIsCreateModalOpen(true)}
               >
                 <Plus className="h-4 w-4 mr-2" />

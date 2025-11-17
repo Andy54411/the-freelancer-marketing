@@ -204,7 +204,7 @@ export function DatevFlowTest({ companyId }: DatevFlowTestProps) {
           <div className="flex gap-2">
             <Button
               onClick={startOAuthFlow}
-              className="flex-1 bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="flex-1 bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               <FiExternalLink className="mr-2" />
               OAuth-Flow starten

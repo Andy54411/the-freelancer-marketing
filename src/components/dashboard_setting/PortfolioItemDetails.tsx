@@ -698,7 +698,7 @@ const PortfolioItemDetails: React.FC<PortfolioItemDetailsProps> = ({
 
               <button
                 onClick={addCustomTechnology}
-                className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors"
+                className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover transition-colors"
               >
                 Hinzufügen
               </button>
@@ -782,7 +782,7 @@ const PortfolioItemDetails: React.FC<PortfolioItemDetailsProps> = ({
             </button>
             <button
               onClick={handleSave}
-              className="px-6 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors flex items-center gap-2"
+              className="px-6 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-taskilo-hover transition-colors flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
               Speichern

@@ -125,7 +125,7 @@ export function RecurringInvoiceSettings({
 
   return (
     <>
-    <Card className="border-2 border-[#14ad9f]/20 bg-gradient-to-br from-white to-[#14ad9f]/5">
+    <Card className="border-2 border-[#14ad9f]/20 bg-linear-to-br from-white to-[#14ad9f]/5">
       <CardHeader>
         <CardTitle className="flex items-center text-[#14ad9f]">
           <RefreshCw className="h-5 w-5 mr-2" />
@@ -441,7 +441,7 @@ export function RecurringInvoiceSettings({
         <AlertDialogFooter>
           <Button
             onClick={() => setShowCustomerWarning(false)}
-            className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
+            className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white"
           >
             Verstanden
           </Button>

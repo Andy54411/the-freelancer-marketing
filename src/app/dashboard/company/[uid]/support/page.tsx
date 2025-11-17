@@ -227,7 +227,7 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
             <div className="flex gap-2">
               <Button
                 onClick={() => setShowCreateForm(true)}
-                className="bg-[#14ad9f] hover:bg-[#129488]"
+                className="bg-[#14ad9f] hover:bg-taskilo-hover"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Neues Ticket
@@ -312,7 +312,7 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
                   <Button
                     onClick={createTicket}
                     disabled={submitting}
-                    className="bg-[#14ad9f] hover:bg-[#129488]"
+                    className="bg-[#14ad9f] hover:bg-taskilo-hover"
                   >
                     {submitting ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -347,7 +347,7 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
                   </p>
                   <Button
                     onClick={() => setShowCreateForm(true)}
-                    className="bg-[#14ad9f] hover:bg-[#129488]"
+                    className="bg-[#14ad9f] hover:bg-taskilo-hover"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Erstes Ticket erstellen

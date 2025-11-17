@@ -141,7 +141,7 @@ export default function BankingWebFormPage() {
           <button
             onClick={createWebForm}
             disabled={loading}
-            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#14ad9f] hover:bg-taskilo-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
@@ -165,7 +165,7 @@ export default function BankingWebFormPage() {
                 href={webFormUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center text-sm font-medium text-[#14ad9f] hover:text-[#129488]"
+                className="inline-flex items-center text-sm font-medium text-[#14ad9f] hover:text-taskilo-hover"
               >
                 WebForm erneut öffnen
                 <ExternalLink className="h-4 w-4 ml-1" />

@@ -375,7 +375,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
           </Button>
           <Button
             onClick={handleCreateTimeEntry}
-            className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2"
+            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
             Zeit erfassen
@@ -499,7 +499,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
                   {!isActive ? (
                     <Button
                       onClick={() => startTimer(employee.id!)}
-                      className="flex-1 bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2"
+                      className="flex-1 bg-[#14ad9f] hover:bg-taskilo-hover text-white flex items-center gap-2"
                     >
                       <Play className="h-4 w-4" />
                       Start
@@ -794,7 +794,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
                   </Button>
                   <Button
                     onClick={handleUpdateTimeEntry}
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                    className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                   >
                     Speichern
                   </Button>
@@ -818,7 +818,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
             </p>
             <Button
               onClick={handleCreateTimeEntry}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               Erste Zeit erfassen
             </Button>

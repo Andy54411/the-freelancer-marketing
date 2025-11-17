@@ -311,7 +311,7 @@ export default function InventorySelector({
                               <Button
                                 size="sm"
                                 onClick={() => handleSelectItem(item)}
-                                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
                                 disabled={availableStock <= 0}
                               >
                                 <Plus className="w-3 h-3 mr-1" />
