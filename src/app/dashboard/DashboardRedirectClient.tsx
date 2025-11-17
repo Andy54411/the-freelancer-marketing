@@ -38,7 +38,7 @@ export default function DashboardRedirectClient() {
 
         // Weitere kurze Verzögerung bevor Redirect
         setTimeout(() => {
-          switch (user.role) {
+          switch (user.user_type) {
             case 'master':
             case 'support':
               redirect('/dashboard/admin');
@@ -59,7 +59,7 @@ export default function DashboardRedirectClient() {
   const getRoleIcon = () => {
     if (!user) return <FiLoader className="animate-spin text-4xl text-[#14ad9f]" />;
 
-    switch (user.role) {
+    switch (user.user_type) {
       case 'master':
       case 'support':
         return <Shield className="text-4xl text-[#14ad9f]" />;
@@ -78,7 +78,7 @@ export default function DashboardRedirectClient() {
     const firstName = user.firstName || 'User';
 
     if (redirecting) {
-      switch (user.role) {
+      switch (user.user_type) {
         case 'master':
         case 'support':
           return `Willkommen zurück, ${firstName}! Admin-Dashboard wird geladen...`;
