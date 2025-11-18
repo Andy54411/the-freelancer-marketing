@@ -260,6 +260,31 @@ const navigationItems: NavigationItem[] = [
     href: 'finance/inventory',
   },
   {
+    label: 'Taskilo Advertising',
+    icon: FiTrendingUp,
+    value: 'advertising',
+    href: 'taskilo-advertising',
+    subItems: [
+      { label: 'Dashboard', value: 'advertising-dashboard', href: 'taskilo-advertising' },
+      { 
+        label: 'Google Ads', 
+        value: 'advertising-google', 
+        href: 'taskilo-advertising/google-ads',
+        subItems: [
+          { label: 'Kampagnen', value: 'google-ads-campaigns', href: 'taskilo-advertising/google-ads/campaigns' },
+          { label: 'Neue Kampagne', value: 'google-ads-new-campaign', href: 'taskilo-advertising/google-ads/campaigns/new' },
+          { label: 'Zielvorhaben', value: 'google-ads-goals', href: 'taskilo-advertising/google-ads/goals' },
+          { label: 'Tools', value: 'google-ads-tools', href: 'taskilo-advertising/google-ads/tools' },
+          { label: 'Abrechnung', value: 'google-ads-billing', href: 'taskilo-advertising/google-ads/billing' },
+          { label: 'Verwaltung', value: 'google-ads-management', href: 'taskilo-advertising/google-ads/management' },
+        ]
+      },
+      { label: 'LinkedIn Ads', value: 'advertising-linkedin', href: 'taskilo-advertising/linkedin' },
+      { label: 'Meta Ads', value: 'advertising-meta', href: 'taskilo-advertising/meta' },
+      { label: 'Analytics', value: 'advertising-analytics', href: 'taskilo-advertising/analytics' },
+    ],
+  },
+  {
     label: 'Personal',
     icon: FiUsers,
     value: 'personal',
@@ -560,6 +585,11 @@ export default function CompanySidebar({
       return pathname?.includes('/finance/inventory');
     }
 
+    // Advertising aktiv wenn Pfad /taskilo-advertising
+    if (item.value === 'advertising') {
+      return pathname?.includes('/taskilo-advertising');
+    }
+
     // Steuerportal aktiv bei /steuerportal/*, /datev/* oder finance Steuern/Auswertung
     if (item.value === 'steuerportal') {
       return (
@@ -611,6 +641,8 @@ export default function CompanySidebar({
       }
       return false;
     }
+
+    // Standard URL-Pfad Matching für alle Untermenüs
 
     return pathname.includes(`/${subItem.href}`);
   };
@@ -888,6 +920,12 @@ export default function CompanySidebar({
                           <div key={subItem.value}>
                             <button
                               onClick={() => {
+                                console.log('🔍 SubItem Click:', {
+                                  label: subItem.label,
+                                  value: subItem.value,
+                                  href: subItem.href,
+                                  fullURL: subItem.href ? `/dashboard/company/${uid}/${subItem.href}` : 'NO_HREF'
+                                });
                                 if (subItem.href) {
                                   onNavigate(subItem.value, subItem.href);
                                 } else {

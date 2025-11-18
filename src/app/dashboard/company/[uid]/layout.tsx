@@ -192,7 +192,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     if (pathname?.includes('/calendar')) return 'calendar';
     if (pathname?.includes('/reviews')) return 'reviews';
     if (pathname?.includes('/support')) return 'support';
-    if (pathname?.includes('/taskilo-advertising')) return 'taskilo-advertising';
+    if (pathname?.includes('/taskilo-advertising')) return 'advertising';
     return view;
   }, [pathname, view]);
 
@@ -234,11 +234,19 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   // Navigation handler
   const handleNavigation = useCallback(
     (value: string, href?: string) => {
+      console.log('📡 Navigation called:', {
+        value,
+        href,
+        uid,
+        fullURL: href ? `/dashboard/company/${uid}/${href}` : 'NO_HREF'
+      });
       setIsSidebarOpen(false);
 
       // Wenn href definiert ist, verwende echte Navigation
       if (href) {
-        router.push(`/dashboard/company/${uid}/${href}`);
+        const fullURL = `/dashboard/company/${uid}/${href}`;
+        console.log('🚀 Navigating to:', fullURL);
+        router.push(fullURL);
         return;
       }
 
@@ -312,7 +320,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         return FiUser;
       case 'settings':
         return FiSettings;
-      case 'taskilo-advertising':
+      case 'advertising':
         return FiUsers;
       case 'steuerportal':
         return FiShield;
@@ -346,7 +354,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         return 'Profil';
       case 'settings':
         return 'Einstellungen';
-      case 'taskilo-advertising':
+      case 'advertising':
         return 'Taskilo Advertising';
       case 'steuerportal':
         return 'Steuerportal';

@@ -23,13 +23,13 @@ export function useCustomerNumber(companyId: string, customerName: string): stri
       try {
         // Versuche zuerst die Subcollection Struktur (nur falls authentifiziert)
         if (companyId && customerName) {
-          let customersQuery = query(
+          const customersQuery = query(
             collection(db, 'companies', companyId, 'customers'),
             where('name', '==', customerName),
             limit(1)
           );
 
-          let querySnapshot = await getDocs(customersQuery);
+          const querySnapshot = await getDocs(customersQuery);
 
           if (!querySnapshot.empty) {
             const customerDoc = querySnapshot.docs[0];

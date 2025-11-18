@@ -179,7 +179,7 @@ export default function ElektrikerRatgeberPage() {
 
                   <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                     <p className="text-yellow-800 text-sm font-semibold">
-                      ⚠️ ACHTUNG: Auch bei "erlaubten" Arbeiten gilt - im Zweifel lieber den Profi!
+                      ⚠️ ACHTUNG: Auch bei &ldquo;erlaubten&rdquo; Arbeiten gilt - im Zweifel lieber den Profi!
                     </p>
                   </div>
                 </div>
@@ -229,7 +229,7 @@ export default function ElektrikerRatgeberPage() {
 
                   <div className="mt-4 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                     <p className="text-yellow-800 text-sm">
-                      <strong>Tipp:</strong> Auch "einfache" Arbeiten sollten vom Elektriker
+                      <strong>Tipp:</strong> Auch &ldquo;einfache&rdquo; Arbeiten sollten vom Elektriker
                       abgenommen werden, um Versicherungsschutz zu gewährleisten.
                     </p>
                   </div>
@@ -325,7 +325,7 @@ export default function ElektrikerRatgeberPage() {
 
           {/* Kosten */}
           <div className="mb-12">
-            <div className="bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white">
+            <div className="bg-linear-to-r from-[#14ad9f] to-taskilo-hover rounded-xl p-8 text-white">
               <h2 className="text-3xl font-bold mb-6">💰 Was kostet ein Elektriker?</h2>
 
               <div className="grid md:grid-cols-3 gap-6">
@@ -382,7 +382,7 @@ export default function ElektrikerRatgeberPage() {
                     </div>
                     <div className="flex items-start space-x-3">
                       <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
-                      <span>Spannungsprüfer verwenden - nie "blind" vertrauen</span>
+                      <span>Spannungsprüfer verwenden - nie &ldquo;blind&rdquo; vertrauen</span>
                     </div>
                     <div className="flex items-start space-x-3">
                       <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     ];
 
     let lastError: Error | null = null;
-    let usedModel = '';
+    const usedModel = '';
 
     for (const modelName of modelNames) {
       try {

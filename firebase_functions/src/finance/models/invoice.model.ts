@@ -111,7 +111,7 @@ export class InvoiceModel extends BaseModel<InvoiceData> {
             throw new Error('Cannot update invoice in current status');
         }
 
-        let updateData: any = {
+        const updateData: any = {
             introduction: updates.introduction,
             conclusion: updates.conclusion,
             notes: updates.notes,

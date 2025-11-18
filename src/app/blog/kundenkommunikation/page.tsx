@@ -685,10 +685,10 @@ export default function KundenkommunikationPage() {
                       <h4 className="font-semibold text-purple-800 mb-2">
                         Erfolgreicher Abschluss:
                       </h4>
-                      <p className="text-purple-700 text-sm italic">
-                        "Geschafft! 🎉 Ihr Projekt ist fertig und ich bin sehr zufrieden mit dem
+                      <p className="text-green-700 text-sm italic">
+                        &ldquo;Geschafft! 🎉 Ihr Projekt ist fertig und ich bin sehr zufrieden mit dem
                         Ergebnis. Gerne führe ich Sie durch alles und erkläre die Pflege. Zeit für
-                        die Übergabe?"
+                        die Übergabe?&rdquo;
                       </p>
                     </div>
                   </div>
@@ -702,27 +702,27 @@ export default function KundenkommunikationPage() {
                     <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                       <h4 className="font-semibold text-orange-800 mb-2">Verzögerung:</h4>
                       <p className="text-orange-700 text-sm italic">
-                        "Wichtiger Hinweis: Durch [konkreter Grund] verzögert sich das Projekt um 2
+                        &ldquo;Wichtiger Hinweis: Durch [konkreter Grund] verzögert sich das Projekt um 2
                         Tage. Neuer Termin: [Datum]. Entschuldigung für die Unannehmlichkeiten!
-                        Kompensation: [Vorschlag]"
+                        Kompensation: [Vorschlag]&rdquo;
                       </p>
                     </div>
 
                     <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                       <h4 className="font-semibold text-red-800 mb-2">Unerwartetes Problem:</h4>
                       <p className="text-red-700 text-sm italic">
-                        "Unvorhergesehenes entdeckt: [Problem]. Das bedeutet [Auswirkung]. Meine
+                        &ldquo;Unvorhergesehenes entdeckt: [Problem]. Das bedeutet [Auswirkung]. Meine
                         Lösungsvorschläge: 1) [Option A] 2) [Option B]. Was ist Ihre Präferenz? Rufe
-                        um 14 Uhr an."
+                        um 14 Uhr an.&rdquo;
                       </p>
                     </div>
 
                     <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                       <h4 className="font-semibold text-yellow-800 mb-2">Nachbesserung nötig:</h4>
                       <p className="text-yellow-700 text-sm italic">
-                        "Sie haben absolut recht - das entspricht nicht meinen Standards. Komme
+                        &ldquo;Sie haben absolut recht - das entspricht nicht meinen Standards. Komme
                         morgen früh und bringe das in Ordnung. Selbstverständlich kostenfrei. Vielen
-                        Dank für den Hinweis!"
+                        Dank für den Hinweis!&rdquo;
                       </p>
                     </div>
                   </div>

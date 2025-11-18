@@ -73,7 +73,7 @@ export default function TopCustomersCard() {
 
       // Berechne Zeitraum
       const now = new Date();
-      let startDate = new Date();
+      const startDate = new Date();
 
       switch (selectedPeriod) {
         case '1month':

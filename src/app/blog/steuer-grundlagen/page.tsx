@@ -637,7 +637,7 @@ export default function SteuerGrundlagenPage() {
           </div>
           {/* Steuerarten im Überblick */}
           <div className="mb-12">
-            <div className="bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white">
+            <div className="bg-linear-to-r from-[#14ad9f] to-taskilo-hover rounded-xl p-8 text-white">
               <h2 className="text-3xl font-bold mb-6">
                 💰 Steuerarten für Selbstständige im Überblick
               </h2>
@@ -872,7 +872,7 @@ export default function SteuerGrundlagenPage() {
                   </h3>
                   <p className="text-gray-700 text-sm">
                     Ja! Taskilo-Servicegebühren sind Betriebsausgaben und voll absetzbar. Sie finden
-                    alle Belege in Ihrem Dashboard unter "Abrechnungen".
+                    alle Belege in Ihrem Dashboard unter &ldquo;Abrechnungen&rdquo;.
                   </p>
                 </div>
 

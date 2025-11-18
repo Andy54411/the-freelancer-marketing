@@ -401,7 +401,7 @@ export class GermanyValidationEngine {
     penalty: number;
   } {
     const issues: ValidationIssue[] = [];
-    let penalty = 0;
+    const penalty = 0;
 
     // Währung prüfen
     if (data.rechnungsdetails.waehrung !== 'EUR') {

@@ -18,13 +18,6 @@ interface PrintClientProps {
 
 export function PrintClient({ documentData }: PrintClientProps) {
 
-  // DEFENSIVE PROGRAMMIERUNG: Prüfe documentData
-
-
-  if (!documentData) {
-    return <div className="p-8 text-center text-red-600">Keine Dokumentdaten verfügbar</div>;
-  }
-
   // Process data with the same hook as PDF generation
   const processedData = usePDFTemplateData({
     document: documentData,
@@ -78,15 +71,20 @@ export function PrintClient({ documentData }: PrintClientProps) {
 
   // Automatisch drucken wenn Dokument geladen ist
   useEffect(() => {
-    if (documentData) {
-      // Warte kurz bis DOM gerendert ist
-      const timer = setTimeout(() => {
-        window.print();
-      }, 500);
+    if (!documentData) return;
+    
+    // Warte kurz bis DOM gerendert ist
+    const timer = setTimeout(() => {
+      window.print();
+    }, 500);
 
-      return () => clearTimeout(timer);
-    }
+    return () => clearTimeout(timer);
   }, [documentData]);
+
+  // DEFENSIVE PROGRAMMIERUNG: Prüfe documentData nach Hooks
+  if (!documentData) {
+    return <div className="p-8 text-center text-red-600">Keine Dokumentdaten verfügbar</div>;
+  }
 
   return (
     <>

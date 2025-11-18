@@ -189,7 +189,7 @@ export default function ActivityHistoryCard({
     // 2. Zeitraum-Filter
     if (selectedTimeRange !== 'all') {
       const now = new Date();
-      let cutoffDate = new Date();
+      const cutoffDate = new Date();
 
       switch (selectedTimeRange) {
         case 'today':

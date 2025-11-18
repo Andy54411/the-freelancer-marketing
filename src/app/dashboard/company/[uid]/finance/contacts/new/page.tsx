@@ -351,10 +351,6 @@ export default function ContactsPage() {
   const typeDropdownRef = useRef<HTMLDivElement>(null);
   const [defaultValuesApplied, setDefaultValuesApplied] = useState(false);
 
-  if (!companyId) {
-    return <div className="p-6">Lädt...</div>;
-  }
-
   // Tab Definitionen - nur relevante Tabs für neue Kunden
   const tabs: TabDefinition[] = [
   { id: 'overview', label: 'Grunddaten', icon: FileText, count: null },
@@ -365,10 +361,9 @@ export default function ContactsPage() {
 
   // Generate next customer number using NumberSequenceService
   const generateNextCustomerNumber = async () => {
+    if (!companyId) return;
+    
     try {
-      if (!companyId) return;
-
-
 
       // Synchronisation läuft im Hintergrund - Berechtigungsfehler sind normal in Development
       Promise.all([
@@ -639,7 +634,10 @@ export default function ContactsPage() {
     };
   }, []);
 
-
+  // Early return after all hooks - React Rules of Hooks compliant
+  if (!companyId) {
+    return <div className="p-6">Lädt...</div>;
+  }
 
   return (
     <div className="max-w-6xl w-full p-6 bg-white min-h-screen">
@@ -1110,7 +1108,7 @@ export default function ContactsPage() {
                   <h3 className="text-lg font-medium text-gray-900">Steuerliche Informationen</h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 min-h-[32px]">
+                      <div className="flex items-center gap-2 min-h-8">
                         <Label>Steuernummer</Label>
                         <TooltipIcon 
                           text="Deutsche Steuernummer des Unternehmens. Format: 12345/67890. Wird für steuerliche Dokumentation benötigt."
@@ -1123,7 +1121,7 @@ export default function ContactsPage() {
                       placeholder="12345/67890" />
                     </div>
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 min-h-[32px]">
+                      <div className="flex items-center gap-2 min-h-8">
                         <Label>USt-IdNr.</Label>
                         <TooltipIcon 
                           text="Umsatzsteuer-Identifikationsnummer für EU-Geschäfte. Format: DE123456789. Klicken Sie auf 'Prüfen' zur Validierung."
@@ -1597,7 +1595,7 @@ export default function ContactsPage() {
                     <h4 className="font-medium text-gray-900 mb-1">Was ist Skonto?</h4>
                     <p className="text-sm text-gray-700">
                       Skonto ist ein Preisnachlass, den Sie Ihren Kunden bei frühzeitiger Zahlung gewähren. 
-                      Dies verbessert Ihre Liquidität und reduziert das Ausfallrisiko. Übliche Konditionen sind "2% bei Zahlung innerhalb 14 Tagen".
+                      Dies verbessert Ihre Liquidität und reduziert das Ausfallrisiko. Übliche Konditionen sind &ldquo;2% bei Zahlung innerhalb 14 Tagen&rdquo;.
                     </p>
                   </div>
                 </div>

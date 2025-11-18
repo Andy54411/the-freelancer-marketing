@@ -1,61 +1,56 @@
-# Taskilo AI - Umfassender Coding-Leitfaden
+# Taskilo AI - Comprehensive Coding Guide
 
-**Core Stack**: Next.js 15 + TypeScript + Firebase + Vercel + Deutsche Steuerkonformität
+**Core Stack**: Next.js 14+ + TypeScript + Firebase + Vercel + German Tax Compliance + Multi-Platform Advertising
 
-## 🚫 KRITISCHE NICHT-VERHANDELBARE REGELN
+## 🚫 CRITICAL NON-NEGOTIABLE RULES
 
-1. **TypeScript**: 100% fehlerfrei - verwende `get_errors` Tool vor Abschluss
-2. **KEINE Fallbacks**: Keine `|| ''`, `|| 'default'`, `?? fallback` - Probleme an der Wurzel lösen
-3. **KEINE console.log**: Strukturiertes Logging über Error-Monitoring oder entfernen
-4. **KEINE Mock-Daten**: Immer echte Datenquellen verwenden
-5. **Path Aliases**: NUR `@/` Imports - niemals relative Pfade
-6. **Zod-Validierung**: ALLE Eingaben müssen durch Schemas validiert werden
-7. **Deutsche Steuerkonformität**: GoBD + §19 UStG mit fortlaufender Nummerierung
-8. **KEINE EMOJIS**: Professioneller Code/UI - nur Lucide Icons verwenden
+1. **TypeScript**: 100% error-free - use `get_errors` tool before completion
+2. **NO Fallbacks**: No `|| ''`, `|| 'default'`, `?? fallback` - solve problems at root
+3. **NO console.log**: Structured logging via error monitoring or remove entirely
+4. **NO Mock/Demo Data**: NEVER create demo data, placeholder content, or mock responses - ALWAYS integrate with real Firebase collections and live data sources
+5. **Clean Up Old Files**: ALWAYS delete old/deprecated files when creating new ones - use `rm` commands to clean up
+6. **Path Aliases**: ONLY `@/` imports - never relative paths
+7. **Zod Validation**: ALL inputs must be validated through schemas
+8. **German Tax Compliance**: GoBD + §19 UStG with sequential numbering
+9. **NO EMOJIS**: Professional code/UI - only Lucide Icons
 
-## 🏗️ Architektur-Muster
+## 🏗️ Architecture Patterns
 
-### Firebase Daten-Architektur
+### Firebase Company-Subcollection Architecture (CRITICAL MIGRATION)
 ```typescript
-// Client-side Firebase
-import { db, auth, functions } from '@/firebase/clients';
-
-// Server-side (API routes)
-import { db, auth, admin } from '@/firebase/server';
-
-// Service Pattern - Static classes
+// ✅ NEW: Company-based subcollections (ALWAYS USE)
+import { db } from '@/firebase/clients';
 export class CustomerService {
   static async getByCompany(companyId: string) {
     return getDocs(collection(db, 'companies', companyId, 'customers'));
   }
 }
+
+// ❌ OLD: Global collections (NEVER USE)
+// collection(db, 'customers') // DEPRECATED
 ```
 
-### Dashboard Routing-Struktur
-- **Kunden-Dashboard**: `/dashboard/user/[uid]`
-- **Firmen-Dashboard**: `/dashboard/company/[uid]` (Haupt-Geschäftslogik)
-- **Admin-Dashboard**: `/dashboard/admin`
+**Migration Status**: Active transition from 37 → 15 collections. ALWAYS use company subcollection pattern: `/companies/{companyId}/{collection}/{docId}`
 
-Firmen-Routen verwenden verschachtelte Strukturen:
-- Finanzen: `/dashboard/company/[uid]/finance/{invoices,expenses,reports}`
-- Einstellungen: `/dashboard/company/[uid]/settings?view={profile,tax,banking}`
+### Dashboard Routing Structure
+- **Company Dashboard**: `/dashboard/company/[uid]` (Primary business logic)
+- **Taskilo Advertising**: `/dashboard/company/[uid]/taskilo-advertising/{google-ads,linkedin,meta,campaigns,keywords,analytics}`
+- **Finance**: `/dashboard/company/[uid]/finance/{invoices,expenses,reports}`
+- **Settings**: `/dashboard/company/[uid]/settings?view={profile,tax,banking}`
 
-### Formular-Muster mit Zod
+### Multi-Platform Advertising Architecture
 ```typescript
-// Alle Formulare verwenden React Hook Form + Zod Validierung
-const schema = z.object({
-  name: z.string().min(1, 'Name erforderlich'),
-  email: z.string().email('Gültige E-Mail erforderlich'),
-});
-
-const { control, handleSubmit, formState: { errors } } = useForm({
-  resolver: zodResolver(schema)
-});
+// Central service managing all advertising platforms
+export class MultiPlatformAdvertisingService {
+  // Google Ads: Manager Account 578-822-9684 linking workflow
+  // LinkedIn, Meta, Taboola, Outbrain: OAuth-based connections
+  async connectPlatform(platform: AdvertisingPlatform, companyId: string, authData: any)
+}
 ```
 
-## 🇩🇪 Deutsche Steuer & Compliance
+## 🇩🇪 German Tax & Compliance
 
-### Kleinunternehmer (§19 UStG) Erkennung
+### Kleinunternehmer (§19 UStG) Detection
 ```typescript
 const isKleinunternehmer = 
   companyData.kleinunternehmer === 'ja' ||
@@ -63,79 +58,72 @@ const isKleinunternehmer =
   companyData.step2?.kleinunternehmer === 'ja';
 ```
 
-### GoBD-konforme Rechnungsnummerierung
-- Fortlaufende Nummern pro Firma (niemals wiederverwenden)
-- Storno-Rechnungen statt Löschungen
-- Steuervalidierung durch `GermanyValidationEngine`
+### GoBD-Compliant Invoice Numbering
+- Sequential numbers per company (never reuse)  
+- Storno invoices instead of deletions
+- Tax validation through `GermanyValidationEngine`
+- E-Invoice compliance with `AutoEInvoiceService`
 
-### USt-IdNr Validierung
-Firmen benötigen entweder `vatId` (USt-IdNr) ODER `taxNumber` (Steuernummer).
-Kleinunternehmer: nur `taxNumber`, niemals `vatId`.
+### USt-IdNr Validation
+Companies need either `vatId` (USt-IdNr) OR `taxNumber` (Steuernummer).
+Kleinunternehmer: only `taxNumber`, never `vatId`.
 
 ## 🔧 Development Workflow
 
-### Build Commands
+### Essential Build Commands
 ```bash
-pnpm run dev                                    # Development
-NODE_OPTIONS="--max-old-space-size=8192" pnpm build  # Production build
+pnpm dev                                        # Development server
+NODE_OPTIONS="--max-old-space-size=8192" pnpm build  # Production build (MEMORY CRITICAL)
 pnpm run type-check                            # TypeScript validation
-pnpm emulators                                 # Firebase emulators
 ```
 
-### Task Management
-Verwende VS Code's integriertes Task-System:
-```bash
-# TypeScript watch task verfügbar
-# Ausführen über Command Palette: "Tasks: Run Task"
-```
+### VS Code Task System
+- **TypeScript Watch**: Available via Command Palette → "Tasks: Run Task"
+- **Background Type Checking**: `NODE_OPTIONS='--max-old-space-size=8192' pnpm exec tsc --noEmit --watch`
 
 ### Error Handling Patterns
 ```typescript
-// Strukturierte Error-Responses
-return NextResponse.json(
-  {
-    success: false,
-    error: 'Spezifische Fehlermeldung',
-    details: error.message,
-    timestamp: new Date().toISOString(),
-  },
-  { status: 500 }
-);
+// Structured API responses
+return NextResponse.json({
+  success: false,
+  error: 'Specific error message',
+  details: error.message,
+  timestamp: new Date().toISOString(),
+}, { status: 500 });
 ```
 
 ## 🔐 Firebase Security & Patterns
 
 ### Firestore Rules Pattern
-Company-based subcollections für Datenisolation:
+Company-based subcollections for data isolation:
 ```javascript
 match /companies/{companyId}/customers/{customerId} {
   allow read, write: if request.auth.uid == companyId;
 }
 ```
 
-### Kritische Firestore Limitations
-- **KEINE orderBy()** - Sortierung im Application Code
-- Immer Listener in `useEffect` cleanup aufräumen
-- Soft Deletes für Audit Trails verwenden (`deletedAt: Timestamp`)
+### Critical Firestore Limitations
+- **NO orderBy()** - Sort in application code
+- Always cleanup listeners in `useEffect` 
+- Use soft deletes for audit trails (`deletedAt: Timestamp`)
 
-### Environment Detection
+### Production Firebase Configuration
 ```typescript
-// Prüfung auf Emulator
-if (process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST) {
-  // Emulator-spezifische Logik
-}
+// Always use production Firebase configuration
+import { db } from '@/firebase/clients';
+// Direct connection to Firebase production services
 ```
 
 ## 🎨 UI/UX Standards
 
-- **Primary Color**: Teal - NIEMALS black
-- **Icons**: Nur Lucide React (importiert von lucide-react)
-- **Loading States**: Immer Skeleton Loading für async Operationen zeigen
-- **Mobile-First**: Alle Layouts müssen responsive sein
+- **Primary Color**: Teal - NEVER black
+- **Icons**: Only Lucide React (import from lucide-react)
+- **Loading States**: Always show Skeleton Loading for async operations
+- **Mobile-First**: All layouts must be responsive
 
 ### Component Patterns
 ```typescript
-// Skeleton loading Beispiel
+// Skeleton loading example
 {isLoading ? (
   <div className="animate-pulse">
     <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
@@ -153,15 +141,15 @@ if (process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST) {
 - `EInvoiceTransmissionService` - Electronic invoice handling
 - `WorkspaceService` - Company workspace management
 
-### Wichtige Verzeichnisse
+### Important Directories
 - `/src/services/` - Business logic services
 - `/src/components/finance/` - Financial components
 - `/firebase_functions/` - Cloud Functions
 - `/scripts/` - Maintenance and migration scripts
 
 ### Migration Context
-Das Projekt wechselt von flachen Firestore Collections zu company-basierten Subcollections.
-Immer das neue Subcollection Pattern verwenden: `/companies/{companyId}/{collection}/{docId}`
+The project is transitioning from flat Firestore collections to company-based subcollections.
+Always use the new subcollection pattern: `/companies/{companyId}/{collection}/{docId}`
 
 ## 🚨 Common Pitfalls
 
@@ -173,9 +161,9 @@ Immer das neue Subcollection Pattern verwenden: `/companies/{companyId}/{collect
 
 ## 📚 Documentation References
 
-Kritische Docs in `/docs/`:
+Critical docs in `/docs/`:
 - `MIGRATION_GUIDE.md` - Firestore subcollection migration
 - `COMPLETE_USAGE_TRACKING_SYSTEM.md` - Storage limits
 - `FIRESTORE_MIGRATION_TROUBLESHOOTING.md` - Common issues
 
-Für Fragen zu spezifischen Implementierungen, überprüfe die relevanten Service-Dateien oder bestehende Component-Patterns.
+For questions about specific implementations, check the relevant Service files or existing Component patterns.

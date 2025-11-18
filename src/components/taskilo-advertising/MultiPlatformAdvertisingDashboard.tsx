@@ -109,14 +109,23 @@ export default function MultiPlatformAdvertisingDashboard({
   const [error, setError] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
 
-  // Check for OAuth callback results
+  // Check for URL parameters and set initial state
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
     const error = urlParams.get('error');
     const platform = urlParams.get('platform');
+    const tab = urlParams.get('tab');
     const message = urlParams.get('message');
 
+    // Set initial tab based on URL parameters
+    if (platform && ['google', 'linkedin', 'meta', 'taboola', 'outbrain'].includes(platform)) {
+      setActiveTab(platform);
+    } else if (tab && ['campaigns', 'keywords', 'analytics'].includes(tab)) {
+      setActiveTab(tab);
+    }
+
+    // Handle OAuth callback results
     if (success === 'connected' && platform) {
       setConnectionStatus(`✅ ${platform.replace('-', ' ')} erfolgreich verbunden!`);
 
@@ -650,9 +659,13 @@ export default function MultiPlatformAdvertisingDashboard({
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">Übersicht</TabsTrigger>
+          <TabsTrigger value="google">Google Ads</TabsTrigger>
+          <TabsTrigger value="linkedin">LinkedIn</TabsTrigger>
+          <TabsTrigger value="meta">Meta Ads</TabsTrigger>
           <TabsTrigger value="campaigns">Kampagnen</TabsTrigger>
+          <TabsTrigger value="keywords">Keywords</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="platforms">Plattformen</TabsTrigger>
         </TabsList>
