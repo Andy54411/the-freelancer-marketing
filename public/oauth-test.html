@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Business OAuth Popup Test</title>
+</head>
+<body>
+    <h1>Google Business OAuth Popup Test</h1>
+    <button onclick="testOAuth()">Test OAuth Popup</button>
+    <div id="status"></div>
+    <div id="error" style="color: red;"></div>
+
+    <script>
+        function testOAuth() {
+            const statusDiv = document.getElementById('status');
+            const errorDiv = document.getElementById('error');
+            
+            statusDiv.innerHTML = 'Opening OAuth popup...';
+            errorDiv.innerHTML = '';
+
+            // OAuth URL von API abrufen
+            fetch('/api/google-business/oauth-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ companyId: 'test123' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.error);
+                }
+
+                // Popup öffnen
+                const popup = window.open(
+                    data.authUrl,
+                    'google-oauth',
+                    'width=500,height=600,scrollbars=yes,resizable=yes'
+                );
+
+                if (!popup) {
+                    throw new Error('Popup was blocked');
+                }
+
+                // Message Listener
+                const handleMessage = (event) => {
+                    if (event.origin !== window.location.origin) return;
+                    
+                    if (event.data.type === 'GOOGLE_OAUTH_SUCCESS') {
+                        statusDiv.innerHTML = 'OAuth successful!';
+                        popup.close();
+                        window.removeEventListener('message', handleMessage);
+                    } else if (event.data.type === 'GOOGLE_OAUTH_ERROR') {
+                        errorDiv.innerHTML = 'OAuth error: ' + event.data.error;
+                        popup.close();
+                        window.removeEventListener('message', handleMessage);
+                    }
+                };
+
+                window.addEventListener('message', handleMessage);
+
+                // Check if popup was closed manually
+                const checkClosed = setInterval(() => {
+                    if (popup.closed) {
+                        clearInterval(checkClosed);
+                        statusDiv.innerHTML = 'Popup was closed manually';
+                        window.removeEventListener('message', handleMessage);
+                    }
+                }, 1000);
+            })
+            .catch(error => {
+                errorDiv.innerHTML = 'Error: ' + error.message;
+            });
+        }
+    </script>
+</body>
+</html>
