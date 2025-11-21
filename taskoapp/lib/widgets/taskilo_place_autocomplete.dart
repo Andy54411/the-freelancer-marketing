@@ -44,8 +44,8 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
       return webKey;
     }
     
-    // Fallback - der bekannte Web Key
-    return "AIzaSyCsKo9MFlJDLErQjCgESVGnLjMhYD9UhvI";
+    // Kein API Key verfügbar - muss in .env konfiguriert werden
+    throw Exception('Google Maps API Key nicht konfiguriert. Bitte GOOGLE_MAPS_API_KEY in .env setzen.');
   }
 
   @override

@@ -1,0 +1,17 @@
+{
+  "tilvo": {
+    "firebase_private_key_id": "YOUR_FIREBASE_PRIVATE_KEY_ID",
+    "firebase_client_id": "YOUR_FIREBASE_CLIENT_ID",
+    "firebase_client_email": "YOUR_FIREBASE_CLIENT_EMAIL",
+    "google_maps_api_key": "YOUR_GOOGLE_MAPS_API_KEY",
+    "firebase_private_key": "YOUR_FIREBASE_PRIVATE_KEY"
+  },
+  "sendgrid": {
+    "apikey": "YOUR_SENDGRID_API_KEY",
+    "api_key": "YOUR_SENDGRID_API_KEY"
+  },
+  "app": {
+    "frontend_url": "https://taskilo.de",
+    "emulator_public_frontend_url": "http://localhost:3000"
+  }
+}

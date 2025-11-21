@@ -40,6 +40,8 @@ certs/
 firebase-debug.log
 firestore-debug.log
 *.log
+firebase-config.json
+firebase_functions/.runtimeconfig.json
 
 # macOS
 .DS_Store
