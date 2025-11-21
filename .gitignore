@@ -69,3 +69,18 @@ service-account*.json
 *-service-account.json
 firebase-admin*.json
 .env*.local
+
+# Flutter/Mobile App Configs
+taskoapp/android/app/google-services.json
+taskoapp/ios/Runner/GoogleService-Info.plist
+taskoapp/macos/Runner/GoogleService-Info.plist
+
+# Apple/iOS Keys
+*.p8
+*.p12
+*.mobileprovision
+AuthKey_*.p8
+
+# Lambda/Deployment Scripts with secrets
+firebase_functions/.env.lambda.template
+firebase_functions/deploy-lambda.sh
