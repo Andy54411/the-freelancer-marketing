@@ -12,6 +12,8 @@ import { GoogleBusinessTestHelper } from '@/utils/GoogleBusinessTestHelper';
 import { AffiliateLocationService } from '@/services/AffiliateLocationService';
 import LocationSelectionModal from './LocationSelectionModal';
 import AffiliateLocationModal from './AffiliateLocationModal';
+import ConversionSetupModal from './ConversionSetupModal';
+import MerchantCenterCreationModal from './MerchantCenterCreationModal';
 import {
   Target,
   Users,
@@ -35,7 +37,11 @@ import {
   HelpCircle,
   Link as LinkIcon,
   Check,
+  ShoppingCart,
+  ScanBarcode,
+  Pencil,
 } from 'lucide-react';
+import { useAlertHelpers } from '@/components/ui/AlertProvider';
 
 const COUNTRY_OPTIONS = [
   'Afghanistan',
@@ -344,6 +350,7 @@ const campaignObjectives: CampaignObjective[] = [
 export default function CampaignObjectiveSelector({ companyId }: CampaignObjectiveSelectorProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { showSuccess } = useAlertHelpers();
 
   const salesCampaignTypes = [
     {
@@ -503,6 +510,15 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
     },
   ];
 
+  const videoSubtypes = [
+    {
+      id: 'drive_conversions',
+      title: 'Mehr Conversions',
+      description:
+        'Mehr Conversions mit Videoanzeigen erzielen, die Nutzer dazu bewegen, mit Ihrem Unternehmen zu interagieren',
+    },
+  ];
+
   // Kampagnentypen für "Kampagne ohne Vorgaben"
   const noObjectiveCampaignTypes = [
     {
@@ -559,6 +575,7 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
   const [selectedTactics, setSelectedTactics] = useState<string[]>([]);
   const [selectedConversionGoals, setSelectedConversionGoals] = useState<string[]>([]);
   const [selectedAppSubtype, setSelectedAppSubtype] = useState<string>('');
+  const [selectedVideoSubtype, setSelectedVideoSubtype] = useState<string>('drive_conversions');
   const [selectedAppPlatform, setSelectedAppPlatform] = useState<string>('');
   const [selectedPlatform, setSelectedPlatform] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -572,7 +589,13 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
   const [googleBusinessAccounts, setGoogleBusinessAccounts] = useState<any[]>([]);
   const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
   const [showAffiliateModal, setShowAffiliateModal] = useState<boolean>(false);
+  const [showMerchantCenterModal, setShowMerchantCenterModal] = useState<boolean>(false);
   const [selectedAffiliateChains, setSelectedAffiliateChains] = useState<any[]>([]);
+  const [enhancedConversionsEnabled, setEnhancedConversionsEnabled] = useState<boolean>(true);
+  const [showMoreConversionGoals, setShowMoreConversionGoals] = useState<boolean>(false);
+  const [showConversionSetupModal, setShowConversionSetupModal] = useState<boolean>(false);
+  const [selectedGoalForSetup, setSelectedGoalForSetup] = useState<string>('');
+  const [conversionSetupMethod, setConversionSetupMethod] = useState<string>('ga4');
   const [campaignName, setCampaignName] = useState<string>('');
   const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [phoneCountry, setPhoneCountry] = useState<string>('Deutschland');
@@ -581,6 +604,7 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
     landingDestination: '',
     websiteUrl: '',
   });
+  const [conversionGoalConfigs, setConversionGoalConfigs] = useState<Record<string, any>>({});
 
   useEffect(() => {
     // Body scroll blockieren wenn Modal offen ist
@@ -722,6 +746,7 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
     const allData = {
       ...businessData,
       objective: selectedObjective,
+      enhancedConversions: enhancedConversionsEnabled,
     };
 
     console.log('Kampagnendaten:', allData);
@@ -794,6 +819,48 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
           : 'Fehler beim Starten der Google Business Verbindung'
       );
       setIsLoadingGoogleBusiness(false);
+    }
+  };
+
+  const handleGoogleAdsReauth = async () => {
+    try {
+      const response = await fetch(`/api/google-ads/auth-url?companyId=${companyId}&isPopup=true`);
+      const data = await response.json();
+
+      if (data.success && data.url) {
+        const popup = window.open(
+          data.url,
+          'google-ads-oauth',
+          'width=600,height=700,scrollbars=yes,resizable=yes'
+        );
+
+        if (!popup) {
+          alert('Bitte erlauben Sie Popups für diese Seite.');
+          return;
+        }
+
+        // Listen for message
+        const handleMessage = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+
+          if (event.data.type === 'GOOGLE_ADS_OAUTH_SUCCESS') {
+            window.removeEventListener('message', handleMessage);
+            showSuccess('Berechtigungen erfolgreich aktualisiert!');
+            // Retry logic could be added here, or just let user click save again
+          } else if (event.data.type === 'GOOGLE_ADS_OAUTH_ERROR') {
+            window.removeEventListener('message', handleMessage);
+            alert(
+              'Fehler bei der Aktualisierung der Berechtigungen: ' +
+                (event.data.error || 'Unbekannter Fehler')
+            );
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+      }
+    } catch (error) {
+      console.error('Error starting re-auth:', error);
+      alert('Fehler beim Starten der Authentifizierung.');
     }
   };
 
@@ -1025,6 +1092,109 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
             </div>
           </div>
         )}
+
+        {/* Video Campaign Subtype Selection */}
+        {selectedCampaignType === 'video' &&
+          ['SALES', 'LEADS', 'WEBSITE_TRAFFIC'].includes(selectedObjective) && (
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+              <div className="p-6">
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                    Kampagnenuntertyp auswählen
+                  </h2>
+                </div>
+
+                <div className="space-y-3">
+                  {videoSubtypes.map(subtype => (
+                    <div
+                      key={subtype.id}
+                      className={`flex items-start p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                        selectedVideoSubtype === subtype.id
+                          ? 'border-[#14ad9f] bg-[#14ad9f]/5 ring-2 ring-[#14ad9f]/20'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => setSelectedVideoSubtype(subtype.id)}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 mr-3 mt-0.5 flex items-center justify-center ${
+                          selectedVideoSubtype === subtype.id
+                            ? 'border-[#14ad9f] bg-[#14ad9f]'
+                            : 'border-gray-300'
+                        }`}
+                      >
+                        {selectedVideoSubtype === subtype.id && (
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3
+                          className={`font-semibold mb-1 ${
+                            selectedVideoSubtype === subtype.id ? 'text-[#14ad9f]' : 'text-gray-900'
+                          }`}
+                        >
+                          {subtype.title}
+                        </h3>
+                        <div className="text-sm text-gray-600">
+                          {subtype.description}
+                          <a
+                            href="https://support.google.com/google-ads/answer/10146226?hl=de"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline inline-flex items-center ml-2"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            Weitere Informationen
+                            <svg className="w-3 h-3 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path>
+                              <path d="M5 5a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2v-2a1 1 0 10-2 0v2H5V7h2a1 1 0 000-2H5z"></path>
+                            </svg>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Conversion Tracking Warning */}
+                <div className="mt-6 flex items-start gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="p-1 bg-yellow-100 rounded text-yellow-700">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-yellow-800 mb-2">
+                      <a
+                        href="#"
+                        className="font-medium underline hover:text-yellow-900 text-blue-700"
+                      >
+                        Richten Sie Conversion-Tracking ein
+                      </a>
+                      , um mit der Erstellung der Kampagne fortzufahren.
+                    </p>
+                    <div>
+                      <a
+                        href="https://support.google.com/google-ads/answer/1722054?hl=de"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-800 underline inline-flex items-center"
+                      >
+                        Methoden zum Erfassen von Conversions
+                        <svg className="w-3 h-3 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path>
+                          <path d="M5 5a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2v-2a1 1 0 10-2 0v2H5V7h2a1 1 0 000-2H5z"></path>
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
         {/* App-Kampagnenuntertyp für App-Downloads */}
         {selectedObjective === 'APP_DOWNLOADS' && selectedCampaignType === 'app' && (
@@ -1793,8 +1963,83 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
           </div>
         )}
 
-        {/* Conversion Goals Selection for Search Campaign */}
-        {selectedCampaignType === 'search' && (
+        {/* Website Input for Display Campaign */}
+        {selectedCampaignType === 'display' && (
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
+            <div className="p-6">
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-base text-gray-700 font-medium">
+                    Auf diese Website gelangen Nutzer, nachdem sie auf Ihre Anzeige geklickt haben
+                  </h2>
+                  <div className="text-gray-400 cursor-help" title="Weitere Informationen">
+                    <HelpCircle className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <LinkIcon className="h-5 w-5 text-gray-500" />
+                </div>
+                <input
+                  type="text"
+                  value={businessData.websiteUrl}
+                  onChange={e => setBusinessData({ ...businessData, websiteUrl: e.target.value })}
+                  placeholder="Ihre Unternehmenswebsite"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-400 rounded focus:ring-1 focus:ring-[#14ad9f] focus:border-[#14ad9f] outline-none text-gray-900"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Shopping Campaign Merchant Center Section */}
+        {selectedCampaignType === 'shopping' && (
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
+            <div className="p-6">
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Dieser Kampagne Produkte hinzufügen
+                </h2>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-1 bg-blue-100 rounded">
+                    <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-4 4a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-800 mb-3">
+                      Wenn Sie eine Shopping-Kampagne verwenden möchten, müssen Sie ein Merchant
+                      Center-Konto mit den Produkten erstellen, die beworben werden sollen. Sie
+                      können das Konto jetzt erstellen und die Einrichtung abschließen, nachdem Sie
+                      diese Kampagne veröffentlicht haben.
+                    </p>
+                    <Button
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 h-auto"
+                      onClick={() => setShowMerchantCenterModal(true)}
+                    >
+                      Merchant Center-Konto erstellen
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Conversion Goals Selection for Search & Performance Max & Demand Gen & Display Campaign */}
+        {(selectedCampaignType === 'search' ||
+          selectedCampaignType === 'performance-max' ||
+          selectedCampaignType === 'demand-gen' ||
+          selectedCampaignType === 'display') && (
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
             <div className="p-6">
               <div className="mb-6">
@@ -1832,6 +2077,7 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
                     description:
                       'Schalten Sie Ihre Anzeigen für Nutzer, die mit der größten Wahrscheinlichkeit Produkte von Ihrer Website, aus Ihrer App oder in Ihrem Geschäft kaufen werden.',
                     icon: CreditCard,
+                    isPrimary: true,
                   },
                   {
                     id: 'subscribe',
@@ -1839,58 +2085,226 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
                     description:
                       'Anzeigen für Nutzer schalten, die am wahrscheinlichsten kostenpflichtige Abos für Ihre Dienstleistungen und/oder Produkte abschließen',
                     icon: Repeat,
+                    isPrimary: true,
                   },
-                ].map(goal => {
-                  const IconComponent = goal.icon;
-                  const isSelected = selectedConversionGoals.includes(goal.id);
-                  return (
-                    <div
-                      key={goal.id}
-                      className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                        isSelected
-                          ? 'border-[#14ad9f] bg-[#14ad9f]/5 ring-2 ring-[#14ad9f]/20'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      onClick={() => {
-                        if (isSelected) {
-                          setSelectedConversionGoals(
-                            selectedConversionGoals.filter(id => id !== goal.id)
-                          );
-                        } else {
-                          setSelectedConversionGoals([...selectedConversionGoals, goal.id]);
-                        }
-                      }}
-                    >
-                      <div className="flex items-start gap-4 w-full">
-                        <IconComponent className="w-6 h-6 text-gray-400 shrink-0 mt-1" />
-                        <div className="flex-1">
-                          <h3
-                            className={`font-semibold text-base mb-1 ${
-                              isSelected ? 'text-[#14ad9f]' : 'text-gray-900'
+                  {
+                    id: 'add_to_cart',
+                    title: 'In den Einkaufswagen',
+                    description:
+                      'Anzeigen für Nutzer schalten, die Interesse an Ihren Produkten haben. Sie können dann Erinnerungen senden, um den Bezahlvorgang abzuschließen.',
+                    icon: ShoppingCart,
+                    isPrimary: false,
+                  },
+                  {
+                    id: 'begin_checkout',
+                    title: 'Bezahlvorgang starten',
+                    description:
+                      'Anzeigen für Nutzer schalten, die Interesse an Ihren Produkten haben. Sie können dann Erinnerungen senden, um den Bezahlvorgang abzuschließen.',
+                    icon: ScanBarcode,
+                    isPrimary: false,
+                  },
+                ]
+                  .filter(goal => goal.isPrimary || showMoreConversionGoals)
+                  .map(goal => {
+                    const IconComponent = goal.icon;
+                    const isSelected = selectedConversionGoals.includes(goal.id);
+                    return (
+                      <div
+                        key={goal.id}
+                        className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                          isSelected
+                            ? 'border-[#14ad9f] bg-[#14ad9f]/5 ring-2 ring-[#14ad9f]/20'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        onClick={() => {
+                          if (isSelected) {
+                            // Deselect the goal
+                            setSelectedConversionGoals([]);
+                          } else {
+                            // Select only this goal
+                            setSelectedConversionGoals([goal.id]);
+                          }
+                        }}
+                      >
+                        <div className="flex items-start gap-4 w-full">
+                          <IconComponent className="w-6 h-6 text-gray-400 shrink-0 mt-1" />
+                          <div className="flex-1">
+                            <h3
+                              className={`font-semibold text-base mb-1 ${
+                                isSelected ? 'text-[#14ad9f]' : 'text-gray-900'
+                              }`}
+                            >
+                              {goal.title}
+                            </h3>
+                            <p className="text-sm text-gray-600">{goal.description}</p>
+
+                            {/* Render badges for selected events */}
+                            {isSelected &&
+                              conversionGoalConfigs[goal.id]?.events &&
+                              conversionGoalConfigs[goal.id].events.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                  {conversionGoalConfigs[goal.id].events.map((event: string) => (
+                                    <span
+                                      key={event}
+                                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100"
+                                    >
+                                      {event}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                            {/* Edit button for configurable goals */}
+                            {isSelected &&
+                              (goal.id === 'subscribe' ||
+                                goal.id === 'add_to_cart' ||
+                                goal.id === 'purchase' ||
+                                goal.id === 'begin_checkout') && (
+                                <div className="mt-3">
+                                  <button
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      setSelectedGoalForSetup(goal.id);
+                                      setShowConversionSetupModal(true);
+                                    }}
+                                    className="flex items-center gap-1.5 text-sm font-medium text-[#14ad9f] hover:text-[#12998d] transition-colors"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                    Bearbeiten
+                                  </button>
+                                </div>
+                              )}
+                          </div>
+                          <div
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                              isSelected ? 'border-[#14ad9f] bg-[#14ad9f]' : 'border-gray-300'
                             }`}
                           >
-                            {goal.title}
-                          </h3>
-                          <p className="text-sm text-gray-600">{goal.description}</p>
-                        </div>
-                        <div
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                            isSelected ? 'border-[#14ad9f] bg-[#14ad9f]' : 'border-gray-300'
-                          }`}
-                        >
-                          {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                            {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+
+                {/* Show More/Less Link */}
+                <button
+                  onClick={() => setShowMoreConversionGoals(!showMoreConversionGoals)}
+                  className="text-sm text-blue-600 hover:underline font-medium transition-colors"
+                >
+                  {showMoreConversionGoals ? 'Weniger' : 'Mehr'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Demand Gen Introduction */}
+        {selectedCampaignType === 'demand-gen' && (
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
+            <div className="p-6">
+              <div className="flex items-start gap-4">
+                <p className="text-gray-600 leading-relaxed">
+                  Engagement und Aktionen können auf YouTube, YouTube Shorts, in Discover und Gmail
+                  mit Demand Gen-Kampagnen erfasst werden. Sie sind ideal für Werbetreibende in den
+                  sozialen Netzwerken, die visuell ansprechende, mehrformatige Anzeigen auf den
+                  potentesten Plattformen von Google schalten möchten.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Enhanced Conversions */}
+        {selectedCampaignType === 'search' && selectedConversionGoals.length > 0 && (
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
+            <div className="p-6">
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Erweiterte Conversions für Konto aktivieren
+                </h2>
+                <p className="text-gray-600">
+                  Bei der Funktion „Erweiterte Conversions“ werden automatisch Daten erkannt und
+                  verwendet, die Kunden auf Ihrer Website hinterlassen (z. B. E-Mail-Adressen). Sie
+                  können genutzt werden, um bessere Analysen zu erhalten und Ihre Kampagne zu
+                  optimieren. Diese Einstellung gilt für alle infrage kommenden Conversions in Ihrem
+                  Konto.{' '}
+                  <a
+                    href="https://support.google.com/google-ads/answer/14170725?hl=de"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline hover:text-blue-800 inline-flex items-center"
+                  >
+                    Weitere Informationen zu erweiterten Conversions
+                    <svg className="w-3 h-3 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path>
+                      <path d="M5 5a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2v-2a1 1 0 10-2 0v2H5V7h2a1 1 0 000-2H5z"></path>
+                    </svg>
+                  </a>
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div
+                  className="flex items-start gap-3 cursor-pointer"
+                  onClick={() => setEnhancedConversionsEnabled(!enhancedConversionsEnabled)}
+                >
+                  <div
+                    className={`w-5 h-5 mt-0.5 flex items-center justify-center rounded border transition-colors ${
+                      enhancedConversionsEnabled
+                        ? 'bg-[#14ad9f] border-[#14ad9f] text-white'
+                        : 'border-gray-400 bg-white'
+                    }`}
+                  >
+                    {enhancedConversionsEnabled && <Check className="w-4 h-4" />}
+                  </div>
+                  <div>
+                    <span className="text-gray-900 font-medium">
+                      Erweiterte Conversions aktivieren
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-sm text-gray-500 bg-gray-50 p-4 rounded-lg">
+                  Mit einem Klick auf „Zustimmen und fortfahren“ bestätigen Sie, dass Sie die{' '}
+                  <a
+                    href="https://support.google.com/adspolicy/answer/7475709?hl=de"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    Richtlinien von Google
+                  </a>{' '}
+                  einhalten. Sie beauftragen Google, Ihre Daten wie im{' '}
+                  <a
+                    href="https://support.google.com/adspolicy/answer/9755941?hl=de"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    Artikel zur Google-Richtlinie zur Anzeigenausrichtung
+                  </a>{' '}
+                  beschrieben, zu verarbeiten. Für erweiterte Conversions gelten die{' '}
+                  <a
+                    href="https://privacy.google.com/businesses/processorterms/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    Datenverarbeitungsbedingungen für Google Ads
+                  </a>
+                  .
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* Kampagnenname */}
-        {((selectedObjective && selectedCampaignType) ||
+        {((selectedObjective &&
+          selectedCampaignType &&
+          selectedCampaignType !== 'video' &&
+          selectedCampaignType !== 'display') ||
           (selectedObjective === 'AWARENESS_AND_CONSIDERATION' && selectedAwarenessSubtype) ||
           (selectedObjective === 'LOCAL_STORE_VISITS' &&
             selectedCampaignType === 'performance-max-local' &&
@@ -1919,34 +2333,37 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
         )}
 
         {/* Business Data Summary (if available) */}
-        {businessData.businessName && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <div className="p-1 bg-blue-100 rounded">
-                <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-4 4a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-medium text-blue-900 mb-1">Unternehmensdaten</h3>
-                <div className="text-sm text-blue-800 space-y-1">
-                  <p>
-                    <strong>Unternehmen:</strong> {businessData.businessName}
-                  </p>
-                  {businessData.websiteUrl && (
+        {businessData.businessName &&
+          selectedCampaignType !== 'video' &&
+          selectedCampaignType !== 'display' &&
+          selectedCampaignType !== 'shopping' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-1 bg-blue-100 rounded">
+                  <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-medium text-blue-900 mb-1">Unternehmensdaten</h3>
+                  <div className="text-sm text-blue-800 space-y-1">
                     <p>
-                      <strong>Website:</strong> {businessData.websiteUrl}
+                      <strong>Unternehmen:</strong> {businessData.businessName}
                     </p>
-                  )}
+                    {businessData.websiteUrl && (
+                      <p>
+                        <strong>Website:</strong> {businessData.websiteUrl}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Action Buttons */}
         <div className="flex items-center justify-between pt-4">
@@ -2065,6 +2482,81 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
               alert('❌ Fehler beim Speichern der Standorte. Bitte versuchen Sie es erneut.');
             }
           }}
+        />
+
+        {/* Conversion Setup Modal */}
+        <ConversionSetupModal
+          isOpen={showConversionSetupModal}
+          onClose={() => setShowConversionSetupModal(false)}
+          onApply={(setupMethod, config) => {
+            console.log('Setup method:', setupMethod);
+            console.log('Setup config:', config);
+
+            // Save configuration for the goal
+            if (config) {
+              setConversionGoalConfigs(prev => ({
+                ...prev,
+                [selectedGoalForSetup]: {
+                  method: setupMethod,
+                  ...config,
+                },
+              }));
+            }
+
+            setSelectedConversionGoals([selectedGoalForSetup]);
+            setShowConversionSetupModal(false);
+          }}
+          goalType={selectedGoalForSetup}
+        />
+
+        {/* Merchant Center Creation Modal (for Shopping Campaigns) */}
+        <MerchantCenterCreationModal
+          isOpen={showMerchantCenterModal}
+          onClose={() => setShowMerchantCenterModal(false)}
+          onSave={async data => {
+            console.log('Creating Merchant Center Account:', data);
+
+            try {
+              const response = await fetch('/api/merchant-center/create', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  companyId,
+                  ...data,
+                }),
+              });
+
+              const result = await response.json();
+
+              if (result.success) {
+                setShowMerchantCenterModal(false);
+                showSuccess('Merchant Center-Konto erstellt und verknüpft!');
+              } else {
+                if (result.error === 'REQUIRES_REAUTH') {
+                  if (
+                    confirm(
+                      'Neue Berechtigungen erforderlich: Um ein Merchant Center Konto zu erstellen, müssen Sie Taskilo zusätzliche Rechte gewähren. Möchten Sie die Berechtigungen jetzt aktualisieren?'
+                    )
+                  ) {
+                    handleGoogleAdsReauth();
+                  }
+                } else if (result.error === 'NO_MCA_FOUND') {
+                  alert(
+                    'Wir konnten kein Unterkonto erstellen. Bitte erstellen Sie ein Merchant Center-Konto manuell unter merchants.google.com.'
+                  );
+                } else {
+                  alert('Fehler: ' + (result.message || result.error));
+                }
+              }
+            } catch (error) {
+              console.error('Error:', error);
+              alert('Ein unerwarteter Fehler ist aufgetreten.');
+            }
+          }}
+          initialBusinessName={businessData.businessName}
+          initialWebsiteUrl={businessData.websiteUrl}
         />
       </div>
     </div>

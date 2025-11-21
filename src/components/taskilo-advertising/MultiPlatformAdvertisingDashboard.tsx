@@ -168,12 +168,12 @@ export default function MultiPlatformAdvertisingDashboard({
       if (connectionsResponse.ok) {
         const connectionsData = await connectionsResponse.json();
         if (connectionsData.success) {
-          setPlatformConnections(connectionsData.data);
+          setPlatformConnections(connectionsData.data || []);
         }
       }
 
       // Fallback: Mock Platform-Verbindungen für Demo
-      if (platformConnections.length === 0) {
+      if ((!platformConnections || platformConnections.length === 0) && !connectionsResponse.ok) {
         setPlatformConnections([
           {
             platform: 'google-ads',
@@ -212,7 +212,7 @@ export default function MultiPlatformAdvertisingDashboard({
       if (campaignsResponse.ok) {
         const campaignsData = await campaignsResponse.json();
         if (campaignsData.success) {
-          setCampaigns(campaignsData.data);
+          setCampaigns(campaignsData.data || []);
         }
       }
 
@@ -527,7 +527,7 @@ export default function MultiPlatformAdvertisingDashboard({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {platformConnections.map(connection => (
+            {platformConnections?.map(connection => (
               <div
                 key={connection.platform}
                 className="flex flex-col items-center p-4 border rounded-lg"
@@ -679,7 +679,7 @@ export default function MultiPlatformAdvertisingDashboard({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {analytics.platformBreakdown.map(platform => (
+                  {analytics.platformBreakdown?.map(platform => (
                     <div
                       key={platform.platform}
                       className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
@@ -782,7 +782,7 @@ export default function MultiPlatformAdvertisingDashboard({
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {campaigns.map(campaign => (
+                    {campaigns?.map(campaign => (
                       <tr key={`${campaign.platform}-${campaign.id}`}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
@@ -865,7 +865,7 @@ export default function MultiPlatformAdvertisingDashboard({
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {platformConnections.map(connection => (
+                {platformConnections?.map(connection => (
                   <Card key={connection.platform}>
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between mb-4">

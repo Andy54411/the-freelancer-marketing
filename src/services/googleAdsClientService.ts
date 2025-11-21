@@ -23,12 +23,12 @@ class GoogleAdsClientService {
 
   constructor() {
     this.config = {
-      clientId: process.env.GOOGLE_ADS_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET || '',
+      clientId: process.env.GOOGLE_ADS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || '',
       developerToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN || '',
       // Legacy Support
-      client_id: process.env.GOOGLE_ADS_CLIENT_ID || '',
-      client_secret: process.env.GOOGLE_ADS_CLIENT_SECRET || '',
+      client_id: process.env.GOOGLE_ADS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '',
+      client_secret: process.env.GOOGLE_ADS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || '',
       developer_token: process.env.GOOGLE_ADS_DEVELOPER_TOKEN || '',
     };
 
@@ -66,7 +66,7 @@ class GoogleAdsClientService {
    */
   private mapCustomerStatus(
     status: any
-  ): 'UNKNOWN' | 'ENABLED' | 'SUSPENDED' | 'PAUSED' | 'REMOVED' {
+  ): 'UNKNOWN' | 'ENABLED' | 'SUSPENDED' | 'PAUSED' | 'REMOVED' | 'CANCELED' {
     if (!status) return 'UNKNOWN';
 
     const statusStr = String(status).toUpperCase();
@@ -77,6 +77,7 @@ class GoogleAdsClientService {
       case 'SUSPENDED':
         return 'SUSPENDED';
       case 'CANCELED':
+        return 'CANCELED';
       case 'PAUSED':
         return 'PAUSED';
       case 'CLOSED':
@@ -114,6 +115,7 @@ class GoogleAdsClientService {
     // 🎯 VOLLSTÄNDIGE GOOGLE ADS SCOPES für White-Label Platform
     const scopes = [
       'https://www.googleapis.com/auth/adwords', // Full Google Ads access
+      'https://www.googleapis.com/auth/content', // Google Merchant Center access
       'https://www.googleapis.com/auth/userinfo.email', // User email (für Account-Info)
       'https://www.googleapis.com/auth/userinfo.profile', // User profile (für Account-Info)
     ].join(' ');
@@ -311,6 +313,18 @@ class GoogleAdsClientService {
     refreshToken: string,
     managerCustomerId?: string
   ): Promise<GoogleAdsApiResponse<GoogleAdsAccount[]>> {
+    // 🛑 Check for Developer Token first
+    if (!this.config.developer_token) {
+      console.warn('Skipping getAccessibleCustomers: No Developer Token configured.');
+      return {
+        success: false,
+        error: {
+          code: 'NO_DEVELOPER_TOKEN',
+          message: 'Developer Token is missing. Cannot fetch accessible customers.',
+        },
+      };
+    }
+
     try {
       // STRATEGIE 1: Client Library listAccessibleCustomers - für echte Accounts
       try {
@@ -393,7 +407,7 @@ class GoogleAdsClientService {
       let accessToken;
       try {
         accessToken = await this.getValidAccessToken(refreshToken);
-      } catch (tokenError) {
+      } catch (tokenError: any) {
         return {
           success: false,
           error: {
@@ -515,8 +529,8 @@ class GoogleAdsClientService {
       // Hole Details für jeden Kunden
       const formattedAccounts: GoogleAdsAccount[] = [];
 
-      for (const customerId of customerIds.slice(0, 5)) {
-        // Limit auf 5 für Performance
+      // Erhöhe Limit auf 20, um alle Accounts zu sehen
+      for (const customerId of customerIds.slice(0, 20)) {
         try {
           const customer = this.client.Customer({
             customer_id: customerId,
@@ -538,9 +552,11 @@ class GoogleAdsClientService {
 
           if (customerDetails && customerDetails.length > 0) {
             const details = customerDetails[0];
+            const rawId = String(details.customer?.id || customerId);
+
             formattedAccounts.push({
-              id: String(details.customer?.id || customerId),
-              name: details.customer?.descriptive_name || `Account ${customerId}`,
+              id: rawId,
+              name: details.customer?.descriptive_name || `Google Ads-Konto`,
               currency: details.customer?.currency_code || 'EUR',
               timezone: details.customer?.time_zone || 'Europe/Berlin',
               status: this.mapCustomerStatus(details.customer?.status) || 'ENABLED',
@@ -549,14 +565,14 @@ class GoogleAdsClientService {
               level: 0,
             });
           }
-        } catch (customerError) {
-          // Füge trotzdem einen Basic-Account hinzu
+        } catch (customerError: any) {
+          // Fallback für Fehler (z.B. Test-Token Einschränkungen)
           formattedAccounts.push({
             id: customerId,
-            name: `Account ${customerId}`,
+            name: `Google Ads-Konto`,
             currency: 'EUR',
             timezone: 'Europe/Berlin',
-            status: 'ENABLED',
+            status: 'UNKNOWN',
             manager: false,
             testAccount: false,
             level: 0,
@@ -725,8 +741,26 @@ class GoogleAdsClientService {
   ): Promise<GoogleAdsApiResponse<{ campaignId: string }>> {
     try {
       // Validiere Customer ID Format
-      if (!customerId || customerId === 'auto-detect') {
-        throw new Error('Invalid customer ID provided');
+      if (
+        !customerId ||
+        customerId === 'auto-detect' ||
+        customerId === 'oauth-connected' ||
+        customerId === 'pending_selection' ||
+        customerId.startsWith('oauth-')
+      ) {
+        throw new Error(
+          'Invalid customer ID provided. A valid Google Ads Customer ID is required to run ads.'
+        );
+      }
+
+      // 🔒 SICHERHEITS-CHECK: Manager Account Verknüpfung prüfen
+      const MANAGER_ID = '578-822-9684';
+      const isLinked = await this.isLinkedToManager(refreshToken, customerId, MANAGER_ID);
+
+      if (!isLinked) {
+        throw new Error(
+          `Account not linked to Taskilo Manager Account (${MANAGER_ID}). Please link your account to enable ad creation.`
+        );
       }
 
       const customer = this.client.Customer({
@@ -760,6 +794,9 @@ class GoogleAdsClientService {
           },
         ]);
 
+        if (!budgetResult.results[0].resource_name) {
+          throw new Error('Failed to retrieve budget resource name');
+        }
         budgetResourceName = budgetResult.results[0].resource_name;
       } catch (budgetError: any) {
         throw new Error(
@@ -792,6 +829,9 @@ class GoogleAdsClientService {
           },
         ]);
 
+        if (!campaignResult.results[0].resource_name) {
+          throw new Error('Failed to retrieve campaign resource name');
+        }
         const campaignResourceName = campaignResult.results[0].resource_name;
         const campaignId = campaignResourceName.split('/')[3]; // Extract ID from resource name
 
@@ -878,8 +918,26 @@ class GoogleAdsClientService {
   ): Promise<GoogleAdsApiResponse<{ campaignId: string; adGroupIds: string[] }>> {
     try {
       // Validiere Customer ID Format
-      if (!customerId || customerId === 'auto-detect') {
-        throw new Error('Invalid customer ID provided');
+      if (
+        !customerId ||
+        customerId === 'auto-detect' ||
+        customerId === 'oauth-connected' ||
+        customerId === 'pending_selection' ||
+        customerId.startsWith('oauth-')
+      ) {
+        throw new Error(
+          'Invalid customer ID provided. A valid Google Ads Customer ID is required to run ads.'
+        );
+      }
+
+      // 🔒 SICHERHEITS-CHECK: Manager Account Verknüpfung prüfen
+      const MANAGER_ID = '578-822-9684';
+      const isLinked = await this.isLinkedToManager(refreshToken, customerId, MANAGER_ID);
+
+      if (!isLinked) {
+        throw new Error(
+          `Account not linked to Taskilo Manager Account (${MANAGER_ID}). Please link your account to enable ad creation.`
+        );
       }
 
       const customer = this.client.Customer({
@@ -913,6 +971,9 @@ class GoogleAdsClientService {
           },
         ]);
 
+        if (!budgetResult.results[0].resource_name) {
+          throw new Error('Failed to retrieve budget resource name');
+        }
         budgetResourceName = budgetResult.results[0].resource_name;
       } catch (budgetError: any) {
         throw new Error(
@@ -948,6 +1009,9 @@ class GoogleAdsClientService {
           },
         ]);
 
+        if (!campaignResult.results[0].resource_name) {
+          throw new Error('Failed to retrieve campaign resource name');
+        }
         campaignResourceName = campaignResult.results[0].resource_name;
         campaignId = campaignResourceName.split('/')[3]; // Extract ID from resource name
       } catch (campaignError: any) {
@@ -976,6 +1040,9 @@ class GoogleAdsClientService {
           ]);
 
           const adGroupResourceName = adGroupResult.results[0].resource_name;
+          if (!adGroupResourceName) {
+            throw new Error('Failed to retrieve ad group resource name');
+          }
           const adGroupId = adGroupResourceName.split('/')[5]; // Extract ID from resource name
           adGroupIds.push(adGroupId);
 
@@ -1782,6 +1849,64 @@ class GoogleAdsClientService {
           message: error.message || 'Failed to fetch user profile',
         },
       };
+    }
+  }
+
+  /**
+   * ✅ Prüfen ob Account mit Manager Account verknüpft ist
+   */
+  async isLinkedToManager(
+    refreshToken: string,
+    customerId: string,
+    managerId: string
+  ): Promise<boolean> {
+    // 🛑 BYPASS if no developer token (Dev Mode / Misconfiguration)
+    if (!this.config.developer_token) {
+      console.warn(
+        '⚠️ Skipping Manager Link Check: No Developer Token configured. Allowing connection for testing.'
+      );
+      return true;
+    }
+
+    try {
+      const customer = this.client.Customer({
+        customer_id: customerId,
+        refresh_token: refreshToken,
+      });
+
+      // Query customer_client_link to see if the manager is linked
+      // Note: We query from the perspective of the client account, so we look at customer_manager_link?
+      // Actually, from the client account, we can query `customer_client` of the manager if we had access to manager.
+      // But we only have access to client.
+      // So we query `customer_manager_link` resource.
+
+      const query = `
+        SELECT
+          customer_manager_link.manager_customer,
+          customer_manager_link.status
+        FROM customer_manager_link
+        WHERE customer_manager_link.status = 'ACTIVE'
+      `;
+
+      const result = await customer.query(query);
+
+      const targetManagerResource = `customers/${managerId.replace(/-/g, '')}`;
+
+      console.log(
+        `[ManagerCheck] Checking link for customer ${customerId} against manager ${targetManagerResource}`
+      );
+      console.log(`[ManagerCheck] Found links:`, JSON.stringify(result, null, 2));
+
+      const isLinked = result.some(
+        (row: any) => row.customer_manager_link?.manager_customer === targetManagerResource
+      );
+
+      console.log(`[ManagerCheck] Is Linked: ${isLinked}`);
+
+      return isLinked;
+    } catch (error) {
+      console.warn('Failed to check manager link:', error);
+      return false;
     }
   }
 

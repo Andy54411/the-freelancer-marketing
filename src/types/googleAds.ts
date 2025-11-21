@@ -6,7 +6,7 @@ export interface GoogleAdsAccount {
   name: string;
   currency: string;
   timezone: string;
-  status: 'ENABLED' | 'PAUSED' | 'REMOVED' | 'SUSPENDED' | 'UNKNOWN';
+  status: 'ENABLED' | 'PAUSED' | 'REMOVED' | 'SUSPENDED' | 'UNKNOWN' | 'CANCELED';
   manager: boolean;
   testAccount: boolean;
   level?: number;

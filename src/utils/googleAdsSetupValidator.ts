@@ -24,8 +24,8 @@ export class GoogleAdsSetupValidator {
     const warnings: string[] = [];
 
     // Environment Variables prüfen
-    const clientId = process.env.GOOGLE_ADS_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET;
+    const clientId = process.env.GOOGLE_ADS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
     const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 

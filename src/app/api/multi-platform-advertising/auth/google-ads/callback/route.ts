@@ -17,7 +17,7 @@ if (!admin.apps.length) {
 /**
  * 🔄 Google Ads OAuth Callback
  * GET /api/multi-platform-advertising/auth/google-ads/callback
- * 
+ *
  * Verarbeitet die Antwort von Google OAuth und erstellt echte Google Ads Verbindung
  */
 export async function GET(request: NextRequest) {
@@ -27,9 +27,12 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get('state'); // companyId
     const error = searchParams.get('error');
 
-    const baseUrl = process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:3000' 
-      : (process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://taskilo.de');
+    const baseUrl =
+      process.env.NODE_ENV === 'development'
+        ? 'http://localhost:3000'
+        : process.env.NEXT_PUBLIC_BASE_URL ||
+          process.env.NEXT_PUBLIC_APP_URL ||
+          'https://taskilo.de';
 
     if (error) {
       console.error('❌ Google OAuth Error:', error);
@@ -45,10 +48,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('✅ Google OAuth callback received:', { 
-      code: code.substring(0, 20) + '...', 
+    console.log('✅ Google OAuth callback received:', {
+      code: code.substring(0, 20) + '...',
       companyId: state,
-      redirectUri: `${baseUrl}/api/multi-platform-advertising/auth/google-ads/callback`
+      redirectUri: `${baseUrl}/api/multi-platform-advertising/auth/google-ads/callback`,
     });
 
     // Exchange authorization code for access token
@@ -58,7 +61,9 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        client_id: process.env.GOOGLE_CLIENT_ID || '1022290879475-tr7pp4pr7ildsd0s3sj4tnjir1apn8ch.apps.googleusercontent.com',
+        client_id:
+          process.env.GOOGLE_CLIENT_ID ||
+          '1022290879475-tr7pp4pr7ildsd0s3sj4tnjir1apn8ch.apps.googleusercontent.com',
         client_secret: process.env.GOOGLE_CLIENT_SECRET || 'GOCSPX-dummy',
         code,
         grant_type: 'authorization_code',
@@ -75,9 +80,9 @@ export async function GET(request: NextRequest) {
     }
 
     const tokens = await tokenResponse.json();
-    console.log('🎯 OAuth tokens received:', { 
+    console.log('🎯 OAuth tokens received:', {
       access_token: tokens.access_token ? 'present' : 'missing',
-      refresh_token: tokens.refresh_token ? 'present' : 'missing'
+      refresh_token: tokens.refresh_token ? 'present' : 'missing',
     });
 
     // Hole Google Ads Account-Informationen mit der installierten google-ads-api
@@ -87,11 +92,13 @@ export async function GET(request: NextRequest) {
       currency: string;
       accountStatus: string;
     } | null = null;
-    
+
+    const availableAccounts: any[] = [];
+
     try {
       // WICHTIG: Google Ads API braucht speziellen Developer Token
       const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
-      
+
       if (!developerToken || developerToken === 'TEST_TOKEN') {
         console.warn('⚠️ No valid Google Ads Developer Token found. Using OAuth data only.');
         // Fallback: Nur OAuth-Informationen verwenden
@@ -99,14 +106,16 @@ export async function GET(request: NextRequest) {
           customerId: 'oauth-connected',
           accountName: 'Google Ads Account (OAuth Connected)',
           currency: 'EUR',
-          accountStatus: 'oauth_only'
+          accountStatus: 'oauth_only',
         };
       } else {
         // Verwende die installierte google-ads-api für bessere Integration
         const { GoogleAdsApi } = await import('google-ads-api');
-        
+
         const client = new GoogleAdsApi({
-          client_id: process.env.GOOGLE_CLIENT_ID || '1022290879475-tr7pp4pr7ildsd0s3sj4tnjir1apn8ch.apps.googleusercontent.com',
+          client_id:
+            process.env.GOOGLE_CLIENT_ID ||
+            '1022290879475-tr7pp4pr7ildsd0s3sj4tnjir1apn8ch.apps.googleusercontent.com',
           client_secret: process.env.GOOGLE_CLIENT_SECRET || 'GOCSPX-dummy',
           developer_token: developerToken,
         });
@@ -126,51 +135,77 @@ export async function GET(request: NextRequest) {
               customerId: `oauth-${Date.now()}`, // Eindeutige ID generieren
               accountName: 'Google Account (OAuth Connected)',
               currency: 'EUR',
-              accountStatus: 'oauth_ready'
+              accountStatus: 'oauth_ready',
             };
             console.log('📊 OAuth-only connection created:', accountInfo);
           } else {
             // Mit Developer Token - versuche Google Ads API
-            const accessibleCustomersResponse = await fetch('https://googleads.googleapis.com/v16/customers:listAccessibleCustomers', {
-              headers: {
-                'Authorization': `Bearer ${tokens.access_token}`,
-                'developer-token': developerToken,
-                'Content-Type': 'application/json',
-              },
-            });
+            const accessibleCustomersResponse = await fetch(
+              'https://googleads.googleapis.com/v16/customers:listAccessibleCustomers',
+              {
+                headers: {
+                  Authorization: `Bearer ${tokens.access_token}`,
+                  'developer-token': developerToken,
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
 
             if (accessibleCustomersResponse.ok) {
               const accessibleData = await accessibleCustomersResponse.json();
               console.log('📊 Accessible customers:', accessibleData);
-              
-              if (accessibleData.resourceNames && accessibleData.resourceNames.length > 0) {
-                const customerId = accessibleData.resourceNames[0].replace('customers/', '');
-                
-                // Hole detaillierte Account-Informationen
-                const accountResponse = await fetch(`https://googleads.googleapis.com/v16/customers/${customerId}`, {
-                  headers: {
-                    'Authorization': `Bearer ${tokens.access_token}`,
-                    'developer-token': developerToken,
-                    'Content-Type': 'application/json',
-                  },
-                });
 
-                if (accountResponse.ok) {
-                  const accountData = await accountResponse.json();
+              if (accessibleData.resourceNames && accessibleData.resourceNames.length > 0) {
+                // Fetch details for ALL accessible accounts
+                for (const resourceName of accessibleData.resourceNames) {
+                  const customerId = resourceName.replace('customers/', '');
+                  try {
+                    const accountResponse = await fetch(
+                      `https://googleads.googleapis.com/v16/customers/${customerId}`,
+                      {
+                        headers: {
+                          Authorization: `Bearer ${tokens.access_token}`,
+                          'developer-token': developerToken,
+                          'Content-Type': 'application/json',
+                        },
+                      }
+                    );
+
+                    if (accountResponse.ok) {
+                      const accountData = await accountResponse.json();
+                      availableAccounts.push({
+                        customerId: customerId,
+                        accountName:
+                          accountData.descriptiveName || `Google Ads Account ${customerId}`,
+                        currency: accountData.currencyCode || 'EUR',
+                        accountStatus: accountData.status || 'ENABLED',
+                        isManager: accountData.manager || false,
+                      });
+                    }
+                  } catch (e) {
+                    console.warn(`Failed to fetch details for customer ${customerId}`, e);
+                  }
+                }
+
+                if (availableAccounts.length > 1) {
+                  // Multiple accounts found - require selection
                   accountInfo = {
-                    customerId: customerId,
-                    accountName: accountData.descriptiveName || `Google Ads Account ${customerId}`,
-                    currency: accountData.currencyCode || 'EUR',
-                    accountStatus: accountData.status || 'ENABLED'
+                    customerId: 'pending_selection',
+                    accountName: 'Multiple Accounts Found',
+                    currency: 'EUR',
+                    accountStatus: 'requires_selection',
                   };
-                  console.log('📊 Google Ads account details:', accountInfo);
+                } else if (availableAccounts.length === 1) {
+                  // Only one account - auto select
+                  accountInfo = availableAccounts[0];
                 } else {
-                  // Fallback mit Customer ID
+                  // No details fetched? Fallback to first ID
+                  const customerId = accessibleData.resourceNames[0].replace('customers/', '');
                   accountInfo = {
                     customerId: customerId,
                     accountName: `Google Ads Account ${customerId}`,
                     currency: 'EUR',
-                    accountStatus: 'api_connected'
+                    accountStatus: 'api_connected',
                   };
                 }
               } else {
@@ -179,11 +214,14 @@ export async function GET(request: NextRequest) {
                   customerId: `oauth-${Date.now()}`,
                   accountName: 'Google Account (OAuth Connected)',
                   currency: 'EUR',
-                  accountStatus: 'oauth_no_ads_accounts'
+                  accountStatus: 'oauth_no_ads_accounts',
                 };
               }
             } else {
-              console.warn('⚠️ Failed to list accessible customers:', await accessibleCustomersResponse.text());
+              console.warn(
+                '⚠️ Failed to list accessible customers:',
+                await accessibleCustomersResponse.text()
+              );
               throw new Error('API call failed');
             }
           }
@@ -191,9 +229,9 @@ export async function GET(request: NextRequest) {
           console.warn('⚠️ Google Ads API call failed, using OAuth fallback:', apiError);
           accountInfo = {
             customerId: 'oauth-connected',
-            accountName: 'Google Ads Account (OAuth Connected)', 
+            accountName: 'Google Ads Account (OAuth Connected)',
             currency: 'EUR',
-            accountStatus: 'oauth_fallback'
+            accountStatus: 'oauth_fallback',
           };
         }
       }
@@ -204,14 +242,15 @@ export async function GET(request: NextRequest) {
         customerId: 'oauth-connected',
         accountName: 'Google Ads Account (OAuth Connected)',
         currency: 'EUR',
-        accountStatus: 'oauth_fallback'
+        accountStatus: 'oauth_fallback',
       };
     }
 
     // Speichere echte OAuth-Verbindung in Firestore mit Admin SDK (umgeht Firestore Rules)
-    const connectionData = {
+    const connectionData: any = {
       platform: 'google-ads',
-      status: 'connected',
+      status:
+        accountInfo?.accountStatus === 'requires_selection' ? 'requires_selection' : 'connected',
       customerId: accountInfo?.customerId || 'unknown',
       accountName: accountInfo?.accountName || 'Google Ads Account',
       currency: accountInfo?.currency || 'EUR',
@@ -225,13 +264,17 @@ export async function GET(request: NextRequest) {
         scope: tokens.scope,
         token_type: tokens.token_type,
       },
-      // WICHTIG: Echte OAuth-Verbindung  
+      // WICHTIG: Echte OAuth-Verbindung
       isRealConnection: true,
       authMethod: 'oauth',
       managerApproved: true, // OAuth = User hat explizit zugestimmt
       apiAccess: accountInfo?.accountStatus === 'oauth_only' ? false : true,
       developerTokenConfigured: process.env.GOOGLE_ADS_DEVELOPER_TOKEN ? true : false,
     };
+
+    if (availableAccounts.length > 0) {
+      connectionData.availableAccounts = availableAccounts;
+    }
 
     // Verwende Firebase Admin SDK für server-side write (umgeht Firestore Security Rules)
     const db = admin.firestore();
@@ -246,29 +289,41 @@ export async function GET(request: NextRequest) {
     console.log('📍 Saved to path: companies/' + state + '/advertising_connections/google-ads');
 
     // Erfolgreiche Weiterleitung zurück zur App
-    return NextResponse.redirect(
-      `${baseUrl}/dashboard/company/${state}/taskilo-advertising/google-ads?success=connected&account=${accountInfo?.customerId || 'unknown'}`
+    const redirectUrl = new URL(
+      `${baseUrl}/dashboard/company/${state}/taskilo-advertising/google-ads`
     );
+    redirectUrl.searchParams.set('success', 'connected');
+    redirectUrl.searchParams.set('account', accountInfo?.customerId || 'unknown');
 
+    if (accountInfo?.accountStatus === 'requires_selection') {
+      redirectUrl.searchParams.set('selection_required', 'true');
+    }
+
+    return NextResponse.redirect(redirectUrl.toString());
   } catch (error) {
     console.error('❌ Google Ads OAuth callback failed:', error);
     const { searchParams } = new URL(request.url);
     const state = searchParams.get('state');
-    const baseUrl = process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:3000' 
-      : (process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://taskilo.de');
-    
+    const baseUrl =
+      process.env.NODE_ENV === 'development'
+        ? 'http://localhost:3000'
+        : process.env.NEXT_PUBLIC_BASE_URL ||
+          process.env.NEXT_PUBLIC_APP_URL ||
+          'https://taskilo.de';
+
     // Spezifische Error-Behandlung für häufige Probleme
-    const errorType = error instanceof Error && error.message.includes('PERMISSION_DENIED') 
-      ? 'firestore_permission' 
-      : 'callback_failed';
-    
-    const errorMessage = error instanceof Error && error.message.includes('PERMISSION_DENIED')
-      ? 'Company access denied - check Firestore permissions'
-      : 'OAuth callback processing failed';
-      
+    const errorType =
+      error instanceof Error && error.message.includes('PERMISSION_DENIED')
+        ? 'firestore_permission'
+        : 'callback_failed';
+
+    const errorMessage =
+      error instanceof Error && error.message.includes('PERMISSION_DENIED')
+        ? 'Company access denied - check Firestore permissions'
+        : 'OAuth callback processing failed';
+
     console.error(`❌ Error details: ${errorType} - ${errorMessage}`);
-    
+
     return NextResponse.redirect(
       `${baseUrl}/dashboard/company/${state || 'unknown'}/taskilo-advertising/google-ads?error=${errorType}&message=${encodeURIComponent(errorMessage)}`
     );

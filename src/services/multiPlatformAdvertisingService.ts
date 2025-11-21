@@ -10,6 +10,7 @@ import {
   MultiPlatformApiResponse,
   UnifiedMetrics,
 } from '@/types/advertising';
+import { db } from '@/firebase/server';
 
 // Platform-spezifische Services
 import { GoogleAdsClientService } from './googleAdsClientService';
@@ -632,12 +633,105 @@ export class MultiPlatformAdvertisingService {
     return { success: true, data: { summary: {}, campaignCount: 0, dailyData: [] } };
   }
 
-  // Campaign creation methods (TO BE IMPLEMENTED)
+  // Campaign creation methods
   private async createGoogleAdsCampaign(
     companyId: string,
     campaignData: any
   ): Promise<MultiPlatformApiResponse<{ campaignId: string }>> {
-    return { success: true, data: { campaignId: 'google-test-campaign' } };
+    try {
+      if (!db) {
+        throw new Error('Firebase Admin not initialized');
+      }
+
+      // 1. Get Credentials from Firestore (New Architecture)
+      const docRef = db
+        .collection('companies')
+        .doc(companyId)
+        .collection('advertising_connections')
+        .doc('google-ads');
+      const docSnap = await docRef.get();
+
+      if (!docSnap.exists) {
+        return {
+          success: false,
+          error: {
+            code: 'NO_CONNECTION',
+            message: 'Google Ads not connected',
+            platform: 'google-ads',
+          },
+        };
+      }
+
+      const data = docSnap.data();
+      const refreshToken = data?.oauth?.refresh_token || data?.refreshToken || data?.refresh_token;
+      const customerId = data?.customerId;
+
+      if (!refreshToken) {
+        return {
+          success: false,
+          error: {
+            code: 'NO_TOKEN',
+            message: 'No refresh token available',
+            platform: 'google-ads',
+          },
+        };
+      }
+
+      // 2. Validate Customer ID
+      if (
+        !customerId ||
+        customerId === 'oauth-connected' ||
+        customerId === 'pending_selection' ||
+        customerId.startsWith('oauth-')
+      ) {
+        return {
+          success: false,
+          error: {
+            code: 'INVALID_CUSTOMER_ID',
+            message:
+              'Invalid or missing Google Ads Customer ID. Please select an account in settings.',
+            platform: 'google-ads',
+          },
+        };
+      }
+
+      // 3. Create Campaign
+      const result = await this.googleAdsService.createCampaign(refreshToken, customerId, {
+        name: campaignData.name,
+        budgetAmountMicros: campaignData.budget?.amount
+          ? campaignData.budget.amount * 1000000
+          : 10000000, // Default 10 EUR
+        advertisingChannelType: 'SEARCH', // Default
+        biddingStrategyType: 'MAXIMIZE_CLICKS', // Default
+        startDate: campaignData.startDate,
+        endDate: campaignData.endDate,
+      });
+
+      if (result.success && result.data) {
+        return {
+          success: true,
+          data: { campaignId: result.data.campaignId },
+        };
+      } else {
+        return {
+          success: false,
+          error: {
+            code: result.error?.code || 'CREATION_FAILED',
+            message: result.error?.message || 'Failed to create campaign',
+            platform: 'google-ads',
+          },
+        };
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: error.message || 'Internal error during campaign creation',
+          platform: 'google-ads',
+        },
+      };
+    }
   }
 
   private async createLinkedInCampaign(

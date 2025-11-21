@@ -12,12 +12,12 @@ Fügen Sie diese URIs in der Google Cloud Console hinzu:
 
 **Development:**
 ```
-http://localhost:3000/api/multi-platform-advertising/auth/google-ads/callback
+http://localhost:3000/api/google-ads/callback
 ```
 
 **Production:**
 ```
-https://taskilo.de/api/multi-platform-advertising/auth/google-ads/callback
+https://taskilo.de/api/google-ads/callback
 ```
 
 ### 3. OAuth Scopes

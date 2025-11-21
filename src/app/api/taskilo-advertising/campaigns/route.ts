@@ -18,12 +18,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
     }
 
-    // Hole Google Ads Konfiguration aus Firestore
+    // Hole Google Ads Konfiguration aus Firestore (New Architecture)
     const googleAdsSnap = await db
-      .collection('users')
+      .collection('companies')
       .doc(companyId)
-      .collection('integrations')
-      .doc('googleAds')
+      .collection('advertising_connections')
+      .doc('google-ads')
       .get();
 
     if (!googleAdsSnap.exists) {
@@ -44,32 +44,34 @@ export async function GET(request: NextRequest) {
     }
 
     const data = googleAdsSnap.data();
-    const accountConfig = data?.accountConfig;
+    // Support both old and new structure
+    const refreshToken = data?.oauth?.refresh_token || data?.refreshToken || data?.refresh_token;
+    const customerId = data?.customerId;
 
-    if (!accountConfig?.refreshToken) {
+    if (!refreshToken) {
       return NextResponse.json(
-        { error: 'Advertising-Verbindung nicht verfügbar' },
+        { error: 'Advertising-Verbindung nicht verfügbar (Kein Token)' },
         { status: 400 }
       );
     }
 
-    // Hole verfügbare Customer IDs
-    const customersResponse = await googleAdsClientService.getAccessibleCustomers(
-      accountConfig.refreshToken
-    );
-
-    if (!customersResponse.success || !customersResponse.data?.length) {
-      return NextResponse.json({ error: 'Keine Advertising-Accounts verfügbar' }, { status: 400 });
+    if (
+      !customerId ||
+      customerId === 'oauth-connected' ||
+      customerId === 'pending_selection' ||
+      customerId.startsWith('oauth-')
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'Kein Google Ads Account ausgewählt. Bitte wählen Sie einen Account in den Einstellungen.',
+        },
+        { status: 400 }
+      );
     }
 
-    // Verwende ersten verfügbaren Account
-    const customerId = customersResponse.data[0].id;
-
     // Hole Kampagnen über bestehenden Service
-    const campaignsResponse = await googleAdsClientService.getCampaigns(
-      accountConfig.refreshToken,
-      customerId
-    );
+    const campaignsResponse = await googleAdsClientService.getCampaigns(refreshToken, customerId);
 
     if (!campaignsResponse.success) {
       return NextResponse.json(
@@ -131,7 +133,7 @@ export async function GET(request: NextRequest) {
         totalCampaigns: enhancedCampaigns.length,
         account: {
           id: customerId,
-          name: customersResponse.data[0].name,
+          name: `Account ${customerId}`,
         },
         summary: {
           active: enhancedCampaigns.filter((c: any) => c.status === 'ENABLED').length,
@@ -184,12 +186,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hole Google Ads Konfiguration
+    // Hole Google Ads Konfiguration (New Architecture)
     const googleAdsSnap = await db
-      .collection('users')
+      .collection('companies')
       .doc(companyId)
-      .collection('integrations')
-      .doc('googleAds')
+      .collection('advertising_connections')
+      .doc('google-ads')
       .get();
 
     if (!googleAdsSnap.exists) {
@@ -197,25 +199,30 @@ export async function POST(request: NextRequest) {
     }
 
     const data = googleAdsSnap.data();
-    const accountConfig = data?.accountConfig;
+    const refreshToken = data?.oauth?.refresh_token || data?.refreshToken || data?.refresh_token;
+    const customerId = data?.customerId;
 
-    if (!accountConfig?.refreshToken) {
+    if (!refreshToken) {
       return NextResponse.json(
         { error: 'Advertising-Verbindung nicht verfügbar' },
         { status: 400 }
       );
     }
 
-    // Hole Customer ID
-    const customersResponse = await googleAdsClientService.getAccessibleCustomers(
-      accountConfig.refreshToken
-    );
-
-    if (!customersResponse.success || !customersResponse.data?.length) {
-      return NextResponse.json({ error: 'Keine Advertising-Accounts verfügbar' }, { status: 400 });
+    if (
+      !customerId ||
+      customerId === 'oauth-connected' ||
+      customerId === 'pending_selection' ||
+      customerId.startsWith('oauth-')
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'Kein Google Ads Account ausgewählt. Bitte wählen Sie einen Account in den Einstellungen.',
+        },
+        { status: 400 }
+      );
     }
-
-    const customerId = customersResponse.data[0].id;
 
     // Erstelle Kampagne über bestehenden Service
     const campaignData = {
@@ -231,7 +238,7 @@ export async function POST(request: NextRequest) {
     };
 
     const createResponse = await googleAdsClientService.createCampaign(
-      accountConfig.refreshToken,
+      refreshToken,
       customerId,
       campaignData
     );
