@@ -43,7 +43,9 @@ service firebase.storage {
                request.resource.contentType.matches('image/jpeg') ||
                request.resource.contentType.matches('image/jpg') ||
                request.resource.contentType.matches('image/png') ||
-               request.resource.contentType.matches('image/gif')
+               request.resource.contentType.matches('image/gif') ||
+               request.resource.contentType.matches('image/heic') ||
+               request.resource.contentType.matches('image/heif')
              );
     }
 
