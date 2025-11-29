@@ -1,17 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { ApplicantProfile } from '@/types/career';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from '@/components/ui/form';
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -32,7 +26,198 @@ const COUNTRIES = [
   'Österreich',
   'Schweiz',
   // ... (rest of the countries can be imported or kept short for now, or passed as props if needed, but for now I'll include the main ones and maybe a full list if I can find where it is defined or just copy it)
-  'Afghanistan', 'Ägypten', 'Albanien', 'Algerien', 'Andorra', 'Angola', 'Antigua und Barbuda', 'Äquatorialguinea', 'Argentinien', 'Armenien', 'Aserbaidschan', 'Äthiopien', 'Australien', 'Bahamas', 'Bahrain', 'Bangladesch', 'Barbados', 'Belgien', 'Belize', 'Benin', 'Bhutan', 'Bolivien', 'Bosnien und Herzegowina', 'Botswana', 'Brasilien', 'Brunei', 'Bulgarien', 'Burkina Faso', 'Burundi', 'Chile', 'China', 'Costa Rica', 'Dänemark', 'Dominica', 'Dominikanische Republik', 'Dschibuti', 'Ecuador', 'El Salvador', 'Elfenbeinküste', 'Eritrea', 'Estland', 'Eswatini', 'Fidschi', 'Finnland', 'Frankreich', 'Gabun', 'Gambia', 'Georgien', 'Ghana', 'Grenada', 'Griechenland', 'Großbritannien', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 'Haiti', 'Honduras', 'Indien', 'Indonesien', 'Irak', 'Iran', 'Irland', 'Island', 'Israel', 'Italien', 'Jamaika', 'Japan', 'Jemen', 'Jordanien', 'Kambodscha', 'Kamerun', 'Kanada', 'Kap Verde', 'Kasachstan', 'Katar', 'Kenia', 'Kirgisistan', 'Kiribati', 'Kolumbien', 'Komoren', 'Kongo (Demokratische Republik)', 'Kongo (Republik)', 'Korea (Nord)', 'Korea (Süd)', 'Kosovo', 'Kroatien', 'Kuba', 'Kuwait', 'Laos', 'Lesotho', 'Lettland', 'Libanon', 'Liberia', 'Libyen', 'Liechtenstein', 'Litauen', 'Luxemburg', 'Madagaskar', 'Malawi', 'Malaysia', 'Malediven', 'Mali', 'Malta', 'Marokko', 'Marshallinseln', 'Mauretanien', 'Mauritius', 'Mexiko', 'Mikronesien', 'Moldawien', 'Monaco', 'Mongolei', 'Montenegro', 'Mosambik', 'Myanmar', 'Namibia', 'Nauru', 'Nepal', 'Neuseeland', 'Nicaragua', 'Niederlande', 'Niger', 'Nigeria', 'Nordmazedonien', 'Norwegen', 'Oman', 'Pakistan', 'Palau', 'Panama', 'Papua-Neuguinea', 'Paraguay', 'Peru', 'Philippinen', 'Polen', 'Portugal', 'Ruanda', 'Rumänien', 'Russland', 'Salomonen', 'Sambia', 'Samoa', 'San Marino', 'São Tomé und Príncipe', 'Saudi-Arabien', 'Schweden', 'Senegal', 'Serbien', 'Seychellen', 'Sierra Leone', 'Simbabwe', 'Singapur', 'Slowakei', 'Slowenien', 'Somalia', 'Spanien', 'Sri Lanka', 'St. Kitts und Nevis', 'St. Lucia', 'St. Vincent und die Grenadinen', 'Südafrika', 'Sudan', 'Südsudan', 'Suriname', 'Syrien', 'Tadschikistan', 'Tansania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad und Tobago', 'Tschad', 'Tschechien', 'Tunesien', 'Türkei', 'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 'Ungarn', 'Uruguay', 'USA', 'Usbekistan', 'Vanuatu', 'Vatikanstadt', 'Venezuela', 'Vereinigte Arabische Emirate', 'Vietnam', 'Weißrussland', 'Zentralafrikanische Republik', 'Zypern'
+  'Afghanistan',
+  'Ägypten',
+  'Albanien',
+  'Algerien',
+  'Andorra',
+  'Angola',
+  'Antigua und Barbuda',
+  'Äquatorialguinea',
+  'Argentinien',
+  'Armenien',
+  'Aserbaidschan',
+  'Äthiopien',
+  'Australien',
+  'Bahamas',
+  'Bahrain',
+  'Bangladesch',
+  'Barbados',
+  'Belgien',
+  'Belize',
+  'Benin',
+  'Bhutan',
+  'Bolivien',
+  'Bosnien und Herzegowina',
+  'Botswana',
+  'Brasilien',
+  'Brunei',
+  'Bulgarien',
+  'Burkina Faso',
+  'Burundi',
+  'Chile',
+  'China',
+  'Costa Rica',
+  'Dänemark',
+  'Dominica',
+  'Dominikanische Republik',
+  'Dschibuti',
+  'Ecuador',
+  'El Salvador',
+  'Elfenbeinküste',
+  'Eritrea',
+  'Estland',
+  'Eswatini',
+  'Fidschi',
+  'Finnland',
+  'Frankreich',
+  'Gabun',
+  'Gambia',
+  'Georgien',
+  'Ghana',
+  'Grenada',
+  'Griechenland',
+  'Großbritannien',
+  'Guatemala',
+  'Guinea',
+  'Guinea-Bissau',
+  'Guyana',
+  'Haiti',
+  'Honduras',
+  'Indien',
+  'Indonesien',
+  'Irak',
+  'Iran',
+  'Irland',
+  'Island',
+  'Israel',
+  'Italien',
+  'Jamaika',
+  'Japan',
+  'Jemen',
+  'Jordanien',
+  'Kambodscha',
+  'Kamerun',
+  'Kanada',
+  'Kap Verde',
+  'Kasachstan',
+  'Katar',
+  'Kenia',
+  'Kirgisistan',
+  'Kiribati',
+  'Kolumbien',
+  'Komoren',
+  'Kongo (Demokratische Republik)',
+  'Kongo (Republik)',
+  'Korea (Nord)',
+  'Korea (Süd)',
+  'Kosovo',
+  'Kroatien',
+  'Kuba',
+  'Kuwait',
+  'Laos',
+  'Lesotho',
+  'Lettland',
+  'Libanon',
+  'Liberia',
+  'Libyen',
+  'Liechtenstein',
+  'Litauen',
+  'Luxemburg',
+  'Madagaskar',
+  'Malawi',
+  'Malaysia',
+  'Malediven',
+  'Mali',
+  'Malta',
+  'Marokko',
+  'Marshallinseln',
+  'Mauretanien',
+  'Mauritius',
+  'Mexiko',
+  'Mikronesien',
+  'Moldawien',
+  'Monaco',
+  'Mongolei',
+  'Montenegro',
+  'Mosambik',
+  'Myanmar',
+  'Namibia',
+  'Nauru',
+  'Nepal',
+  'Neuseeland',
+  'Nicaragua',
+  'Niederlande',
+  'Niger',
+  'Nigeria',
+  'Nordmazedonien',
+  'Norwegen',
+  'Oman',
+  'Pakistan',
+  'Palau',
+  'Panama',
+  'Papua-Neuguinea',
+  'Paraguay',
+  'Peru',
+  'Philippinen',
+  'Polen',
+  'Portugal',
+  'Ruanda',
+  'Rumänien',
+  'Russland',
+  'Salomonen',
+  'Sambia',
+  'Samoa',
+  'San Marino',
+  'São Tomé und Príncipe',
+  'Saudi-Arabien',
+  'Schweden',
+  'Senegal',
+  'Serbien',
+  'Seychellen',
+  'Sierra Leone',
+  'Simbabwe',
+  'Singapur',
+  'Slowakei',
+  'Slowenien',
+  'Somalia',
+  'Spanien',
+  'Sri Lanka',
+  'St. Kitts und Nevis',
+  'St. Lucia',
+  'St. Vincent und die Grenadinen',
+  'Südafrika',
+  'Sudan',
+  'Südsudan',
+  'Suriname',
+  'Syrien',
+  'Tadschikistan',
+  'Tansania',
+  'Thailand',
+  'Timor-Leste',
+  'Togo',
+  'Tonga',
+  'Trinidad und Tobago',
+  'Tschad',
+  'Tschechien',
+  'Tunesien',
+  'Türkei',
+  'Turkmenistan',
+  'Tuvalu',
+  'Uganda',
+  'Ukraine',
+  'Ungarn',
+  'Uruguay',
+  'USA',
+  'Usbekistan',
+  'Vanuatu',
+  'Vatikanstadt',
+  'Venezuela',
+  'Vereinigte Arabische Emirate',
+  'Vietnam',
+  'Weißrussland',
+  'Zentralafrikanische Republik',
+  'Zypern',
 ];
 
 interface PersonalSectionProps {
@@ -46,39 +231,23 @@ export function PersonalSection({ form, onSave, isSubmitting }: PersonalSectionP
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Date parts state
-  const [birthDay, setBirthDay] = useState('');
-  const [birthMonth, setBirthMonth] = useState('');
-  const [birthYear, setBirthYear] = useState('');
 
-  const birthDate = form.watch('birthDate');
   const userId = form.watch('userId');
+  const birthDate = form.watch('birthDate');
 
-  // Initialize date parts from form value
-  useEffect(() => {
-    if (birthDate) {
-      const date = new Date(birthDate);
-      if (!isNaN(date.getTime())) {
-        setBirthDay(date.getDate().toString());
-        setBirthMonth((date.getMonth() + 1).toString());
-        setBirthYear(date.getFullYear().toString());
-      }
-    }
-  }, [birthDate]);
+  // Parse birthDate for display
+  let birthDay = '';
+  let birthMonth = '';
+  let birthYear = '';
 
-  // Update form value when parts change
-  useEffect(() => {
-    if (birthDay && birthMonth && birthYear) {
-      const d = birthDay.padStart(2, '0');
-      const m = birthMonth.padStart(2, '0');
-      const y = birthYear;
-      const newDate = `${y}-${m}-${d}`;
-      if (newDate !== birthDate) {
-        form.setValue('birthDate', newDate, { shouldDirty: true });
-      }
+  if (birthDate) {
+    const parts = birthDate.split('-');
+    if (parts.length === 3) {
+      birthYear = parts[0];
+      birthMonth = parts[1];
+      birthDay = parts[2];
     }
-  }, [birthDay, birthMonth, birthYear, form, birthDate]);
+  }
 
   const toggleEdit = () => {
     if (isEditing) {
@@ -102,7 +271,8 @@ export function PersonalSection({ form, onSave, isSubmitting }: PersonalSectionP
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) { // 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      // 5MB
       toast.error('Die Datei darf maximal 5MB groß sein.');
       return;
     }
@@ -112,7 +282,7 @@ export function PersonalSection({ form, onSave, isSubmitting }: PersonalSectionP
       const storageRef = ref(storage, `users/${userId}/profile_picture/${file.name}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
-      
+
       form.setValue('profilePictureUrl', downloadURL, { shouldDirty: true });
       toast.success('Profilbild erfolgreich hochgeladen');
     } catch (error) {
@@ -155,12 +325,7 @@ export function PersonalSection({ form, onSave, isSubmitting }: PersonalSectionP
             {/* Left: Photo */}
             <div className="w-32 h-32 shrink-0 relative bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
               {profilePictureUrl ? (
-                <Image
-                  src={profilePictureUrl}
-                  alt="Profile"
-                  fill
-                  className="object-cover"
-                />
+                <Image src={profilePictureUrl} alt="Profile" fill className="object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-400">
                   <User className="w-12 h-12" />
@@ -169,16 +334,16 @@ export function PersonalSection({ form, onSave, isSubmitting }: PersonalSectionP
             </div>
 
             {/* Right: Details Grid */}
-            <div className="flex-1 grid grid-cols-1 gap-y-4">
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
               {/* Anrede */}
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Anrede</div>
-                <div className="font-medium">{form.watch('salutation')}</div>
+                <div className="font-medium">{form.watch('salutation') || '-'}</div>
               </div>
 
               {/* Vorname / Name */}
               <div>
-                <div className="text-sm text-muted-foreground mb-1">Vorname* / Name*</div>
+                <div className="text-sm text-muted-foreground mb-1">Vorname / Name</div>
                 <div className="font-medium">
                   {firstName} {lastName}
                 </div>
@@ -187,28 +352,22 @@ export function PersonalSection({ form, onSave, isSubmitting }: PersonalSectionP
               {/* Geburtsdatum */}
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Geburtsdatum</div>
-                <div className="flex gap-2 font-medium">
-                  <div className="bg-gray-50 border rounded px-3 py-1 min-w-12 text-center">
-                    {birthDay || '--'}
-                  </div>
-                  <div className="bg-gray-50 border rounded px-3 py-1 min-w-12 text-center">
-                    {birthMonth || '--'}
-                  </div>
-                  <div className="bg-gray-50 border rounded px-3 py-1 min-w-16 text-center">
-                    {birthYear || '----'}
-                  </div>
+                <div className="font-medium">
+                  {birthDay && birthMonth && birthYear
+                    ? `${birthDay}.${birthMonth}.${birthYear}`
+                    : '-'}
                 </div>
               </div>
 
               {/* Straße / Nr. */}
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Straße / Nr.</div>
-                <div className="font-medium">{street}</div>
+                <div className="font-medium">{street || '-'}</div>
               </div>
 
               {/* PLZ / Ort */}
               <div>
-                <div className="text-sm text-muted-foreground mb-1">PLZ / Ort*</div>
+                <div className="text-sm text-muted-foreground mb-1">PLZ / Ort</div>
                 <div className="font-medium">
                   {zip} {city}
                 </div>
@@ -216,20 +375,20 @@ export function PersonalSection({ form, onSave, isSubmitting }: PersonalSectionP
 
               {/* Land */}
               <div>
-                <div className="text-sm text-muted-foreground mb-1">Land*</div>
-                <div className="font-medium">{form.watch('country')}</div>
+                <div className="text-sm text-muted-foreground mb-1">Land</div>
+                <div className="font-medium">{form.watch('country') || '-'}</div>
               </div>
 
               {/* E-Mail */}
               <div>
-                <div className="text-sm text-muted-foreground mb-1">E-Mail*</div>
+                <div className="text-sm text-muted-foreground mb-1">E-Mail</div>
                 <div className="font-medium">{email}</div>
               </div>
 
               {/* Telefon */}
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Telefon</div>
-                <div className="font-medium">{form.watch('phone')}</div>
+                <div className="font-medium">{form.watch('phone') || '-'}</div>
               </div>
             </div>
           </div>
@@ -242,12 +401,7 @@ export function PersonalSection({ form, onSave, isSubmitting }: PersonalSectionP
                 {isUploading ? (
                   <Loader2 className="w-10 h-10 animate-spin text-teal-600" />
                 ) : profilePictureUrl ? (
-                  <Image
-                    src={profilePictureUrl}
-                    alt="Profile"
-                    fill
-                    className="object-cover"
-                  />
+                  <Image src={profilePictureUrl} alt="Profile" fill className="object-cover" />
                 ) : (
                   <User className="w-20 h-20 text-gray-400" />
                 )}
@@ -259,10 +413,10 @@ export function PersonalSection({ form, onSave, isSubmitting }: PersonalSectionP
                 accept="image/jpeg,image/png"
                 onChange={handleFileChange}
               />
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full max-w-48" 
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full max-w-48"
                 type="button"
                 onClick={handleUploadClick}
                 disabled={isUploading}
@@ -340,31 +494,62 @@ export function PersonalSection({ form, onSave, isSubmitting }: PersonalSectionP
               {/* Geburtsdatum */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
                 <FormLabel className="md:text-right">Geburtsdatum</FormLabel>
-                <div className="md:col-span-3 flex gap-2 items-center">
-                  <Input
-                    className="w-16 text-center"
-                    placeholder="TT"
-                    value={birthDay}
-                    onChange={e => setBirthDay(e.target.value)}
-                    maxLength={2}
+                <div className="md:col-span-3">
+                  <FormField
+                    control={form.control}
+                    name="birthDate"
+                    render={({ field }) => {
+                      const [year, month, day] = (field.value || '').split('-');
+                      return (
+                        <FormItem>
+                          <div className="flex gap-2 items-center">
+                            <Input
+                              placeholder="TT"
+                              className="w-16 text-center"
+                              maxLength={2}
+                              value={day || ''}
+                              onChange={e => {
+                                const newDay = e.target.value;
+                                const currentYear = year || '';
+                                const currentMonth = month || '';
+                                field.onChange(`${currentYear}-${currentMonth}-${newDay}`);
+                              }}
+                            />
+                            <span className="text-gray-400">.</span>
+                            <Input
+                              placeholder="MM"
+                              className="w-16 text-center"
+                              maxLength={2}
+                              value={month || ''}
+                              onChange={e => {
+                                const newMonth = e.target.value;
+                                const currentYear = year || '';
+                                const currentDay = day || '';
+                                field.onChange(`${currentYear}-${newMonth}-${currentDay}`);
+                              }}
+                            />
+                            <span className="text-gray-400">.</span>
+                            <Input
+                              placeholder="JJJJ"
+                              className="w-24 text-center"
+                              maxLength={4}
+                              value={year || ''}
+                              onChange={e => {
+                                const newYear = e.target.value;
+                                const currentMonth = month || '';
+                                const currentDay = day || '';
+                                field.onChange(`${newYear}-${currentMonth}-${currentDay}`);
+                              }}
+                            />
+                            <span className="text-xs text-muted-foreground ml-2">
+                              (Tag.Monat.Jahr)
+                            </span>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
                   />
-                  <span className="text-gray-400">.</span>
-                  <Input
-                    className="w-16 text-center"
-                    placeholder="MM"
-                    value={birthMonth}
-                    onChange={e => setBirthMonth(e.target.value)}
-                    maxLength={2}
-                  />
-                  <span className="text-gray-400">.</span>
-                  <Input
-                    className="w-24 text-center"
-                    placeholder="JJJJ"
-                    value={birthYear}
-                    onChange={e => setBirthYear(e.target.value)}
-                    maxLength={4}
-                  />
-                  <span className="text-xs text-muted-foreground ml-2">(Tag.Monat.Jahr)</span>
                 </div>
               </div>
 
@@ -491,6 +676,27 @@ export function PersonalSection({ form, onSave, isSubmitting }: PersonalSectionP
                     eine Kontaktanfrage akzeptieren.
                   </p>
                 </div>
+              </div>
+
+              <div className="flex justify-end gap-4 mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditing(false)}
+                  disabled={isSubmitting}
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  onClick={() => {
+                    onSave();
+                    setIsEditing(false);
+                  }}
+                  disabled={isSubmitting}
+                  className="bg-teal-600 hover:bg-teal-700 text-white"
+                >
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Speichern
+                </Button>
               </div>
             </div>
           </div>
