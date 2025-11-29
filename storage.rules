@@ -246,6 +246,13 @@ service firebase.storage {
                       (isDelete() || (isUpload() && isValidDocumentType()));
     }
 
+    // User Certificates - Benutzer können ihre Zertifikate hochladen (für Experience Section)
+    match /users/{userId}/certificates/{fileName} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isSupportStaff());
+      allow write: if request.auth != null && request.auth.uid == userId &&
+                      (isDelete() || (isUpload() && isValidDocumentType()));
+    }
+
     // User Profile Pictures - Benutzer können ihre Profilbilder hochladen
     match /users/{userId}/profile_picture/{fileName} {
       allow read: if true; // Öffentlich lesbar für Profilanzeige
