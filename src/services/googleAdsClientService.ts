@@ -399,190 +399,35 @@ class GoogleAdsClientService {
               data: customerAccounts,
             };
           }
+          
+          return {
+            success: false,
+            error: {
+              code: 'NO_ACCOUNTS_FOUND',
+              message: 'No Google Ads accounts found',
+            },
+          };
         }
-      } catch (clientLibraryError) {}
-
-      // STRATEGIE 2: REST API als Fallback
-
-      let accessToken;
-      try {
-        accessToken = await this.getValidAccessToken(refreshToken);
-      } catch (tokenError: any) {
+      } catch (clientLibraryError: any) {
         return {
           success: false,
           error: {
-            code: 'TOKEN_ERROR',
-            message: 'Failed to get valid access token',
-            details: { originalError: tokenError.message },
+            code: 'CLIENT_LIBRARY_ERROR',
+            message: clientLibraryError.message || 'Failed to fetch accessible customers',
+            details: {
+              originalError: clientLibraryError.message,
+              stack: clientLibraryError.stack,
+            },
           },
         };
       }
-
-      const listCustomersResponse = await fetch(
-        'https://googleads.googleapis.com/v17/customers:listAccessibleCustomers',
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'developer-token': this.config.developer_token!,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (listCustomersResponse.status === 404) {
-        // Fallback: Erstelle einen Dummy-Account für Testzwecke
-        return {
-          success: true,
-          data: [
-            {
-              id: 'no-google-ads-account',
-              name: 'No Google Ads Account Found',
-              currency: 'EUR',
-              timezone: 'Europe/Berlin',
-              status: 'ENABLED',
-              manager: false,
-              testAccount: true,
-              level: 0,
-            },
-          ],
-        };
-      }
-
-      if (!listCustomersResponse.ok) {
-        throw new Error(
-          `Failed to list accessible customers: ${listCustomersResponse.status} ${listCustomersResponse.statusText}`
-        );
-      }
-
-      const listData = await listCustomersResponse.json();
-
-      // Wenn keine Kunden gefunden, versuche alternative Methode
-      if (!listData.resourceNames || listData.resourceNames.length === 0) {
-        // Fallback: Versuche mit dem aktuellen Account selbst
-        const customer = this.client.Customer({
-          customer_id: managerCustomerId || '0', // Default customer ID
-          refresh_token: refreshToken,
-        });
-
-        // Versuche customer Info zu bekommen
-        const customerInfo = await customer.query(`
-          SELECT
-            customer.id,
-            customer.descriptive_name,
-            customer.currency_code,
-            customer.time_zone,
-            customer.status,
-            customer.manager,
-            customer.test_account
-          FROM customer
-          LIMIT 1
-        `);
-
-        if (customerInfo && customerInfo.length > 0) {
-          const info = customerInfo[0];
-          const formattedAccount: GoogleAdsAccount = {
-            id: String(info.customer?.id || 'default'),
-            name: info.customer?.descriptive_name || 'Main Account',
-            currency: info.customer?.currency_code || 'EUR',
-            timezone: info.customer?.time_zone || 'Europe/Berlin',
-            status: this.mapCustomerStatus(info.customer?.status) || 'ENABLED',
-            manager: info.customer?.manager || false,
-            testAccount: info.customer?.test_account || false,
-            level: 0,
-          };
-
-          return {
-            success: true,
-            data: [formattedAccount],
-          };
-        }
-      }
-
-      // Normale Verarbeitung der listAccessibleCustomers Response
-      const customerIds =
-        listData.resourceNames
-          ?.map((resourceName: string) => {
-            const match = resourceName.match(/customers\/(\d+)/);
-            return match ? match[1] : null;
-          })
-          .filter(Boolean) || [];
-
-      if (customerIds.length === 0) {
-        return {
-          success: true,
-          data: [
-            {
-              id: 'no-accounts-found',
-              name: 'No Google Ads Accounts Found',
-              currency: 'EUR',
-              timezone: 'Europe/Berlin',
-              status: 'ENABLED',
-              manager: false,
-              testAccount: true,
-              level: 0,
-            },
-          ],
-        };
-      }
-
-      // Hole Details für jeden Kunden
-      const formattedAccounts: GoogleAdsAccount[] = [];
-
-      // Erhöhe Limit auf 20, um alle Accounts zu sehen
-      for (const customerId of customerIds.slice(0, 20)) {
-        try {
-          const customer = this.client.Customer({
-            customer_id: customerId,
-            refresh_token: refreshToken,
-          });
-
-          const customerDetails = await customer.query(`
-            SELECT
-              customer.id,
-              customer.descriptive_name,
-              customer.currency_code,
-              customer.time_zone,
-              customer.status,
-              customer.manager,
-              customer.test_account
-            FROM customer
-            LIMIT 1
-          `);
-
-          if (customerDetails && customerDetails.length > 0) {
-            const details = customerDetails[0];
-            const rawId = String(details.customer?.id || customerId);
-
-            formattedAccounts.push({
-              id: rawId,
-              name: details.customer?.descriptive_name || `Google Ads-Konto`,
-              currency: details.customer?.currency_code || 'EUR',
-              timezone: details.customer?.time_zone || 'Europe/Berlin',
-              status: this.mapCustomerStatus(details.customer?.status) || 'ENABLED',
-              manager: details.customer?.manager || false,
-              testAccount: details.customer?.test_account || false,
-              level: 0,
-            });
-          }
-        } catch (customerError: any) {
-          // Fallback für Fehler (z.B. Test-Token Einschränkungen)
-          formattedAccounts.push({
-            id: customerId,
-            name: `Google Ads-Konto`,
-            currency: 'EUR',
-            timezone: 'Europe/Berlin',
-            status: 'UNKNOWN',
-            manager: false,
-            testAccount: false,
-            level: 0,
-          });
-        }
-      }
-
+      
       return {
-        success: true,
-        data: formattedAccounts,
+        success: false,
+        error: {
+          code: 'NO_RESPONSE',
+          message: 'No response from Google Ads API',
+        },
       };
     } catch (error: any) {
       return {
@@ -754,10 +599,14 @@ class GoogleAdsClientService {
       }
 
       // 🔒 SICHERHEITS-CHECK: Manager Account Verknüpfung prüfen
-      const MANAGER_ID = '578-822-9684';
-      const isLinked = await this.isLinkedToManager(refreshToken, customerId, MANAGER_ID);
+      const MANAGER_ID = '655-923-8498';
+      const linkCheck = await this.isLinkedToManager(refreshToken, customerId, MANAGER_ID);
 
-      if (!isLinked) {
+      if (!linkCheck.canVerify) {
+        // Kann nicht verifiziert werden (Test Token + Production Account)
+        console.warn(`⚠️ Cannot verify manager link: ${linkCheck.reason}`);
+        // Fahre fort mit Warnung - User muss manuell verifizieren
+      } else if (!linkCheck.linked) {
         throw new Error(
           `Account not linked to Taskilo Manager Account (${MANAGER_ID}). Please link your account to enable ad creation.`
         );
@@ -914,6 +763,11 @@ class GoogleAdsClientService {
           genders?: string[];
         };
       };
+      customerAcquisition?: {
+        enabled: boolean;
+        optimizationMode?: 'BID_HIGHER' | 'ONLY_NEW';
+        value?: number;
+      };
     }
   ): Promise<GoogleAdsApiResponse<{ campaignId: string; adGroupIds: string[] }>> {
     try {
@@ -931,10 +785,14 @@ class GoogleAdsClientService {
       }
 
       // 🔒 SICHERHEITS-CHECK: Manager Account Verknüpfung prüfen
-      const MANAGER_ID = '578-822-9684';
-      const isLinked = await this.isLinkedToManager(refreshToken, customerId, MANAGER_ID);
+      const MANAGER_ID = '655-923-8498';
+      const linkCheck = await this.isLinkedToManager(refreshToken, customerId, MANAGER_ID);
 
-      if (!isLinked) {
+      if (!linkCheck.canVerify) {
+        // Kann nicht verifiziert werden (Test Token + Production Account)
+        console.warn(`⚠️ Cannot verify manager link: ${linkCheck.reason}`);
+        // Fahre fort mit Warnung - User muss manuell verifizieren
+      } else if (!linkCheck.linked) {
         throw new Error(
           `Account not linked to Taskilo Manager Account (${MANAGER_ID}). Please link your account to enable ad creation.`
         );
@@ -1006,7 +864,13 @@ class GoogleAdsClientService {
               target_content_network: false,
               target_partner_search_network: false,
             },
-          },
+            // Customer Acquisition Settings
+            ...(campaignData.customerAcquisition?.enabled ? {
+               optimization_goal_setting: {
+                 optimization_goal_types: ['CUSTOMER_ACQUISITION']
+               }
+            } : {}),
+          } as any,
         ]);
 
         if (!campaignResult.results[0].resource_name) {
@@ -1405,467 +1269,21 @@ class GoogleAdsClientService {
     }
   }
 
-  // 🎯 ===== WHITE-LABEL EXTENSIONS START =====
-
-  /**
-   * 🎯 KEYWORD MANAGEMENT - White-Label Feature
-   */
-  async getKeywords(
-    refreshToken: string,
-    customerId: string,
-    adGroupId?: string
-  ): Promise<GoogleAdsApiResponse<any[]>> {
-    try {
-      const customer = this.client.Customer({
-        customer_id: customerId,
-        refresh_token: refreshToken,
-      });
-
-      let query = `
-        SELECT
-          ad_group_criterion.criterion_id,
-          ad_group_criterion.keyword.text,
-          ad_group_criterion.keyword.match_type,
-          ad_group_criterion.status,
-          ad_group_criterion.final_urls,
-          ad_group_criterion.cpc_bid_micros,
-          ad_group.id,
-          ad_group.name,
-          campaign.id,
-          campaign.name,
-          metrics.impressions,
-          metrics.clicks,
-          metrics.cost_micros,
-          metrics.conversions,
-          metrics.ctr,
-          metrics.average_cpc
-        FROM keyword_view
-        WHERE ad_group_criterion.type = KEYWORD
-        AND ad_group_criterion.status != REMOVED
-      `;
-
-      if (adGroupId) {
-        query += ` AND ad_group.id = ${adGroupId}`;
-      }
-
-      const result = await customer.query(query);
-
-      const keywords = result.map((row: any) => ({
-        id: String(row.ad_group_criterion?.criterion_id || ''),
-        text: row.ad_group_criterion?.keyword?.text || '',
-        matchType: row.ad_group_criterion?.keyword?.match_type || 'BROAD',
-        status: row.ad_group_criterion?.status || 'UNKNOWN',
-        finalUrl: row.ad_group_criterion?.final_urls?.[0] || '',
-        cpc: (row.ad_group_criterion?.cpc_bid_micros || 0) / 1000000,
-        adGroupId: String(row.ad_group?.id || ''),
-        adGroupName: row.ad_group?.name || '',
-        campaignId: String(row.campaign?.id || ''),
-        campaignName: row.campaign?.name || '',
-        metrics: {
-          impressions: row.metrics?.impressions || 0,
-          clicks: row.metrics?.clicks || 0,
-          cost: (row.metrics?.cost_micros || 0) / 1000000,
-          conversions: row.metrics?.conversions || 0,
-          ctr: row.metrics?.ctr || 0,
-          cpc: (row.metrics?.average_cpc || 0) / 1000000,
-        },
-      }));
-
-      return {
-        success: true,
-        data: keywords,
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        error: {
-          code: 'API_ERROR',
-          message: error.message || 'Failed to fetch keywords',
-        },
-      };
-    }
-  }
-
-  /**
-   * 🎯 AD MANAGEMENT - White-Label Feature
-   */
-  async getAds(
-    refreshToken: string,
-    customerId: string,
-    adGroupId?: string
-  ): Promise<GoogleAdsApiResponse<any[]>> {
-    try {
-      const customer = this.client.Customer({
-        customer_id: customerId,
-        refresh_token: refreshToken,
-      });
-
-      let query = `
-        SELECT
-          ad_group_ad.ad.id,
-          ad_group_ad.ad.type,
-          ad_group_ad.status,
-          ad_group_ad.ad.final_urls,
-          ad_group_ad.ad.display_url,
-          ad_group_ad.ad.text_ad.headline,
-          ad_group_ad.ad.text_ad.description1,
-          ad_group_ad.ad.text_ad.description2,
-          ad_group_ad.ad.responsive_search_ad.headlines,
-          ad_group_ad.ad.responsive_search_ad.descriptions,
-          ad_group.id,
-          ad_group.name,
-          campaign.id,
-          campaign.name,
-          metrics.impressions,
-          metrics.clicks,
-          metrics.cost_micros,
-          metrics.conversions,
-          metrics.ctr
-        FROM ad_group_ad
-        WHERE ad_group_ad.status != REMOVED
-      `;
-
-      if (adGroupId) {
-        query += ` AND ad_group.id = ${adGroupId}`;
-      }
-
-      const result = await customer.query(query);
-
-      const ads = result.map((row: any) => ({
-        id: String(row.ad_group_ad?.ad?.id || ''),
-        type: row.ad_group_ad?.ad?.type || 'TEXT_AD',
-        status: row.ad_group_ad?.status || 'UNKNOWN',
-        finalUrls: row.ad_group_ad?.ad?.final_urls || [],
-        displayUrl: row.ad_group_ad?.ad?.display_url || '',
-        headline: row.ad_group_ad?.ad?.text_ad?.headline || '',
-        description1: row.ad_group_ad?.ad?.text_ad?.description1 || '',
-        description2: row.ad_group_ad?.ad?.text_ad?.description2 || '',
-        responsiveSearchAd: {
-          headlines:
-            row.ad_group_ad?.ad?.responsive_search_ad?.headlines?.map((h: any) => ({
-              text: h.text,
-              pinned_field: h.pinned_field,
-            })) || [],
-          descriptions:
-            row.ad_group_ad?.ad?.responsive_search_ad?.descriptions?.map((d: any) => ({
-              text: d.text,
-              pinned_field: d.pinned_field,
-            })) || [],
-        },
-        adGroupId: String(row.ad_group?.id || ''),
-        adGroupName: row.ad_group?.name || '',
-        campaignId: String(row.campaign?.id || ''),
-        campaignName: row.campaign?.name || '',
-        metrics: {
-          impressions: row.metrics?.impressions || 0,
-          clicks: row.metrics?.clicks || 0,
-          cost: (row.metrics?.cost_micros || 0) / 1000000,
-          conversions: row.metrics?.conversions || 0,
-          ctr: row.metrics?.ctr || 0,
-        },
-      }));
-
-      return {
-        success: true,
-        data: ads,
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        error: {
-          code: 'API_ERROR',
-          message: error.message || 'Failed to fetch ads',
-        },
-      };
-    }
-  }
-
-  /**
-   * 🎯 AD GROUP MANAGEMENT - White-Label Feature
-   */
-  async getAdGroups(
-    refreshToken: string,
-    customerId: string,
-    campaignId?: string
-  ): Promise<GoogleAdsApiResponse<any[]>> {
-    try {
-      const customer = this.client.Customer({
-        customer_id: customerId,
-        refresh_token: refreshToken,
-      });
-
-      let query = `
-        SELECT
-          ad_group.id,
-          ad_group.name,
-          ad_group.status,
-          ad_group.type,
-          ad_group.cpc_bid_micros,
-          ad_group.cpa_bid_micros,
-          ad_group.target_cpm_micros,
-          campaign.id,
-          campaign.name,
-          metrics.impressions,
-          metrics.clicks,
-          metrics.cost_micros,
-          metrics.conversions,
-          metrics.ctr,
-          metrics.average_cpc
-        FROM ad_group
-        WHERE ad_group.status != REMOVED
-      `;
-
-      if (campaignId) {
-        query += ` AND campaign.id = ${campaignId}`;
-      }
-
-      const result = await customer.query(query);
-
-      const adGroups = result.map((row: any) => ({
-        id: String(row.ad_group?.id || ''),
-        name: row.ad_group?.name || '',
-        status: row.ad_group?.status || 'UNKNOWN',
-        type: row.ad_group?.type || 'SEARCH_STANDARD',
-        cpcBid: (row.ad_group?.cpc_bid_micros || 0) / 1000000,
-        cpaBid: (row.ad_group?.cpa_bid_micros || 0) / 1000000,
-        targetCpm: (row.ad_group?.target_cpm_micros || 0) / 1000000,
-        campaignId: String(row.campaign?.id || ''),
-        campaignName: row.campaign?.name || '',
-        metrics: {
-          impressions: row.metrics?.impressions || 0,
-          clicks: row.metrics?.clicks || 0,
-          cost: (row.metrics?.cost_micros || 0) / 1000000,
-          conversions: row.metrics?.conversions || 0,
-          ctr: row.metrics?.ctr || 0,
-          cpc: (row.metrics?.average_cpc || 0) / 1000000,
-        },
-      }));
-
-      return {
-        success: true,
-        data: adGroups,
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        error: {
-          code: 'API_ERROR',
-          message: error.message || 'Failed to fetch ad groups',
-        },
-      };
-    }
-  }
-
-  /**
-   * 🎯 BUDGET MANAGEMENT - White-Label Feature
-   */
-  async getBudgets(refreshToken: string, customerId: string): Promise<GoogleAdsApiResponse<any[]>> {
-    try {
-      const customer = this.client.Customer({
-        customer_id: customerId,
-        refresh_token: refreshToken,
-      });
-
-      const query = `
-        SELECT
-          campaign_budget.id,
-          campaign_budget.name,
-          campaign_budget.amount_micros,
-          campaign_budget.delivery_method,
-          campaign_budget.period,
-          campaign_budget.status,
-          campaign_budget.total_amount_micros
-        FROM campaign_budget
-        WHERE campaign_budget.status != REMOVED
-      `;
-
-      const result = await customer.query(query);
-
-      const budgets = result.map((row: any) => ({
-        id: String(row.campaign_budget?.id || ''),
-        name: row.campaign_budget?.name || '',
-        amount: (row.campaign_budget?.amount_micros || 0) / 1000000,
-        currency: 'EUR', // Default, should be fetched from account
-        deliveryMethod: row.campaign_budget?.delivery_method || 'STANDARD',
-        period: row.campaign_budget?.period || 'DAILY',
-        status: row.campaign_budget?.status || 'ENABLED',
-        totalAmount: (row.campaign_budget?.total_amount_micros || 0) / 1000000,
-      }));
-
-      return {
-        success: true,
-        data: budgets,
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        error: {
-          code: 'API_ERROR',
-          message: error.message || 'Failed to fetch budgets',
-        },
-      };
-    }
-  }
-
-  /**
-   * 🎯 PERFORMANCE ANALYTICS - White-Label Feature
-   */
-  async getPerformanceAnalytics(
-    refreshToken: string,
-    customerId: string,
-    dateRange?: { startDate: string; endDate: string }
-  ): Promise<GoogleAdsApiResponse<any>> {
-    try {
-      const customer = this.client.Customer({
-        customer_id: customerId,
-        refresh_token: refreshToken,
-      });
-
-      const startDate = dateRange?.startDate || '2024-01-01';
-      const endDate = dateRange?.endDate || new Date().toISOString().split('T')[0];
-
-      const query = `
-        SELECT
-          metrics.impressions,
-          metrics.clicks,
-          metrics.cost_micros,
-          metrics.conversions,
-          metrics.conversion_value,
-          metrics.ctr,
-          metrics.average_cpc,
-          metrics.average_cpa,
-          metrics.value_per_conversion,
-          segments.date
-        FROM customer
-        WHERE segments.date BETWEEN '${startDate}' AND '${endDate}'
-      `;
-
-      const result = await customer.query(query);
-
-      const totalMetrics = {
-        impressions: 0,
-        clicks: 0,
-        cost: 0,
-        conversions: 0,
-        conversionValue: 0,
-        ctr: 0,
-        cpc: 0,
-        cpa: 0,
-        roas: 0,
-      };
-
-      const dailyData: any[] = [];
-
-      result.forEach((row: any) => {
-        const metrics = row.metrics || {};
-        const cost = (metrics.cost_micros || 0) / 1000000;
-        const conversions = metrics.conversions || 0;
-        const conversionValue = metrics.conversion_value || 0;
-
-        totalMetrics.impressions += metrics.impressions || 0;
-        totalMetrics.clicks += metrics.clicks || 0;
-        totalMetrics.cost += cost;
-        totalMetrics.conversions += conversions;
-        totalMetrics.conversionValue += conversionValue;
-
-        dailyData.push({
-          date: row.segments?.date || '',
-          impressions: metrics.impressions || 0,
-          clicks: metrics.clicks || 0,
-          cost: cost,
-          conversions: conversions,
-          conversionValue: conversionValue,
-          ctr: metrics.ctr || 0,
-          cpc: (metrics.average_cpc || 0) / 1000000,
-        });
-      });
-
-      // Calculate averages
-      if (totalMetrics.impressions > 0) {
-        totalMetrics.ctr = (totalMetrics.clicks / totalMetrics.impressions) * 100;
-      }
-      if (totalMetrics.clicks > 0) {
-        totalMetrics.cpc = totalMetrics.cost / totalMetrics.clicks;
-      }
-      if (totalMetrics.conversions > 0) {
-        totalMetrics.cpa = totalMetrics.cost / totalMetrics.conversions;
-      }
-      if (totalMetrics.cost > 0) {
-        totalMetrics.roas = totalMetrics.conversionValue / totalMetrics.cost;
-      }
-
-      return {
-        success: true,
-        data: {
-          summary: totalMetrics,
-          daily: dailyData,
-          dateRange: { startDate, endDate },
-        },
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        error: {
-          code: 'API_ERROR',
-          message: error.message || 'Failed to fetch performance analytics',
-        },
-      };
-    }
-  }
-
-  /**
-   * 🎯 USER PROFILE - Get Google Account Info for White-Label
-   */
-  async getUserProfile(accessToken: string): Promise<GoogleAdsApiResponse<any>> {
-    try {
-      const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch user profile: ${response.status}`);
-      }
-
-      const userInfo = await response.json();
-
-      return {
-        success: true,
-        data: {
-          id: userInfo.id,
-          email: userInfo.email,
-          name: userInfo.name,
-          picture: userInfo.picture,
-          locale: userInfo.locale,
-          verified: userInfo.verified_email,
-        },
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        error: {
-          code: 'API_ERROR',
-          message: error.message || 'Failed to fetch user profile',
-        },
-      };
-    }
-  }
-
   /**
    * ✅ Prüfen ob Account mit Manager Account verknüpft ist
+   * @returns { linked: boolean, canVerify: boolean, reason?: string }
    */
   async isLinkedToManager(
     refreshToken: string,
     customerId: string,
     managerId: string
-  ): Promise<boolean> {
+  ): Promise<{ linked: boolean; canVerify: boolean; reason?: string }> {
     // 🛑 BYPASS if no developer token (Dev Mode / Misconfiguration)
     if (!this.config.developer_token) {
       console.warn(
         '⚠️ Skipping Manager Link Check: No Developer Token configured. Allowing connection for testing.'
       );
-      return true;
+      return { linked: false, canVerify: false, reason: 'NO_DEVELOPER_TOKEN' };
     }
 
     try {
@@ -1874,12 +1292,53 @@ class GoogleAdsClientService {
         refresh_token: refreshToken,
       });
 
-      // Query customer_client_link to see if the manager is linked
-      // Note: We query from the perspective of the client account, so we look at customer_manager_link?
-      // Actually, from the client account, we can query `customer_client` of the manager if we had access to manager.
-      // But we only have access to client.
-      // So we query `customer_manager_link` resource.
+      // 1. Check if it's a Test Account
+      // If it is a test account, we bypass the manager link check because
+      // test accounts cannot be linked to production manager accounts easily
+      // and we want to allow testing.
+      try {
+        console.log(`[ManagerCheck] Checking if account ${customerId} is a test account...`);
+        const customerInfo = await customer.query(`
+          SELECT customer.id, customer.test_account, customer.descriptive_name, customer.status
+          FROM customer
+          LIMIT 1
+        `);
 
+        console.log(`[ManagerCheck] Account info for ${customerId}:`, JSON.stringify(customerInfo, null, 2));
+
+        if (customerInfo && customerInfo.length > 0) {
+          const isTestAccount = customerInfo[0].customer?.test_account;
+          if (isTestAccount) {
+            console.log(
+              `[ManagerCheck] Account ${customerId} is a TEST ACCOUNT. Bypassing manager link check.`
+            );
+            return { linked: true, canVerify: true, reason: 'TEST_ACCOUNT' };
+          } else {
+             console.log(`[ManagerCheck] Account ${customerId} reports test_account=false.`);
+          }
+        }
+      } catch (infoError: any) {
+        // If we get the "Test Access Only" error here, it means it's a Production Account
+        // and we are using a Test Token. So we definitely can't access it programmatically.
+        // In this case, we need MANUAL verification of the manager link.
+        if (
+          infoError.message?.includes('approved for use with test accounts') ||
+          infoError.errors?.[0]?.message?.includes('approved for use with test accounts')
+        ) {
+          console.warn(
+            `[ManagerCheck] ⚠️ Test Developer Token cannot access Production Account ${customerId}.`
+          );
+          console.warn(
+            `[ManagerCheck] ⚠️ Manager link check SKIPPED - manual verification required.`
+          );
+          // WICHTIG: Wir können die Verknüpfung NICHT prüfen, also geben wir das zurück
+          return { linked: false, canVerify: false, reason: 'TEST_TOKEN_PRODUCTION_ACCOUNT' };
+        }
+        // Other errors, ignore and proceed to link check
+        console.warn(`[ManagerCheck] Could not verify test account status: ${infoError.message}`);
+      }
+
+      // 2. Check Manager Link for Production Accounts
       const query = `
         SELECT
           customer_manager_link.manager_customer,
@@ -1895,7 +1354,7 @@ class GoogleAdsClientService {
       console.log(
         `[ManagerCheck] Checking link for customer ${customerId} against manager ${targetManagerResource}`
       );
-      console.log(`[ManagerCheck] Found links:`, JSON.stringify(result, null, 2));
+      // console.log(`[ManagerCheck] Found links:`, JSON.stringify(result, null, 2));
 
       const isLinked = result.some(
         (row: any) => row.customer_manager_link?.manager_customer === targetManagerResource
@@ -1903,14 +1362,522 @@ class GoogleAdsClientService {
 
       console.log(`[ManagerCheck] Is Linked: ${isLinked}`);
 
-      return isLinked;
-    } catch (error) {
+      return { linked: isLinked, canVerify: true };
+    } catch (error: any) {
+      // If error is "Test Access Only", return cannot verify
+      if (
+        error.message?.includes('approved for use with test accounts') ||
+        error.errors?.[0]?.message?.includes('approved for use with test accounts')
+      ) {
+        console.warn(`[ManagerCheck] Failed to check link for ${customerId}: Test Access Only error.`);
+        return { linked: false, canVerify: false, reason: 'TEST_TOKEN_ERROR' };
+      }
+      
       console.warn('Failed to check manager link:', error);
-      return false;
+      return { linked: false, canVerify: false, reason: 'API_ERROR' };
+    }
+  }
+
+  /**
+   * 🆕 Manager sendet Einladung an Client-Account
+   */
+  async sendManagerInvitationFromManager(
+    customerId: string
+  ): Promise<GoogleAdsApiResponse<any>> {
+    try {
+      const MANAGER_ID = '655-923-8498';
+      
+      // Verwende den Standard-Customer mit Test-Token
+      const managerCustomer = this.client.Customer({
+        customer_id: MANAGER_ID.replace(/-/g, ''),
+        refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN || 'dummy',
+        login_customer_id: MANAGER_ID.replace(/-/g, ''),
+      });
+
+      const clientResourceName = `customers/${customerId.replace(/-/g, '')}`;
+
+      // Manager lädt Client ein - verwende Library Service Wrapper
+      // @ts-ignore
+      const result = await managerCustomer.customerClientLinks.create([
+        {
+          client_customer: clientResourceName,
+          status: 'PENDING',
+        }
+      ]);
+
+      return {
+        success: true,
+        data: result,
+      };
+    } catch (error: any) {
+      console.error('Manager invitation error:', error);
+      
+      // Extrahiere Fehlermeldung aus Google Ads Error-Objekt
+      const errorMessage = error?.errors?.[0]?.message || error.message || 'Unknown error';
+      const isTestTokenError = errorMessage.includes('approved for use with test accounts');
+      
+      // Prüfe ob Einladung schon existiert
+      if (errorMessage.includes('ALREADY_EXISTS') || errorMessage.includes('DUPLICATE')) {
+        return {
+          success: true,
+          data: { message: 'Einladung existiert bereits' },
+        };
+      }
+
+      return {
+        success: false,
+        error: {
+          code: isTestTokenError ? 'TEST_TOKEN_PRODUCTION_ACCOUNT' : 'INVITATION_FAILED',
+          message: errorMessage,
+          details: error,
+          isProductionAccount: isTestTokenError,
+        },
+      };
+    }
+  }
+
+  /**
+   * ✅ Manager Einladung senden (vom Client-Account aus)
+   * HINWEIS: Dies funktioniert nur, wenn der Client-Account Zugriff auf die API hat.
+   * Bei Test-Developer-Tokens funktioniert dies NICHT mit Produktions-Accounts ("Test Access Only").
+   * 
+   * ⚠️ DEPRECATED: Verwende stattdessen sendManagerInvitationFromManager()
+   */
+  async sendManagerInvitation(
+    clientRefreshToken: string,
+    customerId: string,
+    managerId: string
+  ): Promise<GoogleAdsApiResponse<any>> {
+    try {
+      if (!clientRefreshToken) {
+        return {
+          success: false,
+          error: {
+            code: 'NO_CLIENT_TOKEN',
+            message: 'Client refresh token missing',
+          },
+        };
+      }
+
+      // Authentifiziere als Client
+      const customer = this.client.Customer({
+        customer_id: customerId,
+        refresh_token: clientRefreshToken,
+      });
+
+      const managerResourceName = `customers/${managerId.replace(/-/g, '')}`;
+
+      // Versuche, eine Verknüpfung vom Client zum Manager zu erstellen
+      // Dies entspricht: "Client lädt Manager ein"
+      const result = await customer.mutateResources([
+        {
+          customer_manager_link: {
+            create: {
+              manager_customer: managerResourceName,
+              status: 'PENDING',
+            },
+          },
+        } as any,
+      ]);
+
+      return {
+        success: true,
+        data: result,
+      };
+    } catch (error: any) {
+      // Prüfe ob Einladung schon existiert
+      if (error.message?.includes('ALREADY_EXISTS') || error.message?.includes('DUPLICATE_ENTRY')) {
+        return {
+          success: true,
+          data: { message: 'Invitation already exists' },
+        };
+      }
+
+      return {
+        success: false,
+        error: {
+          code: 'INVITATION_FAILED',
+          message: error.message || 'Failed to send manager invitation from client',
+          details: error,
+        },
+      };
+    }
+  }
+
+  /**
+   * ✅ Neues Test-Konto erstellen (unter dem Manager)
+   */
+  async createTestAccount(
+    accountName: string
+  ): Promise<GoogleAdsApiResponse<{ customerId: string; resourceName: string }>> {
+    try {
+      const MANAGER_ID = '655-923-8498'; // Test Manager
+
+      const managerCustomer = this.client.Customer({
+        customer_id: MANAGER_ID.replace(/-/g, ''),
+        refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN || '',
+        login_customer_id: MANAGER_ID.replace(/-/g, ''),
+      });
+
+      // Create a new client customer
+      // Use the library's service wrapper: customer.customers.createCustomerClient
+      
+      // @ts-ignore - Library types might be incomplete
+      const result = await managerCustomer.customers.createCustomerClient({
+        customer_id: MANAGER_ID.replace(/-/g, ''),
+        customer_client: {
+          descriptive_name: accountName,
+          currency_code: 'EUR',
+          time_zone: 'Europe/Berlin',
+        },
+      });
+
+      // Result usually contains resource_name of the new customer
+      const resourceName = result.resource_name;
+      const customerId = resourceName.split('/')[1];
+
+      return {
+        success: true,
+        data: {
+          customerId,
+          resourceName,
+        },
+      };
+    } catch (error: any) {
+      console.error('Create Account Error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'ACCOUNT_CREATION_FAILED',
+          message: error.message || 'Failed to create test account',
+          details: error,
+        },
+      };
     }
   }
 
   // 🎯 ===== WHITE-LABEL EXTENSIONS END =====
+
+  /**
+   * ✅ Audience Segments suchen (Affinity, In-Market, Demographics)
+   */
+  async searchAudienceSegments(
+    refreshToken: string,
+    customerId: string,
+    query: string,
+    loginCustomerId?: string
+  ): Promise<GoogleAdsApiResponse<{
+    affinity: any[];
+    inMarket: any[];
+    demographics: any[];
+  }>> {
+    try {
+      const customer = this.client.Customer({
+        customer_id: customerId.replace(/-/g, ''),
+        refresh_token: refreshToken,
+        login_customer_id: loginCustomerId ? loginCustomerId.replace(/-/g, '') : undefined,
+      });
+
+      // 1. Search User Interests (Affinity & In-Market)
+      // Use REGEXP_MATCH for broader search capabilities (supports "TermA|TermB")
+      // (?i) makes it case-insensitive
+      const regexQuery = `(?i).*(${query}).*`;
+      
+      const userInterestQuery = `
+        SELECT 
+          user_interest.user_interest_id, 
+          user_interest.name, 
+          user_interest.taxonomy_type,
+          user_interest.user_interest_parent
+        FROM user_interest 
+        WHERE 
+          user_interest.name REGEXP_MATCH '${regexQuery}' 
+        LIMIT 100
+      `;
+
+      // 2. Search Detailed Demographics
+      const demographicQuery = `
+        SELECT 
+          detailed_demographic.id, 
+          detailed_demographic.name, 
+          detailed_demographic.parent
+        FROM detailed_demographic 
+        WHERE 
+          detailed_demographic.name REGEXP_MATCH '${regexQuery}' 
+        LIMIT 50
+      `;
+
+      // 3. Search Custom Audiences (Custom Affinity / Intent)
+      const customAudienceQuery = `
+        SELECT 
+          custom_audience.id, 
+          custom_audience.name,
+          custom_audience.description,
+          custom_audience.status
+        FROM custom_audience
+        WHERE 
+          custom_audience.name REGEXP_MATCH '${regexQuery}'
+          AND custom_audience.status = 'ENABLED'
+        LIMIT 50
+      `;
+
+      // 4. Search Life Events
+      const lifeEventQuery = `
+        SELECT
+          life_event.id,
+          life_event.name,
+          life_event.parent
+        FROM life_event
+        WHERE
+          life_event.name REGEXP_MATCH '${regexQuery}'
+        LIMIT 50
+      `;      console.log(`[AudienceSearch] Executing GAQL for ${customerId}: ${userInterestQuery.replace(/\s+/g, ' ').trim()}`);
+
+      const [interestResults, demographicResults, customAudienceResults, lifeEventResults] = await Promise.all([
+        customer.query(userInterestQuery),
+        customer.query(demographicQuery),
+        customer.query(customAudienceQuery).catch(() => []), // Fail gracefully
+        customer.query(lifeEventQuery).catch(() => []) // Fail gracefully
+      ]);
+
+      console.log(`[AudienceSearch] Found:
+        - ${interestResults.length} interests
+        - ${demographicResults.length} demographics
+        - ${customAudienceResults.length} custom audiences
+        - ${lifeEventResults.length} life events
+        for query '${query}'`);
+
+      const affinity: any[] = [];
+      const inMarket: any[] = [];
+      const demographics: any[] = [];
+
+      // Process Interests
+      for (const row of interestResults) {
+        const interest = row.user_interest;
+        if (!interest) continue;
+
+        // Generiere eine sinnvolle Beschreibung basierend auf dem Typ
+        let generatedDescription = "Zielgruppe für dieses Thema.";
+        
+        if (interest.taxonomy_type === 'AFFINITY') {
+          generatedDescription = `Personen, die ein starkes Interesse an ${interest.name} zeigen und diesbezügliche Gewohnheiten haben.`;
+        } else if (interest.taxonomy_type === 'IN_MARKET') {
+          generatedDescription = `Personen, die aktiv nach Produkten oder Dienstleistungen im Bereich ${interest.name} suchen oder den Kauf planen.`;
+        } else if (interest.taxonomy_type === 'MOBILE_APP_INSTALL_USER') {
+          generatedDescription = `Personen, die Apps aus dem Bereich ${interest.name} installiert haben.`;
+        }
+
+        const item = {
+          id: `user_interest:${interest.user_interest_id}`, // Prefix to distinguish
+          name: interest.name,
+          path: [], // TODO: Resolve parent path if needed
+          description: generatedDescription,
+          weeklyImpressions: "100M+ (Schätzung)", // Platzhalter für UI-Konsistenz, da echte Daten Forecasting benötigen
+          relatedSegments: [],
+          youtubeCategories: []
+        };
+
+        if (interest.taxonomy_type === 'AFFINITY') {
+          affinity.push(item);
+        } else if (interest.taxonomy_type === 'IN_MARKET') {
+          inMarket.push(item);
+        } else {
+           // Add other types to affinity for now or create a new category
+           affinity.push(item);
+        }
+      }
+
+      // Process Demographics
+      for (const row of demographicResults) {
+        const demo = row.detailed_demographic;
+        if (!demo) continue;
+
+        demographics.push({
+          id: `detailed_demographic:${demo.id}`,
+          name: demo.name,
+          path: [],
+          description: `Detaillierte demografische Gruppe: ${demo.name}`,
+          weeklyImpressions: "Verfügbar",
+          relatedSegments: [],
+          youtubeCategories: []
+        });
+      }
+      
+      // Process Custom Audiences (add to Affinity for UI simplicity)
+      for (const row of customAudienceResults) {
+        const ca = row.custom_audience;
+        if (!ca) continue;
+        
+        affinity.push({
+          id: `custom_audience:${ca.id}`,
+          name: ca.name + ' (Benutzerdefiniert)',
+          description: ca.description || 'Benutzerdefinierte Zielgruppe',
+          path: [],
+          weeklyImpressions: "Benutzerdefiniert",
+          relatedSegments: [],
+          youtubeCategories: []
+        });
+      }
+
+      // Process Life Events (add to In-Market for UI simplicity)
+      for (const row of lifeEventResults) {
+        const le = row.life_event;
+        if (!le) continue;
+        
+        inMarket.push({
+          id: `life_event:${le.id}`,
+          name: le.name + ' (Lebensereignis)',
+          path: [],
+          description: `Personen, die bald folgendes Lebensereignis haben: ${le.name}`,
+          weeklyImpressions: "Verfügbar",
+          relatedSegments: [],
+          youtubeCategories: []
+        });
+      }
+
+      return {
+        success: true,
+        data: {
+          affinity,
+          inMarket,
+          demographics
+        }
+      };
+
+    } catch (error: any) {
+      console.error('Audience Search Error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'AUDIENCE_SEARCH_FAILED',
+          message: error.message || 'Failed to search audience segments',
+        },
+      };
+    }
+  }
+
+  /**
+   * ✅ Audience Insights abrufen (für Hover-Cards)
+   */
+  async getAudienceInsights(
+    refreshToken: string,
+    customerId: string,
+    audienceId: string
+  ): Promise<GoogleAdsApiResponse<any>> {
+    try {
+      const customer = this.client.Customer({
+        customer_id: customerId.replace(/-/g, ''),
+        refresh_token: refreshToken,
+      });
+
+      // Wir nutzen den AudienceInsightsService
+      // Da die Library diesen Service ggf. nicht direkt als Helper hat, nutzen wir den generischen Service-Aufruf oder die Methode wenn verfügbar.
+      
+      // Dimension für die Anfrage vorbereiten
+      // audienceId ist z.B. "user_interest:12345"
+      const [type, id] = audienceId.split(':');
+      
+      let dimension: any = {};
+      
+      if (type === 'user_interest') {
+        dimension = {
+          user_interest: {
+            user_interest_id: id
+          }
+        };
+      } else if (type === 'detailed_demographic') {
+        dimension = {
+          detailed_demographic: {
+            detailed_demographic_id: id
+          }
+        };
+      } else if (type === 'life_event') {
+        dimension = {
+          life_event: {
+            life_event_id: id
+          }
+        };
+      } else {
+        // Fallback oder Fehler
+        return {
+          success: false,
+          error: {
+            code: 'INVALID_AUDIENCE_TYPE',
+            message: 'Insights not supported for this audience type',
+          },
+        };
+      }
+
+      // API Request
+      // @ts-ignore
+      const result = await customer.audienceInsights.generateAudienceCompositionInsights({
+        customer_id: customerId.replace(/-/g, ''),
+        audience: {
+          dimensions: [dimension]
+        } as any,
+        dimensions: [
+          'USER_INTEREST',
+          'YOUTUBE_CHANNEL',
+          'TOPIC'
+        ] as any[],
+        customer_insights_group: '1' // Optional
+      });
+
+      // Daten verarbeiten
+      const relatedSegments: any[] = [];
+      const youtubeCategories: any[] = [];
+      
+      // Verarbeite Composition Insights
+      if (result.sections) {
+        for (const section of result.sections as any[]) {
+          if (section.dimension === 'USER_INTEREST') {
+             if (section.top_audience_compositions) {
+                for (const item of section.top_audience_compositions) {
+                  if (item.user_interest) {
+                    relatedSegments.push({
+                      name: item.user_interest.name,
+                      id: item.user_interest.user_interest_id,
+                      score: item.score
+                    });
+                  }
+                }
+             }
+          } else if (section.dimension === 'YOUTUBE_CHANNEL') {
+             if (section.top_audience_compositions) {
+                for (const item of section.top_audience_compositions) {
+                  if (item.youtube_channel) {
+                    youtubeCategories.push({
+                      name: item.youtube_channel.channel_name,
+                      id: item.youtube_channel.channel_id
+                    });
+                  }
+                }
+             }
+          }
+        }
+      }
+
+      return {
+        success: true,
+        data: {
+          relatedSegments: relatedSegments.slice(0, 5),
+          youtubeCategories: youtubeCategories.slice(0, 5),
+          weeklyImpressions: "100M+ (Verfügbar)", // Insights geben keine absoluten Impressionen, aber bestätigen die Existenz
+          description: "" // Insights geben leider auch keine Description
+        }
+      };
+
+    } catch (error: any) {
+      console.error('Audience Insights Error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'INSIGHTS_ERROR',
+          message: error.message || 'Failed to fetch audience insights',
+        },
+      };
+    }
+  }
 }
 
 // Singleton-Instanz exportieren

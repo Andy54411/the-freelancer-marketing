@@ -42,7 +42,7 @@ export class CustomerService {
 ```typescript
 // Central service managing all advertising platforms
 export class MultiPlatformAdvertisingService {
-  // Google Ads: Manager Account 578-822-9684 linking workflow
+  // Google Ads: Manager Account 655-923-8498 linking workflow
   // LinkedIn, Meta, Taboola, Outbrain: OAuth-based connections
   async connectPlatform(platform: AdvertisingPlatform, companyId: string, authData: any)
 }

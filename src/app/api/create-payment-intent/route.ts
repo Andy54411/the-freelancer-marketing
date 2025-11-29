@@ -168,19 +168,9 @@ export async function POST(request: NextRequest) {
     // --- ENDE DER WARTE-LOGIK ---
 
     // Lade temporaryJobDraft um customerType zu ermitteln
-    const admin = await import('firebase-admin');
-    let db: FirebaseFirestore.Firestore;
+    const { db } = await import('@/firebase/server');
 
-    try {
-      if (!admin.default.apps.length) {
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
-        admin.default.initializeApp({
-          credential: admin.default.credential.cert(serviceAccount),
-          projectId: serviceAccount.project_id,
-        });
-      }
-      db = admin.default.firestore();
-    } catch (error) {
+    if (!db) {
       return NextResponse.json({ error: 'Server-Konfigurationsfehler' }, { status: 500 });
     }
 

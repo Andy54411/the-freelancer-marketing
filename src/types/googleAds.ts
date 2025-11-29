@@ -246,6 +246,7 @@ export interface GoogleAdsApiResponse<T = any> {
     code: string;
     message: string;
     details?: any;
+    isProductionAccount?: boolean; // Flag für Production Account Fehler
   };
   pagination?: {
     nextPageToken?: string;
@@ -368,6 +369,8 @@ export interface GoogleAdsError {
   message: string;
   retryable: boolean;
   retryAfter?: number;
+  isProductionAccount?: boolean; // NEW: Flag für Production Account Fehler
+  details?: any;
   // Legacy für Backward Compatibility
   details?: any;
 }

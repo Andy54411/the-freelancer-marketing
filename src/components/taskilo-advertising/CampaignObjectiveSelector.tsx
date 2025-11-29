@@ -746,15 +746,14 @@ export default function CampaignObjectiveSelector({ companyId }: CampaignObjecti
     const allData = {
       ...businessData,
       objective: selectedObjective,
-      enhancedConversions: enhancedConversionsEnabled,
+      campaignType: selectedCampaignType,
+      enhancedConversions: String(enhancedConversionsEnabled),
     };
 
     console.log('Kampagnendaten:', allData);
 
-    // Hier würde zur nächsten Seite navigiert werden (z.B. Kampagnentyp-Auswahl)
-    // router.push(`/dashboard/company/${companyId}/taskilo-advertising/google-ads/campaigns/new/campaign-type?${new URLSearchParams(allData)}`);
-
-    alert('Kampagnenziel ausgewählt! (Nächste Seite würde hier folgen)');
+    const queryParams = new URLSearchParams(allData);
+    router.push(`/dashboard/company/${companyId}/taskilo-advertising/google-ads/campaigns/new/create?${queryParams.toString()}`);
   };
 
   const handleBack = () => {

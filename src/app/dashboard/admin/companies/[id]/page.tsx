@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import GoogleAdsIntegrationRequest from '@/components/admin/GoogleAdsIntegrationRequest';
 import {
   ArrowLeft,
   Building2,
@@ -31,6 +32,7 @@ import {
   Image,
   FileImage,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 
 interface CompanyDetails {
@@ -187,6 +189,8 @@ export default function AdminCompanyDetailsPage() {
   const [isUpdatingApproval, setIsUpdatingApproval] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const companyId = params?.id as string;
 
   useEffect(() => {
@@ -266,6 +270,30 @@ export default function AdminCompanyDetailsPage() {
       alert('Fehler beim Aktualisieren des Status');
     } finally {
       setIsUpdatingApproval(false);
+    }
+  };
+
+  const handleDeleteCompany = async () => {
+    if (!company) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/admin/companies/${companyId}/delete`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        alert('Unternehmen wurde erfolgreich gelöscht.');
+        router.push('/dashboard/admin/companies');
+      } else {
+        const error = await response.json();
+        alert(`Fehler: ${error.message || 'Unbekannter Fehler'}`);
+      }
+    } catch (error) {
+      alert('Fehler beim Löschen des Unternehmens');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -419,7 +447,58 @@ export default function AdminCompanyDetailsPage() {
           <Ban className="h-4 w-4 mr-2" />
           {company.accountSuspended ? 'Entsperren' : 'Sperren'}
         </Button>
+        <Button
+          variant="outline"
+          className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-300"
+          onClick={() => setShowDeleteConfirm(true)}
+          disabled={isDeleting}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Löschen
+        </Button>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Unternehmen löschen
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Möchten Sie <strong>{company.companyName}</strong> wirklich dauerhaft löschen? 
+              Diese Aktion kann nicht rückgängig gemacht werden und löscht alle zugehörigen 
+              Daten (Kunden, Aufträge, Angebote, Rechnungen, etc.).
+            </p>
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={handleDeleteCompany}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    Wird gelöscht...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Endgültig löschen
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Grundinformationen */}
@@ -876,6 +955,9 @@ export default function AdminCompanyDetailsPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Google Ads Integration Request */}
+          <GoogleAdsIntegrationRequest companyId={companyId} />
+
           {/* Statistiken */}
           <Card>
             <CardHeader>

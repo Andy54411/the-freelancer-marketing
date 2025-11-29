@@ -20,21 +20,16 @@ export async function GET(_request: NextRequest) {
     companiesSnapshot.forEach(doc => {
       const data = doc.data();
 
-      // Verwende die gleiche Status-Logik wie in der Detail-API
+      // Status-Logik: NUR Admin-Freigabe zählt (Onboarding-System hat Fehler)
       let status = 'inactive';
 
-      // Prüfe Admin-Freigabe und Onboarding-Status
       const isAdminApproved = data?.adminApproved === true;
-      const isOnboardingComplete =
-        data?.onboardingCompleted === true ||
-        data?.onboardingCompletionPercentage >= 100 ||
-        data?.profileComplete === true;
 
-      // Status-Logik: Admin-freigegeben + Onboarding = Aktiv
-      if (isAdminApproved && isOnboardingComplete) {
-        status = 'active';
-      } else if (data?.status === 'suspended') {
+      // Status basierend auf Admin-Freigabe
+      if (data?.accountSuspended === true || data?.status === 'suspended') {
         status = 'suspended';
+      } else if (isAdminApproved) {
+        status = 'active';
       } else {
         status = 'inactive';
       }
@@ -59,10 +54,10 @@ export async function GET(_request: NextRequest) {
         description: data.description || data.step1?.description,
         services: data.services,
         stripeAccountId: data.step5?.stripeAccountId || data.stripeAccountId,
-        verified: isAdminApproved && isOnboardingComplete,
+        verified: isAdminApproved,
         // Debug-Informationen
         adminApproved: isAdminApproved,
-        onboardingCompleted: isOnboardingComplete,
+        onboardingCompleted: data.onboardingCompleted,
         profileComplete: data.profileComplete,
       });
     });

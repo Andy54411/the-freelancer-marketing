@@ -29,6 +29,7 @@ import {
   MessageSquare as FiMessageSquare,
   PlusCircle as FiPlusCircle,
   HelpCircle as FiHelpCircle,
+  Briefcase,
 } from 'lucide-react';
 import Modal from './components/Modal';
 import { Elements } from '@stripe/react-stripe-js';
@@ -642,6 +643,28 @@ export default function UserDashboardPage() {
 
             {/* Seitenleiste: Support & Schnellzugriff */}
             <div className="space-y-4">
+              {/* Jobbörse Promo Card */}
+              <div 
+                onClick={() => router.push('/jobs')}
+                className="bg-linear-to-br from-[#14ad9f] to-teal-700 text-white shadow-2xl rounded-2xl p-5 hover:shadow-3xl transition-all duration-300 relative overflow-hidden group cursor-pointer"
+              >
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <Briefcase size={80} />
+                </div>
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4 backdrop-blur-sm group-hover:scale-110 transition-transform">
+                    <Briefcase className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="font-bold text-xl mb-2">Jobbörse</h3>
+                  <p className="text-teal-50 text-sm mb-4">
+                    Entdecken Sie spannende Karrieremöglichkeiten und finden Sie Ihren Traumjob.
+                  </p>
+                  <button className="w-full py-2 bg-white text-[#14ad9f] rounded-lg font-semibold text-sm hover:bg-teal-50 transition-colors flex items-center justify-center gap-2">
+                    Zu den Jobs
+                  </button>
+                </div>
+              </div>
+
               {/* Support Card */}
               <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-4 hover:shadow-3xl transition-all duration-300 h-fit">
                 <div className="text-center">

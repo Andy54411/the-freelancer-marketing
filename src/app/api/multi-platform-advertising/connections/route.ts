@@ -1,22 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as admin from 'firebase-admin';
-
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
-  try {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    });
-  } catch (error) {
-    console.error('Failed to initialize Firebase Admin:', error);
-  }
-}
-
-const db = admin.firestore();
+import { db } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
+  if (!db) {
+    console.error('❌ Firebase DB not initialized');
+    return NextResponse.json(
+      { success: false, error: 'Database connection failed' },
+      { status: 500 }
+    );
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');

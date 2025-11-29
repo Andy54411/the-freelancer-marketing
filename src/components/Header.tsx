@@ -502,11 +502,11 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
   return (
     <>
       <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex justify-between items-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center gap-4 sm:gap-8">
             {company ? (
               // --- ANSICHT FÜR COMPANY DASHBOARD ---
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 shrink-0">
                 {/* Taskilo Logo auch im Company Dashboard anzeigen */}
                 <Link href="/" className="text-xl font-bold text-[#14ad9f]">
                   Taskilo
@@ -518,14 +518,14 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
               </div>
             ) : (
               // --- STANDARD-ANSICHT FÜR DIE APP (Logo) ---
-              <Link href="/" className="text-xl sm:text-2xl font-bold text-[#14ad9f]">
+              <Link href="/" className="text-xl sm:text-2xl font-bold text-[#14ad9f] shrink-0">
                 Taskilo
               </Link>
             )}
 
             {/* Suchleiste - Responsive */}
             <div
-              className="relative flex-grow max-w-xl mx-2 sm:mx-4"
+              className="relative flex-1"
               ref={searchDropdownContainerRef}
             >
               <input

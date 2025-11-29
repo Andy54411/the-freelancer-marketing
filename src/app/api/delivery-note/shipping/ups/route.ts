@@ -1,17 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-
-// Initialize Firebase Admin
-if (!getApps().length) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
-  initializeApp({
-    credential: cert(serviceAccount),
-  });
-}
-
-const db = getFirestore();
+import { db } from '@/firebase/server';
 
 // POST: UPS-Versandlabel erstellen
 export async function POST(request: NextRequest) {

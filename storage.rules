@@ -239,6 +239,20 @@ service firebase.storage {
                         request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'))));
     }
 
+    // User Qualifications - Benutzer können ihre Zertifikate hochladen
+    match /users/{userId}/qualifications/{fileName} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isSupportStaff());
+      allow write: if request.auth != null && request.auth.uid == userId &&
+                      (isDelete() || (isUpload() && isValidDocumentType()));
+    }
+
+    // User Profile Pictures - Benutzer können ihre Profilbilder hochladen
+    match /users/{userId}/profile_picture/{fileName} {
+      allow read: if true; // Öffentlich lesbar für Profilanzeige
+      allow write: if request.auth != null && request.auth.uid == userId &&
+                      (isDelete() || (isUpload() && isValidImageType()));
+    }
+
     // Fallback: Authentifizierte Benutzer können ihre eigenen Dateien in allen Pfaden lesen
     match /user_uploads/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;

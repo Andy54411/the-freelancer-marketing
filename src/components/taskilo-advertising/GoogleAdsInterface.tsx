@@ -2,7 +2,7 @@
 
 // 🎯 GOOGLE ADS INTERFACE - Korrekt mit kleiner Schrift und Abständen
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Plus,
@@ -13,6 +13,7 @@ import {
   HelpCircle,
   Settings,
   MoreVertical,
+  Lock,
 } from 'lucide-react';
 import GoogleAdsHeader from './GoogleAdsHeader';
 import GoogleAdsFilterBar from './GoogleAdsFilterBar';
@@ -23,15 +24,71 @@ interface GoogleAdsInterfaceProps {
 
 export default function GoogleAdsInterface({ companyId }: GoogleAdsInterfaceProps) {
   const router = useRouter();
+  const [managerApproved, setManagerApproved] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    checkManagerStatus();
+  }, [companyId]);
+
+  const checkManagerStatus = async () => {
+    try {
+      const response = await fetch(`/api/companies/${companyId}/integrations/google-ads`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setManagerApproved(
+          data.managerApproved === true && 
+          data.managerLinkStatus === 'ACTIVE'
+        );
+      }
+    } catch (error) {
+      console.error('Failed to check manager status:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleCreateCampaign = () => {
+    if (!managerApproved) {
+      alert('Bitte verknüpfen Sie zuerst Ihren Account mit dem Taskilo Manager Account.');
+      return;
+    }
     router.push(`/dashboard/company/${companyId}/taskilo-advertising/google-ads/campaigns/new`);
   };
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-32 bg-gray-200 rounded-lg mb-6"></div>
+          <div className="h-64 bg-gray-200 rounded-lg"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Filter Bar */}
-      <GoogleAdsFilterBar companyId={companyId} />
+      {/* 🔒 BLOCKIERE ALLES wenn nicht approved */}
+      {!managerApproved ? (
+        <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-12 text-center">
+          <Lock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+            Google Ads Integration ausstehend
+          </h2>
+          <p className="text-gray-600 max-w-2xl mx-auto mb-6">
+            Ihre Google Ads Integration wird gerade vom Taskilo-Team eingerichtet. 
+            Sie erhalten eine Benachrichtigung, sobald Sie Google Ads nutzen können.
+          </p>
+          <p className="text-sm text-gray-500">
+            Status: Warten auf Manager-Verknüpfung
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Filter Bar */}
+          <GoogleAdsFilterBar companyId={companyId} />
 
       {/* Google Ads Header */}
       <GoogleAdsHeader companyId={companyId} />
@@ -204,6 +261,8 @@ export default function GoogleAdsInterface({ companyId }: GoogleAdsInterfaceProp
           </p>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

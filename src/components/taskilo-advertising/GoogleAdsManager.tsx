@@ -253,7 +253,7 @@ export default function GoogleAdsManager({ companyId }: GoogleAdsManagerProps) {
                       ✅ Echte Manager-Verbindung aktiv
                     </span>
                     <span className="text-green-600 text-sm">
-                      Customer ID: {connectionData?.customerId} → Manager: 578-822-9684
+                      Customer ID: {connectionData?.customerId} → Manager: 655-923-8498
                     </span>
                   </div>
                 </div>

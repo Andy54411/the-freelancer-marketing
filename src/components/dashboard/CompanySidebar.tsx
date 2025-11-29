@@ -28,6 +28,7 @@ import {
   Folder as FiFolder,
   FolderTree as FiFolderTree,
   Boxes as FiBoxes,
+  Briefcase as FiBriefcase,
   HelpCircle as FiHelpCircle,
   MessageCircle as FiMessageCircle,
   PanelLeftClose as FiPanelLeftClose,
@@ -302,6 +303,17 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
+    label: 'Recruiting',
+    icon: FiBriefcase,
+    value: 'recruiting',
+    href: 'recruiting',
+    subItems: [
+      { label: 'Stellenanzeigen', value: 'recruiting-jobs', href: 'recruiting' },
+      { label: 'Neue Anzeige', value: 'recruiting-create', href: 'recruiting/create' },
+      { label: 'Bewerbungen', value: 'recruiting-applications', href: 'recruiting/applications' },
+    ],
+  },
+  {
     label: 'Workspace',
     icon: FiFolder,
     value: 'workspace',
@@ -571,6 +583,11 @@ export default function CompanySidebar({
     // Personal aktiv wenn Personal-Pfad
     if (item.value === 'personal') {
       return pathname?.includes('/personal');
+    }
+
+    // Recruiting aktiv wenn Recruiting-Pfad
+    if (item.value === 'recruiting') {
+      return pathname?.includes('/recruiting');
     }
 
     // Projekte aktiv wenn Projekte- oder Zeit-Erfassungs-Pfad

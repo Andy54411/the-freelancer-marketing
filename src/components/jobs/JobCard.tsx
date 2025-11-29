@@ -1,0 +1,96 @@
+import React from 'react';
+import { MapPin, Clock, Calendar, Heart, Sparkles, Send } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Job } from '@/lib/mock-jobs';
+import { useJobFavorites } from '@/hooks/useJobFavorites';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface JobCardProps {
+  job: Job;
+}
+
+export const JobCard: React.FC<JobCardProps> = ({ job }) => {
+  const { user } = useAuth();
+  const { isFavorite, toggleFavorite } = useJobFavorites(job.id);
+  
+  const jobLink = user 
+    ? `/dashboard/user/${user.uid}/career/jobs/${job.id}` 
+    : `/jobs/${job.id}`;
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow relative group">
+      <div className="flex gap-4">
+        {/* Logo */}
+        <div className="w-16 h-16 shrink-0 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center overflow-hidden">
+          {job.logoUrl ? (
+            <Image 
+              src={job.logoUrl} 
+              alt={job.company} 
+              width={64} 
+              height={64} 
+              className="object-contain w-full h-full"
+            />
+          ) : (
+            <div className="text-gray-300 font-bold text-xl">{job.company.charAt(0)}</div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1">
+          <div className="flex justify-between items-start">
+            <div>
+              <Link href={jobLink} className="hover:underline">
+                <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-teal-600 transition-colors">
+                  {job.title}
+                </h3>
+              </Link>
+              <p className="text-gray-600 font-medium mb-2">{job.company}</p>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className={`text-gray-400 hover:text-red-500 ${isFavorite ? 'text-red-500' : ''}`}
+              onClick={toggleFavorite}
+            >
+              <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">
+            <div className="flex items-center gap-1">
+              <MapPin className="w-4 h-4" />
+              {job.location}
+            </div>
+            <div className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              {job.type}
+            </div>
+            <div className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              {job.date}
+            </div>
+            {job.isNew && (
+               <div className="flex items-center gap-1 text-blue-600 font-medium">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Neu</span>
+               </div>
+            )}
+            {job.isExpress && (
+               <div className="flex items-center gap-1 text-orange-600 font-medium">
+                  <Send className="w-4 h-4" />
+                  <span>Expressbewerbung</span>
+               </div>
+            )}
+          </div>
+
+          <div 
+            className="text-sm text-gray-600 line-clamp-2 mb-4"
+            dangerouslySetInnerHTML={{ __html: job.description }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};

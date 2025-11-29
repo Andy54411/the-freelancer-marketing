@@ -1,18 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as admin from 'firebase-admin';
-
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
-  try {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    });
-  } catch (error) {
-    console.error('Failed to initialize Firebase Admin:', error);
-  }
-}
+import { admin, db } from '@/firebase/server';
 
 /**
  * 🔄 Google Ads OAuth Callback
@@ -21,6 +8,14 @@ if (!admin.apps.length) {
  * Verarbeitet die Antwort von Google OAuth und erstellt echte Google Ads Verbindung
  */
 export async function GET(request: NextRequest) {
+  if (!db) {
+    console.error('❌ Firebase DB not initialized');
+    return NextResponse.json(
+      { success: false, error: 'Database connection failed' },
+      { status: 500 }
+    );
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
@@ -267,7 +262,9 @@ export async function GET(request: NextRequest) {
       // WICHTIG: Echte OAuth-Verbindung
       isRealConnection: true,
       authMethod: 'oauth',
-      managerApproved: true, // OAuth = User hat explizit zugestimmt
+      managerApproved: false, // MUSS später manuell bestätigt werden
+      managerLinkStatus: 'PENDING', // Wartet auf Manager-Verknüpfung
+      requiresManagerLink: true,
       apiAccess: accountInfo?.accountStatus === 'oauth_only' ? false : true,
       developerTokenConfigured: process.env.GOOGLE_ADS_DEVELOPER_TOKEN ? true : false,
     };
@@ -277,7 +274,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verwende Firebase Admin SDK für server-side write (umgeht Firestore Security Rules)
-    const db = admin.firestore();
+    // const db = admin.firestore(); // Already imported and checked
     await db
       .collection('companies')
       .doc(state)

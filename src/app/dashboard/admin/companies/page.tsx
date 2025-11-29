@@ -28,6 +28,9 @@ export default function AdminCompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
 
   useEffect(() => {
     loadCompanies();
@@ -43,6 +46,36 @@ export default function AdminCompaniesPage() {
     } catch (error) {
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteClick = (company: Company) => {
+    setCompanyToDelete(company);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteCompany = async () => {
+    if (!companyToDelete) return;
+
+    setDeletingId(companyToDelete.id);
+    try {
+      const response = await fetch(`/api/admin/companies/${companyToDelete.id}/delete`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        alert(`Unternehmen "${companyToDelete.companyName || companyToDelete.name}" wurde erfolgreich gelöscht.`);
+        setShowDeleteConfirm(false);
+        setCompanyToDelete(null);
+        await loadCompanies(); // Liste neu laden
+      } else {
+        const data = await response.json();
+        alert(`Fehler beim Löschen: ${data.error || 'Unbekannter Fehler'}`);
+      }
+    } catch (error) {
+      alert('Fehler beim Löschen des Unternehmens');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -194,6 +227,9 @@ export default function AdminCompaniesPage() {
                       <h3 className="font-semibold text-gray-900">
                         {company.companyName || company.name}
                       </h3>
+                      <div className="flex items-center space-x-2 text-xs text-gray-500 mb-1">
+                        <span className="font-mono">UID: {company.id}</span>
+                      </div>
                       <div className="flex items-center space-x-2 text-sm text-gray-600">
                         <Mail className="h-3 w-3" />
                         <span>{company.email}</span>
@@ -247,9 +283,15 @@ export default function AdminCompaniesPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-red-600 hover:text-red-700"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteClick(company)}
+                        disabled={deletingId === company.id}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        {deletingId === company.id ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -266,6 +308,55 @@ export default function AdminCompaniesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && companyToDelete && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Unternehmen löschen
+            </h3>
+            <p className="text-gray-600 mb-1">
+              Möchten Sie <strong>{companyToDelete.companyName || companyToDelete.name}</strong> wirklich dauerhaft löschen?
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              UID: <span className="font-mono">{companyToDelete.id}</span>
+            </p>
+            <p className="text-sm text-red-600 mb-4">
+              ⚠️ Diese Aktion kann nicht rückgängig gemacht werden und löscht alle zugehörigen Daten (Kunden, Aufträge, Angebote, Rechnungen, etc.).
+            </p>
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setCompanyToDelete(null);
+                }}
+                disabled={deletingId !== null}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={handleDeleteCompany}
+                disabled={deletingId !== null}
+              >
+                {deletingId ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    Wird gelöscht...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Endgültig löschen
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

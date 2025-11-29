@@ -30,7 +30,7 @@ export default function UserDashboardLayout({ children }: { children: React.Reac
         style={{ '--global-header-height': '64px' } as React.CSSProperties}
       >
         <UserHeader currentUid={user?.uid ?? ''} />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pt-[var(--global-header-height)]">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pt-(--global-header-height)">
           <Suspense
             fallback={
               <div className="flex justify-center items-center min-h-screen">

@@ -529,16 +529,16 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   return (
     <>
       <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex justify-between items-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center gap-4 sm:gap-8">
             {/* Logo */}
-            <Link href="/" className="text-xl sm:text-2xl font-bold text-[#14ad9f]">
+            <Link href="/" className="text-xl sm:text-2xl font-bold text-[#14ad9f] shrink-0">
               Taskilo
             </Link>
 
             {/* Suchleiste */}
             <div
-              className="relative flex-grow max-w-xl mx-2 sm:mx-4"
+              className="relative flex-1"
               ref={searchDropdownContainerRef}
             >
               <input
@@ -1089,8 +1089,16 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                 onClick={() => setIsProfileDropdownOpen(false)}
                               >
-                                <FiBriefcase className="inline mr-2" />
+                                <FiCheckSquare className="inline mr-2" />
                                 Meine Aufträge
+                              </Link>
+                              <Link
+                                href="/jobs"
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setIsProfileDropdownOpen(false)}
+                              >
+                                <FiBriefcase className="inline mr-2" />
+                                Jobbörse
                               </Link>
                               <Link
                                 href={`/dashboard/user/${currentUser.uid}/quotes`}
@@ -1107,6 +1115,14 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                               >
                                 <FiFilePlus className="inline mr-2" />
                                 Eine Projektanfrage posten
+                              </Link>
+                              <Link
+                                href={`/dashboard/user/${currentUser.uid}/career`}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setIsProfileDropdownOpen(false)}
+                              >
+                                <FiBriefcase className="inline mr-2" />
+                                Karriere / Jobs
                               </Link>
                               <hr />
                               <Link

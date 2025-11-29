@@ -30,12 +30,15 @@ export async function GET(request: NextRequest) {
       throw new Error('Firebase Admin not initialized');
     }
 
-    // Parse state to check for popup mode
-    // Format: companyId|popup or just companyId
+    // Parse state to check for popup mode or manager token
+    // Format: companyId|popup or manager_token or just companyId
     let companyId = state;
     let isPopup = false;
+    let isManagerToken = false;
 
-    if (state.includes('|popup')) {
+    if (state === 'manager_token') {
+      isManagerToken = true;
+    } else if (state.includes('|popup')) {
       const parts = state.split('|');
       companyId = parts[0];
       isPopup = true;
@@ -61,6 +64,14 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       console.error('Token exchange failed:', tokenData);
+      
+      if (isManagerToken) {
+        return new NextResponse(
+          `<html><body><h1>Fehler beim Token-Austausch</h1><pre>${JSON.stringify(tokenData, null, 2)}</pre></body></html>`,
+          { headers: { 'Content-Type': 'text/html' } }
+        );
+      }
+      
       const redirectUrl = `${baseUrl}/dashboard/company/${companyId}/taskilo-advertising/google-ads?error=token_exchange_failed`;
 
       if (isPopup) {
@@ -70,6 +81,86 @@ export async function GET(request: NextRequest) {
         );
       }
       return NextResponse.redirect(redirectUrl);
+    }
+
+    // Wenn Manager-Token, zeige ihn an
+    if (isManagerToken) {
+      return new NextResponse(
+        `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Google Ads Manager Token</title>
+            <style>
+              body {
+                font-family: system-ui, -apple-system, sans-serif;
+                max-width: 800px;
+                margin: 50px auto;
+                padding: 20px;
+                background: #f5f5f5;
+              }
+              .container {
+                background: white;
+                padding: 30px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              }
+              h1 {
+                color: #14ad9f;
+                margin-top: 0;
+              }
+              .token-box {
+                background: #f8f9fa;
+                border: 2px solid #14ad9f;
+                border-radius: 4px;
+                padding: 15px;
+                margin: 20px 0;
+                word-break: break-all;
+                font-family: monospace;
+                font-size: 14px;
+              }
+              .instructions {
+                background: #fff3cd;
+                border-left: 4px solid #ffc107;
+                padding: 15px;
+                margin: 20px 0;
+              }
+              code {
+                background: #e9ecef;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-family: monospace;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>✅ Google Ads Manager Token erhalten</h1>
+              
+              <div class="instructions">
+                <strong>📝 Fügen Sie diesen Token zu Ihrer .env.local hinzu:</strong>
+              </div>
+
+              <div class="token-box">
+                GOOGLE_ADS_REFRESH_TOKEN="${tokenData.refresh_token}"
+              </div>
+
+              <div class="instructions">
+                <strong>⚠️ Wichtig:</strong>
+                <ul>
+                  <li>Starten Sie den Development-Server neu</li>
+                  <li>Dieser Token ermöglicht das Versenden von Manager-Einladungen</li>
+                </ul>
+              </div>
+            </div>
+          </body>
+        </html>
+        `,
+        {
+          status: 200,
+          headers: { 'Content-Type': 'text/html' },
+        }
+      );
     }
 
     // Get user info from Google

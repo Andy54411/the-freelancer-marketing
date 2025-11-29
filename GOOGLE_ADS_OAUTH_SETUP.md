@@ -38,6 +38,11 @@ GOOGLE_CLIENT_SECRET=GOCSPX-[Ihr-Secret]
 GOOGLE_ADS_DEVELOPER_TOKEN=[Ihr-Developer-Token]
 GOOGLE_ADS_LOGIN_CUSTOMER_ID=[Ihr-Manager-Account-ID]
 
+# 🆕 Manager Account Integration (für automatische Verknüpfung)
+# Der Refresh Token vom Taskilo Manager Account (655-923-8498)
+# Wird verwendet, um automatisch Einladungen an Kunden-Accounts zu senden
+GOOGLE_ADS_MANAGER_REFRESH_TOKEN=[Manager-Refresh-Token]
+
 # Base URLs
 NEXT_PUBLIC_BASE_URL=https://taskilo.de
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -78,6 +83,22 @@ GET /dashboard/company/{companyId}/taskilo-advertising/google-ads?success=connec
 - Nicht zwingend erforderlich für OAuth
 - Nur für erweiterte Account-Verwaltung
 - Login Customer ID setzen wenn vorhanden
+
+### 🆕 Manager Refresh Token Setup
+
+**Damit Taskilo automatisch Verknüpfungsanfragen senden kann:**
+
+1. **Refresh Token vom Manager Account erhalten**:
+   - Als Manager Account einloggen (andy.staudinger@taskilo.de)
+   - OAuth Flow in Taskilo durchlaufen
+   - Refresh Token aus Firestore kopieren
+   
+2. **Token in Environment setzen**:
+   ```bash
+   GOOGLE_ADS_MANAGER_REFRESH_TOKEN=1//0g...
+   ```
+
+3. **Vorteil**: Kunde muss nur noch Einladung akzeptieren (keine manuelle Domain-Freigabe!)
 
 ## 🧪 Testing
 

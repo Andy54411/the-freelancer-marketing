@@ -8,6 +8,7 @@ export interface CompanySettings {
   // Firmendaten
   companyName: string;
   companyAddress?: string;
+  companyCountry?: string;
   companyEmail?: string;
   companyPhone?: string;
   companyWebsite?: string;
@@ -112,6 +113,7 @@ export function useCompanySettings(userId?: string) {
                 .filter(Boolean)
                 .join('\n') ||
               undefined,
+            companyCountry: userData.companyCountry || userData.step2?.country,
             companyEmail: userData.email || userData.step2?.email,
             companyPhone: userData.companyPhoneNumber || userData.step2?.companyPhoneNumber,
             companyWebsite: userData.companyWebsite || userData.step2?.website,

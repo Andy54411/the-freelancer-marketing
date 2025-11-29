@@ -113,12 +113,31 @@ service cloud.firestore {
         allow read: if request.auth != null; // Authentifizierte User können Profile für Chat lesen
         allow write: if request.auth != null && request.auth.uid == userId;
       }
+
+      // --- Jobfinder Subcollection ---
+      match /jobfinder/{document} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // --- Preferences Subcollection ---
+      match /preferences/{document} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+    }
+
+    // --- Job Favorites Subcollection (Explicit Path) ---
+    match /users/{userId}/job_favorites/{favoriteId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // --- companies Collection ---
     match /companies/{companyId} {
       // Öffentlicher Lesezugriff auf Company-Dokumente für Service-Discovery
       allow get, list: if true;
+      
+      // Company kann ihr eigenes Dokument schreiben (Onboarding, Profil-Updates)
+      allow write: if request.auth != null && request.auth.uid == companyId;
 
       // ✅ TEXT TEMPLATES SUBCOLLECTION - Wiederverwendbare Textbausteine
       match /textTemplates/{templateId} {
@@ -2774,6 +2793,16 @@ service cloud.firestore {
                     'admin@taskilo.de'
                   ];
     }
+
+    // --- Jobs Collection ---
+    match /jobs/{jobId} {
+      // Jeder kann Jobs lesen
+      allow read, list: if request.auth != null;
+      
+      // Nur Support/Admin kann Jobs schreiben
+      allow write: if isSupportStaff();
+    }
+
 
 
   }

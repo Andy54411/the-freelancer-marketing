@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import GoogleAdsInterface from '@/components/taskilo-advertising/GoogleAdsInterface';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -16,6 +16,7 @@ interface GoogleAdsAccount {
 export default function GoogleAdsPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const companyId = params.uid as string;
 
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
@@ -50,6 +51,7 @@ export default function GoogleAdsPage() {
         const data = await response.json();
 
         if (data.success) {
+          // Nutze isConnected direkt von der API
           if (
             data.status === 'requires_selection' ||
             searchParams.get('selection_required') === 'true' ||
@@ -57,14 +59,10 @@ export default function GoogleAdsPage() {
           ) {
             setRequiresSelection(true);
             setAvailableAccounts(data.availableAccounts || []);
-            setIsConnected(false); // Noch nicht vollständig verbunden
+            setIsConnected(false);
           } else {
-            // Verbunden wenn Access Token vorhanden UND Status connected
-            setIsConnected(
-              data.hasAccessToken &&
-                data.status !== 'requires_selection' &&
-                data.customerId !== 'oauth-connected'
-            );
+            // API entscheidet ob verbunden (nur wenn managerApproved=true UND managerLinkStatus='ACTIVE')
+            setIsConnected(data.isConnected === true);
           }
         } else {
           setIsConnected(false);
@@ -99,10 +97,8 @@ export default function GoogleAdsPage() {
 
       const result = await response.json();
       if (result.success) {
-        setRequiresSelection(false);
-        setIsConnected(true);
-        // Optional: Reload page to clear URL params
-        window.history.replaceState({}, '', window.location.pathname);
+        // NICHT als verbunden markieren - redirect zur Warteseite
+        router.push(`/dashboard/company/${companyId}/taskilo-advertising/google-ads/pending`);
       } else {
         setSelectionError(result.message || result.error || 'Fehler bei der Auswahl des Accounts');
       }
@@ -251,21 +247,58 @@ export default function GoogleAdsPage() {
 
   // Wenn nicht verbunden, zeige Verbindungsseite
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
-        <div className="w-16 h-16 bg-linear-to-br from-blue-500 via-green-500 to-yellow-500 rounded-lg mx-auto mb-6"></div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Google Ads verbinden</h2>
-        <p className="text-gray-600 mb-6">
-          Verbinden Sie Ihr Google Ads Konto, um Kampagnen zu verwalten und zu erstellen.
-        </p>
-        <button
-          onClick={() =>
-            (window.location.href = `/api/multi-platform-advertising/auth/google-ads?companyId=${companyId}`)
-          }
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
-        >
-          Mit Google Ads verbinden
-        </button>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-2xl mx-auto pt-12">
+        <div className="bg-white rounded-lg shadow-md p-8">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-12 h-12 text-red-600" />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">
+              Google Ads noch nicht verbunden
+            </h2>
+            <p className="text-gray-600 text-lg">
+              Sie müssen Ihren Google Ads Account erst mit Taskilo verbinden,
+              bevor Sie Kampagnen schalten können.
+            </p>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              So verbinden Sie Ihren Account:
+            </h3>
+            <ol className="space-y-3 text-blue-900">
+              <li className="flex gap-3">
+                <span className="font-bold min-w-6">1.</span>
+                <span>Klicken Sie unten auf "Integration beantragen"</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="font-bold min-w-6">2.</span>
+                <span>Erstellen Sie ein Google Ads Test-Konto (wird weitergeleitet)</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="font-bold min-w-6">3.</span>
+                <span>Geben Sie Ihre Customer ID ein</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="font-bold min-w-6">4.</span>
+                <span>Warten Sie auf die Freigabe vom Taskilo Manager Account</span>
+              </li>
+            </ol>
+          </div>
+
+          <button
+            onClick={() => router.push(`/dashboard/company/${companyId}/taskilo-advertising/google-ads/request`)}
+            className="w-full bg-[#14ad9f] hover:bg-taskilo-hover text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
+          >
+            Jetzt Integration beantragen →
+          </button>
+
+          <p className="text-sm text-gray-500 mt-6 text-center">
+            ⚠️ Ohne Manager-Verknüpfung können Sie KEINE Google Ads schalten
+          </p>
+        </div>
       </div>
     </div>
   );
