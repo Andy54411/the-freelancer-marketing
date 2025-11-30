@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ApplicantProfile, JobPosting } from '@/types/career';
+import { ApplicantProfile } from '@/types/career';
+import { Job } from '@/lib/mock-jobs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,26 +16,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Loader2,
-  FileText,
-  Upload,
-  Trash2,
-  Paperclip,
-  CheckCircle2,
-  Briefcase,
-  GraduationCap,
-  Globe,
-  Award,
-} from 'lucide-react';
+import { Loader2, FileText, Upload, Trash2, Paperclip, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { storage } from '@/firebase/clients';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-interface ApplicationFormProps {
-  job: JobPosting;
+interface JobApplicationFormProps {
+  job: Job;
   profile: ApplicantProfile;
   userId: string;
 }
@@ -48,7 +38,7 @@ interface Attachment {
   source: 'profile' | 'upload';
 }
 
-export function ApplicationForm({ job, profile, userId }: ApplicationFormProps) {
+export function JobApplicationForm({ job, profile, userId }: JobApplicationFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -56,11 +46,6 @@ export function ApplicationForm({ job, profile, userId }: ApplicationFormProps) 
   const [salutation, setSalutation] = useState(profile.salutation || 'Herr');
   const [email, setEmail] = useState(profile.email || '');
   const [phone, setPhone] = useState(profile.phone || '');
-  const [birthDate, setBirthDate] = useState(profile.birthDate || '');
-  const [street, setStreet] = useState(profile.street || '');
-  const [zip, setZip] = useState(profile.zip || '');
-  const [city, setCity] = useState(profile.city || '');
-  const [country, setCountry] = useState(profile.country || 'Deutschland');
   const [message, setMessage] = useState('');
 
   // Attachments State
@@ -213,11 +198,6 @@ export function ApplicationForm({ job, profile, userId }: ApplicationFormProps) 
           lastName: profile.lastName,
           email,
           phone,
-          birthDate,
-          street,
-          zip,
-          city,
-          country,
         },
         attachments: attachments.filter(a => a.selected),
         message,
@@ -244,7 +224,7 @@ export function ApplicationForm({ job, profile, userId }: ApplicationFormProps) 
       <div className="space-y-2">
         <h1 className="text-2xl font-bold text-gray-900">Bewerbung als {job.title}</h1>
         <p className="text-gray-500">
-          {job.companyName} • {job.location}
+          {job.company} • {job.location}
         </p>
       </div>
 
@@ -286,157 +266,7 @@ export function ApplicationForm({ job, profile, userId }: ApplicationFormProps) 
               </Label>
               <Input value={phone} onChange={e => setPhone(e.target.value)} type="tel" />
             </div>
-            <div className="space-y-2">
-              <Label>
-                Geburtsdatum <span className="text-gray-400 font-normal">(optional)</span>
-              </Label>
-              <Input value={birthDate} onChange={e => setBirthDate(e.target.value)} type="date" />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>
-                Straße & Hausnummer <span className="text-gray-400 font-normal">(optional)</span>
-              </Label>
-              <Input value={street} onChange={e => setStreet(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>
-                PLZ <span className="text-gray-400 font-normal">(optional)</span>
-              </Label>
-              <Input value={zip} onChange={e => setZip(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>
-                Ort <span className="text-gray-400 font-normal">(optional)</span>
-              </Label>
-              <Input value={city} onChange={e => setCity(e.target.value)} />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>
-                Land <span className="text-gray-400 font-normal">(optional)</span>
-              </Label>
-              <Input value={country} onChange={e => setCountry(e.target.value)} />
-            </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Online Profile Data */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Online-Profil</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          {/* Experience */}
-          {profile.experience && profile.experience.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="font-medium flex items-center gap-2 text-gray-900">
-                <Briefcase className="w-4 h-4 text-teal-600" /> Berufserfahrung
-              </h3>
-              <div className="space-y-6 border-l-2 border-gray-200 ml-5">
-                {profile.experience.map((exp, i) => (
-                  <div key={i} className="relative">
-                    <div className="absolute left-4 top-1.5 w-2.5 h-2.5 rounded-full bg-white border-2 border-teal-600" />
-                    <div className="pl-10">
-                      <div className="text-sm font-medium text-gray-900">{exp.title}</div>
-                      <div className="text-sm text-gray-600">
-                        {exp.company} • {exp.location}
-                      </div>
-                      <div className="text-xs text-gray-400 mt-0.5">
-                        {new Date(exp.startDate).toLocaleDateString('de-DE', {
-                          month: '2-digit',
-                          year: 'numeric',
-                        })}{' '}
-                        -
-                        {exp.endDate
-                          ? new Date(exp.endDate).toLocaleDateString('de-DE', {
-                              month: '2-digit',
-                              year: 'numeric',
-                            })
-                          : 'Heute'}
-                      </div>
-                      {exp.description && (
-                        <p className="text-sm text-gray-500 mt-1 break-all">{exp.description}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Education */}
-          {profile.education && profile.education.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="font-medium flex items-center gap-2 text-gray-900">
-                <GraduationCap className="w-4 h-4 text-teal-600" /> Bildungsweg
-              </h3>
-              <div className="space-y-6 border-l-2 border-gray-200 ml-5">
-                {profile.education.map((edu, i) => (
-                  <div key={i} className="relative">
-                    <div className="absolute left-4 top-1.5 w-2.5 h-2.5 rounded-full bg-white border-2 border-teal-600" />
-                    <div className="pl-10">
-                      <div className="text-sm font-medium text-gray-900">{edu.degree}</div>
-                      <div className="text-sm text-gray-600">
-                        {edu.institution} • {edu.location}
-                      </div>
-                      <div className="text-xs text-gray-400 mt-0.5">
-                        {new Date(edu.startDate).toLocaleDateString('de-DE', {
-                          month: '2-digit',
-                          year: 'numeric',
-                        })}{' '}
-                        -
-                        {edu.endDate
-                          ? new Date(edu.endDate).toLocaleDateString('de-DE', {
-                              month: '2-digit',
-                              year: 'numeric',
-                            })
-                          : 'Heute'}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Languages */}
-          {profile.languages && profile.languages.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="font-medium flex items-center gap-2 text-gray-900">
-                <Globe className="w-4 h-4 text-teal-600" /> Sprachkenntnisse
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-2">
-                {profile.languages.map((lang, i) => (
-                  <div
-                    key={i}
-                    className="flex justify-between items-center p-2 bg-gray-50 rounded border"
-                  >
-                    <span className="text-sm font-medium text-gray-900">{lang.language}</span>
-                    <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
-                      {lang.level}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Qualifications */}
-          {profile.qualifications && profile.qualifications.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="font-medium flex items-center gap-2 text-gray-900">
-                <Award className="w-4 h-4 text-teal-600" /> Fachkenntnisse
-              </h3>
-              <div className="flex flex-wrap gap-2 pl-2">
-                {profile.qualifications.map((qual, i) => (
-                  <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
-                    <span className="text-sm text-gray-700">{qual.name}</span>
-                    {qual.issuer && <span className="text-xs text-gray-400">• {qual.issuer}</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -451,55 +281,49 @@ export function ApplicationForm({ job, profile, userId }: ApplicationFormProps) 
           </p>
 
           <div className="space-y-2">
-            {cvAttachments.length > 0 ? (
-              cvAttachments.map(att => (
-                <div
-                  key={att.id}
-                  className={`flex items-center justify-between p-3 border rounded-md ${att.selected ? 'bg-teal-50 border-teal-200' : 'bg-white'}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      checked={att.selected}
-                      onCheckedChange={() => toggleAttachment(att.id)}
-                      id={`cv-${att.id}`}
-                    />
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-teal-600" />
-                      <label
-                        htmlFor={`cv-${att.id}`}
-                        className="text-sm font-medium cursor-pointer hover:underline"
-                      >
-                        {att.name}
-                      </label>
-                    </div>
-                  </div>
+            {cvAttachments.map(att => (
+              <div
+                key={att.id}
+                className={`flex items-center justify-between p-3 border rounded-md ${att.selected ? 'bg-teal-50 border-teal-200' : 'bg-white'}`}
+              >
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={att.selected}
+                    onCheckedChange={() => toggleAttachment(att.id)}
+                    id={`cv-${att.id}`}
+                  />
                   <div className="flex items-center gap-2">
-                    <a
-                      href={att.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:underline"
+                    <FileText className="h-5 w-5 text-teal-600" />
+                    <label
+                      htmlFor={`cv-${att.id}`}
+                      className="text-sm font-medium cursor-pointer hover:underline"
                     >
-                      Ansehen
-                    </a>
-                    {att.source === 'upload' && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeAttachment(att.id)}
-                        className="h-8 w-8 text-red-500"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+                      {att.name}
+                    </label>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="text-sm text-gray-400 italic p-2">
-                Kein Lebenslauf gefunden. Bitte laden Sie einen hoch.
+                <div className="flex items-center gap-2">
+                  <a
+                    href={att.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    Ansehen
+                  </a>
+                  {att.source === 'upload' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeAttachment(att.id)}
+                      className="h-8 w-8 text-red-500"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
-            )}
+            ))}
           </div>
 
           <div className="pt-2">
@@ -643,7 +467,7 @@ export function ApplicationForm({ job, profile, userId }: ApplicationFormProps) 
           <Link href="/privacy" className="text-teal-600 hover:underline">
             Datenschutzerklärung
           </Link>
-          . Deine Bewerbung wird mit {job.companyName} geteilt.
+          . Deine Bewerbung wird mit {job.company} geteilt.
         </div>
 
         <div className="flex justify-end">

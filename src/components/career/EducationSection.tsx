@@ -6,13 +6,7 @@ import { ApplicantProfile } from '@/types/career';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from '@/components/ui/form';
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -21,7 +15,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Pencil, GraduationCap } from 'lucide-react';
+import { Loader2, Pencil, GraduationCap, Upload, FileText, Trash2 } from 'lucide-react';
+import { storage } from '@/firebase/clients';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { toast } from 'sonner';
 
 interface EducationSectionProps {
   form: UseFormReturn<ApplicantProfile>;
@@ -48,6 +45,7 @@ const YEARS = Array.from({ length: 60 }, (_, i) => (new Date().getFullYear() - i
 
 export function EducationSection({ form, onSave, isSubmitting }: EducationSectionProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'education',
@@ -84,12 +82,46 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
   const formatDateDisplay = (start?: string, end?: string) => {
     const s = parseDate(start);
     const e = parseDate(end);
-    
+
     const startStr = s.year ? `${s.month}/${s.year}` : '';
     const endStr = end ? `${e.month}/${e.year}` : 'jetzt';
-    
+
     if (!startStr) return '';
     return `${startStr} - ${endStr}`;
+  };
+
+  const handleFileUpload = async (index: number, file: File) => {
+    if (!file) return;
+
+    // Validation
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/heic'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Nur PDF, JPG, PNG und HEIC Dateien sind erlaubt.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      // 5MB
+      toast.error('Die Datei darf maximal 5MB groß sein.');
+      return;
+    }
+
+    setUploadingIndex(index);
+    try {
+      const userId = form.getValues('userId');
+      const storageRef = ref(storage, `users/${userId}/certificates/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+
+      form.setValue(`education.${index}.certificateUrl`, downloadURL, { shouldDirty: true });
+      form.setValue(`education.${index}.fileName`, file.name, { shouldDirty: true });
+      toast.success('Zertifikat erfolgreich hochgeladen');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Fehler beim Hochladen des Zertifikats');
+    } finally {
+      setUploadingIndex(null);
+    }
   };
 
   return (
@@ -119,7 +151,10 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
                 const values = form.getValues(`education.${index}`);
                 if (!values) return null;
                 return (
-                  <div key={field.id} className="flex gap-4 border-b border-gray-100 last:border-0 pb-4 last:pb-0">
+                  <div
+                    key={field.id}
+                    className="flex gap-4 border-b border-gray-100 last:border-0 pb-4 last:pb-0"
+                  >
                     <div className="w-[180px] shrink-0 text-sm font-medium text-gray-700 pt-0.5">
                       {formatDateDisplay(values.startDate, values.endDate)}
                     </div>
@@ -140,12 +175,16 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
               const isCurrent = !endDate;
 
               return (
-                <div key={field.id} className="relative bg-white p-6 rounded-lg border-b border-gray-200 last:border-0">
+                <div
+                  key={field.id}
+                  className="relative bg-white p-6 rounded-lg border-b border-gray-200 last:border-0"
+                >
                   <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-x-4 gap-y-6 items-start">
-                    
                     {/* Date Range Label */}
-                    <FormLabel className="text-sm font-medium text-gray-700 pt-2">Beginn / Ende *</FormLabel>
-                    
+                    <FormLabel className="text-sm font-medium text-gray-700 pt-2">
+                      Beginn / Ende *
+                    </FormLabel>
+
                     {/* Date Range Inputs */}
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
@@ -159,7 +198,7 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
                               <div className="flex gap-2">
                                 <Select
                                   value={month}
-                                  onValueChange={(m) => {
+                                  onValueChange={m => {
                                     const y = year || new Date().getFullYear().toString();
                                     field.onChange(`${y}-${m}-01`);
                                   }}
@@ -168,7 +207,7 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
                                     <SelectValue placeholder="MM" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {MONTHS.map((m) => (
+                                    {MONTHS.map(m => (
                                       <SelectItem key={m.value} value={m.value}>
                                         {m.label}
                                       </SelectItem>
@@ -177,7 +216,7 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
                                 </Select>
                                 <Select
                                   value={year}
-                                  onValueChange={(y) => {
+                                  onValueChange={y => {
                                     const m = month || '01';
                                     field.onChange(`${y}-${m}-01`);
                                   }}
@@ -186,7 +225,7 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
                                     <SelectValue placeholder="YYYY" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {YEARS.map((y) => (
+                                    {YEARS.map(y => (
                                       <SelectItem key={y} value={y}>
                                         {y}
                                       </SelectItem>
@@ -212,7 +251,7 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
                                 <div className="flex gap-2">
                                   <Select
                                     value={month}
-                                    onValueChange={(m) => {
+                                    onValueChange={m => {
                                       const y = year || new Date().getFullYear().toString();
                                       field.onChange(`${y}-${m}-01`);
                                     }}
@@ -221,7 +260,7 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
                                       <SelectValue placeholder="MM" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {MONTHS.map((m) => (
+                                      {MONTHS.map(m => (
                                         <SelectItem key={m.value} value={m.value}>
                                           {m.label}
                                         </SelectItem>
@@ -230,7 +269,7 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
                                   </Select>
                                   <Select
                                     value={year}
-                                    onValueChange={(y) => {
+                                    onValueChange={y => {
                                       const m = month || '01';
                                       field.onChange(`${y}-${m}-01`);
                                     }}
@@ -239,7 +278,7 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
                                       <SelectValue placeholder="YYYY" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {YEARS.map((y) => (
+                                      {YEARS.map(y => (
                                         <SelectItem key={y} value={y}>
                                           {y}
                                         </SelectItem>
@@ -258,7 +297,7 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
                         <Checkbox
                           id={`edu-current-${index}`}
                           checked={isCurrent}
-                          onCheckedChange={(checked) => {
+                          onCheckedChange={checked => {
                             if (checked) {
                               form.setValue(`education.${index}.endDate`, undefined);
                             } else {
@@ -280,7 +319,9 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
                     </div>
 
                     {/* Degree (Abschluss) */}
-                    <FormLabel className="text-sm font-medium text-gray-700 pt-3">Abschluss *</FormLabel>
+                    <FormLabel className="text-sm font-medium text-gray-700 pt-3">
+                      Abschluss *
+                    </FormLabel>
                     <FormField
                       control={form.control}
                       name={`education.${index}.degree`}
@@ -295,7 +336,9 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
                     />
 
                     {/* Institution (Bildungseinrichtung) */}
-                    <FormLabel className="text-sm font-medium text-gray-700 pt-3">Bildungseinrichtung *</FormLabel>
+                    <FormLabel className="text-sm font-medium text-gray-700 pt-3">
+                      Bildungseinrichtung *
+                    </FormLabel>
                     <FormField
                       control={form.control}
                       name={`education.${index}.institution`}
@@ -323,7 +366,72 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
                         </FormItem>
                       )}
                     />
-                    
+
+                    {/* Certificate Upload */}
+                    <FormLabel className="text-sm font-medium text-gray-700 pt-3">
+                      Zeugnis / Diplom
+                    </FormLabel>
+                    <div className="w-full">
+                      {uploadingIndex === index ? (
+                        <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-md bg-gray-50 h-24">
+                          <Loader2 className="h-6 w-6 animate-spin text-teal-600 mb-2" />
+                          <span className="text-sm text-gray-500">Wird hochgeladen...</span>
+                        </div>
+                      ) : form.watch(`education.${index}.certificateUrl`) ? (
+                        <div className="flex items-center justify-between p-3 border rounded-md bg-gray-50">
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <FileText className="h-4 w-4 text-teal-600 shrink-0" />
+                            <span className="text-sm truncate">
+                              {form.watch(`education.${index}.fileName`) || 'Dokument'}
+                            </span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              form.setValue(`education.${index}.certificateUrl`, undefined, {
+                                shouldDirty: true,
+                              });
+                              form.setValue(`education.${index}.fileName`, undefined, {
+                                shouldDirty: true,
+                              });
+                            }}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-4">
+                          <Input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png,.heic"
+                            className="hidden"
+                            id={`edu-file-upload-${index}`}
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (file) handleFileUpload(index, file);
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                              document.getElementById(`edu-file-upload-${index}`)?.click()
+                            }
+                            className="w-full border-dashed border-2 h-24 flex flex-col gap-2 hover:bg-gray-50 hover:border-teal-500 hover:text-teal-600"
+                          >
+                            <Upload className="w-6 h-6" />
+                            <span>Datei hochladen</span>
+                            <span className="text-xs text-gray-400 font-normal">
+                              PDF, JPG, PNG (max. 5MB)
+                            </span>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
                     {/* Delete Button (Right aligned) */}
                     <div className="md:col-start-2 flex justify-end">
                       <Button
@@ -345,31 +453,33 @@ export function EducationSection({ form, onSave, isSubmitting }: EducationSectio
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => append({
-                  degree: '',
-                  institution: '',
-                  location: '',
-                  startDate: '',
-                })}
+                onClick={() =>
+                  append({
+                    degree: '',
+                    institution: '',
+                    location: '',
+                    startDate: '',
+                  })
+                }
                 className="text-gray-600 hover:text-gray-900 hover:bg-transparent font-normal h-auto p-0"
               >
                 Neuer Eintrag
               </Button>
 
               <div className="flex gap-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={toggleEdit}
                   className="bg-white hover:bg-gray-50 text-gray-700 border-gray-300"
                 >
                   Abbrechen
                 </Button>
-                <Button 
-                  type="button" 
-                  onClick={toggleEdit} 
+                <Button
+                  type="button"
+                  onClick={toggleEdit}
                   disabled={isSubmitting}
-                  className="bg-taskilo hover:bg-taskilo-hover text-white min-w-[100px]"
+                  className="bg-teal-600 hover:bg-teal-700 text-white min-w-[100px]"
                 >
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Speichern

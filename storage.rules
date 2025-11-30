@@ -255,6 +255,20 @@ service firebase.storage {
                       (isDelete() || (isUpload() && isValidDocumentType()));
     }
 
+    // User CV - Benutzer können ihren Lebenslauf hochladen
+    match /users/{userId}/cv/{fileName} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isSupportStaff());
+      allow write: if request.auth != null && request.auth.uid == userId &&
+                      (isDelete() || (isUpload() && isValidDocumentType()));
+    }
+
+    // User Cover Letters - Benutzer können ihr Anschreiben hochladen
+    match /users/{userId}/cover_letters/{fileName} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isSupportStaff());
+      allow write: if request.auth != null && request.auth.uid == userId &&
+                      (isDelete() || (isUpload() && isValidDocumentType()));
+    }
+
     // User Profile Pictures - Benutzer können ihre Profilbilder hochladen
     match /users/{userId}/profile_picture/{fileName} {
       allow read: if true; // Öffentlich lesbar für Profilanzeige

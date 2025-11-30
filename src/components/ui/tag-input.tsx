@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,15 +37,23 @@ export function TagInput({ placeholder, tags, setTags }: TagInputProps) {
       <div className="flex gap-2">
         <Input
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={e => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onBlur={addTag} // Add tag on blur
           placeholder={placeholder}
           className="flex-1"
         />
+        <Button type="button" onClick={addTag} size="icon" variant="outline">
+          <Plus className="h-4 w-4" />
+        </Button>
       </div>
       <div className="flex flex-wrap gap-2">
         {tags.map((tag, index) => (
-          <Badge key={index} variant="secondary" className="px-2 py-1 text-sm font-normal border border-gray-200 bg-white text-gray-700 hover:bg-gray-50">
+          <Badge
+            key={index}
+            variant="secondary"
+            className="px-2 py-1 text-sm font-normal border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+          >
             {tag}
             <button
               type="button"

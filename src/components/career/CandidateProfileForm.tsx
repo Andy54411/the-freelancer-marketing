@@ -7,6 +7,7 @@ import { EducationSection } from './EducationSection';
 import { LanguageSection } from './LanguageSection';
 import { QualificationSection } from './QualificationSection';
 import { PersonalSection } from './PersonalSection';
+import { DocumentsSection } from './DocumentsSection';
 
 import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -35,7 +36,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Plus, Trash2, Upload, User, Pencil } from 'lucide-react';
+import { Loader2, Plus, Trash2, Upload, User, Pencil, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 
@@ -169,6 +170,12 @@ export function CandidateProfileForm({ userId, initialData }: CandidateProfileFo
       portfolioUrl: initialData?.portfolioUrl || '',
       profilePictureUrl: initialData?.profilePictureUrl || '',
 
+      // Documents
+      cvUrl: initialData?.cvUrl || '',
+      cvName: initialData?.cvName || '',
+      coverLetterUrl: initialData?.coverLetterUrl || '',
+      coverLetterName: initialData?.coverLetterName || '',
+
       // Preferences
       desiredPosition: initialData?.desiredPosition || '',
       jobField: initialData?.jobField || '',
@@ -228,6 +235,32 @@ export function CandidateProfileForm({ userId, initialData }: CandidateProfileFo
       });
       if (!response.ok) throw new Error('Fehler beim Speichern');
       toast.success('Persönliche Daten gespeichert');
+      router.refresh();
+    } catch (error) {
+      toast.error('Fehler beim Speichern');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function saveDocuments() {
+    setIsSubmitting(true);
+    try {
+      const data = form.getValues();
+      const response = await fetch('/api/career/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: data.userId,
+          cvUrl: data.cvUrl,
+          cvName: data.cvName,
+          coverLetterUrl: data.coverLetterUrl,
+          coverLetterName: data.coverLetterName,
+          updatedAt: new Date().toISOString(),
+        }),
+      });
+      if (!response.ok) throw new Error('Fehler beim Speichern');
+      toast.success('Dokumente gespeichert');
       router.refresh();
     } catch (error) {
       toast.error('Fehler beim Speichern');
@@ -364,30 +397,6 @@ export function CandidateProfileForm({ userId, initialData }: CandidateProfileFo
     }
   }
 
-  async function saveLinks() {
-    setIsSubmitting(true);
-    try {
-      const data = form.getValues();
-      const response = await fetch('/api/career/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: data.userId,
-          linkedinUrl: data.linkedinUrl,
-          portfolioUrl: data.portfolioUrl,
-          updatedAt: new Date().toISOString(),
-        }),
-      });
-      if (!response.ok) throw new Error('Fehler beim Speichern');
-      toast.success('Links gespeichert');
-      router.refresh();
-    } catch (error) {
-      toast.error('Fehler beim Speichern');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
   async function onSubmit(data: ApplicantProfile) {
     setIsSubmitting(true);
     try {
@@ -422,553 +431,566 @@ export function CandidateProfileForm({ userId, initialData }: CandidateProfileFo
     <Form {...form}>
       <div className="space-y-8">
         {/* Contact Data - Custom Layout matching requirements */}
-        <PersonalSection 
-          form={form} 
-          onSave={savePersonalData} 
-          isSubmitting={isSubmitting} 
-        />
+        <PersonalSection form={form} onSave={savePersonalData} isSubmitting={isSubmitting} />
 
         {/* Berufliche Wünsche */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-blue-900">Berufliche Wünsche</h3>
-          <Card className="relative">
-            {!isEditingPreferences && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-                onClick={() => setIsEditingPreferences(true)}
-              >
-                <Pencil className="h-5 w-5" />
-              </Button>
-            )}
-            <CardContent className="p-6">
-              {!isEditingPreferences ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="md:col-span-1 text-gray-600">Position</div>
-                    <div className="md:col-span-3 text-gray-900">
-                      {form.getValues('desiredPosition') || '-'}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="md:col-span-1 text-gray-600">Berufsgruppe</div>
-                    <div className="md:col-span-3 text-gray-900">
-                      {form.getValues('jobField') || '-'}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="md:col-span-1 text-gray-600">Arbeitsort</div>
-                    <div className="md:col-span-3 text-gray-900">
-                      {(form.getValues('preferredLocations') || []).join(', ') || '-'}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="md:col-span-1 text-gray-600">Anstellung</div>
-                    <div className="md:col-span-3 text-gray-900">
-                      {(form.getValues('employmentTypes') || []).join(', ') || '-'}
-                    </div>
+        <Card className="mb-8">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-teal-600" />
+              <CardTitle className="text-xl font-semibold">Berufliche Wünsche</CardTitle>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsEditingPreferences(!isEditingPreferences)}
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {!isEditingPreferences ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="md:col-span-1 text-gray-600">Position</div>
+                  <div className="md:col-span-3 text-gray-900">
+                    {form.getValues('desiredPosition') || '-'}
                   </div>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Position */}
-                  <div className="md:col-span-2">
-                    <FormField
-                      control={form.control}
-                      name="desiredPosition"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Position*</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="md:col-span-1 text-gray-600">Berufsgruppe</div>
+                  <div className="md:col-span-3 text-gray-900">
+                    {form.getValues('jobField') || '-'}
                   </div>
-
-                  {/* Berufsgruppe */}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="md:col-span-1 text-gray-600">Arbeitsort</div>
+                  <div className="md:col-span-3 text-gray-900">
+                    {(form.getValues('preferredLocations') || []).join(', ') || '-'}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="md:col-span-1 text-gray-600">Anstellung</div>
+                  <div className="md:col-span-3 text-gray-900">
+                    {(form.getValues('employmentTypes') || []).join(', ') || '-'}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Position */}
+                <div className="md:col-span-2">
                   <FormField
                     control={form.control}
-                    name="jobField"
+                    name="desiredPosition"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Berufsgruppe*</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="--- bitte auswählen ---" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {JOB_CATEGORIES.map(cat => (
-                              <SelectItem key={cat} value={cat}>
-                                {cat}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>Position*</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                </div>
 
-                  {/* Tätigkeitsfeld */}
+                {/* Berufsgruppe */}
+                <FormField
+                  control={form.control}
+                  name="jobField"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Berufsgruppe*</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="--- bitte auswählen ---" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {JOB_CATEGORIES.map(cat => (
+                            <SelectItem key={cat} value={cat}>
+                              {cat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Tätigkeitsfeld */}
+                <FormField
+                  control={form.control}
+                  name="activityField"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tätigkeitsfeld</FormLabel>
+                      <FormControl>
+                        <MultiSelect
+                          options={ACTIVITY_FIELDS.map(f => ({ label: f, value: f }))}
+                          selected={field.value || []}
+                          onChange={field.onChange}
+                          placeholder="Bitte wählen"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Branche */}
+                <div className="md:col-span-2">
                   <FormField
                     control={form.control}
-                    name="activityField"
+                    name="industries"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tätigkeitsfeld</FormLabel>
+                        <FormLabel>Branche*</FormLabel>
                         <FormControl>
                           <MultiSelect
-                            options={ACTIVITY_FIELDS.map(f => ({ label: f, value: f }))}
+                            options={INDUSTRIES.map(i => ({ label: i, value: i }))}
                             selected={field.value || []}
                             onChange={field.onChange}
-                            placeholder="Bitte wählen"
+                            placeholder="Branchen wählen"
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                </div>
 
-                  {/* Branche */}
-                  <div className="md:col-span-2">
+                {/* Hotelsterne */}
+                <div>
+                  <FormLabel className="block mb-2">
+                    Hotelsterne <span className="text-gray-500 text-sm">(Richtwert)</span>
+                  </FormLabel>
+                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="industries"
+                      name="hotelStars.min"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Branche*</FormLabel>
-                          <FormControl>
-                            <MultiSelect
-                              options={INDUSTRIES.map(i => ({ label: i, value: i }))}
-                              selected={field.value || []}
-                              onChange={field.onChange}
-                              placeholder="Branchen wählen"
-                            />
-                          </FormControl>
-                          <FormMessage />
+                          <Select onValueChange={field.onChange} value={field.value as string}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Min" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {[0, 1, 2, 3, 4, 5].map(num => (
+                                <SelectItem key={num} value={num.toString()}>
+                                  {num}*
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="hotelStars.max"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Select onValueChange={field.onChange} value={field.value as string}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Max" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {[0, 1, 2, 3, 4, 5].map(num => (
+                                <SelectItem key={num} value={num.toString()}>
+                                  {num}*
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </FormItem>
                       )}
                     />
                   </div>
+                </div>
 
-                  {/* Hotelsterne */}
-                  <div>
-                    <FormLabel className="block mb-2">
-                      Hotelsterne <span className="text-gray-500 text-sm">(Richtwert)</span>
-                    </FormLabel>
+                {/* Gault Millau */}
+                <div>
+                  <FormLabel className="block mb-2">Gault Millau-Punkte</FormLabel>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="gaultMillauPoints.min"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Select onValueChange={field.onChange} value={field.value as string}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Min" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="0">0</SelectItem>
+                              {Array.from({ length: 12 }, (_, i) => 15 + i * 0.5).map(num => (
+                                <SelectItem key={num} value={num.toString()}>
+                                  {num}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="gaultMillauPoints.max"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Select onValueChange={field.onChange} value={field.value as string}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Max" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="0">0</SelectItem>
+                              {Array.from({ length: 12 }, (_, i) => 15 + i * 0.5).map(num => (
+                                <SelectItem key={num} value={num.toString()}>
+                                  {num}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Michelin */}
+                <div>
+                  <FormLabel className="block mb-2">Michelin-Sterne</FormLabel>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="michelinStars.min"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Select onValueChange={field.onChange} value={field.value as string}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Min" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {[0, 1, 2, 3].map(num => (
+                                <SelectItem key={num} value={num.toString()}>
+                                  {num}*
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="michelinStars.max"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Select onValueChange={field.onChange} value={field.value as string}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Max" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {[0, 1, 2, 3].map(num => (
+                                <SelectItem key={num} value={num.toString()}>
+                                  {num}*
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Anstellung */}
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="employmentTypes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Anstellung*</FormLabel>
+                        <FormControl>
+                          <MultiSelect
+                            options={EMPLOYMENT_TYPES.map(t => ({ label: t, value: t }))}
+                            selected={field.value || []}
+                            onChange={field.onChange}
+                            placeholder="Anstellungsarten wählen"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Arbeitsort */}
+                <div className="md:col-span-2">
+                  <FormField
+                    control={form.control}
+                    name="preferredLocations"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Arbeitsort*</FormLabel>
+                        <FormControl>
+                          <TagInput
+                            placeholder="Ort eingeben und aus der Liste auswählen"
+                            tags={field.value || []}
+                            setTags={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Rang */}
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="careerLevel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Rang*</FormLabel>
+                        <FormControl>
+                          <MultiSelect
+                            options={CAREER_LEVELS.map(l => ({ label: l, value: l }))}
+                            selected={field.value || []}
+                            onChange={field.onChange}
+                            placeholder="Karrierelevel wählen"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Umzugsbereitschaft */}
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="relocationWillingness"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Umzugsbereitschaft</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            className="flex gap-4 pt-2"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="yes" id="relocation-yes" />
+                              <label htmlFor="relocation-yes">vorhanden</label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="no" id="relocation-no" />
+                              <label htmlFor="relocation-no">nicht vorhanden</label>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Kündigungsfrist */}
+                <div className="md:col-span-2">
+                  <FormLabel className="block mb-2">Kündigungsfrist</FormLabel>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
-                        name="hotelStars.min"
+                        name="noticePeriod.duration"
                         render={({ field }) => (
                           <FormItem>
                             <Select onValueChange={field.onChange} value={field.value as string}>
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Min" />
+                                  <SelectValue placeholder="Dauer" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {[0, 1, 2, 3, 4, 5].map(num => (
-                                  <SelectItem key={num} value={num.toString()}>
-                                    {num}*
-                                  </SelectItem>
-                                ))}
+                                <SelectItem value="0">--- bitte auswählen ---</SelectItem>
+                                <SelectItem value="keine">keine</SelectItem>
+                                <SelectItem value="7 Tage">7 Tage</SelectItem>
+                                <SelectItem value="14 Tage">14 Tage</SelectItem>
+                                <SelectItem value="1 Monat">1 Monat</SelectItem>
+                                <SelectItem value="2 Monate">2 Monate</SelectItem>
+                                <SelectItem value="3 Monate">3 Monate</SelectItem>
+                                <SelectItem value="4 Monate">4 Monate</SelectItem>
+                                <SelectItem value="6 Monate">6 Monate</SelectItem>
                               </SelectContent>
                             </Select>
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
                       <FormField
                         control={form.control}
-                        name="hotelStars.max"
+                        name="noticePeriod.timing"
                         render={({ field }) => (
                           <FormItem>
                             <Select onValueChange={field.onChange} value={field.value as string}>
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Max" />
+                                  <SelectValue placeholder="Zeitpunkt" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {[0, 1, 2, 3, 4, 5].map(num => (
-                                  <SelectItem key={num} value={num.toString()}>
-                                    {num}*
-                                  </SelectItem>
-                                ))}
+                                <SelectItem value="0">--- bitte auswählen ---</SelectItem>
+                                <SelectItem value="keine">keine</SelectItem>
+                                <SelectItem value="zur Monatsmitte">zur Monatsmitte</SelectItem>
+                                <SelectItem value="zum Monatsende">zum Monatsende</SelectItem>
+                                <SelectItem value="zum Quartal">zum Quartal</SelectItem>
+                                <SelectItem value="zum Jahresende">zum Jahresende</SelectItem>
                               </SelectContent>
                             </Select>
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
-                    </div>
-                  </div>
-
-                  {/* Gault Millau */}
-                  <div>
-                    <FormLabel className="block mb-2">Gault Millau-Punkte</FormLabel>
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="gaultMillauPoints.min"
-                        render={({ field }) => (
-                          <FormItem>
-                            <Select onValueChange={field.onChange} value={field.value as string}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Min" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="0">0</SelectItem>
-                                {Array.from({ length: 12 }, (_, i) => 15 + i * 0.5).map(num => (
-                                  <SelectItem key={num} value={num.toString()}>
-                                    {num}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="gaultMillauPoints.max"
-                        render={({ field }) => (
-                          <FormItem>
-                            <Select onValueChange={field.onChange} value={field.value as string}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Max" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="0">0</SelectItem>
-                                {Array.from({ length: 12 }, (_, i) => 15 + i * 0.5).map(num => (
-                                  <SelectItem key={num} value={num.toString()}>
-                                    {num}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Michelin */}
-                  <div>
-                    <FormLabel className="block mb-2">Michelin-Sterne</FormLabel>
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="michelinStars.min"
-                        render={({ field }) => (
-                          <FormItem>
-                            <Select onValueChange={field.onChange} value={field.value as string}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Min" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {[0, 1, 2, 3].map(num => (
-                                  <SelectItem key={num} value={num.toString()}>
-                                    {num}*
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="michelinStars.max"
-                        render={({ field }) => (
-                          <FormItem>
-                            <Select onValueChange={field.onChange} value={field.value as string}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Max" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {[0, 1, 2, 3].map(num => (
-                                  <SelectItem key={num} value={num.toString()}>
-                                    {num}*
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Anstellung */}
-                  <div>
-                    <FormField
-                      control={form.control}
-                      name="employmentTypes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Anstellung*</FormLabel>
-                          <FormControl>
-                            <MultiSelect
-                              options={EMPLOYMENT_TYPES.map(t => ({ label: t, value: t }))}
-                              selected={field.value || []}
-                              onChange={field.onChange}
-                              placeholder="Anstellungsarten wählen"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {/* Arbeitsort */}
-                  <div className="md:col-span-2">
-                    <FormField
-                      control={form.control}
-                      name="preferredLocations"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Arbeitsort*</FormLabel>
-                          <FormControl>
-                            <TagInput
-                              placeholder="Ort eingeben und aus der Liste auswählen"
-                              tags={field.value || []}
-                              setTags={field.onChange}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {/* Rang */}
-                  <div>
-                    <FormField
-                      control={form.control}
-                      name="careerLevel"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Rang*</FormLabel>
-                          <FormControl>
-                            <MultiSelect
-                              options={CAREER_LEVELS.map(l => ({ label: l, value: l }))}
-                              selected={field.value || []}
-                              onChange={field.onChange}
-                              placeholder="Karrierelevel wählen"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {/* Umzugsbereitschaft */}
-                  <div>
-                    <FormField
-                      control={form.control}
-                      name="relocationWillingness"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Umzugsbereitschaft</FormLabel>
-                          <FormControl>
-                            <RadioGroup
-                              onValueChange={field.onChange}
-                              value={field.value}
-                              className="flex gap-4 pt-2"
-                            >
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="yes" id="relocation-yes" />
-                                <label htmlFor="relocation-yes">vorhanden</label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="no" id="relocation-no" />
-                                <label htmlFor="relocation-no">nicht vorhanden</label>
-                              </div>
-                            </RadioGroup>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {/* Kündigungsfrist */}
-                  <div className="md:col-span-2">
-                    <FormLabel className="block mb-2">Kündigungsfrist</FormLabel>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="noticePeriod.duration"
-                          render={({ field }) => (
-                            <FormItem>
-                              <Select onValueChange={field.onChange} value={field.value as string}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Dauer" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="0">--- bitte auswählen ---</SelectItem>
-                                  <SelectItem value="keine">keine</SelectItem>
-                                  <SelectItem value="7 Tage">7 Tage</SelectItem>
-                                  <SelectItem value="14 Tage">14 Tage</SelectItem>
-                                  <SelectItem value="1 Monat">1 Monat</SelectItem>
-                                  <SelectItem value="2 Monate">2 Monate</SelectItem>
-                                  <SelectItem value="3 Monate">3 Monate</SelectItem>
-                                  <SelectItem value="4 Monate">4 Monate</SelectItem>
-                                  <SelectItem value="6 Monate">6 Monate</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="noticePeriod.timing"
-                          render={({ field }) => (
-                            <FormItem>
-                              <Select onValueChange={field.onChange} value={field.value as string}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Zeitpunkt" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="0">--- bitte auswählen ---</SelectItem>
-                                  <SelectItem value="keine">keine</SelectItem>
-                                  <SelectItem value="zur Monatsmitte">zur Monatsmitte</SelectItem>
-                                  <SelectItem value="zum Monatsende">zum Monatsende</SelectItem>
-                                  <SelectItem value="zum Quartal">zum Quartal</SelectItem>
-                                  <SelectItem value="zum Jahresende">zum Jahresende</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Gehaltswunsch */}
-                  <div className="md:col-span-2">
-                    <FormLabel className="block mb-2">Gehaltswunsch</FormLabel>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="salaryExpectation.amount"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  placeholder="Betrag"
-                                  {...field}
-                                  value={(field.value as number) || ''}
-                                  onChange={e =>
-                                    field.onChange(
-                                      e.target.value ? parseInt(e.target.value) : undefined
-                                    )
-                                  }
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="salaryExpectation.currency"
-                          render={({ field }) => (
-                            <FormItem>
-                              <Select onValueChange={field.onChange} value={field.value as string}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Währung" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="---">---</SelectItem>
-                                  <SelectItem value="CHF">CHF</SelectItem>
-                                  <SelectItem value="EUR">EUR</SelectItem>
-                                  <SelectItem value="GBP">GBP</SelectItem>
-                                  <SelectItem value="PLN">PLN</SelectItem>
-                                  <SelectItem value="USD">USD</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="salaryExpectation.period"
-                          render={({ field }) => (
-                            <FormItem>
-                              <Select onValueChange={field.onChange} value={field.value as string}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Zeitraum" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="0">--- bitte auswählen ---</SelectItem>
-                                  <SelectItem value="Jahresgehalt - netto">
-                                    Jahresgehalt - netto
-                                  </SelectItem>
-                                  <SelectItem value="Jahresgehalt - brutto">
-                                    Jahresgehalt - brutto
-                                  </SelectItem>
-                                  <SelectItem value="Monatsgehalt - netto">
-                                    Monatsgehalt - netto
-                                  </SelectItem>
-                                  <SelectItem value="Monatsgehalt - brutto">
-                                    Monatsgehalt - brutto
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
                     </div>
                   </div>
                 </div>
-              )}
-            </CardContent>
+
+                {/* Gehaltswunsch */}
+                <div className="md:col-span-2">
+                  <FormLabel className="block mb-2">Gehaltswunsch</FormLabel>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="salaryExpectation.amount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="Betrag"
+                                {...field}
+                                value={(field.value as number) || ''}
+                                onChange={e =>
+                                  field.onChange(
+                                    e.target.value ? parseInt(e.target.value) : undefined
+                                  )
+                                }
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="salaryExpectation.currency"
+                        render={({ field }) => (
+                          <FormItem>
+                            <Select onValueChange={field.onChange} value={field.value as string}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Währung" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="---">---</SelectItem>
+                                <SelectItem value="CHF">CHF</SelectItem>
+                                <SelectItem value="EUR">EUR</SelectItem>
+                                <SelectItem value="GBP">GBP</SelectItem>
+                                <SelectItem value="PLN">PLN</SelectItem>
+                                <SelectItem value="USD">USD</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="salaryExpectation.period"
+                        render={({ field }) => (
+                          <FormItem>
+                            <Select onValueChange={field.onChange} value={field.value as string}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Zeitraum" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="0">--- bitte auswählen ---</SelectItem>
+                                <SelectItem value="Jahresgehalt - netto">
+                                  Jahresgehalt - netto
+                                </SelectItem>
+                                <SelectItem value="Jahresgehalt - brutto">
+                                  Jahresgehalt - brutto
+                                </SelectItem>
+                                <SelectItem value="Monatsgehalt - netto">
+                                  Monatsgehalt - netto
+                                </SelectItem>
+                                <SelectItem value="Monatsgehalt - brutto">
+                                  Monatsgehalt - brutto
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             {isEditingPreferences && (
-              <div className="flex justify-end p-6 pt-0">
-                <Button type="button" onClick={savePreferences} disabled={isSubmitting}>
+              <div className="flex justify-end gap-4 mt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditingPreferences(false)}
+                  disabled={isSubmitting}
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  type="button"
+                  onClick={savePreferences}
+                  disabled={isSubmitting}
+                  className="bg-teal-600 hover:bg-teal-700 text-white"
+                >
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Speichern
                 </Button>
               </div>
             )}
-          </Card>
-        </div>
+          </CardContent>
+        </Card>
+
+        {/* Dokumente */}
+        <DocumentsSection form={form} onSave={saveDocuments} isSubmitting={isSubmitting} />
 
         {/* Lebenslauf (Experience, Education, Languages, Qualifications) */}
         <Card>
@@ -986,49 +1008,12 @@ export function CandidateProfileForm({ userId, initialData }: CandidateProfileFo
             <LanguageSection form={form} onSave={saveLanguages} isSubmitting={isSubmitting} />
 
             {/* Fachkenntnisse */}
-            <QualificationSection form={form} onSave={saveQualifications} isSubmitting={isSubmitting} />
-          </CardContent>
-        </Card>
-
-        {/* Links */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Links & Social Media</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="linkedinUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>LinkedIn URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://linkedin.com/in/..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="portfolioUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Portfolio / Website URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <QualificationSection
+              form={form}
+              onSave={saveQualifications}
+              isSubmitting={isSubmitting}
             />
           </CardContent>
-          <div className="flex justify-end p-6 pt-0">
-            <Button type="button" onClick={saveLinks} disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Speichern
-            </Button>
-          </div>
         </Card>
       </div>
     </Form>

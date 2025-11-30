@@ -47,6 +47,7 @@ const YEARS = Array.from({ length: 60 }, (_, i) => (new Date().getFullYear() - i
 
 export function ExperienceSection({ form, onSave, isSubmitting }: ExperienceSectionProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'experience',
@@ -97,6 +98,7 @@ export function ExperienceSection({ form, onSave, isSubmitting }: ExperienceSect
       return;
     }
 
+    setUploadingIndex(index);
     try {
       const userId = form.getValues('userId');
       const storageRef = ref(storage, `users/${userId}/certificates/${Date.now()}_${file.name}`);
@@ -109,6 +111,8 @@ export function ExperienceSection({ form, onSave, isSubmitting }: ExperienceSect
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Fehler beim Hochladen des Zertifikats');
+    } finally {
+      setUploadingIndex(null);
     }
   };
 
@@ -379,7 +383,12 @@ export function ExperienceSection({ form, onSave, isSubmitting }: ExperienceSect
                       Arbeitszeugnis / Zertifikat
                     </FormLabel>
                     <div className="w-full">
-                      {form.watch(`experience.${index}.certificateUrl`) ? (
+                      {uploadingIndex === index ? (
+                        <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-md bg-gray-50 h-24">
+                          <Loader2 className="h-6 w-6 animate-spin text-teal-600 mb-2" />
+                          <span className="text-sm text-gray-500">Wird hochgeladen...</span>
+                        </div>
+                      ) : form.watch(`experience.${index}.certificateUrl`) ? (
                         <div className="flex items-center justify-between p-3 border rounded-md bg-gray-50">
                           <div className="flex items-center gap-2 overflow-hidden">
                             <FileText className="h-4 w-4 text-teal-600 shrink-0" />

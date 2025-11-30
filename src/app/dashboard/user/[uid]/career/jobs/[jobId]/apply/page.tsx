@@ -4,7 +4,13 @@ import { notFound } from 'next/navigation';
 import { MOCK_JOBS } from '@/lib/mock-jobs';
 import { ApplicationForm } from './ApplicationForm';
 
-export default async function ApplyPage({ params }: { params: Promise<{ uid: string, jobId: string }> }) {
+import { redirect } from 'next/navigation';
+
+export default async function ApplyPage({
+  params,
+}: {
+  params: Promise<{ uid: string; jobId: string }>;
+}) {
   const { uid, jobId } = await params;
 
   if (!db) {
@@ -13,7 +19,7 @@ export default async function ApplyPage({ params }: { params: Promise<{ uid: str
 
   // 1. Fetch Job
   let job: JobPosting | null = null;
-  
+
   // Try Firestore
   const jobDoc = await db.collection('jobs').doc(jobId).get();
   if (jobDoc.exists) {
@@ -51,7 +57,12 @@ export default async function ApplyPage({ params }: { params: Promise<{ uid: str
       profile = profileDoc.data() as ApplicantProfile;
     } else {
       // Try legacy path
-      const legacyDoc = await db.collection('users').doc(uid).collection('career_profile').doc('main').get();
+      const legacyDoc = await db
+        .collection('users')
+        .doc(uid)
+        .collection('career_profile')
+        .doc('main')
+        .get();
       if (legacyDoc.exists) {
         profile = legacyDoc.data() as ApplicantProfile;
       } else {
@@ -66,7 +77,20 @@ export default async function ApplyPage({ params }: { params: Promise<{ uid: str
             email: userData?.email || '',
             salutation: userData?.salutation || '',
             phone: userData?.phone || '',
-          } as ApplicantProfile;
+            // Initialize required arrays
+            experience: [],
+            education: [],
+            languages: [],
+            qualifications: [],
+            skills: [],
+            industries: [],
+            employmentTypes: [],
+            preferredLocations: [],
+            careerLevel: [],
+            // Missing required fields
+            desiredPosition: '',
+            updatedAt: new Date().toISOString(),
+          } as unknown as ApplicantProfile;
         }
       }
     }
@@ -75,8 +99,7 @@ export default async function ApplyPage({ params }: { params: Promise<{ uid: str
   }
 
   if (!profile) {
-    // Optional: Redirect to profile creation if strictly required
-    // redirect(`/dashboard/user/${uid}/career/profile`);
+    redirect(`/dashboard/user/${uid}/career/profile`);
   }
 
   return (

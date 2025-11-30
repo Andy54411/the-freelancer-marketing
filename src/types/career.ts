@@ -41,6 +41,8 @@ export const ApplicantProfileSchema = z.object({
         startDate: z.string(),
         endDate: z.string().optional(),
         description: z.string().optional(),
+        certificateUrl: z.string().optional(),
+        fileName: z.string().optional(),
       })
     )
     .optional(),
@@ -65,6 +67,12 @@ export const ApplicantProfileSchema = z.object({
     .optional(),
   linkedinUrl: z.string().url().optional().or(z.literal('')),
   portfolioUrl: z.string().url().optional().or(z.literal('')),
+
+  // Documents
+  cvUrl: z.string().optional(),
+  cvName: z.string().optional(),
+  coverLetterUrl: z.string().optional(),
+  coverLetterName: z.string().optional(),
 
   // Preferences
   desiredPosition: z.string().min(1, 'Position ist erforderlich'),
