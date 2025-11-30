@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ApplicantProfile } from '@/types/career';
-import { Job } from '@/lib/mock-jobs';
+import { ApplicantProfile, JobPosting } from '@/types/career';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -24,7 +23,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 interface JobApplicationFormProps {
-  job: Job;
+  job: JobPosting;
   profile: ApplicantProfile;
   userId: string;
 }
@@ -224,7 +223,7 @@ export function JobApplicationForm({ job, profile, userId }: JobApplicationFormP
       <div className="space-y-2">
         <h1 className="text-2xl font-bold text-gray-900">Bewerbung als {job.title}</h1>
         <p className="text-gray-500">
-          {job.company} • {job.location}
+          {job.companyName} • {job.location}
         </p>
       </div>
 
@@ -467,7 +466,7 @@ export function JobApplicationForm({ job, profile, userId }: JobApplicationFormP
           <Link href="/privacy" className="text-teal-600 hover:underline">
             Datenschutzerklärung
           </Link>
-          . Deine Bewerbung wird mit {job.company} geteilt.
+          . Deine Bewerbung wird mit {job.companyName} geteilt.
         </div>
 
         <div className="flex justify-end">

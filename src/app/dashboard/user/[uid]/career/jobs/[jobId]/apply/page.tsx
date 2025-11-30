@@ -1,10 +1,11 @@
 import { db } from '@/firebase/server';
 import { JobPosting, ApplicantProfile } from '@/types/career';
 import { notFound } from 'next/navigation';
-import { MOCK_JOBS } from '@/lib/mock-jobs';
 import { ApplicationForm } from './ApplicationForm';
 
 import { redirect } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 
 export default async function ApplyPage({
   params,
@@ -24,23 +25,6 @@ export default async function ApplyPage({
   const jobDoc = await db.collection('jobs').doc(jobId).get();
   if (jobDoc.exists) {
     job = { id: jobDoc.id, ...jobDoc.data() } as JobPosting;
-  } else {
-    // Try Mock Data
-    const mockJob = MOCK_JOBS.find(j => j.id === jobId);
-    if (mockJob) {
-      job = {
-        id: mockJob.id,
-        companyId: 'mock-company-id',
-        companyName: mockJob.company,
-        title: mockJob.title,
-        description: mockJob.description,
-        location: mockJob.location,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        type: mockJob.type as any,
-        postedAt: new Date().toISOString(),
-        status: 'active',
-      } as JobPosting;
-    }
   }
 
   if (!job) {
@@ -51,11 +35,15 @@ export default async function ApplyPage({
   let profile: ApplicantProfile | null = null;
 
   try {
+    console.log(`Fetching profile for user: ${uid}`);
+
     // Try new collection first
     const profileDoc = await db.collection('candidateProfiles').doc(uid).get();
     if (profileDoc.exists) {
+      console.log('Found profile in candidateProfiles');
       profile = profileDoc.data() as ApplicantProfile;
     } else {
+      console.log('Profile not found in candidateProfiles, trying legacy...');
       // Try legacy path
       const legacyDoc = await db
         .collection('users')
@@ -64,8 +52,10 @@ export default async function ApplyPage({
         .doc('main')
         .get();
       if (legacyDoc.exists) {
+        console.log('Found profile in legacy path');
         profile = legacyDoc.data() as ApplicantProfile;
       } else {
+        console.log('Profile not found, creating default from user record');
         // Try to pre-fill from user record
         const userDoc = await db.collection('users').doc(uid).get();
         if (userDoc.exists) {

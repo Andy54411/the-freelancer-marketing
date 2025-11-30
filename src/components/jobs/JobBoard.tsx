@@ -3,19 +3,18 @@
 import React, { useEffect, useState } from 'react';
 import { JobFilterSidebar } from './JobFilterSidebar';
 import { JobCard } from './JobCard';
-import { MOCK_JOBS, Job } from '@/lib/mock-jobs';
+import { JobPosting } from '@/types/career';
 import { Mail, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/clients';
 import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 
-// Mock Data extracted from the user's HTML
-// const MOCK_JOBS removed - imported from lib
+// Mock Data removed
 
 export function JobBoard() {
   const { user } = useAuth();
-  const [allJobs, setAllJobs] = useState<Job[]>([]); // Raw fetch
+  const [allJobs, setAllJobs] = useState<JobPosting[]>([]); // Raw fetch
   const [userFilters, setUserFilters] = useState<any>(null); // Firestore prefs
   const [sidebarFilters, setSidebarFilters] = useState<Record<string, string[]>>({}); // Local clicks
   const [loading, setLoading] = useState(true);
@@ -32,28 +31,29 @@ export function JobBoard() {
           }
         }
 
-        // 2. Fetch Jobs (Try Firestore first, fallback to Mock if empty/error)
-        let fetchedJobs: Job[] = [];
+        // 2. Fetch Jobs (Real Data Only)
+        let fetchedJobs: JobPosting[] = [];
         try {
           const jobsSnapshot = await getDocs(
-            query(collection(db, 'jobs'), where('status', '==', 'active'), orderBy('postedAt', 'desc'), limit(50))
+            query(
+              collection(db, 'jobs'),
+              where('status', '==', 'active'),
+              orderBy('postedAt', 'desc'),
+              limit(50)
+            )
           );
           if (!jobsSnapshot.empty) {
-            fetchedJobs = jobsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
+            fetchedJobs = jobsSnapshot.docs.map(
+              doc => ({ id: doc.id, ...doc.data() }) as JobPosting
+            );
           }
         } catch (e) {
-          console.log('Firestore jobs fetch failed or empty, using mock data', e);
-        }
-
-        if (fetchedJobs.length === 0) {
-          fetchedJobs = MOCK_JOBS;
+          console.error('Firestore jobs fetch failed', e);
         }
 
         setAllJobs(fetchedJobs);
-
       } catch (error) {
         console.error('Error loading job board:', error);
-        setAllJobs(MOCK_JOBS); // Fallback
       } finally {
         setLoading(false);
       }
@@ -68,17 +68,20 @@ export function JobBoard() {
     if (userFilters) {
       jobs = jobs.filter(job => {
         // Location Filter
-        if (userFilters.location && !job.location.toLowerCase().includes(userFilters.location.toLowerCase())) {
+        if (
+          userFilters.location &&
+          !job.location.toLowerCase().includes(userFilters.location.toLowerCase())
+        ) {
           return false;
         }
-        
+
         // Search Phrase
         if (userFilters.searchPhrase) {
           const phrase = userFilters.searchPhrase.toLowerCase();
-          const matches = 
-            job.title.toLowerCase().includes(phrase) || 
+          const matches =
+            job.title.toLowerCase().includes(phrase) ||
             job.description.toLowerCase().includes(phrase) ||
-            job.company.toLowerCase().includes(phrase);
+            job.companyName.toLowerCase().includes(phrase);
           if (!matches) return false;
         }
         return true;
@@ -90,17 +93,14 @@ export function JobBoard() {
   // 2. Apply Sidebar Filters -> Displayed Jobs
   const displayedJobs = React.useMemo(() => {
     let jobs = baseJobs;
-    
-    // Helper to parse German date DD.MM.YYYY
-    const parseDate = (dateStr: string) => {
-      const [day, month, year] = dateStr.split('.').map(Number);
-      return new Date(year, month - 1, day);
-    };
+
     const now = new Date();
 
     // Filter by Sidebar selections
     if (sidebarFilters.location?.length) {
-      jobs = jobs.filter(job => sidebarFilters.location.includes(job.location.split(',')[0].trim()));
+      jobs = jobs.filter(job =>
+        sidebarFilters.location.includes(job.location.split(',')[0].trim())
+      );
     }
     if (sidebarFilters.type?.length) {
       jobs = jobs.filter(job => {
@@ -108,20 +108,23 @@ export function JobBoard() {
         return sidebarFilters.type.some(t => types.includes(t));
       });
     }
+    // Industry and JobGroup filters temporarily disabled as they are not in JobPosting schema
+    /*
     if (sidebarFilters.industry?.length) {
       jobs = jobs.filter(job => job.industry && sidebarFilters.industry.includes(job.industry));
     }
     if (sidebarFilters.jobGroup?.length) {
       jobs = jobs.filter(job => job.jobGroup && sidebarFilters.jobGroup.includes(job.jobGroup));
     }
+    */
     if (sidebarFilters.date?.length) {
       jobs = jobs.filter(job => {
-        if (!job.date) return false;
+        if (!job.postedAt) return false;
         try {
-          const jobDate = parseDate(job.date);
+          const jobDate = new Date(job.postedAt);
           const diffTime = Math.abs(now.getTime() - jobDate.getTime());
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          
+
           return sidebarFilters.date.some(filter => {
             if (filter === '< 3 Tage') return diffDays < 3;
             if (filter === '3 - 7 Tage') return diffDays >= 3 && diffDays <= 7;
@@ -130,7 +133,9 @@ export function JobBoard() {
             if (filter === '> 4 Wochen') return diffDays > 28;
             return false;
           });
-        } catch { return false; }
+        } catch {
+          return false;
+        }
       });
     }
 
@@ -165,7 +170,7 @@ export function JobBoard() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left Column: Filters */}
         <div className="w-full lg:w-1/4">
-          <JobFilterSidebar 
+          <JobFilterSidebar
             jobs={baseJobs} // Pass baseJobs so counts reflect all possibilities within user prefs
             activeFilters={sidebarFilters}
             onFilterChange={handleSidebarFilterChange}
@@ -178,7 +183,10 @@ export function JobBoard() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
             <p className="text-lg text-gray-700">
-              {(userFilters || Object.keys(sidebarFilters).length > 0) ? 'Gefilterte Suche' : 'Alle Jobs'}: <span className="font-bold text-teal-600">{displayedJobs.length}</span> Treffer
+              {userFilters || Object.keys(sidebarFilters).length > 0
+                ? 'Gefilterte Suche'
+                : 'Alle Jobs'}
+              : <span className="font-bold text-teal-600">{displayedJobs.length}</span> Treffer
             </p>
             <Button className="bg-teal-600 hover:bg-teal-700 text-white">
               <Mail className="w-4 h-4 mr-2" />
@@ -189,15 +197,11 @@ export function JobBoard() {
           {/* Job List */}
           <div className="space-y-4">
             {displayedJobs.length > 0 ? (
-              displayedJobs.map((job) => (
-                <JobCard key={job.id} job={job} />
-              ))
+              displayedJobs.map(job => <JobCard key={job.id} job={job} />)
             ) : (
               <div className="text-center py-12 border rounded-lg bg-gray-50">
                 <h3 className="text-lg font-medium text-gray-900">Keine Jobs gefunden</h3>
-                <p className="text-gray-500 mt-1">
-                  Versuchen Sie es mit weniger Filtern.
-                </p>
+                <p className="text-gray-500 mt-1">Versuchen Sie es mit weniger Filtern.</p>
               </div>
             )}
           </div>
@@ -205,7 +209,8 @@ export function JobBoard() {
           {/* Pagination */}
           <div className="mt-8 flex justify-between items-center border-t border-gray-200 pt-4">
             <div className="text-sm text-gray-600">
-              <span className="font-bold text-gray-900">25</span> | <span className="cursor-pointer hover:text-teal-600">50</span> Jobs pro Seite
+              <span className="font-bold text-gray-900">25</span> |{' '}
+              <span className="cursor-pointer hover:text-teal-600">50</span> Jobs pro Seite
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">1 von 1</span>

@@ -3,38 +3,27 @@ import { MapPin, Clock, Calendar, Heart, Sparkles, Send } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Job } from '@/lib/mock-jobs';
+import { JobPosting } from '@/types/career';
 import { useJobFavorites } from '@/hooks/useJobFavorites';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface JobCardProps {
-  job: Job;
+  job: JobPosting;
 }
 
 export const JobCard: React.FC<JobCardProps> = ({ job }) => {
   const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useJobFavorites(job.id);
-  
-  const jobLink = user 
-    ? `/dashboard/user/${user.uid}/career/jobs/${job.id}` 
-    : `/jobs/${job.id}`;
+
+  const jobLink = user ? `/dashboard/user/${user.uid}/career/jobs/${job.id}` : `/jobs/${job.id}`;
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow relative group">
       <div className="flex gap-4">
         {/* Logo */}
         <div className="w-16 h-16 shrink-0 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center overflow-hidden">
-          {job.logoUrl ? (
-            <Image 
-              src={job.logoUrl} 
-              alt={job.company} 
-              width={64} 
-              height={64} 
-              className="object-contain w-full h-full"
-            />
-          ) : (
-            <div className="text-gray-300 font-bold text-xl">{job.company.charAt(0)}</div>
-          )}
+          {/* Logo support to be added later, using initial for now */}
+          <div className="text-gray-300 font-bold text-xl">{job.companyName.charAt(0)}</div>
         </div>
 
         {/* Content */}
@@ -46,11 +35,11 @@ export const JobCard: React.FC<JobCardProps> = ({ job }) => {
                   {job.title}
                 </h3>
               </Link>
-              <p className="text-gray-600 font-medium mb-2">{job.company}</p>
+              <p className="text-gray-600 font-medium mb-2">{job.companyName}</p>
             </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className={`text-gray-400 hover:text-red-500 ${isFavorite ? 'text-red-500' : ''}`}
               onClick={toggleFavorite}
             >
@@ -69,26 +58,11 @@ export const JobCard: React.FC<JobCardProps> = ({ job }) => {
             </div>
             <div className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
-              {job.date}
+              {new Date(job.postedAt).toLocaleDateString('de-DE')}
             </div>
-            {job.isNew && (
-               <div className="flex items-center gap-1 text-blue-600 font-medium">
-                  <Sparkles className="w-4 h-4" />
-                  <span>Neu</span>
-               </div>
-            )}
-            {job.isExpress && (
-               <div className="flex items-center gap-1 text-orange-600 font-medium">
-                  <Send className="w-4 h-4" />
-                  <span>Expressbewerbung</span>
-               </div>
-            )}
           </div>
 
-          <div 
-            className="text-sm text-gray-600 line-clamp-2 mb-4"
-            dangerouslySetInnerHTML={{ __html: job.description }}
-          />
+          <div className="text-sm text-gray-600 line-clamp-2 mb-4">{job.description}</div>
         </div>
       </div>
     </div>
