@@ -35,6 +35,7 @@ export const HeroHeader = () => {
   const [isLoading, setIsLoading] = React.useState(true);
 
   const menuItems = [
+    { name: 'Stellenanzeigen', href: '/jobs', labelKey: 'nav.jobs' },
     { name: 'Dienstleistungen', href: '/services', labelKey: 'nav.services' },
     { name: 'Über uns', href: '/about', labelKey: 'nav.about' },
     { name: 'Kontakt', href: '/contact', labelKey: 'nav.contact' },

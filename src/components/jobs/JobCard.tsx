@@ -45,7 +45,7 @@ export const JobCard: React.FC<JobCardProps> = ({ job }) => {
             <div>
               <Link href={jobLink} className="hover:underline focus:outline-none">
                 <span className="absolute inset-0" aria-hidden="true" />
-                <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-teal-600 transition-colors">
+                <h3 className="text-lg font-bold text-[#14ad9f] mb-1 group-hover:text-teal-700 transition-colors">
                   {job.title}
                 </h3>
               </Link>

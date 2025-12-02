@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useGoogleMaps } from '../contexts/GoogleMapsLoaderContext';
 
 interface PlaceDetails {
@@ -20,7 +20,7 @@ interface UseModernMapsResult {
       countries?: string[];
       onPlaceSelected?: (place: PlaceDetails) => void;
     }
-  ) => void;
+  ) => (() => void) | undefined;
   createAdvancedMarker: (options: {
     position: { lat: number; lng: number };
     map: google.maps.Map;
@@ -78,18 +78,21 @@ export const useModernMaps = (): UseModernMapsResult => {
     };
   }, [isLoaded, google]);
 
-  const createAutocomplete = (
-    input: HTMLInputElement,
-    options: {
-      countries?: string[];
-      onPlaceSelected?: (place: PlaceDetails) => void;
-    } = {}
-  ) => {
-    if (!isLoaded || !google || !input) return;
+  const createAutocomplete = useCallback(
+    (
+      input: HTMLInputElement,
+      options: {
+        countries?: string[];
+        onPlaceSelected?: (place: PlaceDetails) => void;
+      } = {}
+    ) => {
+      if (!isLoaded || !google || !input) return;
 
-    const { countries = ['de', 'at', 'ch'], onPlaceSelected } = options;
+      const { countries = ['de', 'at', 'ch'], onPlaceSelected } = options;
 
-    // Versuche zuerst PlaceAutocompleteElement (modern)
+      // DEAKTIVIERT: Modernes PlaceAutocompleteElement verursacht Probleme mit API-Keys und Duplikaten
+      // Wir verwenden stattdessen das bewährte Autocomplete
+      /*
     if ((google.maps.places as any).PlaceAutocompleteElement) {
       try {
         const element = new (google.maps.places as any).PlaceAutocompleteElement({
@@ -108,53 +111,64 @@ export const useModernMaps = (): UseModernMapsResult => {
         return;
       } catch (error) {}
     }
+    */
 
-    // Fallback auf traditionelles Autocomplete
-    try {
-      const autocomplete = new google.maps.places.Autocomplete(input, {
-        componentRestrictions: { country: countries },
-        fields: ['address_components', 'geometry', 'formatted_address', 'name'],
-      });
-
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        const placeDetails = extractPlaceDetails(place);
-        onPlaceSelected?.(placeDetails);
-      });
-    } catch (error) {}
-  };
-
-  const createAdvancedMarker = (options: {
-    position: { lat: number; lng: number };
-    map: google.maps.Map;
-    title?: string;
-  }) => {
-    if (!isLoaded || !google) return null;
-
-    const { position, map, title } = options;
-
-    // Versuche zuerst AdvancedMarkerElement (modern)
-    if ((google.maps.marker as any)?.AdvancedMarkerElement) {
+      // Fallback auf traditionelles Autocomplete
       try {
-        return new (google.maps.marker as any).AdvancedMarkerElement({
+        const autocomplete = new google.maps.places.Autocomplete(input, {
+          // componentRestrictions: { country: countries }, // Weltweit erlauben, wenn countries nicht strikt gefordert
+          fields: ['address_components', 'geometry', 'formatted_address', 'name'],
+        });
+
+        const listener = autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          const placeDetails = extractPlaceDetails(place);
+          onPlaceSelected?.(placeDetails);
+        });
+
+        // Return cleanup function
+        return () => {
+          google.maps.event.removeListener(listener);
+          const observers = document.querySelectorAll('.pac-container') || [];
+          observers.forEach(el => el.remove());
+        };
+      } catch (error) {}
+
+      return undefined;
+    },
+    [isLoaded, google]
+  );
+
+  const createAdvancedMarker = useCallback(
+    (options: { position: { lat: number; lng: number }; map: google.maps.Map; title?: string }) => {
+      if (!isLoaded || !google) return null;
+
+      const { position, map, title } = options;
+
+      // Versuche zuerst AdvancedMarkerElement (modern)
+      if ((google.maps.marker as any)?.AdvancedMarkerElement) {
+        try {
+          return new (google.maps.marker as any).AdvancedMarkerElement({
+            position,
+            map,
+            title,
+          });
+        } catch (error) {}
+      }
+
+      // Fallback auf traditionellen Marker
+      try {
+        return new google.maps.Marker({
           position,
           map,
           title,
         });
-      } catch (error) {}
-    }
-
-    // Fallback auf traditionellen Marker
-    try {
-      return new google.maps.Marker({
-        position,
-        map,
-        title,
-      });
-    } catch (error) {
-      return null;
-    }
-  };
+      } catch (error) {
+        return null;
+      }
+    },
+    [isLoaded, google]
+  );
 
   const extractPlaceDetails = (place: any): PlaceDetails => {
     if (!place?.address_components) {

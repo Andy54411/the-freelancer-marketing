@@ -30,6 +30,7 @@ import { JobPosting } from '@/types/career';
 import { useJobFavorites } from '@/hooks/useJobFavorites';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { GallerySlider } from '@/components/ui/gallery-slider';
 
 interface JobDetailClientProps {
   job: JobPosting;
@@ -160,7 +161,7 @@ export default function JobDetailClient({
                 >
                   {job.companyName}
                 </Link>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">{job.title}</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-[#14ad9f] mb-4">{job.title}</h1>
 
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                   <div className="flex items-center gap-1.5">
@@ -268,7 +269,7 @@ export default function JobDetailClient({
             )}
 
             {/* Job Description Content */}
-            <div className="prose prose-teal max-w-none text-gray-700 break-words overflow-hidden">
+            <div className="prose prose-teal max-w-none text-gray-700 wrap-break-word overflow-hidden">
               {/* Description from Data */}
               <div className="mb-8 [&_img]:max-w-full [&_img]:h-auto [&_iframe]:max-w-full [&_video]:max-w-full">
                 <div dangerouslySetInnerHTML={{ __html: job.description }} />
@@ -300,7 +301,7 @@ export default function JobDetailClient({
 
               {/* Contact */}
               {job.contactInfo && job.contactInfo.trim().length > 0 ? (
-                <div className="bg-teal-50 p-6 rounded-lg border border-teal-100 mt-12 break-words [&_img]:max-w-full [&_img]:h-auto prose prose-teal max-w-none">
+                <div className="bg-teal-50 p-6 rounded-lg border border-teal-100 mt-12 wrap-break-word [&_img]:max-w-full [&_img]:h-auto prose prose-teal max-w-none">
                   <h3 className="text-lg font-bold text-teal-900 mb-4">
                     Kontakt & Ansprechpartner
                   </h3>
@@ -326,21 +327,7 @@ export default function JobDetailClient({
               {job.galleryImages && job.galleryImages.length > 0 && (
                 <div className="mb-12 mt-12">
                   <h2 className="text-xl font-bold text-gray-900 mb-4">Einblicke</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {job.galleryImages.map((url, index) => (
-                      <div
-                        key={index}
-                        className="relative aspect-video rounded-lg overflow-hidden bg-gray-100"
-                      >
-                        <img
-                          src={url}
-                          alt={`Galeriebild ${index + 1}`}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                          loading="lazy"
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  <GallerySlider images={job.galleryImages} />
                 </div>
               )}
 
@@ -463,15 +450,20 @@ export default function JobDetailClient({
                             <em>{simJob.companyName}</em>
                           </div>
 
-                          <ul className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500 list-none p-0 m-0">
-                            <li className="flex items-center gap-1">{simJob.location}</li>
-                            <li className="flex items-center gap-1">
-                              {jobTypeMap[simJob.type] || simJob.type}
-                            </li>
-                            <li className="flex items-center gap-1">
-                              {new Date(simJob.postedAt).toLocaleDateString('de-DE')}
-                            </li>
-                          </ul>
+                          <div className="flex flex-wrap gap-4 text-sm text-gray-500 mt-2">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              <span>{simJob.location}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              <span>{jobTypeMap[simJob.type] || simJob.type}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              <span>{new Date(simJob.postedAt).toLocaleDateString('de-DE')}</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}

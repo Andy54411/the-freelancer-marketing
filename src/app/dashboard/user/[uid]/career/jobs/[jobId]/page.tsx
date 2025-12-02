@@ -139,7 +139,7 @@ export default async function JobDetailsPage({
               <Link href="#" className="text-lg text-gray-500 hover:text-teal-600 mb-1 block">
                 {job.companyName}
               </Link>
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">{job.title}</h1>
+              <h1 className="text-3xl font-bold text-[#14ad9f] mb-3">{job.title}</h1>
               <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                 <span className="flex items-center gap-1">
                   <MapPin className="h-4 w-4" /> {job.location}

@@ -35,7 +35,7 @@ import {
   limit,
 } from 'firebase/firestore'; // Firestore Funktionen
 import { categories, Category } from '@/lib/categoriesData'; // Importiere Kategorien und Typen
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 const auth = getAuth(app);
 
@@ -498,10 +498,12 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
   }, [searchTerm]);
 
   // Debug: Log company prop
+  const pathname = usePathname();
+  const isJobsPage = pathname?.startsWith('/jobs');
 
   return (
     <>
-      <header className="bg-white shadow-sm sticky top-0 z-50">
+      <header className={`bg-white shadow-sm z-50 ${isJobsPage ? 'relative' : 'sticky top-0'}`}>
         <div className="w-full px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center gap-4 sm:gap-8">
             {company ? (
@@ -524,10 +526,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
             )}
 
             {/* Suchleiste - Responsive */}
-            <div
-              className="relative flex-1"
-              ref={searchDropdownContainerRef}
-            >
+            <div className="relative flex-1" ref={searchDropdownContainerRef}>
               <input
                 ref={searchInputRef}
                 type="search"

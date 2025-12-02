@@ -19,6 +19,13 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import Footer from '@/components/footer';
 import Script from 'next/script';
+import { Inter } from 'next/font/google';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -274,7 +281,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <StructuredData type="Organization" />
         <StructuredData type="WebSite" />
       </head>
-      <body>
+      <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <CookieConsentProvider>
             <AnalyticsProvider>

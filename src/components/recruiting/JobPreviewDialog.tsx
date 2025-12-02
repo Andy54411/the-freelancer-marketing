@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { MapPin, Calendar, Clock, ArrowLeft, Share2, Printer, Star, Building2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { GallerySlider } from '@/components/ui/gallery-slider';
 
 interface JobPreviewDialogProps {
   open: boolean;
@@ -208,6 +209,14 @@ export function JobPreviewDialog({
                       <div className="mb-8">
                         <h2 className="text-xl font-bold text-gray-900 mb-4">Das bieten wir Dir</h2>
                         <div dangerouslySetInnerHTML={{ __html: data.benefits }} />
+                      </div>
+                    )}
+
+                    {/* Gallery Images */}
+                    {data.galleryImages && data.galleryImages.length > 0 && (
+                      <div className="mb-12 mt-12">
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">Einblicke</h2>
+                        <GallerySlider images={data.galleryImages} />
                       </div>
                     )}
 

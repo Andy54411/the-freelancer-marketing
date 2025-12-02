@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronDown, ChevronUp, X, Check } from 'lucide-react';
 import { JobPosting } from '@/types/career';
+import { findCategoryBySubcategory } from '@/lib/categoriesData';
+import { Slider } from '@/components/ui/slider';
 
 interface FilterGroupProps {
   title: string;
@@ -70,11 +72,59 @@ function FilterGroup({
   );
 }
 
+interface SalaryFilterProps {
+  min: number;
+  max: number;
+  currentMin?: number;
+  currentMax?: number;
+  onChange: (min: number, max: number) => void;
+}
+
+function SalaryFilter({ min, max, currentMin, currentMax, onChange }: SalaryFilterProps) {
+  const [open, setOpen] = useState(true);
+  const [localValue, setLocalValue] = useState([currentMin || min, currentMax || max]);
+
+  // Only show if we have a valid range
+  if (min >= max) return null;
+
+  return (
+    <div className="mb-4 border-b border-gray-200 pb-4 last:border-0">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-between w-full text-left font-semibold text-gray-800 mb-2 hover:text-teal-600"
+      >
+        Gehalt (Jährlich)
+        {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </button>
+
+      {open && (
+        <div className="px-2 py-2">
+          <div className="flex justify-between text-sm text-gray-600 mb-4">
+            <span>{localValue[0].toLocaleString()} €</span>
+            <span>{localValue[1].toLocaleString()} €</span>
+          </div>
+          <Slider
+            defaultValue={[min, max]}
+            value={localValue}
+            min={min}
+            max={max}
+            step={1000}
+            onValueChange={setLocalValue}
+            onValueCommit={val => onChange(val[0], val[1])}
+            className="my-4"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface JobFilterSidebarProps {
   jobs?: JobPosting[];
   onClearFilters?: () => void;
   activeFilters?: Record<string, string[]>;
-  onFilterChange?: (category: string, value: string) => void;
+  onFilterChange?: (category: string, value: string | number | number[]) => void;
+  salaryRange?: { min: number; max: number };
 }
 
 export function JobFilterSidebar({
@@ -82,12 +132,17 @@ export function JobFilterSidebar({
   onClearFilters,
   activeFilters = {},
   onFilterChange,
+  salaryRange,
 }: JobFilterSidebarProps) {
   const facets = React.useMemo(() => {
+    const categories: Record<string, number> = {};
+    const regions: Record<string, number> = {};
+    const languages: Record<string, number> = {};
+    const careerLevels: Record<string, number> = {};
     const locations: Record<string, number> = {};
     const types: Record<string, number> = {};
-    // const industries: Record<string, number> = {};
-    // const jobGroups: Record<string, number> = {};
+    const titles: Record<string, number> = {};
+    const industries: Record<string, number> = {};
     const dates: Record<string, number> = {
       '< 3 Tage': 0,
       '3 - 7 Tage': 0,
@@ -99,9 +154,9 @@ export function JobFilterSidebar({
     const jobTypeTranslations: Record<string, string> = {
       'full-time': 'Vollzeit',
       'part-time': 'Teilzeit',
-      contract: 'Freiberuflich',
-      freelance: 'Freelance',
-      internship: 'Praktikum',
+      contract: 'Zeit- / Saisonvertrag',
+      freelance: 'Freiberuflich / Selbständig',
+      internship: 'Praktikum / Ausbildung',
       apprenticeship: 'Ausbildung',
       working_student: 'Werkstudent',
     };
@@ -109,7 +164,29 @@ export function JobFilterSidebar({
     const now = new Date();
 
     jobs.forEach(job => {
-      // Location
+      // Category (Berufsgruppe)
+      if (job.category) {
+        categories[job.category] = (categories[job.category] || 0) + 1;
+      }
+
+      // Region (Ort)
+      if (job.region) {
+        regions[job.region] = (regions[job.region] || 0) + 1;
+      }
+
+      // Languages (Sprache)
+      if (job.languages && Array.isArray(job.languages)) {
+        job.languages.forEach(lang => {
+          languages[lang] = (languages[lang] || 0) + 1;
+        });
+      }
+
+      // Career Level (Rang)
+      if (job.careerLevel) {
+        careerLevels[job.careerLevel] = (careerLevels[job.careerLevel] || 0) + 1;
+      }
+
+      // Location (Stadt)
       if (job.location) {
         const loc = job.location.split(',')[0].trim();
         locations[loc] = (locations[loc] || 0) + 1;
@@ -119,21 +196,42 @@ export function JobFilterSidebar({
       if (job.type) {
         const typeList = job.type.split(',').map(t => t.trim());
         typeList.forEach(t => {
-          types[t] = (types[t] || 0) + 1;
+          const label = jobTypeTranslations[t] || t;
+          types[label] = (types[label] || 0) + 1;
         });
       }
 
-      /*
-      // Industry
-      if (job.industry) {
-        industries[job.industry] = (industries[job.industry] || 0) + 1;
+      // Title (Beruf)
+      if (job.title) {
+        titles[job.title] = (titles[job.title] || 0) + 1;
       }
 
-      // Job Group
-      if (job.jobGroup) {
-        jobGroups[job.jobGroup] = (jobGroups[job.jobGroup] || 0) + 1;
+      // Industry (Branche)
+      let industry = job.industry;
+
+      if (!industry) {
+        industry = findCategoryBySubcategory(job.title);
       }
-      */
+
+      if (!industry) {
+        // Fallback: Guess from Company Name
+        const companyLower = job.companyName.toLowerCase();
+        if (companyLower.includes('hotel') || companyLower.includes('resort'))
+          industry = 'Hotellerie';
+        else if (
+          companyLower.includes('restaurant') ||
+          companyLower.includes('bar') ||
+          companyLower.includes('café') ||
+          companyLower.includes('bistro')
+        )
+          industry = 'Gastronomie';
+        else if (companyLower.includes('gmbh') || companyLower.includes('ag'))
+          industry = 'Dienstleistung';
+      }
+
+      if (industry) {
+        industries[industry] = (industries[industry] || 0) + 1;
+      }
 
       // Date
       if (job.postedAt) {
@@ -154,18 +252,34 @@ export function JobFilterSidebar({
     });
 
     return {
+      categories: Object.entries(categories)
+        .map(([label, count]) => ({ label, count, value: label }))
+        .sort((a, b) => b.count - a.count),
+      regions: Object.entries(regions)
+        .map(([label, count]) => ({ label, count, value: label }))
+        .sort((a, b) => b.count - a.count),
+      languages: Object.entries(languages)
+        .map(([label, count]) => ({ label, count, value: label }))
+        .sort((a, b) => b.count - a.count),
+      careerLevels: Object.entries(careerLevels)
+        .map(([label, count]) => ({ label, count, value: label }))
+        .sort((a, b) => b.count - a.count),
       locations: Object.entries(locations)
         .map(([label, count]) => ({ label, count, value: label }))
         .sort((a, b) => b.count - a.count),
       types: Object.entries(types)
         .map(([value, count]) => ({
-          label: jobTypeTranslations[value] || value,
+          label: value,
           count,
           value,
         }))
         .sort((a, b) => b.count - a.count),
-      // industries: Object.entries(industries).map(([label, count]) => ({ label, count, value: label })).sort((a, b) => b.count - a.count),
-      // jobGroups: Object.entries(jobGroups).map(([label, count]) => ({ label, count, value: label })).sort((a, b) => b.count - a.count),
+      titles: Object.entries(titles)
+        .map(([label, count]) => ({ label, count, value: label }))
+        .sort((a, b) => b.count - a.count),
+      industries: Object.entries(industries)
+        .map(([label, count]) => ({ label, count, value: label }))
+        .sort((a, b) => b.count - a.count),
       dates: Object.entries(dates)
         .filter(([, count]) => count > 0)
         .map(([label, count]) => ({ label, count, value: label })),
@@ -178,31 +292,61 @@ export function JobFilterSidebar({
       <div className="mb-6 pb-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-bold text-gray-900">Filter</h3>
-          <button onClick={onClearFilters} className="text-xs text-blue-600 hover:underline">
+          <button onClick={onClearFilters} className="text-xs text-teal-600 hover:underline">
             Alle entfernen
           </button>
         </div>
       </div>
 
+      {salaryRange && (
+        <SalaryFilter
+          min={salaryRange.min}
+          max={salaryRange.max}
+          currentMin={activeFilters.salaryMin ? Number(activeFilters.salaryMin[0]) : undefined}
+          currentMax={activeFilters.salaryMax ? Number(activeFilters.salaryMax[0]) : undefined}
+          onChange={(min, max) => {
+            if (onFilterChange) {
+              // We pass these as separate filter updates
+              onFilterChange('salaryMin', min);
+              onFilterChange('salaryMax', max);
+            }
+          }}
+        />
+      )}
+
       <FilterGroup
-        title="Berufsgruppe"
-        items={[]} // facets.jobGroups
-        selectedValues={activeFilters.jobGroup}
-        onSelect={val => onFilterChange && onFilterChange('jobGroup', val)}
+        title="Berufsgruppe / Beruf"
+        items={facets.categories}
+        selectedValues={activeFilters.category}
+        onSelect={val => onFilterChange && onFilterChange('category', val)}
       />
 
       <FilterGroup
         title="Ort"
-        items={facets.locations}
-        selectedValues={activeFilters.location}
-        onSelect={val => onFilterChange && onFilterChange('location', val)}
+        items={facets.regions}
+        selectedValues={activeFilters.region}
+        onSelect={val => onFilterChange && onFilterChange('region', val)}
+      />
+
+      <FilterGroup
+        title="Sprache"
+        items={facets.languages}
+        selectedValues={activeFilters.languages}
+        onSelect={val => onFilterChange && onFilterChange('languages', val)}
       />
 
       <FilterGroup
         title="Branche"
-        items={[]} // facets.industries
+        items={facets.industries}
         selectedValues={activeFilters.industry}
         onSelect={val => onFilterChange && onFilterChange('industry', val)}
+      />
+
+      <FilterGroup
+        title="Rang"
+        items={facets.careerLevels}
+        selectedValues={activeFilters.careerLevel}
+        onSelect={val => onFilterChange && onFilterChange('careerLevel', val)}
       />
 
       <FilterGroup

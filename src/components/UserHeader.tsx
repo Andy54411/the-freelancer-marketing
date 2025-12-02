@@ -50,6 +50,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { OverdueInvoicesAlert } from '@/components/finance/OverdueInvoicesAlert';
 import { useUpdateNotifications } from '@/hooks/useUpdateNotifications';
+import useMeasure from 'react-use-measure';
+
 const auth = getAuth(app);
 
 // NEU: Interface für Benachrichtigungen
@@ -98,6 +100,38 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0); // NEU
   const [notifications, setNotifications] = useState<NotificationPreview[]>([]); // NEU
+
+  // Scroll-Logic for hiding header
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const [headerRef, bounds] = useMeasure();
+
+  useEffect(() => {
+    const controlNavbar = () => {
+      if (typeof window !== 'undefined') {
+        const currentScrollY = window.scrollY;
+
+        // Ignore negative scroll (Safari bounce)
+        if (currentScrollY < 0) return;
+
+        const diff = currentScrollY - lastScrollY.current;
+
+        // Hide if scrolling down AND scrolled past 100px
+        if (diff > 0 && currentScrollY > 100) {
+          setIsVisible(false);
+        }
+        // Show if scrolling up significantly (more than 10px) or at the very top
+        else if (diff < -10 || currentScrollY < 100) {
+          setIsVisible(true);
+        }
+
+        lastScrollY.current = currentScrollY;
+      }
+    };
+
+    window.addEventListener('scroll', controlNavbar);
+    return () => window.removeEventListener('scroll', controlNavbar);
+  }, []);
   const [unreadEmailsCount, setUnreadEmailsCount] = useState(0); // 🔔 UNREAD EMAILS
   const [workspaces, setWorkspaces] = useState<any[]>([]); // For Quick Note functionality
   const [searchTerm, setSearchTerm] = useState('');
@@ -528,7 +562,12 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
   return (
     <>
-      <header className="bg-white shadow-sm sticky top-0 z-50">
+      <div style={{ height: bounds.height > 0 ? bounds.height : 120 }} className="w-full" />
+      <header
+        ref={headerRef}
+        className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out"
+        style={{ transform: isVisible ? 'translateY(0)' : 'translateY(-100%)' }}
+      >
         <div className="w-full px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center gap-4 sm:gap-8">
             {/* Logo */}
@@ -537,10 +576,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
             </Link>
 
             {/* Suchleiste */}
-            <div
-              className="relative flex-1"
-              ref={searchDropdownContainerRef}
-            >
+            <div className="relative flex-1" ref={searchDropdownContainerRef}>
               <input
                 ref={searchInputRef}
                 type="search"
@@ -1158,21 +1194,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         </div>
         <AppHeaderNavigation />
       </header>
-
-      <style jsx>
-        {`
-          @media (max-width: 768px) {
-            header {
-              position: relative;
-            }
-
-            .container {
-              padding-left: 1rem;
-              padding-right: 1rem;
-            }
-          }
-        `}
-      </style>
     </>
   );
 };

@@ -138,10 +138,22 @@ export const JobPostingSchema = z.object({
   companyId: z.string(),
   companyName: z.string(),
   title: z.string().min(1, 'Titel ist erforderlich'),
+  industry: z.string().optional(), // Branche
+  category: z.string().optional(), // Berufsgruppe
+  region: z.string().optional(), // Ort (Region)
+  languages: z.array(z.string()).optional(), // Sprache
+  careerLevel: z.string().optional(), // Rang
   description: z.string().min(1, 'Beschreibung ist erforderlich'),
   tasks: z.string().optional(),
   location: z.string().min(1, 'Standort ist erforderlich'),
-  type: z.enum(['full-time', 'part-time', 'contract', 'freelance', 'internship']),
+  coordinates: z
+    .object({
+      lat: z.number(),
+      lng: z.number(),
+    })
+    .optional(),
+  geohash: z.string().optional(),
+  type: z.string(), // Anstellung (changed from strict enum to allow new German values)
   salaryRange: z
     .object({
       min: z.number().optional(),
