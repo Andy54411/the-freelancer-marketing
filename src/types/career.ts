@@ -139,6 +139,7 @@ export const JobPostingSchema = z.object({
   companyName: z.string(),
   title: z.string().min(1, 'Titel ist erforderlich'),
   description: z.string().min(1, 'Beschreibung ist erforderlich'),
+  tasks: z.string().optional(),
   location: z.string().min(1, 'Standort ist erforderlich'),
   type: z.enum(['full-time', 'part-time', 'contract', 'freelance', 'internship']),
   salaryRange: z
@@ -148,7 +149,13 @@ export const JobPostingSchema = z.object({
       currency: z.string().default('EUR'),
     })
     .optional(),
-  requirements: z.array(z.string()).optional(),
+  requirements: z.string().optional(),
+  benefits: z.string().optional(),
+  contactInfo: z.string().optional(),
+  headerImageUrl: z.string().optional(),
+  headerImagePositionY: z.number().optional().default(50), // 0-100%
+  logoUrl: z.string().optional(),
+  galleryImages: z.array(z.string()).optional(),
   postedAt: z.string(), // ISO Date
   expiresAt: z.string().optional(), // ISO Date
   status: z.enum(['active', 'closed', 'draft']),

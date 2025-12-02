@@ -7,7 +7,11 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, MapPin, Clock } from 'lucide-react';
 import Link from 'next/link';
 
-export default async function CompanyJobDetailsPage({ params }: { params: Promise<{ uid: string, jobId: string }> }) {
+export default async function CompanyJobDetailsPage({
+  params,
+}: {
+  params: Promise<{ uid: string; jobId: string }>;
+}) {
   const { uid, jobId } = await params;
 
   if (!db) {
@@ -15,7 +19,14 @@ export default async function CompanyJobDetailsPage({ params }: { params: Promis
   }
 
   // Fetch Job
-  const jobDoc = await db.collection('jobs').doc(jobId).get();
+  // Try subcollection first
+  let jobDoc = await db.collection('companies').doc(uid).collection('jobs').doc(jobId).get();
+
+  // Fallback to global collection
+  if (!jobDoc.exists) {
+    jobDoc = await db.collection('jobs').doc(jobId).get();
+  }
+
   if (!jobDoc.exists) {
     notFound();
   }
@@ -29,17 +40,18 @@ export default async function CompanyJobDetailsPage({ params }: { params: Promis
   // Fetch Applications
   let applications: JobApplication[] = [];
   try {
-    const appsSnapshot = await db.collection('jobApplications')
+    const appsSnapshot = await db
+      .collection('jobApplications')
       .where('jobId', '==', jobId)
       .orderBy('appliedAt', 'desc')
       .get();
-    
-    applications = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JobApplication));
+
+    applications = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as JobApplication);
   } catch (error) {
     console.error('Error fetching applications:', error);
     // Fallback
     const appsSnapshot = await db.collection('jobApplications').where('jobId', '==', jobId).get();
-    applications = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JobApplication));
+    applications = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as JobApplication);
   }
 
   return (
@@ -85,7 +97,8 @@ export default async function CompanyJobDetailsPage({ params }: { params: Promis
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Gehalt</span>
                 <span>
-                  {job.salaryRange?.min ? `€${job.salaryRange.min}` : '-'} - {job.salaryRange?.max ? `€${job.salaryRange.max}` : '-'}
+                  {job.salaryRange?.min ? `€${job.salaryRange.min}` : '-'} -{' '}
+                  {job.salaryRange?.max ? `€${job.salaryRange.max}` : '-'}
                 </span>
               </div>
             </div>

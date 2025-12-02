@@ -21,8 +21,17 @@ export default async function ApplyPage({
   // 1. Fetch Job
   let job: JobPosting | null = null;
 
-  // Try Firestore
-  const jobDoc = await db.collection('jobs').doc(jobId).get();
+  // Try Firestore Global
+  let jobDoc = await db.collection('jobs').doc(jobId).get();
+
+  // Try Subcollections
+  if (!jobDoc.exists) {
+    const querySnapshot = await db.collectionGroup('jobs').where('id', '==', jobId).limit(1).get();
+    if (!querySnapshot.empty) {
+      jobDoc = querySnapshot.docs[0];
+    }
+  }
+
   if (jobDoc.exists) {
     job = { id: jobDoc.id, ...jobDoc.data() } as JobPosting;
   }

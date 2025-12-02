@@ -20,6 +20,17 @@ import Link from 'next/link';
 import { JobApplicationDialog } from '@/components/career/JobApplicationDialog';
 import { JobActions } from './JobActions';
 
+const jobTypeTranslations: Record<string, string> = {
+  'full-time': 'Vollzeit',
+  'part-time': 'Teilzeit',
+  contract: 'Vertragsbasis',
+  freelance: 'Freiberuflich',
+  internship: 'Praktikum',
+  temporary: 'Aushilfe',
+  apprenticeship: 'Ausbildung',
+  working_student: 'Werkstudent',
+};
+
 export default async function JobDetailsPage({
   params,
 }: {
@@ -34,8 +45,17 @@ export default async function JobDetailsPage({
   // Fetch Job
   let job: JobPosting | null = null;
 
-  // 1. Try Firestore
-  const jobDoc = await db.collection('jobs').doc(jobId).get();
+  // 1. Try Firestore Global Collection
+  let jobDoc = await db.collection('jobs').doc(jobId).get();
+
+  // 2. If not found, try Subcollections via Collection Group
+  if (!jobDoc.exists) {
+    const querySnapshot = await db.collectionGroup('jobs').where('id', '==', jobId).limit(1).get();
+    if (!querySnapshot.empty) {
+      jobDoc = querySnapshot.docs[0];
+    }
+  }
+
   if (jobDoc.exists) {
     job = { id: jobDoc.id, ...jobDoc.data() } as JobPosting;
   }
@@ -68,6 +88,29 @@ export default async function JobDetailsPage({
     .map(doc => ({ id: doc.id, ...doc.data() }) as JobPosting)
     .filter(j => j.id !== jobId)
     .slice(0, 3);
+
+  // Fetch Company Details for "Company Info" section
+  let companyDescription = '';
+  let companyJobCount = 0;
+
+  if (job.companyId) {
+    try {
+      const companyDoc = await db.collection('companies').doc(job.companyId).get();
+      if (companyDoc.exists) {
+        companyDescription = companyDoc.data()?.description || '';
+      }
+
+      const jobsQuery = await db
+        .collectionGroup('jobs')
+        .where('companyId', '==', job.companyId)
+        .where('status', '==', 'active')
+        .count()
+        .get();
+      companyJobCount = jobsQuery.data().count;
+    } catch (e) {
+      console.error('Error fetching company details:', e);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 pb-10 font-sans">
@@ -102,7 +145,7 @@ export default async function JobDetailsPage({
                   <MapPin className="h-4 w-4" /> {job.location}
                 </span>
                 <span className="flex items-center gap-1 capitalize">
-                  <Building2 className="h-4 w-4" /> {job.type}
+                  <Building2 className="h-4 w-4" /> {jobTypeTranslations[job.type] || job.type}
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="h-4 w-4" /> {new Date(job.postedAt).toLocaleDateString('de-DE')}
@@ -127,9 +170,11 @@ export default async function JobDetailsPage({
                 </Link>
               )}
               <div className="flex gap-2">
-                <Button variant="outline" size="icon" title="Unternehmensprofil">
-                  <Building2 className="h-4 w-4" />
-                </Button>
+                <Link href={`/companies/${job.companyId}`}>
+                  <Button variant="outline" size="icon" title="Unternehmensprofil">
+                    <Building2 className="h-4 w-4" />
+                  </Button>
+                </Link>
                 <Button variant="outline" size="icon" title="Drucken">
                   <Printer className="h-4 w-4" />
                 </Button>
@@ -148,90 +193,108 @@ export default async function JobDetailsPage({
         <div className="lg:col-span-2 space-y-6">
           <Card className="overflow-hidden border-none shadow-sm">
             {/* Header Image Placeholder */}
-            <div className="h-64 bg-gray-200 w-full relative">
-              {/* Replace with actual image if available */}
+            <div className="h-64 bg-gray-200 w-full relative overflow-hidden">
               <img
-                src="https://api.cvmanager.ch/images/uploads/279e972b-7b40-43d4-8a7d-423315bb4206.jpg"
+                src={
+                  job.headerImageUrl ||
+                  'https://api.cvmanager.ch/images/uploads/279e972b-7b40-43d4-8a7d-423315bb4206.jpg'
+                }
                 alt="Job Header"
                 className="w-full h-full object-cover"
+                style={{ objectPosition: `center ${job.headerImagePositionY ?? 50}%` }}
               />
             </div>
 
             <CardContent className="p-8 space-y-8 text-gray-700 leading-relaxed">
               {/* Introduction */}
-              <div id="introduction">
-                <p className="mb-4">
-                  <strong>{job.companyName}</strong> verbindet Menschen, frisches Essen,
-                  Lebensmittel und Produkte zu einem Erlebnis.
-                </p>
-                <p className="mb-4">
-                  Wir suchen motivierte, offene und herzliche Mitarbeitende, die Lust haben,
-                  gemeinsam mit uns einen besonderen Ort zu schaffen!
-                </p>
-                <p className="whitespace-pre-wrap">{job.description}</p>
-              </div>
+              <div id="introduction" dangerouslySetInnerHTML={{ __html: job.description }} />
 
               {/* Tasks */}
-              <div id="tasks">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Deine Aufgaben</h2>
-                <ul className="list-disc pl-5 space-y-2">
-                  <li>Zubereitung und Ausgabe unserer Speisen</li>
-                  <li>Betreuung unserer Gäste mit einem Lächeln</li>
-                  <li>Mitarbeit im täglichen Ablauf</li>
-                  <li>Sicherstellen einer sauberen und angenehmen Arbeitsumgebung</li>
-                  <li>Unterstützung bei der Eröffnung und Weiterentwicklung des Outlets</li>
-                </ul>
-              </div>
+              {job.tasks ? (
+                <div id="tasks" dangerouslySetInnerHTML={{ __html: job.tasks }} />
+              ) : (
+                <div id="tasks">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">Deine Aufgaben</h2>
+                  <ul className="list-disc pl-5 space-y-2">
+                    <li>Zubereitung und Ausgabe unserer Speisen</li>
+                    <li>Betreuung unserer Gäste mit einem Lächeln</li>
+                    <li>Mitarbeit im täglichen Ablauf</li>
+                    <li>Sicherstellen einer sauberen und angenehmen Arbeitsumgebung</li>
+                    <li>Unterstützung bei der Eröffnung und Weiterentwicklung des Outlets</li>
+                  </ul>
+                </div>
+              )}
 
               {/* Profile / Requirements */}
               <div id="profile">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Was du mitbringst</h2>
-                <ul className="list-disc pl-5 space-y-2">
-                  {job.requirements && job.requirements.length > 0 ? (
-                    job.requirements.map((req, i) => <li key={i}>{req}</li>)
-                  ) : (
-                    <>
-                      <li>Freude an der Arbeit mit Lebensmitteln</li>
-                      <li>Teamgeist, Zuverlässigkeit und Begeisterung</li>
-                      <li>Qualitätsbewusstsein und ein Auge fürs Detail</li>
-                      <li>Ausbildung oder Erfahrung im relevanten Bereich</li>
-                    </>
-                  )}
-                </ul>
+                {job.requirements ? (
+                  <div dangerouslySetInnerHTML={{ __html: job.requirements }} />
+                ) : (
+                  <ul className="list-disc pl-5 space-y-2">
+                    <li>Freude an der Arbeit mit Lebensmitteln</li>
+                    <li>Teamgeist, Zuverlässigkeit und Begeisterung</li>
+                    <li>Qualitätsbewusstsein und ein Auge fürs Detail</li>
+                    <li>Ausbildung oder Erfahrung im relevanten Bereich</li>
+                  </ul>
+                )}
               </div>
 
               {/* Benefits */}
               <div id="benefits">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Wir bieten dir</h2>
-                <ul className="list-disc pl-5 space-y-2">
-                  <li>Ein engagiertes und herzliches Team</li>
-                  <li>Ein kreatives Arbeitsumfeld mit viel Gestaltungsspielraum</li>
-                  <li>Moderne Arbeitsbedingungen</li>
-                  <li>Entwicklungsmöglichkeiten in einem wachsenden Konzept</li>
-                  {job.salaryRange && (
-                    <li>
-                      Attraktives Gehalt: €{job.salaryRange.min?.toLocaleString()} - €
-                      {job.salaryRange.max?.toLocaleString()}
-                    </li>
-                  )}
-                </ul>
+                {job.benefits ? (
+                  <div dangerouslySetInnerHTML={{ __html: job.benefits }} />
+                ) : (
+                  <ul className="list-disc pl-5 space-y-2">
+                    <li>Ein engagiertes und herzliches Team</li>
+                    <li>Ein kreatives Arbeitsumfeld mit viel Gestaltungsspielraum</li>
+                    <li>Sonntag und Feiertag geschlossen</li>
+                    <li>Moderne Arbeitsbedingungen</li>
+                    <li>Entwicklungsmöglichkeiten</li>
+                  </ul>
+                )}
               </div>
 
               {/* Contact */}
-              <div id="contact" className="pt-8 border-t">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Kontakt</h2>
-                <p className="mb-4">
-                  Fühlst Du dich von unserem Konzept angesprochen und bist bereit für deine nächste
-                  Herausforderung? Dann sende uns jetzt deine Bewerbung. Wir freuen uns darauf, dich
-                  kennenlernen zu dürfen.
-                </p>
-                <div className="font-medium">
-                  {job.companyName}
-                  <br />
-                  Musterstraße 123
-                  <br />
-                  12345 {job.location}
-                </div>
+              <div id="contact_container" className="pt-8 border-t">
+                {job.contactInfo ? (
+                  <div dangerouslySetInnerHTML={{ __html: job.contactInfo }} />
+                ) : (
+                  <>
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Kontakt</h2>
+                    <p className="mb-2">
+                      Fühlst Du dich von unserem Konzept angesprochen und bist für deine nächste
+                      Herausforderung?
+                    </p>
+                    <p className="mb-4">
+                      Dann sende uns jetzt deine Bewerbung. Wir freuen uns darauf, dich kennenlernen
+                      zu dürfen.
+                    </p>
+
+                    <div className="font-medium">
+                      <strong>{job.companyName}</strong>
+                      <br />
+                      Musterstraße 123
+                      <br />
+                      <span className="postalcode">12345</span> {job.location}
+                      <br />
+                      <div className="job_section mt-4">
+                        <br />
+                        <a
+                          href="#"
+                          rel="noreferrer noopener"
+                          target="_blank"
+                          className="text-teal-600 hover:underline"
+                        >
+                          www.{job.companyName.toLowerCase().replace(/\s+/g, '')}.ch
+                        </a>
+                      </div>
+                      <br />
+                      <div className="job_section" id="contact_fields"></div>
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
 
@@ -259,6 +322,59 @@ export default async function JobDetailsPage({
               )}
             </div>
           </Card>
+
+          {/* Company Info Card (New) */}
+          <Card className="overflow-hidden border-none shadow-sm p-6">
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Left: Logo & Links */}
+              <div className="w-full md:w-48 shrink-0 flex flex-col items-center md:items-start text-center md:text-left border-b md:border-b-0 md:border-r border-gray-100 pb-6 md:pb-0 md:pr-6">
+                <div className="w-32 h-32 relative mb-4 border border-gray-200 rounded-lg p-2 bg-white flex items-center justify-center">
+                  {job.logoUrl ? (
+                    <img
+                      src={job.logoUrl}
+                      alt={job.companyName}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  ) : (
+                    <Building2 className="w-12 h-12 text-gray-300" />
+                  )}
+                </div>
+                <Link
+                  href={`/companies/${job.companyId}`}
+                  className="text-teal-600 hover:underline text-sm font-medium mb-1 flex items-center gap-1"
+                >
+                  Unternehmensprofil <ArrowLeft className="w-3 h-3 rotate-180" />
+                </Link>
+                <Link
+                  href={`/companies/${job.companyId}?tab=jobs`}
+                  className="text-teal-600 hover:underline text-sm font-medium flex items-center gap-1"
+                >
+                  Jobs: {companyJobCount} <ArrowLeft className="w-3 h-3 rotate-180" />
+                </Link>
+              </div>
+
+              {/* Right: Content */}
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  <Link
+                    href={`/companies/${job.companyId}`}
+                    className="hover:text-teal-600 transition-colors"
+                  >
+                    {job.companyName}
+                  </Link>
+                </h2>
+                <div className="text-gray-600 leading-relaxed mb-4 line-clamp-4">
+                  {companyDescription || 'Wir bewirten aus Leidenschaft!'}
+                </div>
+                <Link
+                  href={`/companies/${job.companyId}`}
+                  className="text-teal-600 hover:underline font-medium"
+                >
+                  Weiterlesen
+                </Link>
+              </div>
+            </div>
+          </Card>
         </div>
 
         {/* Right Column: Sidebar / Similar Jobs */}
@@ -268,7 +384,7 @@ export default async function JobDetailsPage({
             <CardContent className="p-6">
               <h3 className="font-bold text-lg mb-2">{job.companyName}</h3>
               <Link
-                href="#"
+                href={`/companies/${job.companyId}`}
                 className="text-teal-600 hover:underline text-sm flex items-center gap-1 mb-4"
               >
                 Unternehmensprofil <ArrowLeft className="h-3 w-3 rotate-180" />
@@ -302,7 +418,7 @@ export default async function JobDetailsPage({
                       <div className="text-xs text-gray-400 mt-1 flex items-center gap-2">
                         <span>{simJob.location}</span>
                         <span>•</span>
-                        <span>{simJob.type}</span>
+                        <span>{jobTypeTranslations[simJob.type] || simJob.type}</span>
                       </div>
                     </div>
                   </div>

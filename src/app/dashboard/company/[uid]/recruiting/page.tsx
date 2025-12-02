@@ -11,29 +11,48 @@ export default async function RecruitingPage({ params }: { params: Promise<{ uid
 
   // Fetch jobs for this company
   let jobs: JobPosting[] = [];
-  
+
   if (!db) {
     console.error('Database not initialized');
     return <div>Database Error</div>;
   }
 
   try {
-    const jobsSnapshot = await db.collection('jobs')
-      .where('companyId', '==', uid)
+    // Try fetching from subcollection first (NEW Architecture)
+    let jobsSnapshot = await db
+      .collection('companies')
+      .doc(uid)
+      .collection('jobs')
       .orderBy('postedAt', 'desc')
       .get();
 
-    jobs = jobsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JobPosting));
+    // If empty, try fetching from global collection (Legacy Fallback)
+    if (jobsSnapshot.empty) {
+      jobsSnapshot = await db
+        .collection('jobs')
+        .where('companyId', '==', uid)
+        .orderBy('postedAt', 'desc')
+        .get();
+    }
+
+    jobs = jobsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as JobPosting);
   } catch (error) {
     console.error('Error fetching company jobs:', error);
     // Fallback without orderBy if index is missing
     try {
-        const jobsSnapshot = await db.collection('jobs').where('companyId', '==', uid).get();
-        jobs = jobsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JobPosting));
-        // Sort manually
-        jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
+      // Try subcollection without sort
+      let jobsSnapshot = await db.collection('companies').doc(uid).collection('jobs').get();
+
+      // If empty, try global without sort
+      if (jobsSnapshot.empty) {
+        jobsSnapshot = await db.collection('jobs').where('companyId', '==', uid).get();
+      }
+
+      jobs = jobsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as JobPosting);
+      // Sort manually
+      jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
     } catch (e) {
-        console.error('Fallback fetch failed', e);
+      console.error('Fallback fetch failed', e);
     }
   }
 
@@ -46,7 +65,9 @@ export default async function RecruitingPage({ params }: { params: Promise<{ uid
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Recruiting</h1>
-          <p className="text-muted-foreground">Verwalten Sie Ihre Stellenanzeigen und Bewerbungen.</p>
+          <p className="text-muted-foreground">
+            Verwalten Sie Ihre Stellenanzeigen und Bewerbungen.
+          </p>
         </div>
         <Link href={`/dashboard/company/${uid}/recruiting/create`}>
           <Button>
@@ -98,7 +119,7 @@ export default async function RecruitingPage({ params }: { params: Promise<{ uid
         <CardContent>
           {jobs.length > 0 ? (
             <div className="space-y-4">
-              {jobs.map((job) => (
+              {jobs.map(job => (
                 <div
                   key={job.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
@@ -107,7 +128,11 @@ export default async function RecruitingPage({ params }: { params: Promise<{ uid
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold">{job.title}</h3>
                       <Badge variant={job.status === 'active' ? 'default' : 'secondary'}>
-                        {job.status === 'active' ? 'Aktiv' : job.status === 'closed' ? 'Geschlossen' : 'Entwurf'}
+                        {job.status === 'active'
+                          ? 'Aktiv'
+                          : job.status === 'closed'
+                            ? 'Geschlossen'
+                            : 'Entwurf'}
                       </Badge>
                     </div>
                     <div className="text-sm text-muted-foreground flex items-center gap-4">
@@ -132,7 +157,9 @@ export default async function RecruitingPage({ params }: { params: Promise<{ uid
             <div className="text-center py-12">
               <Briefcase className="mx-auto h-12 w-12 text-gray-300" />
               <h3 className="mt-2 text-lg font-medium text-gray-900">Keine Stellenanzeigen</h3>
-              <p className="mt-1 text-sm text-gray-500">Starten Sie Ihr Recruiting, indem Sie Ihre erste Stelle ausschreiben.</p>
+              <p className="mt-1 text-sm text-gray-500">
+                Starten Sie Ihr Recruiting, indem Sie Ihre erste Stelle ausschreiben.
+              </p>
               <div className="mt-6">
                 <Link href={`/dashboard/company/${uid}/recruiting/create`}>
                   <Button>

@@ -8,12 +8,26 @@ import { Mail, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/clients';
-import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  orderBy,
+  limit,
+  collectionGroup,
+} from 'firebase/firestore';
+import { useSearchParams } from 'next/navigation';
 
 // Mock Data removed
 
 export function JobBoard() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const urlLocation = searchParams.get('location');
+
   const [allJobs, setAllJobs] = useState<JobPosting[]>([]); // Raw fetch
   const [userFilters, setUserFilters] = useState<any>(null); // Firestore prefs
   const [sidebarFilters, setSidebarFilters] = useState<Record<string, string[]>>({}); // Local clicks
@@ -34,9 +48,10 @@ export function JobBoard() {
         // 2. Fetch Jobs (Real Data Only)
         let fetchedJobs: JobPosting[] = [];
         try {
+          // Use collectionGroup to query across all 'jobs' subcollections
           const jobsSnapshot = await getDocs(
             query(
-              collection(db, 'jobs'),
+              collectionGroup(db, 'jobs'),
               where('status', '==', 'active'),
               orderBy('postedAt', 'desc'),
               limit(50)
@@ -65,10 +80,19 @@ export function JobBoard() {
   // 1. Apply User Filters (Firestore) -> Base Jobs
   const baseJobs = React.useMemo(() => {
     let jobs = allJobs;
+
+    // URL Location Filter (High priority)
+    if (urlLocation) {
+      jobs = jobs.filter(job => job.location.toLowerCase().includes(urlLocation.toLowerCase()));
+    }
+
     if (userFilters) {
       jobs = jobs.filter(job => {
-        // Location Filter
+        // Location Filter (only if not already filtered by URL, or combine?)
+        // If URL param exists, we might want to ignore user saved filter for location to avoid conflict,
+        // or AND them. Usually URL overrides.
         if (
+          !urlLocation && // Only apply saved location filter if no URL location
           userFilters.location &&
           !job.location.toLowerCase().includes(userFilters.location.toLowerCase())
         ) {

@@ -11,13 +11,17 @@ export default async function CreateJobPage({ params }: { params: Promise<{ uid:
 
   // Fetch company details
   const companyDoc = await db.collection('companies').doc(uid).get();
-  
+
   if (!companyDoc.exists) {
     notFound();
   }
 
   const companyData = companyDoc.data();
-  const companyName = companyData?.name || 'Unbekanntes Unternehmen';
+  const companyName =
+    companyData?.companyName ||
+    companyData?.firmenname ||
+    companyData?.name ||
+    'Unbekanntes Unternehmen';
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">

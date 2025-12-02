@@ -267,20 +267,48 @@ const navigationItems: NavigationItem[] = [
     href: 'taskilo-advertising',
     subItems: [
       { label: 'Dashboard', value: 'advertising-dashboard', href: 'taskilo-advertising' },
-      { 
-        label: 'Google Ads', 
-        value: 'advertising-google', 
+      {
+        label: 'Google Ads',
+        value: 'advertising-google',
         href: 'taskilo-advertising/google-ads',
         subItems: [
-          { label: 'Kampagnen', value: 'google-ads-campaigns', href: 'taskilo-advertising/google-ads/campaigns' },
-          { label: 'Neue Kampagne', value: 'google-ads-new-campaign', href: 'taskilo-advertising/google-ads/campaigns/new' },
-          { label: 'Zielvorhaben', value: 'google-ads-goals', href: 'taskilo-advertising/google-ads/goals' },
-          { label: 'Tools', value: 'google-ads-tools', href: 'taskilo-advertising/google-ads/tools' },
-          { label: 'Abrechnung', value: 'google-ads-billing', href: 'taskilo-advertising/google-ads/billing' },
-          { label: 'Verwaltung', value: 'google-ads-management', href: 'taskilo-advertising/google-ads/management' },
-        ]
+          {
+            label: 'Kampagnen',
+            value: 'google-ads-campaigns',
+            href: 'taskilo-advertising/google-ads/campaigns',
+          },
+          {
+            label: 'Neue Kampagne',
+            value: 'google-ads-new-campaign',
+            href: 'taskilo-advertising/google-ads/campaigns/new',
+          },
+          {
+            label: 'Zielvorhaben',
+            value: 'google-ads-goals',
+            href: 'taskilo-advertising/google-ads/goals',
+          },
+          {
+            label: 'Tools',
+            value: 'google-ads-tools',
+            href: 'taskilo-advertising/google-ads/tools',
+          },
+          {
+            label: 'Abrechnung',
+            value: 'google-ads-billing',
+            href: 'taskilo-advertising/google-ads/billing',
+          },
+          {
+            label: 'Verwaltung',
+            value: 'google-ads-management',
+            href: 'taskilo-advertising/google-ads/management',
+          },
+        ],
       },
-      { label: 'LinkedIn Ads', value: 'advertising-linkedin', href: 'taskilo-advertising/linkedin' },
+      {
+        label: 'LinkedIn Ads',
+        value: 'advertising-linkedin',
+        href: 'taskilo-advertising/linkedin',
+      },
       { label: 'Meta Ads', value: 'advertising-meta', href: 'taskilo-advertising/meta' },
       { label: 'Analytics', value: 'advertising-analytics', href: 'taskilo-advertising/analytics' },
     ],
@@ -308,6 +336,7 @@ const navigationItems: NavigationItem[] = [
     value: 'recruiting',
     href: 'recruiting',
     subItems: [
+      { label: 'Unternehmensprofil', value: 'recruiting-profile', href: 'recruiting/profile' },
       { label: 'Stellenanzeigen', value: 'recruiting-jobs', href: 'recruiting' },
       { label: 'Neue Anzeige', value: 'recruiting-create', href: 'recruiting/create' },
       { label: 'Bewerbungen', value: 'recruiting-applications', href: 'recruiting/applications' },
@@ -377,10 +406,10 @@ export default function CompanySidebar({
   });
   const [emailSearchQuery, setEmailSearchQuery] = useState('');
   const [checkingBankConnection, setCheckingBankConnection] = useState(true);
-  
+
   // Use prop if provided, otherwise use local state
   const isCollapsed = isCollapsedProp ?? false;
-  
+
   const handleToggleCollapsed = () => {
     const newValue = !isCollapsed;
     if (onToggleCollapsed) {
@@ -716,11 +745,7 @@ export default function CompanySidebar({
           display: none;
         }
       `}</style>
-      <div 
-        ref={sidebarRef} 
-        className="flex flex-col bg-white h-full w-full" 
-        style={{ maxHeight }}
-      >
+      <div ref={sidebarRef} className="flex flex-col bg-white h-full w-full" style={{ maxHeight }}>
         <div
           ref={scrollRef}
           className="sidebar-scroll flex flex-col flex-1 pt-5 pb-4 overflow-y-auto select-none"
@@ -739,7 +764,9 @@ export default function CompanySidebar({
             {!isCollapsed && (
               <div className="flex items-center flex-1 min-w-0">
                 <h2 className="text-lg font-semibold text-gray-900 truncate">Dashboard</h2>
-                {companyName && <span className="ml-2 text-sm text-gray-500 truncate">{companyName}</span>}
+                {companyName && (
+                  <span className="ml-2 text-sm text-gray-500 truncate">{companyName}</span>
+                )}
               </div>
             )}
             <button
@@ -782,35 +809,45 @@ export default function CompanySidebar({
                         try {
                           const apiUrl = `/api/company/${uid}/gmail-auth-status`;
                           console.log('📡 API-Aufruf:', apiUrl);
-                          
+
                           const response = await fetch(apiUrl);
                           console.log('📨 Response Status:', response.status, response.statusText);
-                          
+
                           if (!response.ok) {
-                            console.error('❌ API-Response nicht OK:', response.status, response.statusText);
+                            console.error(
+                              '❌ API-Response nicht OK:',
+                              response.status,
+                              response.statusText
+                            );
                             onNavigate('email-integration', 'email-integration');
                             return;
                           }
-                          
+
                           const data = await response.json();
-                          console.log('📋 Gmail auth status response:', JSON.stringify(data, null, 2));
+                          console.log(
+                            '📋 Gmail auth status response:',
+                            JSON.stringify(data, null, 2)
+                          );
 
                           // Prüfe auf gültige Verbindung
-                          const hasValidConnection = data.hasConfig && 
-                                                   data.hasTokens && 
-                                                   !data.tokenExpired && 
-                                                   data.status !== 'authentication_required';
+                          const hasValidConnection =
+                            data.hasConfig &&
+                            data.hasTokens &&
+                            !data.tokenExpired &&
+                            data.status !== 'authentication_required';
 
                           console.log('🔐 Verbindungs-Check:', {
                             hasConfig: data.hasConfig,
                             hasTokens: data.hasTokens,
                             tokenExpired: data.tokenExpired,
                             status: data.status,
-                            hasValidConnection
+                            hasValidConnection,
                           });
 
                           if (!hasValidConnection) {
-                            console.log('❌ Keine gültige Verbindung, weiterleitung zur Integration');
+                            console.log(
+                              '❌ Keine gültige Verbindung, weiterleitung zur Integration'
+                            );
                             onNavigate('email-integration', 'email-integration');
                             return;
                           } else {
@@ -824,7 +861,7 @@ export default function CompanySidebar({
                           console.error('💥 Error details:', {
                             name: (error as Error).name,
                             message: (error as Error).message,
-                            stack: (error as Error).stack
+                            stack: (error as Error).stack,
                           });
                           // Bei Fehler zur Integration weiterleiten
                           onNavigate('email-integration', 'email-integration');
@@ -941,7 +978,9 @@ export default function CompanySidebar({
                                   label: subItem.label,
                                   value: subItem.value,
                                   href: subItem.href,
-                                  fullURL: subItem.href ? `/dashboard/company/${uid}/${subItem.href}` : 'NO_HREF'
+                                  fullURL: subItem.href
+                                    ? `/dashboard/company/${uid}/${subItem.href}`
+                                    : 'NO_HREF',
                                 });
                                 if (subItem.href) {
                                   onNavigate(subItem.value, subItem.href);

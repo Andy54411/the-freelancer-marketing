@@ -1,7 +1,94 @@
 import { db } from '@/firebase/server';
 import { JobPosting } from '@/types/career';
 import { notFound } from 'next/navigation';
+import { Metadata } from 'next';
 import JobDetailClient from './JobDetailClient';
+
+async function getJob(id: string) {
+  if (!db) return null;
+
+  // Try to find job in top-level collection first (legacy)
+  let jobDoc = await db.collection('jobs').doc(id).get();
+  let jobData = jobDoc.exists ? jobDoc.data() : null;
+
+  // If not found, search in subcollections using collectionGroup
+  if (!jobDoc.exists) {
+    try {
+      // Note: This requires a Single Field Index on 'id' for CollectionGroup 'jobs'
+      const querySnapshot = await db.collectionGroup('jobs').where('id', '==', id).limit(1).get();
+      if (!querySnapshot.empty) {
+        jobDoc = querySnapshot.docs[0];
+        jobData = jobDoc.data();
+      }
+    } catch (error: any) {
+      console.error('Error querying jobs collectionGroup:', error);
+      // If it's an index error, it usually contains a URL in the message
+      if (error.code === 9 || error.message?.includes('FAILED_PRECONDITION')) {
+        console.error('----------------------------------------------------------------');
+        console.error('MISSING INDEX ERROR');
+        console.error('This query requires a Collection Group Index on the "id" field.');
+        console.error(
+          'Please check the Firebase Console > Firestore > Indexes > Single Field Indexes'
+        );
+        console.error('Or look for a URL in the error message above to create it automatically.');
+        console.error('----------------------------------------------------------------');
+      }
+      throw error;
+    }
+  }
+
+  if (!jobData) return null;
+  return { id: jobDoc.id, ...jobData } as JobPosting;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const job = await getJob(id);
+
+  if (!job) {
+    return {
+      title: 'Job nicht gefunden',
+    };
+  }
+
+  const title = `${job.title} bei ${job.companyName} | Taskilo AI`;
+  const description =
+    job.description?.substring(0, 160).replace(/<[^>]*>?/gm, '') ||
+    `Bewerben Sie sich jetzt als ${job.title} bei ${job.companyName}.`;
+  const imageUrl =
+    job.headerImageUrl || job.logoUrl || 'https://taskilo.ai/images/default-job-share.png';
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `https://taskilo.ai/jobs/${id}`,
+      siteName: 'Taskilo AI',
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+      locale: 'de_DE',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [imageUrl],
+    },
+  };
+}
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -10,13 +97,59 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     return <div>Database Error</div>;
   }
 
-  const jobDoc = await db.collection('jobs').doc(id).get();
+  const job = await getJob(id);
 
-  if (!jobDoc.exists) {
+  if (!job) {
     notFound();
   }
 
-  const job = { id: jobDoc.id, ...jobDoc.data() } as JobPosting;
+  // Fetch Company Details
+  let companyDescription = '';
+  let companyJobCount = 0;
 
-  return <JobDetailClient job={job} />;
+  if (job.companyId) {
+    try {
+      const companyDoc = await db.collection('companies').doc(job.companyId).get();
+      if (companyDoc.exists) {
+        companyDescription = companyDoc.data()?.description || '';
+      }
+
+      const jobsQuery = await db
+        .collectionGroup('jobs')
+        .where('companyId', '==', job.companyId)
+        .where('status', '==', 'active')
+        .count()
+        .get();
+      companyJobCount = jobsQuery.data().count;
+    } catch (e) {
+      console.error('Error fetching company details:', e);
+    }
+  }
+
+  // Fetch Similar Jobs
+  let similarJobs: JobPosting[] = [];
+  try {
+    const similarJobsSnapshot = await db
+      .collectionGroup('jobs')
+      .where('status', '==', 'active')
+      .orderBy('postedAt', 'desc')
+      .limit(5)
+      .get();
+
+    similarJobs = similarJobsSnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }) as JobPosting)
+      .filter(j => j.id !== job.id)
+      .slice(0, 4);
+  } catch (e) {
+    console.error('Error fetching similar jobs:', e);
+  }
+
+  return (
+    <JobDetailClient
+      job={job}
+      companyDescription={companyDescription}
+      companyJobCount={companyJobCount}
+      similarJobs={similarJobs}
+    />
+  );
 }

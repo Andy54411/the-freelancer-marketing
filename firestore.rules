@@ -77,6 +77,12 @@ service cloud.firestore {
              );
     }
 
+    // --- GLOBAL JOBS ACCESS (Recursive) ---
+    // This ensures collectionGroup('jobs') works regardless of where the collection is nested
+    match /{path=**}/jobs/{jobId} {
+      allow read, list: if true;
+    }
+
     // --- users Collection ---
     match /users/{userId} {
       // Ein Admin/Support kann jedes Benutzerdokument lesen oder auflisten.
@@ -237,6 +243,15 @@ service cloud.firestore {
         
         // Nur die eigene Firma oder Support kann Service-Pakete löschen
         allow delete: if request.auth != null && (request.auth.uid == companyId || isSupportStaff());
+      }
+
+      // --- Jobs Subcollection (Stellenanzeigen) ---
+      match /jobs/{jobId} {
+        // Öffentlicher Lesezugriff für Stellenanzeigen
+        allow read, list: if true;
+        
+        // Nur die eigene Firma kann ihre Stellenanzeigen verwalten
+        allow create, update, delete: if request.auth != null && request.auth.uid == companyId;
       }
     }
 
@@ -2797,7 +2812,7 @@ service cloud.firestore {
     // --- Jobs Collection ---
     match /jobs/{jobId} {
       // Jeder kann Jobs lesen
-      allow read, list: if request.auth != null;
+      allow read, list: if true;
       
       // Nur Support/Admin kann Jobs schreiben
       allow write: if isSupportStaff();

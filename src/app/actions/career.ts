@@ -11,11 +11,16 @@ export async function saveApplicantProfile(data: z.infer<typeof ApplicantProfile
       throw new Error('Database connection not available');
     }
     const validatedData = ApplicantProfileSchema.parse(data);
-    
-    await db.collection('users').doc(validatedData.userId).collection('career_profile').doc('main').set({
-      ...validatedData,
-      updatedAt: new Date().toISOString(),
-    });
+
+    await db
+      .collection('users')
+      .doc(validatedData.userId)
+      .collection('career_profile')
+      .doc('main')
+      .set({
+        ...validatedData,
+        updatedAt: new Date().toISOString(),
+      });
 
     revalidatePath(`/dashboard/user/${validatedData.userId}/career/profile`);
     return { success: true };
@@ -31,16 +36,35 @@ export async function applyForJob(jobId: string, userId: string, coverLetter?: s
       throw new Error('Database connection not available');
     }
     // 1. Get User Profile
-    const profileDoc = await db.collection('users').doc(userId).collection('career_profile').doc('main').get();
-    
+    const profileDoc = await db
+      .collection('users')
+      .doc(userId)
+      .collection('career_profile')
+      .doc('main')
+      .get();
+
     if (!profileDoc.exists) {
       return { success: false, error: 'Bitte füllen Sie zuerst Ihr Profil aus.' };
     }
-    
+
     const profile = profileDoc.data();
 
     // 2. Get Job Details
-    const jobDoc = await db.collection('jobs').doc(jobId).get();
+    // Try global collection first
+    let jobDoc = await db.collection('jobs').doc(jobId).get();
+
+    // Try subcollections if not found
+    if (!jobDoc.exists) {
+      const querySnapshot = await db
+        .collectionGroup('jobs')
+        .where('id', '==', jobId)
+        .limit(1)
+        .get();
+      if (!querySnapshot.empty) {
+        jobDoc = querySnapshot.docs[0];
+      }
+    }
+
     if (!jobDoc.exists) {
       return { success: false, error: 'Job nicht gefunden.' };
     }
@@ -63,10 +87,20 @@ export async function applyForJob(jobId: string, userId: string, coverLetter?: s
 
     // Save to global applications collection (or company subcollection)
     // Using company subcollection pattern as per instructions
-    await db.collection('companies').doc(job?.companyId).collection('job_applications').doc(applicationId).set(application);
-    
+    await db
+      .collection('companies')
+      .doc(job?.companyId)
+      .collection('job_applications')
+      .doc(applicationId)
+      .set(application);
+
     // Also save reference in user's collection
-    await db.collection('users').doc(userId).collection('job_applications').doc(applicationId).set(application);
+    await db
+      .collection('users')
+      .doc(userId)
+      .collection('job_applications')
+      .doc(applicationId)
+      .set(application);
 
     revalidatePath(`/dashboard/user/${userId}/career/applications`);
     return { success: true };

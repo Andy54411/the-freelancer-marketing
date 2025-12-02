@@ -17,20 +17,34 @@ export const JobCard: React.FC<JobCardProps> = ({ job }) => {
 
   const jobLink = user ? `/dashboard/user/${user.uid}/career/jobs/${job.id}` : `/jobs/${job.id}`;
 
+  const jobTypeTranslations: Record<string, string> = {
+    'full-time': 'Vollzeit',
+    'part-time': 'Teilzeit',
+    contract: 'Freiberuflich',
+    freelance: 'Freelance',
+    internship: 'Praktikum',
+    apprenticeship: 'Ausbildung',
+    working_student: 'Werkstudent',
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow relative group">
       <div className="flex gap-4">
         {/* Logo */}
         <div className="w-16 h-16 shrink-0 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center overflow-hidden">
-          {/* Logo support to be added later, using initial for now */}
-          <div className="text-gray-300 font-bold text-xl">{job.companyName.charAt(0)}</div>
+          {job.logoUrl ? (
+            <img src={job.logoUrl} alt={job.companyName} className="w-full h-full object-contain" />
+          ) : (
+            <div className="text-gray-300 font-bold text-xl">{job.companyName.charAt(0)}</div>
+          )}
         </div>
 
         {/* Content */}
         <div className="flex-1">
           <div className="flex justify-between items-start">
             <div>
-              <Link href={jobLink} className="hover:underline">
+              <Link href={jobLink} className="hover:underline focus:outline-none">
+                <span className="absolute inset-0" aria-hidden="true" />
                 <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-teal-600 transition-colors">
                   {job.title}
                 </h3>
@@ -40,7 +54,7 @@ export const JobCard: React.FC<JobCardProps> = ({ job }) => {
             <Button
               variant="ghost"
               size="icon"
-              className={`text-gray-400 hover:text-red-500 ${isFavorite ? 'text-red-500' : ''}`}
+              className={`text-gray-400 hover:text-red-500 ${isFavorite ? 'text-red-500' : ''} relative z-10`}
               onClick={toggleFavorite}
             >
               <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
@@ -54,7 +68,7 @@ export const JobCard: React.FC<JobCardProps> = ({ job }) => {
             </div>
             <div className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
-              {job.type}
+              {jobTypeTranslations[job.type] || job.type}
             </div>
             <div className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />

@@ -544,7 +544,50 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "jobs",
+            "queryScope": "COLLECTION_GROUP",
+            "fields": [
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "postedAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "jobs",
+            "queryScope": "COLLECTION_GROUP",
+            "fields": [
+                {
+                    "fieldPath": "companyId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                }
+            ]
         }
     ],
-    "fieldOverrides": []
+    "fieldOverrides": [
+        {
+            "collectionGroup": "jobs",
+            "fieldPath": "id",
+            "indexes": [
+                {
+                    "order": "ASCENDING",
+                    "queryScope": "COLLECTION_GROUP"
+                },
+                {
+                    "order": "DESCENDING",
+                    "queryScope": "COLLECTION_GROUP"
+                }
+            ]
+        }
+    ]
 }

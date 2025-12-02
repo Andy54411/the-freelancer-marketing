@@ -785,7 +785,7 @@ export default function ProfilePage() {
                             </div>
 
                             {/* Provider Info */}
-                            <div className="flex-grow">
+                            <div className="grow">
                               <div className="flex items-center gap-3 mb-2">
                                 <h1 className="text-3xl font-bold text-gray-900">
                                   {profile.companyName}
@@ -855,7 +855,7 @@ export default function ProfilePage() {
                             profile.description.split('\n').map(
                               (paragraph, index) =>
                                 paragraph.trim() && (
-                                  <p key={index} className="break-words">
+                                  <p key={index} className="wrap-break-word">
                                     {paragraph.trim()}
                                   </p>
                                 )
@@ -957,7 +957,7 @@ export default function ProfilePage() {
                                     {/* Linke Seite: Hauptbild - nimmt 2 Spalten */}
                                     <div className="relative md:col-span-2">
                                       {item.imageUrl && (
-                                        <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">
+                                        <div className="aspect-4/3 bg-gray-100 overflow-hidden relative">
                                           <Image
                                             src={item.imageUrl}
                                             alt={item.title}

@@ -83,7 +83,7 @@ export function JobFilterSidebar({
   activeFilters = {},
   onFilterChange,
 }: JobFilterSidebarProps) {
-  const facets = useMemo(() => {
+  const facets = React.useMemo(() => {
     const locations: Record<string, number> = {};
     const types: Record<string, number> = {};
     // const industries: Record<string, number> = {};
@@ -94,6 +94,16 @@ export function JobFilterSidebar({
       '7 - 14 Tage': 0,
       '2 - 4 Wochen': 0,
       '> 4 Wochen': 0,
+    };
+
+    const jobTypeTranslations: Record<string, string> = {
+      'full-time': 'Vollzeit',
+      'part-time': 'Teilzeit',
+      contract: 'Freiberuflich',
+      freelance: 'Freelance',
+      internship: 'Praktikum',
+      apprenticeship: 'Ausbildung',
+      working_student: 'Werkstudent',
     };
 
     const now = new Date();
@@ -148,7 +158,11 @@ export function JobFilterSidebar({
         .map(([label, count]) => ({ label, count, value: label }))
         .sort((a, b) => b.count - a.count),
       types: Object.entries(types)
-        .map(([label, count]) => ({ label, count, value: label }))
+        .map(([value, count]) => ({
+          label: jobTypeTranslations[value] || value,
+          count,
+          value,
+        }))
         .sort((a, b) => b.count - a.count),
       // industries: Object.entries(industries).map(([label, count]) => ({ label, count, value: label })).sort((a, b) => b.count - a.count),
       // jobGroups: Object.entries(jobGroups).map(([label, count]) => ({ label, count, value: label })).sort((a, b) => b.count - a.count),
