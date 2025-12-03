@@ -106,12 +106,17 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   // Fetch Company Details
   let companyDescription = '';
   let companyJobCount = 0;
+  let applicationMethod = 'taskilo';
+  let externalApplicationUrl = '';
 
   if (job.companyId) {
     try {
       const companyDoc = await db.collection('companies').doc(job.companyId).get();
       if (companyDoc.exists) {
-        companyDescription = companyDoc.data()?.description || '';
+        const data = companyDoc.data();
+        companyDescription = data?.description || '';
+        applicationMethod = data?.applicationMethod || 'taskilo';
+        externalApplicationUrl = data?.externalApplicationUrl || '';
       }
 
       const jobsQuery = await db
@@ -150,6 +155,8 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
       companyDescription={companyDescription}
       companyJobCount={companyJobCount}
       similarJobs={similarJobs}
+      applicationMethod={applicationMethod}
+      externalApplicationUrl={externalApplicationUrl}
     />
   );
 }

@@ -26,11 +26,11 @@ export default function UserDashboardLayout({ children }: { children: React.Reac
   return (
     <SidebarVisibilityProvider>
       <div
-        className="flex flex-col min-h-screen"
+        className="flex flex-col h-screen overflow-hidden"
         style={{ '--global-header-height': '64px' } as React.CSSProperties}
       >
         <UserHeader currentUid={user?.uid ?? ''} />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pt-(--global-header-height)">
+        <main className="flex-1 overflow-y-auto">
           <Suspense
             fallback={
               <div className="flex justify-center items-center min-h-screen">

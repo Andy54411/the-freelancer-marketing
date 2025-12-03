@@ -32,7 +32,7 @@ const Modal: React.FC<ModalProps> = ({ onClose, children, title }) => {
         <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 shrink-0">
           {' '}
           {/* shrink-0 hinzugefügt */}
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 break-words">
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 wrap-break-word">
             {title}
           </h3>
           <button
@@ -45,7 +45,7 @@ const Modal: React.FC<ModalProps> = ({ onClose, children, title }) => {
         </div>
 
         {/* Der Inhaltsbereich, der von anderen Komponenten befüllt wird */}
-        <div className="p-4 md:p-6 flex-grow overflow-y-auto">
+        <div className="p-4 md:p-6 grow overflow-y-auto">
           {' '}
           {/* overflow-y-auto und flex-grow hier */}
           {children}

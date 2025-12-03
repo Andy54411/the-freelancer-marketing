@@ -65,14 +65,20 @@ export default async function JobDetailsPage({
   }
 
   // Check if user has profile
-  const profileDoc = await db.collection('candidateProfiles').doc(uid).get();
+  const profileDoc = await db
+    .collection('users')
+    .doc(uid)
+    .collection('candidate_profile')
+    .doc('main')
+    .get();
   const hasProfile = profileDoc.exists;
 
   // Check if already applied
   const applicationQuery = await db
-    .collection('jobApplications')
+    .collection('users')
+    .doc(uid)
+    .collection('job_applications')
     .where('jobId', '==', jobId)
-    .where('applicantId', '==', uid)
     .get();
 
   const hasApplied = !applicationQuery.empty;
@@ -92,12 +98,17 @@ export default async function JobDetailsPage({
   // Fetch Company Details for "Company Info" section
   let companyDescription = '';
   let companyJobCount = 0;
+  let applicationMethod = 'taskilo';
+  let externalApplicationUrl = '';
 
   if (job.companyId) {
     try {
       const companyDoc = await db.collection('companies').doc(job.companyId).get();
       if (companyDoc.exists) {
-        companyDescription = companyDoc.data()?.description || '';
+        const data = companyDoc.data();
+        companyDescription = data?.description || '';
+        applicationMethod = data?.applicationMethod || 'taskilo';
+        externalApplicationUrl = data?.externalApplicationUrl || '';
       }
 
       const jobsQuery = await db
@@ -159,6 +170,17 @@ export default async function JobDetailsPage({
                   <CheckCircle className="h-5 w-5" />
                   <span>Bereits beworben</span>
                 </div>
+              ) : applicationMethod === 'external' && externalApplicationUrl ? (
+                <a
+                  href={externalApplicationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full md:w-auto"
+                >
+                  <Button className="w-full md:w-auto bg-teal-600 hover:bg-teal-700 text-white font-semibold px-8">
+                    Bewerbung starten <Share2 className="ml-2 h-4 w-4" />
+                  </Button>
+                </a>
               ) : (
                 <Link
                   href={`/dashboard/user/${uid}/career/jobs/${jobId}/apply`}
@@ -310,6 +332,17 @@ export default async function JobDetailsPage({
                   <CheckCircle className="h-5 w-5" />
                   <span>Bereits beworben</span>
                 </div>
+              ) : applicationMethod === 'external' && externalApplicationUrl ? (
+                <a
+                  href={externalApplicationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto"
+                >
+                  <Button className="w-full sm:w-auto bg-teal-600 hover:bg-teal-700 text-white font-semibold px-8">
+                    Bewerbung starten <Share2 className="ml-2 h-4 w-4" />
+                  </Button>
+                </a>
               ) : (
                 <Link
                   href={`/dashboard/user/${uid}/career/jobs/${jobId}/apply`}

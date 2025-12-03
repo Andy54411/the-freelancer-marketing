@@ -104,6 +104,7 @@ const OrderAddressSelection: React.FC<OrderAddressSelectionProps> = ({
       setSelectedProvider(preselectedProvider);
       onProviderSelect(preselectedProvider);
       setLoadingProfiles(false);
+      return;
     } else if (activePostalCode && selectedSubcategory) {
       // Nur suchen wenn kein Provider vorausgewählt ist
       const timer = setTimeout(
@@ -113,6 +114,7 @@ const OrderAddressSelection: React.FC<OrderAddressSelectionProps> = ({
       return () => clearTimeout(timer);
     } else {
       setCompanyProfiles([]);
+      return;
     }
   }, [
     activePostalCode,
@@ -260,7 +262,7 @@ const OrderAddressSelection: React.FC<OrderAddressSelectionProps> = ({
           )}
 
           {!loadingProfiles && companyProfiles.length > 0 && (
-            <div className="space-y-4 max-h-[28rem] overflow-y-auto p-1">
+            <div className="space-y-4 max-h-112 overflow-y-auto p-1">
               {companyProfiles.map(provider => (
                 <CompanyCard
                   key={provider.id}

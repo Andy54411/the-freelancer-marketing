@@ -140,7 +140,7 @@ export default function RenovierungsfehlerPage() {
                   </div>
 
                   <div className="bg-red-100 p-4 rounded-lg">
-                    <h4 className="font-semibold text-red-800 mb-2">💸 Kostenfalle:</h4>
+                    <h4 className="font-semibold text-red-800 mb-2">Kostenfalle:</h4>
                     <p className="text-red-700 text-sm">
                       Schlechte Planung führt zu 30-50% Mehrkosten durch Nacharbeiten,
                       Materialverschwendung und Verzögerungen.
@@ -181,7 +181,7 @@ export default function RenovierungsfehlerPage() {
               </div>
 
               <div className="mt-6 bg-[#14ad9f] bg-opacity-10 p-4 rounded-lg">
-                <h4 className="font-semibold text-[#14ad9f] mb-2">💡 Taskilo-Tipp:</h4>
+                <h4 className="font-semibold text-[#14ad9f] mb-2">Taskilo-Tipp:</h4>
                 <p className="text-gray-700">
                   Nutzen Sie unsere Planungsberatung! Unsere erfahrenen Projektmanager helfen Ihnen
                   bei der detaillierten Planung und Koordination aller Gewerke - von der ersten Idee
@@ -219,7 +219,7 @@ export default function RenovierungsfehlerPage() {
 
                   <div className="bg-orange-100 p-4 rounded-lg">
                     <h4 className="font-semibold text-orange-800 mb-3">
-                      📊 Kostenfaktoren Beispiel Badezimmer:
+                      Kostenfaktoren Beispiel Badezimmer:
                     </h4>
                     <div className="space-y-1 text-orange-700 text-sm">
                       <p>• Material: 3.000€ (30%)</p>
@@ -263,7 +263,7 @@ export default function RenovierungsfehlerPage() {
                   </div>
 
                   <div className="mt-6 bg-blue-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-blue-800 mb-2">💰 Spartipp:</h4>
+                    <h4 className="font-semibold text-blue-800 mb-2">Spartipp:</h4>
                     <p className="text-blue-700 text-sm">
                       Eigenleistung kann 20-40% der Kosten sparen, aber nur bei einfachen Arbeiten
                       wie Streichen oder Fliesen legen.
@@ -536,7 +536,7 @@ export default function RenovierungsfehlerPage() {
 
           {/* Zeitplanung */}
           <div className="mb-12">
-            <div className="bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white">
+            <div className="bg-linear-to-r from-[#14ad9f] to-taskilo-hover rounded-xl p-8 text-white">
               <h2 className="text-3xl font-bold mb-6 flex items-center">
                 <Clock className="w-8 h-8 mr-2" />
                 Realistische Zeitplanung für Renovierungen

@@ -283,10 +283,11 @@ export default function VerifizierungsprozessPage() {
                   Identitätsprüfung und grundlegende Qualifikation
                 </p>
                 <div className="text-sm text-gray-500">
-                  ✓ Personalausweis
+                  Personalausweis
                   <br />
-                  ✓ Gewerbeschein
-                  <br />✓ Basis-Referenzen
+                  Gewerbeschein
+                  <br />
+                  Basis-Referenzen
                 </div>
               </div>
 
@@ -355,7 +356,7 @@ export default function VerifizierungsprozessPage() {
           </div>
 
           {/* Call to Action */}
-          <div className="mt-16 bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white text-center">
+          <div className="mt-16 bg-linear-to-r from-[#14ad9f] to-taskilo-hover rounded-xl p-8 text-white text-center">
             <h2 className="text-3xl font-bold mb-4">Vertrauen Sie auf geprüfte Qualität</h2>
             <p className="text-xl text-[#e6fffe] mb-6">
               Buchen Sie Services von verifizierten Anbietern und profitieren Sie von unserem

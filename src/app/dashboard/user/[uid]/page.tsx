@@ -13,6 +13,8 @@ import {
   where,
   getDocs,
   orderBy,
+  collectionGroup,
+  limit,
 } from 'firebase/firestore';
 import {
   db,
@@ -30,6 +32,8 @@ import {
   PlusCircle as FiPlusCircle,
   HelpCircle as FiHelpCircle,
   Briefcase,
+  ArrowRight,
+  RotateCw,
 } from 'lucide-react';
 import Modal from './components/Modal';
 import { Elements } from '@stripe/react-stripe-js';
@@ -45,6 +49,7 @@ import { SavedPaymentMethod, SavedAddress, UserProfileData, OrderListItem } from
 import FaqSection from './components/FaqSection'; // FAQ Sektion importieren
 import TimeTrackingOverview from '@/components/TimeTrackingOverview';
 import BillingHistory from '@/components/BillingHistory';
+import JobBoardPromoModal from './components/JobBoardPromoModal';
 
 import { stripePromise } from '@/lib/stripe';
 
@@ -89,6 +94,15 @@ export default function UserDashboardPage() {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [ordersError, setOrdersError] = useState<string | null>(null);
 
+  // Job Board & Applications State
+  const [matchingJobsCount, setMatchingJobsCount] = useState<number | null>(null);
+  const [recentApplications, setRecentApplications] = useState<any[]>([]);
+  const [hasJobFilter, setHasJobFilter] = useState(false);
+  const [showJobBoardPromo, setShowJobBoardPromo] = useState(false);
+  const [isJobCardFlipped, setIsJobCardFlipped] = useState(false);
+  const [isApplicationsCardFlipped, setIsApplicationsCardFlipped] = useState(false);
+  const [isSupportCardFlipped, setIsSupportCardFlipped] = useState(false);
+
   const loadInitialDashboardData = useCallback(async (user: FirebaseUser) => {
     setLoading(true);
     setError(null);
@@ -104,6 +118,11 @@ export default function UserDashboardPage() {
       }
       const profileData = userDocSnap.data() as UserProfileData;
 
+      // Check if we should show the promo modal
+      if (!profileData.hideJobBoardPromo) {
+        setShowJobBoardPromo(true);
+      }
+
       const paymentMethodsResult = await getSavedPaymentMethodsCallable({});
       if (paymentMethodsResult.data?.savedPaymentMethods) {
         profileData.savedPaymentMethods = paymentMethodsResult.data.savedPaymentMethods;
@@ -114,6 +133,7 @@ export default function UserDashboardPage() {
       profileData.savedAddresses = (profileData.savedAddresses as SavedAddress[]) || [];
 
       setUserProfile(profileData);
+      console.log('User Profile Data Loaded:', profileData); // Debug Log
 
       setLoadingOrders(true);
       setOrdersError(null);
@@ -255,6 +275,68 @@ export default function UserDashboardPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Nur einmal beim Mounten ausführen, um die URL zu prüfen
+
+  // Fetch Job Board Data
+  useEffect(() => {
+    const fetchJobData = async () => {
+      if (!currentUser?.uid) return;
+
+      try {
+        // 1. Fetch Applications
+        const appsQuery = query(
+          collection(db, 'users', currentUser.uid, 'job_applications'),
+          orderBy('appliedAt', 'desc'),
+          limit(3)
+        );
+        const appsSnap = await getDocs(appsQuery);
+        const apps = appsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setRecentApplications(apps);
+
+        // 2. Fetch Job Preferences & Matches
+        const prefDoc = await getDoc(doc(db, 'users', currentUser.uid, 'preferences', 'jobboard'));
+        if (prefDoc.exists()) {
+          setHasJobFilter(true);
+          const prefs = prefDoc.data();
+
+          // Build query based on prefs (simplified version of JobBoard logic)
+          const q = query(
+            collectionGroup(db, 'jobs'),
+            where('status', '==', 'active'),
+            orderBy('postedAt', 'desc'),
+            limit(50) // Fetch some recent jobs to check relevance
+          );
+
+          const jobsSnap = await getDocs(q);
+          // Simple client-side filter for the "Quick Match" count
+          const relevantJobs = jobsSnap.docs.filter(doc => {
+            const job = doc.data();
+            // Check location
+            if (
+              prefs.location &&
+              !job.location?.toLowerCase().includes(prefs.location.toLowerCase())
+            )
+              return false;
+            // Check title/searchPhrase
+            if (prefs.searchPhrase) {
+              const phrase = prefs.searchPhrase.toLowerCase();
+              const titleMatch = job.title?.toLowerCase().includes(phrase);
+              if (!titleMatch) return false;
+            }
+            return true;
+          });
+
+          setMatchingJobsCount(relevantJobs.length);
+        } else {
+          setHasJobFilter(false);
+          setMatchingJobsCount(null);
+        }
+      } catch (error) {
+        console.error('Error fetching job dashboard data', error);
+      }
+    };
+
+    fetchJobData();
+  }, [currentUser]);
 
   const handleProfilePictureUploaded = (newUrl: string) => {
     // Update local state to reflect the change immediately
@@ -457,6 +539,26 @@ export default function UserDashboardPage() {
     }
   }, [currentUser, loadInitialDashboardData]);
 
+  const handlePromoClose = async (dontShowAgain: boolean) => {
+    setShowJobBoardPromo(false);
+    if (dontShowAgain && currentUser) {
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, {
+          hideJobBoardPromo: true,
+        });
+        // Update local state
+        if (userProfile) {
+          setUserProfile({ ...userProfile, hideJobBoardPromo: true });
+        }
+        toast.success('Einstellung gespeichert.');
+      } catch (error) {
+        console.error('Error saving preference:', error);
+        toast.error('Einstellung konnte nicht gespeichert werden.');
+      }
+    }
+  };
+
   if (loading || loadingOrders) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -500,26 +602,310 @@ export default function UserDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
-      <div className="relative z-10 pt-20 px-4 lg:px-6 pb-6">
+      <div className="relative z-10 p-4 lg:p-6">
         <div className="max-w-6xl mx-auto space-y-6">
           <WelcomeBox
-            firstname={typeof userProfile.firstName === 'string' ? userProfile.firstName : ''}
+            firstname={
+              (userProfile as any)?.firstName ||
+              (userProfile as any)?.firstname ||
+              (userProfile as any)?.profile?.firstName ||
+              (userProfile as any)?.step1?.firstName ||
+              (userProfile as any)?.displayName?.split(' ')[0] ||
+              (currentUser?.displayName ? currentUser.displayName.split(' ')[0] : '') ||
+              'Benutzer'
+            }
             profilePictureUrl={
-              (typeof userProfile.profilePictureURL === 'string'
+              (typeof userProfile?.profilePictureURL === 'string'
                 ? userProfile.profilePictureURL
                 : null) ||
-              (typeof userProfile.profilePictureFirebaseUrl === 'string'
+              (typeof userProfile?.profilePictureFirebaseUrl === 'string'
                 ? userProfile.profilePictureFirebaseUrl
-                : null)
+                : null) ||
+              (typeof (userProfile as any)?.profileImage === 'string'
+                ? (userProfile as any).profileImage
+                : null) ||
+              (typeof (userProfile as any)?.photoURL === 'string'
+                ? (userProfile as any).photoURL
+                : null) ||
+              (typeof (userProfile as any)?.profile?.profilePictureURL === 'string'
+                ? (userProfile as any).profile.profilePictureURL
+                : null) ||
+              (typeof (userProfile as any)?.step1?.profilePictureURL === 'string'
+                ? (userProfile as any).step1.profilePictureURL
+                : null) ||
+              currentUser?.photoURL
             }
             onProfilePictureClick={() => setShowUploadModal(true)}
           />
           {/* VERBESSERTE GRID-LAYOUT mit Taskilo-Design */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Hauptbereich: Meine Aufträge - nimmt 2/3 des Platzes ein */}
-            <div className="lg:col-span-2">
+          <div className="space-y-6">
+            {/* Info Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Jobbörse Flip Card */}
+              <div
+                className="relative h-full min-h-[200px] cursor-pointer group perspective-1000"
+                onClick={() => setIsJobCardFlipped(!isJobCardFlipped)}
+              >
+                <div
+                  className="relative w-full h-full transition-all duration-500 transform-style-3d"
+                  style={{
+                    transformStyle: 'preserve-3d',
+                    transform: isJobCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                  }}
+                >
+                  {/* Front Face */}
+                  <div
+                    className="absolute inset-0 backface-hidden bg-linear-to-br from-[#14ad9f] to-teal-700 text-white shadow-2xl rounded-2xl p-5 overflow-hidden flex flex-col justify-between"
+                    style={{ backfaceVisibility: 'hidden' }}
+                  >
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                      <Briefcase size={80} />
+                    </div>
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4 backdrop-blur-sm">
+                        <Briefcase className="w-6 h-6 text-white" />
+                      </div>
+                      <h3 className="font-bold text-xl mb-2">Jobbörse</h3>
+                      <p className="text-teal-50 text-sm">
+                        Entdecken Sie spannende Karrieremöglichkeiten.
+                      </p>
+                    </div>
+                    <div className="relative z-10 flex items-center text-sm font-medium text-teal-100 mt-2">
+                      <RotateCw size={16} className="mr-2" />
+                      Klicken zum Umdrehen
+                    </div>
+                  </div>
+
+                  {/* Back Face */}
+                  <div
+                    className="absolute inset-0 backface-hidden bg-white text-gray-800 shadow-2xl rounded-2xl p-5 overflow-hidden flex flex-col justify-between"
+                    style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                  >
+                    <div>
+                      <h3 className="font-bold text-lg text-[#14ad9f] mb-2">Dein Job-Feed</h3>
+                      {hasJobFilter && matchingJobsCount !== null ? (
+                        <div className="flex flex-col items-center justify-center py-2">
+                          <span className="text-5xl font-bold text-gray-800 mb-1">
+                            {matchingJobsCount}
+                          </span>
+                          <span className="text-sm text-gray-500">neue Treffer</span>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600 mb-4">
+                          Vervollständige dein Profil, um passende Jobs zu sehen.
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        router.push(`/dashboard/user/${currentUser?.uid}/career`);
+                      }}
+                      className="w-full py-2 bg-[#14ad9f] text-white rounded-lg font-semibold text-sm hover:bg-teal-600 transition-colors flex items-center justify-center gap-2"
+                    >
+                      {hasJobFilter ? 'Jobs anzeigen' : 'Jobbörse öffnen'}
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Meine Bewerbungen Flip Card */}
+              <div
+                className="relative h-full min-h-[200px] cursor-pointer group perspective-1000"
+                onClick={() => setIsApplicationsCardFlipped(!isApplicationsCardFlipped)}
+              >
+                <div
+                  className="relative w-full h-full transition-all duration-500 transform-style-3d"
+                  style={{
+                    transformStyle: 'preserve-3d',
+                    transform: isApplicationsCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                  }}
+                >
+                  {/* Front Face */}
+                  <div
+                    className="absolute inset-0 backface-hidden bg-linear-to-br from-[#14ad9f] to-teal-700 text-white shadow-2xl rounded-2xl p-5 overflow-hidden flex flex-col justify-between"
+                    style={{ backfaceVisibility: 'hidden' }}
+                  >
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                      <Briefcase size={80} />
+                    </div>
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4 backdrop-blur-sm">
+                        <Briefcase className="w-6 h-6 text-white" />
+                      </div>
+                      <h3 className="font-bold text-xl mb-2">Bewerbungen</h3>
+                      <p className="text-teal-50 text-sm">
+                        {recentApplications.length > 0
+                          ? `${recentApplications.length} aktive Bewerbungen`
+                          : 'Keine aktiven Bewerbungen'}
+                      </p>
+                    </div>
+                    <div className="relative z-10 flex items-center text-sm font-medium text-teal-100 mt-2">
+                      <RotateCw size={16} className="mr-2" />
+                      Klicken zum Umdrehen
+                    </div>
+                  </div>
+
+                  {/* Back Face */}
+                  <div
+                    className="absolute inset-0 backface-hidden bg-white text-gray-800 shadow-2xl rounded-2xl p-4 overflow-hidden flex flex-col"
+                    style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                  >
+                    {recentApplications.length > 0 ? (
+                      <>
+                        <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center shrink-0">
+                          <Briefcase className="w-5 h-5 text-[#14ad9f] mr-2" />
+                          Meine Bewerbungen
+                        </h3>
+                        <div className="space-y-2 overflow-y-auto grow pr-1">
+                          {recentApplications.map((app: any) => (
+                            <div
+                              key={app.id}
+                              className="p-2 bg-gray-50 rounded-lg border border-gray-100 hover:border-teal-200 transition-colors cursor-pointer"
+                              onClick={e => {
+                                e.stopPropagation();
+                                router.push(
+                                  `/dashboard/user/${currentUser?.uid}/career/applications`
+                                );
+                              }}
+                            >
+                              <p className="font-semibold text-gray-900 text-xs truncate">
+                                {app.jobTitle || 'Bewerbung'}
+                              </p>
+                              <p className="text-[10px] text-gray-500 truncate">
+                                {app.companyName}
+                              </p>
+                              <div className="flex justify-between items-center mt-1">
+                                <span
+                                  className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                                    app.status === 'accepted'
+                                      ? 'bg-green-100 text-green-700'
+                                      : app.status === 'rejected'
+                                        ? 'bg-red-100 text-red-700'
+                                        : 'bg-blue-100 text-blue-700'
+                                  }`}
+                                >
+                                  {app.status === 'pending'
+                                    ? 'Offen'
+                                    : app.status === 'reviewed'
+                                      ? 'Gesehen'
+                                      : app.status === 'interview'
+                                        ? 'Interview'
+                                        : app.status === 'accepted'
+                                          ? 'Zusage'
+                                          : app.status === 'rejected'
+                                            ? 'Absage'
+                                            : app.status}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            router.push(`/dashboard/user/${currentUser?.uid}/career/applications`);
+                          }}
+                          className="w-full mt-2 py-1.5 text-xs text-[#14ad9f] font-medium hover:bg-teal-50 rounded-lg transition-colors shrink-0"
+                        >
+                          Alle anzeigen
+                        </button>
+                      </>
+                    ) : (
+                      <div className="h-full flex flex-col justify-center items-center text-center">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                          <Briefcase className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <h3 className="text-base font-bold text-gray-800 mb-1">
+                          Keine Bewerbungen
+                        </h3>
+                        <p className="text-xs text-gray-500 mb-3">
+                          Du hast dich noch auf keine Jobs beworben.
+                        </p>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            router.push('/jobs');
+                          }}
+                          className="text-xs text-[#14ad9f] font-medium hover:underline"
+                        >
+                          Jetzt Jobs finden
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Support Flip Card */}
+              <div
+                className="md:col-span-2 relative h-full min-h-[200px] cursor-pointer group perspective-1000"
+                onClick={() => setIsSupportCardFlipped(!isSupportCardFlipped)}
+              >
+                <div
+                  className="relative w-full h-full transition-all duration-500 transform-style-3d"
+                  style={{
+                    transformStyle: 'preserve-3d',
+                    transform: isSupportCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                  }}
+                >
+                  {/* Front Face */}
+                  <div
+                    className="absolute inset-0 backface-hidden bg-linear-to-br from-[#14ad9f] to-teal-700 text-white shadow-2xl rounded-2xl p-5 overflow-hidden flex flex-col justify-between"
+                    style={{ backfaceVisibility: 'hidden' }}
+                  >
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                      <FiHelpCircle size={80} />
+                    </div>
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4 backdrop-blur-sm">
+                        <FiHelpCircle className="w-6 h-6 text-white" />
+                      </div>
+                      <h3 className="font-bold text-xl mb-2">Hilfe & Support</h3>
+                      <p className="text-teal-50 text-sm max-w-md">
+                        Benötigen Sie Hilfe? Unser Support-Team ist 24/7 für Sie da.
+                      </p>
+                    </div>
+                    <div className="relative z-10 flex items-center text-sm font-medium text-teal-100 mt-2">
+                      <RotateCw size={16} className="mr-2" />
+                      Klicken zum Umdrehen
+                    </div>
+                  </div>
+
+                  {/* Back Face */}
+                  <div
+                    className="absolute inset-0 backface-hidden bg-white text-gray-800 shadow-2xl rounded-2xl p-5 overflow-hidden flex flex-col justify-center items-center"
+                    style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                  >
+                    <div className="text-center w-full max-w-md">
+                      <div className="w-12 h-12 mx-auto mb-3 bg-linear-to-r from-[#14ad9f] to-teal-600 rounded-full flex items-center justify-center">
+                        <FiHelpCircle className="w-6 h-6 text-white" />
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-800 mb-2">Wir sind für Sie da</h3>
+                      <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+                        Haben Sie Fragen zu einer Bestellung oder unserem Service? Starten Sie jetzt
+                        einen Chat mit unserem Support.
+                      </p>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleOpenSupportChat();
+                        }}
+                        className="px-6 py-2 bg-linear-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-[#129a8f] hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl text-sm"
+                      >
+                        Support Chat starten
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Hauptbereich: Meine Aufträge - nimmt volle Breite ein */}
+            <div className="w-full">
               <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-6 hover:shadow-3xl transition-all duration-300 h-fit">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-bold bg-linear-to-r from-[#14ad9f] to-teal-600 bg-clip-text text-transparent flex items-center">
@@ -640,90 +1026,6 @@ export default function UserDashboardPage() {
                 </div>
               </div>
             </div>
-
-            {/* Seitenleiste: Support & Schnellzugriff */}
-            <div className="space-y-4">
-              {/* Jobbörse Promo Card */}
-              <div 
-                onClick={() => router.push('/jobs')}
-                className="bg-linear-to-br from-[#14ad9f] to-teal-700 text-white shadow-2xl rounded-2xl p-5 hover:shadow-3xl transition-all duration-300 relative overflow-hidden group cursor-pointer"
-              >
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Briefcase size={80} />
-                </div>
-                <div className="relative z-10">
-                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4 backdrop-blur-sm group-hover:scale-110 transition-transform">
-                    <Briefcase className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="font-bold text-xl mb-2">Jobbörse</h3>
-                  <p className="text-teal-50 text-sm mb-4">
-                    Entdecken Sie spannende Karrieremöglichkeiten und finden Sie Ihren Traumjob.
-                  </p>
-                  <button className="w-full py-2 bg-white text-[#14ad9f] rounded-lg font-semibold text-sm hover:bg-teal-50 transition-colors flex items-center justify-center gap-2">
-                    Zu den Jobs
-                  </button>
-                </div>
-              </div>
-
-              {/* Support Card */}
-              <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-4 hover:shadow-3xl transition-all duration-300 h-fit">
-                <div className="text-center">
-                  <div className="w-12 h-12 mx-auto mb-3 bg-linear-to-r from-[#14ad9f] to-teal-600 rounded-full flex items-center justify-center">
-                    <FiHelpCircle className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">Hilfe & Support</h3>
-                  <p className="text-gray-600 text-sm mb-4 leading-relaxed">
-                    Benötigen Sie Hilfe? Unser Support-Team ist 24/7 für Sie da.
-                  </p>
-                  <button
-                    onClick={handleOpenSupportChat}
-                    className="w-full px-3 py-2 bg-linear-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-[#129a8f] hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl text-sm"
-                  >
-                    Support kontaktieren
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Stats Card */}
-              <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-4 hover:shadow-3xl transition-all duration-300 h-fit">
-                <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
-                  <span className="w-3 h-3 bg-linear-to-r from-[#14ad9f] to-teal-600 rounded-full mr-2"></span>
-                  Übersicht
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-2 bg-linear-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                    <span className="text-sm font-medium text-gray-700">Aktive Aufträge</span>
-                    <span className="text-lg font-bold text-green-600">
-                      {
-                        userOrders.filter(
-                          order =>
-                            order.status === 'zahlung_erhalten_clearing' ||
-                            order.status === 'bezahlt' ||
-                            order.status === 'in_bearbeitung' ||
-                            order.status === 'angenommen'
-                        ).length
-                      }
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 bg-linear-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
-                    <span className="text-sm font-medium text-gray-700">Gesamt investiert</span>
-                    <span className="text-lg font-bold text-blue-600">
-                      {(
-                        userOrders.reduce(
-                          (total, order) => total + (order.totalPriceInCents || 0),
-                          0
-                        ) / 100
-                      ).toLocaleString('de-DE', {
-                        style: 'currency',
-                        currency: 'EUR',
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
           {/* Kombinierter Bereich für TimeTracking und Billing - über FAQ */}
           {currentUser && (
@@ -809,6 +1111,9 @@ export default function UserDashboardPage() {
               }}
             />
           </Modal>
+        )}
+        {showJobBoardPromo && currentUser && (
+          <JobBoardPromoModal onClose={handlePromoClose} uid={currentUser.uid} />
         )}
         {/* Taskilo KI-Projekt-Assistent */}
         {currentUser?.uid && (

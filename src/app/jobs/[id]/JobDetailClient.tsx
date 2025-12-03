@@ -37,6 +37,8 @@ interface JobDetailClientProps {
   companyDescription?: string;
   companyJobCount?: number;
   similarJobs?: JobPosting[];
+  applicationMethod?: string;
+  externalApplicationUrl?: string;
 }
 
 export default function JobDetailClient({
@@ -44,6 +46,8 @@ export default function JobDetailClient({
   companyDescription,
   companyJobCount,
   similarJobs = [],
+  applicationMethod = 'taskilo',
+  externalApplicationUrl,
 }: JobDetailClientProps) {
   const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useJobFavorites(job.id);
@@ -186,17 +190,25 @@ export default function JobDetailClient({
 
               {/* Actions */}
               <div className="flex flex-col gap-3 w-full md:w-auto">
-                <Link
-                  href={
-                    user
-                      ? `/dashboard/user/${user.uid}/career/jobs/${job.id}/apply`
-                      : `/login?redirect=/dashboard/user/guest/career/jobs/${job.id}/apply`
-                  }
-                >
-                  <Button className="bg-teal-600 hover:bg-teal-700 text-white w-full md:w-auto">
-                    Bewerbung starten
-                  </Button>
-                </Link>
+                {applicationMethod === 'external' && externalApplicationUrl ? (
+                  <a href={externalApplicationUrl} target="_blank" rel="noopener noreferrer">
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white w-full md:w-auto">
+                      Bewerbung starten <LinkIcon className="ml-2 w-4 h-4" />
+                    </Button>
+                  </a>
+                ) : (
+                  <Link
+                    href={
+                      user
+                        ? `/dashboard/user/${user.uid}/career/jobs/${job.id}/apply`
+                        : `/login?redirect=/dashboard/user/guest/career/jobs/${job.id}/apply`
+                    }
+                  >
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white w-full md:w-auto">
+                      Bewerbung starten
+                    </Button>
+                  </Link>
+                )}
                 <div className="flex gap-2 justify-center md:justify-end">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -333,17 +345,25 @@ export default function JobDetailClient({
 
               {/* Bottom Apply Button */}
               <div className="mt-8 flex justify-center">
-                <Link
-                  href={
-                    user
-                      ? `/dashboard/user/${user.uid}/career/jobs/${job.id}/apply`
-                      : `/login?redirect=/dashboard/user/guest/career/jobs/${job.id}/apply`
-                  }
-                >
-                  <Button className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-6 text-lg">
-                    Jetzt bewerben
-                  </Button>
-                </Link>
+                {applicationMethod === 'external' && externalApplicationUrl ? (
+                  <a href={externalApplicationUrl} target="_blank" rel="noopener noreferrer">
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-6 text-lg">
+                      Jetzt bewerben <LinkIcon className="ml-2 w-5 h-5" />
+                    </Button>
+                  </a>
+                ) : (
+                  <Link
+                    href={
+                      user
+                        ? `/dashboard/user/${user.uid}/career/jobs/${job.id}/apply`
+                        : `/login?redirect=/dashboard/user/guest/career/jobs/${job.id}/apply`
+                    }
+                  >
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-6 text-lg">
+                      Jetzt bewerben
+                    </Button>
+                  </Link>
+                )}
               </div>
 
               {/* Company Info Card */}

@@ -175,8 +175,16 @@ export default function FooterSection() {
           href: '/agb',
         },
         {
+          title: 'Nutzungsbedingungen',
+          href: '/nutzungsbedingungen',
+        },
+        {
           title: 'Cookies',
           href: '/cookies',
+        },
+        {
+          title: 'Privatsphäre',
+          href: '/privatsphaere',
         },
       ],
     },
@@ -390,7 +398,7 @@ export default function FooterSection() {
                 />
                 <label
                   htmlFor="newsletter-consent"
-                  className="text-xs text-white/80 leading-relaxed cursor-pointer min-h-[44px] flex items-start pt-1"
+                  className="text-xs text-white/80 leading-relaxed cursor-pointer min-h-11 flex items-start pt-1"
                 >
                   <span className="block">
                     Ich stimme der Verarbeitung meiner E-Mail-Adresse für den Newsletter zu. Weitere

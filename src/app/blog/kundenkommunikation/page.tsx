@@ -105,47 +105,46 @@ export default function KundenkommunikationPage() {
               <div className="grid lg:grid-cols-2 gap-8">
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                    ⚡ Schnelle Reaktion (Goldene 2-Stunden-Regel)
+                    Schnelle Reaktion (Goldene 2-Stunden-Regel)
                   </h4>
                   <div className="space-y-3">
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <h5 className="font-semibold text-green-800 mb-2">✅ Sofort antworten:</h5>
+                      <h5 className="font-semibold text-green-800 mb-2">Sofort antworten:</h5>
                       <p className="text-green-700 text-sm">
-                        "Vielen Dank für Ihre Anfrage! Ich erstelle Ihnen gerne ein detailliertes
-                        Angebot. Bis heute Abend erhalten Sie alle Informationen."
+                        &quot;Vielen Dank für Ihre Anfrage! Ich erstelle Ihnen gerne ein
+                        detailliertes Angebot. Bis heute Abend erhalten Sie alle
+                        Informationen.&quot;
                       </p>
                     </div>
 
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                       <h5 className="font-semibold text-blue-800 mb-2">
-                        📞 Telefonische Klärung anbieten:
+                        Telefonische Klärung anbieten:
                       </h5>
                       <p className="text-blue-700 text-sm">
-                        "Für komplexe Fragen rufe ich Sie gerne an: Wann passt es Ihnen? Tel: 030 /
-                        123 456 78"
+                        &quot;Für komplexe Fragen rufe ich Sie gerne an: Wann passt es Ihnen? Tel:
+                        030 / 123 456 78&quot;
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                    💬 Professioneller Ton
-                  </h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Professioneller Ton</h4>
                   <div className="space-y-3">
                     <div className="bg-green-50 p-3 rounded-lg">
-                      <p className="text-green-800 text-sm font-semibold">✅ Richtig:</p>
+                      <p className="text-green-800 text-sm font-semibold">Richtig:</p>
                       <p className="text-green-700 text-sm italic">
-                        "Guten Tag Herr Schmidt, gerne unterstütze ich Sie bei der Badsanierung. Für
-                        ein präzises Angebot benötige ich noch..."
+                        &quot;Guten Tag Herr Schmidt, gerne unterstütze ich Sie bei der
+                        Badsanierung. Für ein präzises Angebot benötige ich noch...&quot;
                       </p>
                     </div>
 
                     <div className="bg-red-50 p-3 rounded-lg">
-                      <p className="text-red-800 text-sm font-semibold">❌ Falsch:</p>
+                      <p className="text-red-800 text-sm font-semibold">Falsch:</p>
                       <p className="text-red-700 text-sm italic">
-                        "Hi, klar kann ich das machen. Kostet so 5-8k, je nachdem. Melde mich wenn
-                        Zeit habe."
+                        &quot;Hi, klar kann ich das machen. Kostet so 5-8k, je nachdem. Melde mich
+                        wenn Zeit habe.&quot;
                       </p>
                     </div>
                   </div>
@@ -153,7 +152,7 @@ export default function KundenkommunikationPage() {
               </div>
 
               <div className="mt-6 bg-[#14ad9f] bg-opacity-10 p-4 rounded-lg">
-                <h4 className="font-semibold text-[#14ad9f] mb-2">🏆 Taskilo-Erfolgsformel:</h4>
+                <h4 className="font-semibold text-[#14ad9f] mb-2">Taskilo-Erfolgsformel:</h4>
                 <p className="text-gray-700">
                   Antwortzeit unter 2 Stunden + professioneller Ton + konkrete nächste Schritte =
                   85% höhere Wahrscheinlichkeit auf Auftrag!
@@ -174,53 +173,53 @@ export default function KundenkommunikationPage() {
 
               <div className="grid lg:grid-cols-2 gap-8">
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">🎯 Bedarfsanalyse</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Bedarfsanalyse</h4>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-2">
                       <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
-                        Aktiv nachfragen: "Welches Ergebnis stellen Sie sich vor?"
+                        Aktiv nachfragen: &quot;Welches Ergebnis stellen Sie sich vor?&quot;
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
                       <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
-                        Budget erfragen: "Haben Sie einen groben Kostenrahmen im Kopf?"
+                        Budget erfragen: &quot;Haben Sie einen groben Kostenrahmen im Kopf?&quot;
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
                       <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
-                        Zeitplan klären: "Bis wann soll das Projekt fertig sein?"
+                        Zeitplan klären: &quot;Bis wann soll das Projekt fertig sein?&quot;
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
                       <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
-                        Besonderheiten beachten: "Gibt es spezielle Wünsche?"
+                        Besonderheiten beachten: &quot;Gibt es spezielle Wünsche?&quot;
                       </span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">💡 Beratungstipps</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Beratungstipps</h4>
                   <div className="space-y-3">
                     <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                       <p className="text-yellow-800 text-sm font-semibold">
                         Alternative Lösungen anbieten:
                       </p>
                       <p className="text-yellow-700 text-sm">
-                        "Es gibt 3 Ansätze für Ihr Projekt: Budget-Variante (3.000€), Standard
-                        (5.000€) oder Premium (8.000€). Was spricht Sie an?"
+                        &quot;Es gibt 3 Ansätze für Ihr Projekt: Budget-Variante (3.000€), Standard
+                        (5.000€) oder Premium (8.000€). Was spricht Sie an?&quot;
                       </p>
                     </div>
 
                     <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
                       <p className="text-blue-800 text-sm font-semibold">Expertenwissen teilen:</p>
                       <p className="text-blue-700 text-sm">
-                        "Nach 15 Jahren Erfahrung empfehle ich in Ihrem Fall... Das spart
-                        langfristig Kosten und ist nachhaltiger."
+                        &quot;Nach 15 Jahren Erfahrung empfehle ich in Ihrem Fall... Das spart
+                        langfristig Kosten und ist nachhaltiger.&quot;
                       </p>
                     </div>
                   </div>
@@ -241,22 +240,20 @@ export default function KundenkommunikationPage() {
 
               <div className="grid lg:grid-cols-2 gap-8">
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                    📅 Regelmäßige Updates
-                  </h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Regelmäßige Updates</h4>
                   <div className="space-y-3">
                     <div className="bg-green-50 p-4 rounded-lg">
                       <h5 className="font-semibold text-green-800 mb-2">
-                        🌅 Täglicher Status (große Projekte):
+                        Täglicher Status (große Projekte):
                       </h5>
                       <p className="text-green-700 text-sm">
-                        "Guten Morgen! Heute stehen Punkt 3-5 auf dem Plan: Elektroinstallation
-                        Küche. Voraussichtlich bis 16 Uhr fertig. Fragen?"
+                        &quot;Guten Morgen! Heute stehen Punkt 3-5 auf dem Plan: Elektroinstallation
+                        Küche. Voraussichtlich bis 16 Uhr fertig. Fragen?&quot;
                       </p>
                     </div>
 
                     <div className="bg-blue-50 p-4 rounded-lg">
-                      <h5 className="font-semibold text-blue-800 mb-2">📸 Foto-Updates:</h5>
+                      <h5 className="font-semibold text-blue-800 mb-2">Foto-Updates:</h5>
                       <p className="text-blue-700 text-sm">
                         Zwischenstände fotografieren und per Taskilo-Chat senden. Kunden lieben es,
                         den Fortschritt zu sehen!
@@ -267,7 +264,7 @@ export default function KundenkommunikationPage() {
 
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                    ⚠️ Probleme proaktiv kommunizieren
+                    Probleme proaktiv kommunizieren
                   </h4>
                   <div className="space-y-3">
                     <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
@@ -275,8 +272,8 @@ export default function KundenkommunikationPage() {
                         Verzögerungen sofort melden:
                       </p>
                       <p className="text-orange-700 text-sm">
-                        "Leider Verzögerung: Material hat Lieferproblem. Neue Planung: Start
-                        Mittwoch statt Montag. Entschuldigung für Unannehmlichkeiten!"
+                        &quot;Leider Verzögerung: Material hat Lieferproblem. Neue Planung: Start
+                        Mittwoch statt Montag. Entschuldigung für Unannehmlichkeiten!&quot;
                       </p>
                     </div>
 
@@ -285,8 +282,8 @@ export default function KundenkommunikationPage() {
                         Mehrkosten vorher besprechen:
                       </p>
                       <p className="text-red-700 text-sm">
-                        "Bei der Entfernung der Fliesen ist ein Wasserschaden aufgetreten. Reparatur
-                        nötig: 300€. Soll ich das beheben oder warten Sie ab?"
+                        &quot;Bei der Entfernung der Fliesen ist ein Wasserschaden aufgetreten.
+                        Reparatur nötig: 300€. Soll ich das beheben oder warten Sie ab?&quot;
                       </p>
                     </div>
                   </div>
@@ -312,8 +309,8 @@ export default function KundenkommunikationPage() {
                     <div className="bg-green-50 p-4 rounded-lg">
                       <h5 className="font-semibold text-green-800 mb-2">✅ Gemeinsame Abnahme:</h5>
                       <p className="text-green-700 text-sm">
-                        "Lassen Sie uns gemeinsam durchgehen: Entspricht alles Ihren Vorstellungen?
-                        Hier sind die Garantieunterlagen und Pflegetipps."
+                        &quot;Lassen Sie uns gemeinsam durchgehen: Entspricht alles Ihren
+                        Vorstellungen? Hier sind die Garantieunterlagen und Pflegetipps.&quot;
                       </p>
                     </div>
 
@@ -341,8 +338,9 @@ export default function KundenkommunikationPage() {
                         Höflich um Bewertung bitten:
                       </p>
                       <p className="text-yellow-700 text-sm">
-                        "Falls Sie zufrieden sind, würde ich mich sehr über eine ehrliche Bewertung
-                        auf Taskilo freuen. Das hilft anderen Kunden bei der Auswahl."
+                        &quot;Falls Sie zufrieden sind, würde ich mich sehr über eine ehrliche
+                        Bewertung auf Taskilo freuen. Das hilft anderen Kunden bei der
+                        Auswahl.&quot;
                       </p>
                     </div>
 
@@ -351,8 +349,8 @@ export default function KundenkommunikationPage() {
                         Nachbetreuung anbieten:
                       </p>
                       <p className="text-green-700 text-sm">
-                        "Bei Fragen oder kleinen Problemen können Sie mich jederzeit kontaktieren.
-                        Auch in 6 Monaten! Kundenzufriedenheit ist mir wichtig."
+                        &quot;Bei Fragen oder kleinen Problemen können Sie mich jederzeit
+                        kontaktieren. Auch in 6 Monaten! Kundenzufriedenheit ist mir wichtig.&quot;
                       </p>
                     </div>
                   </div>
@@ -378,16 +376,16 @@ export default function KundenkommunikationPage() {
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <h5 className="font-semibold text-blue-800 mb-2">📞 Nach 1 Woche:</h5>
                       <p className="text-blue-700 text-sm">
-                        "Kurze Nachfrage: Läuft alles problemlos? Sind Sie zufrieden mit dem
-                        Ergebnis?"
+                        &quot;Kurze Nachfrage: Läuft alles problemlos? Sind Sie zufrieden mit dem
+                        Ergebnis?&quot;
                       </p>
                     </div>
 
                     <div className="bg-green-50 p-4 rounded-lg">
                       <h5 className="font-semibold text-green-800 mb-2">📅 Nach 3 Monaten:</h5>
                       <p className="text-green-700 text-sm">
-                        "Wie gefällt Ihnen Ihr neues Bad? Falls Wartung oder weitere Projekte
-                        anstehen, denken Sie gerne an mich!"
+                        &quot;Wie gefällt Ihnen Ihr neues Bad? Falls Wartung oder weitere Projekte
+                        anstehen, denken Sie gerne an mich!&quot;
                       </p>
                     </div>
                   </div>
@@ -401,16 +399,16 @@ export default function KundenkommunikationPage() {
                         Saisonale Tipps senden:
                       </p>
                       <p className="text-purple-700 text-sm">
-                        "Wintercheck: Vergessen Sie nicht die Heizungswartung! Gerne erstelle ich
-                        ein Angebot."
+                        &quot;Wintercheck: Vergessen Sie nicht die Heizungswartung! Gerne erstelle
+                        ich ein Angebot.&quot;
                       </p>
                     </div>
 
                     <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
                       <p className="text-orange-800 text-sm font-semibold">Empfehlungsprogramm:</p>
                       <p className="text-orange-700 text-sm">
-                        "Kennen Sie jemanden, der auch renovieren möchte? Bei erfolgreicher
-                        Vermittlung gibt's 5% Rabatt auf Ihr nächstes Projekt!"
+                        &quot;Kennen Sie jemanden, der auch renovieren möchte? Bei erfolgreicher
+                        Vermittlung gibt&apos;s 5% Rabatt auf Ihr nächstes Projekt!&quot;
                       </p>
                     </div>
                   </div>
@@ -436,16 +434,16 @@ export default function KundenkommunikationPage() {
                     <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                       <h4 className="font-semibold text-red-800 mb-2">Kunde ist unzufrieden:</h4>
                       <p className="text-red-700 text-sm mb-2 italic">
-                        "Das sieht ganz anders aus als besprochen!"
+                        &quot;Das sieht ganz anders aus als besprochen!&quot;
                       </p>
                       <div className="bg-white p-3 rounded border border-red-100">
                         <p className="text-green-800 text-sm font-semibold">
                           ✅ Richtige Reaktion:
                         </p>
                         <p className="text-gray-700 text-sm">
-                          "Das tut mir sehr leid! Lassen Sie uns das gemeinsam anschauen. Wo genau
-                          sehen Sie Unterschiede zu unserer Absprache? Ich finde sicher eine Lösung,
-                          mit der Sie zufrieden sind."
+                          &quot;Das tut mir sehr leid! Lassen Sie uns das gemeinsam anschauen. Wo
+                          genau sehen Sie Unterschiede zu unserer Absprache? Ich finde sicher eine
+                          Lösung, mit der Sie zufrieden sind.&quot;
                         </p>
                       </div>
                     </div>
@@ -453,15 +451,16 @@ export default function KundenkommunikationPage() {
                     <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                       <h4 className="font-semibold text-orange-800 mb-2">Preisdiskussion:</h4>
                       <p className="text-orange-700 text-sm mb-2 italic">
-                        "Das ist viel teurer als gedacht!"
+                        &quot;Das ist viel teurer als gedacht!&quot;
                       </p>
                       <div className="bg-white p-3 rounded border border-orange-100">
                         <p className="text-green-800 text-sm font-semibold">
                           ✅ Richtige Reaktion:
                         </p>
                         <p className="text-gray-700 text-sm">
-                          "Verstehe Ihre Überraschung! Lassen Sie mich die Kalkulation erklären:
-                          [Aufschlüsselung]. Gerne finden wir eine Budget-freundlichere Variante."
+                          &quot;Verstehe Ihre Überraschung! Lassen Sie mich die Kalkulation
+                          erklären: [Aufschlüsselung]. Gerne finden wir eine Budget-freundlichere
+                          Variante.&quot;
                         </p>
                       </div>
                     </div>
@@ -476,36 +475,36 @@ export default function KundenkommunikationPage() {
                     <div className="flex items-start space-x-2">
                       <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
-                        <strong>Aktiv zuhören:</strong> "Verstehe ich richtig, dass Sie sich Sorgen
-                        machen wegen..."
+                        <strong>Aktiv zuhören:</strong> &quot;Verstehe ich richtig, dass Sie sich
+                        Sorgen machen wegen...&quot;
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
                       <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
-                        <strong>Empathie zeigen:</strong> "Ich kann Ihren Ärger absolut
-                        verstehen..."
+                        <strong>Empathie zeigen:</strong> &quot;Ich kann Ihren Ärger absolut
+                        verstehen...&quot;
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
                       <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
-                        <strong>Verantwortung übernehmen:</strong> "Das war mein Fehler, ich kümmere
-                        mich sofort darum."
+                        <strong>Verantwortung übernehmen:</strong> &quot;Das war mein Fehler, ich
+                        kümmere mich sofort darum.&quot;
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
                       <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
-                        <strong>Lösungen anbieten:</strong> "Hier sind 3 Wege, wie wir das lösen
-                        können..."
+                        <strong>Lösungen anbieten:</strong> &quot;Hier sind 3 Wege, wie wir das
+                        lösen können...&quot;
                       </span>
                     </div>
                     <div className="flex items-start space-x-2">
                       <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
                       <span className="text-sm">
-                        <strong>Timeline setzen:</strong> "Bis morgen Abend haben Sie eine Lösung
-                        von mir."
+                        <strong>Timeline setzen:</strong> &quot;Bis morgen Abend haben Sie eine
+                        Lösung von mir.&quot;
                       </span>
                     </div>
                   </div>
@@ -532,7 +531,7 @@ export default function KundenkommunikationPage() {
               <div className="grid lg:grid-cols-2 gap-8">
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                    💬 Chat-Dos and Don'ts
+                    💬 Chat-Dos and Don&apos;ts
                   </h3>
                   <div className="space-y-4">
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
@@ -547,9 +546,11 @@ export default function KundenkommunikationPage() {
                     </div>
 
                     <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                      <h4 className="font-semibold text-red-800 mb-2">❌ DON'Ts:</h4>
+                      <h4 className="font-semibold text-red-800 mb-2">❌ DON&apos;Ts:</h4>
                       <ul className="text-red-700 text-sm space-y-1">
-                        <li>• Zu informeller Ton ("Hey", "Jo", "Läuft")</li>
+                        <li>
+                          • Zu informeller Ton (&quot;Hey&quot;, &quot;Jo&quot;, &quot;Läuft&quot;)
+                        </li>
                         <li>• Nachrichten nach 20 Uhr</li>
                         <li>• Endlos-Monologe ohne Struktur</li>
                         <li>• Schlechte Nachrichten ohne Lösungsvorschlag</li>
@@ -574,7 +575,7 @@ export default function KundenkommunikationPage() {
                     <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
                       <h4 className="font-semibold text-purple-800 mb-2">📍 Standort teilen:</h4>
                       <p className="text-purple-700 text-sm">
-                        "Bin in 10 Minuten da!" - Live-Location bei Anfahrt
+                        &quot;Bin in 10 Minuten da!&quot; - Live-Location bei Anfahrt
                       </p>
                     </div>
 
@@ -666,18 +667,18 @@ export default function KundenkommunikationPage() {
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                       <h4 className="font-semibold text-green-800 mb-2">Projektstart:</h4>
                       <p className="text-green-700 text-sm italic">
-                        "Guten Morgen! Heute startet Ihr Projekt. Wir kommen um 8 Uhr, haben alle
-                        Materialien dabei und rechnen mit Fertigstellung bis Freitag. Freue mich auf
-                        die Zusammenarbeit!"
+                        &quot;Guten Morgen! Heute startet Ihr Projekt. Wir kommen um 8 Uhr, haben
+                        alle Materialien dabei und rechnen mit Fertigstellung bis Freitag. Freue
+                        mich auf die Zusammenarbeit!&quot;
                       </p>
                     </div>
 
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                       <h4 className="font-semibold text-blue-800 mb-2">Fortschritt-Update:</h4>
                       <p className="text-blue-700 text-sm italic">
-                        "Update Tag 3: Grundarbeiten abgeschlossen, morgen beginnen wir mit
+                        &quot;Update Tag 3: Grundarbeiten abgeschlossen, morgen beginnen wir mit
                         [nächster Schritt]. Bisher läuft alles planmäßig. Anbei Foto vom aktuellen
-                        Stand 📸"
+                        Stand 📸&quot;
                       </p>
                     </div>
 
@@ -686,9 +687,9 @@ export default function KundenkommunikationPage() {
                         Erfolgreicher Abschluss:
                       </h4>
                       <p className="text-green-700 text-sm italic">
-                        &ldquo;Geschafft! 🎉 Ihr Projekt ist fertig und ich bin sehr zufrieden mit dem
-                        Ergebnis. Gerne führe ich Sie durch alles und erkläre die Pflege. Zeit für
-                        die Übergabe?&rdquo;
+                        &ldquo;Geschafft! 🎉 Ihr Projekt ist fertig und ich bin sehr zufrieden mit
+                        dem Ergebnis. Gerne führe ich Sie durch alles und erkläre die Pflege. Zeit
+                        für die Übergabe?&rdquo;
                       </p>
                     </div>
                   </div>
@@ -702,8 +703,8 @@ export default function KundenkommunikationPage() {
                     <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                       <h4 className="font-semibold text-orange-800 mb-2">Verzögerung:</h4>
                       <p className="text-orange-700 text-sm italic">
-                        &ldquo;Wichtiger Hinweis: Durch [konkreter Grund] verzögert sich das Projekt um 2
-                        Tage. Neuer Termin: [Datum]. Entschuldigung für die Unannehmlichkeiten!
+                        &ldquo;Wichtiger Hinweis: Durch [konkreter Grund] verzögert sich das Projekt
+                        um 2 Tage. Neuer Termin: [Datum]. Entschuldigung für die Unannehmlichkeiten!
                         Kompensation: [Vorschlag]&rdquo;
                       </p>
                     </div>
@@ -711,18 +712,18 @@ export default function KundenkommunikationPage() {
                     <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                       <h4 className="font-semibold text-red-800 mb-2">Unerwartetes Problem:</h4>
                       <p className="text-red-700 text-sm italic">
-                        &ldquo;Unvorhergesehenes entdeckt: [Problem]. Das bedeutet [Auswirkung]. Meine
-                        Lösungsvorschläge: 1) [Option A] 2) [Option B]. Was ist Ihre Präferenz? Rufe
-                        um 14 Uhr an.&rdquo;
+                        &ldquo;Unvorhergesehenes entdeckt: [Problem]. Das bedeutet [Auswirkung].
+                        Meine Lösungsvorschläge: 1) [Option A] 2) [Option B]. Was ist Ihre
+                        Präferenz? Rufe um 14 Uhr an.&rdquo;
                       </p>
                     </div>
 
                     <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                       <h4 className="font-semibold text-yellow-800 mb-2">Nachbesserung nötig:</h4>
                       <p className="text-yellow-700 text-sm italic">
-                        &ldquo;Sie haben absolut recht - das entspricht nicht meinen Standards. Komme
-                        morgen früh und bringe das in Ordnung. Selbstverständlich kostenfrei. Vielen
-                        Dank für den Hinweis!&rdquo;
+                        &ldquo;Sie haben absolut recht - das entspricht nicht meinen Standards.
+                        Komme morgen früh und bringe das in Ordnung. Selbstverständlich kostenfrei.
+                        Vielen Dank für den Hinweis!&rdquo;
                       </p>
                     </div>
                   </div>

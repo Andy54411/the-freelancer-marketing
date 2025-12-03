@@ -130,6 +130,16 @@ service cloud.firestore {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
 
+      // --- Job Applications Subcollection ---
+      match /job_applications/{applicationId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // --- Candidate Profile Subcollection ---
+      match /candidate_profile/{document} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
     }
 
     // --- Job Favorites Subcollection (Explicit Path) ---

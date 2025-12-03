@@ -7,34 +7,34 @@ export default async function CareerProfilePage({ params }: { params: Promise<{ 
 
   // Fetch existing profile
   let initialData: Partial<ApplicantProfile> | undefined = undefined;
-  
+
   if (db) {
     try {
-      // Try new collection first
-      const profileDoc = await db.collection('candidateProfiles').doc(uid).get();
-    if (profileDoc.exists) {
-      initialData = profileDoc.data() as Partial<ApplicantProfile>;
-    } else {
-        // Try legacy path
-        const legacyDoc = await db.collection('users').doc(uid).collection('career_profile').doc('main').get();
-        if (legacyDoc.exists) {
-             initialData = legacyDoc.data() as Partial<ApplicantProfile>;
-        } else {
-            // Try to pre-fill from user record
-            const userDoc = await db.collection('users').doc(uid).get();
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                initialData = {
-                    firstName: userData?.firstName || '',
-                    lastName: userData?.lastName || '',
-                    email: userData?.email || '',
-                };
-            }
+      // Try new subcollection first (Architecture Compliance)
+      const subcollectionDoc = await db
+        .collection('users')
+        .doc(uid)
+        .collection('candidate_profile')
+        .doc('main')
+        .get();
+
+      if (subcollectionDoc.exists) {
+        initialData = subcollectionDoc.data() as Partial<ApplicantProfile>;
+      } else {
+        // Try to pre-fill from user record
+        const userDoc = await db.collection('users').doc(uid).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          initialData = {
+            firstName: userData?.firstName || '',
+            lastName: userData?.lastName || '',
+            email: userData?.email || '',
+          };
         }
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
     }
-  } catch (error) {
-    console.error('Error fetching profile:', error);
-  }
   }
 
   return (
@@ -42,7 +42,8 @@ export default async function CareerProfilePage({ params }: { params: Promise<{ 
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Mein Kandidatenprofil</h1>
         <p className="text-muted-foreground">
-          Erstellen Sie Ihr Profil, um sich auf Stellen zu bewerben und von Unternehmen gefunden zu werden.
+          Erstellen Sie Ihr Profil, um sich auf Stellen zu bewerben und von Unternehmen gefunden zu
+          werden.
         </p>
       </div>
 

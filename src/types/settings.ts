@@ -14,6 +14,19 @@ export interface RawFirestoreUserData {
   profilePictureFirebaseUrl?: string;
   identityFrontUrlStripeId?: string;
   identityBackUrlStripeId?: string;
+  // User Profile Data (Clean structure)
+  profile?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phoneNumber?: string;
+    street?: string;
+    houseNumber?: string;
+    postalCode?: string;
+    city?: string;
+    country?: string;
+    dateOfBirth?: any; // Timestamp or string
+  };
   // Additional root-level accounting fields
   lastInvoiceNumber?: string;
   districtCourt?: string;

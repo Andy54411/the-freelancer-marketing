@@ -75,7 +75,7 @@ export default function ElektrikerRatgeberPage() {
             <div className="flex items-start space-x-3">
               <AlertTriangle className="w-8 h-8 text-red-500 shrink-0 mt-1" />
               <div>
-                <h2 className="text-xl font-bold text-red-800 mb-2">⚠️ SICHERHEITSHINWEIS</h2>
+                <h2 className="text-xl font-bold text-red-800 mb-2">SICHERHEITSHINWEIS</h2>
                 <p className="text-red-700 text-lg">
                   Elektroarbeiten können lebensgefährlich sein! Unsachgemäße Installationen führen
                   zu Stromschlägen, Bränden und Versicherungsproblemen. Bei Zweifeln immer einen
@@ -102,7 +102,7 @@ export default function ElektrikerRatgeberPage() {
                 <div className="space-y-4">
                   <div className="bg-white p-4 rounded-lg border border-red-100">
                     <h4 className="font-semibold text-red-800 mb-2">
-                      🔌 Anschlüsse an Hauptstromkreis
+                      Anschlüsse an Hauptstromkreis
                     </h4>
                     <p className="text-red-700 text-sm">
                       Steckdosen, Schalter, Verteilerkästen - nur VDE-zertifizierte Elektriker!
@@ -110,14 +110,14 @@ export default function ElektrikerRatgeberPage() {
                   </div>
 
                   <div className="bg-white p-4 rounded-lg border border-red-100">
-                    <h4 className="font-semibold text-red-800 mb-2">🏠 Festinstallationen</h4>
+                    <h4 className="font-semibold text-red-800 mb-2">Festinstallationen</h4>
                     <p className="text-red-700 text-sm">
                       Deckenlampen, Einbaustrahler, Küchengeräte-Anschluss
                     </p>
                   </div>
 
                   <div className="bg-white p-4 rounded-lg border border-red-100">
-                    <h4 className="font-semibold text-red-800 mb-2">💧 Feuchträume</h4>
+                    <h4 className="font-semibold text-red-800 mb-2">Feuchträume</h4>
                     <p className="text-red-700 text-sm">
                       Badezimmer, Küche, Keller - besondere Schutzbestimmungen!
                     </p>
@@ -125,7 +125,7 @@ export default function ElektrikerRatgeberPage() {
 
                   <div className="bg-white p-4 rounded-lg border border-red-100">
                     <h4 className="font-semibold text-red-800 mb-2">
-                      🔧 Verteilerkästen & Sicherungen
+                      Verteilerkästen & Sicherungen
                     </h4>
                     <p className="text-red-700 text-sm">
                       FI-Schalter, Sicherungsautomaten, Zähleranschluss
@@ -133,7 +133,7 @@ export default function ElektrikerRatgeberPage() {
                   </div>
 
                   <div className="bg-white p-4 rounded-lg border border-red-100">
-                    <h4 className="font-semibold text-red-800 mb-2">⚡ Hochvolt-Bereiche</h4>
+                    <h4 className="font-semibold text-red-800 mb-2">Hochvolt-Bereiche</h4>
                     <p className="text-red-700 text-sm">
                       Alles über 50V, Starkstrom (400V), E-Auto-Ladestationen
                     </p>
@@ -150,28 +150,28 @@ export default function ElektrikerRatgeberPage() {
 
                 <div className="space-y-4">
                   <div className="bg-white p-4 rounded-lg border border-green-100">
-                    <h4 className="font-semibold text-green-800 mb-2">💡 Lampen wechseln</h4>
+                    <h4 className="font-semibold text-green-800 mb-2">Lampen wechseln</h4>
                     <p className="text-green-700 text-sm">
                       Glühbirnen, LED-Spots - aber STROM AUS und bei Unsicherheit Profi!
                     </p>
                   </div>
 
                   <div className="bg-white p-4 rounded-lg border border-green-100">
-                    <h4 className="font-semibold text-green-800 mb-2">🔌 Einfache Reparaturen</h4>
+                    <h4 className="font-semibold text-green-800 mb-2">Einfache Reparaturen</h4>
                     <p className="text-green-700 text-sm">
                       Kabel von Elektrogeräten, Stecker austauschen (12V/24V)
                     </p>
                   </div>
 
                   <div className="bg-white p-4 rounded-lg border border-green-100">
-                    <h4 className="font-semibold text-green-800 mb-2">🎵 Niedervolt-Systeme</h4>
+                    <h4 className="font-semibold text-green-800 mb-2">Niedervolt-Systeme</h4>
                     <p className="text-green-700 text-sm">
                       12V LED-Stripes, Klingel, Türsprechanlage (je nach System)
                     </p>
                   </div>
 
                   <div className="bg-white p-4 rounded-lg border border-green-100">
-                    <h4 className="font-semibold text-green-800 mb-2">📱 Smart Home (teilweise)</h4>
+                    <h4 className="font-semibold text-green-800 mb-2">Smart Home (teilweise)</h4>
                     <p className="text-green-700 text-sm">
                       Batteriebasierte Sensoren, WLAN-Geräte ohne Festinstallation
                     </p>
@@ -179,7 +179,8 @@ export default function ElektrikerRatgeberPage() {
 
                   <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                     <p className="text-yellow-800 text-sm font-semibold">
-                      ⚠️ ACHTUNG: Auch bei &ldquo;erlaubten&rdquo; Arbeiten gilt - im Zweifel lieber den Profi!
+                      ACHTUNG: Auch bei &ldquo;erlaubten&rdquo; Arbeiten gilt - im Zweifel lieber
+                      den Profi!
                     </p>
                   </div>
                 </div>
@@ -203,7 +204,7 @@ export default function ElektrikerRatgeberPage() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-semibold text-red-800 mb-3">
-                    🚫 Zwingend Elektriker beauftragen:
+                    Zwingend Elektriker beauftragen:
                   </h4>
                   <ul className="space-y-2 text-gray-700">
                     <li>• Zusätzliche Steckdosen installieren</li>
@@ -217,9 +218,7 @@ export default function ElektrikerRatgeberPage() {
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-green-800 mb-3">
-                    ✅ Eventuell selbst machbar:
-                  </h4>
+                  <h4 className="font-semibold text-green-800 mb-3">Eventuell selbst machbar:</h4>
                   <ul className="space-y-2 text-gray-700">
                     <li>• Lampen in bestehende Fassungen einsetzen</li>
                     <li>• Aufputz-Verlängerungskabel (sichtbar)</li>
@@ -229,8 +228,8 @@ export default function ElektrikerRatgeberPage() {
 
                   <div className="mt-4 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                     <p className="text-yellow-800 text-sm">
-                      <strong>Tipp:</strong> Auch &ldquo;einfache&rdquo; Arbeiten sollten vom Elektriker
-                      abgenommen werden, um Versicherungsschutz zu gewährleisten.
+                      <strong>Tipp:</strong> Auch &ldquo;einfache&rdquo; Arbeiten sollten vom
+                      Elektriker abgenommen werden, um Versicherungsschutz zu gewährleisten.
                     </p>
                   </div>
                 </div>
@@ -246,7 +245,7 @@ export default function ElektrikerRatgeberPage() {
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-semibold text-red-800 mb-3">🚫 Immer Elektriker:</h4>
+                  <h4 className="font-semibold text-red-800 mb-3">Immer Elektriker:</h4>
                   <ul className="space-y-2 text-gray-700">
                     <li>• Unterputz-Schalter mit WLAN/Zigbee</li>
                     <li>• Einbau-Dimmer für Deckenlicht</li>
@@ -258,7 +257,7 @@ export default function ElektrikerRatgeberPage() {
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-green-800 mb-3">✅ Oft selbst möglich:</h4>
+                  <h4 className="font-semibold text-green-800 mb-3">Oft selbst möglich:</h4>
                   <ul className="space-y-2 text-gray-700">
                     <li>• WLAN-Zwischenstecker</li>
                     <li>• Batteriebasierte Sensoren (Tür, Fenster)</li>
@@ -286,9 +285,7 @@ export default function ElektrikerRatgeberPage() {
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-semibold text-red-800 mb-3">
-                    🚨 SOFORT Elektriker/Notdienst:
-                  </h4>
+                  <h4 className="font-semibold text-red-800 mb-3">SOFORT Elektriker/Notdienst:</h4>
                   <ul className="space-y-2 text-gray-700">
                     <li>• Stromausfall in der ganzen Wohnung</li>
                     <li>• Sicherung springt ständig raus</li>
@@ -301,9 +298,7 @@ export default function ElektrikerRatgeberPage() {
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-orange-800 mb-3">
-                    ⏰ Baldmöglichst Elektriker:
-                  </h4>
+                  <h4 className="font-semibold text-orange-800 mb-3">Baldmöglichst Elektriker:</h4>
                   <ul className="space-y-2 text-gray-700">
                     <li>• Einzelne Steckdosen funktionieren nicht</li>
                     <li>• Lichtschalter reagieren nicht</li>
@@ -326,11 +321,11 @@ export default function ElektrikerRatgeberPage() {
           {/* Kosten */}
           <div className="mb-12">
             <div className="bg-linear-to-r from-[#14ad9f] to-taskilo-hover rounded-xl p-8 text-white">
-              <h2 className="text-3xl font-bold mb-6">💰 Was kostet ein Elektriker?</h2>
+              <h2 className="text-3xl font-bold mb-6">Was kostet ein Elektriker?</h2>
 
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="bg-white bg-opacity-20 p-6 rounded-lg">
-                  <h3 className="text-xl font-semibold mb-4">🔧 Standard-Arbeiten</h3>
+                  <h3 className="text-xl font-semibold mb-4">Standard-Arbeiten</h3>
                   <div className="space-y-2 text-[#e6fffe]">
                     <p>• Steckdose setzen: 80-150€</p>
                     <p>• Lichtschalter: 60-120€</p>
@@ -341,7 +336,7 @@ export default function ElektrikerRatgeberPage() {
                 </div>
 
                 <div className="bg-white bg-opacity-20 p-6 rounded-lg">
-                  <h3 className="text-xl font-semibold mb-4">🏠 Größere Projekte</h3>
+                  <h3 className="text-xl font-semibold mb-4">Größere Projekte</h3>
                   <div className="space-y-2 text-[#e6fffe]">
                     <p>• Elektro-Komplettsanierung: 8.000-15.000€</p>
                     <p>• Küchen-Elektrik: 1.500-3.000€</p>
@@ -351,7 +346,7 @@ export default function ElektrikerRatgeberPage() {
                 </div>
 
                 <div className="bg-white bg-opacity-20 p-6 rounded-lg">
-                  <h3 className="text-xl font-semibold mb-4">🚨 Notdienst</h3>
+                  <h3 className="text-xl font-semibold mb-4">Notdienst</h3>
                   <div className="space-y-2 text-[#e6fffe]">
                     <p>• Wochenende: +50% Aufschlag</p>
                     <p>• Nachts: +100% Aufschlag</p>
@@ -374,7 +369,7 @@ export default function ElektrikerRatgeberPage() {
 
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">✅ IMMER beachten:</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">IMMER beachten:</h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
                       <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
@@ -400,7 +395,7 @@ export default function ElektrikerRatgeberPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">🚫 NIEMALS machen:</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">NIEMALS machen:</h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
                       <XCircle className="w-5 h-5 text-red-500 mt-1 shrink-0" />
@@ -427,7 +422,7 @@ export default function ElektrikerRatgeberPage() {
               </div>
 
               <div className="mt-6 bg-red-50 p-4 rounded-lg border border-red-200">
-                <h4 className="font-semibold text-red-800 mb-2">⚡ Lebensgefahr!</h4>
+                <h4 className="font-semibold text-red-800 mb-2">Lebensgefahr!</h4>
                 <p className="text-red-700">
                   Strom kann tödlich sein! 50V können bereits ausreichen, um einen Herzstillstand zu
                   verursachen. 230V-Haushaltsstrom ist extrem gefährlich. Bei geringstem Zweifel:
@@ -441,13 +436,13 @@ export default function ElektrikerRatgeberPage() {
           <div className="mb-12">
             <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
               <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                🎓 Qualifikationen eines professionellen Elektrikers
+                Qualifikationen eines professionellen Elektrikers
               </h2>
 
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                    📜 Mindest-Qualifikationen:
+                    Mindest-Qualifikationen:
                   </h3>
                   <div className="space-y-3">
                     <div className="bg-blue-50 p-3 rounded-lg">
@@ -477,7 +472,7 @@ export default function ElektrikerRatgeberPage() {
 
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                    🏆 Zusätzliche Spezialisierungen:
+                    Zusätzliche Spezialisierungen:
                   </h3>
                   <div className="space-y-3">
                     <div className="bg-green-50 p-3 rounded-lg">
@@ -503,7 +498,7 @@ export default function ElektrikerRatgeberPage() {
               </div>
 
               <div className="mt-6 bg-[#14ad9f] bg-opacity-10 p-4 rounded-lg">
-                <h4 className="font-semibold text-[#14ad9f] mb-2">🔍 Taskilo-Qualitätsprüfung:</h4>
+                <h4 className="font-semibold text-[#14ad9f] mb-2">Taskilo-Qualitätsprüfung:</h4>
                 <p className="text-gray-700">
                   Alle Elektriker auf Taskilo durchlaufen eine umfassende Qualifikationsprüfung. Wir
                   prüfen Ausbildungsnachweise, VDE-Zertifikate, Gewerbeanmeldung und
@@ -516,7 +511,7 @@ export default function ElektrikerRatgeberPage() {
           {/* FAQ */}
           <div className="mb-12">
             <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">❓ Häufige Fragen</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">Häufige Fragen</h2>
 
               <div className="space-y-6">
                 <div className="border-b border-gray-200 pb-4">

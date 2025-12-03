@@ -176,14 +176,71 @@ export function JobSearchHeader() {
     return () => clearTimeout(timeoutId);
   }, [what]);
 
+  // Helper function to check scroll state
+  const checkScrollState = () => {
+    // 1. Check Window Scroll
+    if (window.scrollY > 20) {
+      setIsScrolled(true);
+      return;
+    }
+
+    // 2. Check Parent Scroll (for Dashboard)
+    let element: HTMLElement | null = wrapperRef.current;
+    while (element && element.parentElement) {
+      const parent = element.parentElement;
+      // Check if parent is scrollable
+      const style = window.getComputedStyle(parent);
+      const isScrollable = style.overflowY === 'auto' || style.overflowY === 'scroll';
+
+      if (isScrollable) {
+        setIsScrolled(parent.scrollTop > 20);
+        return;
+      }
+      element = parent;
+    }
+
+    // 3. Default to false
+    setIsScrolled(false);
+  };
+
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+    const handleScroll = (event: Event) => {
+      const target = event.target as HTMLElement | Document;
+
+      // Check if it's the window/document scrolling
+      if (target === document) {
+        setIsScrolled(window.scrollY > 20);
+        return;
+      }
+
+      // Check if it's an element scrolling that contains our component
+      if (
+        target instanceof HTMLElement &&
+        wrapperRef.current &&
+        target.contains(wrapperRef.current)
+      ) {
+        setIsScrolled(target.scrollTop > 20);
+      }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    // Capture true is key here to get scroll events from children
+    window.addEventListener('scroll', handleScroll, { capture: true });
+
+    // Initial check with a small delay to ensure layout is ready
+    const timer = setTimeout(checkScrollState, 100);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll, { capture: true });
+      clearTimeout(timer);
+    };
   }, []);
+
+  // Re-check scroll state when search params change (e.g. clearing filters)
+  useEffect(() => {
+    // Small timeout to allow layout to update (e.g. list shrinking)
+    const timer = setTimeout(checkScrollState, 300); // Increased timeout
+    return () => clearTimeout(timer);
+  }, [searchParams]);
 
   useEffect(() => {
     const nextWhat = searchParams.get('what');
@@ -254,7 +311,7 @@ export function JobSearchHeader() {
   return (
     <div
       className={`w-full sticky top-0 z-40 transition-all duration-300 ${
-        isScrolled ? 'bg-teal-600 py-4 shadow-md' : 'bg-transparent py-6'
+        isScrolled ? 'bg-teal-600 py-4 shadow-md' : 'bg-white py-6'
       }`}
     >
       <div className="mx-auto flex w-full max-w-6xl justify-center px-4">

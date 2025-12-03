@@ -18,6 +18,13 @@ import {
   ArrowLeft,
   Monitor,
   Bell,
+  Linkedin,
+  Facebook,
+  Instagram,
+  Twitter,
+  Users,
+  Building2,
+  History,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -43,6 +50,8 @@ interface CompanyData {
   employeeCount?: string;
   foundedYear?: string;
   industry?: string;
+  applicationMethod?: string;
+  externalApplicationUrl?: string;
   socialMedia?: {
     linkedin?: string;
     facebook?: string;
@@ -115,6 +124,8 @@ export default function CompanyProfilePage() {
             employeeCount: data.employeeCount,
             foundedYear: data.foundedYear,
             industry: data.industry,
+            applicationMethod: data.applicationMethod,
+            externalApplicationUrl: data.externalApplicationUrl,
             socialMedia: data.socialMedia,
           });
 
@@ -387,7 +398,101 @@ export default function CompanyProfilePage() {
                   </div>
 
                   {/* Sidebar (Right 1/3) */}
-                  <div className="lg:col-span-1 space-y-6">
+                  <div className="lg:col-span-1 space-y-6 relative z-20">
+                    {/* Company Details & Social Media */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                      <div className="p-4 border-b border-gray-100 bg-gray-50">
+                        <h3 className="font-semibold text-gray-900">Unternehmensdetails</h3>
+                      </div>
+                      <div className="p-4 space-y-4">
+                        {company.industry && (
+                          <div className="flex items-center gap-3 text-sm text-gray-600">
+                            <Building2 className="w-4 h-4 text-gray-400 shrink-0" />
+                            <span>{company.industry}</span>
+                          </div>
+                        )}
+                        {company.employeeCount && (
+                          <div className="flex items-center gap-3 text-sm text-gray-600">
+                            <Users className="w-4 h-4 text-gray-400 shrink-0" />
+                            <span>{company.employeeCount} Mitarbeiter</span>
+                          </div>
+                        )}
+                        {company.foundedYear && (
+                          <div className="flex items-center gap-3 text-sm text-gray-600">
+                            <History className="w-4 h-4 text-gray-400 shrink-0" />
+                            <span>Gegründet {company.foundedYear}</span>
+                          </div>
+                        )}
+
+                        {/* Social Media */}
+                        {company.socialMedia &&
+                          Object.values(company.socialMedia).some(Boolean) && (
+                            <div className="pt-4 border-t border-gray-100">
+                              <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3">
+                                Social Media
+                              </h4>
+                              <div className="flex gap-3">
+                                {company.socialMedia.linkedin && (
+                                  <a
+                                    href={company.socialMedia.linkedin}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 bg-gray-50 rounded-full hover:bg-blue-50 hover:text-[#0077b5] transition-colors"
+                                  >
+                                    <Linkedin className="w-4 h-4" />
+                                  </a>
+                                )}
+                                {company.socialMedia.facebook && (
+                                  <a
+                                    href={company.socialMedia.facebook}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 bg-gray-50 rounded-full hover:bg-blue-50 hover:text-[#1877f2] transition-colors"
+                                  >
+                                    <Facebook className="w-4 h-4" />
+                                  </a>
+                                )}
+                                {company.socialMedia.instagram && (
+                                  <a
+                                    href={company.socialMedia.instagram}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 bg-gray-50 rounded-full hover:bg-pink-50 hover:text-[#e4405f] transition-colors"
+                                  >
+                                    <Instagram className="w-4 h-4" />
+                                  </a>
+                                )}
+                                {company.socialMedia.twitter && (
+                                  <a
+                                    href={company.socialMedia.twitter}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 bg-gray-50 rounded-full hover:bg-blue-50 hover:text-[#1da1f2] transition-colors"
+                                  >
+                                    <Twitter className="w-4 h-4" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                        {/* External Career Page */}
+                        {company.externalApplicationUrl && (
+                          <div className="pt-4 border-t border-gray-100">
+                            <a
+                              href={company.externalApplicationUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center w-full p-2 text-sm font-medium text-teal-700 bg-teal-50 rounded-md hover:bg-teal-100 transition-colors"
+                            >
+                              Karriereseite besuchen
+                              <ChevronRight className="w-4 h-4 ml-1" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     {/* Mini Job List (Always visible or only on About tab?) */}
                     {/* Based on HTML, it seems to be visible on the right side */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">

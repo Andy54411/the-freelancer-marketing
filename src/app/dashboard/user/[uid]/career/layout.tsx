@@ -40,17 +40,17 @@ export default function CareerLayout({
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-2">
+    <div className="space-y-6">
+      <div className="px-6 pt-6 flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Karriere & Jobs</h1>
         <p className="text-muted-foreground">
           Finden Sie Ihren Traumjob oder lassen Sie sich von Unternehmen finden.
         </p>
       </div>
 
-      <div className="border-b">
+      <div className="border-b px-6">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-          {tabs.map((tab) => {
+          {tabs.map(tab => {
             const isActive = pathname.startsWith(tab.href);
             return (
               <Link
@@ -77,7 +77,7 @@ export default function CareerLayout({
         </nav>
       </div>
 
-      <div className="mt-6">{children}</div>
+      <div className="">{children}</div>
     </div>
   );
 }

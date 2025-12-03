@@ -418,12 +418,12 @@ Bei Kleinunternehmern:
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h3 className="font-semibold text-blue-800 mb-2">Checkliste vor Versand:</h3>
                   <ul className="text-blue-700 text-sm space-y-1">
-                    <li>✓ Alle Pflichtangaben vorhanden</li>
-                    <li>✓ Rechnungsnummer fortlaufend</li>
-                    <li>✓ Leistung eindeutig beschrieben</li>
-                    <li>✓ Beträge korrekt berechnet</li>
-                    <li>✓ Zahlungsziel angegeben</li>
-                    <li>✓ Bankdaten vollständig</li>
+                    <li>• Alle Pflichtangaben vorhanden</li>
+                    <li>• Rechnungsnummer fortlaufend</li>
+                    <li>• Leistung eindeutig beschrieben</li>
+                    <li>• Beträge korrekt berechnet</li>
+                    <li>• Zahlungsziel angegeben</li>
+                    <li>• Bankdaten vollständig</li>
                   </ul>
                 </div>
               </section>
@@ -524,12 +524,12 @@ Bei Kleinunternehmern:
                   <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-green-800 mb-3">Taskilo Vorteile:</h3>
                     <ul className="space-y-2 text-green-700 text-sm">
-                      <li>✓ Direkte Rechnungserstellung aus Projekten</li>
-                      <li>✓ Integrierte Zeiterfassung</li>
-                      <li>✓ E-Rechnung-ready (XRechnung, ZUGFeRD)</li>
-                      <li>✓ Stripe-Integration für Online-Payments</li>
-                      <li>✓ Automatische Archivierung</li>
-                      <li>✓ Mahnwesen inklusive</li>
+                      <li>• Direkte Rechnungserstellung aus Projekten</li>
+                      <li>• Integrierte Zeiterfassung</li>
+                      <li>• E-Rechnung-ready (XRechnung, ZUGFeRD)</li>
+                      <li>• Stripe-Integration für Online-Payments</li>
+                      <li>• Automatische Archivierung</li>
+                      <li>• Mahnwesen inklusive</li>
                     </ul>
                   </div>
 
@@ -538,12 +538,12 @@ Bei Kleinunternehmern:
                       Workflow-Integration:
                     </h3>
                     <ul className="space-y-2 text-blue-700 text-sm">
-                      <li>✓ Projektmanagement + Abrechnung</li>
-                      <li>✓ Kundenportal für Transparenz</li>
-                      <li>✓ Mobile App für unterwegs</li>
-                      <li>✓ DATEV-Export für Steuerberater</li>
-                      <li>✓ Dashboard mit Kennzahlen</li>
-                      <li>✓ Team-Kollaboration</li>
+                      <li>• Projektmanagement + Abrechnung</li>
+                      <li>• Kundenportal für Transparenz</li>
+                      <li>• Mobile App für unterwegs</li>
+                      <li>• DATEV-Export für Steuerberater</li>
+                      <li>• Dashboard mit Kennzahlen</li>
+                      <li>• Team-Kollaboration</li>
                     </ul>
                   </div>
                 </div>

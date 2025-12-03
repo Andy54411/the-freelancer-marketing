@@ -20,9 +20,10 @@ export async function POST(request: NextRequest) {
 
     // 1. Check if already applied
     const existingAppQuery = await db
-      .collection('jobApplications')
+      .collection('users')
+      .doc(userId)
+      .collection('job_applications')
       .where('jobId', '==', jobId)
-      .where('applicantId', '==', userId)
       .get();
 
     if (!existingAppQuery.empty) {
@@ -33,7 +34,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Fetch Applicant Profile
-    const profileDoc = await db.collection('candidateProfiles').doc(userId).get();
+    const profileDoc = await db
+      .collection('users')
+      .doc(userId)
+      .collection('candidate_profile')
+      .doc('main')
+      .get();
+
     if (!profileDoc.exists) {
       return NextResponse.json(
         { message: 'Bitte erstellen Sie zuerst Ihr Kandidatenprofil.' },
@@ -53,10 +60,38 @@ export async function POST(request: NextRequest) {
       message: message || '',
       status: 'pending',
       appliedAt: new Date().toISOString(),
+      jobTitle: jobTitle || '',
+      companyName: companyName || '',
     };
 
-    const docRef = await db.collection('jobApplications').add(applicationData);
-    await docRef.update({ id: docRef.id });
+    // Generate ID
+    const applicationId = db
+      .collection('users')
+      .doc(userId)
+      .collection('job_applications')
+      .doc().id;
+
+    // 1. User Subcollection (For User Dashboard)
+    await db
+      .collection('users')
+      .doc(userId)
+      .collection('job_applications')
+      .doc(applicationId)
+      .set({
+        ...applicationData,
+        id: applicationId,
+      });
+
+    // 2. Company Subcollection (For Company Dashboard & Architecture Compliance)
+    await db
+      .collection('companies')
+      .doc(companyId)
+      .collection('jobApplications')
+      .doc(applicationId)
+      .set({
+        ...applicationData,
+        id: applicationId,
+      });
 
     // 4. Send Email via Resend
     try {
@@ -271,7 +306,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      id: docRef.id,
+      id: applicationId,
       message: 'Application submitted successfully',
     });
   } catch (error) {

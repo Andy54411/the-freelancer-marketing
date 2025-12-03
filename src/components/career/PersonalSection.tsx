@@ -325,7 +325,13 @@ export function PersonalSection({ form, onSave, isSubmitting }: PersonalSectionP
             {/* Left: Photo */}
             <div className="w-32 h-32 shrink-0 relative bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
               {profilePictureUrl ? (
-                <Image src={profilePictureUrl} alt="Profile" fill className="object-cover" />
+                <Image
+                  src={profilePictureUrl}
+                  alt="Profile"
+                  fill
+                  className="object-cover"
+                  priority
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-400">
                   <User className="w-12 h-12" />
@@ -401,7 +407,13 @@ export function PersonalSection({ form, onSave, isSubmitting }: PersonalSectionP
                 {isUploading ? (
                   <Loader2 className="w-10 h-10 animate-spin text-teal-600" />
                 ) : profilePictureUrl ? (
-                  <Image src={profilePictureUrl} alt="Profile" fill className="object-cover" />
+                  <Image
+                    src={profilePictureUrl}
+                    alt="Profile"
+                    fill
+                    className="object-cover"
+                    priority
+                  />
                 ) : (
                   <User className="w-20 h-20 text-gray-400" />
                 )}

@@ -25,6 +25,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const profileSchema = z.object({
   companyName: z.string().min(2, 'Firmenname muss mindestens 2 Zeichen lang sein'),
@@ -43,6 +44,8 @@ const profileSchema = z.object({
   facebook: z.string().optional(),
   instagram: z.string().optional(),
   twitter: z.string().optional(),
+  applicationMethod: z.enum(['taskilo', 'external']).default('taskilo'),
+  externalApplicationUrl: z.string().url('Ungültige URL').optional().or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -80,6 +83,8 @@ export default function CompanyProfileSettingsPage() {
       facebook: '',
       instagram: '',
       twitter: '',
+      applicationMethod: 'taskilo',
+      externalApplicationUrl: '',
     },
   });
 
@@ -110,6 +115,8 @@ export default function CompanyProfileSettingsPage() {
             facebook: data.socialMedia?.facebook || '',
             instagram: data.socialMedia?.instagram || '',
             twitter: data.socialMedia?.twitter || '',
+            applicationMethod: data.applicationMethod || 'taskilo',
+            externalApplicationUrl: data.externalApplicationUrl || '',
           });
 
           setCurrentLogoUrl(
@@ -210,6 +217,8 @@ export default function CompanyProfileSettingsPage() {
           instagram: values.instagram,
           twitter: values.twitter,
         },
+        applicationMethod: values.applicationMethod,
+        externalApplicationUrl: values.externalApplicationUrl,
         updatedAt: new Date().toISOString(),
       };
 
@@ -251,102 +260,108 @@ export default function CompanyProfileSettingsPage() {
         </p>
       </div>
       <div className="flex justify-end">
-        <Button variant="outline" onClick={() => window.open(`/companies/${uid}`, '_blank')}>
+        <Button
+          variant="outline"
+          className="border-teal-600 text-teal-600 hover:bg-teal-50 hover:text-teal-700"
+          onClick={() => window.open(`/companies/${uid}`, '_blank')}
+        >
           Öffentliches Profil ansehen
         </Button>
       </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Basisinformationen</CardTitle>
-              <CardDescription>Grundlegende Informationen über Ihr Unternehmen.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="companyName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Firmenname</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ihr Firmenname" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="industry"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Branche</FormLabel>
-                      <FormControl>
-                        <Input placeholder="z.B. IT-Dienstleistungen" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Beschreibung</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Beschreiben Sie Ihr Unternehmen..."
-                        className="min-h-[120px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Firmenlogo</CardTitle>
-              <CardDescription>Laden Sie hier Ihr Firmenlogo hoch.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 flex flex-col items-center justify-center min-h-[200px] relative bg-gray-50">
-                  {currentLogoUrl ? (
-                    <img
-                      src={currentLogoUrl}
-                      alt="Logo Preview"
-                      className="max-h-40 object-contain mb-2"
-                    />
-                  ) : (
-                    <div className="text-gray-400 mb-2">Kein Logo</div>
-                  )}
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Basisinformationen</CardTitle>
+                <CardDescription>Grundlegende Informationen über Ihr Unternehmen.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="companyName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Firmenname</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ihr Firmenname" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="mt-2 pointer-events-none"
-                  >
-                    <Upload className="w-4 h-4 mr-2" /> Logo hochladen
-                  </Button>
+                  <FormField
+                    control={form.control}
+                    name="industry"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Branche</FormLabel>
+                        <FormControl>
+                          <Input placeholder="z.B. IT-Dienstleistungen" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Beschreibung</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Beschreiben Sie Ihr Unternehmen..."
+                          className="min-h-[120px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-1 h-full">
+              <CardHeader>
+                <CardTitle>Firmenlogo</CardTitle>
+                <CardDescription>Laden Sie hier Ihr Firmenlogo hoch.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4 h-full">
+                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 flex flex-col items-center justify-center h-[200px] relative bg-gray-50 hover:bg-gray-100 transition-colors">
+                    {currentLogoUrl ? (
+                      <img
+                        src={currentLogoUrl}
+                        alt="Logo Preview"
+                        className="max-h-32 object-contain mb-2"
+                      />
+                    ) : (
+                      <div className="text-gray-400 mb-2 text-sm">Kein Logo</div>
+                    )}
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 pointer-events-none border-teal-200 text-teal-700 bg-teal-50"
+                    >
+                      <Upload className="w-4 h-4 mr-2" /> Hochladen
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           <Card>
             <CardHeader>
@@ -545,8 +560,74 @@ export default function CompanyProfileSettingsPage() {
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle>Bewerbungsmethode</CardTitle>
+              <CardDescription>
+                Legen Sie fest, wie Bewerber sich bei Ihnen bewerben sollen.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="applicationMethod"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Methode auswählen</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-1"
+                      >
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="taskilo" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Über Taskilo (Empfohlen)</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="external" />
+                          </FormControl>
+                          <FormLabel className="font-normal">
+                            Externes HR-System / Karriere-Seite
+                          </FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {form.watch('applicationMethod') === 'external' && (
+                <FormField
+                  control={form.control}
+                  name="externalApplicationUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Link zum Bewerbungsformular</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://ihre-firma.de/jobs/bewerben" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Bewerber werden direkt zu dieser URL weitergeleitet.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </CardContent>
+          </Card>
+
           <div className="flex justify-end">
-            <Button type="submit" disabled={saving} className="w-full md:w-auto">
+            <Button
+              type="submit"
+              disabled={saving}
+              className="w-full md:w-auto bg-[#14ad9f] hover:bg-[#119c8d] text-white"
+            >
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Speichern
             </Button>

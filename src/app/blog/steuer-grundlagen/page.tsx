@@ -74,7 +74,7 @@ export default function SteuerGrundlagenPage() {
             <div className="flex items-start space-x-3">
               <AlertTriangle className="w-8 h-8 text-[#14ad9f] shrink-0 mt-1" />
               <div>
-                <h2 className="text-xl font-bold text-[#14ad9f] mb-2">⚠️ WICHTIGER HINWEIS</h2>
+                <h2 className="text-xl font-bold text-[#14ad9f] mb-2">WICHTIGER HINWEIS</h2>
                 <p className="text-gray-700 text-lg">
                   Dieser Artikel bietet eine Grundorientierung und ersetzt keine individuelle
                   Steuerberatung. Steuergesetze ändern sich häufig - konsultieren Sie immer einen
@@ -142,9 +142,7 @@ export default function SteuerGrundlagenPage() {
                   </h3>
                   <div className="space-y-4">
                     <div className="bg-[#14ad9f]/10 p-4 rounded-lg border border-[#14ad9f]/30">
-                      <h4 className="font-semibold text-[#14ad9f] mb-2">
-                        ✅ Gewerbeanmeldung NÖTIG:
-                      </h4>
+                      <h4 className="font-semibold text-[#14ad9f] mb-2">Gewerbeanmeldung NÖTIG:</h4>
                       <ul className="text-gray-700 text-sm space-y-1">
                         <li>• Handwerk (Elektriker, Klempner, Maler)</li>
                         <li>• Dienstleistungen (Reinigung, Umzug, Reparaturen)</li>
@@ -155,9 +153,7 @@ export default function SteuerGrundlagenPage() {
                     </div>
 
                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                      <h4 className="font-semibold text-gray-800 mb-2">
-                        ℹ️ KEINE Gewerbeanmeldung:
-                      </h4>
+                      <h4 className="font-semibold text-gray-800 mb-2">KEINE Gewerbeanmeldung:</h4>
                       <ul className="text-gray-700 text-sm space-y-1">
                         <li>• Freie Berufe (Berater, Übersetzer, Künstler)</li>
                         <li>• Vermietung (nur Räume/Gegenstände)</li>
@@ -218,7 +214,7 @@ export default function SteuerGrundlagenPage() {
                   </div>
 
                   <div className="mt-6 bg-[#14ad9f] bg-opacity-10 p-4 rounded-lg">
-                    <h4 className="font-semibold text-[#14ad9f] mb-2">💡 Taskilo-Tipp:</h4>
+                    <h4 className="font-semibold text-[#14ad9f] mb-2">Taskilo-Tipp:</h4>
                     <p className="text-gray-700 text-sm">
                       Melden Sie Ihr Gewerbe an, bevor Sie auf Taskilo aktiv werden. Das schützt Sie
                       rechtlich und wirkt professionell auf Kunden.
@@ -243,7 +239,7 @@ export default function SteuerGrundlagenPage() {
               <div className="grid lg:grid-cols-2 gap-8">
                 <div>
                   <h3 className="text-xl font-semibold text-green-600 mb-4">
-                    🟢 Kleinunternehmerregelung
+                    Kleinunternehmerregelung
                   </h3>
                   <div className="bg-green-50 p-6 rounded-lg border border-green-200">
                     <h4 className="font-semibold text-green-800 mb-3">Voraussetzungen:</h4>
@@ -252,7 +248,7 @@ export default function SteuerGrundlagenPage() {
                       <li>• Umsatz aktuelles Jahr voraussichtlich ≤ 50.000€</li>
                     </ul>
 
-                    <h4 className="font-semibold text-green-800 mb-3">✅ Vorteile:</h4>
+                    <h4 className="font-semibold text-green-800 mb-3">Vorteile:</h4>
                     <ul className="text-green-700 text-sm space-y-1 mb-4">
                       <li>• Keine Umsatzsteuer auf Rechnungen</li>
                       <li>• Keine Umsatzsteuervoranmeldung</li>
@@ -260,7 +256,7 @@ export default function SteuerGrundlagenPage() {
                       <li>• Günstigere Preise für Privatkunden</li>
                     </ul>
 
-                    <h4 className="font-semibold text-green-800 mb-3">❌ Nachteile:</h4>
+                    <h4 className="font-semibold text-green-800 mb-3">Nachteile:</h4>
                     <ul className="text-green-700 text-sm space-y-1">
                       <li>• Kein Vorsteuerabzug</li>
                       <li>• Weniger professionell für B2B</li>
@@ -270,7 +266,7 @@ export default function SteuerGrundlagenPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-blue-600 mb-4">🔵 Regelbesteuerung</h3>
+                  <h3 className="text-xl font-semibold text-blue-600 mb-4">Regelbesteuerung</h3>
                   <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
                     <h4 className="font-semibold text-blue-800 mb-3">Wann nötig/sinnvoll:</h4>
                     <ul className="text-blue-700 text-sm space-y-1 mb-4">
@@ -280,14 +276,14 @@ export default function SteuerGrundlagenPage() {
                       <li>• Wachstumspläne über 50.000€</li>
                     </ul>
 
-                    <h4 className="font-semibold text-blue-800 mb-3">✅ Vorteile:</h4>
+                    <h4 className="font-semibold text-blue-800 mb-3">Vorteile:</h4>
                     <ul className="text-blue-700 text-sm space-y-1 mb-4">
                       <li>• Vorsteuerabzug bei Ausgaben</li>
                       <li>• Unbegrenztes Wachstum</li>
                       <li>• Professioneller für B2B</li>
                     </ul>
 
-                    <h4 className="font-semibold text-blue-800 mb-3">❌ Nachteile:</h4>
+                    <h4 className="font-semibold text-blue-800 mb-3">Nachteile:</h4>
                     <ul className="text-blue-700 text-sm space-y-1">
                       <li>• 19% Umsatzsteuer auf Rechnungen</li>
                       <li>• Monatliche/Vierteljährliche Voranmeldung</li>

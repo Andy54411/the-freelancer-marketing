@@ -41,6 +41,8 @@ export default async function CompanyJobDetailsPage({
   let applications: JobApplication[] = [];
   try {
     const appsSnapshot = await db
+      .collection('companies')
+      .doc(uid)
       .collection('jobApplications')
       .where('jobId', '==', jobId)
       .orderBy('appliedAt', 'desc')
@@ -50,7 +52,12 @@ export default async function CompanyJobDetailsPage({
   } catch (error) {
     console.error('Error fetching applications:', error);
     // Fallback
-    const appsSnapshot = await db.collection('jobApplications').where('jobId', '==', jobId).get();
+    const appsSnapshot = await db
+      .collection('companies')
+      .doc(uid)
+      .collection('jobApplications')
+      .where('jobId', '==', jobId)
+      .get();
     applications = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as JobApplication);
   }
 

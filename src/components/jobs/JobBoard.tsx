@@ -73,8 +73,20 @@ export function JobBoard() {
   // Effect to geocode search location
   useEffect(() => {
     const geocodeLocation = async () => {
-      if (!searchWhere || !isLoaded || !google) {
+      if (!searchWhere) {
         setSearchCoords(null);
+        return;
+      }
+
+      // 1. Try local lookup first (faster, cheaper, works without API key)
+      const localCity = getCoordinates(searchWhere);
+      if (localCity) {
+        setSearchCoords({ lat: localCity.lat, lng: localCity.lng });
+        return;
+      }
+
+      if (!isLoaded || !google) {
+        // setSearchCoords(null); // Don't reset if we are waiting for google
         return;
       }
 
@@ -86,7 +98,7 @@ export function JobBoard() {
           setSearchCoords({ lat: loc.lat(), lng: loc.lng() });
         }
       } catch (e) {
-        console.error('Geocoding failed', e);
+        console.warn('Geocoding failed (API Key restriction?), falling back to text search', e);
         setSearchCoords(null);
       }
     };
@@ -217,6 +229,26 @@ export function JobBoard() {
             job.companyName.toLowerCase().includes(phrase);
           if (!matches) return false;
         }
+
+        // Salary Filter
+        if (userFilters.salary) {
+          const minSalary = parseInt(userFilters.salary, 10);
+          if (!isNaN(minSalary) && minSalary > 0) {
+            // If job has no salary info, we might want to keep it or hide it.
+            // Usually, if I filter for salary, I want to see jobs that match.
+            // But many jobs don't have salary info.
+            // Let's assume if job has salary info, it must match.
+            if (job.salaryRange?.max) {
+              if (job.salaryRange.max < minSalary) return false;
+            }
+            // If job has only min salary
+            else if (job.salaryRange?.min) {
+              if (job.salaryRange.min < minSalary) return false;
+            }
+            // If job has no salary info, we keep it (or drop it? Let's keep it for now to not hide too much)
+          }
+        }
+
         return true;
       });
     }

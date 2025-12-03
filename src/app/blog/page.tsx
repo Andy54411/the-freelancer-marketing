@@ -309,7 +309,7 @@ export default function BlogPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div className="text-center p-6 bg-linear-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
-                  <div className="w-16 h-16 bg-linear-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-linear-to-br from-[#14ad9f] to-taskilo-hover rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiHome className="text-white text-xl" />
                   </div>
                   <h3 className="font-semibold mb-2 text-gray-900">Haushaltsservices</h3>
@@ -319,7 +319,7 @@ export default function BlogPage() {
                 </div>
 
                 <div className="text-center p-6 bg-linear-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
-                  <div className="w-16 h-16 bg-linear-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-linear-to-br from-[#14ad9f] to-taskilo-hover rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiTool className="text-white text-xl" />
                   </div>
                   <h3 className="font-semibold mb-2 text-gray-900">Handwerk</h3>
@@ -329,7 +329,7 @@ export default function BlogPage() {
                 </div>
 
                 <div className="text-center p-6 bg-linear-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
-                  <div className="w-16 h-16 bg-linear-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-linear-to-br from-[#14ad9f] to-taskilo-hover rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiZap className="text-white text-xl" />
                   </div>
                   <h3 className="font-semibold mb-2 text-gray-900">Digitale Services</h3>
@@ -339,7 +339,7 @@ export default function BlogPage() {
                 </div>
 
                 <div className="text-center p-6 bg-linear-to-br from-[#14ad9f]/10 to-[#14ad9f]/20 rounded-lg border border-[#14ad9f]/30">
-                  <div className="w-16 h-16 bg-linear-to-br from-[#14ad9f] to-[#129488] rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-linear-to-br from-[#14ad9f] to-taskilo-hover rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiBriefcase className="text-white text-xl" />
                   </div>
                   <h3 className="font-semibold mb-2 text-gray-900">Business Services</h3>
@@ -370,7 +370,7 @@ export default function BlogPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <a
                   href="/blog/zahlungsablaeufe"
-                  className="block bg-linear-to-r from-[#14ad9f] to-teal-600 hover:from-[#129488] hover:to-teal-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                  className="block bg-linear-to-r from-[#14ad9f] to-teal-600 hover:from-taskilo-hover hover:to-teal-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
                 >
                   <div className="flex items-start gap-4">
                     <FiCreditCard className="text-2xl mt-1" />

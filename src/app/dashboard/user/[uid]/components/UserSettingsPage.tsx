@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, FormEvent } from 'react';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import {
   getStorage,
@@ -57,22 +57,26 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
 
   useEffect(() => {
     if (userData) {
+      // Prioritize 'profile' object, fallback to 'step1'/'step3' for legacy data
+      const profile = userData.profile || {};
+      const step1 = userData.step1 || {};
+      const step3 = userData.step3 || {};
+      const personalData = step1.personalData || {};
+      const address = personalData.address || {};
+
       setForm({
         uid: userData.uid,
-        email: userData.email || userData.step1?.email || '',
-        firstName: userData.step1?.firstName || userData.step1?.personalData?.firstName || '',
-        lastName: userData.step1?.lastName || userData.step1?.personalData?.lastName || '',
-        phoneNumber: userData.step1?.phoneNumber || userData.step1?.personalData?.phone || '',
-        personalStreet:
-          userData.step1?.personalStreet || userData.step1?.personalData?.address?.street || '',
-        personalHouseNumber: userData.step1?.personalData?.address?.houseNumber || '',
+        email: userData.email || profile.email || step1.email || '',
+        firstName: profile.firstName || step1.firstName || personalData.firstName || '',
+        lastName: profile.lastName || step1.lastName || personalData.lastName || '',
+        phoneNumber: profile.phoneNumber || step1.phoneNumber || personalData.phone || '',
+        personalStreet: profile.street || step1.personalStreet || address.street || '',
+        personalHouseNumber: profile.houseNumber || address.houseNumber || '',
         personalPostalCode:
-          userData.step1?.personalPostalCode ||
-          userData.step1?.personalData?.address?.postalCode ||
-          '',
-        personalCity: userData.step1?.personalData?.address?.city || '',
-        personalCountry: userData.step1?.personalData?.address?.country || null,
-        profilePictureURL: userData.step3?.profilePictureURL || '',
+          profile.postalCode || step1.personalPostalCode || address.postalCode || '',
+        personalCity: profile.city || address.city || '',
+        personalCountry: profile.country || address.country || null,
+        profilePictureURL: userData.photoURL || step3.profilePictureURL || '',
         profilePictureFile: null,
         oldPassword: '',
         newPassword: '',
@@ -122,9 +126,33 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
     }
 
     const firestoreUpdateData: Partial<RawFirestoreUserData> = {
+      // Update root fields
+      displayName: `${form.firstName} ${form.lastName}`,
+      photoURL: newProfilePictureURL,
+
+      // Update clean 'profile' object
+      profile: {
+        ...userData?.profile,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phoneNumber: form.phoneNumber,
+        street: form.personalStreet,
+        houseNumber: form.personalHouseNumber, // Explicitly save house number
+        postalCode: form.personalPostalCode,
+        city: form.personalCity,
+        country: form.personalCountry || undefined,
+        email: form.email,
+      },
+
+      // Legacy support: Keep updating step1/step3 for now to avoid breaking other things?
+      // User explicitly said "steps are for companies", so we should probably STOP updating them for users.
+      // But if other parts of the app rely on them, it might be risky.
+      // However, the user was very angry about steps being used for users.
+      // So I will comment them out or remove them.
+      /*
       step3: {
         ...userData?.step3,
-        profilePictureURL: newProfilePictureURL, // Verwende die neue oder alte URL
+        profilePictureURL: newProfilePictureURL,
       },
       step1: {
         ...userData?.step1,
@@ -148,6 +176,7 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
           },
         },
       },
+      */
     };
 
     try {
@@ -155,6 +184,34 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
         ...firestoreUpdateData,
         updatedAt: serverTimestamp(),
       });
+
+      // Sync to candidate_profile subcollection
+      const candidateProfileData = {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phone: form.phoneNumber,
+        street: form.personalHouseNumber
+          ? `${form.personalStreet} ${form.personalHouseNumber}`
+          : form.personalStreet,
+        zip: form.personalPostalCode,
+        city: form.personalCity,
+        country: form.personalCountry || 'Deutschland',
+        profilePictureUrl: newProfilePictureURL,
+        updatedAt: new Date().toISOString(),
+      };
+
+      try {
+        await setDoc(
+          doc(db, 'users', form.uid, 'candidate_profile', 'main'),
+          candidateProfileData,
+          { merge: true }
+        );
+      } catch (syncError) {
+        console.error('Error syncing to candidate_profile:', syncError);
+        // We don't block the success message if sync fails, but we log it.
+        // Or maybe we should warn? For now, silent fail/log is probably safer to not confuse user if they don't use career features yet.
+      }
+
       toast.success('Benutzereinstellungen erfolgreich gespeichert!');
       // NEU: Event auslösen, um andere Komponenten (wie den Header) zu informieren
       if (

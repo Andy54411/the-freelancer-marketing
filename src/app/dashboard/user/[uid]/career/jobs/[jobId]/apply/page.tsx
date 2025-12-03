@@ -46,51 +46,44 @@ export default async function ApplyPage({
   try {
     console.log(`Fetching profile for user: ${uid}`);
 
-    // Try new collection first
-    const profileDoc = await db.collection('candidateProfiles').doc(uid).get();
+    // Try new subcollection
+    const profileDoc = await db
+      .collection('users')
+      .doc(uid)
+      .collection('candidate_profile')
+      .doc('main')
+      .get();
+
     if (profileDoc.exists) {
-      console.log('Found profile in candidateProfiles');
+      console.log('Found profile in users subcollection');
       profile = profileDoc.data() as ApplicantProfile;
     } else {
-      console.log('Profile not found in candidateProfiles, trying legacy...');
-      // Try legacy path
-      const legacyDoc = await db
-        .collection('users')
-        .doc(uid)
-        .collection('career_profile')
-        .doc('main')
-        .get();
-      if (legacyDoc.exists) {
-        console.log('Found profile in legacy path');
-        profile = legacyDoc.data() as ApplicantProfile;
-      } else {
-        console.log('Profile not found, creating default from user record');
-        // Try to pre-fill from user record
-        const userDoc = await db.collection('users').doc(uid).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          profile = {
-            userId: uid,
-            firstName: userData?.firstName || '',
-            lastName: userData?.lastName || '',
-            email: userData?.email || '',
-            salutation: userData?.salutation || '',
-            phone: userData?.phone || '',
-            // Initialize required arrays
-            experience: [],
-            education: [],
-            languages: [],
-            qualifications: [],
-            skills: [],
-            industries: [],
-            employmentTypes: [],
-            preferredLocations: [],
-            careerLevel: [],
-            // Missing required fields
-            desiredPosition: '',
-            updatedAt: new Date().toISOString(),
-          } as unknown as ApplicantProfile;
-        }
+      console.log('Profile not found in users subcollection');
+      // Try to pre-fill from user record
+      const userDoc = await db.collection('users').doc(uid).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        profile = {
+          userId: uid,
+          firstName: userData?.firstName || '',
+          lastName: userData?.lastName || '',
+          email: userData?.email || '',
+          salutation: userData?.salutation || '',
+          phone: userData?.phone || '',
+          // Initialize required arrays
+          experience: [],
+          education: [],
+          languages: [],
+          qualifications: [],
+          skills: [],
+          industries: [],
+          employmentTypes: [],
+          preferredLocations: [],
+          careerLevel: [],
+          // Missing required fields
+          desiredPosition: '',
+          updatedAt: new Date().toISOString(),
+        } as unknown as ApplicantProfile;
       }
     }
   } catch (error) {

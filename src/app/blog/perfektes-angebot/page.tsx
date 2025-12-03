@@ -489,8 +489,9 @@ export default function PerfektesAngebotPage() {
                           1. Zu vage Beschreibungen
                         </h3>
                         <p className="text-red-700 text-sm">
-                          ❌ &quot;Renovierung nach Absprache&quot;
-                          <br />✅ &quot;Entfernung Altfliesen, Spachteln, Grundierung,
+                          Falsch: &quot;Renovierung nach Absprache&quot;
+                          <br />
+                          Richtig: &quot;Entfernung Altfliesen, Spachteln, Grundierung,
                           Neuverfliesen 15m²&quot;
                         </p>
                       </div>
@@ -500,8 +501,9 @@ export default function PerfektesAngebotPage() {
                           2. Keine Preistransparenz
                         </h3>
                         <p className="text-red-700 text-sm">
-                          ❌ &quot;Preis nach Aufwand&quot;
-                          <br />✅ &quot;Material: 2.000€ + Arbeitszeit: 40h à 65€ = 4.600€
+                          Falsch: &quot;Preis nach Aufwand&quot;
+                          <br />
+                          Richtig: &quot;Material: 2.000€ + Arbeitszeit: 40h à 65€ = 4.600€
                           gesamt&quot;
                         </p>
                       </div>
@@ -509,8 +511,9 @@ export default function PerfektesAngebotPage() {
                       <div className="bg-white p-4 rounded-lg border border-red-100">
                         <h3 className="font-semibold text-red-800 mb-2">3. Fehlende Zeitangaben</h3>
                         <p className="text-red-700 text-sm">
-                          ❌ &quot;Dauert nicht lange&quot;
-                          <br />✅ &quot;Projektdauer: 8-10 Arbeitstage, Start: ab 15. Februar&quot;
+                          Falsch: &quot;Dauert nicht lange&quot;
+                          <br />
+                          Richtig: &quot;Projektdauer: 8-10 Arbeitstage, Start: ab 15. Februar&quot;
                         </p>
                       </div>
                     </div>
@@ -521,8 +524,9 @@ export default function PerfektesAngebotPage() {
                           4. Keine Vertrauenssignale
                         </h3>
                         <p className="text-red-700 text-sm">
-                          ❌ Nur Preis ohne Referenzen
-                          <br />✅ &quot;4.9★ bei 127 Bewertungen + Meisterbrief +
+                          Falsch: Nur Preis ohne Referenzen
+                          <br />
+                          Richtig: &quot;4.9 Sterne bei 127 Bewertungen + Meisterbrief +
                           Vollversicherung&quot;
                         </p>
                       </div>
@@ -530,8 +534,9 @@ export default function PerfektesAngebotPage() {
                       <div className="bg-white p-4 rounded-lg border border-red-100">
                         <h3 className="font-semibold text-red-800 mb-2">5. Schwacher Abschluss</h3>
                         <p className="text-red-700 text-sm">
-                          ❌ &quot;Melden Sie sich bei Interesse&quot;
-                          <br />✅ &quot;Beauftragen Sie bis 20.01. und sparen 5%! Rufen Sie an:
+                          Falsch: &quot;Melden Sie sich bei Interesse&quot;
+                          <br />
+                          Richtig: &quot;Beauftragen Sie bis 20.01. und sparen 5%! Rufen Sie an:
                           030/12345&quot;
                         </p>
                       </div>
@@ -587,7 +592,7 @@ export default function PerfektesAngebotPage() {
 
               <section
                 id="erfolg-messen"
-                className="scroll-mt-24 bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white mb-8"
+                className="scroll-mt-24 bg-linear-to-r from-[#14ad9f] to-taskilo-hover rounded-xl p-8 text-white mb-8"
               >
                 <h2 className="text-3xl font-bold mb-6">Ihren Angebots-Erfolg messen</h2>
 

@@ -87,15 +87,9 @@ export default function UserSettingsDashboardPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {' '}
-      {/* Header is now provided by layout.tsx */}
-      <main className="flex-1 overflow-y-auto pt-[var(--global-header-height)]">
-        {' '}
-        {/* Hauptinhaltsbereich, der scrollbar ist, mit Padding */}
-        {/* Check if user has company data by checking for company-specific fields */}
-        <UserSettingsPage userData={userData} onDataSaved={handleDataSaved} />
-      </main>
+    <div className="flex flex-col min-h-screen p-4 lg:p-6">
+      {/* Check if user has company data by checking for company-specific fields */}
+      <UserSettingsPage userData={userData} onDataSaved={handleDataSaved} />
     </div>
   );
 }

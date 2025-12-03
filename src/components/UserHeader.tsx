@@ -1129,14 +1129,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                                 Meine Aufträge
                               </Link>
                               <Link
-                                href="/jobs"
-                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                onClick={() => setIsProfileDropdownOpen(false)}
-                              >
-                                <FiBriefcase className="inline mr-2" />
-                                Jobbörse
-                              </Link>
-                              <Link
                                 href={`/dashboard/user/${currentUser.uid}/quotes`}
                                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                 onClick={() => setIsProfileDropdownOpen(false)}

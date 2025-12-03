@@ -29,14 +29,14 @@ export const WelcomeBox: React.FC<WelcomeBoxProps> = ({
           Verwalten Sie Ihre Aufträge und entdecken Sie neue Services.
         </p>
       </div>
-      <div className="relative group cursor-pointer ml-6" onClick={onProfilePictureClick}>
+      <div className="relative group cursor-pointer ml-6 shrink-0" onClick={onProfilePictureClick}>
         {profilePictureUrl ? (
           <Image
             src={profilePictureUrl}
             alt="Profilbild"
             width={70}
             height={70}
-            className="rounded-full object-cover border-3 border-gradient-to-r from-[#14ad9f] to-teal-600 group-hover:scale-105 transition-all duration-300 shadow-lg"
+            className="w-[70px] h-[70px] rounded-full object-cover border-3 border-gradient-to-r from-[#14ad9f] to-teal-600 group-hover:scale-105 transition-all duration-300 shadow-lg"
           />
         ) : (
           <div className="w-[70px] h-[70px] rounded-full bg-linear-to-r from-[#14ad9f] to-teal-600 flex items-center justify-center group-hover:scale-105 transition-all duration-300 shadow-lg">
