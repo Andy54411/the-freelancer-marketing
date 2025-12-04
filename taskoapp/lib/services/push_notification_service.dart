@@ -11,7 +11,7 @@ class PushNotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
-  
+
   // Local Notifications Plugin für iOS/Android foreground notifications
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
@@ -19,7 +19,7 @@ class PushNotificationService {
   /// Initialisiert Push Notifications
   static Future<void> initialize() async {
     try {
-      debugPrint('🔔 Initialisiere Push Notifications...');
+      // debugPrint('🔔 Initialisiere Push Notifications...');
 
       // Berechtigung anfordern (iOS)
       final NotificationSettings settings = await _messaging.requestPermission(
@@ -32,24 +32,26 @@ class PushNotificationService {
         sound: true,
       );
 
-      debugPrint('🔔 Notification permission: ${settings.authorizationStatus}');
+      // debugPrint('🔔 Notification permission: ${settings.authorizationStatus}');
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        debugPrint('✅ Push Notifications berechtigt');
-        
+        // debugPrint('✅ Push Notifications berechtigt');
+
         // Local Notifications initialisieren
         await _initializeLocalNotifications();
-        
+
         // FCM Token abrufen und speichern
         await _setupFCMToken();
-        
+
         // Message Handlers einrichten
         await _setupMessageHandlers();
-        
+
         // Background Message Handler einrichten
-        FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-        
-        debugPrint('✅ Push Notifications vollständig eingerichtet');
+        FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler,
+        );
+
+        // debugPrint('✅ Push Notifications vollständig eingerichtet');
       } else {
         debugPrint('❌ Push Notifications nicht berechtigt');
       }
@@ -65,16 +67,16 @@ class PushNotificationService {
 
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
-    );
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        );
 
     const InitializationSettings initializationSettings =
         InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsIOS,
+        );
 
     await _localNotifications.initialize(
       initializationSettings,
@@ -117,7 +119,9 @@ class PushNotificationService {
   static Future<void> _setupMessageHandlers() async {
     // Foreground Messages (App ist geöffnet)
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('📱 Foreground Message empfangen: ${message.notification?.title}');
+      debugPrint(
+        '📱 Foreground Message empfangen: ${message.notification?.title}',
+      );
       _showLocalNotification(message);
     });
 
@@ -137,16 +141,17 @@ class PushNotificationService {
 
   /// Zeigt Local Notification im Foreground
   static Future<void> _showLocalNotification(RemoteMessage message) async {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'taskilo_offers', // Channel ID
-      'Neue Angebote', // Channel Name
-      channelDescription: 'Benachrichtigungen für neue Angebote',
-      importance: Importance.high,
-      priority: Priority.high,
-      showWhen: true,
-      color: Color(0xFF14AD9F), // Taskilo Primary Color
-      icon: '@mipmap/ic_launcher',
-    );
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          'taskilo_offers', // Channel ID
+          'Neue Angebote', // Channel Name
+          channelDescription: 'Benachrichtigungen für neue Angebote',
+          importance: Importance.high,
+          priority: Priority.high,
+          showWhen: true,
+          color: Color(0xFF14AD9F), // Taskilo Primary Color
+          icon: '@mipmap/ic_launcher',
+        );
 
     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
       presentAlert: true,
@@ -169,9 +174,11 @@ class PushNotificationService {
   }
 
   /// Behandelt Notification Tap Events
-  static Future<void> _onNotificationTapped(NotificationResponse response) async {
+  static Future<void> _onNotificationTapped(
+    NotificationResponse response,
+  ) async {
     debugPrint('🎯 Local Notification getippt: ${response.payload}');
-    
+
     try {
       // Parse payload als Map
       if (response.payload != null && response.payload!.isNotEmpty) {
@@ -180,7 +187,7 @@ class PushNotificationService {
           'type': 'new_offer',
           'screen': 'incoming_offers',
         };
-        
+
         await _handleNotificationNavigation(data);
       }
     } catch (e) {
@@ -195,11 +202,13 @@ class PushNotificationService {
   }
 
   /// Zentrale Navigation Handler für alle Notification Types
-  static Future<void> _handleNotificationNavigation(Map<String, dynamic> data) async {
+  static Future<void> _handleNotificationNavigation(
+    Map<String, dynamic> data,
+  ) async {
     try {
       // Warte bis Navigation Service bereit ist
       await NotificationNavigationService.waitForNavigation();
-      
+
       // Delegiere Navigation an NotificationNavigationService
       await NotificationNavigationService.navigateFromNotification(data);
     } catch (e) {
@@ -212,10 +221,10 @@ class PushNotificationService {
     try {
       // Topic für User-spezifische Angebote
       await _messaging.subscribeToTopic('user_offers_$userId');
-      
+
       // Topic für allgemeine Angebote in der Region
       // await _messaging.subscribeToTopic('offers_general');
-      
+
       debugPrint('✅ Angebot-Notifications abonniert für User: $userId');
     } catch (e) {
       debugPrint('❌ Fehler beim Abonnieren der Topics: $e');

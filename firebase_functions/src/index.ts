@@ -47,6 +47,8 @@ import * as fixInconsistentPaymentModule from './fix_inconsistent_payment';
 import * as quoteNotifications from './quote_notifications';
 import * as chatNotifications from './chat_notifications';
 import * as offerPushNotifications from './offer_push_notifications';
+import * as triggersJobApplications from './triggers_job_applications';
+export const onJobApplicationCreated = triggersJobApplications.onJobApplicationCreated;
 
 // Stripe Functions wurden nach Next.js API Routes migriert
 

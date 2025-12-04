@@ -515,7 +515,7 @@ export default function KaeuferschutzPage() {
               {/* Contact Information */}
               <section
                 id="kontakt"
-                className="bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-xl p-8 text-white scroll-mt-24"
+                className="bg-linear-to-r from-[#14ad9f] to-taskilo-hover rounded-xl p-8 text-white scroll-mt-24"
               >
                 <div className="text-center">
                   <Phone className="w-12 h-12 mx-auto mb-4" />

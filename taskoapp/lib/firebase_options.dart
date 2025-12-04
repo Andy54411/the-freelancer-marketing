@@ -46,7 +46,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1022290879475',
     projectId: 'tilvo-f142f',
     authDomain: 'tilvo-f142f.firebaseapp.com',
-    databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
+    databaseURL:
+        'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'tilvo-f142f.firebasestorage.app',
     measurementId: 'G-WWXT65CVC8',
   );
@@ -56,7 +57,8 @@ class DefaultFirebaseOptions {
     appId: '1:1022290879475:android:3a621239990633c35ae886',
     messagingSenderId: '1022290879475',
     projectId: 'tilvo-f142f',
-    databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
+    databaseURL:
+        'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'tilvo-f142f.firebasestorage.app',
   );
 
@@ -65,9 +67,11 @@ class DefaultFirebaseOptions {
     appId: '1:1022290879475:ios:b4b24626475b35f75ae886',
     messagingSenderId: '1022290879475',
     projectId: 'tilvo-f142f',
-    databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
+    databaseURL:
+        'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'tilvo-f142f.firebasestorage.app',
-    iosClientId: '1022290879475-4k9lfpu0q44a0lafmus1ss5h25mul4um.apps.googleusercontent.com',
+    iosClientId:
+        '1022290879475-4k9lfpu0q44a0lafmus1ss5h25mul4um.apps.googleusercontent.com',
     iosBundleId: 'com.tilvo.app',
   );
 
@@ -76,9 +80,11 @@ class DefaultFirebaseOptions {
     appId: '1:1022290879475:ios:8fd00b16c4a209de5ae886',
     messagingSenderId: '1022290879475',
     projectId: 'tilvo-f142f',
-    databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
+    databaseURL:
+        'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'tilvo-f142f.firebasestorage.app',
-    iosClientId: '1022290879475-4fo0nm6fu4tbpe2vt09niea0er39anja.apps.googleusercontent.com',
+    iosClientId:
+        '1022290879475-4fo0nm6fu4tbpe2vt09niea0er39anja.apps.googleusercontent.com',
     iosBundleId: 'com.tilvo.de',
   );
 
@@ -88,9 +94,9 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1022290879475',
     projectId: 'tilvo-f142f',
     authDomain: 'tilvo-f142f.firebaseapp.com',
-    databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
+    databaseURL:
+        'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'tilvo-f142f.firebasestorage.app',
     measurementId: 'G-X3V12JVCLT',
   );
-
 }

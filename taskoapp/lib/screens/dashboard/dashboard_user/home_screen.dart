@@ -9,6 +9,7 @@ import 'my_orders_screen.dart';
 import 'search_screen.dart' show SearchScreen;
 import 'calendar_screen.dart';
 import 'projects_screen.dart';
+import '../../jobs/job_board_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,24 +35,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<TaskiloUser?>();
-    
+
     // Wenn User ausgeloggt ist, zeige Loading oder navigiere zurück
     if (user == null) {
       debugPrint('HOMESCREEN: User ist NULL - sollte zur Startseite');
       // Zurück zur AuthWrapper, die dann DiscoverScreen zeigt
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/',
-          (route) => false,
-        );
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
       });
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    
+
     return DashboardLayout(
       title: 'Willkommen, ${user.displayName ?? 'Benutzer'}!',
       useGradientBackground: true,
@@ -81,9 +75,9 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // Meine Aufträge Übersichtskarte
           _buildMyOrdersOverviewCard(user),
-          
+
           const SizedBox(height: 20),
-          
+
           // Schnellzugriff Text mit weißer Schrift
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -104,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -113,39 +107,25 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisSpacing: 16,
             childAspectRatio: 1.2,
             children: [
-              _buildQuickActionCard(
-                'Neuer Auftrag',
-                Icons.add_circle,
-                () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const SearchScreen(),
-                    ),
-                  );
-                },
-              ),
-              _buildQuickActionCard(
-                'Meine Aufträge',
-                Icons.list_alt,
-                () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const MyOrdersScreen(),
-                    ),
-                  );
-                },
-              ),
-              _buildQuickActionCard(
-                'Projekte',
-                Icons.psychology,
-                () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ProjectsScreen(),
-                    ),
-                  );
-                },
-              ),
+              _buildQuickActionCard('Neuer Auftrag', Icons.add_circle, () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const SearchScreen()),
+                );
+              }),
+              _buildQuickActionCard('Meine Aufträge', Icons.list_alt, () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const MyOrdersScreen(),
+                  ),
+                );
+              }),
+              _buildQuickActionCard('Projekte', Icons.psychology, () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ProjectsScreen(),
+                  ),
+                );
+              }),
               // Terminkalender
               Container(
                 decoration: BoxDecoration(
@@ -168,11 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.calendar_month,
-                        size: 32,
-                        color: Colors.white,
-                      ),
+                      Icon(Icons.calendar_month, size: 32, color: Colors.white),
                       const SizedBox(height: 8),
                       Text(
                         'Terminkalender',
@@ -196,6 +172,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
+              _buildQuickActionCard('Jobbörse', Icons.work, () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const JobBoardScreen(),
+                  ),
+                );
+              }),
             ],
           ),
         ],
@@ -203,18 +186,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildQuickActionCard(String title, IconData icon, VoidCallback onTap) {
+  Widget _buildQuickActionCard(
+    String title,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
     return DashboardCard(
       margin: EdgeInsets.zero,
       onTap: onTap,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: 32,
-            color: Colors.white,
-          ),
+          Icon(icon, size: 32, color: Colors.white),
           const SizedBox(height: 8),
           Text(
             title,
@@ -283,7 +266,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       : null,
                   child: user?.photoURL == null
                       ? Text(
-                          user?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
+                          user?.displayName?.substring(0, 1).toUpperCase() ??
+                              'U',
                           style: const TextStyle(
                             fontSize: 24,
                             color: Colors.white,
@@ -319,9 +303,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Profile Options Text
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -342,35 +326,19 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          
-          _buildProfileOption(
-            'Profil bearbeiten',
-            Icons.edit,
-            () {
-              // Navigation zu Profil bearbeiten
-            },
-          ),
-          _buildProfileOption(
-            'Zahlungsmethoden',
-            Icons.payment,
-            () {
-              // Navigation zu Zahlungsmethoden
-            },
-          ),
-          _buildProfileOption(
-            'Benachrichtigungen',
-            Icons.notifications,
-            () {
-              // Navigation zu Benachrichtigungen
-            },
-          ),
-          _buildProfileOption(
-            'Hilfe & Support',
-            Icons.help,
-            () {
-              // Navigation zu Hilfe
-            },
-          ),
+
+          _buildProfileOption('Profil bearbeiten', Icons.edit, () {
+            // Navigation zu Profil bearbeiten
+          }),
+          _buildProfileOption('Zahlungsmethoden', Icons.payment, () {
+            // Navigation zu Zahlungsmethoden
+          }),
+          _buildProfileOption('Benachrichtigungen', Icons.notifications, () {
+            // Navigation zu Benachrichtigungen
+          }),
+          _buildProfileOption('Hilfe & Support', Icons.help, () {
+            // Navigation zu Hilfe
+          }),
         ],
       ),
     );
@@ -403,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildLatestOrderPreview(taskilo_order.Order order) {
     String statusText = '';
     Color statusColor = Colors.white;
-    
+
     switch (order.status.toLowerCase()) {
       case 'abgeschlossen':
       case 'zahlung_erhalten_clearing':
@@ -485,7 +453,10 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 8),
               Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(16),
@@ -568,9 +539,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 16),
                   const Center(
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                    ),
+                    child: CircularProgressIndicator(color: Colors.white),
                   ),
                 ],
               ),
@@ -611,17 +580,18 @@ class _HomeScreenState extends State<HomeScreen> {
         final allOrders = snapshot.data ?? [];
         final hasOrders = allOrders.isNotEmpty;
         final totalOrders = allOrders.length;
-        
+
         // Zähle die verschiedenen Status
         int activeOrders = 0;
         int completedOrders = 0;
-        
+
         for (final order in allOrders) {
           final status = order.status.toLowerCase();
-          
+
           if (status == 'aktiv' || status == 'in bearbeitung') {
             activeOrders++;
-          } else if (status == 'abgeschlossen' || status == 'zahlung_erhalten_clearing') {
+          } else if (status == 'abgeschlossen' ||
+              status == 'zahlung_erhalten_clearing') {
             completedOrders++;
           }
         }
@@ -629,7 +599,11 @@ class _HomeScreenState extends State<HomeScreen> {
         taskilo_order.Order? latestOrder;
         if (hasOrders) {
           // Sortiere nach Erstellungsdatum (neueste zuerst)
-          allOrders.sort((a, b) => (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now()));
+          allOrders.sort(
+            (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+              a.createdAt ?? DateTime.now(),
+            ),
+          );
           latestOrder = allOrders.first;
         }
 
@@ -674,13 +648,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                   if (activeOrders > 0)
                                     Container(
                                       key: const ValueKey('active_badge'),
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: Colors.orange.withValues(alpha: 0.9),
+                                        color: Colors.orange.withValues(
+                                          alpha: 0.9,
+                                        ),
                                         borderRadius: BorderRadius.circular(12),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.1),
+                                            color: Colors.black.withValues(
+                                              alpha: 0.1,
+                                            ),
                                             blurRadius: 2,
                                             offset: const Offset(0, 1),
                                           ),
@@ -698,13 +679,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                   if (completedOrders > 0)
                                     Container(
                                       key: const ValueKey('completed_badge'),
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: Colors.green.withValues(alpha: 0.9),
+                                        color: Colors.green.withValues(
+                                          alpha: 0.9,
+                                        ),
                                         borderRadius: BorderRadius.circular(12),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.1),
+                                            color: Colors.black.withValues(
+                                              alpha: 0.1,
+                                            ),
                                             blurRadius: 2,
                                             offset: const Offset(0, 1),
                                           ),
@@ -728,113 +716,116 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-                const SizedBox(height: 16),
-                if (hasOrders && latestOrder != null) ...[
-                  // Neuester Auftrag
-                  _buildLatestOrderPreview(latestOrder),
-                  const SizedBox(height: 20),
-                  // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const SearchScreen(),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF14ad9f),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Neuer Auftrag',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
+              const SizedBox(height: 16),
+              if (hasOrders && latestOrder != null) ...[
+                // Neuester Auftrag
+                _buildLatestOrderPreview(latestOrder),
+                const SizedBox(height: 20),
+                // Action Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
                         onPressed: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => const MyOrdersScreen(),
+                              builder: (context) => const SearchScreen(),
                             ),
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white.withValues(alpha: 0.2),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF14ad9f),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: const BorderSide(color: Colors.white, width: 1),
                           ),
                         ),
                         child: const Text(
-                          'Alle anzeigen',
+                          'Neuer Auftrag',
                           style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
-                    ],
-                  ),
-                ] else ...[
-                  // Keine Aufträge
-                  Column(
-                    children: [
-                      Icon(
-                        Icons.assignment_outlined,
-                        size: 48,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Noch keine Aufträge vorhanden',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const MyOrdersScreen(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 16,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const SearchScreen(),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF14ad9f),
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Auftrag erstellen',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: Colors.white, width: 1),
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                      child: const Text(
+                        'Alle anzeigen',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                // Keine Aufträge
+                Column(
+                  children: [
+                    Icon(
+                      Icons.assignment_outlined,
+                      size: 48,
+                      color: Colors.white.withValues(alpha: 0.7),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Noch keine Aufträge vorhanden',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const SearchScreen(),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF14ad9f),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Auftrag erstellen',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
-            ),
+            ],
+          ),
         );
       },
     );

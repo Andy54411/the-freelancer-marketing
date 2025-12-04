@@ -10,30 +10,37 @@ class AuthService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     // Korrekte OAuth Client ID aus google-services.json verwenden
-    clientId: '1022290879475-ca1lvf8o1sau2f1gakf4qro1ondrfpti.apps.googleusercontent.com',
+    clientId:
+        '1022290879475-ca1lvf8o1sau2f1gakf4qro1ondrfpti.apps.googleusercontent.com',
   );
 
   // Stream für aktuellen User
   Stream<TaskiloUser?> get userStream {
     return _auth.authStateChanges().asyncMap((firebaseUser) async {
-      debugPrint('AUTH_SERVICE: authStateChanged - firebaseUser = ${firebaseUser != null ? "VORHANDEN (${firebaseUser.email})" : "NULL"}');
-      
+      // debugPrint('AUTH_SERVICE: authStateChanged - firebaseUser = ${firebaseUser != null ? "VORHANDEN (${firebaseUser.email})" : "NULL"}');
+
       if (firebaseUser == null) {
-        debugPrint('AUTH_SERVICE: Kein User - return null');
+        // debugPrint('AUTH_SERVICE: Kein User - return null');
         return null;
       }
-      
+
       // Lade User-Daten aus Firestore
-      final userDoc = await _firestore.collection('users').doc(firebaseUser.uid).get();
-      
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(firebaseUser.uid)
+          .get();
+
       if (userDoc.exists) {
-        debugPrint('AUTH_SERVICE: User-Dokument gefunden - TaskiloUser erstellt');
+        // debugPrint('AUTH_SERVICE: User-Dokument gefunden - TaskiloUser erstellt');
         return TaskiloUser.fromFirestore(userDoc);
       } else {
-        debugPrint('AUTH_SERVICE: User-Dokument nicht gefunden - erstelle neues');
+        // debugPrint('AUTH_SERVICE: User-Dokument nicht gefunden - erstelle neues');
         // Erstelle neuen User in Firestore wenn noch nicht vorhanden
         final newUser = TaskiloUser.fromFirebaseUser(firebaseUser);
-        await _firestore.collection('users').doc(firebaseUser.uid).set(newUser.toFirestore());
+        await _firestore
+            .collection('users')
+            .doc(firebaseUser.uid)
+            .set(newUser.toFirestore());
         return newUser;
       }
     });
@@ -47,22 +54,25 @@ class AuthService {
   }
 
   // Email & Password Login
-  Future<TaskiloUser?> signInWithEmailAndPassword(String email, String password) async {
+  Future<TaskiloUser?> signInWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     try {
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-      
+
       if (credential.user != null) {
         await _updateLastLoginTime(credential.user!.uid);
         final user = await _getUserFromFirestore(credential.user!.uid);
-        
+
         // Starte Offer Monitoring für eingeloggte User
         if (user != null) {
           await OfferNotificationService.startOfferMonitoring();
         }
-        
+
         return user;
       }
       return null;
@@ -73,32 +83,37 @@ class AuthService {
 
   // Email & Password Registrierung
   Future<TaskiloUser?> createUserWithEmailAndPassword(
-    String email, 
-    String password, 
-    {String? displayName, UserType userType = UserType.customer}
-  ) async {
+    String email,
+    String password, {
+    String? displayName,
+    UserType userType = UserType.customer,
+  }) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      
+
       if (credential.user != null) {
         // Aktualisiere Display Name wenn angegeben
         if (displayName != null) {
           await credential.user!.updateDisplayName(displayName);
         }
-        
+
         // Erstelle User-Dokument in Firestore
-        final user = TaskiloUser.fromFirebaseUser(credential.user!, 
-          profile: const UserProfile()
+        final user = TaskiloUser.fromFirebaseUser(
+          credential.user!,
+          profile: const UserProfile(),
         ).copyWith(userType: userType);
-        
-        await _firestore.collection('users').doc(credential.user!.uid).set(user.toFirestore());
-        
+
+        await _firestore
+            .collection('users')
+            .doc(credential.user!.uid)
+            .set(user.toFirestore());
+
         // Sende Email-Verifikation
         await credential.user!.sendEmailVerification();
-        
+
         return user;
       }
       return null;
@@ -107,7 +122,7 @@ class AuthService {
     }
   }
 
-    // Erweiterte User Registrierung (Web-kompatibel)
+  // Erweiterte User Registrierung (Web-kompatibel)
   Future<TaskiloUser?> registerUser({
     required String email,
     required String password,
@@ -128,8 +143,10 @@ class AuthService {
       debugPrint('🔍 Firebase Auth Status Check:');
       debugPrint('   Current User: ${FirebaseAuth.instance.currentUser}');
       debugPrint('   🔧 App Name: ${FirebaseAuth.instance.app.name}');
-      debugPrint('   🆔 App Options: ${FirebaseAuth.instance.app.options.projectId}');
-      
+      debugPrint(
+        '   🆔 App Options: ${FirebaseAuth.instance.app.options.projectId}',
+      );
+
       debugPrint('Starte Benutzerregistrierung...');
       debugPrint('📧 Email: $email');
       debugPrint('Name: $firstName $lastName');
@@ -155,10 +172,15 @@ class AuthService {
         );
 
         // Erstelle User-Dokument in Firestore
-        final user = TaskiloUser.fromFirebaseUser(credential.user!, profile: profile)
-            .copyWith(userType: userType);
+        final user = TaskiloUser.fromFirebaseUser(
+          credential.user!,
+          profile: profile,
+        ).copyWith(userType: userType);
 
-        await _firestore.collection('users').doc(credential.user!.uid).set(user.toFirestore());
+        await _firestore
+            .collection('users')
+            .doc(credential.user!.uid)
+            .set(user.toFirestore());
 
         // Newsletter-Anmeldung wenn gewünscht
         if (newsletterSubscribed) {
@@ -193,100 +215,108 @@ class AuthService {
   Future<TaskiloUser?> signInWithGoogle() async {
     try {
       debugPrint('🔍 Starte Google Sign-In...');
-      
+
       // 0. Erst ausloggen falls bereits eingeloggt
       await _googleSignIn.signOut();
-      
+
       // 1. Google Sign-In starten
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      
+
       if (googleUser == null) {
         debugPrint('❌ Google Sign-In vom Benutzer abgebrochen');
         return null; // User hat den Sign-In abgebrochen
       }
-      
+
       debugPrint('✅ Google-Account ausgewählt: ${googleUser.email}');
-      
+
       // 2. Google Authentication Details abrufen
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      
-      debugPrint('🔑 Access Token: ${googleAuth.accessToken != null ? "✅" : "❌"}');
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      debugPrint(
+        '🔑 Access Token: ${googleAuth.accessToken != null ? "✅" : "❌"}',
+      );
       debugPrint('🔑 ID Token: ${googleAuth.idToken != null ? "✅" : "❌"}');
-      
+
       if (googleAuth.accessToken == null || googleAuth.idToken == null) {
         debugPrint('❌ Google Auth Tokens sind null');
         throw 'Google-Authentifizierung fehlgeschlagen: Tokens nicht erhalten';
       }
-      
+
       // 3. Firebase Credential erstellen
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      
+
       debugPrint('🔑 Firebase-Credential erstellt');
-      
+
       // 4. Bei Firebase anmelden
       final userCredential = await _auth.signInWithCredential(credential);
-      
+
       if (userCredential.user != null) {
         debugPrint('✅ Firebase-Anmeldung erfolgreich');
-        
+
         // 5. Prüfe ob User bereits in Firestore existiert
-        final existingUser = await _getUserFromFirestore(userCredential.user!.uid);
-        
+        final existingUser = await _getUserFromFirestore(
+          userCredential.user!.uid,
+        );
+
         if (existingUser != null) {
           debugPrint('📂 Bestehender User gefunden');
           await _updateLastLoginTime(userCredential.user!.uid);
-          
+
           // Starte Offer Monitoring für eingeloggte User
           await OfferNotificationService.startOfferMonitoring();
-          
+
           return existingUser;
         } else {
           debugPrint('👤 Neuer User - erstelle Firestore-Dokument');
-          
+
           // 6. Neuen User mit Google-Daten erstellen
           final names = googleUser.displayName?.split(' ') ?? ['', ''];
           final profile = UserProfile(
             firstName: names.isNotEmpty ? names.first : '',
             lastName: names.length > 1 ? names.skip(1).join(' ') : '',
           );
-          
+
           final newUser = TaskiloUser.fromFirebaseUser(
             userCredential.user!,
             profile: profile,
           );
-          
-          await _firestore.collection('users').doc(userCredential.user!.uid).set(newUser.toFirestore());
-          
+
+          await _firestore
+              .collection('users')
+              .doc(userCredential.user!.uid)
+              .set(newUser.toFirestore());
+
           debugPrint('✅ Neuer User erfolgreich erstellt');
-          
+
           // Starte Offer Monitoring für neue User
           await OfferNotificationService.startOfferMonitoring();
-          
+
           return newUser;
         }
       }
-      
+
       return null;
     } on FirebaseAuthException catch (e) {
       debugPrint('❌ Firebase Auth Fehler: ${e.code} - ${e.message}');
-      
+
       // Spezielle Behandlung für Google Sign-In Credential-Fehler
       if (e.code == 'invalid-credential') {
         // Google Sign-In zurücksetzen und erneut versuchen
         await _googleSignIn.signOut();
         throw 'Google-Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.';
       }
-      
+
       throw _handleAuthException(e);
     } on Exception catch (e) {
       debugPrint('❌ Google Sign-In Exception: $e');
-      
+
       // Google Sign-In zurücksetzen bei Fehlern
       await _googleSignIn.signOut();
-      
+
       if (e.toString().contains('network_error')) {
         throw 'Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.';
       } else if (e.toString().contains('sign_in_cancelled')) {
@@ -294,7 +324,7 @@ class AuthService {
       } else if (e.toString().contains('sign_in_failed')) {
         throw 'Google Sign-In fehlgeschlagen. Bitte versuchen Sie es erneut.';
       }
-      
+
       throw 'Ein Fehler ist bei der Google-Anmeldung aufgetreten: $e';
     } catch (e) {
       debugPrint('❌ Unbekannter Google Sign-In Fehler: $e');
@@ -322,10 +352,7 @@ class AuthService {
 
     // Firebase Auth Profile Update
     if (displayName != null || photoURL != null) {
-      await user.updateProfile(
-        displayName: displayName,
-        photoURL: photoURL,
-      );
+      await user.updateProfile(displayName: displayName, photoURL: photoURL);
     }
 
     // Firestore User Document Update
@@ -345,7 +372,7 @@ class AuthService {
     try {
       // Stoppe Offer Monitoring vor dem Logout
       await OfferNotificationService.stopOfferMonitoring();
-      
+
       await _auth.signOut();
       debugPrint('AUTH_SERVICE: Firebase Auth signOut erfolgreich');
     } catch (e) {
@@ -361,7 +388,7 @@ class AuthService {
 
     // Lösche User-Dokument aus Firestore
     await _firestore.collection('users').doc(user.uid).delete();
-    
+
     // Lösche Firebase Auth User
     await user.delete();
   }
@@ -389,7 +416,11 @@ class AuthService {
   }
 
   // Newsletter-Anmeldung in separater Collection
-  Future<void> _addToNewsletter(String email, String firstName, String lastName) async {
+  Future<void> _addToNewsletter(
+    String email,
+    String firstName,
+    String lastName,
+  ) async {
     try {
       await _firestore.collection('newsletter_subscribers').doc(email).set({
         'email': email,
@@ -400,7 +431,7 @@ class AuthService {
         'isActive': true,
         'tags': ['app_user'],
       });
-      
+
       debugPrint('✅ Newsletter-Anmeldung erfolgreich für: $email');
     } catch (e) {
       debugPrint('❌ Newsletter-Anmeldung fehlgeschlagen: $e');
@@ -417,7 +448,7 @@ class AuthService {
     debugPrint('  🆔 Credential: ${e.credential}');
     debugPrint('  📱 Phone Number: ${e.phoneNumber}');
     debugPrint('  🔗 Tenant ID: ${e.tenantId}');
-    
+
     switch (e.code) {
       case 'user-not-found':
         return 'Kein Benutzer mit dieser E-Mail gefunden.';

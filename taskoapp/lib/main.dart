@@ -21,30 +21,30 @@ import 'utils/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 🎯 DEAKTIVIERE ALLE DEBUG-HIGHLIGHTING FÜR PRODUKTION
   if (kDebugMode) {
     // Deaktiviere alle Debug-Overlays die gelbe Hervorhebungen verursachen
-    debugPaintSizeEnabled = false;           // Keine Debug-Paint-Anzeigen
-    debugRepaintRainbowEnabled = false;      // Keine Repaint-Highlights
-    debugRepaintTextRainbowEnabled = false;  // Keine Text-Repaint-Highlights
-    
+    debugPaintSizeEnabled = false; // Keine Debug-Paint-Anzeigen
+    debugRepaintRainbowEnabled = false; // Keine Repaint-Highlights
+    debugRepaintTextRainbowEnabled = false; // Keine Text-Repaint-Highlights
+
     // Deaktiviere alle Material Debug-Features
     // RendererBinding.instance.ensureSemantics(); // Entfernt - kann Probleme verursachen
   }
-  
+
   // Lade Environment Variables
   await dotenv.load(fileName: ".env");
-  
+
   // Initialisiere Firebase (nur wenn noch nicht initialisiert)
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      debugPrint('✅ Firebase initialized successfully');
+      // debugPrint('✅ Firebase initialized successfully');
     } else {
-      debugPrint('✅ Firebase already initialized');
+      // debugPrint('✅ Firebase already initialized');
     }
   } catch (e) {
     debugPrint('⚠️ Firebase initialization error: $e');
@@ -54,24 +54,24 @@ void main() async {
   // Initialisiere Stripe Payment Service
   try {
     await TaskiloPaymentService.initializeStripe();
-    debugPrint('✅ Stripe successfully initialized');
+    // debugPrint('✅ Stripe successfully initialized');
   } catch (e) {
     debugPrint('⚠️ Stripe initialization failed: $e');
     debugPrint('App will continue without payment functionality');
   }
 
   // Firebase Functions Connection testen
-  final functionsReady = await FirebaseFunctionsService.testConnection();
-  debugPrint('🔧 Firebase Functions ready: $functionsReady');
+  await FirebaseFunctionsService.testConnection();
+  // debugPrint('🔧 Firebase Functions ready: $functionsReady');
 
   // Push Notifications initialisieren
   try {
     await PushNotificationService.initialize();
-    debugPrint('✅ Push Notifications initialized successfully');
+    // debugPrint('✅ Push Notifications initialized successfully');
   } catch (e) {
     debugPrint('⚠️ Push Notifications initialization failed: $e');
   }
-  
+
   runApp(const TaskiloApp());
 }
 
@@ -94,26 +94,26 @@ class TaskiloApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
         // 🎯 KOMPLETTE DEBUG-DEAKTIVIERUNG
-        showPerformanceOverlay: false,        // Keine Performance-Overlays
-        showSemanticsDebugger: false,         // Keine Accessibility-Debug-Anzeigen
+        showPerformanceOverlay: false, // Keine Performance-Overlays
+        showSemanticsDebugger: false, // Keine Accessibility-Debug-Anzeigen
         checkerboardRasterCacheImages: false, // Keine Raster-Cache-Anzeigen
-        checkerboardOffscreenLayers: false,   // Keine Offscreen-Layer-Anzeigen
-        debugShowMaterialGrid: false,         // Keine Material-Grid-Anzeigen
+        checkerboardOffscreenLayers: false, // Keine Offscreen-Layer-Anzeigen
+        debugShowMaterialGrid: false, // Keine Material-Grid-Anzeigen
         navigatorKey: NotificationNavigationService.navigatorKey,
-        home: const AuthWrapper(),  // Auth-basierte Navigation
+        home: const AuthWrapper(), // Auth-basierte Navigation
         getPages: [
           // Auth Routes
           GetPage(name: '/login', page: () => const LoginScreen()),
           GetPage(name: '/home', page: () => const DiscoverScreen()),
           GetPage(name: '/discover', page: () => const DiscoverScreen()),
           GetPage(name: '/dashboard', page: () => const HomeScreen()),
-          
+
           // Dashboard Routes
           GetPage(
             name: '/dashboard/user/incoming-offers',
             page: () => const IncomingOffersScreen(),
           ),
-          
+
           // Fallback route
           GetPage(
             name: '/unknown',
@@ -124,9 +124,8 @@ class TaskiloApp extends StatelessWidget {
         ],
         unknownRoute: GetPage(
           name: '/unknown',
-          page: () => const Scaffold(
-            body: Center(child: Text('Seite nicht gefunden')),
-          ),
+          page: () =>
+              const Scaffold(body: Center(child: Text('Seite nicht gefunden'))),
         ),
       ),
     );
@@ -139,9 +138,11 @@ class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<TaskiloUser?>();
-    
-    debugPrint('AUTH_WRAPPER: User = ${user != null ? "EINGELOGGT (${user.email})" : "AUSGELOGGT"}');
-    
+
+    debugPrint(
+      'AUTH_WRAPPER: User = ${user != null ? "EINGELOGGT (${user.email})" : "AUSGELOGGT"}',
+    );
+
     // Wenn User eingeloggt ist, zeige Dashboard
     // Sonst zeige DiscoverScreen (Startseite)
     if (user != null) {
