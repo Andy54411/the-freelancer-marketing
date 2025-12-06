@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 class JobApplicationService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -21,19 +22,74 @@ class JobApplicationService {
 
   Future<Map<String, dynamic>?> getCandidateProfile() async {
     final user = _auth.currentUser;
-    if (user == null) return null;
+    if (user == null) {
+      debugPrint('JobApplicationService: User is null');
+      return null;
+    }
 
-    final doc = await _db
+    debugPrint('JobApplicationService: Fetching profile for user ${user.uid}');
+
+    try {
+      // 1. Try 'candidate_profile/main' (Standard)
+      final mainDoc = await _db
+          .collection('users')
+          .doc(user.uid)
+          .collection('candidate_profile')
+          .doc('main')
+          .get();
+
+      if (mainDoc.exists) {
+        debugPrint('JobApplicationService: Found main profile document');
+        return mainDoc.data();
+      } else {
+        debugPrint('JobApplicationService: Main profile document not found');
+      }
+
+      // 2. Fallback: Any doc in 'candidate_profile'
+      final query = await _db
+          .collection('users')
+          .doc(user.uid)
+          .collection('candidate_profile')
+          .limit(1)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        debugPrint('JobApplicationService: Found fallback profile document: ${query.docs.first.id}');
+        return query.docs.first.data();
+      }
+
+      debugPrint('JobApplicationService: No candidate_profile found. Checking user profile...');
+
+      // 3. Fallback: Basic user profile
+      final userDoc = await _db.collection('users').doc(user.uid).get();
+      if (userDoc.exists && userDoc.data() != null) {
+        final userData = userDoc.data()!;
+        if (userData.containsKey('profile')) {
+           debugPrint('JobApplicationService: Found basic user profile');
+           // Map basic profile to expected structure if needed, or just return it
+           // The screen handles missing fields gracefully
+           return userData['profile'] as Map<String, dynamic>;
+        }
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint('JobApplicationService: Error fetching profile: $e');
+      return null;
+    }
+  }
+
+  Future<void> updateCandidateProfile(Map<String, dynamic> data) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('User not logged in');
+
+    // Always save to 'main' doc in 'candidate_profile'
+    await _db
         .collection('users')
         .doc(user.uid)
         .collection('candidate_profile')
         .doc('main')
-        .get();
-
-    if (doc.exists) {
-      return doc.data();
-    }
-    return null;
+        .set(data, SetOptions(merge: true));
   }
 
   Future<bool> hasApplied(String jobId) async {
@@ -56,6 +112,8 @@ class JobApplicationService {
     required String jobTitle,
     required String companyName,
     required Map<String, dynamic> applicantProfile,
+    required Map<String, dynamic> personalData,
+    required List<Map<String, dynamic>> attachments,
     String? message,
   }) async {
     final user = _auth.currentUser;
@@ -68,41 +126,13 @@ class JobApplicationService {
         .doc()
         .id;
 
-    // Extract attachments from profile
-    List<Map<String, dynamic>> attachments = [];
-
-    if (applicantProfile['cvUrl'] != null &&
-        applicantProfile['cvUrl'].toString().isNotEmpty) {
-      attachments.add({
-        'name': applicantProfile['cvName'] ?? 'Lebenslauf.pdf',
-        'url': applicantProfile['cvUrl'],
-        'type': 'Lebenslauf',
-      });
-    }
-
-    if (applicantProfile['coverLetterUrl'] != null &&
-        applicantProfile['coverLetterUrl'].toString().isNotEmpty) {
-      attachments.add({
-        'name': applicantProfile['coverLetterName'] ?? 'Anschreiben.pdf',
-        'url': applicantProfile['coverLetterUrl'],
-        'type': 'Anschreiben',
-      });
-    }
-
     final applicationData = {
       'id': applicationId,
       'jobId': jobId,
       'companyId': companyId,
       'applicantId': user.uid,
       'applicantProfile': applicantProfile,
-      'personalData': {
-        'firstName': applicantProfile['firstName'],
-        'lastName': applicantProfile['lastName'],
-        'email': applicantProfile['email'],
-        'phone': applicantProfile['phone'],
-        'city': applicantProfile['city'],
-        'country': applicantProfile['country'],
-      },
+      'personalData': personalData,
       'attachments': attachments,
       'message': message ?? '',
       'status': 'pending',

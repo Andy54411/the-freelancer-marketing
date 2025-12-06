@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -93,6 +94,16 @@ class TaskiloApp extends StatelessWidget {
         title: 'Taskilo - Service Marktplatz',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
+        locale: const Locale('de', 'DE'),
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('de', 'DE'),
+          Locale('en', 'US'),
+        ],
         // 🎯 KOMPLETTE DEBUG-DEAKTIVIERUNG
         showPerformanceOverlay: false, // Keine Performance-Overlays
         showSemanticsDebugger: false, // Keine Accessibility-Debug-Anzeigen

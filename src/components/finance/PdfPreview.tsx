@@ -121,7 +121,7 @@ export function PdfPreview({ file, fileUrl, className = '' }: PdfPreviewProps) {
             >
               <ZoomOut className="h-3 w-3" />
             </Button>
-            <span className="text-xs px-2 border-x min-w-[3rem] text-center">
+            <span className="text-xs px-2 border-x min-w-12 text-center">
               {Math.round(scale * 100)}%
             </span>
             <Button
@@ -149,7 +149,7 @@ export function PdfPreview({ file, fileUrl, className = '' }: PdfPreviewProps) {
               >
                 <ChevronLeft className="h-3 w-3" />
               </Button>
-              <span className="text-xs px-2 border-x min-w-[3rem] text-center">
+              <span className="text-xs px-2 border-x min-w-12 text-center">
                 {pageNumber}/{numPages}
               </span>
               <Button

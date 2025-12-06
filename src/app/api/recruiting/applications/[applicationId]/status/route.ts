@@ -8,43 +8,59 @@ export async function PATCH(
   try {
     const { applicationId } = await params;
     const body = await request.json();
-    const { status } = body;
+    const { status, companyId: providedCompanyId } = body;
 
     if (!status) {
       return NextResponse.json({ error: 'Status required' }, { status: 400 });
     }
 
-    // Get the application to find related IDs
-    // Since we deleted the root collection, we must search in subcollections
-    // We can search in company subcollections as this is likely triggered by a company action
-    // Or use collectionGroup query
-
     let appDoc = null;
     let appRef = null;
-    let source = '';
 
-    // Try finding it via collectionGroup (most robust if we don't know companyId)
-    const querySnapshot = await db
-      .collectionGroup('jobApplications')
-      .where('id', '==', applicationId)
-      .limit(1)
-      .get();
+    // 1. Direct lookup if companyId is provided (Fastest & Cheapest)
+    if (providedCompanyId) {
+      // Try camelCase collection first
+      appRef = db
+        .collection('companies')
+        .doc(providedCompanyId)
+        .collection('jobApplications')
+        .doc(applicationId);
+      appDoc = await appRef.get();
 
-    if (!querySnapshot.empty) {
-      appDoc = querySnapshot.docs[0];
-      appRef = appDoc.ref;
-      source = 'company'; // Assuming collectionGroup hits company subcollection first or we treat it as source
-    } else {
-      // Fallback: Try user subcollection via collectionGroup 'job_applications'
-      const userQuerySnapshot = await db
-        .collectionGroup('job_applications')
+      if (!appDoc.exists) {
+        // Try snake_case collection
+        appRef = db
+          .collection('companies')
+          .doc(providedCompanyId)
+          .collection('job_applications')
+          .doc(applicationId);
+        appDoc = await appRef.get();
+      }
+    }
+
+    // 2. Fallback to Collection Group Query if not found or companyId missing
+    if (!appDoc || !appDoc.exists) {
+      // Try finding it via collectionGroup (most robust if we don't know companyId)
+      const querySnapshot = await db
+        .collectionGroup('jobApplications')
         .where('id', '==', applicationId)
         .limit(1)
         .get();
-      if (!userQuerySnapshot.empty) {
-        appDoc = userQuerySnapshot.docs[0];
+
+      if (!querySnapshot.empty) {
+        appDoc = querySnapshot.docs[0];
         appRef = appDoc.ref;
-        source = 'user';
+      } else {
+        // Fallback: Try user subcollection via collectionGroup 'job_applications'
+        const userQuerySnapshot = await db
+          .collectionGroup('job_applications')
+          .where('id', '==', applicationId)
+          .limit(1)
+          .get();
+        if (!userQuerySnapshot.empty) {
+          appDoc = userQuerySnapshot.docs[0];
+          appRef = appDoc.ref;
+        }
       }
     }
 

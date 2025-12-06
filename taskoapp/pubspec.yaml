@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # UI & Navigation
   cupertino_icons: ^1.0.8
@@ -43,6 +45,7 @@ dependencies:
   # UI Components & Utils
   cached_network_image: ^3.4.1
   image_picker: ^1.1.2
+  file_picker: ^8.0.0
   permission_handler: ^11.3.1
   share_plus: ^10.0.2
   url_launcher: ^6.3.1
@@ -64,6 +67,8 @@ dependencies:
   # Development & Debug
   logger: ^2.4.0
   google_sign_in: 6.2.1
+  syncfusion_flutter_pdfviewer: ^31.1.19
+  device_info_plus: ^11.5.0
 
 dev_dependencies:
   flutter_test:

@@ -5,8 +5,13 @@ import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final Map<String, dynamic>? selectedService; // Optional: Service-Daten für Registrierung
+  final VoidCallback? onLoginSuccess; // Optional: Callback nach erfolgreichem Login
   
-  const LoginScreen({super.key, this.selectedService});
+  const LoginScreen({
+    super.key, 
+    this.selectedService,
+    this.onLoginSuccess,
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -41,8 +46,12 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       
       if (mounted) {
-        // Navigation zum Dashboard nach erfolgreichem Login
-        Navigator.of(context).pushReplacementNamed('/dashboard');
+        if (widget.onLoginSuccess != null) {
+          widget.onLoginSuccess!();
+        } else {
+          // Navigation zum Dashboard nach erfolgreichem Login
+          Navigator.of(context).pushReplacementNamed('/dashboard');
+        }
       }
     } catch (e) {
       if (mounted) {

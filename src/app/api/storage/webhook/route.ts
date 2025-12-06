@@ -189,18 +189,22 @@ export async function POST(request: NextRequest) {
               `⚠️ Company ${companyId} over limit (${currentUsage} / ${freeLimit}). Uploads/Downloads blocked. Deletion scheduled for ${deletionDate.toISOString()}`
             );
 
-            // Send warning email
+            // Send warning email - TODO: Implement StorageEmailService
             try {
-              const { StorageEmailService } = await import('@/services/storageEmailService');
-              await StorageEmailService.sendCancellationWarningEmail(
-                {
-                  email: companyData.email || companyData.contactEmail,
-                  companyName: companyData.companyName || 'Ihr Unternehmen',
-                  companyId: companyId,
-                },
-                currentUsage,
-                deletionDate
+              console.log(
+                'Would send cancellation warning email to:',
+                companyData.email || companyData.contactEmail
               );
+              // const { StorageEmailService } = await import('@/services/storageEmailService');
+              // await StorageEmailService.sendCancellationWarningEmail(
+              //   {
+              //     email: companyData.email || companyData.contactEmail,
+              //     companyName: companyData.companyName || 'Ihr Unternehmen',
+              //     companyId: companyId,
+              //   },
+              //   currentUsage,
+              //   deletionDate
+              // );
             } catch (emailError) {
               console.error('Error sending cancellation warning email:', emailError);
             }

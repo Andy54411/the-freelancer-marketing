@@ -186,6 +186,18 @@ export const JobApplicationSchema = z.object({
   coverLetter: z.string().optional(),
   status: z.enum(['pending', 'reviewed', 'interview', 'rejected', 'accepted']),
   appliedAt: z.string(), // ISO Date
+  personalData: z.record(z.any()).optional(), // Flexible for now to match Flutter
+  attachments: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        name: z.string(),
+        url: z.string(),
+        type: z.string().optional(),
+      })
+    )
+    .optional(),
+  message: z.string().optional(),
 });
 
 export type JobApplication = z.infer<typeof JobApplicationSchema>;

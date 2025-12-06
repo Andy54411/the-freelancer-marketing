@@ -10,6 +10,8 @@ class TaskiloPlaceAutocomplete extends StatefulWidget {
   final IconData? prefixIcon;
   final Function(Map<String, String>) onPlaceSelected;
   final String? Function(String?)? validator;
+  final String types;
+  final bool restrictToDach;
 
   const TaskiloPlaceAutocomplete({
     super.key,
@@ -18,6 +20,8 @@ class TaskiloPlaceAutocomplete extends StatefulWidget {
     required this.onPlaceSelected,
     this.prefixIcon,
     this.validator,
+    this.types = 'address',
+    this.restrictToDach = true,
   });
 
   @override
@@ -94,12 +98,17 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
     }
 
     try {
+      String components = '';
+      if (widget.restrictToDach) {
+        components = '&components=country:de|country:at|country:ch';
+      }
+
       final url = Uri.parse(
         'https://maps.googleapis.com/maps/api/place/autocomplete/json'
         '?input=${Uri.encodeComponent(query)}'
-        '&components=country:de|country:at|country:ch'
+        '$components'
         '&language=de'
-        '&types=address'
+        '&types=${widget.types}'
         '&key=$_apiKey'
       );
 

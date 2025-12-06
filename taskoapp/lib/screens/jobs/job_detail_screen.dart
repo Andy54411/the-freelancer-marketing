@@ -5,6 +5,7 @@ import '../../models/job_posting.dart';
 import '../../services/job_application_service.dart';
 import '../../screens/company/company_profile_screen.dart';
 import '../../screens/auth/login_screen.dart';
+import 'job_application_screen.dart';
 
 class JobDetailScreen extends StatefulWidget {
   final JobPosting job;
@@ -19,7 +20,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   final JobApplicationService _applicationService = JobApplicationService();
   bool _isCheckingStatus = true;
   bool _hasApplied = false;
-  bool _isApplying = false;
 
   @override
   void initState() {
@@ -67,80 +67,44 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         );
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
+          MaterialPageRoute(
+            builder: (context) => LoginScreen(
+              onLoginSuccess: () {
+                Navigator.pop(context, true); // Schließe Login Screen mit success=true
+              },
+            ),
+          ),
+        ).then((result) {
+          // Prüfe Status erneut wenn zurückgekehrt
+          _checkApplicationStatus();
+          
+          // Wenn Login erfolgreich war (result == true), Bewerbungsprozess fortsetzen
+          if (result == true) {
+            _handleApply();
+          }
+        });
       }
       return;
     }
 
-    setState(() {
-      _isApplying = true;
-    });
+    // Navigate to Application Screen
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => JobApplicationScreen(job: widget.job),
+      ),
+    );
 
-    try {
-      // 1. Check Profile
-      final profile = await _applicationService.getCandidateProfile();
-      if (profile == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Bitte vervollständigen Sie zuerst Ihr Kandidatenprofil auf der Website.',
-              ),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        setState(() {
-          _isApplying = false;
-        });
-        return;
-      }
-
-      // 2. Show Dialog for Cover Letter
-      if (mounted) {
-        final message = await showDialog<String>(
-          context: context,
-          builder: (context) => _ApplicationDialog(jobTitle: widget.job.title),
-        );
-
-        if (message != null) {
-          // 3. Submit Application
-          await _applicationService.applyForJob(
-            jobId: widget.job.id,
-            companyId: widget.job.companyId,
-            jobTitle: widget.job.title,
-            companyName: widget.job.companyName,
-            applicantProfile: profile,
-            message: message,
-          );
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Bewerbung erfolgreich gesendet!'),
-                backgroundColor: Colors.green,
-              ),
-            );
-            setState(() {
-              _hasApplied = true;
-            });
-          }
-        }
-      }
-    } catch (e) {
+    if (result == true) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Fehler bei der Bewerbung: $e'),
-            backgroundColor: Colors.red,
+          const SnackBar(
+            content: Text('Bewerbung erfolgreich gesendet!'),
+            backgroundColor: Colors.green,
           ),
         );
-      }
-    } finally {
-      if (mounted) {
         setState(() {
-          _isApplying = false;
+          _hasApplied = true;
         });
       }
     }
@@ -346,10 +310,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed:
-                          (_isCheckingStatus || _hasApplied || _isApplying)
-                          ? null
-                          : _handleApply,
+                      onPressed: (_isCheckingStatus || _hasApplied) ? null : _handleApply,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.teal,
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -357,24 +318,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: _isApplying
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Text(
-                              _hasApplied
-                                  ? 'Bereits beworben'
-                                  : 'Jetzt bewerben',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: Colors.white,
-                              ),
-                            ),
+                      child: Text(
+                        _hasApplied ? 'Bereits beworben' : 'Jetzt bewerben',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -428,65 +378,5 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       return 'Bis $max $currency';
     }
     return '';
-  }
-}
-
-class _ApplicationDialog extends StatefulWidget {
-  final String jobTitle;
-
-  const _ApplicationDialog({required this.jobTitle});
-
-  @override
-  State<_ApplicationDialog> createState() => _ApplicationDialogState();
-}
-
-class _ApplicationDialogState extends State<_ApplicationDialog> {
-  final TextEditingController _messageController = TextEditingController();
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Bewerbung für ${widget.jobTitle}'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Möchten Sie eine persönliche Nachricht hinzufügen?',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _messageController,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              hintText: 'Ihre Nachricht an das Unternehmen...',
-              border: OutlineInputBorder(),
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Abbrechen'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).pop(_messageController.text);
-          },
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-          child: const Text(
-            'Bewerbung absenden',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      ],
-    );
   }
 }

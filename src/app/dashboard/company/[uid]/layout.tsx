@@ -40,7 +40,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   const uid = typeof params?.uid === 'string' ? params.uid : '';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  
+
   // Sidebar Collapsed State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -238,7 +238,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         value,
         href,
         uid,
-        fullURL: href ? `/dashboard/company/${uid}/${href}` : 'NO_HREF'
+        fullURL: href ? `/dashboard/company/${uid}/${href}` : 'NO_HREF',
       });
       setIsSidebarOpen(false);
 
@@ -368,12 +368,14 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   return (
     <SidebarVisibilityProvider>
       <div className="flex flex-col min-h-screen">
-        <UserHeader currentUid={uid} />
+        <div className="print:hidden">
+          <UserHeader currentUid={uid} />
+        </div>
 
         <div className="flex flex-1">
           {/* Desktop Sidebar - Dynamic width based on collapsed state */}
-          <div 
-            className={`hidden md:block md:shrink-0 transition-all duration-300 ${
+          <div
+            className={`hidden md:block md:shrink-0 transition-all duration-300 print:hidden ${
               isSidebarCollapsed ? 'md:w-16' : 'md:w-64'
             }`}
           >
@@ -395,26 +397,26 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
           </div>
 
           {/* Mobile Sidebar */}
-          <CompanyMobileSidebar
-            isOpen={isSidebarOpen}
-            onOpenChange={setIsSidebarOpen}
-            expandedItems={expandedItems}
-            onToggleExpanded={toggleExpanded}
-            onNavigate={handleNavigation}
-            getCurrentView={getCurrentView}
-          />
+          <div className="print:hidden">
+            <CompanyMobileSidebar
+              isOpen={isSidebarOpen}
+              onOpenChange={setIsSidebarOpen}
+              expandedItems={expandedItems}
+              onToggleExpanded={toggleExpanded}
+              onNavigate={handleNavigation}
+              getCurrentView={getCurrentView}
+            />
+          </div>
 
           {/* Main Content */}
           <main className="flex-1">
             {/* Email Integration und Emails bekommen volle Breite */}
             {pathname?.includes('/email-integration') || pathname?.includes('/emails') ? (
-              <div className="h-full w-full">
-                {children}
-              </div>
+              <div className="h-full w-full">{children}</div>
             ) : (
               <div className="py-6">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-                  <div className="mb-8">
+                  <div className="mb-8 print:hidden">
                     <div className="flex items-center space-x-2">
                       <HeaderIcon className="h-6 w-6 text-gray-600" />
                       <h1 className="text-2xl font-bold text-gray-900">{getHeaderLabel()}</h1>
@@ -425,7 +427,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
                   </div>
 
                   {/* Admin Approval Status Banner */}
-                  <AdminApprovalStatus companyId={uid} className="mb-6" />
+                  <AdminApprovalStatus companyId={uid} className="mb-6 print:hidden" />
 
                   {children}
                 </div>

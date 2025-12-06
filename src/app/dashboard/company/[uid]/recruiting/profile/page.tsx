@@ -64,7 +64,7 @@ export default function CompanyProfileSettingsPage() {
   const [currentLogoUrl, setCurrentLogoUrl] = useState<string | null>(null);
   const [currentHeaderUrl, setCurrentHeaderUrl] = useState<string | null>(null);
 
-  const form = useForm<ProfileFormValues>({
+  const form = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       companyName: '',
@@ -83,7 +83,7 @@ export default function CompanyProfileSettingsPage() {
       facebook: '',
       instagram: '',
       twitter: '',
-      applicationMethod: 'taskilo',
+      applicationMethod: 'taskilo' as const,
       externalApplicationUrl: '',
     },
   });
