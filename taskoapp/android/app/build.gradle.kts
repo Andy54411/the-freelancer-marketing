@@ -29,7 +29,7 @@ android {
         applicationId = "com.tilvo.de"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 23  // Required for Firebase Auth
+        minSdk = 24  // Required for WebRTC & Firebase Auth
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

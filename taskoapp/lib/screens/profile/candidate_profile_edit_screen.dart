@@ -13,10 +13,12 @@ class CandidateProfileEditScreen extends StatefulWidget {
   const CandidateProfileEditScreen({super.key, required this.initialProfile});
 
   @override
-  State<CandidateProfileEditScreen> createState() => _CandidateProfileEditScreenState();
+  State<CandidateProfileEditScreen> createState() =>
+      _CandidateProfileEditScreenState();
 }
 
-class _CandidateProfileEditScreenState extends State<CandidateProfileEditScreen> {
+class _CandidateProfileEditScreenState
+    extends State<CandidateProfileEditScreen> {
   final JobApplicationService _service = JobApplicationService();
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
@@ -30,15 +32,25 @@ class _CandidateProfileEditScreenState extends State<CandidateProfileEditScreen>
   @override
   void initState() {
     super.initState();
-    debugPrint('CandidateProfileEditScreen: Initial Profile Data: ${widget.initialProfile}');
+    debugPrint(
+      'CandidateProfileEditScreen: Initial Profile Data: ${widget.initialProfile}',
+    );
     if (widget.initialProfile['experience'] != null) {
-      debugPrint('CandidateProfileEditScreen: Experience Data: ${widget.initialProfile['experience']}');
+      debugPrint(
+        'CandidateProfileEditScreen: Experience Data: ${widget.initialProfile['experience']}',
+      );
     }
-    
-    _experience = List<Map<String, dynamic>>.from(widget.initialProfile['experience'] ?? []);
-    _education = List<Map<String, dynamic>>.from(widget.initialProfile['education'] ?? []);
-    _languages = List<Map<String, dynamic>>.from(widget.initialProfile['languages'] ?? []);
-    
+
+    _experience = List<Map<String, dynamic>>.from(
+      widget.initialProfile['experience'] ?? [],
+    );
+    _education = List<Map<String, dynamic>>.from(
+      widget.initialProfile['education'] ?? [],
+    );
+    _languages = List<Map<String, dynamic>>.from(
+      widget.initialProfile['languages'] ?? [],
+    );
+
     var skills = widget.initialProfile['skills'];
     String skillsText = '';
     if (skills is List) {
@@ -77,16 +89,16 @@ class _CandidateProfileEditScreenState extends State<CandidateProfileEditScreen>
       await _service.updateCandidateProfile(data);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profil gespeichert')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Profil gespeichert')));
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler beim Speichern: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Fehler beim Speichern: $e')));
       }
     } finally {
       if (mounted) {
@@ -123,9 +135,8 @@ class _CandidateProfileEditScreenState extends State<CandidateProfileEditScreen>
   void _editEducation(int index) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => _EducationDialog(
-        initialData: index >= 0 ? _education[index] : null,
-      ),
+      builder: (context) =>
+          _EducationDialog(initialData: index >= 0 ? _education[index] : null),
     );
 
     if (result != null) {
@@ -148,9 +159,8 @@ class _CandidateProfileEditScreenState extends State<CandidateProfileEditScreen>
   void _editLanguage(int index) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => _LanguageDialog(
-        initialData: index >= 0 ? _languages[index] : null,
-      ),
+      builder: (context) =>
+          _LanguageDialog(initialData: index >= 0 ? _languages[index] : null),
     );
 
     if (result != null) {
@@ -179,9 +189,16 @@ class _CandidateProfileEditScreenState extends State<CandidateProfileEditScreen>
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: _isSaving 
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : const Icon(Icons.save),
+            icon: _isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.save),
             onPressed: _isSaving ? null : _save,
           ),
         ],
@@ -195,7 +212,10 @@ class _CandidateProfileEditScreenState extends State<CandidateProfileEditScreen>
             if (_experience.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(8.0),
-                child: Text('Keine Berufserfahrung eingetragen.', style: TextStyle(color: Colors.grey)),
+                child: Text(
+                  'Keine Berufserfahrung eingetragen.',
+                  style: TextStyle(color: Colors.grey),
+                ),
               )
             else
               ..._experience.asMap().entries.map((entry) {
@@ -204,17 +224,29 @@ class _CandidateProfileEditScreenState extends State<CandidateProfileEditScreen>
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     title: Text(exp['title'] ?? 'Kein Titel'),
-                    subtitle: Text('${exp['company'] ?? ''} • ${exp['startDate'] ?? ''}'),
+                    subtitle: Text(
+                      '${exp['company'] ?? ''} • ${exp['startDate'] ?? ''}',
+                    ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (exp['certificateUrl'] != null)
                           const Padding(
                             padding: EdgeInsets.only(right: 8.0),
-                            child: Icon(Icons.description, color: Colors.teal, size: 20),
+                            child: Icon(
+                              Icons.description,
+                              color: Colors.teal,
+                              size: 20,
+                            ),
                           ),
-                        IconButton(icon: const Icon(Icons.edit, color: Colors.teal), onPressed: () => _editExperience(entry.key)),
-                        IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deleteExperience(entry.key)),
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.teal),
+                          onPressed: () => _editExperience(entry.key),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _deleteExperience(entry.key),
+                        ),
                       ],
                     ),
                   ),
@@ -226,7 +258,10 @@ class _CandidateProfileEditScreenState extends State<CandidateProfileEditScreen>
             if (_education.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(8.0),
-                child: Text('Kein Bildungsweg eingetragen.', style: TextStyle(color: Colors.grey)),
+                child: Text(
+                  'Kein Bildungsweg eingetragen.',
+                  style: TextStyle(color: Colors.grey),
+                ),
               )
             else
               ..._education.asMap().entries.map((entry) {
@@ -235,17 +270,29 @@ class _CandidateProfileEditScreenState extends State<CandidateProfileEditScreen>
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     title: Text(edu['degree'] ?? 'Kein Abschluss'),
-                    subtitle: Text('${edu['institution'] ?? ''} • ${edu['startDate'] ?? ''}'),
+                    subtitle: Text(
+                      '${edu['institution'] ?? ''} • ${edu['startDate'] ?? ''}',
+                    ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (edu['certificateUrl'] != null)
                           const Padding(
                             padding: EdgeInsets.only(right: 8.0),
-                            child: Icon(Icons.description, color: Colors.teal, size: 20),
+                            child: Icon(
+                              Icons.description,
+                              color: Colors.teal,
+                              size: 20,
+                            ),
                           ),
-                        IconButton(icon: const Icon(Icons.edit, color: Colors.teal), onPressed: () => _editEducation(entry.key)),
-                        IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deleteEducation(entry.key)),
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.teal),
+                          onPressed: () => _editEducation(entry.key),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _deleteEducation(entry.key),
+                        ),
                       ],
                     ),
                   ),
@@ -257,7 +304,10 @@ class _CandidateProfileEditScreenState extends State<CandidateProfileEditScreen>
             if (_languages.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(8.0),
-                child: Text('Keine Sprachkenntnisse eingetragen.', style: TextStyle(color: Colors.grey)),
+                child: Text(
+                  'Keine Sprachkenntnisse eingetragen.',
+                  style: TextStyle(color: Colors.grey),
+                ),
               )
             else
               ..._languages.asMap().entries.map((entry) {
@@ -270,8 +320,14 @@ class _CandidateProfileEditScreenState extends State<CandidateProfileEditScreen>
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(icon: const Icon(Icons.edit, color: Colors.teal), onPressed: () => _editLanguage(entry.key)),
-                        IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deleteLanguage(entry.key)),
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.teal),
+                          onPressed: () => _editLanguage(entry.key),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _deleteLanguage(entry.key),
+                        ),
                       ],
                     ),
                   ),
@@ -279,7 +335,10 @@ class _CandidateProfileEditScreenState extends State<CandidateProfileEditScreen>
               }),
 
             const SizedBox(height: 24),
-            const Text('Fachkenntnisse', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              'Fachkenntnisse',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _skillsController,
@@ -300,7 +359,10 @@ class _CandidateProfileEditScreenState extends State<CandidateProfileEditScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
         IconButton(
           icon: const Icon(Icons.add_circle, color: Colors.teal),
           onPressed: onAdd,
@@ -327,7 +389,7 @@ class _ExperienceDialogState extends State<_ExperienceDialog> {
   late TextEditingController _startDateController;
   late TextEditingController _endDateController;
   late TextEditingController _descriptionController;
-  
+
   String? _certificateUrl;
   String? _certificateName;
   bool _isUploading = false;
@@ -335,17 +397,30 @@ class _ExperienceDialogState extends State<_ExperienceDialog> {
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.initialData?['title']);
-    _companyController = TextEditingController(text: widget.initialData?['company']);
-    _locationController = TextEditingController(text: widget.initialData?['location']);
-    _startDateController = TextEditingController(text: widget.initialData?['startDate']);
-    _endDateController = TextEditingController(text: widget.initialData?['endDate']);
-    _descriptionController = TextEditingController(text: widget.initialData?['description']);
+    _titleController = TextEditingController(
+      text: widget.initialData?['title'],
+    );
+    _companyController = TextEditingController(
+      text: widget.initialData?['company'],
+    );
+    _locationController = TextEditingController(
+      text: widget.initialData?['location'],
+    );
+    _startDateController = TextEditingController(
+      text: widget.initialData?['startDate'],
+    );
+    _endDateController = TextEditingController(
+      text: widget.initialData?['endDate'],
+    );
+    _descriptionController = TextEditingController(
+      text: widget.initialData?['description'],
+    );
     _certificateUrl = widget.initialData?['certificateUrl'];
     _certificateName = widget.initialData?['fileName'];
-    
+
     // Fallback: Wenn URL da ist, aber kein Name
-    if (_certificateUrl != null && (_certificateName == null || _certificateName!.isEmpty)) {
+    if (_certificateUrl != null &&
+        (_certificateName == null || _certificateName!.isEmpty)) {
       _certificateName = 'Vorhandenes Zeugnis';
     }
   }
@@ -359,18 +434,18 @@ class _ExperienceDialogState extends State<_ExperienceDialog> {
 
       if (result != null) {
         setState(() => _isUploading = true);
-        
+
         final file = File(result.files.single.path!);
         final fileName = result.files.single.name;
         final user = FirebaseAuth.instance.currentUser;
-        
+
         if (user == null) throw Exception('Nicht eingeloggt');
 
         // Upload to Firebase Storage
-        final ref = FirebaseStorage.instance
-            .ref()
-            .child('users/${user.uid}/certificates/${DateTime.now().millisecondsSinceEpoch}_$fileName');
-            
+        final ref = FirebaseStorage.instance.ref().child(
+          'users/${user.uid}/certificates/${DateTime.now().millisecondsSinceEpoch}_$fileName',
+        );
+
         await ref.putFile(file);
         final url = await ref.getDownloadURL();
 
@@ -383,14 +458,17 @@ class _ExperienceDialogState extends State<_ExperienceDialog> {
     } catch (e) {
       setState(() => _isUploading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler beim Upload: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Fehler beim Upload: $e')));
       }
     }
   }
 
-  Future<void> _selectDate(BuildContext context, TextEditingController controller) async {
+  Future<void> _selectDate(
+    BuildContext context,
+    TextEditingController controller,
+  ) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -400,7 +478,8 @@ class _ExperienceDialogState extends State<_ExperienceDialog> {
     );
     if (picked != null) {
       setState(() {
-        controller.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+        controller.text =
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       });
     }
   }
@@ -408,7 +487,11 @@ class _ExperienceDialogState extends State<_ExperienceDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.initialData == null ? 'Erfahrung hinzufügen' : 'Erfahrung bearbeiten'),
+      title: Text(
+        widget.initialData == null
+            ? 'Erfahrung hinzufügen'
+            : 'Erfahrung bearbeiten',
+      ),
       content: SizedBox(
         width: double.maxFinite,
         child: SingleChildScrollView(
@@ -417,116 +500,153 @@ class _ExperienceDialogState extends State<_ExperienceDialog> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-              TextFormField(controller: _titleController, decoration: const InputDecoration(labelText: 'Position'), validator: (v) => v!.isEmpty ? 'Pflichtfeld' : null),
-              const SizedBox(height: 16),
-              TaskiloPlaceAutocomplete(
-                controller: _companyController,
-                labelText: 'Firma',
-                types: 'establishment',
-                restrictToDach: false,
-                onPlaceSelected: (place) {},
-                validator: (v) => v!.isEmpty ? 'Pflichtfeld' : null,
-              ),
-              const SizedBox(height: 16),
-              TaskiloPlaceAutocomplete(
-                controller: _locationController,
-                labelText: 'Ort',
-                types: '(cities)',
-                restrictToDach: false,
-                onPlaceSelected: (place) {},
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _startDateController,
-                decoration: const InputDecoration(
-                  labelText: 'Start (YYYY-MM-DD)',
-                  suffixIcon: Icon(Icons.calendar_today),
+                TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(labelText: 'Position'),
+                  validator: (v) => v!.isEmpty ? 'Pflichtfeld' : null,
                 ),
-                readOnly: true,
-                onTap: () => _selectDate(context, _startDateController),
-                validator: (v) => v!.isEmpty ? 'Pflichtfeld' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _endDateController,
-                decoration: const InputDecoration(
-                  labelText: 'Ende (YYYY-MM-DD) - Leer für Aktuell',
-                  suffixIcon: Icon(Icons.calendar_today),
+                const SizedBox(height: 16),
+                TaskiloPlaceAutocomplete(
+                  controller: _companyController,
+                  labelText: 'Firma',
+                  types: 'establishment',
+                  restrictToDach: false,
+                  onPlaceSelected: (place) {},
+                  validator: (v) => v!.isEmpty ? 'Pflichtfeld' : null,
                 ),
-                readOnly: true,
-                onTap: () => _selectDate(context, _endDateController),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(controller: _descriptionController, decoration: const InputDecoration(labelText: 'Beschreibung'), maxLines: 3),
-              const SizedBox(height: 24),
-              
-              // Certificate Upload
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Arbeitszeugnis', style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        if (_certificateUrl != null)
-                          Row(
-                            children: [
-                              const Icon(Icons.check_circle, color: Colors.teal, size: 16),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  _certificateName ?? 'Zeugnis vorhanden',
-                                  style: const TextStyle(color: Colors.teal),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.visibility, color: Colors.teal, size: 20),
-                                onPressed: () {
-                                  if (_certificateUrl != null) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => FileViewerScreen(
-                                          url: _certificateUrl!,
-                                          fileName: _certificateName ?? 'Dokument',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                },
-                                tooltip: 'Ansehen',
-                              ),
-                            ],
-                          )
-                        else
-                          const Text('Kein Zeugnis ausgewählt', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                      ],
-                    ),
+                const SizedBox(height: 16),
+                TaskiloPlaceAutocomplete(
+                  controller: _locationController,
+                  labelText: 'Ort',
+                  types: '(cities)',
+                  restrictToDach: false,
+                  onPlaceSelected: (place) {},
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _startDateController,
+                  decoration: const InputDecoration(
+                    labelText: 'Start (YYYY-MM-DD)',
+                    suffixIcon: Icon(Icons.calendar_today),
                   ),
-                  if (_isUploading)
-                    const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                  else
-                    ElevatedButton.icon(
-                      onPressed: _pickAndUploadFile,
-                      icon: const Icon(Icons.upload_file, size: 18),
-                      label: Text(_certificateUrl != null ? 'Ändern' : 'Upload'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade100,
-                        foregroundColor: Colors.black87,
-                        elevation: 0,
+                  readOnly: true,
+                  onTap: () => _selectDate(context, _startDateController),
+                  validator: (v) => v!.isEmpty ? 'Pflichtfeld' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _endDateController,
+                  decoration: const InputDecoration(
+                    labelText: 'Ende (YYYY-MM-DD) - Leer für Aktuell',
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                  readOnly: true,
+                  onTap: () => _selectDate(context, _endDateController),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(labelText: 'Beschreibung'),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 24),
+
+                // Certificate Upload
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Arbeitszeugnis',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          if (_certificateUrl != null)
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.teal,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    _certificateName ?? 'Zeugnis vorhanden',
+                                    style: const TextStyle(color: Colors.teal),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.visibility,
+                                    color: Colors.teal,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    if (_certificateUrl != null) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              FileViewerScreen(
+                                                url: _certificateUrl!,
+                                                fileName:
+                                                    _certificateName ??
+                                                    'Dokument',
+                                              ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  tooltip: 'Ansehen',
+                                ),
+                              ],
+                            )
+                          else
+                            const Text(
+                              'Kein Zeugnis ausgewählt',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                ],
-              ),
-            ],
+                    if (_isUploading)
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    else
+                      ElevatedButton.icon(
+                        onPressed: _pickAndUploadFile,
+                        icon: const Icon(Icons.upload_file, size: 18),
+                        label: Text(
+                          _certificateUrl != null ? 'Ändern' : 'Upload',
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade100,
+                          foregroundColor: Colors.black87,
+                          elevation: 0,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Abbrechen')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Abbrechen'),
+        ),
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
@@ -574,16 +694,29 @@ class _EducationDialogState extends State<_EducationDialog> {
   @override
   void initState() {
     super.initState();
-    _degreeController = TextEditingController(text: widget.initialData?['degree']);
-    _institutionController = TextEditingController(text: widget.initialData?['institution']);
-    _locationController = TextEditingController(text: widget.initialData?['location']);
-    _startDateController = TextEditingController(text: widget.initialData?['startDate']);
-    _endDateController = TextEditingController(text: widget.initialData?['endDate']);
-    _descriptionController = TextEditingController(text: widget.initialData?['description']);
+    _degreeController = TextEditingController(
+      text: widget.initialData?['degree'],
+    );
+    _institutionController = TextEditingController(
+      text: widget.initialData?['institution'],
+    );
+    _locationController = TextEditingController(
+      text: widget.initialData?['location'],
+    );
+    _startDateController = TextEditingController(
+      text: widget.initialData?['startDate'],
+    );
+    _endDateController = TextEditingController(
+      text: widget.initialData?['endDate'],
+    );
+    _descriptionController = TextEditingController(
+      text: widget.initialData?['description'],
+    );
     _certificateUrl = widget.initialData?['certificateUrl'];
     _certificateName = widget.initialData?['fileName'];
 
-    if (_certificateUrl != null && (_certificateName == null || _certificateName!.isEmpty)) {
+    if (_certificateUrl != null &&
+        (_certificateName == null || _certificateName!.isEmpty)) {
       _certificateName = 'Vorhandenes Zeugnis';
     }
   }
@@ -597,18 +730,18 @@ class _EducationDialogState extends State<_EducationDialog> {
 
       if (result != null) {
         setState(() => _isUploading = true);
-        
+
         final file = File(result.files.single.path!);
         final fileName = result.files.single.name;
         final user = FirebaseAuth.instance.currentUser;
-        
+
         if (user == null) throw Exception('Nicht eingeloggt');
 
         // Upload to Firebase Storage
-        final ref = FirebaseStorage.instance
-            .ref()
-            .child('users/${user.uid}/certificates/${DateTime.now().millisecondsSinceEpoch}_$fileName');
-            
+        final ref = FirebaseStorage.instance.ref().child(
+          'users/${user.uid}/certificates/${DateTime.now().millisecondsSinceEpoch}_$fileName',
+        );
+
         await ref.putFile(file);
         final url = await ref.getDownloadURL();
 
@@ -621,14 +754,17 @@ class _EducationDialogState extends State<_EducationDialog> {
     } catch (e) {
       setState(() => _isUploading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler beim Upload: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Fehler beim Upload: $e')));
       }
     }
   }
 
-  Future<void> _selectDate(BuildContext context, TextEditingController controller) async {
+  Future<void> _selectDate(
+    BuildContext context,
+    TextEditingController controller,
+  ) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -638,7 +774,8 @@ class _EducationDialogState extends State<_EducationDialog> {
     );
     if (picked != null) {
       setState(() {
-        controller.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+        controller.text =
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       });
     }
   }
@@ -646,7 +783,11 @@ class _EducationDialogState extends State<_EducationDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.initialData == null ? 'Bildungsweg hinzufügen' : 'Bildungsweg bearbeiten'),
+      title: Text(
+        widget.initialData == null
+            ? 'Bildungsweg hinzufügen'
+            : 'Bildungsweg bearbeiten',
+      ),
       content: SizedBox(
         width: double.maxFinite,
         child: SingleChildScrollView(
@@ -655,116 +796,153 @@ class _EducationDialogState extends State<_EducationDialog> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-              TextFormField(controller: _degreeController, decoration: const InputDecoration(labelText: 'Abschluss'), validator: (v) => v!.isEmpty ? 'Pflichtfeld' : null),
-              const SizedBox(height: 16),
-              TaskiloPlaceAutocomplete(
-                controller: _institutionController,
-                labelText: 'Institution',
-                types: 'establishment',
-                restrictToDach: false,
-                onPlaceSelected: (place) {},
-                validator: (v) => v!.isEmpty ? 'Pflichtfeld' : null,
-              ),
-              const SizedBox(height: 16),
-              TaskiloPlaceAutocomplete(
-                controller: _locationController,
-                labelText: 'Ort',
-                types: '(cities)',
-                restrictToDach: false,
-                onPlaceSelected: (place) {},
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _startDateController,
-                decoration: const InputDecoration(
-                  labelText: 'Start (YYYY-MM-DD)',
-                  suffixIcon: Icon(Icons.calendar_today),
+                TextFormField(
+                  controller: _degreeController,
+                  decoration: const InputDecoration(labelText: 'Abschluss'),
+                  validator: (v) => v!.isEmpty ? 'Pflichtfeld' : null,
                 ),
-                readOnly: true,
-                onTap: () => _selectDate(context, _startDateController),
-                validator: (v) => v!.isEmpty ? 'Pflichtfeld' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _endDateController,
-                decoration: const InputDecoration(
-                  labelText: 'Ende (YYYY-MM-DD) - Leer für Aktuell',
-                  suffixIcon: Icon(Icons.calendar_today),
+                const SizedBox(height: 16),
+                TaskiloPlaceAutocomplete(
+                  controller: _institutionController,
+                  labelText: 'Institution',
+                  types: 'establishment',
+                  restrictToDach: false,
+                  onPlaceSelected: (place) {},
+                  validator: (v) => v!.isEmpty ? 'Pflichtfeld' : null,
                 ),
-                readOnly: true,
-                onTap: () => _selectDate(context, _endDateController),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(controller: _descriptionController, decoration: const InputDecoration(labelText: 'Beschreibung'), maxLines: 3),
-              const SizedBox(height: 24),
-              
-              // Certificate Upload
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Zeugnis / Zertifikat', style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        if (_certificateUrl != null)
-                          Row(
-                            children: [
-                              const Icon(Icons.check_circle, color: Colors.teal, size: 16),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  _certificateName ?? 'Zeugnis vorhanden',
-                                  style: const TextStyle(color: Colors.teal),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.visibility, color: Colors.teal, size: 20),
-                                onPressed: () {
-                                  if (_certificateUrl != null) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => FileViewerScreen(
-                                          url: _certificateUrl!,
-                                          fileName: _certificateName ?? 'Dokument',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                },
-                                tooltip: 'Ansehen',
-                              ),
-                            ],
-                          )
-                        else
-                          const Text('Kein Zeugnis ausgewählt', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                      ],
-                    ),
+                const SizedBox(height: 16),
+                TaskiloPlaceAutocomplete(
+                  controller: _locationController,
+                  labelText: 'Ort',
+                  types: '(cities)',
+                  restrictToDach: false,
+                  onPlaceSelected: (place) {},
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _startDateController,
+                  decoration: const InputDecoration(
+                    labelText: 'Start (YYYY-MM-DD)',
+                    suffixIcon: Icon(Icons.calendar_today),
                   ),
-                  if (_isUploading)
-                    const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                  else
-                    ElevatedButton.icon(
-                      onPressed: _pickAndUploadFile,
-                      icon: const Icon(Icons.upload_file, size: 18),
-                      label: Text(_certificateUrl != null ? 'Ändern' : 'Upload'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade100,
-                        foregroundColor: Colors.black87,
-                        elevation: 0,
+                  readOnly: true,
+                  onTap: () => _selectDate(context, _startDateController),
+                  validator: (v) => v!.isEmpty ? 'Pflichtfeld' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _endDateController,
+                  decoration: const InputDecoration(
+                    labelText: 'Ende (YYYY-MM-DD) - Leer für Aktuell',
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                  readOnly: true,
+                  onTap: () => _selectDate(context, _endDateController),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(labelText: 'Beschreibung'),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 24),
+
+                // Certificate Upload
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Zeugnis / Zertifikat',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          if (_certificateUrl != null)
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.teal,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    _certificateName ?? 'Zeugnis vorhanden',
+                                    style: const TextStyle(color: Colors.teal),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.visibility,
+                                    color: Colors.teal,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    if (_certificateUrl != null) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              FileViewerScreen(
+                                                url: _certificateUrl!,
+                                                fileName:
+                                                    _certificateName ??
+                                                    'Dokument',
+                                              ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  tooltip: 'Ansehen',
+                                ),
+                              ],
+                            )
+                          else
+                            const Text(
+                              'Kein Zeugnis ausgewählt',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                ],
-              ),
-            ],
+                    if (_isUploading)
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    else
+                      ElevatedButton.icon(
+                        onPressed: _pickAndUploadFile,
+                        icon: const Icon(Icons.upload_file, size: 18),
+                        label: Text(
+                          _certificateUrl != null ? 'Ändern' : 'Upload',
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade100,
+                          foregroundColor: Colors.black87,
+                          elevation: 0,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Abbrechen')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Abbrechen'),
+        ),
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
@@ -806,14 +984,17 @@ class _LanguageDialogState extends State<_LanguageDialog> {
     'Gut',
     'Fließend',
     'Verhandlungssicher',
-    'Muttersprache'
+    'Muttersprache',
   ];
 
   @override
   void initState() {
     super.initState();
-    _languageController = TextEditingController(text: widget.initialData?['language']);
-    if (widget.initialData?['level'] != null && _levels.contains(widget.initialData!['level'])) {
+    _languageController = TextEditingController(
+      text: widget.initialData?['language'],
+    );
+    if (widget.initialData?['level'] != null &&
+        _levels.contains(widget.initialData!['level'])) {
       _level = widget.initialData!['level'];
     }
   }
@@ -821,7 +1002,11 @@ class _LanguageDialogState extends State<_LanguageDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.initialData == null ? 'Sprache hinzufügen' : 'Sprache bearbeiten'),
+      title: Text(
+        widget.initialData == null
+            ? 'Sprache hinzufügen'
+            : 'Sprache bearbeiten',
+      ),
       content: Form(
         key: _formKey,
         child: Column(
@@ -834,16 +1019,21 @@ class _LanguageDialogState extends State<_LanguageDialog> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _level,
+              initialValue: _level,
               decoration: const InputDecoration(labelText: 'Niveau'),
-              items: _levels.map((l) => DropdownMenuItem(value: l, child: Text(l))).toList(),
+              items: _levels
+                  .map((l) => DropdownMenuItem(value: l, child: Text(l)))
+                  .toList(),
               onChanged: (v) => setState(() => _level = v!),
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Abbrechen')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Abbrechen'),
+        ),
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {

@@ -100,10 +100,7 @@ class TaskiloApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        supportedLocales: const [
-          Locale('de', 'DE'),
-          Locale('en', 'US'),
-        ],
+        supportedLocales: const [Locale('de', 'DE'), Locale('en', 'US')],
         // 🎯 KOMPLETTE DEBUG-DEAKTIVIERUNG
         showPerformanceOverlay: false, // Keine Performance-Overlays
         showSemanticsDebugger: false, // Keine Accessibility-Debug-Anzeigen

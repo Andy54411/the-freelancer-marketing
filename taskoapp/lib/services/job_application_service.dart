@@ -54,21 +54,25 @@ class JobApplicationService {
           .get();
 
       if (query.docs.isNotEmpty) {
-        debugPrint('JobApplicationService: Found fallback profile document: ${query.docs.first.id}');
+        debugPrint(
+          'JobApplicationService: Found fallback profile document: ${query.docs.first.id}',
+        );
         return query.docs.first.data();
       }
 
-      debugPrint('JobApplicationService: No candidate_profile found. Checking user profile...');
+      debugPrint(
+        'JobApplicationService: No candidate_profile found. Checking user profile...',
+      );
 
       // 3. Fallback: Basic user profile
       final userDoc = await _db.collection('users').doc(user.uid).get();
       if (userDoc.exists && userDoc.data() != null) {
         final userData = userDoc.data()!;
         if (userData.containsKey('profile')) {
-           debugPrint('JobApplicationService: Found basic user profile');
-           // Map basic profile to expected structure if needed, or just return it
-           // The screen handles missing fields gracefully
-           return userData['profile'] as Map<String, dynamic>;
+          debugPrint('JobApplicationService: Found basic user profile');
+          // Map basic profile to expected structure if needed, or just return it
+          // The screen handles missing fields gracefully
+          return userData['profile'] as Map<String, dynamic>;
         }
       }
 
@@ -104,6 +108,57 @@ class JobApplicationService {
         .get();
 
     return query.docs.isNotEmpty;
+  }
+
+  Future<List<Map<String, dynamic>>> getUserApplications() async {
+    final user = _auth.currentUser;
+    if (user == null) return [];
+
+    final query = await _db
+        .collection('users')
+        .doc(user.uid)
+        .collection('job_applications')
+        .orderBy('appliedAt', descending: true)
+        .get();
+
+    return query.docs.map((doc) => doc.data()).toList();
+  }
+
+  Future<void> acceptInterviewSlot(
+    String applicationId,
+    String companyId,
+    String slot, {
+    String? meetingType,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('User not logged in');
+
+    final updateData = {
+      'status': 'interview_accepted',
+      'acceptedSlot': slot,
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+
+    // 🎯 Meeting-Typ hinzufügen falls gewählt
+    if (meetingType != null) {
+      updateData['acceptedMeetingType'] = meetingType;
+    }
+
+    // Update User Subcollection
+    await _db
+        .collection('users')
+        .doc(user.uid)
+        .collection('job_applications')
+        .doc(applicationId)
+        .update(updateData);
+
+    // Update Company Subcollection
+    await _db
+        .collection('companies')
+        .doc(companyId)
+        .collection('jobApplications')
+        .doc(applicationId)
+        .update(updateData);
   }
 
   Future<void> applyForJob({

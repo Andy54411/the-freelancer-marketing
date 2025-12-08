@@ -43,6 +43,10 @@
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Wir benötigen Zugriff auf Ihre Kamera für Video-Calls.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Wir benötigen Zugriff auf Ihr Mikrofon für Video-Calls.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 </dict>

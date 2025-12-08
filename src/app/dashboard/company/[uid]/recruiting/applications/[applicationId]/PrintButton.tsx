@@ -43,27 +43,15 @@ export function PrintButton() {
   };
 
   return (
-    <div className="flex gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => window.print()}
-        title="Nur Bewerbung drucken"
-        className="border-[#14ad9f]/30 bg-[#14ad9f]/5 hover:bg-[#14ad9f]/10 print:hidden"
-      >
-        <Printer className="h-4 w-4 text-[#14ad9f] mr-1" />
-        Drucken
-      </Button>
-      <Button
-        variant="default"
-        size="sm"
-        onClick={handlePrintAndDownload}
-        title="PDFs herunterladen + Bewerbung drucken"
-        className="bg-[#14ad9f] hover:bg-[#14ad9f]/90 print:hidden"
-      >
-        <Download className="h-4 w-4 mr-1" />
-        Download + Druck
-      </Button>
-    </div>
+    <Button
+      variant="default"
+      size="sm"
+      onClick={handlePrintAndDownload}
+      title="PDFs herunterladen + Bewerbung drucken"
+      className="bg-[#14ad9f] hover:bg-[#14ad9f]/90 print:hidden"
+    >
+      <Download className="h-4 w-4 mr-1" />
+      Download + Druck
+    </Button>
   );
 }

@@ -18,6 +18,8 @@ import {
 } from 'firebase/firestore';
 import ChatComponent from '@/components/ChatComponent';
 import DirectChatComponent from '@/components/DirectChatComponent';
+import VideoCallRequestNotification from '@/components/VideoCallRequestNotification';
+import TaskiloVideoCall from '@/components/video/TaskiloVideoCall';
 import Image from 'next/image';
 
 // --- Interfaces ---
@@ -47,6 +49,10 @@ export default function CompanyInboxPage() {
 
   const [chats, setChats] = useState<ChatPreview[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  
+  // Video Call State
+  const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
+  const [videoCallData, setVideoCallData] = useState<{chatId: string, userId: string, userName: string} | null>(null);
   const [loadingChats, setLoadingChats] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrderStatus, setSelectedOrderStatus] = useState<string | null>(null);
@@ -366,7 +372,27 @@ export default function CompanyInboxPage() {
             <FiInbox className="mr-3" /> Posteingang
           </h1>
         </div>
-        <div className="overflow-y-auto flex-grow">
+        <div className="overflow-y-auto grow">
+          {/* Video Call Request Notifications */}
+          {currentUser?.uid && (
+            <div className="p-4">
+              <VideoCallRequestNotification
+                companyId={currentUser.uid}
+                chatIds={chats.map(c => getRealChatId(c.id))}
+                onRequestHandled={(request, action) => {
+                  console.log(`Video call request ${request.requestId} ${action}`);
+                  if (action === 'approved') {
+                    setVideoCallData({
+                      chatId: request.chatId,
+                      userId: currentUser.uid,
+                      userName: currentUser.companyName || `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email || 'Company',
+                    });
+                    setIsVideoCallOpen(true);
+                  }
+                }}
+              />
+            </div>
+          )}
           {chats.length > 0 ? (
             <ul>
               {chats.map((chat, index) => (
@@ -456,6 +482,21 @@ export default function CompanyInboxPage() {
           </div>
         )}
       </main>
+
+      {/* Video Call Modal */}
+      {videoCallData && (
+        <TaskiloVideoCall
+          chatId={videoCallData.chatId}
+          userId={videoCallData.userId}
+          userName={videoCallData.userName}
+          isInitiator={true}
+          isOpen={isVideoCallOpen}
+          onClose={() => {
+            setIsVideoCallOpen(false);
+            setVideoCallData(null);
+          }}
+        />
+      )}
     </div>
   );
 }

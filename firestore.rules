@@ -423,14 +423,22 @@ service cloud.firestore {
     match /chats/{chatId} {
       // Ein Benutzer kann einen Chat lesen, wenn er Teilnehmer ist.
       // Ein Admin/Support-Mitarbeiter kann jeden Chat lesen oder auflisten.
-      allow read: if (request.auth.uid in resource.data.users) || isSupportStaff();
+      // FIX: Erlaube 'get' auch wenn das Dokument nicht existiert (resource == null),
+      // damit Clients prüfen können, ob ein Chat erstellt werden muss.
+      allow get: if request.auth != null && (
+        resource == null || 
+        isSupportStaff() ||
+        (resource.data.users is list && request.auth.uid in resource.data.users)
+      );
       
-      // ERWEITERT: Erlaubt Benutzern ihre eigenen Chats abzufragen für Metriken-Berechnung
+      // ERWEITERT: Erlaubt Benutzern ihre eigenen Chats abzufragen
+      // FIX: Prüfe auf 'users' Array um Fehler zu vermeiden
       allow list: if isSupportStaff() || 
-                     (request.auth != null && request.query.limit <= 100);
+                     (request.auth != null && 
+                      (resource.data.users is list && request.auth.uid in resource.data.users));
 
       // Allow users to create and update their own chats
-      allow write: if request.auth.uid in resource.data.users;
+      allow update, delete: if request.auth.uid in resource.data.users;
       allow create: if request.auth.uid in request.resource.data.users;
     }
 
@@ -446,13 +454,19 @@ service cloud.firestore {
       allow get: if canReadMessage();
       // KORREKTUR: Für 'list' (Abfragen) ist 'resource' nicht verfügbar.
       // Wir müssen die Berechtigung über einen 'get'-Aufruf auf das Elterndokument prüfen.
+      // UPDATE: Erlaube Zugriff auch wenn das Chat-Dokument noch nicht existiert (Initialisierung),
+      // da sonst der Listener fehlschlägt bevor der Chat erstellt wurde.
+      // ROBUSTHEIT: Prüfe explizit auf Existenz des 'users' Feldes, um Abstürze zu vermeiden.
       allow list: if request.auth != null
-                   && exists(/databases/$(database)/documents/chats/$(chatId))
-                   // KORREKTUR: Prüfe, ob 'users' ein Array (list) ist, bevor darauf zugegriffen wird.
-                   // Dies ist sicherer als `('users' in ...)` und verhindert Auswertungsfehler,
-                   // falls das Feld nicht existiert oder kein Array ist.
-                   && get(/databases/$(database)/documents/chats/$(chatId)).data.users is list
-                   && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.users;
+                   && (
+                     !exists(/databases/$(database)/documents/chats/$(chatId)) ||
+                     (
+                       exists(/databases/$(database)/documents/chats/$(chatId)) &&
+                       'users' in get(/databases/$(database)/documents/chats/$(chatId)).data &&
+                       get(/databases/$(database)/documents/chats/$(chatId)).data.users is list &&
+                       request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.users
+                     )
+                   );
       allow create: if canCreateMessage([
         "senderId", "text", "timestamp", "chatUsers"
       ]);

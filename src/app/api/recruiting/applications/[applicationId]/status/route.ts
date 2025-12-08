@@ -8,7 +8,16 @@ export async function PATCH(
   try {
     const { applicationId } = await params;
     const body = await request.json();
-    const { status, companyId: providedCompanyId } = body;
+    const { 
+      status, 
+      companyId: providedCompanyId, 
+      interviewSlots, 
+      message, 
+      isVideoCall, 
+      videoLink,
+      meetingType,
+      allowCandidateChoice 
+    } = body;
 
     if (!status) {
       return NextResponse.json({ error: 'Status required' }, { status: 400 });
@@ -72,31 +81,69 @@ export async function PATCH(
     const applicantId = appData?.applicantId;
     const companyId = appData?.companyId;
 
-    const updateData = {
+    const updateData: any = {
       status,
       updatedAt: new Date().toISOString(),
     };
 
-    // Update User Subcollection
-    if (applicantId) {
-      await db
-        .collection('users')
-        .doc(applicantId)
-        .collection('job_applications')
-        .doc(applicationId)
-        .update(updateData)
-        .catch(e => console.warn('Failed to update user app copy', e));
+    if (interviewSlots) {
+      updateData.interviewSlots = interviewSlots;
+      // Optional: Add a flag to trigger email notification cloud function
+      updateData.interviewInviteSent = false; 
     }
 
-    // Update Company Subcollection
-    if (companyId) {
-      await db
-        .collection('companies')
-        .doc(companyId)
-        .collection('jobApplications')
-        .doc(applicationId)
-        .update(updateData)
-        .catch(e => console.warn('Failed to update company app copy', e));
+    if (message) {
+      updateData.interviewMessage = message;
+    }
+
+    // 🎯 Meeting-Typ-Daten erweitern
+    if (typeof isVideoCall === 'boolean') {
+      updateData.isVideoCall = isVideoCall;
+    }
+
+    if (videoLink) {
+      updateData.videoLink = videoLink;
+    }
+
+    // 🎯 Neue Meeting-Typ Felder
+    if (meetingType) {
+      updateData.meetingType = meetingType;
+    }
+
+    if (typeof allowCandidateChoice === 'boolean') {
+      updateData.allowCandidateChoice = allowCandidateChoice;
+    }
+
+    // 1. Update the document we actually found (Source of Truth for this read)
+    if (appRef) {
+      await appRef.update(updateData).catch(e => console.warn('Failed to update source doc', e));
+    }
+
+    // 2. Sync to the other side
+    
+    // If source was User, sync to Company
+    if (appRef && appRef.path.includes('/users/')) {
+        if (companyId) {
+             const camelRef = db.collection('companies').doc(companyId).collection('jobApplications').doc(applicationId);
+             const snakeRef = db.collection('companies').doc(companyId).collection('job_applications').doc(applicationId);
+             try {
+                await camelRef.update(updateData);
+             } catch {
+                await snakeRef.update(updateData).catch(e => console.warn('Failed to sync to company snake_case', e));
+             }
+        }
+    }
+    
+    // If source was Company, sync to User
+    else if (appRef && appRef.path.includes('/companies/')) {
+        if (applicantId) {
+            await db.collection('users').doc(applicantId).collection('job_applications').doc(applicationId)
+                .update(updateData).catch(e => console.warn('Failed to sync to user', e));
+        }
+        
+        // Also ensure we try to update the OTHER company collection format if we are migrating
+        // (e.g. if we found it in snake_case, try to update camelCase too if it exists, or vice versa? 
+        // Actually, let's just stick to updating the source and the user copy for now to avoid confusion)
     }
 
     return NextResponse.json({ success: true });

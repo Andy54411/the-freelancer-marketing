@@ -184,7 +184,7 @@ export const JobApplicationSchema = z.object({
   applicantId: z.string(), // User UID
   applicantProfile: ApplicantProfileSchema, // Snapshot of profile at time of application
   coverLetter: z.string().optional(),
-  status: z.enum(['pending', 'reviewed', 'interview', 'rejected', 'accepted']),
+  status: z.enum(['pending', 'reviewed', 'interview', 'rejected', 'accepted', 'interview_accepted']),
   appliedAt: z.string(), // ISO Date
   personalData: z.record(z.any()).optional(), // Flexible for now to match Flutter
   attachments: z
@@ -198,6 +198,14 @@ export const JobApplicationSchema = z.object({
     )
     .optional(),
   message: z.string().optional(),
+  interviewSlots: z.array(z.string()).optional(),
+  interviewMessage: z.string().optional(),
+  acceptedSlot: z.string().optional(),
+  isVideoCall: z.boolean().optional(),
+  videoLink: z.string().optional(),
+  // 🎯 Neue Meeting-Typ Felder
+  meetingType: z.enum(['video', 'phone', 'inperson', 'flexible']).optional(),
+  allowCandidateChoice: z.boolean().optional(),
 });
 
 export type JobApplication = z.infer<typeof JobApplicationSchema>;

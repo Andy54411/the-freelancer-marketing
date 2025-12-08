@@ -371,7 +371,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           Expanded(
                             flex: 2,
                             child: DropdownButtonFormField<String>(
-                              value: _selectedCountryCode,
+                              initialValue: _selectedCountryCode,
                               decoration: const InputDecoration(
                                 labelText: 'Land',
                                 border: OutlineInputBorder(),

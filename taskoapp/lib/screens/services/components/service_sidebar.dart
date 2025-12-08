@@ -201,52 +201,100 @@ class _ServiceSidebarState extends State<ServiceSidebar> {
   }
 
   Widget _buildRadioOption(String label, String value) {
-    return RadioListTile<String>(
-      title: Text(
-        label,
-        style: const TextStyle(fontSize: 14),
-      ),
-      value: value,
-      groupValue: _selectedDeliveryTime,
-      onChanged: (String? newValue) {
+    final isSelected = _selectedDeliveryTime == value;
+    return GestureDetector(
+      onTap: () {
         setState(() {
-          _selectedDeliveryTime = newValue ?? '';
+          _selectedDeliveryTime = value;
         });
         _updateFilters();
       },
-      activeColor: const Color(0xFF14ad9f),
-      contentPadding: EdgeInsets.zero,
-      dense: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+        child: Row(
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? const Color(0xFF14ad9f) : Colors.grey,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? Container(
+                      margin: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFF14ad9f),
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildRatingOption(String label, String value) {
-    return RadioListTile<String>(
-      title: Row(
-        children: [
-          Icon(
-            Icons.star,
-            size: 16,
-            color: Colors.amber.shade600,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 14),
-          ),
-        ],
-      ),
-      value: value,
-      groupValue: _selectedRating,
-      onChanged: (String? newValue) {
+    final isSelected = _selectedRating == value;
+    return GestureDetector(
+      onTap: () {
         setState(() {
-          _selectedRating = newValue ?? '';
+          _selectedRating = value;
         });
         _updateFilters();
       },
-      activeColor: const Color(0xFF14ad9f),
-      contentPadding: EdgeInsets.zero,
-      dense: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+        child: Row(
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? const Color(0xFF14ad9f) : Colors.grey,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? Container(
+                      margin: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFF14ad9f),
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Icon(
+              Icons.star,
+              size: 16,
+              color: Colors.amber.shade600,
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

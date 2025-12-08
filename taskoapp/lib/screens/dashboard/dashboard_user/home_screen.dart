@@ -10,6 +10,7 @@ import 'search_screen.dart' show SearchScreen;
 import 'calendar_screen.dart';
 import 'projects_screen.dart';
 import '../../jobs/job_board_screen.dart';
+import '../../jobs/my_applications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -179,6 +180,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 );
               }),
+              _buildQuickActionCard(
+                'Meine Bewerbungen',
+                Icons.assignment_ind,
+                () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const MyApplicationsScreen(),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ],

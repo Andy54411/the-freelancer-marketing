@@ -184,7 +184,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: DropdownButtonFormField<String>(
-        value: _selectedStatus,
+        initialValue: _selectedStatus,
         decoration: InputDecoration(
           labelText: 'Status Filter',
           labelStyle: const TextStyle(color: Colors.white70),

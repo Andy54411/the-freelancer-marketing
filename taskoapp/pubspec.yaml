@@ -49,6 +49,9 @@ dependencies:
   permission_handler: ^11.3.1
   share_plus: ^10.0.2
   url_launcher: ^6.3.1
+  # Video Conferencing - WebRTC
+  flutter_webrtc: ^1.2.1
+  firebase_database: ^11.0.9
 
   # Time & Date
   intl: ^0.20.0
@@ -69,6 +72,7 @@ dependencies:
   google_sign_in: 6.2.1
   syncfusion_flutter_pdfviewer: ^31.1.19
   device_info_plus: ^11.5.0
+  flutter_html: ^3.0.0
 
 dev_dependencies:
   flutter_test:

@@ -22,10 +22,16 @@ import {
   User,
 } from 'lucide-react';
 import Link from 'next/link';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 import { ApplicationStatusSelect } from './ApplicationStatusSelect';
+import { ApplicationChat } from './ApplicationChat';
 // import PrintablePdfAttachment from './PrintablePdfAttachment'; // Disabled due to webpack issues
 
 import { PrintButton } from './PrintButton';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function ApplicationDetailsPage({
   params,
@@ -39,6 +45,7 @@ export default async function ApplicationDetailsPage({
   }
 
   let application: JobApplication | null = null;
+  let sourcePath = '';
 
   try {
     // 1. Try Company Subcollection (camelCase)
@@ -85,6 +92,7 @@ export default async function ApplicationDetailsPage({
 
     if (appDoc.exists) {
       application = { id: appDoc.id, ...appDoc.data() } as JobApplication;
+      sourcePath = appDoc.ref.path;
     }
   } catch (error) {
     console.error('Error fetching application:', error);
@@ -230,6 +238,102 @@ export default async function ApplicationDetailsPage({
                 <div className="whitespace-pre-wrap break-words break-all text-sm leading-relaxed print:text-sm text-justify">
                   {application.coverLetter || application.message}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Interview Details */}
+          {(application.status === 'interview' || application.status === 'interview_accepted') && (
+             <Card className="break-inside-avoid print:shadow-none print:border-0 print:p-0 border-[#14ad9f]/50 bg-[#14ad9f]/5">
+              <CardHeader className="print:px-0 print:py-0 print:mb-2">
+                <CardTitle className="flex items-center gap-2 print:text-lg print:border-b print:border-black print:pb-1 text-[#14ad9f]">
+                  <Calendar className="h-5 w-5" /> Interview-Einladung
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="print:px-0 space-y-4">
+                {application.interviewMessage && (
+                   <div className="bg-white/50 p-4 rounded-lg border border-[#14ad9f]/20">
+                      <h4 className="font-semibold mb-2 text-sm">Nachricht an Bewerber:</h4>
+                      <div className="text-sm" dangerouslySetInnerHTML={{ __html: application.interviewMessage }} />
+                   </div>
+                )}
+
+                {application.isVideoCall && (
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                      <h4 className="font-semibold text-blue-700 text-sm">Video-Call Interview</h4>
+                    </div>
+                    {application.videoLink ? (
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-medium text-blue-900">Link:</span>
+                        <a href={application.videoLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate max-w-[300px]">
+                          {application.videoLink}
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-blue-600">Link wird noch bereitgestellt</p>
+                    )}
+                  </div>
+                )}
+                
+                <div>
+                  <h4 className="font-semibold mb-2 text-sm">Vorgeschlagene Termine:</h4>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {application.interviewSlots?.map((slot: any, i: number) => {
+                       let date: Date;
+                       try {
+                         if (typeof slot === 'string') {
+                           date = new Date(slot);
+                         } else if (typeof slot === 'object' && slot.date) {
+                           // Handle legacy object format
+                           date = new Date(slot.date);
+                           if (slot.time) {
+                             const [hours, minutes] = slot.time.split(':').map(Number);
+                             date.setHours(hours, minutes);
+                           }
+                         } else {
+                           return null;
+                         }
+                         
+                         if (isNaN(date.getTime())) return null;
+                       } catch { return null; }
+
+                       const isAccepted = application.acceptedSlot === (typeof slot === 'string' ? slot : JSON.stringify(slot)) || 
+                                        (application.acceptedSlot && typeof slot === 'string' && new Date(application.acceptedSlot).getTime() === date.getTime());
+
+                       return (
+                        <div key={i} className={`p-3 rounded-lg border text-center text-sm ${
+                          isAccepted
+                            ? 'bg-[#14ad9f] text-white border-[#14ad9f]' 
+                            : 'bg-white border-gray-200'
+                        }`}>
+                          <div className="font-medium">{format(date, 'dd.MM.yyyy', { locale: de })}</div>
+                          <div>{format(date, 'HH:mm', { locale: de })} Uhr</div>
+                          {isAccepted && (
+                            <div className="mt-1 text-xs font-bold bg-white/20 rounded px-1">Bestätigt</div>
+                          )}
+                        </div>
+                       );
+                    })}
+                  </div>
+                </div>
+
+                {application.status === 'interview_accepted' && application.acceptedSlot && (
+                   <div className="flex items-center gap-2 text-green-600 font-medium bg-green-50 p-3 rounded-lg border border-green-200">
+                      <Clock className="h-4 w-4" />
+                      Termin bestätigt für: {(() => {
+                        try {
+                          const date = new Date(application.acceptedSlot);
+                          return !isNaN(date.getTime()) 
+                            ? format(date, 'dd.MM.yyyy HH:mm', { locale: de }) 
+                            : 'Ungültiges Datum';
+                        } catch {
+                          return 'Ungültiges Datum';
+                        }
+                      })()} Uhr
+                   </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -407,6 +511,16 @@ export default async function ApplicationDetailsPage({
               </CardContent>
             </Card>
           )}
+
+          {/* Chat Section */}
+          <div className="print:hidden">
+            <ApplicationChat 
+              applicationId={application.id}
+              companyId={uid}
+              applicantId={application.applicantId}
+              applicantName={`${profile.firstName} ${profile.lastName}`}
+            />
+          </div>
         </div>
 
         {/* Right Column: Sidebar Info (Moves to bottom in print) */}

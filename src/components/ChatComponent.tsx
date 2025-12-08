@@ -16,8 +16,10 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients'; // Client Firebase for realtime updates
 import { useAuth } from '@/contexts/AuthContext';
-import { Send as FiSend, Loader2 as FiLoader, User as FiUser, AlertTriangle } from 'lucide-react';
+import { Send as FiSend, Loader2 as FiLoader, User as FiUser, AlertTriangle, Video } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { TaskiloVideoService } from '@/services/TaskiloVideoService';
+import { TaskiloVideoService } from '@/services/TaskiloVideoService';
 import Image from 'next/image';
 import { validateSensitiveData, getSensitiveDataWarning } from '@/lib/sensitiveDataValidator';
 import { toast } from 'sonner';
@@ -119,8 +121,11 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
   const [loggedInUserProfile, setLoggedInUserProfile] = useState<UserProfileData | null>(null);
   const [isSendingMessage, setIsSendingMessage] = useState(false); // Neuer State für Sende-Button
   const [validationError, setValidationError] = useState<string>(''); // Für Validierungsfehler
+  const [isVideoRequestPending, setIsVideoRequestPending] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const videoService = new TaskiloVideoService();
+  const videoService = new TaskiloVideoService();
 
   // Hilfsfunktion zum Laden von Benutzerprofilen für Chat-Nachrichten
   const loadUserProfile = async (userId: string): Promise<UserProfile | null> => {
@@ -396,6 +401,49 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
     }
   };
 
+  // Video Call Request Functions
+  const sendVideoCallRequest = async () => {
+    if (!currentUser || isVideoRequestPending) return;
+
+    setIsVideoRequestPending(true);
+
+    try {
+      // Send video call request
+      await videoService.sendCallRequest(
+        orderId,
+        currentUser.uid,
+        loggedInUserProfile?.firstName || loggedInUserProfile?.companyName || 'User',
+        currentUser.email
+      );
+
+      // Send a chat message about the video call request
+      const videoRequestMessage = '🎥 Einladung zum Taskilo Video-Call';
+      setNewMessageText(videoRequestMessage);
+      await sendMessage(new Event('submit') as FormEvent<HTMLFormElement>);
+      setNewMessageText('');
+
+    } catch (error) {
+      setChatError(`Fehler beim Senden der Video-Call-Anfrage: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+    } finally {
+      setIsVideoRequestPending(false);
+    }
+  };
+
+  const approveVideoCallRequest = async (requestId: string) => {
+    if (!currentUser) return;
+
+    try {
+      await videoService.approveCallRequest(requestId, currentUser.uid);
+      // Optional: Send confirmation message
+      const approvalMessage = '✅ Video-Call wurde genehmigt';
+      setNewMessageText(approvalMessage);
+      await sendMessage(new Event('submit') as FormEvent<HTMLFormElement>);
+      setNewMessageText('');
+    } catch (error) {
+      setChatError(`Fehler beim Genehmigen der Video-Call-Anfrage: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+    }
+  };
+
   // Validiere Eingabe bei jeder Änderung
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -501,7 +549,23 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
                           ({msg.senderType === 'kunde' ? 'Kunde' : 'Anbieter'}):
                         </span>
                       </span>
-                      <p className="text-sm break-words flex-1">{msg.text}</p>
+                      
+                      {/* Check for video call invite */}
+                      {msg.text.includes('🎥 Einladung zum Taskilo Video-Call') ? (
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold">🎥 Video-Call Einladung</p>
+                          {!isOwnMessage && (
+                            <button
+                              onClick={() => approveVideoCallRequest(orderId)}
+                              className="mt-2 px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-md transition-colors"
+                            >
+                              ✅ Video-Call beitreten
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm break-words flex-1">{msg.text}</p>
+                      )}
                     </div>
 
                     {/* Uhrzeit unten rechts */}
@@ -547,6 +611,16 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
               }
             }}
           />
+
+          <button
+            type="button"
+            onClick={sendVideoCallRequest}
+            disabled={isVideoRequestPending}
+            className="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center mr-2"
+            title="Video-Call Anfrage senden"
+          >
+            {isVideoRequestPending ? <FiLoader className="animate-spin" /> : <Video size={20} />}
+          </button>
 
           <button
             type="submit"

@@ -200,7 +200,7 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: value,
+            initialValue: value,
             onChanged: onChanged,
             dropdownColor: const Color(0xFF14AD9F),
             style: const TextStyle(color: Colors.white),

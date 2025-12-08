@@ -6,6 +6,7 @@ import '../../utils/colors.dart';
 import '../dashboard/dashboard_layout.dart';
 import '../support/support_screen.dart';
 import 'edit_profile_screen.dart';
+import '../jobs/my_applications_screen.dart';
 
 /// Profile Screen
 /// Zeigt Benutzerinformationen und Einstellungen
@@ -70,10 +71,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 CircleAvatar(
                   radius: 40,
                   backgroundColor: TaskiloColors.primary,
-                  backgroundImage: user.photoURL != null 
-                      ? NetworkImage(user.photoURL!) 
+                  backgroundImage: user.photoURL != null
+                      ? NetworkImage(user.photoURL!)
                       : null,
-                  child: user.photoURL == null 
+                  child: user.photoURL == null
                       ? Text(
                           _getInitial(user),
                           style: const TextStyle(
@@ -85,7 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       : null,
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Name
                 Text(
                   _getDisplayName(user),
@@ -97,10 +98,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                
+
                 // User Type Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: TaskiloColors.primary.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(16),
@@ -115,9 +119,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Edit Profile Button
                 SizedBox(
                   width: double.infinity,
@@ -153,8 +157,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               _buildInfoRow('E-Mail', user.email),
               _buildInfoRow('Benutzer-ID', user.uid),
-              _buildInfoRow('Benutzertyp', _getUserTypeDisplayText(user.userType)),
+              _buildInfoRow(
+                'Benutzertyp',
+                _getUserTypeDisplayText(user.userType),
+              ),
               _buildInfoRow('Erstellt am', _formatDate(user.createdAt)),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Career Section
+          _buildSectionCard(
+            title: 'Karriere',
+            icon: Icons.work_outline,
+            children: [
+              _buildActionRow(
+                'Meine Bewerbungen',
+                Icons.assignment_ind_outlined,
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MyApplicationsScreen(),
+                  ),
+                ),
+              ),
             ],
           ),
 
@@ -308,9 +335,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildActionRow(String title, IconData icon, VoidCallback onTap) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -325,10 +350,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
-                    ),
+                    style: const TextStyle(fontSize: 14, color: Colors.white),
                   ),
                 ),
                 Icon(
@@ -412,13 +434,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       await _auth.signOut();
-      
+
       if (mounted) {
         // Navigate to login screen and clear stack
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/login',
-          (route) => false,
-        );
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
       }
     } catch (e) {
       if (mounted) {
@@ -439,11 +460,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _navigateToEditProfile(TaskiloUser user) async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => EditProfileScreen(user: user),
-      ),
+      MaterialPageRoute(builder: (context) => EditProfileScreen(user: user)),
     );
-    
+
     // Wenn der Benutzer vom Edit Screen zurückkommt, aktualisiere das UI
     if (result != null && mounted) {
       setState(() {
@@ -455,9 +474,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _navigateToSupport() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const SupportScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const SupportScreen()),
     );
   }
 }

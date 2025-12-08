@@ -70,14 +70,17 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           MaterialPageRoute(
             builder: (context) => LoginScreen(
               onLoginSuccess: () {
-                Navigator.pop(context, true); // Schließe Login Screen mit success=true
+                Navigator.pop(
+                  context,
+                  true,
+                ); // Schließe Login Screen mit success=true
               },
             ),
           ),
         ).then((result) {
           // Prüfe Status erneut wenn zurückgekehrt
           _checkApplicationStatus();
-          
+
           // Wenn Login erfolgreich war (result == true), Bewerbungsprozess fortsetzen
           if (result == true) {
             _handleApply();
@@ -310,7 +313,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: (_isCheckingStatus || _hasApplied) ? null : _handleApply,
+                      onPressed: (_isCheckingStatus || _hasApplied)
+                          ? null
+                          : _handleApply,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.teal,
                         padding: const EdgeInsets.symmetric(vertical: 16),

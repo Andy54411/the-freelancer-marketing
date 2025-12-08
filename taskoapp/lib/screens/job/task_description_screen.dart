@@ -313,7 +313,7 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
                     }
                   });
                 },
-                activeColor: const Color(0xFF14ad9f),
+                activeTrackColor: const Color(0xFF14ad9f),
               ),
             ],
           ),

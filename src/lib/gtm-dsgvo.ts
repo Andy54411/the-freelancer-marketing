@@ -106,7 +106,17 @@ export const sendConsentToGTM = (consent: {
  */
 export const hasAnalyticsConsent = (): boolean => {
   try {
-    const consent = localStorage.getItem('cookieConsent');
+    // Development: Allow analytics consent for testing
+    if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      return true;
+    }
+    
+    // Check both possible storage keys
+    let consent = localStorage.getItem('taskilo-cookie-consent');
+    if (!consent) {
+      consent = localStorage.getItem('cookieConsent');
+    }
+    
     if (consent) {
       const consentObj = JSON.parse(consent);
       return consentObj.analytics === true;
@@ -134,7 +144,17 @@ export const hasMarketingConsent = (): boolean => {
  */
 export const hasFunctionalConsent = (): boolean => {
   try {
-    const consent = localStorage.getItem('cookieConsent');
+    // Development: Allow functional consent for testing
+    if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      return true;
+    }
+    
+    // Check both possible storage keys
+    let consent = localStorage.getItem('taskilo-cookie-consent');
+    if (!consent) {
+      consent = localStorage.getItem('cookieConsent');
+    }
+    
     if (consent) {
       const consentObj = JSON.parse(consent);
       return consentObj.functional === true;

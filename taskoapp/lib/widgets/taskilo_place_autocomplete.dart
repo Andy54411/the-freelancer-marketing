@@ -25,7 +25,8 @@ class TaskiloPlaceAutocomplete extends StatefulWidget {
   });
 
   @override
-  State<TaskiloPlaceAutocomplete> createState() => _TaskiloPlaceAutocompleteState();
+  State<TaskiloPlaceAutocomplete> createState() =>
+      _TaskiloPlaceAutocompleteState();
 }
 
 class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
@@ -38,18 +39,20 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
   String get _apiKey {
     final flutterKey = dotenv.env['GOOGLE_MAPS_FLUTTER_API_KEY'];
     final webKey = dotenv.env['GOOGLE_MAPS_API_KEY'];
-    
+
     // Priorität: Flutter Key, dann Web Key, dann Fallback
     if (flutterKey != null && flutterKey.isNotEmpty && flutterKey.length > 10) {
       return flutterKey;
     }
-    
+
     if (webKey != null && webKey.isNotEmpty) {
       return webKey;
     }
-    
+
     // Kein API Key verfügbar - muss in .env konfiguriert werden
-    throw Exception('Google Maps API Key nicht konfiguriert. Bitte GOOGLE_MAPS_API_KEY in .env setzen.');
+    throw Exception(
+      'Google Maps API Key nicht konfiguriert. Bitte GOOGLE_MAPS_API_KEY in .env setzen.',
+    );
   }
 
   @override
@@ -71,11 +74,11 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
 
   void _onTextChanged() {
     if (!_focusNode.hasFocus) return;
-    
+
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
       if (!_focusNode.hasFocus) return;
-      
+
       final query = widget.controller.text.trim();
       if (query.length >= 2) {
         _searchPlaces(query);
@@ -109,24 +112,24 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
         '$components'
         '&language=de'
         '&types=${widget.types}'
-        '&key=$_apiKey'
+        '&key=$_apiKey',
       );
 
       final response = await http.get(url);
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final String status = data['status'] ?? 'UNKNOWN_ERROR';
-        
+
         if (status == 'OK' && data['predictions'] != null) {
           final predictions = (data['predictions'] as List)
               .map((p) => PlacePrediction.fromJson(p))
               .toList();
-          
+
           setState(() {
             _predictions = predictions;
           });
-          
+
           if (predictions.isNotEmpty) {
             _showOverlay();
           }
@@ -146,13 +149,12 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
 
   void _showFallbackSuggestions(String query) {
     final suggestions = <PlacePrediction>[];
-    
+
     // Direkten Input als erste Option
-    suggestions.add(PlacePrediction(
-      description: query,
-      placeId: 'direct_input',
-    ));
-    
+    suggestions.add(
+      PlacePrediction(description: query, placeId: 'direct_input'),
+    );
+
     // Konkrete Beispiele mit vollständigen Adressen für Tests
     if (query.length >= 2) {
       suggestions.addAll([
@@ -170,11 +172,11 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
         ),
       ]);
     }
-    
+
     setState(() {
       _predictions = suggestions.take(4).toList();
     });
-    
+
     if (suggestions.isNotEmpty) {
       _showOverlay();
     }
@@ -182,7 +184,7 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
 
   void _showOverlay() {
     _removeOverlay();
-    
+
     _overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
         width: MediaQuery.of(context).size.width - 48,
@@ -198,7 +200,9 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF14ad9f).withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: const Color(0xFF14ad9f).withValues(alpha: 0.3),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.1),
@@ -216,10 +220,15 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
                   return InkWell(
                     onTap: () => _selectPrediction(prediction),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         border: index < _predictions.length - 1
-                            ? Border(bottom: BorderSide(color: Colors.grey.shade200))
+                            ? Border(
+                                bottom: BorderSide(color: Colors.grey.shade200),
+                              )
                             : null,
                       ),
                       child: Row(
@@ -252,7 +261,7 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
         ),
       ),
     );
-    
+
     Overlay.of(context).insert(_overlayEntry!);
   }
 
@@ -264,11 +273,12 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
   void _selectPrediction(PlacePrediction prediction) {
     _clearPredictions();
     _focusNode.unfocus();
-    
+
     widget.controller.text = prediction.description;
-    
+
     // Unterscheide zwischen echten Google Places und Fallback-Beispielen
-    if (prediction.placeId.startsWith('ChI') || prediction.placeId.length > 20) {
+    if (prediction.placeId.startsWith('ChI') ||
+        prediction.placeId.length > 20) {
       // Echte Google Place ID - nutze Place Details API
       _getPlaceDetailsAndParse(prediction.placeId, prediction.description);
     } else {
@@ -277,14 +287,18 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
     }
   }
 
-  Future<void> _getPlaceDetailsAndParse(String placeId, String description) async {
+  Future<void> _getPlaceDetailsAndParse(
+    String placeId,
+    String description,
+  ) async {
     if (_apiKey.isEmpty) {
       _parseBasicAddress(description);
       return;
     }
 
     try {
-      final url = 'https://maps.googleapis.com/maps/api/place/details/json'
+      final url =
+          'https://maps.googleapis.com/maps/api/place/details/json'
           '?place_id=$placeId'
           '&fields=address_components,formatted_address'
           '&language=de'
@@ -296,27 +310,29 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
         final data = json.decode(response.body);
 
         if (data['status'] == 'OK' && data['result'] != null) {
-          final addressComponents = data['result']['address_components'] as List?;
-          
+          final addressComponents =
+              data['result']['address_components'] as List?;
+
           String street = '';
           String streetNumber = '';
           String city = '';
           String postalCode = '';
           String country = '';
-          
+
           if (addressComponents != null) {
             for (var component in addressComponents) {
               final types = List<String>.from(component['types'] ?? []);
               final longName = component['long_name'] ?? '';
               final shortName = component['short_name'] ?? '';
-              
+
               if (types.contains('street_number')) {
                 streetNumber = longName;
               } else if (types.contains('route')) {
                 street = longName;
               } else if (types.contains('locality')) {
                 city = longName;
-              } else if (types.contains('administrative_area_level_3') && city.isEmpty) {
+              } else if (types.contains('administrative_area_level_3') &&
+                  city.isEmpty) {
                 city = longName;
               } else if (types.contains('postal_code')) {
                 postalCode = longName;
@@ -325,29 +341,32 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
               }
             }
           }
-          
+
           // Straße mit Hausnummer zusammenfügen
-          final fullStreet = streetNumber.isNotEmpty ? '$street $streetNumber' : street;
-          
+          final fullStreet = streetNumber.isNotEmpty
+              ? '$street $streetNumber'
+              : street;
+
           // Callback mit vollständigen Daten
           final result = {
             'street': fullStreet,
             'city': city,
             'postalCode': postalCode,
             'country': country,
-            'fullAddress': data['result']['formatted_address']?.toString() ?? description,
+            'fullAddress':
+                data['result']['formatted_address']?.toString() ?? description,
           };
-          
+
           debugPrint('Google Places Result: $result');
           widget.onPlaceSelected(result);
-          
+
           return;
         }
       }
     } catch (e) {
       // Fehler silent ignorieren
     }
-    
+
     // Fallback bei Fehlern
     _parseBasicAddress(description);
   }
@@ -364,13 +383,13 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
     String city = '';
     String postalCode = '';
     String country = 'DE';
-    
+
     // Debug-Ausgabe
     debugPrint('Parsing Address: "$description"');
-    
+
     // Teste verschiedene deutsche Adressformate
     final text = description.trim();
-    
+
     // Format: "Musterstraße 123, 12345 Berlin"
     final format1 = RegExp(r'^(.+?),\s*(\d{4,5})\s+(.+)$').firstMatch(text);
     if (format1 != null) {
@@ -378,7 +397,9 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
       postalCode = format1.group(2)!;
       city = format1.group(3)!.trim();
       if (postalCode.length == 4) country = 'AT';
-      debugPrint('Format 1 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"');
+      debugPrint(
+        'Format 1 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"',
+      );
     }
     // Format: "Musterstraße 123 12345 Berlin" (ohne Komma)
     else {
@@ -388,7 +409,9 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
         postalCode = format2.group(2)!;
         city = format2.group(3)!.trim();
         if (postalCode.length == 4) country = 'AT';
-        debugPrint('Format 2 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"');
+        debugPrint(
+          'Format 2 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"',
+        );
       }
       // Format: "12345 Berlin, Musterstraße 123"
       else {
@@ -398,7 +421,9 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
           city = format3.group(2)!.trim();
           street = format3.group(3)!.trim();
           if (postalCode.length == 4) country = 'AT';
-          debugPrint('Format 3 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"');
+          debugPrint(
+            'Format 3 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"',
+          );
         }
         // Nur Straße eingegeben
         else {
@@ -407,23 +432,25 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
         }
       }
     }
-    
+
     // Fallback: Falls noch keine Stadt, versuche PLZ allein zu finden
     if (city.isEmpty && postalCode.isEmpty) {
       final plzOnly = RegExp(r'(\d{4,5})').firstMatch(text);
       if (plzOnly != null) {
         postalCode = plzOnly.group(1)!;
         if (postalCode.length == 4) country = 'AT';
-        
+
         // Entferne PLZ aus Text für Stadt
-        final remaining = text.replaceFirst(RegExp(r'\s*\d{4,5}\s*'), ' ').trim();
+        final remaining = text
+            .replaceFirst(RegExp(r'\s*\d{4,5}\s*'), ' ')
+            .trim();
         if (remaining.isNotEmpty && remaining != street) {
           city = remaining;
         }
         debugPrint('PLZ-Fallback: PLZ="$postalCode", Remaining="$remaining"');
       }
     }
-    
+
     final result = {
       'street': street,
       'city': city,
@@ -431,7 +458,7 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
       'country': country,
       'fullAddress': description,
     };
-    
+
     debugPrint('Sende Result: $result');
     widget.onPlaceSelected(result);
   }
@@ -445,7 +472,7 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
         focusNode: _focusNode,
         decoration: InputDecoration(
           labelText: widget.labelText,
-          prefixIcon: widget.prefixIcon != null 
+          prefixIcon: widget.prefixIcon != null
               ? Icon(widget.prefixIcon, color: const Color(0xFF14ad9f))
               : null,
           suffixIcon: widget.controller.text.isNotEmpty
@@ -477,10 +504,7 @@ class PlacePrediction {
   final String description;
   final String placeId;
 
-  PlacePrediction({
-    required this.description,
-    required this.placeId,
-  });
+  PlacePrediction({required this.description, required this.placeId});
 
   factory PlacePrediction.fromJson(Map<String, dynamic> json) {
     return PlacePrediction(
