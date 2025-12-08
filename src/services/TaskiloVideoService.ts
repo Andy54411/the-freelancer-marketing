@@ -633,12 +633,10 @@ export class TaskiloVideoService {
     }
 
     try {
-      let signalToSend: any;
-
       // TEMPORARY FIX: Disable encryption for video calls to fix null signal issue
       // TODO: Implement compatible encryption between Web and Flutter
       console.log('🔧 [DEBUG] Sending unencrypted signal for debugging - original signal:', signal);
-      signalToSend = signal;
+      const signalToSend = signal;
 
       await push(this.signalingRef, signalToSend);
       
