@@ -117,6 +117,10 @@ const getStatusColor = (status: string) => {
     case 'completed':
       return { backgroundColor: '#6b7280', borderColor: '#6b7280' }; // Grau
 
+    // Interview statuses
+    case 'interview':
+      return { backgroundColor: '#8b5cf6', borderColor: '#8b5cf6' }; // Purple für Interviews
+
     default:
       return { backgroundColor: '#a1a1aa', borderColor: '#a1a1aa' }; // Standard-Grau
   }
@@ -253,11 +257,50 @@ const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ 
             });
           }
         });
+
+      // Interview-Termine aus jobApplications Collection laden
+      const interviewsQuery = query(
+        collection(db, 'jobApplications'),
+        where('companyId', '==', companyUid),
+        where('confirmedInterviewDate', '!=', null)
+      );
+
+      const interviewSnapshot = await getDocs(interviewsQuery);
+      const loadedInterviews: any[] = [];
+
+      interviewSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.confirmedInterviewDate && data.confirmedInterviewTime) {
+          // Kombiniere Datum und Zeit zu einem vollständigen Datum
+          const [day, month, year] = data.confirmedInterviewDate.split('.');
+          const [hours, minutes] = data.confirmedInterviewTime.split(':');
+          const interviewDateTime = new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            parseInt(hours),
+            parseInt(minutes)
+          );
+
+          loadedInterviews.push({
+            id: doc.id,
+            title: `Interview: ${data.applicantProfile?.firstName || ''} ${data.applicantProfile?.lastName || ''}`,
+            startDate: interviewDateTime.toISOString(),
+            endDate: new Date(interviewDateTime.getTime() + 60 * 60 * 1000).toISOString(), // 1 Stunde später
+            eventType: 'interview',
+            status: 'confirmed',
+            priority: 'high',
+            companyId: companyUid,
+            applicantName: `${data.applicantProfile?.firstName || ''} ${data.applicantProfile?.lastName || ''}`.trim(),
+            jobTitle: data.jobTitle || 'Offene Position'
+          });
+        }
+      });
         
       setAllOrders(relevantOrders);
       setAllProjects(loadedProjects);
       setAllInvoices(loadedInvoices);
-      setAllCalendarEvents(loadedCalendarEvents);
+      setAllCalendarEvents([...loadedCalendarEvents, ...loadedInterviews]);
     } catch (err: any) {
       setError(err.message || 'Fehler beim Laden der Aufträge, Projekte und Rechnungen.');
     } finally {
@@ -371,7 +414,10 @@ const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ 
 
     // Events für Calendar Events erstellen
     const calendarEventEvents = allCalendarEvents.map(calendarEvent => {
-      const colors = getStatusColor(calendarEvent.status);
+      // Spezielle Farbe für Interview-Events
+      const colors = calendarEvent.eventType === 'interview' 
+        ? getStatusColor('interview')
+        : getStatusColor(calendarEvent.status);
 
       const eventObject = {
         id: `calendar-${calendarEvent.id}`,
