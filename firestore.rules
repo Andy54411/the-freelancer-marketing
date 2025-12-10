@@ -2842,6 +2842,29 @@ service cloud.firestore {
       allow write: if isSupportStaff();
     }
 
+    // --- Job Applications Collection ---
+    match /jobApplications/{applicationId} {
+      // Companies können alle Bewerbungen für ihre Jobs lesen
+      // Bewerber können ihre eigenen Bewerbungen lesen
+      // Support kann alle lesen
+      allow read, list: if request.auth != null && 
+                        (isCompany() || 
+                         isSupportStaff() ||
+                         (resource != null && resource.data.applicantId == request.auth.uid));
+      
+      // Bewerber können neue Bewerbungen erstellen
+      // Companies können Bewerbungen bearbeiten (Status ändern, Termine setzen)
+      // Support kann alles
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && 
+                    (isCompany() || 
+                     isSupportStaff() ||
+                     (resource != null && resource.data.applicantId == request.auth.uid));
+      
+      // Nur Support kann Bewerbungen löschen
+      allow delete: if isSupportStaff();
+    }
+
 
 
   }
