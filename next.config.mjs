@@ -23,46 +23,11 @@ const nextConfig = {
 
   serverExternalPackages: ['firebase-admin'],
 
-  webpack: (config, { isServer, dev }) => {
-    config.externals = config.externals || [];
-    config.externals.push({
-      './functions': './functions',
-      './functions/*': './functions/*',
-      './firebase_functions': './firebase_functions',
-      './firebase_functions/*': './firebase_functions/*',
-    });
-
-    config.resolve = config.resolve || {};
-    config.resolve.alias = {
-      ...(config.resolve.alias || {}),
-      '@': path.resolve(process.cwd(), 'src'),
-      'canvas': false,
-      'encoding': false,
-    };
-
-    // Fix für pdfjs-dist in Next.js 15
-    config.module = config.module || {};
-    config.module.rules = config.module.rules || [];
-    
-    // ESM-Behandlung für pdfjs-dist
-    config.module.rules.push({
-      test: /\.mjs$/,
-      include: /node_modules/,
-      type: 'javascript/auto',
-    });
-
-    // PDF.js Worker-Dateien ignorieren (werden via CDN geladen)
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        canvas: false,
-        encoding: false,
-        fs: false,
-        path: false,
-      };
-    }
-
-    return config;
+  // Turbopack-Konfiguration für Next.js 16 (ersetzt webpack)
+  turbopack: {
+    resolveAlias: {
+      '@': './src',
+    },
   },
 
   images: {
@@ -116,10 +81,6 @@ const nextConfig = {
 
   typescript: {
     ignoreBuildErrors: true,
-  },
-
-  eslint: {
-    ignoreDuringBuilds: true,
   },
 
   async headers() {
