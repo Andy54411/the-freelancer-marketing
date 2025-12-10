@@ -3,6 +3,7 @@ import os from 'os';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Basic Next.js 16 Turbopack configuration
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
@@ -23,12 +24,8 @@ const nextConfig = {
 
   serverExternalPackages: ['firebase-admin'],
 
-  // Turbopack-Konfiguration für Next.js 16 (ersetzt webpack)
-  turbopack: {
-    resolveAlias: {
-      '@': './src',
-    },
-  },
+  // Turbopack ist Standard in Next.js 16 - keine komplexe Konfiguration nötig
+  turbopack: {},
 
   images: {
     formats: ['image/avif', 'image/webp'],
