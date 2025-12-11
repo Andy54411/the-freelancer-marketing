@@ -47,6 +47,7 @@ import * as fixInconsistentPaymentModule from './fix_inconsistent_payment';
 import * as quoteNotifications from './quote_notifications';
 import * as chatNotifications from './chat_notifications';
 import * as offerPushNotifications from './offer_push_notifications';
+import * as jobAlertNotifications from './job_alert_notifications';
 import * as triggersJobApplications from './triggers_job_applications';
 export const onJobApplicationCreated = triggersJobApplications.onJobApplicationCreated;
 
@@ -138,6 +139,9 @@ export const onChatMessageCreated = chatNotifications.onChatMessageCreated;
 // Offer Push Notification Triggers
 export const onOfferCreated = offerPushNotifications.onOfferCreated;
 export const sendTestPushNotification = offerPushNotifications.sendTestPushNotification;
+
+// Job Alert Notification Triggers
+export const onJobCreatedForAlerts = jobAlertNotifications.onJobCreated;
 
 // Maintenance Functions (Temporary)
 export const updateAllUserCustomClaims = maintenanceAuth.updateAllUserCustomClaims;

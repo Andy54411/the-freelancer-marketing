@@ -3,6 +3,7 @@ import '../../models/job_posting.dart';
 import '../../services/job_service.dart';
 import '../../widgets/jobs/job_card.dart';
 import 'job_detail_screen.dart';
+import 'jobfinder_screen.dart';
 
 class JobBoardScreen extends StatefulWidget {
   final String? initialSearchTerm;
@@ -67,6 +68,18 @@ class _JobBoardScreenState extends State<JobBoardScreen> {
       appBar: AppBar(
         title: const Text('Jobbörse'),
         backgroundColor: Colors.teal,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_active),
+            tooltip: 'Mein Jobfinder',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const JobfinderScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [

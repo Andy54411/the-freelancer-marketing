@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../../models/user_model.dart';
 import '../../../models/order.dart' as taskilo_order;
 import '../../../services/auth_service.dart';
 import '../../../services/order_service.dart';
+import '../../../services/job_application_service.dart';
 import '../dashboard_layout.dart';
 import 'my_orders_screen.dart';
 import 'search_screen.dart' show SearchScreen;
@@ -11,6 +13,7 @@ import 'calendar_screen.dart';
 import 'projects_screen.dart';
 import '../../jobs/job_board_screen.dart';
 import '../../jobs/my_applications_screen.dart';
+import '../../jobs/jobfinder_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +24,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController();
+  
+  // Collapsed/Expanded State für Cards
+  bool _isOrdersExpanded = true;
+  bool _isInterviewsExpanded = true;
 
   @override
   void dispose() {
@@ -76,6 +83,11 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // Meine Aufträge Übersichtskarte
           _buildMyOrdersOverviewCard(user),
+
+          const SizedBox(height: 16),
+
+          // Bewerbungsgespräche
+          _buildUpcomingInterviewsCard(user),
 
           const SizedBox(height: 20),
 
@@ -187,6 +199,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => const MyApplicationsScreen(),
+                    ),
+                  );
+                },
+              ),
+              _buildQuickActionCard(
+                'Jobfinder',
+                Icons.notifications_active,
+                () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const JobfinderScreen(),
                     ),
                   );
                 },
@@ -498,6 +521,310 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildUpcomingInterviewsCard(TaskiloUser? user) {
+    if (user == null) {
+      return const SizedBox.shrink();
+    }
+
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      key: ValueKey('interviews_future_${user.uid}'),
+      future: JobApplicationService().getUserInterviewAppointments(),
+      builder: (context, snapshot) {
+        // Während des Ladens nichts anzeigen
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return DashboardCard(
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.event,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Bewerbungsgespräche',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Bei Fehler oder keine Daten: Card nicht anzeigen
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final interviews = snapshot.data!;
+
+        // Sortiere nach Datum (nächste zuerst)
+        interviews.sort((a, b) {
+          final dateA = a['dateTime'] as DateTime?;
+          final dateB = b['dateTime'] as DateTime?;
+          if (dateA == null || dateB == null) return 0;
+          return dateA.compareTo(dateB);
+        });
+
+        // Filtere nur zukünftige Interviews
+        final now = DateTime.now();
+        final upcomingInterviews = interviews
+            .where((i) {
+              final dateTime = i['dateTime'] as DateTime?;
+              return dateTime != null && dateTime.isAfter(now);
+            })
+            .take(3) // Max 3 anzeigen
+            .toList();
+
+        if (upcomingInterviews.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return DashboardCard(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: const EdgeInsets.all(0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header (immer sichtbar, klickbar zum Ein-/Ausklappen)
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _isInterviewsExpanded = !_isInterviewsExpanded;
+                  });
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.event,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Bewerbungsgespräche',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.teal.shade300,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${upcomingInterviews.length}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      AnimatedRotation(
+                        turns: _isInterviewsExpanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Icon(
+                          Icons.keyboard_arrow_down,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          size: 24,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Expandable Content
+              AnimatedCrossFade(
+                firstChild: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: Column(
+                    children: [
+                      ...upcomingInterviews.map((interview) {
+                        final dateTime = interview['dateTime'] as DateTime;
+                        final dateFormat = DateFormat('dd.MM.yyyy');
+                        final timeFormat = DateFormat('HH:mm');
+                        final jobTitle = interview['jobTitle'] ?? 'Bewerbung';
+                        final companyName =
+                            interview['companyName'] ?? 'Unbekanntes Unternehmen';
+
+                        // Berechne Tage bis zum Interview
+                        final daysUntil = dateTime.difference(now).inDays;
+                        String daysText;
+                        Color daysColor;
+
+                        if (daysUntil == 0) {
+                          daysText = 'Heute';
+                          daysColor = Colors.orange;
+                        } else if (daysUntil == 1) {
+                          daysText = 'Morgen';
+                          daysColor = Colors.amber;
+                        } else {
+                          daysText = 'In $daysUntil Tagen';
+                          daysColor = Colors.green;
+                        }
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      jobTitle,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: daysColor.withValues(alpha: 0.9),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      daysText,
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                companyName,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today,
+                                    size: 14,
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    dateFormat.format(dateTime),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Icon(
+                                    Icons.access_time,
+                                    size: 14,
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${timeFormat.format(dateTime)} Uhr',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const MyApplicationsScreen(),
+                              ),
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: Colors.white, width: 1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text(
+                            'Alle Bewerbungen anzeigen',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                secondChild: const SizedBox.shrink(),
+                crossFadeState: _isInterviewsExpanded
+                    ? CrossFadeState.showFirst
+                    : CrossFadeState.showSecond,
+                duration: const Duration(milliseconds: 200),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildMyOrdersOverviewCard(TaskiloUser? user) {
     if (user == null) {
       return Center(
@@ -621,14 +948,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return DashboardCard(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Header (immer sichtbar, klickbar zum Ein-/Ausklappen)
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _isOrdersExpanded = !_isOrdersExpanded;
+                  });
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
                     children: [
                       Expanded(
                         child: Column(
@@ -724,118 +1058,141 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                       ),
+                      AnimatedRotation(
+                        turns: _isOrdersExpanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Icon(
+                          Icons.keyboard_arrow_down,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          size: 24,
+                        ),
+                      ),
                     ],
                   ),
-                ],
+                ),
               ),
-              const SizedBox(height: 16),
-              if (hasOrders && latestOrder != null) ...[
-                // Neuester Auftrag
-                _buildLatestOrderPreview(latestOrder),
-                const SizedBox(height: 20),
-                // Action Buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const SearchScreen(),
+              // Expandable Content
+              AnimatedCrossFade(
+                firstChild: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: Column(
+                    children: [
+                      if (hasOrders && latestOrder != null) ...[
+                        // Neuester Auftrag
+                        _buildLatestOrderPreview(latestOrder),
+                        const SizedBox(height: 20),
+                        // Action Buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => const SearchScreen(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: const Color(0xFF14ad9f),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Neuer Auftrag',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                              ),
                             ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF14ad9f),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Neuer Auftrag',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const MyOrdersScreen(),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 12,
-                          horizontal: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: Colors.white, width: 1),
-                        ),
-                      ),
-                      child: const Text(
-                        'Alle anzeigen',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                // Keine Aufträge
-                Column(
-                  children: [
-                    Icon(
-                      Icons.assignment_outlined,
-                      size: 48,
-                      color: Colors.white.withValues(alpha: 0.7),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Noch keine Aufträge vorhanden',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const SearchScreen(),
+                            const SizedBox(width: 12),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const MyOrdersScreen(),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white.withValues(alpha: 0.2),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: const BorderSide(color: Colors.white, width: 1),
+                                ),
+                              ),
+                              child: const Text(
+                                'Alle anzeigen',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
                             ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF14ad9f),
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          ],
                         ),
-                        child: const Text(
-                          'Auftrag erstellen',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
+                      ] else ...[
+                        // Keine Aufträge
+                        Column(
+                          children: [
+                            Icon(
+                              Icons.assignment_outlined,
+                              size: 48,
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Noch keine Aufträge vorhanden',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white.withValues(alpha: 0.9),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 20),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => const SearchScreen(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: const Color(0xFF14ad9f),
+                                  padding: const EdgeInsets.symmetric(vertical: 15),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Auftrag erstellen',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    ],
+                  ),
                 ),
-              ],
+                secondChild: const SizedBox.shrink(),
+                crossFadeState: _isOrdersExpanded
+                    ? CrossFadeState.showFirst
+                    : CrossFadeState.showSecond,
+                duration: const Duration(milliseconds: 200),
+              ),
             ],
           ),
         );

@@ -82,20 +82,42 @@ class JobService {
     }
   }
 
-  Future<JobPosting?> getJobById(String jobId) async {
+  Future<JobPosting?> getJobById(String jobId, {String? companyId}) async {
     try {
-      // Since it's a collection group, we might not know the path.
-      // But usually we need the path or we query by ID.
-      // Querying collectionGroup by ID is possible.
+      debugPrint('JobService: Loading job with ID: $jobId, companyId: $companyId');
+      
+      // Wenn wir die companyId haben, direkt zugreifen
+      if (companyId != null && companyId.isNotEmpty) {
+        final docSnapshot = await _db
+            .collection('companies')
+            .doc(companyId)
+            .collection('jobs')
+            .doc(jobId)
+            .get();
+        
+        if (docSnapshot.exists) {
+          debugPrint('JobService: Job found directly: ${docSnapshot.id}');
+          return JobPosting.fromFirestore(docSnapshot);
+        }
+      }
+      
+      // Fallback: Versuche über collectionGroup
+      debugPrint('JobService: Trying collectionGroup query...');
       final querySnapshot = await _db
           .collectionGroup('jobs')
-          .where(FieldPath.documentId, isEqualTo: jobId)
-          .limit(1)
           .get();
 
-      if (querySnapshot.docs.isNotEmpty) {
-        return JobPosting.fromFirestore(querySnapshot.docs.first);
+      debugPrint('JobService: Found ${querySnapshot.docs.length} total jobs');
+
+      // Suche nach der passenden Document ID
+      for (final doc in querySnapshot.docs) {
+        if (doc.id == jobId) {
+          debugPrint('JobService: Job found via collectionGroup: ${doc.id}');
+          return JobPosting.fromFirestore(doc);
+        }
       }
+      
+      debugPrint('JobService: Job not found with ID: $jobId');
       return null;
     } catch (e) {
       debugPrint('Error fetching job by ID: $e');

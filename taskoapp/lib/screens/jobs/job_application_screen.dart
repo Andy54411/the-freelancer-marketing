@@ -28,8 +28,17 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _countryController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
+  final TextEditingController _salaryAmountController = TextEditingController();
+  final TextEditingController _earliestStartDateController =
+      TextEditingController();
 
   String _salutation = 'Herr';
+
+  // Rahmenbedingungen
+  String _salaryCurrency = 'EUR';
+  String _salaryPeriod = 'Monatsgehalt - brutto';
+  String _noticeDuration = '';
+  String _noticeTiming = 'zum Monatsende';
   bool _isLoading = true;
   bool _isSubmitting = false;
   Map<String, dynamic>? _profile;
@@ -59,6 +68,8 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
     _cityController.dispose();
     _countryController.dispose();
     _messageController.dispose();
+    _salaryAmountController.dispose();
+    _earliestStartDateController.dispose();
     super.dispose();
   }
 
@@ -89,6 +100,19 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
           _zipController.text = profile['zip'] ?? '';
           _cityController.text = profile['city'] ?? '';
           _countryController.text = profile['country'] ?? 'Deutschland';
+
+          // Rahmenbedingungen aus Profil laden
+          if (profile['salaryExpectation'] != null) {
+            final salary = profile['salaryExpectation'];
+            _salaryAmountController.text = salary['amount']?.toString() ?? '';
+            _salaryCurrency = salary['currency'] ?? 'EUR';
+            _salaryPeriod = salary['period'] ?? 'Monatsgehalt - brutto';
+          }
+          if (profile['noticePeriod'] != null) {
+            final notice = profile['noticePeriod'];
+            _noticeDuration = notice['duration'] ?? '';
+            _noticeTiming = notice['timing'] ?? 'zum Monatsende';
+          }
 
           // Load CVs
           if (profile['cvUrl'] != null &&
@@ -242,6 +266,30 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
           .where((att) => _selectedAttachmentIds.contains(att['id']))
           .toList();
 
+      // Rahmenbedingungen vorbereiten
+      Map<String, dynamic>? salaryExpectation;
+      if (_salaryAmountController.text.isNotEmpty) {
+        salaryExpectation = {
+          'amount': int.tryParse(_salaryAmountController.text) ?? 0,
+          'currency': _salaryCurrency,
+          'period': _salaryPeriod,
+        };
+      }
+
+      Map<String, dynamic>? noticePeriod;
+      if (_noticeDuration.isNotEmpty) {
+        noticePeriod = {'duration': _noticeDuration, 'timing': _noticeTiming};
+      }
+
+      // Startdatum von DD.MM.YYYY zu ISO konvertieren
+      String? earliestStartDate;
+      if (_earliestStartDateController.text.isNotEmpty) {
+        final parts = _earliestStartDateController.text.split('.');
+        if (parts.length == 3) {
+          earliestStartDate = '${parts[2]}-${parts[1]}-${parts[0]}';
+        }
+      }
+
       await _applicationService.applyForJob(
         jobId: widget.job.id,
         companyId: widget.job.companyId,
@@ -251,6 +299,9 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
         personalData: personalData,
         attachments: selectedAttachments,
         message: _messageController.text,
+        salaryExpectation: salaryExpectation,
+        noticePeriod: noticePeriod,
+        earliestStartDate: earliestStartDate,
       );
 
       if (mounted) {
@@ -1121,6 +1172,335 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                           ),
                         );
                       },
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Rahmenbedingungen Section
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      color: Colors.white,
+                      child: Theme(
+                        data: Theme.of(
+                          context,
+                        ).copyWith(dividerColor: Colors.transparent),
+                        child: ExpansionTile(
+                          title: const Text(
+                            'Rahmenbedingungen',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              'Gehaltsvorstellung, Kündigungsfrist, Starttermin',
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          tilePadding: const EdgeInsets.symmetric(
+                            horizontal: 24.0,
+                            vertical: 8.0,
+                          ),
+                          childrenPadding: const EdgeInsets.fromLTRB(
+                            24.0,
+                            0,
+                            24.0,
+                            24.0,
+                          ),
+                          initiallyExpanded: false,
+                          children: [
+                            const SizedBox(height: 16),
+
+                            // Gehaltsvorstellung
+                            Row(
+                              children: const [
+                                Icon(Icons.euro, size: 18, color: Colors.teal),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Gehaltsvorstellung',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _salaryAmountController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Betrag',
+                                      border: OutlineInputBorder(),
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    initialValue: _salaryCurrency,
+                                    isExpanded: true,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Währung',
+                                      border: OutlineInputBorder(),
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(
+                                        value: 'EUR',
+                                        child: Text('EUR'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'CHF',
+                                        child: Text('CHF'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'USD',
+                                        child: Text('USD'),
+                                      ),
+                                    ],
+                                    onChanged: (v) => setState(
+                                      () => _salaryCurrency = v ?? 'EUR',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<String>(
+                              initialValue: _salaryPeriod,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                labelText: 'Zeitraum',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 16,
+                                ),
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'Jahresgehalt - brutto',
+                                  child: Text('Jahresgehalt - brutto'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Jahresgehalt - netto',
+                                  child: Text('Jahresgehalt - netto'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Monatsgehalt - brutto',
+                                  child: Text('Monatsgehalt - brutto'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Monatsgehalt - netto',
+                                  child: Text('Monatsgehalt - netto'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Stundenlohn - brutto',
+                                  child: Text('Stundenlohn - brutto'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Stundenlohn - netto',
+                                  child: Text('Stundenlohn - netto'),
+                                ),
+                              ],
+                              onChanged: (v) => setState(
+                                () => _salaryPeriod =
+                                    v ?? 'Monatsgehalt - brutto',
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // Kündigungsfrist
+                            Row(
+                              children: const [
+                                Icon(
+                                  Icons.access_time,
+                                  size: 18,
+                                  color: Colors.teal,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Kündigungsfrist',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    initialValue: _noticeDuration.isEmpty
+                                        ? null
+                                        : _noticeDuration,
+                                    isExpanded: true,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Dauer',
+                                      border: OutlineInputBorder(),
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                    hint: const Text('Bitte wählen'),
+                                    items: const [
+                                      DropdownMenuItem(
+                                        value: 'sofort verfügbar',
+                                        child: Text('Sofort verfügbar'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: '14 Tage',
+                                        child: Text('14 Tage'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: '4 Wochen',
+                                        child: Text('4 Wochen'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: '6 Wochen',
+                                        child: Text('6 Wochen'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: '2 Monate',
+                                        child: Text('2 Monate'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: '3 Monate',
+                                        child: Text('3 Monate'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: '6 Monate',
+                                        child: Text('6 Monate'),
+                                      ),
+                                    ],
+                                    onChanged: (v) => setState(
+                                      () => _noticeDuration = v ?? '',
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    initialValue: _noticeTiming,
+                                    isExpanded: true,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Zeitpunkt',
+                                      border: OutlineInputBorder(),
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(
+                                        value: 'zum Monatsende',
+                                        child: Text('Zum Monatsende'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'zum 15. des Monats',
+                                        child: Text('Zum 15. des Monats'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'zum Quartalsende',
+                                        child: Text('Zum Quartalsende'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'jederzeit',
+                                        child: Text('Jederzeit'),
+                                      ),
+                                    ],
+                                    onChanged: (v) => setState(
+                                      () =>
+                                          _noticeTiming = v ?? 'zum Monatsende',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // Frühester Starttermin
+                            Row(
+                              children: const [
+                                Icon(
+                                  Icons.calendar_today,
+                                  size: 18,
+                                  color: Colors.teal,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Frühester Starttermin',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  '(optional)',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _earliestStartDateController,
+                              decoration: const InputDecoration(
+                                labelText: 'Startdatum',
+                                border: OutlineInputBorder(),
+                                hintText: 'TT.MM.JJJJ',
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 16,
+                                ),
+                                suffixIcon: Icon(
+                                  Icons.calendar_today,
+                                  size: 20,
+                                ),
+                              ),
+                              readOnly: true,
+                              onTap: () async {
+                                final DateTime? picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime.now().add(
+                                    const Duration(days: 30),
+                                  ),
+                                  firstDate: DateTime.now(),
+                                  lastDate: DateTime.now().add(
+                                    const Duration(days: 365),
+                                  ),
+                                );
+                                if (picked != null) {
+                                  setState(() {
+                                    _earliestStartDateController.text =
+                                        "${picked.day.toString().padLeft(2, '0')}.${picked.month.toString().padLeft(2, '0')}.${picked.year}";
+                                  });
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 32),

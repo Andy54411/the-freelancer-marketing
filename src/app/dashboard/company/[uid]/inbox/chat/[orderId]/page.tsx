@@ -202,7 +202,7 @@ export default function CompanyChatPage() {
 
   if (loading || authLoading) {
     return (
-      <div className="flex justify-center items-center h-screen pt-[var(--global-header-height)]">
+      <div className="flex justify-center items-center h-screen pt-(--global-header-height)">
         <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
         Lade Chat...
       </div>
@@ -211,7 +211,7 @@ export default function CompanyChatPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen pt-[var(--global-header-height)] p-4 text-center">
+      <div className="flex flex-col justify-center items-center h-screen pt-(--global-header-height) p-4 text-center">
         <div
           className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative max-w-md"
           role="alert"

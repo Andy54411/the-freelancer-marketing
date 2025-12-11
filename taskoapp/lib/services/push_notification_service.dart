@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'dart:convert';
 import 'notification_navigation_service.dart';
 
 /// Service für Push Notifications - speziell für neue Angebote
@@ -166,10 +167,10 @@ class PushNotificationService {
 
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch.remainder(100000),
-      message.notification?.title ?? 'Neues Angebot',
-      message.notification?.body ?? 'Sie haben ein neues Angebot erhalten',
+      message.notification?.title ?? 'Neue Benachrichtigung',
+      message.notification?.body ?? 'Sie haben eine neue Benachrichtigung',
       platformDetails,
-      payload: message.data.toString(),
+      payload: jsonEncode(message.data),
     );
   }
 
@@ -182,12 +183,21 @@ class PushNotificationService {
     try {
       // Parse payload als Map
       if (response.payload != null && response.payload!.isNotEmpty) {
-        // Simple payload parsing - kann je nach Format angepasst werden
-        final data = <String, dynamic>{
-          'type': 'new_offer',
-          'screen': 'incoming_offers',
-        };
-
+        Map<String, dynamic> data;
+        
+        try {
+          // Versuche JSON zu parsen
+          data = jsonDecode(response.payload!) as Map<String, dynamic>;
+        } catch (e) {
+          // Fallback: Standard "new_offer" Navigation
+          debugPrint('⚠️ Payload konnte nicht geparst werden, nutze Fallback');
+          data = <String, dynamic>{
+            'type': 'new_offer',
+            'screen': 'incoming_offers',
+          };
+        }
+        
+        debugPrint('📦 Parsed notification data: $data');
         await _handleNotificationNavigation(data);
       }
     } catch (e) {

@@ -83,6 +83,30 @@ service cloud.firestore {
       allow read, list: if true;
     }
 
+    // --- GLOBAL JOB APPLICATIONS ACCESS (Recursive) ---
+    // This ensures collectionGroup('jobApplications') works for subcollections under companies
+    // Bewerber können ihre eigenen Bewerbungen lesen (für Kalender-Integration)
+    // Companies können Bewerbungen für ihre Jobs lesen
+    // Support kann alle lesen
+    match /{path=**}/jobApplications/{applicationId} {
+      allow read, list: if request.auth != null && 
+                        (isSupportStaff() ||
+                         (resource != null && resource.data.applicantId == request.auth.uid) ||
+                         (resource != null && resource.data.companyId == request.auth.uid));
+      
+      // Bewerber können neue Bewerbungen erstellen
+      allow create: if request.auth != null;
+      
+      // Companies und Bewerber können Bewerbungen bearbeiten
+      allow update: if request.auth != null && 
+                    (isSupportStaff() ||
+                     (resource != null && resource.data.applicantId == request.auth.uid) ||
+                     (resource != null && resource.data.companyId == request.auth.uid));
+      
+      // Nur Support kann löschen
+      allow delete: if isSupportStaff();
+    }
+
     // --- users Collection ---
     match /users/{userId} {
       // Ein Admin/Support kann jedes Benutzerdokument lesen oder auflisten.

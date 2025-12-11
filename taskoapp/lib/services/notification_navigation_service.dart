@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../screens/jobs/job_detail_by_id_screen.dart';
+import '../screens/jobs/job_board_screen.dart';
 
 /// Navigation Service für Push Notification Navigation
 class NotificationNavigationService {
@@ -71,6 +73,35 @@ class NotificationNavigationService {
     }
   }
 
+  /// Navigiert zu Job Detail Screen
+  static Future<void> navigateToJobDetail(String jobId, {String? companyId}) async {
+    try {
+      debugPrint('🎯 Navigiere zu Job Detail: $jobId, companyId: $companyId');
+
+      // Verwende direkte Navigation statt GetX Route
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => JobDetailByIdScreen(jobId: jobId, companyId: companyId),
+          ),
+        );
+        debugPrint('✅ Navigation zu Job Detail erfolgreich');
+      } else {
+        // Fallback: Versuche GetX
+        Get.to(() => JobDetailByIdScreen(jobId: jobId, companyId: companyId));
+      }
+    } catch (e) {
+      debugPrint('❌ Fehler bei Navigation zu Job Detail: $e');
+      // Fallback: Navigiere zur Jobbörse
+      try {
+        Get.to(() => const JobBoardScreen());
+      } catch (_) {
+        await navigateToDashboard();
+      }
+    }
+  }
+
   /// Navigiert zu einer spezifischen Screen basierend auf Notification Data
   static Future<void> navigateFromNotification(Map<String, dynamic> data) async {
     try {
@@ -113,6 +144,19 @@ class NotificationNavigationService {
           final String? orderId = data['orderId'];
           if (orderId != null) {
             await Get.toNamed('/dashboard/user/order-details/$orderId');
+          }
+          break;
+
+        case 'job_alert':
+          // Navigiere zur Job-Detail-Seite
+          final String? jobId = data['jobId'];
+          final String? companyId = data['companyId'];
+          debugPrint('   JobId: $jobId, CompanyId: $companyId');
+          if (jobId != null) {
+            await navigateToJobDetail(jobId, companyId: companyId);
+          } else {
+            // Fallback: Navigiere zur Jobbörse
+            await Get.toNamed('/jobs');
           }
           break;
 

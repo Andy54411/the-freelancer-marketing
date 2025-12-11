@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, FileText, Upload, Trash2, Paperclip, CheckCircle2 } from 'lucide-react';
+import { Loader2, FileText, Upload, Trash2, Paperclip, CheckCircle2, Euro, Clock, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { storage } from '@/firebase/clients';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -46,6 +46,14 @@ export function JobApplicationForm({ job, profile, userId }: JobApplicationFormP
   const [email, setEmail] = useState(profile.email || '');
   const [phone, setPhone] = useState(profile.phone || '');
   const [message, setMessage] = useState('');
+
+  // Rahmenbedingungen State
+  const [salaryAmount, setSalaryAmount] = useState(profile.salaryExpectation?.amount?.toString() || '');
+  const [salaryCurrency, setSalaryCurrency] = useState(profile.salaryExpectation?.currency || 'EUR');
+  const [salaryPeriod, setSalaryPeriod] = useState(profile.salaryExpectation?.period || 'Monatsgehalt - brutto');
+  const [noticeDuration, setNoticeDuration] = useState(profile.noticePeriod?.duration || '');
+  const [noticeTiming, setNoticeTiming] = useState(profile.noticePeriod?.timing || 'zum Monatsende');
+  const [earliestStartDate, setEarliestStartDate] = useState('');
 
   // Attachments State
   const [attachments, setAttachments] = useState<Attachment[]>(() => {
@@ -198,6 +206,17 @@ export function JobApplicationForm({ job, profile, userId }: JobApplicationFormP
           email,
           phone,
         },
+        // Rahmenbedingungen
+        salaryExpectation: salaryAmount ? {
+          amount: parseInt(salaryAmount, 10),
+          currency: salaryCurrency,
+          period: salaryPeriod,
+        } : undefined,
+        noticePeriod: noticeDuration ? {
+          duration: noticeDuration,
+          timing: noticeTiming,
+        } : undefined,
+        earliestStartDate: earliestStartDate || undefined,
         attachments: attachments.filter(a => a.selected),
         message,
         submittedAt: new Date().toISOString(),
@@ -437,6 +456,117 @@ export function JobApplicationForm({ job, profile, userId }: JobApplicationFormP
               )}
               Weitere Datei hochladen
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Rahmenbedingungen Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Rahmenbedingungen</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Gehaltsvorstellung */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Euro className="h-4 w-4 text-teal-600" />
+              Gehaltsvorstellung
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Betrag</Label>
+                <Input
+                  type="number"
+                  placeholder="z.B. 50000"
+                  value={salaryAmount}
+                  onChange={e => setSalaryAmount(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Währung</Label>
+                <Select value={salaryCurrency} onValueChange={setSalaryCurrency}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="CHF">CHF</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Zeitraum</Label>
+                <Select value={salaryPeriod} onValueChange={setSalaryPeriod}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Jahresgehalt - brutto">Jahresgehalt - brutto</SelectItem>
+                    <SelectItem value="Jahresgehalt - netto">Jahresgehalt - netto</SelectItem>
+                    <SelectItem value="Monatsgehalt - brutto">Monatsgehalt - brutto</SelectItem>
+                    <SelectItem value="Monatsgehalt - netto">Monatsgehalt - netto</SelectItem>
+                    <SelectItem value="Stundenlohn - brutto">Stundenlohn - brutto</SelectItem>
+                    <SelectItem value="Stundenlohn - netto">Stundenlohn - netto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Kündigungsfrist */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Clock className="h-4 w-4 text-teal-600" />
+              Kündigungsfrist
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Dauer</Label>
+                <Select value={noticeDuration} onValueChange={setNoticeDuration}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Bitte wählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sofort verfügbar">Sofort verfügbar</SelectItem>
+                    <SelectItem value="14 Tage">14 Tage</SelectItem>
+                    <SelectItem value="4 Wochen">4 Wochen</SelectItem>
+                    <SelectItem value="6 Wochen">6 Wochen</SelectItem>
+                    <SelectItem value="2 Monate">2 Monate</SelectItem>
+                    <SelectItem value="3 Monate">3 Monate</SelectItem>
+                    <SelectItem value="6 Monate">6 Monate</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Zeitpunkt</Label>
+                <Select value={noticeTiming} onValueChange={setNoticeTiming}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="zum Monatsende">Zum Monatsende</SelectItem>
+                    <SelectItem value="zum 15. des Monats">Zum 15. des Monats</SelectItem>
+                    <SelectItem value="zum Quartalsende">Zum Quartalsende</SelectItem>
+                    <SelectItem value="jederzeit">Jederzeit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Frühester Starttermin */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Calendar className="h-4 w-4 text-teal-600" />
+              Frühester Starttermin <span className="text-gray-400 font-normal">(optional)</span>
+            </div>
+            <Input
+              type="date"
+              value={earliestStartDate}
+              onChange={e => setEarliestStartDate(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+            />
           </div>
         </CardContent>
       </Card>

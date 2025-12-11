@@ -26,6 +26,7 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { ApplicationStatusSelect } from './ApplicationStatusSelect';
 import { ApplicationChat } from './ApplicationChat';
+import { ApplicationNotes } from './ApplicationNotes';
 // import PrintablePdfAttachment from './PrintablePdfAttachment'; // Disabled due to webpack issues
 
 import { PrintButton } from './PrintButton';
@@ -568,6 +569,13 @@ export default async function ApplicationDetailsPage({
             </CardContent>
           </Card>
 
+          {/* Internal Notes */}
+          <ApplicationNotes
+            applicationId={application.id}
+            companyId={uid}
+            initialNotes={application.internalNotes || ''}
+          />
+
           {/* Skills & Languages */}
           <Card className="break-inside-avoid print:shadow-none print:border-0 print:p-0">
             <CardHeader className="print:px-0 print:py-0 print:mb-2">
@@ -632,7 +640,8 @@ export default async function ApplicationDetailsPage({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 print:px-0">
-              {profile.salaryExpectation && (
+              {/* Priorität: Bewerbungsdaten > Profildaten */}
+              {(application.salaryExpectation || profile.salaryExpectation) && (
                 <div className="flex items-start gap-3 print:block">
                   <Euro className="h-4 w-4 text-[#14ad9f] mt-1 print:hidden" />
                   <div>
@@ -640,13 +649,14 @@ export default async function ApplicationDetailsPage({
                       Gehaltsvorstellung:
                     </p>
                     <p className="text-sm text-muted-foreground print:inline-block print:text-black print:text-xs">
-                      {profile.salaryExpectation.amount} {profile.salaryExpectation.currency} /{' '}
-                      {profile.salaryExpectation.period}
+                      {(application.salaryExpectation?.amount || profile.salaryExpectation?.amount) || '-'}{' '}
+                      {(application.salaryExpectation?.currency || profile.salaryExpectation?.currency) || 'EUR'} /{' '}
+                      {(application.salaryExpectation?.period || profile.salaryExpectation?.period) || '-'}
                     </p>
                   </div>
                 </div>
               )}
-              {profile.noticePeriod && (
+              {(application.noticePeriod || profile.noticePeriod) && (
                 <div className="flex items-start gap-3 print:block">
                   <Clock className="h-4 w-4 text-[#14ad9f] mt-1 print:hidden" />
                   <div>
@@ -654,10 +664,30 @@ export default async function ApplicationDetailsPage({
                       Kündigungsfrist:
                     </p>
                     <p className="text-sm text-muted-foreground print:inline-block print:text-black print:text-xs">
-                      {profile.noticePeriod.duration} ({profile.noticePeriod.timing})
+                      {(application.noticePeriod?.duration || profile.noticePeriod?.duration) || '-'}
+                      {(application.noticePeriod?.timing || profile.noticePeriod?.timing) && 
+                        ` (${application.noticePeriod?.timing || profile.noticePeriod?.timing})`}
                     </p>
                   </div>
                 </div>
+              )}
+              {application.earliestStartDate && (
+                <div className="flex items-start gap-3 print:block">
+                  <Calendar className="h-4 w-4 text-[#14ad9f] mt-1 print:hidden" />
+                  <div>
+                    <p className="text-sm font-medium print:inline-block print:w-32 print:text-xs">
+                      Frühester Start:
+                    </p>
+                    <p className="text-sm text-muted-foreground print:inline-block print:text-black print:text-xs">
+                      {new Date(application.earliestStartDate).toLocaleDateString('de-DE')}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {!application.salaryExpectation && !profile.salaryExpectation && 
+               !application.noticePeriod && !profile.noticePeriod && 
+               !application.earliestStartDate && (
+                <p className="text-sm text-muted-foreground italic">Keine Angaben vorhanden.</p>
               )}
             </CardContent>
           </Card>

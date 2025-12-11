@@ -56,10 +56,11 @@ type CalendarEventData = {
   description?: string;
   startDate: string;
   endDate: string;
-  eventType: 'meeting' | 'appointment' | 'task' | 'reminder' | 'call';
+  eventType: 'meeting' | 'appointment' | 'task' | 'reminder' | 'call' | 'interview';
   status: 'planned' | 'confirmed' | 'completed' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   customerId?: string;
+  applicantId?: string;
   companyId: string;
 };
 
@@ -258,10 +259,10 @@ const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ 
           }
         });
 
-      // Interview-Termine aus jobApplications Collection laden
+      // Interview-Termine aus jobApplications Subcollection laden
+      // jobApplications sind unter /companies/{companyId}/jobApplications/ gespeichert
       const interviewsQuery = query(
-        collection(db, 'jobApplications'),
-        where('companyId', '==', companyUid),
+        collection(db, 'companies', companyUid, 'jobApplications'),
         where('confirmedInterviewDate', '!=', null)
       );
 
@@ -291,6 +292,7 @@ const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ 
             status: 'confirmed',
             priority: 'high',
             companyId: companyUid,
+            applicantId: data.applicantId,
             applicantName: `${data.applicantProfile?.firstName || ''} ${data.applicantProfile?.lastName || ''}`.trim(),
             jobTitle: data.jobTitle || 'Offene Position'
           });
@@ -419,12 +421,19 @@ const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ 
         ? getStatusColor('interview')
         : getStatusColor(calendarEvent.status);
 
+      // URL für Interview-Events zur Bewerbungsseite mit Chat setzen
+      // calendarEvent.id ist die applicationId für Interviews
+      const eventUrl = calendarEvent.eventType === 'interview'
+        ? `/dashboard/company/${companyUid}/recruiting/applications/${calendarEvent.id}`
+        : undefined;
+
       const eventObject = {
         id: `calendar-${calendarEvent.id}`,
         title: calendarEvent.title,
         start: calendarEvent.startDate ? new Date(calendarEvent.startDate) : undefined,
         end: calendarEvent.endDate ? new Date(calendarEvent.endDate) : undefined,
         allDay: false, // Calendar Events können spezifische Zeiten haben
+        url: eventUrl,
         extendedProps: {
           description: calendarEvent.description,
           status: calendarEvent.status,
@@ -432,6 +441,7 @@ const CompanyCalendar = forwardRef<CompanyCalendarRef, CompanyCalendarProps>(({ 
           eventType: calendarEvent.eventType,
           priority: calendarEvent.priority,
           customerId: calendarEvent.customerId,
+          applicantId: calendarEvent.applicantId,
         },
         // Priorität-basierte Hervorhebung
         className: calendarEvent.priority === 'urgent' ? 'calendar-event-urgent' : '',

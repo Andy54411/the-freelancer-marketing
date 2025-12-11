@@ -6,6 +6,7 @@ import 'package:add_2_calendar/add_2_calendar.dart';
 import '../../../models/user_model.dart';
 import '../../../models/order.dart' as taskilo_order;
 import '../../../services/order_service.dart';
+import '../../../services/job_application_service.dart';
 import '../dashboard_layout.dart';
 import 'order_detail_screen.dart';
 
@@ -17,11 +18,12 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  late final ValueNotifier<List<taskilo_order.Order>> _selectedEvents;
+  late final ValueNotifier<List<dynamic>> _selectedEvents;
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   List<taskilo_order.Order> _allOrders = [];
+  List<Map<String, dynamic>> _allInterviews = [];
   bool _isLoading = true;
   String? _error;
 
@@ -117,6 +119,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
       }
       
       debugPrint('📅 Finale Aufträge für Kalender: ${_allOrders.length}');
+      
+      // Lade auch Interview-Termine
+      final interviews = await JobApplicationService().getUserInterviewAppointments();
+      setState(() {
+        _allInterviews = interviews;
+      });
+      debugPrint('📅 Interview-Termine geladen: ${_allInterviews.length}');
+      
       _selectedEvents.value = _getEventsForDay(_selectedDay!);
     } catch (e) {
       setState(() {
@@ -126,9 +136,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
-    List<taskilo_order.Order> _getEventsForDay(DateTime day) {
-    final events = _allOrders.where((order) {
-      // Verwende orderDate falls verfügbar, sonst createdAt als Fallback
+    List<dynamic> _getEventsForDay(DateTime day) {
+    // Orders für den Tag
+    final orderEvents = _allOrders.where((order) {
       final orderDateTime = order.orderDate ?? order.createdAt;
       if (orderDateTime == null) return false;
       
@@ -137,16 +147,32 @@ class _CalendarScreenState extends State<CalendarScreen> {
       return orderDay.isAtSameMomentAs(checkDay);
     }).toList();
     
+    // Interview-Termine für den Tag
+    final interviewEvents = _allInterviews.where((interview) {
+      final interviewDateTime = interview['dateTime'] as DateTime;
+      final interviewDay = DateTime(interviewDateTime.year, interviewDateTime.month, interviewDateTime.day);
+      final checkDay = DateTime(day.year, day.month, day.day);
+      return interviewDay.isAtSameMomentAs(checkDay);
+    }).toList();
+    
+    // Kombiniere beide Event-Typen
+    final allEvents = <dynamic>[...orderEvents, ...interviewEvents];
+    
     // Debug: Zeige Events für den Tag
-    if (events.isNotEmpty) {
-      debugPrint('📅 Events für ${DateFormat('dd.MM.yyyy').format(day)}: ${events.length}');
-      for (final event in events) {
-        final displayDate = event.orderDate ?? event.createdAt!;
-        debugPrint('  - ${event.selectedSubcategory} (${event.status}) am ${DateFormat('dd.MM.yyyy').format(displayDate)}');
+    if (allEvents.isNotEmpty) {
+      debugPrint('📅 Events für ${DateFormat('dd.MM.yyyy').format(day)}: ${allEvents.length}');
+      for (final event in allEvents) {
+        if (event is taskilo_order.Order) {
+          final displayDate = event.orderDate ?? event.createdAt!;
+          debugPrint('  - AUFTRAG: ${event.selectedSubcategory} (${event.status}) am ${DateFormat('dd.MM.yyyy').format(displayDate)}');
+        } else if (event is Map<String, dynamic>) {
+          final interviewDate = event['dateTime'] as DateTime;
+          debugPrint('  - INTERVIEW: ${event['title']} am ${DateFormat('dd.MM.yyyy HH:mm').format(interviewDate)}');
+        }
       }
     }
     
-    return events;
+    return allEvents;
   }
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
@@ -156,6 +182,60 @@ class _CalendarScreenState extends State<CalendarScreen> {
         _focusedDay = focusedDay;
       });
       _selectedEvents.value = _getEventsForDay(selectedDay);
+    }
+  }
+
+  Future<void> _exportInterviewToCalendar(Map<String, dynamic> interview) async {
+    final interviewDateTime = interview['dateTime'] as DateTime;
+    final jobTitle = interview['jobTitle'] as String;
+    final companyName = interview['companyName'] as String;
+
+    try {
+      final event = Event(
+        title: 'Interview: $jobTitle',
+        description: 'Interview-Termin bei $companyName\n\nPosition: $jobTitle',
+        location: companyName,
+        startDate: interviewDateTime,
+        endDate: interviewDateTime.add(const Duration(hours: 1)),
+        iosParams: const IOSParams(
+          reminder: Duration(minutes: 30),
+        ),
+        androidParams: const AndroidParams(
+          emailInvites: [],
+        ),
+      );
+
+      final success = await Add2Calendar.addEvent2Cal(event);
+      
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Interview-Termin erfolgreich zum Kalender hinzugefügt!'),
+              backgroundColor: Color(0xFF14ad9f),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Fehler beim Hinzufügen des Termins'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Fehler beim Exportieren des Interview-Termins: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Fehler beim Hinzufügen des Termins'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -297,7 +377,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         lastDay: DateTime.utc(2030, 12, 31),
                         focusedDay: _focusedDay,
                         calendarFormat: _calendarFormat,
-                        eventLoader: _getEventsForDay,
+                        eventLoader: (day) => _getEventsForDay(day).whereType<taskilo_order.Order>().toList(),
                         startingDayOfWeek: StartingDayOfWeek.monday,
                         selectedDayPredicate: (day) {
                           return isSameDay(_selectedDay, day);
@@ -411,7 +491,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     
                     // Termine für den ausgewählten Tag
                     Expanded(
-                      child: ValueListenableBuilder<List<taskilo_order.Order>>(
+                      child: ValueListenableBuilder<List<dynamic>>(
                         valueListenable: _selectedEvents,
                         builder: (context, value, _) {
                           return Container(
@@ -456,8 +536,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                       : ListView.builder(
                                           itemCount: value.length,
                                           itemBuilder: (context, index) {
-                                            final order = value[index];
-                                            return _buildAppointmentCard(order);
+                                            final event = value[index];
+                                            if (event is taskilo_order.Order) {
+                                              return _buildAppointmentCard(event);
+                                            } else if (event is Map<String, dynamic>) {
+                                              return _buildInterviewCard(event);
+                                            }
+                                            return const SizedBox.shrink();
                                           },
                                         ),
                                 ),
@@ -469,6 +554,132 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     ),
                   ],
                 ),
+    );
+  }
+
+  Widget _buildInterviewCard(Map<String, dynamic> interview) {
+    final interviewDateTime = interview['dateTime'] as DateTime;
+    final companyName = interview['companyName'] as String;
+    final jobTitle = interview['jobTitle'] as String;
+    final status = interview['status'] as String;
+    
+    Color statusColor = const Color(0xFF8B5CF6); // Purple für Interviews
+    String statusText = 'INTERVIEW';
+    
+    switch (status) {
+      case 'interview_scheduled':
+        statusText = 'GEPLANT';
+        statusColor = const Color(0xFF3B82F6); // Blue
+        break;
+      case 'interview_accepted':
+      case 'interview_confirmed':
+        statusText = 'BESTÄTIGT';
+        statusColor = const Color(0xFF10B981); // Green
+        break;
+      default:
+        statusText = 'INTERVIEW';
+        statusColor = const Color(0xFF8B5CF6); // Purple
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: statusColor.withValues(alpha: 0.5),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        jobTitle,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Unternehmen: $companyName',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Zeit: ${DateFormat('HH:mm').format(interviewDateTime)} Uhr',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Interview-Termin',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _exportInterviewToCalendar(interview),
+                  icon: const Icon(
+                    Icons.calendar_today,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  tooltip: 'Zum Kalender hinzufügen',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 

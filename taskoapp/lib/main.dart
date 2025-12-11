@@ -18,6 +18,8 @@ import 'screens/auth/login_screen.dart';
 import 'screens/startseite/start_screen.dart';
 import 'screens/dashboard/dashboard_user/home_screen.dart';
 import 'screens/dashboard/dashboard_user/incoming_offers_screen.dart';
+import 'screens/jobs/job_detail_by_id_screen.dart';
+import 'screens/jobs/job_board_screen.dart';
 import 'utils/app_theme.dart';
 
 void main() async {
@@ -120,6 +122,19 @@ class TaskiloApp extends StatelessWidget {
           GetPage(
             name: '/dashboard/user/incoming-offers',
             page: () => const IncomingOffersScreen(),
+          ),
+
+          // Job Routes
+          GetPage(
+            name: '/jobs',
+            page: () => const JobBoardScreen(),
+          ),
+          GetPage(
+            name: '/jobs/detail/:jobId',
+            page: () {
+              final jobId = Get.parameters['jobId'] ?? '';
+              return JobDetailByIdScreen(jobId: jobId);
+            },
           ),
 
           // Fallback route

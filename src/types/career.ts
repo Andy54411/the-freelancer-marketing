@@ -203,9 +203,23 @@ export const JobApplicationSchema = z.object({
   acceptedSlot: z.string().optional(),
   isVideoCall: z.boolean().optional(),
   videoLink: z.string().optional(),
-  // 🎯 Neue Meeting-Typ Felder
+  // Meeting-Typ Felder
   meetingType: z.enum(['video', 'phone', 'inperson', 'flexible']).optional(),
   allowCandidateChoice: z.boolean().optional(),
+  // Interne Notizen (nur für Unternehmen sichtbar)
+  internalNotes: z.string().optional(),
+  notesUpdatedAt: z.string().optional(),
+  // Rahmenbedingungen (direkt in der Bewerbung, überschreibt Profil-Daten)
+  salaryExpectation: z.object({
+    amount: z.number().optional(),
+    currency: z.string().optional(),
+    period: z.string().optional(),
+  }).optional(),
+  noticePeriod: z.object({
+    duration: z.string().optional(),
+    timing: z.string().optional(),
+  }).optional(),
+  earliestStartDate: z.string().optional(),
 });
 
 export type JobApplication = z.infer<typeof JobApplicationSchema>;
