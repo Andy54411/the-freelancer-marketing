@@ -19,7 +19,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Send as FiSend, Loader2 as FiLoader, User as FiUser, AlertTriangle, Video } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { TaskiloVideoService } from '@/services/TaskiloVideoService';
-import { TaskiloVideoService } from '@/services/TaskiloVideoService';
 import Image from 'next/image';
 import { validateSensitiveData, getSensitiveDataWarning } from '@/lib/sensitiveDataValidator';
 import { toast } from 'sonner';
@@ -124,7 +123,6 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
   const [isVideoRequestPending, setIsVideoRequestPending] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const videoService = new TaskiloVideoService();
   const videoService = new TaskiloVideoService();
 
   // Hilfsfunktion zum Laden von Benutzerprofilen für Chat-Nachrichten

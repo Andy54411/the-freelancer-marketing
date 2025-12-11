@@ -637,6 +637,17 @@ export default async function ApplicationDetailsPage({
                               {exp.description}
                             </p>
                           )}
+                          {exp.certificateUrl && (
+                            <a
+                              href={exp.certificateUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 text-sm text-[#14ad9f] hover:underline print:hidden"
+                            >
+                              <FileText className="h-4 w-4" />
+                              Arbeitszeugnis herunterladen
+                            </a>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -711,6 +722,17 @@ export default async function ApplicationDetailsPage({
                               {edu.description}
                             </p>
                           )}
+                          {edu.certificateUrl && (
+                            <a
+                              href={edu.certificateUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 text-sm text-[#14ad9f] hover:underline print:hidden"
+                            >
+                              <FileText className="h-4 w-4" />
+                              Zeugnis herunterladen
+                            </a>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -736,11 +758,22 @@ export default async function ApplicationDetailsPage({
                     key={i}
                     className="flex items-start justify-between border-b last:border-0 pb-4 last:pb-0 print:border-0 print:pb-1"
                   >
-                    <div>
+                    <div className="flex-1">
                       <h4 className="font-semibold print:text-sm">{qual.name}</h4>
                       <div className="text-sm text-muted-foreground print:text-black print:text-xs">
                         {qual.issuer} {qual.date && `• ${qual.date}`}
                       </div>
+                      {qual.certificateUrl && (
+                        <a
+                          href={qual.certificateUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-sm text-[#14ad9f] hover:underline mt-1 print:hidden"
+                        >
+                          <Download className="h-4 w-4" />
+                          Zertifikat herunterladen
+                        </a>
+                      )}
                     </div>
                   </div>
                 ))}
