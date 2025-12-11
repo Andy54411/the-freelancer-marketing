@@ -81,16 +81,17 @@ export function ApplicationsList({ applications: initialApplications }: Applicat
                 <TableCell>{new Date(app.appliedAt).toLocaleDateString('de-DE')}</TableCell>
                 <TableCell>
                   <Select
-                    defaultValue={app.status}
+                    value={app.status}
                     onValueChange={val => updateStatus(app.id, val)}
                   >
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue />
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Status wählen" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pending">Eingegangen</SelectItem>
                       <SelectItem value="reviewed">Geprüft</SelectItem>
-                      <SelectItem value="interview">Interview</SelectItem>
+                      <SelectItem value="interview">Interview eingeladen</SelectItem>
+                      <SelectItem value="interview_accepted">Interview bestätigt</SelectItem>
                       <SelectItem value="accepted">Angenommen</SelectItem>
                       <SelectItem value="rejected">Abgelehnt</SelectItem>
                     </SelectContent>

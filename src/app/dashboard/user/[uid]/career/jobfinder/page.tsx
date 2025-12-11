@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { JobfinderForm } from '@/components/jobs/JobfinderForm';
+import { JobfinderFormSimple } from '@/components/jobs/JobfinderFormSimple';
 import { JobfinderSidebar } from '@/components/jobs/JobfinderSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Briefcase } from 'lucide-react';
@@ -26,8 +26,8 @@ export default function JobfinderPage() {
           Meine Jobfinder
         </h1>
         <p className="mt-4 text-lg text-gray-600 max-w-3xl">
-          Mit dem Jobfinder erhältst du immer die neusten, auf dich zugeschnittenen Jobs bequem per Mail. 
-          Wähle einfach deine Suchkriterien aus und erstelle deinen Jobfinder.
+          Mit dem Jobfinder erhältst du Push-Benachrichtigungen, wenn neue passende Jobs veröffentlicht werden. 
+          Erstelle deinen Jobfinder und verpasse keine Chance mehr.
         </p>
       </div>
 
@@ -37,7 +37,7 @@ export default function JobfinderPage() {
         <div className="lg:col-span-2">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
             <h2 className="text-xl font-bold text-gray-900 mb-6">Neuen Jobfinder erstellen</h2>
-            <JobfinderForm userEmail={user?.email || ''} userId={user?.uid} />
+            <JobfinderFormSimple userEmail={user?.email || ''} userId={user?.uid} />
           </div>
         </div>
 

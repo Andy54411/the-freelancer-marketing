@@ -424,7 +424,7 @@ export default function CreateProjectRequestPage() {
                       type="date"
                       value={formData.startDate}
                       onChange={e => setFormData({ ...formData, startDate: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] min-h-[48px]"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] min-h-12"
                     />
                   </div>
                   <div>
@@ -433,7 +433,7 @@ export default function CreateProjectRequestPage() {
                       type="date"
                       value={formData.endDate}
                       onChange={e => setFormData({ ...formData, endDate: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] min-h-[48px]"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] min-h-12"
                     />
                   </div>
                   <div>
@@ -442,7 +442,7 @@ export default function CreateProjectRequestPage() {
                       type="date"
                       value={formData.preferredDate}
                       onChange={e => setFormData({ ...formData, preferredDate: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] min-h-[48px]"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] min-h-12"
                     />
                   </div>
                 </div>
@@ -719,7 +719,7 @@ export default function CreateProjectRequestPage() {
             <div className="bg-white/10 p-4 rounded-lg space-y-4 mt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <div className="h-[4.5rem] flex flex-col justify-between">
+                  <div className="h-18 flex flex-col justify-between">
                     <Label className="text-[#14ad9f] font-medium">Startdatum</Label>
                     <p className="text-[#14ad9f]/80 text-sm">
                       Wann soll das Projekt frühestens beginnen?
@@ -735,7 +735,7 @@ export default function CreateProjectRequestPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="h-[4.5rem] flex flex-col justify-between">
+                  <div className="h-18 flex flex-col justify-between">
                     <Label className="text-[#14ad9f] font-medium">Enddatum</Label>
                     <p className="text-[#14ad9f]/80 text-sm">
                       Bis wann soll das Projekt abgeschlossen sein?
@@ -752,7 +752,7 @@ export default function CreateProjectRequestPage() {
               </div>
 
               <div className="space-y-3 pt-2">
-                <div className="h-[4.5rem] flex flex-col justify-between">
+                <div className="h-18 flex flex-col justify-between">
                   <Label className="text-[#14ad9f] font-medium">Bevorzugtes Datum (optional)</Label>
                   <p className="text-[#14ad9f]/80 text-sm">
                     Haben Sie einen speziellen Wunschtermin für die Durchführung?

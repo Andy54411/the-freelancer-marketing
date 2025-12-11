@@ -21,17 +21,31 @@ interface JobData {
   jobGroup?: string;
 }
 
+// Unterstützt beide Formate: Legacy (Web alt) und Neu (Web neu + Flutter)
 interface JobfinderData {
+  // Neues Format (Web neu + Flutter)
+  name?: string;
+  searchTerm?: string;
+  radiusKm?: number;
+  category?: string;
+  jobType?: string;
+  pushNotification?: boolean;
+  emailNotification?: boolean;
+  matchCount?: number;
+  
+  // Legacy Format (Web alt)
   jobGroups?: string[];
-  location?: string;
   radius?: string;
   searchPhrase?: string;
   industries?: string[];
   categories?: string[];
   ranks?: string[];
   employment?: string[];
-  active: boolean;
   email?: string;
+  
+  // Gemeinsam
+  location?: string;
+  active: boolean;
   createdAt?: any;
 }
 
@@ -129,9 +143,10 @@ export const onJobCreated = onDocumentCreated(
 );
 
 function doesJobMatchJobfinder(job: JobData, jobfinder: JobfinderData): boolean {
-  // Suchbegriff prüfen
-  if (jobfinder.searchPhrase && jobfinder.searchPhrase.trim() !== '') {
-    const term = jobfinder.searchPhrase.toLowerCase();
+  // Suchbegriff prüfen (unterstützt beide Feldnamen: searchTerm und searchPhrase)
+  const searchTerm = jobfinder.searchTerm || jobfinder.searchPhrase;
+  if (searchTerm && searchTerm.trim() !== '') {
+    const term = searchTerm.toLowerCase();
     const title = (job.title || '').toLowerCase();
     const description = (job.description || '').toLowerCase();
     const company = (job.companyName || '').toLowerCase();
@@ -152,15 +167,34 @@ function doesJobMatchJobfinder(job: JobData, jobfinder: JobfinderData): boolean 
     }
   }
 
-  // Job-Gruppen: Wenn Jobfinder Job-Gruppen hat, muss Job matchen
-  // Aber wenn Jobfinder keine hat oder Job keine hat, matcht es
+  // Kategorie prüfen (neues Format: category als String)
+  if (jobfinder.category && jobfinder.category.trim() !== '' && job.category) {
+    const jobCategory = job.category.toLowerCase();
+    const searchCategory = jobfinder.category.toLowerCase();
+    
+    if (!jobCategory.includes(searchCategory) && !searchCategory.includes(jobCategory)) {
+      return false;
+    }
+  }
+
+  // Job-Typ prüfen (neues Format)
+  if (jobfinder.jobType && jobfinder.jobType.trim() !== '' && job.type) {
+    const jobType = job.type.toLowerCase();
+    const searchType = jobfinder.jobType.toLowerCase();
+    
+    if (!jobType.includes(searchType) && !searchType.includes(jobType)) {
+      return false;
+    }
+  }
+
+  // Job-Gruppen: Legacy Format - Wenn Jobfinder Job-Gruppen hat, muss Job matchen
   if (jobfinder.jobGroups && jobfinder.jobGroups.length > 0 && job.jobGroup) {
     if (!jobfinder.jobGroups.includes(job.jobGroup)) {
       return false;
     }
   }
 
-  // Kategorien
+  // Kategorien: Legacy Format
   if (jobfinder.categories && jobfinder.categories.length > 0 && job.category) {
     if (!jobfinder.categories.includes(job.category)) {
       return false;

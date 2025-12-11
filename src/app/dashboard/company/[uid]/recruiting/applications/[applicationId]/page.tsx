@@ -134,50 +134,246 @@ export default async function ApplicationDetailsPage({
   return (
     <div className="space-y-6 pb-10 print:p-0 print:space-y-0 print:block">
       <style type="text/css" media="print">{`
-        @page { size: A4; margin: 15mm; }
-        body { background: white !important; color: #000 !important; font-family: ui-sans-serif, system-ui, sans-serif !important; }
+        @page { 
+          size: A4; 
+          margin: 20mm 15mm 20mm 15mm;
+        }
+        
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        
+        body { 
+          background: white !important; 
+          color: #1a1a1a !important; 
+          font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+          font-size: 10pt !important;
+          line-height: 1.5 !important;
+        }
         
         /* Hide UI Chrome */
-        .no-print, header, nav, aside, .fixed, button, .print\\:hidden { display: none !important; }
+        .no-print, header, nav, aside, .fixed, button, .print\\:hidden { 
+          display: none !important; 
+        }
         
         /* Reset Layout */
         .print-container { display: block !important; width: 100% !important; }
-        .lg\\:col-span-2, .lg\\:grid-cols-3 { width: 100% !important; display: block !important; grid-template-columns: none !important; }
+        .lg\\:col-span-2, .lg\\:grid-cols-3 { 
+          width: 100% !important; 
+          display: block !important; 
+          grid-template-columns: none !important; 
+        }
         
         /* Remove Card Styling */
         .rounded-lg, .rounded-md, .rounded-xl { border-radius: 0 !important; }
-        .border, .border-2, .border-b { border: none !important; border-bottom: none !important; }
         .shadow, .shadow-sm, .shadow-md { box-shadow: none !important; }
         .bg-card, .bg-background, .bg-muted { background: transparent !important; }
         
-        /* Typography & Spacing */
-        h1 { font-size: 24pt !important; line-height: 1.2 !important; margin-bottom: 5mm !important; color: #000 !important; }
-        h2, .text-2xl { font-size: 16pt !important; margin-bottom: 3mm !important; color: #000 !important; border-bottom: 1px solid #000 !important; padding-bottom: 1mm !important; margin-top: 8mm !important; }
-        h3, .text-lg { font-size: 12pt !important; font-weight: bold !important; margin-bottom: 1mm !important; color: #000 !important; }
-        p, div, span, a { font-size: 10pt !important; line-height: 1.4 !important; color: #000 !important; }
-        .text-muted-foreground { color: #333 !important; }
+        /* ===== HEADER SECTION ===== */
+        .print-header {
+          display: flex !important;
+          align-items: flex-start !important;
+          gap: 20px !important;
+          padding-bottom: 15px !important;
+          border-bottom: 3px solid #14ad9f !important;
+          margin-bottom: 20px !important;
+        }
         
-        /* Specific Elements */
-        .badge { border: 1px solid #000 !important; color: #000 !important; padding: 1px 4px !important; }
-        a { text-decoration: none !important; color: #000 !important; }
+        .print-avatar { 
+          display: block !important; 
+          width: 80px !important; 
+          height: 80px !important; 
+          border-radius: 50% !important;
+          border: 3px solid #14ad9f !important;
+          overflow: hidden !important;
+          flex-shrink: 0 !important;
+          background: #f0f0f0 !important;
+        }
+        .print-avatar img { 
+          width: 100% !important; 
+          height: 100% !important; 
+          object-fit: cover !important; 
+        }
+        
+        .print-header-info {
+          flex: 1 !important;
+        }
+        
+        .print-header-info h1 {
+          font-size: 22pt !important;
+          font-weight: 700 !important;
+          color: #1a1a1a !important;
+          margin: 0 0 5px 0 !important;
+          line-height: 1.2 !important;
+        }
+        
+        .print-header-info .job-title {
+          font-size: 12pt !important;
+          color: #14ad9f !important;
+          font-weight: 600 !important;
+          margin-bottom: 10px !important;
+        }
+        
+        .print-contact-row {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          gap: 20px !important;
+          font-size: 9pt !important;
+          color: #444 !important;
+        }
+        
+        .print-contact-item {
+          display: flex !important;
+          align-items: center !important;
+          gap: 5px !important;
+        }
+        
+        .print-contact-item strong {
+          color: #1a1a1a !important;
+        }
+        
+        /* ===== SECTION STYLES ===== */
+        .print-section {
+          margin-bottom: 20px !important;
+          page-break-inside: avoid !important;
+        }
+        
+        .print-section-title {
+          font-size: 13pt !important;
+          font-weight: 700 !important;
+          color: #14ad9f !important;
+          border-bottom: 2px solid #14ad9f !important;
+          padding-bottom: 5px !important;
+          margin-bottom: 12px !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.5px !important;
+        }
+        
+        /* Card Headers in Print */
+        h2, .text-2xl, [class*="CardTitle"] { 
+          font-size: 13pt !important; 
+          font-weight: 700 !important;
+          color: #14ad9f !important;
+          border-bottom: 2px solid #14ad9f !important;
+          padding-bottom: 5px !important;
+          margin-bottom: 12px !important;
+          margin-top: 20px !important;
+        }
+        
+        h3, .text-lg { 
+          font-size: 11pt !important; 
+          font-weight: 600 !important; 
+          color: #1a1a1a !important;
+          margin-bottom: 3px !important;
+        }
+        
+        p, div, span, a { 
+          font-size: 10pt !important; 
+          line-height: 1.5 !important; 
+          color: #333 !important; 
+        }
+        
+        .text-muted-foreground { color: #555 !important; }
+        
+        /* ===== EXPERIENCE & EDUCATION ENTRIES ===== */
+        .print-entry {
+          margin-bottom: 15px !important;
+          padding-left: 15px !important;
+          border-left: 3px solid #e0e0e0 !important;
+        }
+        
+        .print-entry-header {
+          display: flex !important;
+          justify-content: space-between !important;
+          align-items: baseline !important;
+          margin-bottom: 3px !important;
+        }
+        
+        .print-entry-title {
+          font-size: 11pt !important;
+          font-weight: 600 !important;
+          color: #1a1a1a !important;
+        }
+        
+        .print-entry-date {
+          font-size: 9pt !important;
+          color: #666 !important;
+          font-style: italic !important;
+        }
+        
+        .print-entry-subtitle {
+          font-size: 10pt !important;
+          color: #14ad9f !important;
+          font-weight: 500 !important;
+          margin-bottom: 5px !important;
+        }
+        
+        .print-entry-description {
+          font-size: 9pt !important;
+          color: #444 !important;
+          line-height: 1.4 !important;
+        }
+        
+        /* ===== BADGES & TAGS ===== */
+        .badge, [class*="Badge"] { 
+          display: inline-block !important;
+          border: 1px solid #14ad9f !important; 
+          color: #14ad9f !important; 
+          background: transparent !important;
+          padding: 2px 8px !important;
+          border-radius: 3px !important;
+          font-size: 8pt !important;
+          margin: 2px !important;
+        }
+        
+        /* ===== SKILLS SECTION ===== */
+        .print-skills {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          gap: 8px !important;
+        }
+        
+        /* ===== HIDE ELEMENTS ===== */
+        .lucide { display: none !important; }
+        .absolute.w-0.5 { display: none !important; }
+        .rounded-full:not(.print-avatar) { display: none !important; }
         
         /* Timeline Reset */
-        .absolute.w-0.5 { display: none !important; }
-        .rounded-full { display: none !important; }
         .pl-6, .ml-6 { margin-left: 0 !important; padding-left: 0 !important; }
         
         /* Page Breaks */
-        .break-inside-avoid { break-inside: avoid !important; page-break-inside: avoid !important; margin-bottom: 5mm !important; }
-        .break-before-page { break-before: page !important; page-break-before: always !important; display: block !important; }
+        .break-inside-avoid { 
+          break-inside: avoid !important; 
+          page-break-inside: avoid !important; 
+        }
+        .break-before-page { 
+          break-before: page !important; 
+          page-break-before: always !important; 
+        }
         
-        /* Hide Icons in Print to look cleaner */
-        .lucide { display: none !important; }
+        /* Links */
+        a { text-decoration: none !important; color: #333 !important; }
+        
+        /* ===== FOOTER ===== */
+        .print-footer {
+          position: fixed !important;
+          bottom: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          text-align: center !important;
+          font-size: 8pt !important;
+          color: #999 !important;
+          padding-top: 10px !important;
+          border-top: 1px solid #e0e0e0 !important;
+        }
       `}</style>
 
       {/* Header Section */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between w-full print:block print:mb-4">
-        <div className="flex items-start gap-4 flex-1 print:block">
-          <Link href={`/dashboard/company/${uid}/recruiting/applications`} className="print:hidden">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between w-full print:mb-0">
+        {/* Screen Header */}
+        <div className="flex items-start gap-4 flex-1 print:hidden">
+          <Link href={`/dashboard/company/${uid}/recruiting/applications`}>
             <Button
               variant="outline"
               size="icon"
@@ -186,34 +382,68 @@ export default async function ApplicationDetailsPage({
               <ArrowLeft className="h-4 w-4 text-[#14ad9f]" />
             </Button>
           </Link>
-          <div className="print:w-full">
-            <h1 className="text-2xl font-bold tracking-tight print:text-3xl print:mb-2">
+          
+          {/* Profile Picture */}
+          <Avatar className="h-16 w-16 border-2 border-[#14ad9f]/30 shrink-0">
+            <AvatarImage 
+              src={profile.profilePictureUrl || personalData.profilePictureUrl} 
+              alt={`${profile.firstName} ${profile.lastName}`}
+            />
+            <AvatarFallback className="bg-[#14ad9f]/10 text-[#14ad9f] text-xl font-semibold">
+              {profile.firstName?.[0]}{profile.lastName?.[0]}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
               {profile.firstName} {profile.lastName}
             </h1>
-            <p className="text-muted-foreground print:text-base print:text-black print:mb-4">
+            <p className="text-muted-foreground">
               Bewerbung als{' '}
-              <span className="font-medium text-foreground print:text-black">{jobTitle}</span>
+              <span className="font-medium text-foreground">{jobTitle}</span>
             </p>
-
-            {/* Print-Only Contact Bar */}
-            <div className="hidden print:flex print:flex-wrap print:gap-6 print:text-sm print:border-y print:border-black print:py-2 print:mb-6">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">Email:</span> {profile.email}
+          </div>
+        </div>
+        
+        {/* Print Header - Professional Layout */}
+        <div className="hidden print:flex print-header">
+          {/* Profile Picture for Print */}
+          {(profile.profilePictureUrl || personalData.profilePictureUrl) && (
+            <div className="print-avatar">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={profile.profilePictureUrl || personalData.profilePictureUrl} 
+                alt={`${profile.firstName} ${profile.lastName}`}
+              />
+            </div>
+          )}
+          
+          <div className="print-header-info">
+            <h1>{profile.firstName} {profile.lastName}</h1>
+            <div className="job-title">Bewerbung als {jobTitle}</div>
+            <div className="print-contact-row">
+              <div className="print-contact-item">
+                <strong>E-Mail:</strong> {profile.email}
               </div>
               {(profile.phone || personalData.phone) && (
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">Tel:</span> {profile.phone || personalData.phone}
+                <div className="print-contact-item">
+                  <strong>Tel:</strong> {profile.phone || personalData.phone}
                 </div>
               )}
               {(profile.city || personalData.city) && (
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">Ort:</span> {profile.zip || personalData.zip}{' '}
-                  {profile.city || personalData.city}
+                <div className="print-contact-item">
+                  <strong>Ort:</strong> {profile.zip || personalData.zip} {profile.city || personalData.city}
+                </div>
+              )}
+              {personalData.birthDate && (
+                <div className="print-contact-item">
+                  <strong>Geb.:</strong> {new Date(personalData.birthDate).toLocaleDateString('de-DE')}
                 </div>
               )}
             </div>
           </div>
         </div>
+        
         <div className="flex items-center gap-3 shrink-0 print:hidden">
           <PrintButton />
           <ApplicationStatusSelect
@@ -222,6 +452,11 @@ export default async function ApplicationDetailsPage({
             companyId={uid}
           />
         </div>
+      </div>
+
+      {/* Print Date */}
+      <div className="hidden print:block text-right text-xs text-gray-500 mb-4">
+        Ausgedruckt am {format(new Date(), 'dd.MM.yyyy', { locale: de })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:block">
@@ -692,19 +927,18 @@ export default async function ApplicationDetailsPage({
             </CardContent>
           </Card>
 
-          {/* Attachments List */}
-          <Card className="break-inside-avoid print:shadow-none print:border-0 print:p-0">
-            <CardHeader className="print:px-0 print:py-0 print:mb-2">
-              <CardTitle className="text-lg flex items-center gap-2 print:text-lg print:border-b print:border-black print:pb-1">
-                <Download className="h-4 w-4 text-[#14ad9f] print:hidden" /> Anhänge
+          {/* Attachments List - Hidden in Print (shown at bottom instead) */}
+          <Card className="break-inside-avoid print:hidden">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Download className="h-4 w-4 text-[#14ad9f]" /> Anhänge
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 print:px-0">
+            <CardContent className="space-y-3">
               {application.attachments && application.attachments.length > 0 ? (
                 application.attachments.map((att, i) => (
                   <div
                     key={i}
-                    className="print:mb-1"
                     data-pdf-url={att.url}
                     data-pdf-name={att.name}
                   >
@@ -712,14 +946,15 @@ export default async function ApplicationDetailsPage({
                       href={att.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center p-3 rounded-md border hover:bg-[#14ad9f]/5 hover:border-[#14ad9f]/30 transition-all group print:border-0 print:p-0 print:block"
+                      className="flex items-center p-3 rounded-md border hover:bg-[#14ad9f]/5 hover:border-[#14ad9f]/30 transition-all group"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate group-hover:text-[#14ad9f] transition-colors print:text-black print:text-xs">
-                          • {att.name} ({att.type || 'Dokument'})
+                        <p className="text-sm font-medium truncate group-hover:text-[#14ad9f] transition-colors">
+                          {att.name}
                         </p>
+                        <p className="text-xs text-muted-foreground">{att.type || 'Dokument'}</p>
                       </div>
-                      <Download className="h-4 w-4 text-[#14ad9f] opacity-0 group-hover:opacity-100 transition-opacity print:hidden" />
+                      <Download className="h-4 w-4 text-[#14ad9f] opacity-0 group-hover:opacity-100 transition-opacity" />
                     </a>
                   </div>
                 ))
@@ -731,53 +966,27 @@ export default async function ApplicationDetailsPage({
         </div>
       </div>
 
-      {/* PRINT ONLY: Full Page Attachments */}
-      <div className="hidden print:block">
-        {application.attachments?.map((att, i) => (
-          <div
-            key={`print-att-${i}`}
-            className="break-before-page w-full min-h-screen flex flex-col bg-white"
-          >
-            <h2 className="text-lg font-bold mb-4 border-b pb-2 mt-8 print:block">
-              Anhang: {att.name}
-            </h2>
-
-            {/* Image Handling - Prints natively */}
-            {att.type?.includes('image') || att.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-              <div className="flex-1 flex items-start justify-center p-4">
-                <img
-                  src={att.url}
-                  className="max-w-full max-h-[90vh] object-contain border border-gray-200"
-                  alt={att.name}
-                />
-              </div>
-            ) : (
-              /* PDF Platzhalter für Download */
-              <div
-                className="w-full min-h-screen flex items-center justify-center"
-                data-pdf-url={att.url}
-                data-pdf-name={att.name}
-              >
-                <div className="text-center p-8 bg-gray-50 border border-gray-200 rounded">
-                  <FileText className="h-16 w-16 text-gray-400 mb-4 mx-auto" />
-                  <p className="text-lg font-bold mb-2">PDF-Dokument: {att.name}</p>
-                  <p className="text-gray-600 mb-4">
-                    PDF wird beim Drucken automatisch heruntergeladen.
-                  </p>
-                  <a
-                    href={att.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline text-sm"
-                  >
-                    Datei manuell öffnen
-                  </a>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      {/* PRINT ONLY: Attachment Summary (No full pages for PDFs) */}
+      {application.attachments && application.attachments.length > 0 && (
+        <div className="hidden print:block print:mt-8 print:border-t print:border-gray-300 print:pt-4">
+          <h2 className="text-sm font-bold mb-2 text-[#14ad9f]">ANHÄNGE</h2>
+          <p className="text-xs text-gray-600 mb-2">
+            Folgende Dokumente wurden mit der Bewerbung eingereicht:
+          </p>
+          <ul className="text-xs space-y-1">
+            {application.attachments.map((att, i) => (
+              <li key={`print-att-list-${i}`} className="flex items-center gap-2">
+                <span className="text-[#14ad9f]">•</span>
+                <span className="font-medium">{att.name}</span>
+                <span className="text-gray-500">({att.type || 'Dokument'})</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-gray-500 mt-2 italic">
+            Die Dokumente können im Online-Portal heruntergeladen werden.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

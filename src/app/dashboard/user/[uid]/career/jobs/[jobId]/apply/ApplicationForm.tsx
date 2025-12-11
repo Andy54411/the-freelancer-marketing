@@ -268,6 +268,7 @@ export function ApplicationForm({ job, profile, userId }: ApplicationFormProps) 
           zip,
           city,
           country,
+          profilePictureUrl: profile.profilePictureUrl || null,
         },
         attachments: attachments.filter(a => a.selected),
         message,

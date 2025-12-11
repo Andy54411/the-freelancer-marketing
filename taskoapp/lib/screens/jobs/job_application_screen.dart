@@ -254,6 +254,7 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
         'zip': _zipController.text,
         'city': _cityController.text,
         'country': _countryController.text,
+        'profilePictureUrl': _profile?['profilePictureUrl'],
       };
 
       final allAttachments = [
