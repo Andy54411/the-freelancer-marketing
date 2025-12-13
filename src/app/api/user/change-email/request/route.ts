@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ResendEmailService } from '@/lib/resend-email-service';
-import { db as adminDb } from '@/firebase/server';
+import { db as adminDb, auth as adminAuth } from '@/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export const runtime = 'nodejs';
@@ -39,7 +39,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Prüfe ob die neue E-Mail bereits verwendet wird
+    // Prüfe ob die neue E-Mail bereits in Firebase Auth verwendet wird
+    if (adminAuth) {
+      try {
+        await adminAuth.getUserByEmail(newEmail);
+        // Wenn kein Fehler, existiert der User bereits
+        return NextResponse.json(
+          { success: false, error: 'Diese E-Mail-Adresse wird bereits von einem anderen Konto verwendet' },
+          { status: 400 }
+        );
+      } catch (authError: unknown) {
+        // auth/user-not-found ist OK - E-Mail ist verfügbar
+        const error = authError as { code?: string };
+        if (error.code !== 'auth/user-not-found') {
+          throw authError;
+        }
+      }
+    }
+
+    // Prüfe auch in Firestore (für Konsistenz)
     if (adminDb) {
       const existingUser = await adminDb
         .collection('users')
