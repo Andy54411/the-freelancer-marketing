@@ -20,6 +20,8 @@ import 'screens/dashboard/dashboard_user/home_screen.dart';
 import 'screens/dashboard/dashboard_user/incoming_offers_screen.dart';
 import 'screens/jobs/job_detail_by_id_screen.dart';
 import 'screens/jobs/job_board_screen.dart';
+import 'screens/employee/employee_login_screen.dart';
+import 'screens/employee/employee_dashboard_screen.dart';
 import 'utils/app_theme.dart';
 
 void main() async {
@@ -135,6 +137,23 @@ class TaskiloApp extends StatelessWidget {
               final jobId = Get.parameters['jobId'] ?? '';
               return JobDetailByIdScreen(jobId: jobId);
             },
+          ),
+
+          // Employee Portal Routes (separater Login-Bereich für Mitarbeiter)
+          GetPage(
+            name: '/employee/login',
+            page: () => const EmployeeLoginScreen(),
+          ),
+          GetPage(
+            name: '/employee/login/:companyId',
+            page: () {
+              final companyId = Get.parameters['companyId'];
+              return EmployeeLoginScreen(companyId: companyId);
+            },
+          ),
+          GetPage(
+            name: '/employee/dashboard',
+            page: () => const EmployeeDashboardScreen(),
           ),
 
           // Fallback route

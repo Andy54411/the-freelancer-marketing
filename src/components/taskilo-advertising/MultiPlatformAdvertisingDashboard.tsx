@@ -45,19 +45,19 @@ const PlatformIcon = ({
   switch (platform) {
     case 'google-ads':
       return (
-        <div className="p-1 rounded bg-blue-500" style={iconStyle}>
+        <div className="p-1 rounded bg-teal-500" style={iconStyle}>
           <span className="text-white font-bold text-xs">G</span>
         </div>
       );
     case 'linkedin':
       return (
-        <div className="p-1 rounded bg-blue-700" style={iconStyle}>
+        <div className="p-1 rounded bg-teal-700" style={iconStyle}>
           <span className="text-white font-bold text-xs">Li</span>
         </div>
       );
     case 'meta':
       return (
-        <div className="p-1 rounded bg-blue-600" style={iconStyle}>
+        <div className="p-1 rounded bg-teal-600" style={iconStyle}>
           <span className="text-white font-bold text-xs">M</span>
         </div>
       );
@@ -113,21 +113,23 @@ export default function MultiPlatformAdvertisingDashboard({
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
-    const error = urlParams.get('error');
+    const urlError = urlParams.get('error');
     const platform = urlParams.get('platform');
     const tab = urlParams.get('tab');
     const message = urlParams.get('message');
 
-    // Set initial tab based on URL parameters
-    if (platform && ['google', 'linkedin', 'meta', 'taboola', 'outbrain'].includes(platform)) {
-      setActiveTab(platform);
+    // Set initial tab based on URL parameters (handle google-ads format)
+    const platformKey = platform?.replace('-ads', '').replace('-', '');
+    if (platformKey && ['google', 'linkedin', 'meta', 'taboola', 'outbrain'].includes(platformKey)) {
+      setActiveTab(platformKey);
     } else if (tab && ['campaigns', 'keywords', 'analytics'].includes(tab)) {
       setActiveTab(tab);
     }
 
-    // Handle OAuth callback results
+    // Handle OAuth callback results - success
     if (success === 'connected' && platform) {
-      setConnectionStatus(`✅ ${platform.replace('-', ' ')} erfolgreich verbunden!`);
+      const platformName = platform.replace('-ads', ' Ads').replace('-', ' ');
+      setConnectionStatus(`✅ ${platformName} erfolgreich verbunden!`);
 
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
@@ -139,15 +141,14 @@ export default function MultiPlatformAdvertisingDashboard({
       }, 2000);
     }
 
-    if (error && platform) {
-      setConnectionStatus(
-        `❌ Verbindung zu ${platform.replace('-', ' ')} fehlgeschlagen: ${message || error}`
-      );
+    // Handle OAuth callback results - error
+    if (urlError && platform) {
+      const platformName = platform.replace('-ads', ' Ads').replace('-', ' ');
+      const errorMessage = message ? decodeURIComponent(message) : urlError;
+      setError(`Fehler beim Verbinden mit ${platformName}: ${errorMessage}`);
 
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
-
-      setTimeout(() => setConnectionStatus(null), 5000);
     }
   }, []);
 
@@ -161,7 +162,7 @@ export default function MultiPlatformAdvertisingDashboard({
       setIsLoading(true);
       setError(null);
 
-      // Load platform connections
+      // Load platform connections from Firestore
       const connectionsResponse = await fetch(
         `/api/multi-platform-advertising/connections?companyId=${companyId}`
       );
@@ -172,40 +173,7 @@ export default function MultiPlatformAdvertisingDashboard({
         }
       }
 
-      // Fallback: Mock Platform-Verbindungen für Demo
-      if ((!platformConnections || platformConnections.length === 0) && !connectionsResponse.ok) {
-        setPlatformConnections([
-          {
-            platform: 'google-ads',
-            status: 'connected',
-            lastConnected: new Date().toISOString(),
-            accountInfo: {
-              id: 'demo-google-account',
-              name: 'Taskilo Demo Account',
-              currency: 'EUR',
-              timezone: 'Europe/Berlin',
-            },
-          },
-          {
-            platform: 'linkedin',
-            status: 'disconnected',
-          },
-          {
-            platform: 'meta',
-            status: 'disconnected',
-          },
-          {
-            platform: 'taboola',
-            status: 'disconnected',
-          },
-          {
-            platform: 'outbrain',
-            status: 'disconnected',
-          },
-        ]);
-      }
-
-      // Load campaigns
+      // Load campaigns from connected platforms
       const campaignsResponse = await fetch(
         `/api/multi-platform-advertising/campaigns?companyId=${companyId}`
       );
@@ -216,7 +184,7 @@ export default function MultiPlatformAdvertisingDashboard({
         }
       }
 
-      // Load analytics
+      // Load analytics from connected platforms
       const analyticsResponse = await fetch(
         `/api/multi-platform-advertising/analytics?companyId=${companyId}`
       );
@@ -226,193 +194,7 @@ export default function MultiPlatformAdvertisingDashboard({
           setAnalytics(analyticsData.data);
         }
       }
-
-      // Fallback: Mock-Daten für Demo wenn keine echten Daten vorhanden
-      if (!analytics || !analytics.summary || analytics.summary.cost === 0) {
-        setAnalytics({
-          summary: {
-            impressions: 125000,
-            clicks: 3750,
-            cost: 1250000, // 12,500 EUR in cents
-            conversions: 187,
-            conversionValue: 3750000, // 37,500 EUR in cents
-            ctr: 3.0,
-            cpc: 333, // 3.33 EUR in cents
-            cpa: 6684, // 66.84 EUR in cents
-            roas: 3.0,
-          },
-          platformBreakdown: [
-            {
-              platform: 'google-ads',
-              metrics: {
-                impressions: 75000,
-                clicks: 2250,
-                cost: 750000,
-                conversions: 112,
-                conversionValue: 2250000,
-                ctr: 3.0,
-                cpc: 333,
-                cpa: 6696,
-                roas: 3.0,
-              },
-              campaignCount: 5,
-              isActive: true,
-            },
-            {
-              platform: 'meta',
-              metrics: {
-                impressions: 50000,
-                clicks: 1500,
-                cost: 500000,
-                conversions: 75,
-                conversionValue: 1500000,
-                ctr: 3.0,
-                cpc: 333,
-                cpa: 6667,
-                roas: 3.0,
-              },
-              campaignCount: 3,
-              isActive: false,
-            },
-            {
-              platform: 'linkedin',
-              metrics: {
-                impressions: 0,
-                clicks: 0,
-                cost: 0,
-                conversions: 0,
-                conversionValue: 0,
-                ctr: 0,
-                cpc: 0,
-                cpa: 0,
-                roas: 0,
-              },
-              campaignCount: 0,
-              isActive: false,
-            },
-            {
-              platform: 'taboola',
-              metrics: {
-                impressions: 0,
-                clicks: 0,
-                cost: 0,
-                conversions: 0,
-                conversionValue: 0,
-                ctr: 0,
-                cpc: 0,
-                cpa: 0,
-                roas: 0,
-              },
-              campaignCount: 0,
-              isActive: false,
-            },
-            {
-              platform: 'outbrain',
-              metrics: {
-                impressions: 0,
-                clicks: 0,
-                cost: 0,
-                conversions: 0,
-                conversionValue: 0,
-                ctr: 0,
-                cpc: 0,
-                cpa: 0,
-                roas: 0,
-              },
-              campaignCount: 0,
-              isActive: false,
-            },
-          ],
-          dailyData: [],
-          insights: {
-            bestPerformingPlatform: 'google-ads',
-            worstPerformingPlatform: 'linkedin',
-            totalBudgetUtilization: 75,
-            averageRoas: 3.0,
-            recommendations: [
-              'Google Ads zeigt excellent Performance (ROAS: 3.0). Erhöhen Sie das Budget hier.',
-              'Erwägen Sie Tests auf LinkedIn, Taboola, Outbrain für zusätzliche Reichweite',
-              'Meta Ads pausiert - prüfen Sie die Performance und reaktivieren Sie bei Bedarf',
-            ],
-          },
-        });
-      }
-
-      // Mock campaigns wenn keine vorhanden
-      if (campaigns.length === 0) {
-        setCampaigns([
-          {
-            id: 'demo-google-campaign-1',
-            name: 'Handwerker Services - Google Search',
-            platform: 'google-ads',
-            status: 'ENABLED',
-            type: 'SEARCH',
-            startDate: '2025-01-01',
-            budget: {
-              amount: 50,
-              currency: 'EUR',
-              period: 'DAILY',
-              spent: 42,
-              remaining: 8,
-            },
-            targeting: {
-              locations: ['Deutschland'],
-              keywords: ['handwerker', 'elektriker', 'klempner'],
-            },
-            creative: {
-              headlines: ['Professionelle Handwerker', 'Schnell & Zuverlässig'],
-              descriptions: ['Finden Sie qualifizierte Handwerker in Ihrer Nähe'],
-            },
-            metrics: {
-              impressions: 45000,
-              clicks: 1350,
-              cost: 450000, // 4,500 EUR in cents
-              conversions: 67,
-              conversionValue: 1350000, // 13,500 EUR in cents
-              ctr: 3.0,
-              cpc: 333,
-              cpa: 6716,
-              roas: 3.0,
-            },
-          },
-          {
-            id: 'demo-meta-campaign-1',
-            name: 'Social Media Presence - Facebook',
-            platform: 'meta',
-            status: 'PAUSED',
-            type: 'CONVERSIONS',
-            startDate: '2025-01-15',
-            budget: {
-              amount: 30,
-              currency: 'EUR',
-              period: 'DAILY',
-              spent: 0,
-              remaining: 30,
-            },
-            targeting: {
-              locations: ['Deutschland'],
-              demographics: { ageMin: 25, ageMax: 55 },
-              interests: ['home improvement', 'diy'],
-            },
-            creative: {
-              headlines: ['Taskilo Services'],
-              descriptions: ['Professionelle Dienstleister in Ihrer Nähe'],
-            },
-            metrics: {
-              impressions: 0,
-              clicks: 0,
-              cost: 0,
-              conversions: 0,
-              conversionValue: 0,
-              ctr: 0,
-              cpc: 0,
-              cpa: 0,
-              roas: 0,
-            },
-          },
-        ]);
-      }
-    } catch (error: any) {
+    } catch (err: unknown) {
       setError('Fehler beim Laden der Dashboard-Daten');
     } finally {
       setIsLoading(false);
@@ -421,17 +203,9 @@ export default function MultiPlatformAdvertisingDashboard({
 
   const connectPlatform = async (platform: AdvertisingPlatform) => {
     try {
-      // Redirect to platform-specific OAuth
-      const response = await fetch(
-        `/api/multi-platform-advertising/auth/${platform}?companyId=${companyId}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.authUrl) {
-          window.location.href = data.authUrl;
-        }
-      }
-    } catch (error: any) {
+      // Redirect direkt zur OAuth-Route (die Route macht selbst den Redirect zu Google/LinkedIn/etc.)
+      window.location.href = `/api/multi-platform-advertising/auth/${platform}?companyId=${companyId}`;
+    } catch (error: unknown) {
       setError(`Fehler beim Verbinden mit ${platform}`);
     }
   };
@@ -572,8 +346,8 @@ export default function MultiPlatformAdvertisingDashboard({
                     {formatCurrency(analytics.summary.cost || 0)}
                   </p>
                 </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <Target className="w-6 h-6 text-blue-600" />
+                <div className="p-3 bg-teal-100 rounded-full">
+                  <Target className="w-6 h-6 text-teal-600" />
                 </div>
               </div>
               <div className="mt-4 flex items-center text-sm">
@@ -731,10 +505,10 @@ export default function MultiPlatformAdvertisingDashboard({
                   {analytics.insights.recommendations.map((recommendation, index) => (
                     <div
                       key={index}
-                      className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg"
+                      className="flex items-start space-x-3 p-3 bg-teal-50 rounded-lg"
                     >
-                      <Zap className="w-4 h-4 text-blue-500 mt-0.5" />
-                      <p className="text-sm text-blue-800">{recommendation}</p>
+                      <Zap className="w-4 h-4 text-teal-500 mt-0.5" />
+                      <p className="text-sm text-teal-800">{recommendation}</p>
                     </div>
                   ))}
                 </div>

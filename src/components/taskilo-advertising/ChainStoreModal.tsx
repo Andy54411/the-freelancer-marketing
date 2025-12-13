@@ -104,10 +104,10 @@ export default function ChainStoreModal({ isOpen, onClose, onContinue }: ChainSt
             >
               <div className="relative w-4 h-4 mr-2">
                 <div
-                  className={`w-4 h-4 rounded-full border-2 ${selectedOption === 'google-business' ? 'border-blue-600' : 'border-gray-400'} bg-white flex items-center justify-center`}
+                  className={`w-4 h-4 rounded-full border-2 ${selectedOption === 'google-business' ? 'border-teal-600' : 'border-gray-400'} bg-white flex items-center justify-center`}
                 >
                   {selectedOption === 'google-business' && (
-                    <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                    <div className="w-2 h-2 rounded-full bg-teal-600"></div>
                   )}
                 </div>
               </div>
@@ -124,17 +124,17 @@ export default function ChainStoreModal({ isOpen, onClose, onContinue }: ChainSt
             >
               <div className="relative w-4 h-4 mr-2">
                 <div
-                  className={`w-4 h-4 rounded-full border-2 ${selectedOption === 'retail' ? 'border-blue-600' : 'border-gray-400'} bg-white flex items-center justify-center`}
+                  className={`w-4 h-4 rounded-full border-2 ${selectedOption === 'retail' ? 'border-teal-600' : 'border-gray-400'} bg-white flex items-center justify-center`}
                 >
                   {selectedOption === 'retail' && (
-                    <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                    <div className="w-2 h-2 rounded-full bg-teal-600"></div>
                   )}
                 </div>
               </div>
               <span
                 className={`text-sm ${selectedOption === 'retail' ? 'text-gray-900' : 'text-gray-600'}`}
               >
-                Filialgeschäfte
+                Filialgeschaefte
               </span>
             </label>
 
@@ -144,10 +144,10 @@ export default function ChainStoreModal({ isOpen, onClose, onContinue }: ChainSt
             >
               <div className="relative w-4 h-4 mr-2">
                 <div
-                  className={`w-4 h-4 rounded-full border-2 ${selectedOption === 'maps' ? 'border-blue-600' : 'border-gray-400'} bg-white flex items-center justify-center`}
+                  className={`w-4 h-4 rounded-full border-2 ${selectedOption === 'maps' ? 'border-teal-600' : 'border-gray-400'} bg-white flex items-center justify-center`}
                 >
                   {selectedOption === 'maps' && (
-                    <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                    <div className="w-2 h-2 rounded-full bg-teal-600"></div>
                   )}
                 </div>
               </div>
@@ -170,7 +170,7 @@ export default function ChainStoreModal({ isOpen, onClose, onContinue }: ChainSt
                     <input
                       type="text"
                       placeholder="Suchen"
-                      className="w-full pl-4 pr-10 py-2 border-b-2 border-gray-300 focus:border-blue-500 outline-none bg-transparent"
+                      className="w-full pl-4 pr-10 py-2 border-b-2 border-gray-300 focus:border-teal-500 outline-none bg-transparent"
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
                     />
@@ -256,7 +256,7 @@ export default function ChainStoreModal({ isOpen, onClose, onContinue }: ChainSt
             onClick={onContinue}
             className={`px-4 py-2 text-sm font-medium rounded ${
               selectedCountries.length > 0 || selectedOption !== 'retail'
-                ? 'text-white bg-blue-600 hover:bg-blue-700'
+                ? 'text-white bg-teal-600 hover:bg-teal-700'
                 : 'text-gray-400 bg-gray-200 cursor-not-allowed'
             }`}
             disabled={selectedOption === 'retail' && selectedCountries.length === 0}

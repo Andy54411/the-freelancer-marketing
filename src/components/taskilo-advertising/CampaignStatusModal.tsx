@@ -68,7 +68,7 @@ export default function CampaignStatusModal({ isOpen, onClose, buttonRef, select
               onClick={() => onStatusChange('Alle')}
               className={`px-3 py-2 text-sm rounded cursor-pointer transition-colors ${
                 selectedStatus === 'Alle'
-                  ? 'text-gray-900 bg-blue-50 border-l-3 border-blue-500 font-medium'
+                  ? 'text-gray-900 bg-teal-50 border-l-3 border-teal-500 font-medium'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
               role="option"
@@ -83,7 +83,7 @@ export default function CampaignStatusModal({ isOpen, onClose, buttonRef, select
               onClick={() => onStatusChange('Aktiviert')}
               className={`px-3 py-2 text-sm rounded cursor-pointer transition-colors ${
                 selectedStatus === 'Aktiviert'
-                  ? 'text-gray-900 bg-blue-50 border-l-3 border-blue-500 font-medium'
+                  ? 'text-gray-900 bg-teal-50 border-l-3 border-teal-500 font-medium'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
               role="option"
@@ -98,7 +98,7 @@ export default function CampaignStatusModal({ isOpen, onClose, buttonRef, select
               onClick={() => onStatusChange('Aktiviert, Pausiert')}
               className={`px-3 py-2 text-sm rounded cursor-pointer transition-colors ${
                 selectedStatus === 'Aktiviert, Pausiert'
-                  ? 'text-gray-900 bg-blue-50 border-l-3 border-blue-500 font-medium'
+                  ? 'text-gray-900 bg-teal-50 border-l-3 border-teal-500 font-medium'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
               role="option"

@@ -28,9 +28,18 @@ import { app } from '@/firebase/clients';
 interface DocumentsTabProps {
   employeeId: string;
   companyId: string;
+  employee?: {
+    documents?: {
+      name: string;
+      type: string;
+      url: string;
+      uploadedAt?: string;
+    }[];
+    [key: string]: unknown;
+  };
 }
 
-const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) => {
+const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId, employee }) => {
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -83,6 +92,75 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
       setLoading(false);
     }
   }, [employeeId, companyId]);
+
+  // Lade Dokumente aus dem Employee-Objekt (aus Recruiting übernommen)
+  useEffect(() => {
+    if (employee?.documents?.length && !loading) {
+      // Konvertiere die eingebetteten Dokumente in EmployeeDocument-Format
+      const embeddedDocs: EmployeeDocument[] = employee.documents.map((doc, idx) => ({
+        id: `embedded-${idx}`,
+        companyId,
+        employeeId,
+        title: doc.name.replace(/\.[^/.]+$/, ''),
+        category: mapDocTypeToCategory(doc.type),
+        fileName: doc.name,
+        fileSize: 0,
+        mimeType: getMimeType(doc.name),
+        downloadURL: doc.url,
+        storagePath: '',
+        uploadDate: doc.uploadedAt || new Date().toISOString(),
+        uploadedBy: 'recruiting',
+        version: 1,
+        isConfidential: false,
+        accessLevel: 'HR_ONLY',
+        isEmbedded: true, // Markierung für eingebettete Dokumente
+      }));
+
+      // Füge eingebettete Dokumente hinzu (falls nicht schon vorhanden)
+      setDocuments(prev => {
+        const existingUrls = new Set(prev.map(d => d.downloadURL));
+        const newDocs = embeddedDocs.filter(d => !existingUrls.has(d.downloadURL));
+        return [...prev, ...newDocs];
+      });
+    }
+  }, [employee?.documents, loading]);
+
+  // Hilfsfunktionen für Dokumenttyp-Mapping
+  const mapDocTypeToCategory = (type: string): EmployeeDocument['category'] => {
+    switch (type?.toLowerCase()) {
+      case 'lebenslauf':
+      case 'cv':
+        return 'OTHER';
+      case 'anschreiben':
+        return 'OTHER';
+      case 'zeugnis':
+      case 'arbeitszeugnis':
+        return 'CERTIFICATE';
+      case 'zertifikat':
+        return 'CERTIFICATE';
+      default:
+        return 'OTHER';
+    }
+  };
+
+  const getMimeType = (fileName: string): string => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      default:
+        return 'application/octet-stream';
+    }
+  };
 
   const loadDocuments = async () => {
     try {

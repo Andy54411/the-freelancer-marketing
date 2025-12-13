@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -32,10 +33,12 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Smartphone,
+  UserPlus,
 } from 'lucide-react';
 import { type Employee } from '@/services/personalService';
-import { EditEmployeeModal } from './EditEmployeeModal';
 import { DeleteEmployeeModal } from './DeleteEmployeeModal';
+import Link from 'next/link';
 
 interface EmployeeTableProps {
   employees: Employee[];
@@ -50,12 +53,12 @@ export function EmployeeTable({
   onEmployeeUpdated,
   onEmployeeDeleted,
 }: EmployeeTableProps) {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Modal states
-  const [showEditEmployee, setShowEditEmployee] = useState(false);
+  // Modal states - nur noch Delete Modal benötigt
   const [showDeleteEmployee, setShowDeleteEmployee] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
@@ -110,8 +113,7 @@ export function EmployeeTable({
   };
 
   const handleEditEmployee = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setShowEditEmployee(true);
+    router.push(`/dashboard/company/${companyId}/personal/edit/${employee.id}`);
   };
 
   const handleDeleteEmployee = (employee: Employee) => {
@@ -120,7 +122,7 @@ export function EmployeeTable({
   };
 
   const handleViewEmployee = (employee: Employee) => {
-    // Hier könnte eine Detailansicht implementiert werden
+    router.push(`/dashboard/company/${companyId}/personal/edit/${employee.id}`);
   };
 
   const handleContactEmployee = (employee: Employee, type: 'email' | 'phone') => {
@@ -219,6 +221,9 @@ export function EmployeeTable({
                         ) : (
                           <XCircle className="h-4 w-4 text-red-500" />
                         )}
+                        {employee.appAccess?.registered && (
+                          <Smartphone className="h-4 w-4 text-blue-500" title="App-Zugang aktiv" />
+                        )}
                       </div>
                       <p className="text-sm text-gray-600">{employee.position}</p>
                       <p className="text-xs text-gray-500">{employee.email}</p>
@@ -306,24 +311,7 @@ export function EmployeeTable({
         </CardContent>
       </Card>
 
-      {/* Modals */}
-      {showEditEmployee && selectedEmployee && (
-        <EditEmployeeModal
-          isOpen={showEditEmployee}
-          onClose={() => {
-            setShowEditEmployee(false);
-            setSelectedEmployee(null);
-          }}
-          onEmployeeUpdated={employee => {
-            onEmployeeUpdated(employee);
-            setShowEditEmployee(false);
-            setSelectedEmployee(null);
-          }}
-          employee={selectedEmployee}
-          companyId={companyId}
-        />
-      )}
-
+      {/* Delete Modal */}
       {showDeleteEmployee && selectedEmployee && (
         <DeleteEmployeeModal
           isOpen={showDeleteEmployee}

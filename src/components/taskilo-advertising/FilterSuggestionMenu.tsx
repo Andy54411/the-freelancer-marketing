@@ -77,7 +77,7 @@ export default function FilterSuggestionMenu({
               onClose();
             }}
             className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors flex items-center ${
-              index === 0 ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+              index === 0 ? 'bg-teal-50 text-teal-700' : 'text-gray-700'
             }`}
             role="menuitem"
           >

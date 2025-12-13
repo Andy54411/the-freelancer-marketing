@@ -147,7 +147,7 @@ export default function GoogleAdsManager({ companyId }: GoogleAdsManagerProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center">
-              <div className="p-2 rounded bg-blue-500 mr-3">
+              <div className="p-2 rounded bg-teal-500 mr-3">
                 <span className="text-white font-bold">G</span>
               </div>
               Google Ads Verbindung
@@ -183,8 +183,8 @@ export default function GoogleAdsManager({ companyId }: GoogleAdsManagerProps) {
                       <p><strong>Verbindungstyp:</strong> OAuth {connectionData?.authMethod}</p>
                       <p><strong>Status:</strong> {connectionData?.accountStatus}</p>
                       
-                      <div className="mt-3 p-3 bg-blue-100 rounded">
-                        <p className="text-blue-800 font-medium text-xs">
+                      <div className="mt-3 p-3 bg-teal-100 rounded">
+                        <p className="text-teal-800 font-medium text-xs">
                           🎯 Echte Google OAuth-Verbindung aktiv. Account-Zugriff über Google APIs verfügbar.
                         </p>
                       </div>
@@ -260,7 +260,7 @@ export default function GoogleAdsManager({ companyId }: GoogleAdsManagerProps) {
               </div>
 
               {connectionData && (
-                <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                <div className="text-sm text-gray-600 bg-teal-50 p-3 rounded-lg">
                   <p className="font-medium">Verbindungsdetails:</p>
                   <p>Verbunden am: {new Date(connectionData.connectedAt || connectionData.requestedAt || Date.now()).toLocaleDateString('de-DE')}</p>
                   {connectionData.userInfo?.name && (
@@ -277,7 +277,7 @@ export default function GoogleAdsManager({ companyId }: GoogleAdsManagerProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="p-4 bg-teal-50 border border-teal-200 rounded-lg">
                 <div className="flex items-center">
                   <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
                   <div>
@@ -292,9 +292,9 @@ export default function GoogleAdsManager({ companyId }: GoogleAdsManagerProps) {
               </div>
               
               <div className="space-y-4">
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-blue-800 text-sm font-medium mb-2">🔐 OAuth-Authentifizierung</p>
-                  <p className="text-blue-700 text-xs">
+                <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg">
+                  <p className="text-teal-800 text-sm font-medium mb-2">🔐 OAuth-Authentifizierung</p>
+                  <p className="text-teal-700 text-xs">
                     Sie werden zu Google weitergeleitet, wo Sie Ihr Google Ads Konto auswählen und den Zugriff autorisieren können. 
                     Nach der Bestätigung werden Sie automatisch zurückgeleitet.
                   </p>

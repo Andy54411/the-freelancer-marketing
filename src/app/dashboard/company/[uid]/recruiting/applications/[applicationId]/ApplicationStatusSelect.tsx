@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Select,
@@ -11,21 +11,29 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { InterviewInvitationModal } from './InterviewInvitationModal';
+import EmployeeCreationModal from '@/components/recruiting/EmployeeCreationModal';
 
 interface ApplicationStatusSelectProps {
   applicationId: string;
   currentStatus: string;
   companyId: string;
+  applicationData?: any;
+  jobTitle?: string;
 }
 
 export function ApplicationStatusSelect({
   applicationId,
   currentStatus,
   companyId,
+  applicationData,
+  jobTitle,
 }: ApplicationStatusSelectProps) {
   const router = useRouter();
   const [status, setStatus] = useState(currentStatus);
   const [isInterviewModalOpen, setIsInterviewModalOpen] = useState(false);
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+
+  console.log('ApplicationStatusSelect props:', { applicationId, currentStatus, companyId });
 
   async function updateStatus(
     newStatus: string,
@@ -37,7 +45,9 @@ export function ApplicationStatusSelect({
     allowCandidateChoice?: boolean
   ) {
     try {
+      console.log('updateStatus called with:', { newStatus, companyId });
       const body: any = { status: newStatus, companyId };
+      console.log('Request body:', body);
       
       if (interviewSlots) {
         // Convert slots to ISO strings combining date and time
@@ -76,9 +86,18 @@ export function ApplicationStatusSelect({
       if (!response.ok) throw new Error('Failed to update status');
 
       setStatus(newStatus);
-      toast.success(
-        newStatus === 'interview' ? 'Einladung versendet' : 'Status aktualisiert'
-      );
+      
+      if (newStatus === 'accepted') {
+        toast.success('Bewerber eingestellt! Mitarbeiter wurde automatisch angelegt.', {
+          description: 'Sie finden den neuen Mitarbeiter in der Personalverwaltung.',
+          duration: 8000,
+        });
+      } else if (newStatus === 'interview') {
+        toast.success('Einladung versendet');
+      } else {
+        toast.success('Status aktualisiert');
+      }
+      
       router.refresh(); // Refresh server components to show new status elsewhere
     } catch (error) {
       toast.error('Fehler beim Aktualisieren des Status');
@@ -88,6 +107,8 @@ export function ApplicationStatusSelect({
   const handleStatusChange = (newStatus: string) => {
     if (newStatus === 'interview') {
       setIsInterviewModalOpen(true);
+    } else if (newStatus === 'accepted') {
+      setIsEmployeeModalOpen(true);
     } else {
       updateStatus(newStatus);
     }
@@ -105,6 +126,35 @@ export function ApplicationStatusSelect({
     const allowCandidateChoice = firstSlot?.allowCandidateChoice ?? true;
     
     updateStatus('interview', slots, message, isVideoCall, videoLink, meetingType, allowCandidateChoice);
+  };
+
+  const handleEmployeeConfirm = async (employeeData: any) => {
+    try {
+      const response = await fetch(`/api/recruiting/applications/${applicationId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: 'accepted', 
+          companyId,
+          employeeData,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update status');
+
+      setStatus('accepted');
+      setIsEmployeeModalOpen(false);
+      
+      toast.success('Bewerber eingestellt! Mitarbeiter wurde angelegt.', {
+        description: 'Sie finden den neuen Mitarbeiter in der Personalverwaltung.',
+        duration: 8000,
+      });
+      
+      router.refresh();
+    } catch (error) {
+      toast.error('Fehler beim Anlegen des Mitarbeiters');
+      throw error;
+    }
   };
 
   return (
@@ -127,6 +177,14 @@ export function ApplicationStatusSelect({
         isOpen={isInterviewModalOpen}
         onClose={() => setIsInterviewModalOpen(false)}
         onConfirm={handleInterviewConfirm}
+      />
+
+      <EmployeeCreationModal
+        isOpen={isEmployeeModalOpen}
+        onClose={() => setIsEmployeeModalOpen(false)}
+        onConfirm={handleEmployeeConfirm}
+        applicationData={applicationData}
+        jobTitle={jobTitle}
       />
     </>
   );

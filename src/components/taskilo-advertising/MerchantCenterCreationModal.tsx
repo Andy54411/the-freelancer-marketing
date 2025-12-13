@@ -373,13 +373,13 @@ export default function MerchantCenterCreationModal({
                         id="mc-business-name"
                         value={businessName}
                         onChange={e => setBusinessName(e.target.value)}
-                        className="peer w-full px-3 py-3 border border-gray-300 rounded focus:border-blue-600 focus:ring-1 focus:ring-blue-600 focus:outline-none transition-colors pt-6"
+                        className="peer w-full px-3 py-3 border border-gray-300 rounded focus:border-teal-600 focus:ring-1 focus:ring-teal-600 focus:outline-none transition-colors pt-6"
                         placeholder=" "
                       />
                       <label
                         htmlFor="mc-business-name"
                         className={`absolute left-3 top-4 text-gray-500 text-base transition-all duration-200 pointer-events-none
-                          peer-focus:-translate-y-3 peer-focus:text-xs peer-focus:text-blue-600
+                          peer-focus:-translate-y-3 peer-focus:text-xs peer-focus:text-teal-600
                           ${businessName ? '-translate-y-3 text-xs' : ''}`}
                       >
                         Name des Unternehmens <span className="text-red-500">*</span>
@@ -395,13 +395,13 @@ export default function MerchantCenterCreationModal({
                         id="mc-website-url"
                         value={websiteUrl}
                         onChange={e => setWebsiteUrl(e.target.value)}
-                        className="peer w-full px-3 py-3 border border-gray-300 rounded focus:border-blue-600 focus:ring-1 focus:ring-blue-600 focus:outline-none transition-colors pt-6"
+                        className="peer w-full px-3 py-3 border border-gray-300 rounded focus:border-teal-600 focus:ring-1 focus:ring-teal-600 focus:outline-none transition-colors pt-6"
                         placeholder=" "
                       />
                       <label
                         htmlFor="mc-website-url"
                         className={`absolute left-3 top-4 text-gray-500 text-base transition-all duration-200 pointer-events-none
-                          peer-focus:-translate-y-3 peer-focus:text-xs peer-focus:text-blue-600
+                          peer-focus:-translate-y-3 peer-focus:text-xs peer-focus:text-teal-600
                           ${websiteUrl ? '-translate-y-3 text-xs' : ''}`}
                       >
                         Website des Unternehmens <span className="text-red-500">*</span>
@@ -418,7 +418,7 @@ export default function MerchantCenterCreationModal({
                       <select
                         value={country}
                         onChange={e => setCountry(e.target.value)}
-                        className="peer w-full px-3 py-3 border border-gray-300 rounded bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 focus:outline-none transition-colors pt-6 appearance-none cursor-pointer"
+                        className="peer w-full px-3 py-3 border border-gray-300 rounded bg-white focus:border-teal-600 focus:ring-1 focus:ring-teal-600 focus:outline-none transition-colors pt-6 appearance-none cursor-pointer"
                       >
                         {COUNTRY_OPTIONS.map(c => (
                           <option key={c} value={c}>
@@ -450,7 +450,7 @@ export default function MerchantCenterCreationModal({
               <div className="flex items-start gap-3 mb-6">
                 <div
                   className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer mt-0.5 transition-colors shrink-0 ${
-                    emailNotifications ? 'bg-blue-600 border-blue-600' : 'border-gray-400'
+                    emailNotifications ? 'bg-teal-600 border-teal-600' : 'border-gray-400'
                   }`}
                   onClick={() => setEmailNotifications(!emailNotifications)}
                 >
@@ -469,16 +469,16 @@ export default function MerchantCenterCreationModal({
               <div className="text-sm text-gray-600 space-y-4">
                 <p>
                   Indem Sie fortfahren, stimmen Sie den{' '}
-                  <a href="#" className="text-blue-600 hover:underline">
+                  <a href="#" className="text-teal-600 hover:underline">
                     Merchant Center-Nutzungsbedingungen
                   </a>{' '}
-                  zu. Je nach Einrichtung werden Ihre App-Daten möglicherweise in{' '}
-                  <a href="#" className="text-blue-600 hover:underline">
+                  zu. Je nach Einrichtung werden Ihre App-Daten moeglicherweise in{' '}
+                  <a href="#" className="text-teal-600 hover:underline">
                     Unternehmensmanager
                   </a>{' '}
                   freigegeben. In der{' '}
-                  <a href="#" className="text-blue-600 hover:underline">
-                    Datenschutzerklärung von Google
+                  <a href="#" className="text-teal-600 hover:underline">
+                    Datenschutzerklaerung von Google
                   </a>{' '}
                   wird beschrieben, wie Google mit Ihren Daten umgeht.
                 </p>
@@ -489,10 +489,10 @@ export default function MerchantCenterCreationModal({
                   Preisvergleichsportal von Google, verknüpft. Wenn Sie ein Konto bei einem anderen
                   Preisvergleichsportal erstellen möchten, wenden Sie sich bitte direkt an dieses
                   Portal.{' '}
-                  <a href="#" className="text-blue-600 hover:underline">
+                  <a href="#" className="text-teal-600 hover:underline">
                     Hier finden Sie zertifizierte Preisvergleichsportale.
                   </a>{' '}
-                  <a href="#" className="text-blue-600 hover:underline">
+                  <a href="#" className="text-teal-600 hover:underline">
                     Weitere Informationen zu Werbung mit Preisvergleichsportalen
                   </a>
                 </p>
@@ -541,7 +541,7 @@ export default function MerchantCenterCreationModal({
                             </div>
                             <a
                               href="#"
-                              className="text-xs text-blue-600 hover:underline inline-flex items-center mt-1"
+                              className="text-xs text-teal-600 hover:underline inline-flex items-center mt-1"
                             >
                               Weitere Informationen zur Kundennummer{' '}
                               <ExternalLink className="w-3 h-3 ml-1" />
@@ -553,15 +553,15 @@ export default function MerchantCenterCreationModal({
                           <BarChart className="w-5 h-5 text-gray-400 shrink-0" />
                           <div>
                             <div className="text-sm font-medium text-gray-900">
-                              Messwerte, die sich auf Anzeigen beziehen, in denen für Produkte aus
-                              dem verknüpften Merchant Center-Konto geworben wird
+                              Messwerte, die sich auf Anzeigen beziehen, in denen fuer Produkte aus
+                              dem verknuepften Merchant Center-Konto geworben wird
                             </div>
                             <div className="text-sm text-gray-600 mt-1">
                               Beispielsweise kann die Anzahl der Klicks weitergegeben werden.
                             </div>
                             <a
                               href="#"
-                              className="text-xs text-blue-600 hover:underline inline-flex items-center mt-1"
+                              className="text-xs text-teal-600 hover:underline inline-flex items-center mt-1"
                             >
                               Weitere Informationen zu freigegebenen Daten{' '}
                               <ExternalLink className="w-3 h-3 ml-1" />
@@ -616,7 +616,7 @@ export default function MerchantCenterCreationModal({
           <Button
             onClick={handleSave}
             disabled={!businessName || !websiteUrl || isSaving}
-            className="bg-blue-600 hover:bg-blue-700 text-white min-w-[200px]"
+            className="bg-teal-600 hover:bg-teal-700 text-white min-w-[200px]"
           >
             {isSaving ? (
               <div className="flex items-center gap-2">
@@ -624,14 +624,14 @@ export default function MerchantCenterCreationModal({
                 <span>Wird erstellt...</span>
               </div>
             ) : (
-              'Konto erstellen und verknüpfen'
+              'Konto erstellen und verknuepfen'
             )}
           </Button>
           <Button
             variant="ghost"
             onClick={handleClose}
             disabled={isSaving}
-            className="text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+            className="text-teal-600 hover:bg-teal-50 hover:text-teal-700"
           >
             Abbrechen
           </Button>

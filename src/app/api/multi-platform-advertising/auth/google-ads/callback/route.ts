@@ -32,14 +32,14 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('❌ Google OAuth Error:', error);
       return NextResponse.redirect(
-        `${baseUrl}/dashboard/company/${state}/taskilo-advertising/google-ads?error=oauth_failed&message=${encodeURIComponent(error)}`
+        `${baseUrl}/dashboard/company/${state}/taskilo-advertising?error=oauth_failed&platform=google-ads&message=${encodeURIComponent(error)}`
       );
     }
 
     if (!code || !state) {
       console.error('❌ Missing OAuth code or state');
       return NextResponse.redirect(
-        `${baseUrl}/dashboard/company/${state}/taskilo-advertising/google-ads?error=missing_params`
+        `${baseUrl}/dashboard/company/${state}/taskilo-advertising?error=missing_params&platform=google-ads`
       );
     }
 
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       const tokenError = await tokenResponse.text();
       console.error('❌ Token exchange failed:', tokenError);
       return NextResponse.redirect(
-        `${baseUrl}/dashboard/company/${state}/taskilo-advertising/google-ads?error=token_exchange_failed`
+        `${baseUrl}/dashboard/company/${state}/taskilo-advertising?error=token_exchange_failed&platform=google-ads`
       );
     }
 
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
           } else {
             // Mit Developer Token - versuche Google Ads API
             const accessibleCustomersResponse = await fetch(
-              'https://googleads.googleapis.com/v16/customers:listAccessibleCustomers',
+              'https://googleads.googleapis.com/v18/customers:listAccessibleCustomers',
               {
                 headers: {
                   Authorization: `Bearer ${tokens.access_token}`,
@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
                   const customerId = resourceName.replace('customers/', '');
                   try {
                     const accountResponse = await fetch(
-                      `https://googleads.googleapis.com/v16/customers/${customerId}`,
+                      `https://googleads.googleapis.com/v18/customers/${customerId}`,
                       {
                         headers: {
                           Authorization: `Bearer ${tokens.access_token}`,
@@ -285,11 +285,12 @@ export async function GET(request: NextRequest) {
     console.log('✅ Google Ads OAuth connection saved for company:', state);
     console.log('📍 Saved to path: companies/' + state + '/advertising_connections/google-ads');
 
-    // Erfolgreiche Weiterleitung zurück zur App
+    // Erfolgreiche Weiterleitung zurück zur App (zur Haupt-Advertising-Seite)
     const redirectUrl = new URL(
-      `${baseUrl}/dashboard/company/${state}/taskilo-advertising/google-ads`
+      `${baseUrl}/dashboard/company/${state}/taskilo-advertising`
     );
     redirectUrl.searchParams.set('success', 'connected');
+    redirectUrl.searchParams.set('platform', 'google-ads');
     redirectUrl.searchParams.set('account', accountInfo?.customerId || 'unknown');
 
     if (accountInfo?.accountStatus === 'requires_selection') {
@@ -322,7 +323,7 @@ export async function GET(request: NextRequest) {
     console.error(`❌ Error details: ${errorType} - ${errorMessage}`);
 
     return NextResponse.redirect(
-      `${baseUrl}/dashboard/company/${state || 'unknown'}/taskilo-advertising/google-ads?error=${errorType}&message=${encodeURIComponent(errorMessage)}`
+      `${baseUrl}/dashboard/company/${state || 'unknown'}/taskilo-advertising?error=${errorType}&platform=google-ads&message=${encodeURIComponent(errorMessage)}`
     );
   }
 }

@@ -46,11 +46,22 @@ export default function GoogleAdsPage() {
   useEffect(() => {
     const checkConnectionStatus = async () => {
       try {
-        // Prüfe direkt in Firebase Collection, ob Google Ads Token existieren
+        // Pruefe direkt in Firebase Collection, ob Google Ads Token existieren
         const response = await fetch(`/api/companies/${companyId}/integrations/google-ads`);
         const data = await response.json();
 
         if (data.success) {
+          // Wenn Status pending_link ist UND noch nicht aktiv, zur Pending-Seite weiterleiten
+          // WICHTIG: Nicht weiterleiten wenn bereits ACTIVE (vermeidet Redirect-Loop)
+          if (
+            (data.status === 'pending_link' || data.managerLinkStatus === 'PENDING') &&
+            data.managerLinkStatus !== 'ACTIVE' &&
+            !data.isConnected
+          ) {
+            router.push(`/dashboard/company/${companyId}/taskilo-advertising/google-ads/pending`);
+            return;
+          }
+
           // Nutze isConnected direkt von der API
           if (
             data.status === 'requires_selection' ||
@@ -68,7 +79,7 @@ export default function GoogleAdsPage() {
           setIsConnected(false);
         }
       } catch (error) {
-        console.error('Fehler beim Prüfen der Verbindung:', error);
+        console.error('Fehler beim Pruefen der Verbindung:', error);
         setIsConnected(false);
       } finally {
         setIsLoading(false);
@@ -78,7 +89,7 @@ export default function GoogleAdsPage() {
     if (companyId) {
       checkConnectionStatus();
     }
-  }, [companyId, searchParams]);
+  }, [companyId, searchParams, router]);
 
   const handleAccountSelection = async (account: GoogleAdsAccount) => {
     setIsSelecting(true);

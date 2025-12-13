@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -30,15 +31,17 @@ import {
   MapPin,
 } from 'lucide-react';
 import { type Employee, type AbsenceRequest } from '@/services/personalService';
-import { AddEmployeeModal } from './AddEmployeeModal';
-import { EditEmployeeModal } from './EditEmployeeModal';
-import { DeleteEmployeeModal } from './DeleteEmployeeModal';
 import { CreateAbsenceRequestModal } from './CreateAbsenceRequestModal';
 import { AbsenceApprovalModal } from './AbsenceApprovalModal';
+import { DeleteEmployeeModal } from './DeleteEmployeeModal';
 
 interface PersonalActionsProps {
   companyId: string;
   employees: Employee[];
+  departments?: string[];
+  filterDepartment?: string;
+  onFilterChange?: (department: string) => void;
+  onRefresh?: () => void;
   onEmployeeAdded?: (employee: Employee) => void;
   onEmployeeUpdated?: (employee: Employee) => void;
   onEmployeeDeleted?: (employeeId: string) => void;
@@ -53,15 +56,17 @@ interface PersonalActionsProps {
 export function PersonalActions({
   companyId,
   employees,
+  departments = [],
+  filterDepartment = 'all',
+  onFilterChange,
+  onRefresh,
   onEmployeeAdded,
   onEmployeeUpdated,
   onEmployeeDeleted,
   onAbsenceRequestCreated,
   onAbsenceRequestProcessed,
 }: PersonalActionsProps) {
-  // Modal States
-  const [showAddEmployee, setShowAddEmployee] = useState(false);
-  const [showEditEmployee, setShowEditEmployee] = useState(false);
+  // Modal States - nur noch benötigte Modals
   const [showDeleteEmployee, setShowDeleteEmployee] = useState(false);
   const [showCreateAbsenceRequest, setShowCreateAbsenceRequest] = useState(false);
   const [showAbsenceApproval, setShowAbsenceApproval] = useState(false);
@@ -70,14 +75,9 @@ export function PersonalActions({
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedAbsenceRequest, setSelectedAbsenceRequest] = useState<AbsenceRequest | null>(null);
 
-  // Employee Actions
-  const handleAddEmployee = () => {
-    setShowAddEmployee(true);
-  };
-
+  // Employee Actions - verwende jetzt Links statt Modals
   const handleEditEmployee = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setShowEditEmployee(true);
+    // Navigation wird über Link gemacht
   };
 
   const handleDeleteEmployee = (employee: Employee) => {
@@ -86,7 +86,7 @@ export function PersonalActions({
   };
 
   const handleViewEmployee = (employee: Employee) => {
-    // Hier könnte eine Detailansicht geöffnet werden
+    // Navigation wird über Link gemacht
   };
   // Absence Actions
   const handleCreateAbsenceRequest = () => {
@@ -206,11 +206,13 @@ export function PersonalActions({
   return (
     <>
       {/* Primary Action Buttons */}
-      <div className="flex flex-wrap gap-3">
-        <Button onClick={handleAddEmployee} className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
-          <UserPlus className="h-4 w-4 mr-2" />
-          Mitarbeiter hinzufügen
-        </Button>
+      <div className="flex items-center gap-3">
+        <Link href={`/dashboard/company/${companyId}/personal/add`}>
+          <Button className="bg-[#14ad9f] hover:bg-taskilo-hover text-white">
+            <UserPlus className="h-4 w-4 mr-2" />
+            Mitarbeiter hinzufügen
+          </Button>
+        </Link>
 
         <Button
           onClick={handleCreateAbsenceRequest}
@@ -240,54 +242,32 @@ export function PersonalActions({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="outline">
-          <Filter className="h-4 w-4 mr-2" />
-          Filter
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className={filterDepartment !== 'all' ? 'border-[#14ad9f] text-[#14ad9f]' : ''}>
+              <Filter className="h-4 w-4 mr-2" />
+              {filterDepartment === 'all' ? 'Filter' : filterDepartment}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onFilterChange?.('all')}>
+              Alle Abteilungen
+            </DropdownMenuItem>
+            {departments.filter(d => d !== 'all').map(dept => (
+              <DropdownMenuItem key={dept} onClick={() => onFilterChange?.(dept)}>
+                {dept}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-        <Button variant="outline">
+        <Button variant="outline" onClick={onRefresh}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Aktualisieren
         </Button>
       </div>
 
-      {/* Utility Functions für externe Verwendung */}
-      <div className="hidden">
-        {/* Diese werden von anderen Komponenten verwendet */}
-        <EmployeeDropdownActions employee={employees[0]} />
-        <AbsenceRequestActions request={{} as AbsenceRequest} />
-      </div>
-
-      {/* Modals */}
-      {showAddEmployee && (
-        <AddEmployeeModal
-          isOpen={showAddEmployee}
-          onClose={() => setShowAddEmployee(false)}
-          onEmployeeAdded={employee => {
-            onEmployeeAdded?.(employee);
-            setShowAddEmployee(false);
-          }}
-          companyId={companyId}
-        />
-      )}
-
-      {showEditEmployee && selectedEmployee && (
-        <EditEmployeeModal
-          isOpen={showEditEmployee}
-          onClose={() => {
-            setShowEditEmployee(false);
-            setSelectedEmployee(null);
-          }}
-          onEmployeeUpdated={employee => {
-            onEmployeeUpdated?.(employee);
-            setShowEditEmployee(false);
-            setSelectedEmployee(null);
-          }}
-          employee={selectedEmployee}
-          companyId={companyId}
-        />
-      )}
-
+      {/* Modals - nur noch benötigte */}
       {showDeleteEmployee && selectedEmployee && (
         <DeleteEmployeeModal
           isOpen={showDeleteEmployee}

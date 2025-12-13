@@ -61,7 +61,7 @@ export default function CampaignSelectorModal({ isOpen, onClose, buttonRef }: Ca
           </div>
 
           {/* Single Item - Alle Kampagnen */}
-          <div className="px-4 py-3 border-l-3 border-blue-500 bg-blue-50 flex items-center space-x-3 hover:bg-blue-100 cursor-pointer">
+          <div className="px-4 py-3 border-l-3 border-teal-500 bg-teal-50 flex items-center space-x-3 hover:bg-teal-100 cursor-pointer">
             <Home className="w-4 h-4 text-gray-600" />
             <span className="text-sm font-medium text-gray-900">Alle Kampagnen</span>
           </div>
@@ -72,7 +72,7 @@ export default function CampaignSelectorModal({ isOpen, onClose, buttonRef }: Ca
 
         {/* Footer */}
         <div className="px-4 py-3 border-t border-gray-200 bg-white">
-          <button className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 text-sm font-medium">
+          <button className="flex items-center space-x-2 text-teal-600 hover:text-teal-700 text-sm font-medium">
             <Plus className="w-4 h-4" />
             <span>Ansicht erstellen</span>
           </button>

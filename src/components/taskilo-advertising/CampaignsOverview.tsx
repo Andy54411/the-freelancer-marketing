@@ -272,7 +272,7 @@ export default function CampaignsOverview({ companyId }: CampaignsOverviewProps)
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-2">
-                      <TypeIcon className="w-5 h-5 text-blue-600" />
+                      <TypeIcon className="w-5 h-5 text-teal-600" />
                       <CardTitle className="text-lg truncate">{campaign.name}</CardTitle>
                     </div>
                     <Badge className={statusColors[campaign.status]}>

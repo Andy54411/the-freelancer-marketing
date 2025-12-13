@@ -90,12 +90,12 @@ export default function AdGroupStatusModal({
               }}
               className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-100 transition-colors flex items-center ${
                 selectedStatus === option.value 
-                  ? 'bg-blue-50 text-blue-700 font-medium' 
+                  ? 'bg-teal-50 text-teal-700 font-medium' 
                   : 'text-gray-700'
               }`}
             >
               {selectedStatus === option.value && (
-                <div className="w-1 h-4 bg-blue-600 rounded-full mr-3" />
+                <div className="w-1 h-4 bg-teal-600 rounded-full mr-3" />
               )}
               {option.label}
             </button>

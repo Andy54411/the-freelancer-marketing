@@ -450,6 +450,8 @@ export default async function ApplicationDetailsPage({
             applicationId={application.id}
             currentStatus={application.status}
             companyId={uid}
+            applicationData={application}
+            jobTitle={jobTitle}
           />
         </div>
       </div>

@@ -273,6 +273,10 @@ export default function PersonalOverviewPage() {
             <PersonalActions
               companyId={companyId}
               employees={employees.map(convertToServiceEmployee)}
+              departments={departments}
+              filterDepartment={filterDepartment}
+              onFilterChange={setFilterDepartment}
+              onRefresh={resetRetryAndLoad}
               onEmployeeAdded={serviceEmployee => {
                 const localEmployee = convertFromServiceEmployee(serviceEmployee);
                 setEmployees(prev => [...prev, localEmployee]);

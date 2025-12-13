@@ -153,7 +153,7 @@ export default function ConversionSetupModal({
                       </div>
 
                       {selectedEvents.length > 1 && (
-                        <div className="flex items-start gap-2 p-3 bg-blue-50 text-blue-800 rounded-lg text-sm">
+                        <div className="flex items-start gap-2 p-3 bg-teal-50 text-teal-800 rounded-lg text-sm">
                           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                           <p>
                             Wenn Sie mehrere Ereignisse auswählen, sollten Sie prüfen, ob mit allen

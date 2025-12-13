@@ -249,7 +249,7 @@ export async function PATCH(
   try {
     const { uid: companyId } = await params;
     const body = await request.json();
-    const { managerApproved, managerLinkStatus } = body;
+    const { managerApproved, managerLinkStatus, status } = body;
 
     if (!companyId) {
       return NextResponse.json(
@@ -268,12 +268,15 @@ export async function PATCH(
       .collection('advertising_connections')
       .doc('google-ads');
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (typeof managerApproved === 'boolean') {
       updateData.managerApproved = managerApproved;
     }
     if (managerLinkStatus) {
       updateData.managerLinkStatus = managerLinkStatus;
+    }
+    if (status) {
+      updateData.status = status;
     }
 
     await docRef.update(updateData);

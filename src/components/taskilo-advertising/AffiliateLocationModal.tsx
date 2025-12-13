@@ -314,7 +314,7 @@ export default function AffiliateLocationModal({
                             {chain.locationCount.toLocaleString()} Standorte
                           </div>
                           {chain.category && (
-                            <div className="text-xs text-blue-600 capitalize">{chain.category}</div>
+                            <div className="text-xs text-teal-600 capitalize">{chain.category}</div>
                           )}
                         </div>
                       </div>
@@ -382,7 +382,7 @@ export default function AffiliateLocationModal({
                                       {chain.locationCount.toLocaleString()} Standorte
                                     </div>
                                     {chain.category && (
-                                      <div className="text-xs text-blue-600 capitalize">
+                                      <div className="text-xs text-teal-600 capitalize">
                                         {chain.category}
                                       </div>
                                     )}

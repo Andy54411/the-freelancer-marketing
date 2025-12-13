@@ -51,13 +51,13 @@ export default function CampaignPickerModal({ isOpen, onClose, buttonRef }: Camp
             {/* Filter Button */}
             <button className="p-2 hover:bg-gray-100 rounded-full relative">
               <Filter className="w-4 h-4 text-gray-600" />
-              <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 bg-teal-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
                 1
               </span>
             </button>
 
             {/* Active Filter Chip */}
-            <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
+            <div className="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-sm flex items-center">
               <span>Kampagnenstatus: Aktiviert, Pausiert</span>
             </div>
 
@@ -65,7 +65,7 @@ export default function CampaignPickerModal({ isOpen, onClose, buttonRef }: Camp
             <input 
               type="text" 
               placeholder="Filter hinzufügen"
-              className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
         </div>
@@ -79,7 +79,7 @@ export default function CampaignPickerModal({ isOpen, onClose, buttonRef }: Camp
               <input
                 type="text"
                 placeholder="Kampagne aufrufen"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
               />
             </div>
 

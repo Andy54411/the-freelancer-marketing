@@ -1,11 +1,263 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/firebase/server';
+
+const GOOGLE_ADS_API_VERSION = 'v18';
+
+interface PlatformMetrics {
+  impressions: number;
+  clicks: number;
+  cost: number;
+  conversions: number;
+  conversionValue: number;
+  ctr: number;
+  cpc: number;
+  cpa: number;
+  roas: number;
+}
+
+async function refreshGoogleAdsToken(refreshToken: string): Promise<string | null> {
+  try {
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: process.env.GOOGLE_CLIENT_ID || '',
+        client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to refresh Google token:', await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    return data.access_token;
+  } catch (error) {
+    console.error('Error refreshing Google token:', error);
+    return null;
+  }
+}
+
+async function fetchGoogleAdsAnalytics(connection: any): Promise<{ metrics: PlatformMetrics; campaignCount: number }> {
+  const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+  
+  const emptyMetrics: PlatformMetrics = {
+    impressions: 0,
+    clicks: 0,
+    cost: 0,
+    conversions: 0,
+    conversionValue: 0,
+    ctr: 0,
+    cpc: 0,
+    cpa: 0,
+    roas: 0,
+  };
+
+  console.log('📊 fetchGoogleAdsAnalytics called');
+  
+  if (!developerToken) {
+    console.log('⚠️ Missing developer token for Google Ads analytics');
+    return { metrics: emptyMetrics, campaignCount: 0 };
+  }
+
+  // Try to get a fresh access token
+  let accessToken = connection.oauth?.access_token;
+  
+  if (connection.oauth?.refresh_token) {
+    const freshToken = await refreshGoogleAdsToken(connection.oauth.refresh_token);
+    if (freshToken) {
+      accessToken = freshToken;
+      console.log('🔄 Refreshed Google Ads access token for analytics');
+    }
+  }
+
+  if (!accessToken) {
+    console.log('⚠️ No access token available for Google Ads analytics');
+    return { metrics: emptyMetrics, campaignCount: 0 };
+  }
+
+  // Get customer ID
+  let customerId = connection.customerId?.replace(/-/g, '') || '';
+  
+  if (!customerId || customerId === 'oauth-connected' || customerId.startsWith('oauth-')) {
+    // List accessible customers first
+    try {
+      console.log('🔍 Listing accessible Google Ads customers for analytics...');
+      const accessibleResponse = await fetch(
+        `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}/customers:listAccessibleCustomers`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'developer-token': developerToken,
+          },
+        }
+      );
+
+      if (!accessibleResponse.ok) {
+        console.error('Failed to list accessible customers for analytics:', await accessibleResponse.text());
+        return { metrics: emptyMetrics, campaignCount: 0 };
+      }
+
+      const accessibleData = await accessibleResponse.json();
+      console.log('📊 Accessible customers for analytics:', accessibleData);
+      
+      if (!accessibleData.resourceNames?.length) {
+        console.log('No accessible Google Ads customers found for analytics');
+        return { metrics: emptyMetrics, campaignCount: 0 };
+      }
+
+      customerId = accessibleData.resourceNames[0].replace('customers/', '');
+      console.log('📊 Using customer ID for analytics:', customerId);
+    } catch (error) {
+      console.error('Error listing accessible customers:', error);
+      return { metrics: emptyMetrics, campaignCount: 0 };
+    }
+  }
+
+  return await fetchAnalyticsForCustomer(customerId, accessToken, developerToken);
+}
+
+async function fetchAnalyticsForCustomer(
+  customerId: string, 
+  accessToken: string, 
+  developerToken: string
+): Promise<{ metrics: PlatformMetrics; campaignCount: number }> {
+  const emptyMetrics: PlatformMetrics = {
+    impressions: 0,
+    clicks: 0,
+    cost: 0,
+    conversions: 0,
+    conversionValue: 0,
+    ctr: 0,
+    cpc: 0,
+    cpa: 0,
+    roas: 0,
+  };
+
+  try {
+    // Query for account-level metrics (last 30 days)
+    const query = `
+      SELECT
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros,
+        metrics.conversions,
+        metrics.conversions_value,
+        segments.date
+      FROM customer
+      WHERE segments.date DURING LAST_30_DAYS
+    `;
+
+    const response = await fetch(
+      `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}/customers/${customerId}/googleAds:searchStream`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'developer-token': developerToken,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Google Ads Analytics API error:', errorText);
+      return { metrics: emptyMetrics, campaignCount: 0 };
+    }
+
+    const data = await response.json();
+    
+    let totalImpressions = 0;
+    let totalClicks = 0;
+    let totalCostMicros = 0;
+    let totalConversions = 0;
+    let totalConversionsValue = 0;
+
+    if (Array.isArray(data)) {
+      for (const batch of data) {
+        if (batch.results) {
+          for (const result of batch.results) {
+            const metrics = result.metrics || {};
+            totalImpressions += parseInt(metrics.impressions || '0');
+            totalClicks += parseInt(metrics.clicks || '0');
+            totalCostMicros += parseInt(metrics.costMicros || '0');
+            totalConversions += parseFloat(metrics.conversions || '0');
+            totalConversionsValue += parseFloat(metrics.conversionsValue || '0');
+          }
+        }
+      }
+    }
+
+    // Get campaign count
+    const campaignCountQuery = `
+      SELECT campaign.id
+      FROM campaign
+      WHERE campaign.status = 'ENABLED'
+    `;
+
+    const campaignResponse = await fetch(
+      `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}/customers/${customerId}/googleAds:searchStream`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'developer-token': developerToken,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: campaignCountQuery }),
+      }
+    );
+
+    let campaignCount = 0;
+    if (campaignResponse.ok) {
+      const campaignData = await campaignResponse.json();
+      if (Array.isArray(campaignData)) {
+        for (const batch of campaignData) {
+          campaignCount += batch.results?.length || 0;
+        }
+      }
+    }
+
+    const costCents = Math.round(totalCostMicros / 10000);
+    const conversionsValueCents = Math.round(totalConversionsValue * 100);
+
+    const metrics: PlatformMetrics = {
+      impressions: totalImpressions,
+      clicks: totalClicks,
+      cost: costCents,
+      conversions: Math.round(totalConversions),
+      conversionValue: conversionsValueCents,
+      ctr: totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0,
+      cpc: totalClicks > 0 ? Math.round(costCents / totalClicks) : 0,
+      cpa: totalConversions > 0 ? Math.round(costCents / totalConversions) : 0,
+      roas: costCents > 0 ? conversionsValueCents / costCents : 0,
+    };
+
+    console.log(`📊 Google Ads Analytics: ${totalImpressions} impressions, ${totalClicks} clicks, ${campaignCount} campaigns`);
+    
+    return { metrics, campaignCount };
+  } catch (error) {
+    console.error('Error fetching Google Ads analytics:', error);
+    return { metrics: emptyMetrics, campaignCount: 0 };
+  }
+}
 
 export async function GET(request: NextRequest) {
+  if (!db) {
+    return NextResponse.json(
+      { success: false, error: 'Database connection failed' },
+      { status: 500 }
+    );
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
-    const platform = searchParams.get('platform');
-    const timeRange = searchParams.get('timeRange') || '30d';
 
     if (!companyId) {
       return NextResponse.json(
@@ -14,113 +266,119 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Mock-Analytics-Daten für Demo
-    const mockAnalytics = {
-      overview: {
-        totalSpent: 262.55,
-        totalImpressions: 28990,
-        totalClicks: 479,
-        totalConversions: 24,
-        averageCTR: 1.65,
-        averageCPC: 0.55,
-        conversionRate: 5.01,
-        ROAS: 4.2,
-      },
-      platformBreakdown: [
-        {
-          platform: 'google',
-          spent: 127.50,
-          impressions: 15420,
-          clicks: 234,
-          conversions: 12,
-          ctr: 1.52,
-          cpc: 0.54,
-          conversionRate: 5.13,
-        },
-        {
-          platform: 'linkedin', 
-          spent: 89.25,
-          impressions: 8340,
-          clicks: 156,
-          conversions: 8,
-          ctr: 1.87,
-          cpc: 0.57,
-          conversionRate: 5.13,
-        },
-        {
-          platform: 'meta',
-          spent: 45.80,
-          impressions: 5230,
-          clicks: 89,
-          conversions: 4,
-          ctr: 1.70,
-          cpc: 0.51,
-          conversionRate: 4.49,
-        }
-      ],
-      dailyStats: generateDailyStats(30), // 30 Tage Mock-Daten
-      topKeywords: [
-        { keyword: 'elektriker', impressions: 5420, clicks: 89, cpc: 0.65, position: 2.1 },
-        { keyword: 'elektroinstallation', impressions: 3210, clicks: 67, cpc: 0.58, position: 1.8 },
-        { keyword: 'notdienst elektriker', impressions: 2890, clicks: 45, cpc: 0.72, position: 2.4 },
-        { keyword: 'elektriker in der nähe', impressions: 2340, clicks: 38, cpc: 0.48, position: 1.9 },
-        { keyword: 'elektroplanung', impressions: 1890, clicks: 32, cpc: 0.81, position: 2.2 },
-      ],
-      campaignPerformance: [
-        {
-          campaignName: 'Google Ads - Elektriker Services',
-          platform: 'google',
-          spent: 127.50,
-          clicks: 234,
-          conversions: 12,
-          roas: 4.8,
-          status: 'active'
-        },
-        {
-          campaignName: 'LinkedIn - B2B Elektrodienstleistungen', 
-          platform: 'linkedin',
-          spent: 89.25,
-          clicks: 156,
-          conversions: 8,
-          roas: 3.6,
-          status: 'active'
-        },
-        {
-          campaignName: 'Meta - Lokale Elektrikerdienstleistungen',
-          platform: 'meta', 
-          spent: 45.80,
-          clicks: 89,
-          conversions: 4,
-          roas: 3.1,
-          status: 'paused'
-        }
-      ]
+    // Get all connected platforms
+    const connectionsRef = db
+      .collection('companies')
+      .doc(companyId)
+      .collection('advertising_connections');
+    
+    const connectionsSnapshot = await connectionsRef.get();
+    
+    const platformBreakdown: any[] = [];
+    let summaryMetrics: PlatformMetrics = {
+      impressions: 0,
+      clicks: 0,
+      cost: 0,
+      conversions: 0,
+      conversionValue: 0,
+      ctr: 0,
+      cpc: 0,
+      cpa: 0,
+      roas: 0,
     };
 
-    // Filtere nach Platform falls angegeben
-    if (platform && platform !== 'all') {
-      const platformData = mockAnalytics.platformBreakdown.find(p => p.platform === platform);
-      if (platformData) {
-        mockAnalytics.overview = {
-          totalSpent: platformData.spent,
-          totalImpressions: platformData.impressions,
-          totalClicks: platformData.clicks,
-          totalConversions: platformData.conversions,
-          averageCTR: platformData.ctr,
-          averageCPC: platformData.cpc,
-          conversionRate: platformData.conversionRate,
-          ROAS: mockAnalytics.overview.ROAS, // Behalte ROAS
-        };
-        mockAnalytics.platformBreakdown = [platformData];
-        mockAnalytics.campaignPerformance = mockAnalytics.campaignPerformance.filter(c => c.platform === platform);
+    const allPlatforms = ['google-ads', 'linkedin', 'meta', 'taboola', 'outbrain'];
+
+    for (const platformName of allPlatforms) {
+      const connectionDoc = connectionsSnapshot.docs.find(d => d.id === platformName);
+      const connection = connectionDoc?.data();
+      const isConnected = connection?.status === 'connected';
+
+      if (isConnected && platformName === 'google-ads') {
+        const { metrics, campaignCount } = await fetchGoogleAdsAnalytics(connection);
+        
+        platformBreakdown.push({
+          platform: platformName,
+          metrics,
+          campaignCount,
+          isActive: campaignCount > 0,
+        });
+
+        // Add to summary
+        summaryMetrics.impressions += metrics.impressions;
+        summaryMetrics.clicks += metrics.clicks;
+        summaryMetrics.cost += metrics.cost;
+        summaryMetrics.conversions += metrics.conversions;
+        summaryMetrics.conversionValue += metrics.conversionValue;
+      } else {
+        // Platform not connected - show empty metrics
+        platformBreakdown.push({
+          platform: platformName,
+          metrics: {
+            impressions: 0,
+            clicks: 0,
+            cost: 0,
+            conversions: 0,
+            conversionValue: 0,
+            ctr: 0,
+            cpc: 0,
+            cpa: 0,
+            roas: 0,
+          },
+          campaignCount: 0,
+          isActive: false,
+        });
+      }
+    }
+
+    // Calculate summary rates
+    if (summaryMetrics.impressions > 0) {
+      summaryMetrics.ctr = (summaryMetrics.clicks / summaryMetrics.impressions) * 100;
+    }
+    if (summaryMetrics.clicks > 0) {
+      summaryMetrics.cpc = Math.round(summaryMetrics.cost / summaryMetrics.clicks);
+    }
+    if (summaryMetrics.conversions > 0) {
+      summaryMetrics.cpa = Math.round(summaryMetrics.cost / summaryMetrics.conversions);
+    }
+    if (summaryMetrics.cost > 0) {
+      summaryMetrics.roas = summaryMetrics.conversionValue / summaryMetrics.cost;
+    }
+
+    // Generate insights
+    const activePlatforms = platformBreakdown.filter(p => p.isActive);
+    const bestPerforming = activePlatforms.length > 0 
+      ? activePlatforms.reduce((best, current) => 
+          current.metrics.roas > best.metrics.roas ? current : best
+        ).platform
+      : null;
+
+    const recommendations: string[] = [];
+    
+    if (activePlatforms.length === 0) {
+      recommendations.push('Verbinden Sie eine Werbeplattform, um mit der Kampagnenverwaltung zu beginnen.');
+    } else {
+      if (summaryMetrics.roas > 2) {
+        recommendations.push(`Gute Performance! ROAS von ${summaryMetrics.roas.toFixed(1)}. Erwägen Sie eine Budgeterhöhung.`);
+      }
+      if (activePlatforms.length < 3) {
+        recommendations.push('Erwägen Sie zusätzliche Plattformen für mehr Reichweite.');
       }
     }
 
     return NextResponse.json({
       success: true,
-      analytics: mockAnalytics,
-      timeRange,
-      generatedAt: new Date().toISOString(),
+      data: {
+        summary: summaryMetrics,
+        platformBreakdown,
+        dailyData: [], // TODO: Implement daily breakdown
+        insights: {
+          bestPerformingPlatform: bestPerforming,
+          totalBudgetUtilization: 0,
+          averageRoas: summaryMetrics.roas,
+          recommendations,
+        },
+      },
     });
   } catch (error) {
     console.error('Fehler beim Laden der Analytics:', error);
@@ -133,38 +391,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-// Hilfsfunktion für Mock Daily Stats
-function generateDailyStats(days: number) {
-  const stats: Array<{
-    date: string;
-    spent: number;
-    clicks: number;
-    impressions: number;
-    conversions: number;
-    ctr: number;
-  }> = [];
-  const today = new Date();
-  
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    
-    // Simuliere realistische aber zufällige Daten
-    const baseSpent = 5 + Math.random() * 15;
-    const baseClicks = Math.floor(8 + Math.random() * 20);
-    const baseImpressions = Math.floor(baseClicks * (50 + Math.random() * 100));
-    
-    stats.push({
-      date: date.toISOString().split('T')[0],
-      spent: Math.round(baseSpent * 100) / 100,
-      clicks: baseClicks,
-      impressions: baseImpressions,
-      conversions: Math.floor(baseClicks * (0.02 + Math.random() * 0.08)),
-      ctr: Math.round((baseClicks / baseImpressions) * 10000) / 100,
-    });
-  }
-  
-  return stats;
 }

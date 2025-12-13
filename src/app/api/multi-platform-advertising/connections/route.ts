@@ -25,17 +25,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Mock-Implementierung - zeigt immer "disconnected" für korrektes UI-Verhalten
-    const connections = [
-      { platform: 'google-ads', status: 'disconnected', lastConnected: null, accountInfo: null },
-      { platform: 'linkedin', status: 'disconnected', lastConnected: null, accountInfo: null },
-      { platform: 'meta', status: 'disconnected', lastConnected: null, accountInfo: null },
-      { platform: 'taboola', status: 'disconnected', lastConnected: null, accountInfo: null },
-      { platform: 'outbrain', status: 'disconnected', lastConnected: null, accountInfo: null },
-    ];
-
+    // Lade ECHTE Verbindungen aus Firestore
+    const allPlatforms = ['google-ads', 'linkedin', 'meta', 'taboola', 'outbrain'];
+    
     if (platform) {
-      // Check real connection status from Firestore
+      // Einzelne Plattform abfragen
       try {
         console.log('🔍 Checking Firestore for connection:', `/companies/${companyId}/advertising_connections/${platform}`);
         
@@ -56,12 +50,16 @@ export async function GET(request: NextRequest) {
             success: true,
             connection: {
               platform,
-              status: connectionData?.status || 'disconnected', // NIEMALS 'connected' als Fallback!
+              status: connectionData?.status || 'disconnected',
               customerId: connectionData?.customerId,
-              connectedAt: connectionData?.connectedAt || connectionData?.requestedAt,
-              userInfo: connectionData?.userInfo,
-              lastConnected: connectionData?.connectedAt || connectionData?.requestedAt,
-              // Debug info
+              accountName: connectionData?.accountName,
+              connectedAt: connectionData?.connectedAt,
+              lastSync: connectionData?.lastSync,
+              accountInfo: {
+                id: connectionData?.customerId,
+                name: connectionData?.accountName,
+                currency: connectionData?.currency,
+              },
               _debug: {
                 rawStatus: connectionData?.status,
                 isRealConnection: connectionData?.isRealConnection,
@@ -70,8 +68,6 @@ export async function GET(request: NextRequest) {
             },
           });
         } else {
-          // Keine Verbindung vorhanden
-          console.log('❌ No connection found in Firestore');
           return NextResponse.json({
             success: true,
             connection: { platform, status: 'disconnected', lastConnected: null, accountInfo: null },
@@ -79,13 +75,56 @@ export async function GET(request: NextRequest) {
         }
       } catch (firestoreError) {
         console.error('Firestore error:', firestoreError);
-        // Fallback: disconnected
         return NextResponse.json({
           success: true,
           connection: { platform, status: 'disconnected', lastConnected: null, accountInfo: null },
         });
       }
     }
+
+    // Alle Plattformen abfragen
+    const connections = [];
+    
+    for (const platformName of allPlatforms) {
+      try {
+        const connectionDoc = await db
+          .collection('companies')
+          .doc(companyId)
+          .collection('advertising_connections')
+          .doc(platformName)
+          .get();
+        
+        if (connectionDoc.exists) {
+          const data = connectionDoc.data();
+          connections.push({
+            platform: platformName,
+            status: data?.status || 'disconnected',
+            lastConnected: data?.connectedAt || data?.lastSync || null,
+            accountInfo: data?.customerId ? {
+              id: data.customerId,
+              name: data.accountName,
+              currency: data.currency,
+            } : null,
+          });
+        } else {
+          connections.push({
+            platform: platformName,
+            status: 'disconnected',
+            lastConnected: null,
+            accountInfo: null,
+          });
+        }
+      } catch {
+        connections.push({
+          platform: platformName,
+          status: 'disconnected',
+          lastConnected: null,
+          accountInfo: null,
+        });
+      }
+    }
+
+    console.log('📊 All connections loaded:', connections.map(c => ({ platform: c.platform, status: c.status })));
 
     return NextResponse.json({
       success: true,

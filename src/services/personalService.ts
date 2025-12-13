@@ -331,6 +331,24 @@ export interface Employee {
   notes?: string;
   isActive: boolean;
   avatar?: string;
+
+  // App-Zugang für Mitarbeiter (Mobile App)
+  appAccess?: {
+    registered: boolean;
+    authUid?: string;
+    pin?: string;
+    registeredAt?: string;
+    lastLogin?: string;
+    registrationToken?: string;
+    registrationTokenExpiry?: string;
+    permissions: {
+      timeTracking: boolean;
+      schedule: boolean;
+      absenceRequest: boolean;
+      documents: boolean;
+    };
+  };
+
   createdAt?: Date;
   updatedAt?: Date;
 }

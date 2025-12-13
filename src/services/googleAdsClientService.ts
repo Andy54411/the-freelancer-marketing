@@ -1379,69 +1379,440 @@ class GoogleAdsClientService {
   }
 
   /**
-   * 🆕 Manager sendet Einladung an Client-Account
+   * Reaktiviert einen bestehenden CustomerClientLink vom Manager aus
+   * Wird verwendet wenn eine Einladung CANCELED wurde und eine neue benoetigt wird
+   * Strategie: Link auf CANCELED setzen, dann loeschen, dann neu erstellen
    */
-  async sendManagerInvitationFromManager(
-    customerId: string
+  async reactivateManagerLink(
+    customerId: string,
+    refreshToken: string
   ): Promise<GoogleAdsApiResponse<any>> {
     try {
-      const MANAGER_ID = '655-923-8498';
-      
-      // Verwende den Standard-Customer mit Test-Token
-      const managerCustomer = this.client.Customer({
-        customer_id: MANAGER_ID.replace(/-/g, ''),
-        refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN || 'dummy',
-        login_customer_id: MANAGER_ID.replace(/-/g, ''),
+      const MANAGER_ID = '5788229684';
+      const clientIdClean = customerId.replace(/-/g, '');
+
+      // Customer-Objekt fuer den Manager erstellen
+      const customer = this.client.Customer({
+        customer_id: MANAGER_ID,
+        refresh_token: refreshToken,
+        login_customer_id: MANAGER_ID,
       });
 
-      const clientResourceName = `customers/${customerId.replace(/-/g, '')}`;
+      // Zuerst den bestehenden CustomerClientLink finden
+      const query = `
+        SELECT 
+          customer_client_link.resource_name,
+          customer_client_link.client_customer,
+          customer_client_link.status
+        FROM customer_client_link
+        WHERE customer_client_link.client_customer = 'customers/${clientIdClean}'
+      `;
 
-      // Manager lädt Client ein - verwende Library Service Wrapper
-      // @ts-ignore
-      const result = await managerCustomer.customerClientLinks.create([
-        {
-          client_customer: clientResourceName,
-          status: 'PENDING',
-        }
-      ]);
-
-      return {
-        success: true,
-        data: result,
-      };
-    } catch (error: any) {
-      console.error('Manager invitation error:', error);
+      const linkResults = await customer.query(query);
       
-      // Extrahiere Fehlermeldung aus Google Ads Error-Objekt
-      const errorMessage = error?.errors?.[0]?.message || error.message || 'Unknown error';
-      const isTestTokenError = errorMessage.includes('approved for use with test accounts');
-      
-      // Prüfe ob Einladung schon existiert
-      if (errorMessage.includes('ALREADY_EXISTS') || errorMessage.includes('DUPLICATE')) {
+      if (!linkResults || linkResults.length === 0) {
         return {
-          success: true,
-          data: { message: 'Einladung existiert bereits' },
+          success: false,
+          error: {
+            code: 'NO_EXISTING_LINK',
+            message: 'Kein bestehender Link gefunden',
+            details: null,
+          },
         };
       }
 
+      const existingLink = linkResults[0].customer_client_link;
+      const resourceName = existingLink?.resource_name;
+      const currentStatus = existingLink?.status;
+
+      // Wenn bereits PENDING oder ACTIVE, nichts zu tun
+      if (currentStatus === 4 || currentStatus === 2) {
+        return {
+          success: true,
+          data: { 
+            message: currentStatus === 2 ? 'Verknuepfung ist bereits aktiv' : 'Einladung ist bereits ausstehend',
+            status: currentStatus,
+          },
+        };
+      }
+
+      // Wenn Status CANCELED (6), versuchen wir verschiedene Strategien
+      // um eine neue Einladung zu senden
+      try {
+        // Strategie 1: Direkt auf PENDING setzen
+        const updateResponse = await customer.customerClientLinks.update([
+          {
+            resource_name: resourceName,
+            status: 4, // PENDING = 4
+          },
+        ]);
+
+        return {
+          success: true,
+          data: { 
+            message: 'Einladung wurde reaktiviert. Bitte klicken Sie auf "Einladung annehmen".',
+            response: updateResponse,
+          },
+        };
+      } catch (updateError: any) {
+        // Strategie 2: Erst auf INACTIVE, dann auf PENDING
+        try {
+          // Setze auf INACTIVE
+          await customer.customerClientLinks.update([
+            {
+              resource_name: resourceName,
+              status: 3, // INACTIVE = 3
+            },
+          ]);
+          
+          // Dann auf PENDING fuer neue Einladung
+          const pendingResponse = await customer.customerClientLinks.update([
+            {
+              resource_name: resourceName,
+              status: 4, // PENDING = 4
+            },
+          ]);
+
+          return {
+            success: true,
+            data: { 
+              message: 'Neue Einladung wurde gesendet.',
+              response: pendingResponse,
+            },
+          };
+        } catch (secondError: any) {
+          return {
+            success: false,
+            error: {
+              code: 'REACTIVATE_FAILED',
+              message: `Konnte Link nicht reaktivieren. Bitte entfernen Sie die Verknuepfung manuell in Google Ads unter Einstellungen > Kontozugriff.`,
+              details: { updateError: updateError.message, secondError: secondError.message },
+            },
+          };
+        }
+      }
+    } catch (error: any) {
       return {
         success: false,
         error: {
-          code: isTestTokenError ? 'TEST_TOKEN_PRODUCTION_ACCOUNT' : 'INVITATION_FAILED',
-          message: errorMessage,
-          details: error,
-          isProductionAccount: isTestTokenError,
+          code: 'REACTIVATE_FAILED',
+          message: error.message || 'Reaktivierung fehlgeschlagen',
+          details: error.errors || error,
         },
       };
     }
   }
 
   /**
-   * ✅ Manager Einladung senden (vom Client-Account aus)
+   * Manager sendet Einladung an Client-Account
+   * Verwendet die google-ads-api Library (gRPC) direkt
+   * Die REST API unterstuetzt customerClientLinks:mutate NICHT (501 UNIMPLEMENTED)
+   * 
+   * WORKAROUND: Die Library hat einen Bug - sie sendet `operations` (plural),
+   * aber die API erwartet `operation` (singular) fuer CustomerClientLink.
+   * Wir verwenden den onMutationStart Hook um den Request zu korrigieren.
+   */
+  async sendManagerInvitationFromManager(
+    customerId: string,
+    userRefreshToken?: string
+  ): Promise<GoogleAdsApiResponse<any>> {
+    const MANAGER_ID = '5788229684'; // Taskilo Manager Account (578-822-9684)
+    const clientIdClean = customerId.replace(/-/g, '');
+    
+    // Verwende den User-Token wenn vorhanden, sonst Fallback auf System-Token
+    const refreshToken = userRefreshToken || process.env.GOOGLE_ADS_REFRESH_TOKEN;
+
+    if (!refreshToken) {
+      return {
+        success: false,
+        error: {
+          code: 'MISSING_REFRESH_TOKEN',
+          message: 'Kein Refresh Token verfuegbar',
+          details: null,
+        },
+      };
+    }
+
+    try {
+      // Customer-Objekt fuer den Manager-Account erstellen mit Hook um Request zu fixen
+      // Der Hook transformiert `operations` (Array) zu `operation` (einzelnes Objekt)
+      const customer = this.client.Customer(
+        {
+          customer_id: MANAGER_ID,
+          refresh_token: refreshToken,
+          login_customer_id: MANAGER_ID,
+        },
+        {
+          onMutationStart: async ({ mutation, editOptions }) => {
+            // Die Library sendet { operations: [...] }, aber die API erwartet { operation: {...} }
+            // Wir muessen den Request transformieren
+            if (mutation.operations && Array.isArray(mutation.operations)) {
+              const firstOp = mutation.operations[0];
+              editOptions({
+                operation: firstOp,
+              });
+              // Loesche das falsche operations-Feld
+              delete mutation.operations;
+            }
+          },
+        }
+      );
+
+      const response = await customer.customerClientLinks.create([
+        {
+          client_customer: `customers/${clientIdClean}`,
+          status: 4, // ManagerLinkStatus: UNSPECIFIED=0, UNKNOWN=1, ACTIVE=2, INACTIVE=3, PENDING=4
+        },
+      ]);
+
+      return {
+        success: true,
+        data: response,
+      };
+    } catch (error: any) {
+      const errorMessage = error.message || 'Unknown error';
+      const errorDetails = JSON.stringify(error.errors || error);
+      
+      const isTestTokenError = errorMessage.includes('approved for use with test accounts');
+      const isAlreadyExists = errorMessage.includes('ALREADY_EXISTS') || 
+                              errorMessage.includes('DUPLICATE') ||
+                              errorMessage.includes('already linked');
+      const isAlreadyInvited = errorDetails.includes('ALREADY_INVITED_BY_THIS_MANAGER') ||
+                               errorMessage.includes('ALREADY_INVITED_BY_THIS_MANAGER');
+      const isInvalidCustomer = errorMessage.includes('INVALID_CUSTOMER_ID') ||
+                                errorMessage.includes('Customer not found');
+      const isAccountsNotCompatible = errorDetails.includes('ACCOUNTS_NOT_COMPATIBLE_FOR_LINKING') ||
+                                      errorMessage.includes('incompatible account types');
+
+      // Wenn bereits eingeladen, versuchen wir den Link zu reaktivieren
+      if (isAlreadyInvited || isAlreadyExists) {
+        // Versuche den bestehenden Link zu reaktivieren
+        const reactivateResult = await this.reactivateManagerLink(customerId, refreshToken);
+        if (reactivateResult.success) {
+          return reactivateResult;
+        }
+        // Fallback: Melde als Erfolg, User soll annehmen
+        return {
+          success: true,
+          data: { 
+            message: 'Einladung existiert bereits. Bitte klicken Sie auf "Einladung annehmen" um die Verknuepfung zu bestaetigen.',
+            alreadyInvited: true,
+          },
+        };
+      }
+
+      if (isAccountsNotCompatible) {
+        return {
+          success: false,
+          error: {
+            code: 'ACCOUNTS_NOT_COMPATIBLE',
+            message: 'Das ausgewaehlte Google Ads Konto kann nicht verknuepft werden. Manager-Konten koennen nicht unter andere Manager-Konten verknuepft werden. Bitte waehlen Sie ein normales Werbekonto aus.',
+            details: error.errors || error,
+            isManagerAccount: true,
+          },
+        };
+      }
+
+      if (isInvalidCustomer) {
+        return {
+          success: false,
+          error: {
+            code: 'INVALID_CUSTOMER_ID',
+            message: `Die Google Ads Customer-ID ${customerId} existiert nicht oder ist ungueltig.`,
+            details: error.errors || error,
+          },
+        };
+      }
+
+      if (isTestTokenError) {
+        return {
+          success: false,
+          error: {
+            code: 'TEST_TOKEN_PRODUCTION_ACCOUNT',
+            message: 'Der Developer Token ist nur fuer Test-Accounts freigegeben. Eine manuelle Verknuepfung ist erforderlich.',
+            details: error.errors || error,
+            isProductionAccount: true,
+          },
+        };
+      }
+
+      return {
+        success: false,
+        error: {
+          code: 'INVITATION_FAILED',
+          message: errorMessage,
+          details: error.errors || error,
+        },
+      };
+    }
+  }
+
+  /**
+   * Client akzeptiert die Einladung vom Manager
+   * Verwendet CustomerManagerLink um die Einladung anzunehmen
+   * Der User-Refresh-Token wird verwendet, um im Namen des Clients zu handeln
+   */
+  async acceptManagerInvitation(
+    customerId: string,
+    userRefreshToken: string
+  ): Promise<GoogleAdsApiResponse<any>> {
+    try {
+      const MANAGER_ID = '5788229684'; // Taskilo Manager Account (578-822-9684)
+      const clientIdClean = customerId.replace(/-/g, '');
+
+      if (!userRefreshToken) {
+        return {
+          success: false,
+          error: {
+            code: 'MISSING_REFRESH_TOKEN',
+            message: 'Kein Refresh Token verfuegbar',
+            details: null,
+          },
+        };
+      }
+
+      // Customer-Objekt fuer den Client-Account erstellen
+      const customer = this.client.Customer({
+        customer_id: clientIdClean,
+        refresh_token: userRefreshToken,
+        login_customer_id: clientIdClean,
+      });
+
+      // Zuerst den bestehenden CustomerManagerLink finden
+      const query = `
+        SELECT 
+          customer_manager_link.resource_name,
+          customer_manager_link.manager_customer,
+          customer_manager_link.status
+        FROM customer_manager_link
+        WHERE customer_manager_link.manager_customer = 'customers/${MANAGER_ID}'
+      `;
+
+      const linkResults = await customer.query(query);
+      
+      if (!linkResults || linkResults.length === 0) {
+        return {
+          success: false,
+          error: {
+            code: 'NO_PENDING_INVITATION',
+            message: 'Keine ausstehende Einladung von Taskilo gefunden. Bitte fordern Sie zuerst eine neue Einladung an.',
+            details: null,
+          },
+        };
+      }
+
+      const existingLink = linkResults[0].customer_manager_link;
+      const resourceName = existingLink?.resource_name;
+      const currentStatus = existingLink?.status;
+
+      // Wenn bereits ACTIVE, nichts zu tun
+      if (currentStatus === 2) { // ACTIVE = 2
+        return {
+          success: true,
+          data: { message: 'Verknuepfung ist bereits aktiv', alreadyActive: true },
+        };
+      }
+
+      // Status 6 = CANCELED - versuchen wir verschiedene Strategien
+      if (currentStatus === 6) { // CANCELED = 6
+        // Strategie 1: Versuche direkt auf ACTIVE zu setzen
+        try {
+          const reactivateResponse = await customer.customerManagerLinks.update([
+            {
+              resource_name: resourceName,
+              status: 2, // Direkt auf ACTIVE setzen
+            },
+          ]);
+          return {
+            success: true,
+            data: { message: 'Verknuepfung wurde reaktiviert', response: reactivateResponse },
+          };
+        } catch (reactivateError: any) {
+          // Strategie 2: Setze auf PENDING und dann auf ACTIVE
+          try {
+            // Erst auf PENDING
+            await customer.customerManagerLinks.update([
+              {
+                resource_name: resourceName,
+                status: 4, // PENDING = 4
+              },
+            ]);
+            // Dann auf ACTIVE
+            const activeResponse = await customer.customerManagerLinks.update([
+              {
+                resource_name: resourceName,
+                status: 2, // ACTIVE = 2
+              },
+            ]);
+            return {
+              success: true,
+              data: { message: 'Verknuepfung wurde reaktiviert', response: activeResponse },
+            };
+          } catch (pendingError: any) {
+            // Auch das funktioniert nicht - der Link ist wirklich kaputt
+            // User muss im Google Ads UI den Link manuell loeschen oder Manager muss neuen Account einladen
+            return {
+              success: false,
+              error: {
+                code: 'LINK_CANCELED_PERMANENTLY',
+                message: 'Die Verknuepfung wurde dauerhaft storniert und kann nicht reaktiviert werden. Bitte entfernen Sie die Verknuepfung in Ihrem Google Ads Account unter Einstellungen > Kontozugriff und fordern Sie dann eine neue Einladung an.',
+                details: { 
+                  currentStatus, 
+                  needsManualAction: true,
+                  reactivateError: reactivateError.message,
+                  pendingError: pendingError.message,
+                },
+              },
+            };
+          }
+        }
+      }
+
+      // Wenn nicht PENDING, kann nicht akzeptiert werden
+      if (currentStatus !== 4) { // PENDING = 4
+        return {
+          success: false,
+          error: {
+            code: 'INVALID_LINK_STATUS',
+            message: `Die Einladung hat einen ungueltigen Status (${currentStatus}). Bitte fordern Sie eine neue Einladung an.`,
+            details: { currentStatus, needsNewInvitation: true },
+            needsNewInvitation: true,
+          },
+        };
+      }
+
+      // CustomerManagerLink auf ACTIVE setzen um die Einladung anzunehmen
+      const response = await customer.customerManagerLinks.update([
+        {
+          resource_name: resourceName,
+          status: 2, // ManagerLinkStatus.ACTIVE = 2
+        },
+      ]);
+
+      return {
+        success: true,
+        data: response,
+      };
+    } catch (error: any) {
+      const errorMessage = error.message || 'Unknown error';
+      
+      return {
+        success: false,
+        error: {
+          code: 'ACCEPT_INVITATION_FAILED',
+          message: errorMessage,
+          details: error.errors || error,
+        },
+      };
+    }
+  }
+
+  /**
+   * Manager Einladung senden (vom Client-Account aus)
    * HINWEIS: Dies funktioniert nur, wenn der Client-Account Zugriff auf die API hat.
    * Bei Test-Developer-Tokens funktioniert dies NICHT mit Produktions-Accounts ("Test Access Only").
    * 
-   * ⚠️ DEPRECATED: Verwende stattdessen sendManagerInvitationFromManager()
+   * DEPRECATED: Verwende stattdessen sendManagerInvitationFromManager()
    */
   async sendManagerInvitation(
     clientRefreshToken: string,

@@ -202,11 +202,11 @@ export default function GoogleAdsCampaignCreator({ companyId }: GoogleAdsCampaig
         </div>
       </div>
 
-      {/* Info Card */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+      {/* Info Card - Taskilo Style */}
+      <div className="bg-teal-50 border border-teal-200 rounded-lg p-6">
         <div className="flex items-start gap-3">
-          <div className="p-1 bg-blue-100 rounded">
-            <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+          <div className="p-1 bg-teal-100 rounded">
+            <svg className="w-4 h-4 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
                 d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
@@ -215,10 +215,10 @@ export default function GoogleAdsCampaignCreator({ companyId }: GoogleAdsCampaig
             </svg>
           </div>
           <div>
-            <h3 className="font-medium text-blue-900 mb-1">Information</h3>
-            <p className="text-sm text-blue-800">
-              Diese Angaben werden verwendet, um Ihnen passende Kampagnenvorschläge zu erstellen.
-              Sie können alle Einstellungen später noch anpassen.
+            <h3 className="font-medium text-teal-900 mb-1">Information</h3>
+            <p className="text-sm text-teal-800">
+              Diese Angaben werden verwendet, um Ihnen passende Kampagnenvorschlaege zu erstellen.
+              Sie koennen alle Einstellungen spaeter noch anpassen.
             </p>
           </div>
         </div>

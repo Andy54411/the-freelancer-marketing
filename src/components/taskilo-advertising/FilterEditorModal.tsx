@@ -284,7 +284,7 @@ export default function FilterEditorModal({
                     placeholder="Suchen"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-3 py-2 border-b border-gray-300 bg-transparent text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 border-b border-gray-300 bg-transparent text-sm focus:outline-none focus:border-teal-500"
                   />
                   {searchQuery && (
                     <button
@@ -326,7 +326,7 @@ export default function FilterEditorModal({
                         ? toggleBidStrategy(option)
                         : toggleCampaignType(option)
                       }
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
                     />
                     <span>{option}</span>
                   </label>
@@ -370,7 +370,7 @@ export default function FilterEditorModal({
                   Wert eingeben
                 </div>
                 <div className="relative">
-                  <label className="absolute -top-2 left-2 bg-white px-1 text-xs text-blue-600 font-medium">
+                  <label className="absolute -top-2 left-2 bg-white px-1 text-xs text-teal-600 font-medium">
                     Wert
                   </label>
                   {isTextareaMode ? (
@@ -379,7 +379,7 @@ export default function FilterEditorModal({
                       onChange={(e) => setFilterValue(e.target.value)}
                       placeholder=""
                       rows={3}
-                      className="w-full px-3 py-2 border-2 border-blue-500 rounded text-sm focus:outline-none focus:border-blue-600 resize-none"
+                      className="w-full px-3 py-2 border-2 border-teal-500 rounded text-sm focus:outline-none focus:border-teal-600 resize-none"
                     />
                   ) : (
                     <input
@@ -387,7 +387,7 @@ export default function FilterEditorModal({
                       value={filterValue}
                       onChange={(e) => setFilterValue(e.target.value)}
                       placeholder=""
-                      className="w-full px-3 py-2 border-2 border-blue-500 rounded text-sm focus:outline-none focus:border-blue-600"
+                      className="w-full px-3 py-2 border-2 border-teal-500 rounded text-sm focus:outline-none focus:border-teal-600"
                     />
                   )}
                 </div>
@@ -409,7 +409,7 @@ export default function FilterEditorModal({
               isCheckboxMode ? (filterType === 'Gebotsstrategietyp' ? selectedBidStrategies.length === 0 : selectedCampaignTypes.length === 0) : 
               !filterValue.trim()
             }
-            className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-teal-600 text-white rounded text-sm font-medium hover:bg-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             Übernehmen
           </button>

@@ -102,7 +102,7 @@ export default function AdvertisingAnalytics({ companyId }: AdvertisingAnalytics
                 <p className="text-sm text-gray-600">Gesamte Klicks</p>
                 <p className="text-2xl font-bold">{analytics.totalClicks}</p>
               </div>
-              <MousePointer className="w-8 h-8 text-blue-500" />
+              <MousePointer className="w-8 h-8 text-teal-500" />
             </div>
             <div className="flex items-center mt-2">
               <TrendingUp className="w-4 h-4 text-green-500 mr-1" />

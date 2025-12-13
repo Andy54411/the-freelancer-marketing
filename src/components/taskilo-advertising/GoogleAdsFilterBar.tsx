@@ -128,7 +128,7 @@ export default function GoogleAdsFilterBar({ companyId }: GoogleAdsFilterBarProp
             <div 
               ref={statusButtonRef}
               onClick={() => setIsStatusModalOpen(true)}
-              className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm hover:bg-blue-200 cursor-pointer transition-colors"
+              className="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-sm hover:bg-teal-200 cursor-pointer transition-colors"
             >
               <span>Kampagnenstatus: {
                 selectedStatus === 'alle' ? 'Alle' :
@@ -141,7 +141,7 @@ export default function GoogleAdsFilterBar({ companyId }: GoogleAdsFilterBarProp
             <div 
               ref={adGroupStatusButtonRef}
               onClick={() => setIsAdGroupStatusModalOpen(true)}
-              className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm hover:bg-blue-200 cursor-pointer transition-colors"
+              className="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-sm hover:bg-teal-200 cursor-pointer transition-colors"
             >
               <span>Anzeigengruppenstatus: {
                 selectedAdGroupStatus === 'alle' ? 'Alle' :
@@ -154,12 +154,12 @@ export default function GoogleAdsFilterBar({ companyId }: GoogleAdsFilterBarProp
             {appliedFilters.map((filter) => (
               <div 
                 key={filter.id}
-                className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center space-x-1"
+                className="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-sm flex items-center space-x-1"
               >
                 <span>{filter.type}: {filter.value}</span>
                 <button
                   onClick={() => removeFilter(filter.id)}
-                  className="ml-1 hover:bg-green-200 rounded-full p-0.5"
+                  className="ml-1 hover:bg-teal-200 rounded-full p-0.5"
                 >
                   <span className="text-xs">×</span>
                 </button>
@@ -170,12 +170,12 @@ export default function GoogleAdsFilterBar({ companyId }: GoogleAdsFilterBarProp
             <input 
               ref={filterInputRef}
               type="text" 
-              placeholder="Filter hinzufügen"
+              placeholder="Filter hinzufuegen"
               value={filterInputValue}
               onChange={handleFilterInputChange}
               onFocus={handleFilterInputFocus}
-              className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[150px]"
-              aria-label="Filter hinzufügen"
+              className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent min-w-[150px]"
+              aria-label="Filter hinzufuegen"
             />
           </div>
 

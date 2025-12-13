@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Eye, FileText } from 'lucide-react';
+import EmployeeCreationModal from '@/components/recruiting/EmployeeCreationModal';
 
 import Link from 'next/link';
 
@@ -37,13 +38,15 @@ interface ApplicationsListProps {
 
 export function ApplicationsList({ applications: initialApplications }: ApplicationsListProps) {
   const [applications, setApplications] = useState(initialApplications);
+  const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null);
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
 
-  async function updateStatus(applicationId: string, newStatus: string) {
+  async function updateStatus(applicationId: string, newStatus: string, employeeData?: any) {
     try {
       const response = await fetch(`/api/recruiting/applications/${applicationId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus, employeeData }),
       });
 
       if (!response.ok) throw new Error('Failed to update status');
@@ -51,11 +54,41 @@ export function ApplicationsList({ applications: initialApplications }: Applicat
       setApplications(apps =>
         apps.map(app => (app.id === applicationId ? { ...app, status: newStatus as any } : app))
       );
-      toast.success('Status aktualisiert');
+      
+      if (newStatus === 'accepted') {
+        toast.success('Bewerber eingestellt! Mitarbeiter wurde angelegt.', {
+          description: 'Sie finden den neuen Mitarbeiter in der Personalverwaltung.',
+          duration: 8000,
+        });
+      } else {
+        toast.success('Status aktualisiert');
+      }
     } catch (error) {
       toast.error('Fehler beim Aktualisieren des Status');
+      throw error;
     }
   }
+
+  const handleStatusChange = (app: JobApplication, newStatus: string) => {
+    if (newStatus === 'accepted') {
+      setSelectedApplication(app);
+      setIsEmployeeModalOpen(true);
+    } else {
+      updateStatus(app.id, newStatus);
+    }
+  };
+
+  const handleEmployeeConfirm = async (employeeData: any) => {
+    if (!selectedApplication) return;
+    
+    try {
+      await updateStatus(selectedApplication.id, 'accepted', employeeData);
+      setIsEmployeeModalOpen(false);
+      setSelectedApplication(null);
+    } catch (error) {
+      throw error;
+    }
+  };
 
   return (
     <div className="border rounded-lg">
@@ -82,7 +115,7 @@ export function ApplicationsList({ applications: initialApplications }: Applicat
                 <TableCell>
                   <Select
                     value={app.status}
-                    onValueChange={val => updateStatus(app.id, val)}
+                    onValueChange={val => handleStatusChange(app, val)}
                   >
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="Status wählen" />
@@ -116,6 +149,17 @@ export function ApplicationsList({ applications: initialApplications }: Applicat
           )}
         </TableBody>
       </Table>
+
+      <EmployeeCreationModal
+        isOpen={isEmployeeModalOpen}
+        onClose={() => {
+          setIsEmployeeModalOpen(false);
+          setSelectedApplication(null);
+        }}
+        onConfirm={handleEmployeeConfirm}
+        applicationData={selectedApplication}
+        jobTitle={selectedApplication?.jobTitle}
+      />
     </div>
   );
 }

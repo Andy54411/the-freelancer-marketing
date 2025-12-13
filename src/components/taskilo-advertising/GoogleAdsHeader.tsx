@@ -77,8 +77,8 @@ export default function GoogleAdsHeader({ companyId }: GoogleAdsHeaderProps) {
           </button>
         </div>
         
-        {/* Last 30 Days Button - Smaller */}
-        <button className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs hover:bg-blue-700 font-medium">
+        {/* Last 30 Days Button - Taskilo Style */}
+        <button className="bg-teal-600 text-white px-3 py-1.5 rounded text-xs hover:bg-teal-700 font-medium">
           Letzte 30 Tage anzeigen
         </button>
       </div>

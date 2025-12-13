@@ -180,6 +180,7 @@ export type JobPosting = z.infer<typeof JobPostingSchema>;
 export const JobApplicationSchema = z.object({
   id: z.string(),
   jobId: z.string(),
+  jobTitle: z.string().optional(), // Job title at time of application
   companyId: z.string(),
   applicantId: z.string(), // User UID
   applicantProfile: ApplicantProfileSchema, // Snapshot of profile at time of application

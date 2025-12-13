@@ -56,7 +56,7 @@ export default function MetaAdsManager({ companyId }: MetaAdsManagerProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center">
-              <div className="p-2 rounded bg-blue-600 mr-3">
+              <div className="p-2 rounded bg-teal-600 mr-3">
                 <span className="text-white font-bold text-sm">M</span>
               </div>
               Meta Ads Verbindung
@@ -78,18 +78,18 @@ export default function MetaAdsManager({ companyId }: MetaAdsManagerProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="p-4 bg-teal-50 border border-teal-200 rounded-lg">
               <div className="flex items-center">
-                <AlertTriangle className="w-5 h-5 text-blue-500 mr-2" />
-                <span className="text-blue-700">
-                  Verbinden Sie Ihr Facebook & Instagram Ads Konto.
+                <AlertTriangle className="w-5 h-5 text-teal-500 mr-2" />
+                <span className="text-teal-700">
+                  Verbinden Sie Ihr Facebook und Instagram Ads Konto.
                 </span>
               </div>
             </div>
             
             <Button 
               onClick={handleConnect}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white"
             >
               <ExternalLink className="w-4 h-4 mr-2" />
               Mit Meta Ads verbinden

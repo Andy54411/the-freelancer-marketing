@@ -18,6 +18,7 @@ import ComplianceTab from '@/components/personal/ComplianceTab';
 import DisciplinaryTab from '@/components/personal/DisciplinaryTab';
 import ContractsTab from '@/components/personal/ContractsTab';
 import VacationContainer from '@/components/personal/tabs/VacationContainer';
+import { AppAccessTab } from '@/components/personal/AppAccessTab';
 
 interface EditEmployeePageProps {
   params: Promise<{ uid: string; employeeId: string }>;
@@ -192,7 +193,7 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
       <Card>
         <CardContent className="p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5 lg:grid-cols-9 gap-1">
+            <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10 gap-1">
               <TabsTrigger value="basic" className="text-xs">
                 Grunddaten
               </TabsTrigger>
@@ -220,6 +221,9 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
               <TabsTrigger value="time" className="text-xs">
                 Arbeitszeit
               </TabsTrigger>
+              <TabsTrigger value="app" className="text-xs">
+                App-Zugang
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic" className="mt-6">
@@ -234,7 +238,11 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
             </TabsContent>
 
             <TabsContent value="documents" className="mt-6">
-              <DocumentsTab employeeId={resolvedParams.employeeId} companyId={resolvedParams.uid} />
+              <DocumentsTab 
+                employeeId={resolvedParams.employeeId} 
+                companyId={resolvedParams.uid}
+                employee={employee}
+              />
             </TabsContent>
 
             <TabsContent value="vacation" className="mt-6">
@@ -301,6 +309,17 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
               <TimeTrackingTab
                 employeeId={resolvedParams.employeeId}
                 companyId={resolvedParams.uid}
+              />
+            </TabsContent>
+
+            <TabsContent value="app" className="mt-6">
+              <AppAccessTab
+                employee={employee}
+                companyId={resolvedParams.uid}
+                onEmployeeUpdated={(updatedEmployee) => {
+                  setEmployee(updatedEmployee);
+                  setFormData(updatedEmployee);
+                }}
               />
             </TabsContent>
           </Tabs>

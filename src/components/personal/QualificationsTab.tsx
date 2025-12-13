@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, X, GraduationCap, Award, Languages, Briefcase } from 'lucide-react';
+import { Plus, X, GraduationCap, Award, Languages, Briefcase, FileText, ExternalLink } from 'lucide-react';
 import { Employee } from '@/services/personalService';
 
 interface QualificationsTabProps {
@@ -34,6 +34,7 @@ interface Education {
   startDate: string;
   endDate: string;
   grade?: string;
+  certificateUrl?: string;
 }
 
 interface Certification {
@@ -43,6 +44,7 @@ interface Certification {
   issueDate: string;
   expiryDate?: string;
   credentialId?: string;
+  certificateUrl?: string;
 }
 
 interface Language {
@@ -58,6 +60,17 @@ interface Skill {
   category: 'Technical' | 'Soft Skills' | 'Industry' | 'Other';
 }
 
+interface Experience {
+  id: string;
+  company: string;
+  title: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  certificateUrl?: string;
+}
+
 export default function QualificationsTab({
   employee,
   isEditing,
@@ -66,14 +79,138 @@ export default function QualificationsTab({
   onCancel,
   onEdit,
 }: QualificationsTabProps) {
-  const [education, setEducation] = useState<Education[]>(
-    employee?.qualifications?.education || []
-  );
-  const [certifications, setCertifications] = useState<Certification[]>(
-    employee?.qualifications?.certifications || []
-  );
-  const [languages, setLanguages] = useState<Language[]>(employee?.qualifications?.languages || []);
-  const [skills, setSkills] = useState<Skill[]>(employee?.qualifications?.skills || []);
+  // Mappt die Daten aus der Datenbank (direkte Felder) auf das erwartete Format
+  const mapEducationFromDB = (): Education[] => {
+    // Zuerst prüfen ob qualifications vorhanden
+    if (employee?.qualifications?.education?.length) {
+      return employee.qualifications.education;
+    }
+    // Sonst direkte education-Felder mappen
+    if (employee?.education?.length) {
+      return employee.education.map((edu, idx) => {
+        const eduAny = edu as Record<string, unknown>;
+        return {
+          id: `edu-${idx}`,
+          institution: edu.institution || '',
+          degree: edu.degree || '',
+          field: (eduAny.location as string) || '',
+          startDate: (eduAny.startDate as string) || '',
+          endDate: (eduAny.endDate as string) || '',
+          grade: edu.graduationYear || '',
+          certificateUrl: (eduAny.certificateUrl as string) || '',
+        };
+      });
+    }
+    return [];
+  };
+
+  const mapCertificationsFromDB = (): Certification[] => {
+    if (employee?.qualifications?.certifications?.length) {
+      return employee.qualifications.certifications;
+    }
+    if (employee?.certifications?.length) {
+      return employee.certifications.map((cert, idx) => {
+        const certAny = cert as Record<string, unknown>;
+        return {
+          id: `cert-${idx}`,
+          name: cert.name || '',
+          issuer: cert.issuingOrganization || '',
+          issueDate: cert.issueDate || '',
+          expiryDate: cert.expirationDate || '',
+          credentialId: '',
+          certificateUrl: (certAny.certificateUrl as string) || '',
+        };
+      });
+    }
+    return [];
+  };
+
+  const mapLanguagesFromDB = (): Language[] => {
+    if (employee?.qualifications?.languages?.length) {
+      return employee.qualifications.languages;
+    }
+    if (employee?.languages?.length) {
+      return employee.languages.map((lang, idx) => ({
+        id: `lang-${idx}`,
+        language: lang.language || '',
+        level: mapLanguageLevel(lang.level),
+      }));
+    }
+    return [];
+  };
+
+  const mapLanguageLevel = (level: string): 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2' | 'Native' => {
+    switch (level) {
+      case 'NATIVE':
+        return 'Native';
+      case 'ADVANCED':
+        return 'C1';
+      case 'INTERMEDIATE':
+        return 'B1';
+      case 'BASIC':
+        return 'A1';
+      default:
+        return 'B1';
+    }
+  };
+
+  const mapSkillsFromDB = (): Skill[] => {
+    if (employee?.qualifications?.skills?.length) {
+      return employee.qualifications.skills;
+    }
+    // Skills aus der DB sind ein Array von Strings
+    const employeeAny = employee as Record<string, unknown>;
+    if (employeeAny?.skills && Array.isArray(employeeAny.skills)) {
+      return (employeeAny.skills as string[]).map((skill, idx) => ({
+        id: `skill-${idx}`,
+        name: skill,
+        level: 'Intermediate' as const,
+        category: 'Technical' as const,
+      }));
+    }
+    return [];
+  };
+
+  const mapExperienceFromDB = (): Experience[] => {
+    // Experience aus der DB lesen
+    const employeeAny = employee as Record<string, unknown>;
+    if (employeeAny?.experience && Array.isArray(employeeAny.experience)) {
+      return (employeeAny.experience as Array<{
+        company?: string;
+        title?: string;
+        location?: string;
+        startDate?: string;
+        endDate?: string;
+        description?: string;
+        certificateUrl?: string;
+      }>).map((exp, idx) => ({
+        id: `exp-${idx}`,
+        company: exp.company || '',
+        title: exp.title || '',
+        location: exp.location || '',
+        startDate: exp.startDate || '',
+        endDate: exp.endDate || '',
+        description: exp.description || '',
+        certificateUrl: exp.certificateUrl || '',
+      }));
+    }
+    return [];
+  };
+
+  const [education, setEducation] = useState<Education[]>(mapEducationFromDB());
+  const [certifications, setCertifications] = useState<Certification[]>(mapCertificationsFromDB());
+  const [languages, setLanguages] = useState<Language[]>(mapLanguagesFromDB());
+  const [skills, setSkills] = useState<Skill[]>(mapSkillsFromDB());
+  const [experience, setExperience] = useState<Experience[]>(mapExperienceFromDB());
+
+  // Aktualisiere States wenn employee sich ändert
+  useEffect(() => {
+    setEducation(mapEducationFromDB());
+    setCertifications(mapCertificationsFromDB());
+    setLanguages(mapLanguagesFromDB());
+    setSkills(mapSkillsFromDB());
+    setExperience(mapExperienceFromDB());
+  }, [employee?.id]);
 
   // Education Management
   const addEducation = () => {
@@ -155,6 +292,28 @@ export default function QualificationsTab({
 
   const removeSkill = (id: string) => {
     setSkills(skills.filter(skill => skill.id !== id));
+  };
+
+  // Experience Management
+  const addExperience = () => {
+    const newExp: Experience = {
+      id: Date.now().toString(),
+      company: '',
+      title: '',
+      location: '',
+      startDate: '',
+      endDate: '',
+      description: '',
+    };
+    setExperience([...experience, newExp]);
+  };
+
+  const updateExperience = (id: string, field: keyof Experience, value: string) => {
+    setExperience(experience.map(exp => (exp.id === id ? { ...exp, [field]: value } : exp)));
+  };
+
+  const removeExperience = (id: string) => {
+    setExperience(experience.filter(exp => exp.id !== id));
   };
 
   const handleSave = () => {
@@ -266,6 +425,21 @@ export default function QualificationsTab({
                       disabled={!isEditing}
                     />
                   </div>
+                  {edu.certificateUrl && (
+                    <div className="md:col-span-2">
+                      <Label>Zeugnis/Urkunde</Label>
+                      <a
+                        href={edu.certificateUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-[#14ad9f] hover:underline mt-1"
+                      >
+                        <FileText className="h-4 w-4" />
+                        <span>Dokument anzeigen</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
                 </div>
                 {isEditing && (
                   <Button
@@ -347,6 +521,21 @@ export default function QualificationsTab({
                       placeholder="Eindeutige Zertifikat-Nummer"
                     />
                   </div>
+                  {cert.certificateUrl && (
+                    <div className="md:col-span-2">
+                      <Label>Zertifikat-Dokument</Label>
+                      <a
+                        href={cert.certificateUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-[#14ad9f] hover:underline mt-1"
+                      >
+                        <FileText className="h-4 w-4" />
+                        <span>Zertifikat anzeigen</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
                 </div>
                 {isEditing && (
                   <Button
@@ -520,6 +709,114 @@ export default function QualificationsTab({
             <Button variant="outline" onClick={addSkill} className="w-full border-dashed">
               <Plus className="h-4 w-4 mr-2" />
               Fähigkeit hinzufügen
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Berufserfahrung */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Briefcase className="h-5 w-5 text-[#14ad9f]" />
+            Berufserfahrung
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {experience.map(exp => (
+            <div key={exp.id} className="border rounded-lg p-4 space-y-3">
+              <div className="flex justify-between items-start">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+                  <div>
+                    <Label>Position</Label>
+                    <Input
+                      value={exp.title}
+                      onChange={e => updateExperience(exp.id, 'title', e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Software Entwickler"
+                    />
+                  </div>
+                  <div>
+                    <Label>Unternehmen</Label>
+                    <Input
+                      value={exp.company}
+                      onChange={e => updateExperience(exp.id, 'company', e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Musterfirma GmbH"
+                    />
+                  </div>
+                  <div>
+                    <Label>Standort</Label>
+                    <Input
+                      value={exp.location}
+                      onChange={e => updateExperience(exp.id, 'location', e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Berlin"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label>Von</Label>
+                      <Input
+                        type="date"
+                        value={exp.startDate}
+                        onChange={e => updateExperience(exp.id, 'startDate', e.target.value)}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                    <div>
+                      <Label>Bis</Label>
+                      <Input
+                        type="date"
+                        value={exp.endDate}
+                        onChange={e => updateExperience(exp.id, 'endDate', e.target.value)}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label>Beschreibung</Label>
+                    <Textarea
+                      value={exp.description}
+                      onChange={e => updateExperience(exp.id, 'description', e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Tätigkeitsbeschreibung..."
+                      rows={3}
+                    />
+                  </div>
+                  {exp.certificateUrl && (
+                    <div className="md:col-span-2">
+                      <Label>Arbeitszeugnis</Label>
+                      <a
+                        href={exp.certificateUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-[#14ad9f] hover:underline mt-1"
+                      >
+                        <FileText className="h-4 w-4" />
+                        <span>Arbeitszeugnis anzeigen</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+                {isEditing && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeExperience(exp.id)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+          {isEditing && (
+            <Button variant="outline" onClick={addExperience} className="w-full border-dashed">
+              <Plus className="h-4 w-4 mr-2" />
+              Berufserfahrung hinzufügen
             </Button>
           )}
         </CardContent>
