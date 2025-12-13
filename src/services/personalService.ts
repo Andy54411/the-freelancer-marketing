@@ -328,6 +328,20 @@ export interface Employee {
       }[];
     }[];
   };
+  
+  // Arbeitszeiteinstellungen
+  workSettings?: {
+    dailyWorkHours: number;
+    weeklyWorkHours: number;
+    overtimeThreshold: number;
+    maxDailyHours: number;
+    breakAfterHours: number;
+    breakDuration: number;
+    overtimeMultiplier: number;
+    weekendMultiplier: number;
+    holidayMultiplier: number;
+  };
+  
   notes?: string;
   isActive: boolean;
   avatar?: string;
@@ -341,6 +355,7 @@ export interface Employee {
     lastLogin?: string;
     registrationToken?: string;
     registrationTokenExpiry?: string;
+    invitedAt?: string;
     permissions: {
       timeTracking: boolean;
       schedule: boolean;
@@ -366,6 +381,18 @@ export interface VacationRequest {
   reviewedAt?: Date;
   reviewedBy?: string;
   reviewComment?: string;
+}
+
+export interface WorkSettings {
+  dailyWorkHours: number; // Tägliche Regelarbeitszeit (z.B. 8 Stunden)
+  weeklyWorkHours: number; // Wöchentliche Regelarbeitszeit (z.B. 40 Stunden)
+  overtimeThreshold: number; // Ab wann Überstunden gezählt werden (Stunden pro Tag)
+  maxDailyHours: number; // Maximale tägliche Arbeitszeit
+  breakAfterHours: number; // Nach wie vielen Stunden Pause Pflicht
+  breakDuration: number; // Pausendauer in Minuten
+  overtimeMultiplier: number; // Überstunden-Zuschlag (z.B. 1.25 = 25%)
+  weekendMultiplier: number; // Wochenend-Zuschlag
+  holidayMultiplier: number; // Feiertags-Zuschlag
 }
 
 export interface VacationSettings {
@@ -856,6 +883,29 @@ export class PersonalService {
   }
 
   /**
+   * Aktualisiert die Arbeitszeiteinstellungen eines Mitarbeiters
+   */
+  static async updateWorkSettings(
+    companyId: string,
+    employeeId: string,
+    workSettings: WorkSettings
+  ): Promise<void> {
+    try {
+      const updateData = {
+        workSettings: {
+          ...workSettings,
+          updatedAt: new Date(),
+        },
+        updatedAt: new Date(),
+      };
+
+      await updateDoc(doc(db, 'companies', companyId, 'employees', employeeId), updateData);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Speichert einen neuen Urlaubsantrag
    */
   static async saveVacationRequest(
@@ -931,16 +981,14 @@ export class PersonalService {
    * Berechnet die verfügbaren Urlaubstage für einen Mitarbeiter
    */
   static calculateAvailableVacationDays(employee: Employee): number {
-    if (!employee.vacation?.settings) return 0;
-
-    const settings = employee.vacation.settings;
+    const settings = employee.vacation?.settings;
     const currentYear = new Date().getFullYear();
 
-    // Basis Urlaubstage
-    let availableDays = settings.annualVacationDays;
+    // Basis Urlaubstage - Fallback auf totalDays oder 30
+    let availableDays = settings?.annualVacationDays || employee.vacation?.totalDays || 30;
 
-    // Übertragung vom Vorjahr
-    if (settings.carryOverDays && settings.carryOverDays > 0) {
+    // Übertragung vom Vorjahr (nur wenn settings existiert)
+    if (settings?.carryOverDays && settings.carryOverDays > 0) {
       const maxCarryOver = settings.maxCarryOverDays || 0;
       const carryOverAmount = Math.min(settings.carryOverDays, maxCarryOver);
 
@@ -2263,9 +2311,19 @@ export class PersonalService {
     timeEntry: Omit<TimeTracking, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-      const timeRef = collection(db, `companies/${companyId}/time_tracking`);
+      // Verwende timeEntries Collection (gleiche wie die API)
+      const timeRef = collection(db, `companies/${companyId}/timeEntries`);
       const entryRef = await addDoc(timeRef, {
         ...timeEntry,
+        // Konvertiere TimeTracking-Format zu timeEntries-Format
+        startTime: timeEntry.clockIn,
+        endTime: timeEntry.clockOut,
+        duration: Math.round((timeEntry.totalHours || 0) * 60), // In Minuten
+        breakTime: 0,
+        description: timeEntry.notes || timeEntry.project || '',
+        category: 'WORK',
+        status: timeEntry.status === 'ACTIVE' ? 'ACTIVE' : 'COMPLETED',
+        isManual: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -2284,29 +2342,44 @@ export class PersonalService {
     endDate?: string
   ): Promise<TimeTracking[]> {
     try {
-      const timeRef = collection(db, `companies/${companyId}/time_tracking`);
-      const q = query(timeRef, where('employeeId', '==', employeeId), orderBy('date', 'desc'));
+      // Verwende timeEntries Collection (gleiche wie die API)
+      const timeRef = collection(db, `companies/${companyId}/timeEntries`);
+      const q = query(timeRef, where('employeeId', '==', employeeId));
 
       const querySnapshot = await getDocs(q);
       const timeEntries: TimeTracking[] = [];
 
       querySnapshot.forEach(doc => {
         const data = doc.data();
+        // Konvertiere timeEntries-Format zu TimeTracking-Format
+        const entry: TimeTracking = {
+          id: doc.id,
+          companyId: data.companyId || companyId,
+          employeeId: data.employeeId || employeeId,
+          date: data.date || '',
+          clockIn: data.startTime || data.clockIn || '',
+          clockOut: data.endTime || data.clockOut || '',
+          totalHours: data.duration ? data.duration / 60 : (data.totalHours || 0),
+          overtimeHours: data.overtimeHours || 0,
+          project: data.projectName || data.project || '',
+          notes: data.description || data.notes || '',
+          status: data.status === 'ACTIVE' ? 'ACTIVE' : (data.status === 'COMPLETED' ? 'COMPLETED' : 'REVIEWED'),
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+          updatedAt: data.updatedAt?.toDate?.() || new Date(),
+        };
+        
         // Optionale Datumsfilterung
         if (startDate && endDate) {
-          if (data.date >= startDate && data.date <= endDate) {
-            timeEntries.push({
-              id: doc.id,
-              ...data,
-            } as TimeTracking);
+          if (entry.date >= startDate && entry.date <= endDate) {
+            timeEntries.push(entry);
           }
         } else {
-          timeEntries.push({
-            id: doc.id,
-            ...data,
-          } as TimeTracking);
+          timeEntries.push(entry);
         }
       });
+
+      // Sortiere nach Datum absteigend
+      timeEntries.sort((a, b) => b.date.localeCompare(a.date));
 
       return timeEntries;
     } catch (error) {
@@ -2317,7 +2390,35 @@ export class PersonalService {
   // Zeiterfassung löschen
   static async deleteTimeTracking(companyId: string, timeTrackingId: string): Promise<void> {
     try {
-      await deleteDoc(doc(db, `companies/${companyId}/time_tracking`, timeTrackingId));
+      // Verwende timeEntries Collection (gleiche wie die API)
+      await deleteDoc(doc(db, `companies/${companyId}/timeEntries`, timeTrackingId));
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Zeiterfassung aktualisieren
+  static async updateTimeTracking(
+    companyId: string, 
+    timeTrackingId: string, 
+    updates: Partial<TimeTracking>
+  ): Promise<void> {
+    try {
+      // Konvertiere TimeTracking-Format zu timeEntries-Format
+      const updateData: Record<string, unknown> = {
+        updatedAt: new Date(),
+      };
+      
+      if (updates.date !== undefined) updateData.date = updates.date;
+      if (updates.clockIn !== undefined) updateData.startTime = updates.clockIn;
+      if (updates.clockOut !== undefined) updateData.endTime = updates.clockOut;
+      if (updates.totalHours !== undefined) updateData.duration = Math.round(updates.totalHours * 60);
+      if (updates.notes !== undefined) updateData.description = updates.notes;
+      if (updates.project !== undefined) updateData.projectName = updates.project;
+      if (updates.status !== undefined) updateData.status = updates.status;
+      if (updates.overtimeHours !== undefined) updateData.overtimeHours = updates.overtimeHours;
+      
+      await updateDoc(doc(db, `companies/${companyId}/timeEntries`, timeTrackingId), updateData);
     } catch (error) {
       throw error;
     }

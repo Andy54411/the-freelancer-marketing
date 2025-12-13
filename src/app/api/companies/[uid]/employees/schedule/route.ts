@@ -40,6 +40,8 @@ export async function GET(
     const endDate = searchParams.get('endDate');
     const weekNumber = searchParams.get('week');
 
+    console.log('📅 Schedule API called:', { companyId, employeeId, startDate, endDate, weekNumber });
+
     if (!employeeId) {
       return NextResponse.json(
         { success: false, error: 'Mitarbeiter-ID erforderlich' },
@@ -85,6 +87,8 @@ export async function GET(
       queryEndDate = sunday.toISOString().split('T')[0];
     }
 
+    console.log('📅 Query date range:', { queryStartDate, queryEndDate });
+
     let query: FirebaseFirestore.Query = adminDb
       .collection('companies')
       .doc(companyId)
@@ -100,8 +104,11 @@ export async function GET(
 
     const snapshot = await query.orderBy('date', 'asc').get();
 
+    console.log('📅 Found shifts:', snapshot.docs.length);
+
     const shifts: Shift[] = snapshot.docs.map(doc => {
       const data = doc.data();
+      console.log('📅 Shift data:', doc.id, data);
       return {
         id: doc.id,
         companyId: data.companyId || companyId,

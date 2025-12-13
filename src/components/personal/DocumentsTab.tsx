@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Upload, File, Eye, Trash2, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { PersonalService, EmployeeDocument } from '@/services/personalService';
+import { PersonalService, EmployeeDocument, Employee } from '@/services/personalService';
 import {
   getStorage,
   ref as storageRef,
@@ -28,15 +28,7 @@ import { app } from '@/firebase/clients';
 interface DocumentsTabProps {
   employeeId: string;
   companyId: string;
-  employee?: {
-    documents?: {
-      name: string;
-      type: string;
-      url: string;
-      uploadedAt?: string;
-    }[];
-    [key: string]: unknown;
-  };
+  employee?: Employee;
 }
 
 const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId, employee }) => {

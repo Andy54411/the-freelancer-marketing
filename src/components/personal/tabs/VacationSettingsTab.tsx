@@ -134,7 +134,6 @@ export default function VacationSettingsTab({
     }
   };
 
-  const currentYear = new Date().getFullYear();
   const availableDays = PersonalService.calculateAvailableVacationDays({
     ...employee,
     vacation: {
@@ -211,7 +210,7 @@ export default function VacationSettingsTab({
                   onClick={handleSaveSettings}
                   disabled={isLoading}
                   size="sm"
-                  className="bg-taskilo-primary hover:bg-taskilo-hover text-white"
+                  className="bg-[#14ad9f] hover:bg-[#0d9488] text-white"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {isLoading ? 'Speichern...' : 'Speichern'}

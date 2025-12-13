@@ -34,6 +34,7 @@ export function AppAccessTab({ employee, companyId, onEmployeeUpdated }: AppAcce
   const [loading, setLoading] = useState(false);
   const [sendingInvite, setSendingInvite] = useState(false);
   const [generatingPin, setGeneratingPin] = useState(false);
+  const [syncingEmail, setSyncingEmail] = useState(false);
   const [permissions, setPermissions] = useState({
     timeTracking: employee.appAccess?.permissions?.timeTracking ?? true,
     schedule: employee.appAccess?.permissions?.schedule ?? true,
@@ -86,22 +87,16 @@ export function AppAccessTab({ employee, companyId, onEmployeeUpdated }: AppAcce
     try {
       setSendingInvite(true);
 
-      // Generiere einen temporären Registrierungslink
-      const registrationToken = crypto.randomUUID();
-      const registrationUrl = `${window.location.origin}/employee/register?token=${registrationToken}&company=${companyId}&employee=${employee.id}`;
-
-      // Speichere den Token
+      // Speichere dass Einladung gesendet wurde
       await PersonalService.updateEmployee(companyId, employee.id!, {
         appAccess: {
           ...employee.appAccess,
           registered: false,
           permissions: permissions,
-          registrationToken,
-          registrationTokenExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 Tage
-        },
+        } as Employee['appAccess'],
       });
 
-      // E-Mail senden
+      // E-Mail mit Firmencode senden
       const response = await fetch('/api/personal/send-invite', {
         method: 'POST',
         headers: {
@@ -111,26 +106,37 @@ export function AppAccessTab({ employee, companyId, onEmployeeUpdated }: AppAcce
           employeeEmail: employee.email,
           employeeName: `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
           companyId: companyId,
-          registrationUrl: registrationUrl,
+          companyCode: companyId, // Der Firmencode für die App-Anmeldung
         }),
       });
 
       const result = await response.json();
 
       if (result.success) {
-        toast.success(`Einladung wurde an ${employee.email} gesendet`);
+        toast.success(`Einladung mit Firmencode wurde an ${employee.email} gesendet`);
         
-        // Kopiere Link auch in die Zwischenablage als Backup
-        await navigator.clipboard.writeText(registrationUrl);
-        toast.info('Link wurde auch in die Zwischenablage kopiert');
+        // Kopiere Firmencode auch in die Zwischenablage
+        await navigator.clipboard.writeText(companyId);
+        toast.info('Firmencode wurde auch in die Zwischenablage kopiert');
+        
+        // Aktualisiere lokalen State
+        const updatedEmployee: Employee = {
+          ...employee,
+          appAccess: {
+            ...employee.appAccess,
+            registered: false,
+            permissions: permissions,
+          },
+        };
+        onEmployeeUpdated(updatedEmployee);
       } else {
-        // E-Mail konnte nicht gesendet werden - zeige Link zur manuellen Weitergabe
-        await navigator.clipboard.writeText(registrationUrl);
-        toast.warning('E-Mail konnte nicht gesendet werden. Link wurde in die Zwischenablage kopiert.');
+        // E-Mail konnte nicht gesendet werden
+        await navigator.clipboard.writeText(companyId);
+        toast.warning('E-Mail konnte nicht gesendet werden. Firmencode wurde in die Zwischenablage kopiert.');
       }
 
     } catch (error) {
-      toast.error('Fehler beim Erstellen der Einladung');
+      toast.error('Fehler beim Senden der Einladung');
     } finally {
       setSendingInvite(false);
     }
@@ -228,6 +234,45 @@ export function AppAccessTab({ employee, companyId, onEmployeeUpdated }: AppAcce
     }
   };
 
+  const handleSyncEmail = async () => {
+    if (!employee.appAccess?.authUid) {
+      toast.error('Kein verknüpfter App-Zugang vorhanden');
+      return;
+    }
+
+    try {
+      setSyncingEmail(true);
+      
+      const response = await fetch(
+        `/api/companies/${companyId}/employees/${employee.id}/sync-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Aktualisiere lokalen State
+        const updatedEmployee: Employee = {
+          ...employee,
+          email: result.newEmail,
+        };
+        onEmployeeUpdated(updatedEmployee);
+        toast.success(`E-Mail wurde synchronisiert: ${result.newEmail}`);
+      } else {
+        toast.error(result.error || 'Fehler beim Synchronisieren der E-Mail');
+      }
+    } catch (error) {
+      toast.error('Fehler beim Synchronisieren der E-Mail');
+    } finally {
+      setSyncingEmail(false);
+    }
+  };
+
   const copyCompanyCode = async () => {
     await navigator.clipboard.writeText(companyId);
     toast.success('Firmencode kopiert');
@@ -310,18 +355,37 @@ export function AppAccessTab({ employee, companyId, onEmployeeUpdated }: AppAcce
               Einladung senden
             </CardTitle>
             <CardDescription>
-              Laden Sie den Mitarbeiter ein, sich in der App zu registrieren
+              Der Mitarbeiter erhält eine E-Mail mit dem Firmencode zur App-Anmeldung
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>E-Mail:</strong> {employee.email}
-                </p>
-                <p className="text-sm text-blue-600 mt-1">
-                  Der Mitarbeiter erhält einen Link zur Registrierung in der Taskilo-App.
-                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-blue-800">
+                      <strong>E-Mail:</strong> {employee.email}
+                    </p>
+                    <p className="text-sm text-blue-600 mt-1">
+                      Der Mitarbeiter meldet sich mit seinem Taskilo-Konto an und gibt den Firmencode ein.
+                    </p>
+                  </div>
+                  {employee.appAccess?.authUid && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSyncEmail}
+                      disabled={syncingEmail}
+                      title="E-Mail mit Auth-Account synchronisieren"
+                    >
+                      {syncingEmail ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <Button
@@ -337,7 +401,7 @@ export function AppAccessTab({ employee, companyId, onEmployeeUpdated }: AppAcce
                 ) : (
                   <>
                     <Send className="h-4 w-4 mr-2" />
-                    Einladungslink generieren & kopieren
+                    Einladung mit Firmencode senden
                   </>
                 )}
               </Button>

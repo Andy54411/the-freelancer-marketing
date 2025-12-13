@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
     }
 
     const newEmail = emailChangeRequest.newEmail;
+    const oldEmail = emailChangeRequest.currentEmail; // Die alte E-Mail für die Suche
 
     // Aktualisiere E-Mail in Firebase Auth
     try {
@@ -93,6 +94,49 @@ export async function POST(req: NextRequest) {
       emailChangedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
+
+    // Aktualisiere E-Mail in allen verknüpften Mitarbeiter-Dokumenten
+    // Suche nach Mitarbeitern über authUid ODER über die alte E-Mail-Adresse
+    try {
+      const companiesSnapshot = await adminDb.collection('companies').get();
+      
+      for (const companyDoc of companiesSnapshot.docs) {
+        const employeesRef = adminDb.collection('companies').doc(companyDoc.id).collection('employees');
+        
+        // Suche 1: Mitarbeiter mit authUid-Verknüpfung
+        const employeesWithAuthUid = await employeesRef
+          .where('appAccess.authUid', '==', userId)
+          .get();
+        
+        for (const employeeDoc of employeesWithAuthUid.docs) {
+          await employeeDoc.ref.update({
+            email: newEmail,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
+        
+        // Suche 2: Mitarbeiter mit alter E-Mail-Adresse (noch nicht registriert)
+        if (oldEmail) {
+          const employeesWithOldEmail = await employeesRef
+            .where('email', '==', oldEmail)
+            .get();
+          
+          for (const employeeDoc of employeesWithOldEmail.docs) {
+            // Nur aktualisieren, wenn nicht schon über authUid gefunden
+            const alreadyUpdated = employeesWithAuthUid.docs.some(d => d.id === employeeDoc.id);
+            if (!alreadyUpdated) {
+              await employeeDoc.ref.update({
+                email: newEmail,
+                updatedAt: FieldValue.serverTimestamp(),
+              });
+            }
+          }
+        }
+      }
+    } catch (employeeUpdateError) {
+      // Logge den Fehler, aber lasse die E-Mail-Änderung trotzdem erfolgreich sein
+      console.error('Fehler beim Aktualisieren der Mitarbeiter-E-Mail:', employeeUpdateError);
+    }
 
     return NextResponse.json({
       success: true,

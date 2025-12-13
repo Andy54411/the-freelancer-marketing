@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../services/employee_auth_service.dart';
-import 'employee_dashboard_screen.dart';
+import 'employee_home_screen.dart';
 
 /// Employee Login Screen
 /// Separater Login-Bereich für Mitarbeiter
@@ -75,8 +75,8 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> {
     setState(() => _isLoading = false);
 
     if (result.success && result.session != null) {
-      // Navigate to Employee Dashboard
-      Get.offAll(() => const EmployeeDashboardScreen());
+      // Navigate to Employee Home
+      Get.offAll(() => const EmployeeHomeScreen());
     } else if (result.requiresRegistration) {
       setState(() {
         _showRegistration = true;
@@ -107,7 +107,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> {
     setState(() => _isLoading = false);
 
     if (result.success && result.session != null) {
-      Get.offAll(() => const EmployeeDashboardScreen());
+      Get.offAll(() => const EmployeeHomeScreen());
     } else {
       setState(() => _errorMessage = result.error);
     }

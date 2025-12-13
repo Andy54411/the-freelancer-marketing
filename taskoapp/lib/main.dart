@@ -13,6 +13,7 @@ import 'services/payment_service.dart';
 import 'services/firebase_functions_service.dart';
 import 'services/push_notification_service.dart';
 import 'services/notification_navigation_service.dart';
+import 'services/employee_auth_service.dart';
 import 'models/user_model.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/startseite/start_screen.dart';
@@ -21,7 +22,7 @@ import 'screens/dashboard/dashboard_user/incoming_offers_screen.dart';
 import 'screens/jobs/job_detail_by_id_screen.dart';
 import 'screens/jobs/job_board_screen.dart';
 import 'screens/employee/employee_login_screen.dart';
-import 'screens/employee/employee_dashboard_screen.dart';
+import 'screens/employee/employee_home_screen.dart';
 import 'utils/app_theme.dart';
 
 void main() async {
@@ -75,6 +76,14 @@ void main() async {
     // debugPrint('✅ Push Notifications initialized successfully');
   } catch (e) {
     debugPrint('⚠️ Push Notifications initialization failed: $e');
+  }
+
+  // Employee Auth Service initialisieren (Session wiederherstellen)
+  try {
+    await EmployeeAuthService.initialize();
+    debugPrint('✅ Employee Auth Service initialized');
+  } catch (e) {
+    debugPrint('⚠️ Employee Auth Service initialization failed: $e');
   }
 
   runApp(const TaskiloApp());
@@ -153,7 +162,7 @@ class TaskiloApp extends StatelessWidget {
           ),
           GetPage(
             name: '/employee/dashboard',
-            page: () => const EmployeeDashboardScreen(),
+            page: () => const EmployeeHomeScreen(),
           ),
 
           // Fallback route
@@ -181,11 +190,20 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = context.watch<TaskiloUser?>();
 
+    // WICHTIG: Prüfe zuerst den Mitarbeiter-Login-Status
+    // Wenn ein Mitarbeiter eingeloggt ist, zeige das Mitarbeiter-Dashboard
+    if (EmployeeAuthService.isLoggedIn) {
+      debugPrint(
+        'AUTH_WRAPPER: Employee logged in (${EmployeeAuthService.currentSession?.employeeName})',
+      );
+      return const EmployeeHomeScreen();
+    }
+
     debugPrint(
       'AUTH_WRAPPER: User = ${user != null ? "EINGELOGGT (${user.email})" : "AUSGELOGGT"}',
     );
 
-    // Wenn User eingeloggt ist, zeige Dashboard
+    // Wenn normaler User eingeloggt ist, zeige Dashboard
     // Sonst zeige DiscoverScreen (Startseite)
     if (user != null) {
       debugPrint('AUTH_WRAPPER: Zeige HomeScreen (Dashboard)');

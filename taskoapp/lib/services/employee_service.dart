@@ -6,9 +6,14 @@ import 'employee_auth_service.dart';
 /// Employee Service für Taskilo
 /// Verwaltet Zeiterfassung, Dienstplan und Abwesenheitsanträge
 class EmployeeService {
-  // API Base URL
-  static const String _baseUrl = 'https://taskilo.de/api';
-  // static const String _baseUrl = 'http://localhost:3000/api'; // Für lokale Entwicklung
+  // API Base URL - 10.0.2.2 ist localhost für Android-Emulator
+  static String get _baseUrl {
+    if (kDebugMode) {
+      // Für Android-Emulator: 10.0.2.2 = Host localhost
+      return 'http://10.0.2.2:3000/api';
+    }
+    return 'https://taskilo.de/api';
+  }
 
   // ===== ZEITERFASSUNG =====
 
@@ -17,32 +22,61 @@ class EmployeeService {
     final companyId = EmployeeAuthService.companyId;
     final employeeId = EmployeeAuthService.currentSession?.employeeId;
 
+    debugPrint('📊 getTimeTrackingStatus - companyId: $companyId, employeeId: $employeeId');
+
     if (companyId == null || employeeId == null) {
+      debugPrint('❌ getTimeTrackingStatus: Nicht eingeloggt');
       return TimeTrackingStatus.notLoggedIn();
     }
 
     try {
+      final url = '$_baseUrl/companies/$companyId/employees/time-entries?employeeId=$employeeId&status=ACTIVE';
+      debugPrint('📡 Fetching time status from: $url');
+      
       final response = await http.get(
-        Uri.parse('$_baseUrl/companies/$companyId/employees/time-entries?employeeId=$employeeId&status=ACTIVE'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       );
+
+      debugPrint('📡 Status response: ${response.statusCode}');
+      debugPrint('📡 Status body: ${response.body}');
 
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
         final entries = data['entries'] as List;
+        debugPrint('📊 Active entries found: ${entries.length}');
+        
         if (entries.isNotEmpty) {
           final activeEntry = entries.first;
+          debugPrint('✅ Active entry found: $activeEntry');
+          
+          // Prüfe ob aktuell in Pause
+          final isOnBreak = activeEntry['isOnBreak'] == true;
+          DateTime? breakStartTime;
+          if (isOnBreak && activeEntry['breakStartTime'] != null) {
+            try {
+              breakStartTime = DateTime.parse(activeEntry['breakStartTime']);
+            } catch (e) {
+              debugPrint('⚠️ Could not parse breakStartTime: $e');
+            }
+          }
+          final totalBreakMinutes = activeEntry['breakTime'] ?? 0;
+          
           return TimeTrackingStatus(
             isTracking: true,
             currentEntry: TimeEntry.fromJson(activeEntry),
             startTime: DateTime.parse('${activeEntry['date']}T${activeEntry['startTime']}'),
+            isOnBreak: isOnBreak,
+            breakStartTime: breakStartTime,
+            totalBreakMinutes: totalBreakMinutes,
           );
         }
       }
+      debugPrint('📊 No active entries - isTracking: false');
       return TimeTrackingStatus(isTracking: false);
     } catch (e) {
-      debugPrint('Error getting time tracking status: $e');
+      debugPrint('❌ Error getting time tracking status: $e');
       return TimeTrackingStatus(isTracking: false, error: e.toString());
     }
   }
@@ -56,13 +90,19 @@ class EmployeeService {
     final companyId = EmployeeAuthService.companyId;
     final employeeId = EmployeeAuthService.currentSession?.employeeId;
 
+    debugPrint('🕐 Clock In - companyId: $companyId, employeeId: $employeeId');
+
     if (companyId == null || employeeId == null) {
+      debugPrint('❌ Clock In failed: Nicht eingeloggt');
       return TimeTrackingResult.failure('Nicht eingeloggt');
     }
 
     try {
+      final url = '$_baseUrl/companies/$companyId/employees/time-entries';
+      debugPrint('📡 Calling API: $url');
+      
       final response = await http.post(
-        Uri.parse('$_baseUrl/companies/$companyId/employees/time-entries'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'action': 'clock-in',
@@ -73,17 +113,23 @@ class EmployeeService {
         }),
       );
 
+      debugPrint('📡 Response status: ${response.statusCode}');
+      debugPrint('📡 Response body: ${response.body}');
+
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
+        debugPrint('✅ Clock In successful');
         return TimeTrackingResult.success(
           message: 'Erfolgreich eingestempelt',
           entry: TimeEntry.fromJson(data['entry']),
         );
       } else {
+        debugPrint('❌ Clock In failed: ${data['error']}');
         return TimeTrackingResult.failure(data['error'] ?? 'Fehler beim Einstempeln');
       }
     } catch (e) {
+      debugPrint('❌ Clock In exception: $e');
       return TimeTrackingResult.failure('Ein Fehler ist aufgetreten: $e');
     }
   }
@@ -110,9 +156,10 @@ class EmployeeService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
+        final totalHours = (data['summary']?['totalHours'] as num?)?.toDouble();
         return TimeTrackingResult.success(
           message: 'Erfolgreich ausgestempelt',
-          totalHours: data['summary']['totalHours'],
+          totalHours: totalHours,
         );
       } else {
         return TimeTrackingResult.failure(data['error'] ?? 'Fehler beim Ausstempeln');
@@ -127,11 +174,19 @@ class EmployeeService {
     final companyId = EmployeeAuthService.companyId;
     final employeeId = EmployeeAuthService.currentSession?.employeeId;
 
-    if (companyId == null || employeeId == null) return false;
+    debugPrint('☕ startBreak - companyId: $companyId, employeeId: $employeeId');
+
+    if (companyId == null || employeeId == null) {
+      debugPrint('❌ startBreak: Nicht eingeloggt');
+      return false;
+    }
 
     try {
+      final url = '$_baseUrl/companies/$companyId/employees/time-entries';
+      debugPrint('📡 Calling break-start: $url');
+      
       final response = await http.post(
-        Uri.parse('$_baseUrl/companies/$companyId/employees/time-entries'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'action': 'break-start',
@@ -139,9 +194,11 @@ class EmployeeService {
         }),
       );
 
+      debugPrint('📡 Break-start response: ${response.statusCode} - ${response.body}');
       final data = jsonDecode(response.body);
       return data['success'] == true;
     } catch (e) {
+      debugPrint('❌ startBreak exception: $e');
       return false;
     }
   }
@@ -151,11 +208,19 @@ class EmployeeService {
     final companyId = EmployeeAuthService.companyId;
     final employeeId = EmployeeAuthService.currentSession?.employeeId;
 
-    if (companyId == null || employeeId == null) return 0;
+    debugPrint('☕ endBreak - companyId: $companyId, employeeId: $employeeId');
+
+    if (companyId == null || employeeId == null) {
+      debugPrint('❌ endBreak: Nicht eingeloggt');
+      return 0;
+    }
 
     try {
+      final url = '$_baseUrl/companies/$companyId/employees/time-entries';
+      debugPrint('📡 Calling break-end: $url');
+      
       final response = await http.post(
-        Uri.parse('$_baseUrl/companies/$companyId/employees/time-entries'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'action': 'break-end',
@@ -163,10 +228,107 @@ class EmployeeService {
         }),
       );
 
+      debugPrint('📡 Break-end response: ${response.statusCode} - ${response.body}');
       final data = jsonDecode(response.body);
       return data['breakMinutes'] ?? 0;
     } catch (e) {
+      debugPrint('❌ endBreak exception: $e');
       return 0;
+    }
+  }
+
+  /// Holt Wochen-Statistiken (Schichten + Arbeitszeit)
+  static Future<Map<String, dynamic>> getWeeklyStats() async {
+    final companyId = EmployeeAuthService.companyId;
+    final employeeId = EmployeeAuthService.currentSession?.employeeId;
+
+    debugPrint('📊 getWeeklyStats called - companyId: $companyId, employeeId: $employeeId');
+
+    if (companyId == null || employeeId == null) {
+      return {'totalHours': 0.0, 'shiftsCount': 0};
+    }
+
+    try {
+      // Berechne Wochenstart (Montag) und -ende (Sonntag)
+      final now = DateTime.now();
+      final weekday = now.weekday;
+      final monday = now.subtract(Duration(days: weekday - 1));
+      final sunday = monday.add(const Duration(days: 6));
+      
+      final startDate = '${monday.year}-${monday.month.toString().padLeft(2, '0')}-${monday.day.toString().padLeft(2, '0')}';
+      final endDate = '${sunday.year}-${sunday.month.toString().padLeft(2, '0')}-${sunday.day.toString().padLeft(2, '0')}';
+
+      debugPrint('📊 Weekly stats date range: $startDate to $endDate');
+
+      // Hole Schichten aus dem Schedule (geplante Arbeitszeit)
+      final scheduleUrl = '$_baseUrl/companies/$companyId/employees/schedule?employeeId=$employeeId&startDate=$startDate&endDate=$endDate';
+      
+      final scheduleResponse = await http.get(
+        Uri.parse(scheduleUrl),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      final scheduleData = jsonDecode(scheduleResponse.body);
+      debugPrint('📊 Schedule response: ${scheduleResponse.statusCode}');
+
+      double totalHours = 0.0;
+      int shiftsCount = 0;
+
+      if (scheduleResponse.statusCode == 200 && scheduleData['success'] == true) {
+        final summary = scheduleData['summary'];
+        totalHours = (summary['totalHours'] ?? 0).toDouble();
+        shiftsCount = summary['totalShifts'] ?? 0;
+        debugPrint('📊 From schedule: $totalHours hours, $shiftsCount shifts');
+      }
+
+      return {
+        'totalHours': totalHours,
+        'shiftsCount': shiftsCount,
+      };
+    } catch (e) {
+      debugPrint('❌ getWeeklyStats exception: $e');
+      return {'totalHours': 0.0, 'shiftsCount': 0};
+    }
+  }
+
+  /// Holt Statistiken des letzten Monats
+  static Future<Map<String, dynamic>> getLastMonthStats() async {
+    final companyId = EmployeeAuthService.companyId;
+    final employeeId = EmployeeAuthService.currentSession?.employeeId;
+
+    if (companyId == null || employeeId == null) {
+      return {'totalHours': 0.0};
+    }
+
+    try {
+      // Berechne letzten Monat
+      final now = DateTime.now();
+      final lastMonth = DateTime(now.year, now.month - 1, 1);
+      final lastMonthEnd = DateTime(now.year, now.month, 0); // Letzter Tag des Vormonats
+      
+      final startDate = '${lastMonth.year}-${lastMonth.month.toString().padLeft(2, '0')}-01';
+      final endDate = '${lastMonthEnd.year}-${lastMonthEnd.month.toString().padLeft(2, '0')}-${lastMonthEnd.day.toString().padLeft(2, '0')}';
+
+      final scheduleUrl = '$_baseUrl/companies/$companyId/employees/schedule?employeeId=$employeeId&startDate=$startDate&endDate=$endDate';
+      
+      final scheduleResponse = await http.get(
+        Uri.parse(scheduleUrl),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      final scheduleData = jsonDecode(scheduleResponse.body);
+
+      if (scheduleResponse.statusCode == 200 && scheduleData['success'] == true) {
+        final summary = scheduleData['summary'];
+        return {
+          'totalHours': (summary['totalHours'] ?? 0).toDouble(),
+        };
+      }
+
+      return {'totalHours': 0.0};
+    } catch (e) {
+      debugPrint('❌ getLastMonthStats exception: $e');
+      return {'totalHours': 0.0};
     }
   }
 
@@ -178,28 +340,39 @@ class EmployeeService {
     final companyId = EmployeeAuthService.companyId;
     final employeeId = EmployeeAuthService.currentSession?.employeeId;
 
-    if (companyId == null || employeeId == null) return [];
+    debugPrint('📋 getTimeEntries called - companyId: $companyId, employeeId: $employeeId');
+
+    if (companyId == null || employeeId == null) {
+      debugPrint('📋 Missing companyId or employeeId');
+      return [];
+    }
 
     try {
       String url = '$_baseUrl/companies/$companyId/employees/time-entries?employeeId=$employeeId';
       if (startDate != null) url += '&startDate=$startDate';
       if (endDate != null) url += '&endDate=$endDate';
 
+      debugPrint('📋 TimeEntries URL: $url');
+
       final response = await http.get(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       );
 
+      debugPrint('📋 TimeEntries response: ${response.statusCode} - ${response.body.substring(0, response.body.length.clamp(0, 500))}');
+
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
-        return (data['entries'] as List)
+        final entries = (data['entries'] as List)
             .map((e) => TimeEntry.fromJson(e))
             .toList();
+        debugPrint('📋 Parsed ${entries.length} time entries');
+        return entries;
       }
       return [];
     } catch (e) {
-      debugPrint('Error loading time entries: $e');
+      debugPrint('❌ Error loading time entries: $e');
       return [];
     }
   }
@@ -214,7 +387,10 @@ class EmployeeService {
     final companyId = EmployeeAuthService.companyId;
     final employeeId = EmployeeAuthService.currentSession?.employeeId;
 
+    debugPrint('📅 getSchedule called - companyId: $companyId, employeeId: $employeeId');
+
     if (companyId == null || employeeId == null) {
+      debugPrint('📅 Schedule: Missing companyId or employeeId');
       return ScheduleData.empty();
     }
 
@@ -223,10 +399,14 @@ class EmployeeService {
       if (startDate != null) url += '&startDate=$startDate';
       if (endDate != null) url += '&endDate=$endDate';
 
+      debugPrint('📅 Schedule URL: $url');
+
       final response = await http.get(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       );
+
+      debugPrint('📅 Schedule response: ${response.statusCode} - ${response.body}');
 
       final data = jsonDecode(response.body);
 
@@ -235,7 +415,7 @@ class EmployeeService {
       }
       return ScheduleData.empty();
     } catch (e) {
-      debugPrint('Error loading schedule: $e');
+      debugPrint('📅 Error loading schedule: $e');
       return ScheduleData.empty();
     }
   }
@@ -448,6 +628,9 @@ class TimeTrackingStatus {
   final DateTime? startTime;
   final String? error;
   final bool isLoggedIn;
+  final bool isOnBreak;
+  final DateTime? breakStartTime;
+  final int totalBreakMinutes;
 
   TimeTrackingStatus({
     required this.isTracking,
@@ -455,10 +638,13 @@ class TimeTrackingStatus {
     this.startTime,
     this.error,
     this.isLoggedIn = true,
+    this.isOnBreak = false,
+    this.breakStartTime,
+    this.totalBreakMinutes = 0,
   });
 
   factory TimeTrackingStatus.notLoggedIn() {
-    return TimeTrackingStatus(isTracking: false, isLoggedIn: false);
+    return TimeTrackingStatus(isTracking: false, isLoggedIn: false, isOnBreak: false);
   }
 
   Duration get elapsedDuration {
@@ -545,7 +731,12 @@ class ScheduleData {
 
   factory ScheduleData.fromJson(Map<String, dynamic> json) {
     final shiftsJson = json['shifts'] as List? ?? [];
-    final shifts = shiftsJson.map((s) => Shift.fromJson(s)).toList();
+    debugPrint('📅 Parsing ${shiftsJson.length} shifts from JSON');
+    final shifts = shiftsJson.map((s) {
+      debugPrint('📅 Parsing shift: $s');
+      return Shift.fromJson(s);
+    }).toList();
+    debugPrint('📅 Parsed shifts: ${shifts.length}');
     
     final scheduleMap = <String, List<Shift>>{};
     final scheduleJson = json['schedule'] as Map<String, dynamic>? ?? {};
@@ -554,7 +745,7 @@ class ScheduleData {
     });
 
     final summary = json['summary'] ?? {};
-    return ScheduleData(
+    final result = ScheduleData(
       shifts: shifts,
       scheduleByDate: scheduleMap,
       totalShifts: summary['totalShifts'] ?? 0,
@@ -562,6 +753,8 @@ class ScheduleData {
       weekStart: summary['weekStart'] ?? '',
       weekEnd: summary['weekEnd'] ?? '',
     );
+    debugPrint('📅 ScheduleData created: ${result.shifts.length} shifts, ${result.totalHours}h');
+    return result;
   }
 
   factory ScheduleData.empty() {

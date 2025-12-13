@@ -21,11 +21,33 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
   TimeTrackingStatus? _timeStatus;
   Timer? _timer;
   Duration _elapsed = Duration.zero;
+  List<TimeEntry>? _timeEntries;
+  bool _entriesLoading = true;
+  Map<String, dynamic> _weeklyStats = {'totalHours': 0.0, 'shiftsCount': 0};
+  bool _isOnBreak = false;
 
   @override
   void initState() {
     super.initState();
     _loadTimeStatus();
+    _loadTimeEntries();
+    _loadWeeklyStats();
+  }
+
+  Future<void> _loadTimeEntries() async {
+    setState(() => _entriesLoading = true);
+    final entries = await EmployeeService.getTimeEntries();
+    setState(() {
+      _timeEntries = entries;
+      _entriesLoading = false;
+    });
+  }
+
+  Future<void> _loadWeeklyStats() async {
+    final stats = await EmployeeService.getWeeklyStats();
+    setState(() {
+      _weeklyStats = stats;
+    });
   }
 
   @override
@@ -35,11 +57,14 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
   }
 
   Future<void> _loadTimeStatus() async {
+    debugPrint('🔄 _loadTimeStatus called');
     final status = await EmployeeService.getTimeTrackingStatus();
+    debugPrint('🔄 Status loaded: isTracking=${status.isTracking}, startTime=${status.startTime}');
     setState(() {
       _timeStatus = status;
       if (status.isTracking && status.startTime != null) {
         _elapsed = DateTime.now().difference(status.startTime!);
+        debugPrint('🔄 Timer started, elapsed: $_elapsed');
         _startTimer();
       }
     });
@@ -62,6 +87,7 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
     final result = await EmployeeService.clockIn();
     if (result.success) {
       _loadTimeStatus();
+      _loadTimeEntries(); // Einträge neu laden
       Get.snackbar(
         'Eingestempelt',
         'Du hast deine Schicht begonnen',
@@ -85,7 +111,10 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
       setState(() {
         _timeStatus = TimeTrackingStatus(isTracking: false);
         _elapsed = Duration.zero;
+        _isOnBreak = false; // Pause zurücksetzen
       });
+      _loadTimeEntries(); // Einträge neu laden
+      _loadWeeklyStats(); // Statistiken neu laden
       Get.snackbar(
         'Ausgestempelt',
         'Arbeitszeit: ${result.totalHours?.toStringAsFixed(2) ?? 0} Stunden',
@@ -390,87 +419,163 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
     final isTracking = _timeStatus?.isTracking ?? false;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          // Uhr-Widget
+          // Status-Anzeige oben
+          if (isTracking)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF14AD9F), Color(0xFF0D8F84)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Schicht läuft',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    _formatDuration(_elapsed),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Hauptkarte mit Uhr und Button
           Container(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(13),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: Colors.black.withAlpha(15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
             child: Column(
               children: [
-                // Aktuelle Zeit
-                Text(
-                  DateFormat('HH:mm').format(DateTime.now()),
-                  style: const TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF14AD9F),
-                  ),
-                ),
-                Text(
-                  DateFormat(
-                    'EEEE, d. MMMM yyyy',
-                    'de_DE',
-                  ).format(DateTime.now()),
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 24),
-
-                // Timer
-                if (isTracking) ...[
-                  Text(
-                    'Arbeitszeit',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                  ),
-                  Text(
-                    _formatDuration(_elapsed),
+                // Aktuelle Zeit - größer und prominenter
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [Color(0xFF14AD9F), Color(0xFF0D8F84)],
+                  ).createShader(bounds),
+                  child: Text(
+                    DateFormat('HH:mm').format(DateTime.now()),
                     style: const TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      fontSize: 72,
+                      fontWeight: FontWeight.w300,
+                      color: Colors.white,
+                      letterSpacing: 4,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                ],
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    DateFormat(
+                      'EEEE, d. MMMM yyyy',
+                      'de_DE',
+                    ).format(DateTime.now()),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
 
-                // Clock In/Out Button
-                SizedBox(
-                  width: 180,
-                  height: 180,
-                  child: ElevatedButton(
-                    onPressed: isTracking ? _handleClockOut : _handleClockIn,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isTracking
-                          ? Colors.red
-                          : const Color(0xFF14AD9F),
-                      foregroundColor: Colors.white,
-                      shape: const CircleBorder(),
-                      elevation: 8,
+                // Clock In/Out Button - modernerer Look
+                GestureDetector(
+                  onTap: isTracking ? _handleClockOut : _handleClockIn,
+                  child: Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isTracking
+                            ? [const Color(0xFFEF4444), const Color(0xFFDC2626)]
+                            : [
+                                const Color(0xFF14AD9F),
+                                const Color(0xFF0D8F84),
+                              ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              (isTracking
+                                      ? Colors.red
+                                      : const Color(0xFF14AD9F))
+                                  .withValues(alpha: 0.4),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          isTracking ? Icons.stop : Icons.play_arrow,
-                          size: 48,
+                          isTracking
+                              ? Icons.stop_rounded
+                              : Icons.play_arrow_rounded,
+                          size: 56,
+                          color: Colors.white,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         Text(
                           isTracking ? 'Ausstempeln' : 'Einstempeln',
                           style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
                           ),
                         ),
                       ],
@@ -481,141 +586,543 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
-          // Quick Actions
+          // Quick Actions - modernerer Style
           if (isTracking)
             Row(
               children: [
                 Expanded(
-                  child: _buildQuickAction(
-                    icon: Icons.coffee,
-                    label: 'Pause',
+                  child: _buildQuickActionCard(
+                    icon: _isOnBreak ? Icons.play_arrow_rounded : Icons.coffee_rounded,
+                    label: _isOnBreak ? 'Pause beenden' : 'Pause starten',
+                    subtitle: _isOnBreak ? 'Weiterarbeiten' : '30 Min.',
+                    color: _isOnBreak ? Colors.green : const Color(0xFFF59E0B),
                     onTap: () async {
-                      await EmployeeService.startBreak();
-                      Get.snackbar('Pause', 'Pause gestartet');
+                      if (_isOnBreak) {
+                        final breakMinutes = await EmployeeService.endBreak();
+                        setState(() => _isOnBreak = false);
+                        Get.snackbar(
+                          'Pause beendet',
+                          'Pausenzeit: $breakMinutes Minuten',
+                          backgroundColor: Colors.green,
+                          colorText: Colors.white,
+                        );
+                      } else {
+                        final success = await EmployeeService.startBreak();
+                        if (success) {
+                          setState(() => _isOnBreak = true);
+                          Get.snackbar(
+                            'Pause gestartet',
+                            'Gute Erholung!',
+                            backgroundColor: const Color(0xFFF59E0B),
+                            colorText: Colors.white,
+                          );
+                        } else {
+                          Get.snackbar(
+                            'Fehler',
+                            'Pause konnte nicht gestartet werden',
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                          );
+                        }
+                      }
                     },
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: _buildQuickAction(
-                    icon: Icons.note_add,
+                  child: _buildQuickActionCard(
+                    icon: Icons.edit_note_rounded,
                     label: 'Notiz',
+                    subtitle: 'Hinzufügen',
+                    color: const Color(0xFF6366F1),
                     onTap: () => _showAddNoteDialog(),
                   ),
                 ),
               ],
             ),
 
-          const SizedBox(height: 24),
+          if (!isTracking) ...[
+            // Statistik-Karten wenn nicht eingestempelt
+            _buildStatsSection(),
+          ],
+
+          const SizedBox(height: 20),
 
           // Letzte Einträge
-          _buildRecentEntries(),
+          _buildRecentEntriesCard(),
         ],
       ),
     );
   }
 
-  Widget _buildQuickAction({
+  Widget _buildQuickActionCard({
     required IconData icon,
     required String label,
+    required String subtitle,
+    required Color color,
     required VoidCallback onTap,
   }) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(10),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+              color: Colors.black.withAlpha(8),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Column(
+        child: Row(
           children: [
-            Icon(icon, color: const Color(0xFF14AD9F), size: 28),
-            const SizedBox(height: 8),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRecentEntries() {
-    return FutureBuilder<List<TimeEntry>>(
-      future: EmployeeService.getTimeEntries(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+  Widget _buildStatsSection() {
+    final hours = (_weeklyStats['totalHours'] as num?)?.toDouble() ?? 0.0;
+    final shifts = (_weeklyStats['shiftsCount'] as num?)?.toInt() ?? 0;
+    final hoursInt = hours.floor();
+    final minutes = ((hours - hoursInt) * 60).round();
+    
+    return Container(
+      margin: const EdgeInsets.only(top: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Diese Woche',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  icon: Icons.access_time_rounded,
+                  label: 'Arbeitszeit',
+                  value: '${hoursInt}h ${minutes}m',
+                  color: const Color(0xFF14AD9F),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  icon: Icons.calendar_today_rounded,
+                  label: 'Schichten',
+                  value: '$shifts',
+                  color: const Color(0xFF6366F1),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-        final entries = snapshot.data ?? [];
-        if (entries.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.all(24),
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: const Center(child: Text('Keine Einträge vorhanden')),
-          );
-        }
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentEntriesCard() {
+    if (_entriesLoading) {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(color: Color(0xFF14AD9F)),
+        ),
+      );
+    }
+
+    final entries = _timeEntries ?? [];
 
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(8),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Letzte Einträge',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-              ...entries
-                  .take(5)
-                  .map(
-                    (entry) => ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: entry.status == 'COMPLETED'
-                            ? Colors.green[100]
-                            : Colors.orange[100],
-                        child: Icon(
-                          entry.status == 'COMPLETED'
-                              ? Icons.check
-                              : Icons.access_time,
-                          color: entry.status == 'COMPLETED'
-                              ? Colors.green
-                              : Colors.orange,
-                          size: 20,
-                        ),
-                      ),
-                      title: Text(entry.date),
-                      subtitle: Text(
-                        '${entry.startTime} - ${entry.endTime ?? 'läuft'}',
-                      ),
-                      trailing: Text(
-                        entry.formattedDuration,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Letzte Einträge',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                    if (entries.isNotEmpty)
+                      TextButton(
+                        onPressed: () => _showAllTimeEntriesDialog(entries),
+                        child: const Text(
+                          'Alle anzeigen',
+                          style: TextStyle(color: Color(0xFF14AD9F)),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (entries.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.history_rounded,
+                          size: 48,
+                          color: Colors.grey[300],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Keine Einträge vorhanden',
+                          style: TextStyle(color: Colors.grey[500]),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Starten Sie Ihre erste Schicht',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                )
+              else
+                ...entries.take(5).map((entry) => _buildTimeEntryTile(entry)),
             ],
           ),
         );
-      },
+  }
+
+  Widget _buildTimeEntryTile(TimeEntry entry) {
+    final isCompleted = entry.status == 'COMPLETED';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Colors.grey[200]!)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: isCompleted ? Colors.green[50] : Colors.orange[50],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              isCompleted ? Icons.check_circle_rounded : Icons.schedule_rounded,
+              color: isCompleted ? Colors.green : Colors.orange,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry.date,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  '${entry.startTime} - ${entry.endTime ?? '--:--'}',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                entry.formattedDuration,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Color(0xFF14AD9F),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isCompleted ? Colors.green[50] : Colors.orange[50],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  isCompleted ? 'Abgeschlossen' : 'Offen',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isCompleted ? Colors.green[700] : Colors.orange[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAllTimeEntriesDialog(List<TimeEntry> entries) {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: double.maxFinite,
+          constraints: const BoxConstraints(maxHeight: 500),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF14AD9F),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Alle Zeiteinträge',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Get.back(),
+                    ),
+                  ],
+                ),
+              ),
+              // Einträge-Liste
+              Expanded(
+                child: entries.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.history_rounded,
+                              size: 48,
+                              color: Colors.grey[300],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Keine Einträge vorhanden',
+                              style: TextStyle(color: Colors.grey[500]),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: entries.length,
+                        padding: EdgeInsets.zero,
+                        itemBuilder: (context, index) {
+                          final entry = entries[index];
+                          final isCompleted = entry.status == 'COMPLETED';
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(color: Colors.grey[200]!),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: isCompleted
+                                        ? Colors.green[50]
+                                        : Colors.orange[50],
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    isCompleted
+                                        ? Icons.check_circle_rounded
+                                        : Icons.schedule_rounded,
+                                    color:
+                                        isCompleted ? Colors.green : Colors.orange,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        entry.date,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${entry.startTime} - ${entry.endTime ?? '--:--'}',
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      entry.formattedDuration,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: Color(0xFF14AD9F),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isCompleted
+                                            ? Colors.green[50]
+                                            : Colors.orange[50],
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        isCompleted ? 'Fertig' : 'Offen',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: isCompleted
+                                              ? Colors.green[700]
+                                              : Colors.orange[700],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -667,25 +1174,30 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
               const SizedBox(height: 16),
 
               // Schichten
-              if (schedule.shifts.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Center(
-                    child: Column(
-                      children: [
-                        Icon(Icons.event_busy, size: 48, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text('Keine Schichten geplant'),
-                      ],
+              Builder(builder: (context) {
+                debugPrint('📅 UI: Rendering ${schedule.shifts.length} shifts, totalHours: ${schedule.totalHours}');
+                if (schedule.shifts.isEmpty) {
+                  return Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                )
-              else
-                ...schedule.shifts.map((shift) => _buildShiftCard(shift)),
+                    child: const Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.event_busy, size: 48, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('Keine Schichten geplant'),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                return Column(
+                  children: schedule.shifts.map((shift) => _buildShiftCard(shift)).toList(),
+                );
+              }),
             ],
           ),
         );

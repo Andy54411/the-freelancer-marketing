@@ -18,9 +18,25 @@ import {
   AlertCircle,
   CheckCircle,
   ArrowRight,
+  Save,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { PersonalService, TimeTracking, Shift } from '@/services/personalService';
+import { PersonalService, TimeTracking, Shift, Employee, VacationRequest, AbsenceRequest } from '@/services/personalService';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface TimeEntry {
   id: string;
@@ -42,6 +58,8 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
   const [timeEntries, setTimeEntries] = useState<TimeTracking[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [todaysShift, setTodaysShift] = useState<Shift | null>(null);
+  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>([]);
   const [newEntry, setNewEntry] = useState<{
     date: string;
     type: 'work' | 'break' | 'vacation' | 'sick' | 'overtime';
@@ -57,12 +75,41 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
   });
   const [loading, setLoading] = useState(false);
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    date: '',
+    startTime: '',
+    endTime: '',
+    description: '',
+    status: 'COMPLETED' as 'ACTIVE' | 'COMPLETED' | 'REVIEWED',
+  });
 
   // Daten laden
   useEffect(() => {
     loadTimeTrackingData();
     loadShiftData();
+    loadEmployeeData();
+    loadAbsenceRequests();
   }, [employeeId, companyId]);
+
+  const loadAbsenceRequests = async () => {
+    try {
+      const requests = await PersonalService.getAbsenceRequests(companyId);
+      // Filter auf diesen Mitarbeiter
+      const employeeRequests = requests.filter(req => req.employeeId === employeeId);
+      setAbsenceRequests(employeeRequests);
+    } catch (error) {
+      console.error('Fehler beim Laden der Abwesenheitsanträge:', error);
+    }
+  };
+
+  const loadEmployeeData = async () => {
+    try {
+      const employeeData = await PersonalService.getEmployee(companyId, employeeId);
+      setEmployee(employeeData);
+    } catch (error) {
+      console.error('Fehler beim Laden der Mitarbeiterdaten:', error);
+    }
+  };
 
   const loadTimeTrackingData = async () => {
     try {
@@ -185,6 +232,58 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
     }
   };
 
+  const handleEditEntry = (entry: TimeTracking) => {
+    setEditForm({
+      date: entry.date,
+      startTime: entry.clockIn || '',
+      endTime: entry.clockOut || '',
+      description: entry.notes || entry.project || '',
+      status: entry.status as 'ACTIVE' | 'COMPLETED' | 'REVIEWED',
+    });
+    setEditingEntry(entry.id || null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingEntry) return;
+    
+    try {
+      setLoading(true);
+      
+      const hours = calculateHours(editForm.startTime, editForm.endTime);
+      
+      await PersonalService.updateTimeTracking(companyId, editingEntry, {
+        date: editForm.date,
+        clockIn: editForm.startTime,
+        clockOut: editForm.endTime,
+        totalHours: hours,
+        notes: editForm.description,
+        status: editForm.status,
+      });
+      
+      // Aktualisiere lokalen State
+      setTimeEntries(prev => prev.map(entry => 
+        entry.id === editingEntry 
+          ? { 
+              ...entry, 
+              date: editForm.date,
+              clockIn: editForm.startTime,
+              clockOut: editForm.endTime,
+              totalHours: hours,
+              notes: editForm.description,
+              status: editForm.status,
+            }
+          : entry
+      ));
+      
+      setEditingEntry(null);
+      toast.success('Zeiteintrag aktualisiert');
+    } catch (error) {
+      toast.error('Fehler beim Aktualisieren des Zeiteintrags');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getTypeLabel = (status: string) => {
     if (status === 'ACTIVE') return 'Aktiv';
     if (status === 'COMPLETED') return 'Arbeitszeit';
@@ -212,13 +311,29 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
 
   // Statistiken berechnen
   const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentYear = new Date().getFullYear();
   const monthlyEntries = timeEntries.filter(entry => entry.date.startsWith(currentMonth));
   const totalHours = monthlyEntries.reduce((sum, entry) => sum + (entry.totalHours || 0), 0);
   const workHours = monthlyEntries
     .filter(e => e.status === 'COMPLETED')
     .reduce((sum, entry) => sum + (entry.totalHours || 0), 0);
   const overtimeHours = monthlyEntries.reduce((sum, entry) => sum + (entry.overtimeHours || 0), 0);
-  const vacationDays = 0; // TODO: Aus separater Vacation-Tabelle berechnen
+  
+  // Urlaubstage - verwende PersonalService für konsistente Berechnung wie im VacationTab
+  const annualVacationDays = employee?.vacation?.settings?.annualVacationDays || employee?.vacation?.totalDays || 30;
+  const availableVacationDays = employee ? PersonalService.calculateAvailableVacationDays(employee) : 0;
+  
+  // Genommene Urlaubstage aus AbsenceRequests (APPROVED Vacation)
+  const approvedVacationDays = absenceRequests
+    .filter(req => req.status === 'APPROVED' && req.type === 'VACATION')
+    .reduce((sum, req) => sum + req.days, 0);
+  
+  // Ausstehende Urlaubstage aus AbsenceRequests (PENDING Vacation)
+  const pendingVacationDays = absenceRequests
+    .filter(req => req.status === 'PENDING' && req.type === 'VACATION')
+    .reduce((sum, req) => sum + req.days, 0);
+  
+  const remainingVacationDays = availableVacationDays - approvedVacationDays;
 
   const useShiftTime = () => {
     if (todaysShift) {
@@ -232,8 +347,37 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
     }
   };
 
+  // Aktiven Eintrag finden (Mitarbeiter ist gerade eingestempelt)
+  const activeEntry = timeEntries.find(entry => entry.status === 'ACTIVE');
+
   return (
     <div className="space-y-6">
+      {/* Aktiver Zeiteintrag - Mitarbeiter ist eingestempelt */}
+      {activeEntry && (
+        <Card className="border-green-500 bg-green-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-full animate-pulse">
+                  <Clock className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-green-800">Aktuell eingestempelt</h4>
+                  <p className="text-sm text-green-600">
+                    Seit {formatTime(activeEntry.clockIn)} Uhr • {activeEntry.date}
+                    {activeEntry.project && ` • ${activeEntry.project}`}
+                  </p>
+                </div>
+              </div>
+              <Badge className="bg-green-100 text-green-800 border-green-300">
+                <Clock className="h-3 w-3 mr-1 animate-pulse" />
+                Aktiv
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Heutige Schicht Info */}
       {todaysShift && (
         <Card className="border-[#14ad9f] bg-linear-to-r from-[#14ad9f]/5 to-transparent">
@@ -337,8 +481,13 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
             <div className="flex items-center gap-2">
               <Plane className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-sm text-muted-foreground">Urlaubstage</p>
-                <p className="text-2xl font-bold">{vacationDays}</p>
+                <p className="text-sm text-muted-foreground">Urlaubstage (genommen)</p>
+                <p className="text-2xl font-bold">{approvedVacationDays}</p>
+                {annualVacationDays > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    von {annualVacationDays} • {remainingVacationDays} übrig
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -482,7 +631,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setEditingEntry(entry.id || '')}
+                      onClick={() => handleEditEntry(entry)}
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>
@@ -501,6 +650,106 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
           )}
         </CardContent>
       </Card>
+
+      {/* Bearbeitungsdialog */}
+      <Dialog open={!!editingEntry} onOpenChange={(open) => !open && setEditingEntry(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit2 className="h-5 w-5 text-[#14ad9f]" />
+              Zeiteintrag bearbeiten
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-date">Datum</Label>
+              <Input
+                id="edit-date"
+                type="date"
+                value={editForm.date}
+                onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-startTime">Startzeit</Label>
+                <Input
+                  id="edit-startTime"
+                  type="time"
+                  value={editForm.startTime}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, startTime: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-endTime">Endzeit</Label>
+                <Input
+                  id="edit-endTime"
+                  type="time"
+                  value={editForm.endTime}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, endTime: e.target.value }))}
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-status">Status</Label>
+              <Select
+                value={editForm.status}
+                onValueChange={(value: 'ACTIVE' | 'COMPLETED' | 'REVIEWED') => 
+                  setEditForm(prev => ({ ...prev, status: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ACTIVE">Aktiv</SelectItem>
+                  <SelectItem value="COMPLETED">Abgeschlossen</SelectItem>
+                  <SelectItem value="REVIEWED">Überprüft</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-description">Beschreibung</Label>
+              <Input
+                id="edit-description"
+                value={editForm.description}
+                onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Optionale Beschreibung..."
+              />
+            </div>
+            
+            {editForm.startTime && editForm.endTime && (
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">
+                  Berechnete Stunden: <strong>{calculateHours(editForm.startTime, editForm.endTime).toFixed(1)}h</strong>
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="flex gap-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setEditingEntry(null)}
+            >
+              <X className="h-4 w-4 mr-2" />
+              Abbrechen
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={loading}
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {loading ? 'Speichern...' : 'Speichern'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, User, Building2, Shield, ArrowRight } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
@@ -14,10 +14,11 @@ interface UserData {
   displayName?: string;
 }
 
-export default function SmoothRedirectOverlay() {
+function SmoothRedirectOverlayContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [showOverlay, setShowOverlay] = useState(false);
   const [redirectMessage, setRedirectMessage] = useState('');
   const [progress, setProgress] = useState(0);
@@ -93,12 +94,18 @@ export default function SmoothRedirectOverlay() {
       let needsRedirect = false;
       let targetPath = '';
       let message = '';
+      
+      // Prüfe ob es einen redirectTo Parameter gibt
+      const redirectTo = searchParams?.get('redirectTo');
 
       // Master/Support
       if (user.user_type === 'master' || user.user_type === 'support') {
         if (pathname === '/' || pathname === '/login' || pathname === '/register') {
           needsRedirect = true;
-          targetPath = '/dashboard/admin';
+          // Nutze redirectTo wenn vorhanden und es ein Admin-Pfad ist, sonst Standard
+          targetPath = redirectTo?.includes('/dashboard/admin') 
+            ? redirectTo 
+            : '/dashboard/admin';
           message = `Willkommen zurück, ${userName}! Sie werden zum Admin-Dashboard weitergeleitet...`;
         }
       }
@@ -106,14 +113,20 @@ export default function SmoothRedirectOverlay() {
       else if (user.user_type === 'firma') {
         if (pathname === '/' || pathname === '/login' || pathname === '/register') {
           needsRedirect = true;
-          targetPath = `/dashboard/company/${user.uid}`;
+          // Nutze redirectTo wenn vorhanden und es ein Company-Pfad ist, sonst Standard
+          targetPath = redirectTo?.includes(`/dashboard/company/${user.uid}`) 
+            ? redirectTo 
+            : `/dashboard/company/${user.uid}`;
           message = `Willkommen zurück, ${userName}! Sie werden zu Ihrem Dashboard weitergeleitet...`;
         }
       }
       // Kunde
       else if (pathname === '/login' || pathname === '/register') {
         needsRedirect = true;
-        targetPath = `/dashboard/user/${user.uid}`;
+        // Nutze redirectTo wenn vorhanden und es ein User-Pfad ist, sonst Standard
+        targetPath = redirectTo?.includes(`/dashboard/user/${user.uid}`) 
+          ? redirectTo 
+          : `/dashboard/user/${user.uid}`;
         message = `Willkommen zurück, ${userName}! Sie werden zu Ihrem Dashboard weitergeleitet...`;
       }
 
@@ -144,7 +157,7 @@ export default function SmoothRedirectOverlay() {
         return () => clearInterval(progressInterval);
       }
     }
-  }, [user, loading, pathname, router, userName, redirecting]);
+  }, [user, loading, pathname, router, userName, redirecting, searchParams]);
 
   // Icon basierend auf User-Rolle
   const getRoleIcon = () => {
@@ -214,5 +227,13 @@ export default function SmoothRedirectOverlay() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SmoothRedirectOverlay() {
+  return (
+    <Suspense fallback={null}>
+      <SmoothRedirectOverlayContent />
+    </Suspense>
   );
 }

@@ -40,6 +40,8 @@ export async function GET(
     const endDate = searchParams.get('endDate');
     const status = searchParams.get('status');
 
+    console.log('📋 TimeEntries GET:', { companyId, employeeId, startDate, endDate, status });
+
     if (!employeeId) {
       return NextResponse.json(
         { success: false, error: 'Mitarbeiter-ID erforderlich' },
@@ -47,26 +49,27 @@ export async function GET(
       );
     }
 
+    // Einfache Query ohne orderBy (um Index-Probleme zu vermeiden)
     let query: FirebaseFirestore.Query = adminDb
       .collection('companies')
       .doc(companyId)
       .collection('timeEntries')
       .where('employeeId', '==', employeeId);
 
-    if (startDate) {
-      query = query.where('date', '>=', startDate);
-    }
-    if (endDate) {
-      query = query.where('date', '<=', endDate);
+    // Nur Date-Filter hinzufügen wenn angegeben
+    if (startDate && endDate) {
+      query = query.where('date', '>=', startDate).where('date', '<=', endDate);
     }
     if (status) {
       query = query.where('status', '==', status);
     }
 
-    const snapshot = await query.orderBy('date', 'desc').limit(100).get();
+    const snapshot = await query.get();
+    console.log('📋 Found documents:', snapshot.docs.length);
 
     const entries: TimeEntry[] = snapshot.docs.map(doc => {
       const data = doc.data();
+      console.log('📋 Entry:', doc.id, data);
       return {
         id: doc.id,
         companyId: data.companyId || companyId,
@@ -82,18 +85,26 @@ export async function GET(
       };
     });
 
+    // Sortiere im Code statt in Firestore
+    entries.sort((a, b) => b.date.localeCompare(a.date));
+    
+    // Limitiere auf 100
+    const limitedEntries = entries.slice(0, 100);
+
     // Berechne Zusammenfassung
-    const totalMinutes = entries.reduce((sum, entry) => {
+    const totalMinutes = limitedEntries.reduce((sum, entry) => {
       return sum + (entry.duration || 0);
     }, 0);
 
-    const totalBreakMinutes = entries.reduce((sum, entry) => {
+    const totalBreakMinutes = limitedEntries.reduce((sum, entry) => {
       return sum + (entry.breakTime || 0);
     }, 0);
 
+    console.log('📋 Returning', limitedEntries.length, 'entries');
+
     return NextResponse.json({
       success: true,
-      entries,
+      entries: limitedEntries,
       summary: {
         totalEntries: entries.length,
         totalHours: Math.round((totalMinutes / 60) * 100) / 100,

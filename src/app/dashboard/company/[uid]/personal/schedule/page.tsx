@@ -1,14 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { PersonalService, Employee, Shift } from '@/services/personalService';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Select,
@@ -23,28 +18,37 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Calendar,
-  Clock,
-  Users,
-  Plus,
-  Settings,
+  ChevronLeft,
+  ChevronRight,
+  Grid3X3,
+  List,
+  Save,
   Download,
-  Upload,
-  BarChart3,
-  UserCheck,
-  UserX,
-  AlertCircle,
-  Zap,
-  TrendingUp,
-  CheckCircle,
+  Settings,
+  Plus,
+  MoreHorizontal,
+  Pencil,
+  Key,
+  Cloud,
+  Gift,
+  X,
+  Trash2,
+  Copy,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import ModernScheduleView from '@/components/schedule/ModernScheduleView';
 import { cn } from '@/lib/utils';
 
 // Erweitere Window für Realtime-Subscriptions
@@ -55,96 +59,237 @@ declare global {
   }
 }
 
-interface ModernSchedulePageProps {
-  params: {
+interface SchedulePageProps {
+  params: Promise<{
     uid: string;
-  };
+  }>;
 }
 
-// Schichttypen für Quick Actions
-const QUICK_SHIFT_TEMPLATES = [
+// Schichttypen
+type ShiftType = 'fruehschicht' | 'spaetschicht' | 'nachtschicht' | 'frei' | 'urlaub' | 'krank' | 'wunschfrei' | 'guttagefrei';
+
+interface ShiftTemplate {
+  id: ShiftType;
+  name: string;
+  shortName: string;
+  startTime: string;
+  endTime: string;
+  color: string;
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
+}
+
+const SHIFT_TEMPLATES: ShiftTemplate[] = [
   {
-    id: 'early',
+    id: 'fruehschicht',
     name: 'Frühschicht',
-    startTime: '06:00',
+    shortName: 'Früh',
+    startTime: '07:00',
     endTime: '14:00',
-    color: 'orange',
-    position: 'Standard',
+    color: '#10b981',
+    bgColor: 'bg-emerald-100',
+    textColor: 'text-emerald-800',
+    borderColor: 'border-emerald-300',
   },
   {
-    id: 'middle',
-    name: 'Mittelschicht',
-    startTime: '10:00',
-    endTime: '18:00',
-    color: 'blue',
-    position: 'Standard',
-  },
-  {
-    id: 'late',
+    id: 'spaetschicht',
     name: 'Spätschicht',
-    startTime: '14:00',
-    endTime: '22:00',
-    color: 'purple',
-    position: 'Standard',
+    shortName: 'Spät',
+    startTime: '15:00',
+    endTime: '20:00',
+    color: '#f97316',
+    bgColor: 'bg-orange-100',
+    textColor: 'text-orange-800',
+    borderColor: 'border-orange-300',
   },
   {
-    id: 'night',
+    id: 'nachtschicht',
     name: 'Nachtschicht',
+    shortName: 'Nacht',
     startTime: '22:00',
     endTime: '06:00',
-    color: 'indigo',
-    position: 'Standard',
+    color: '#6366f1',
+    bgColor: 'bg-indigo-100',
+    textColor: 'text-indigo-800',
+    borderColor: 'border-indigo-300',
+  },
+  {
+    id: 'frei',
+    name: 'Freier Tag',
+    shortName: 'Frei',
+    startTime: '',
+    endTime: '',
+    color: '#9ca3af',
+    bgColor: 'bg-gray-100',
+    textColor: 'text-gray-600',
+    borderColor: 'border-gray-300',
+  },
+  {
+    id: 'guttagefrei',
+    name: 'Guttageabbau',
+    shortName: 'Guttage',
+    startTime: '',
+    endTime: '',
+    color: '#14b8a6',
+    bgColor: 'bg-teal-100',
+    textColor: 'text-teal-800',
+    borderColor: 'border-teal-300',
+  },
+  {
+    id: 'urlaub',
+    name: 'Urlaub',
+    shortName: 'Urlaub',
+    startTime: '',
+    endTime: '',
+    color: '#ef4444',
+    bgColor: 'bg-red-50',
+    textColor: 'text-red-700',
+    borderColor: 'border-red-200',
+  },
+  {
+    id: 'krank',
+    name: 'Krankheit',
+    shortName: 'Krank',
+    startTime: '',
+    endTime: '',
+    color: '#dc2626',
+    bgColor: 'bg-red-100',
+    textColor: 'text-red-800',
+    borderColor: 'border-red-300',
+  },
+  {
+    id: 'wunschfrei',
+    name: 'Wunschfrei',
+    shortName: 'Wunsch',
+    startTime: '',
+    endTime: '',
+    color: '#f43f5e',
+    bgColor: 'bg-rose-100',
+    textColor: 'text-rose-700',
+    borderColor: 'border-rose-300',
   },
 ];
 
-export default function ModernSchedulePage({ params }: ModernSchedulePageProps) {
+// Hilfsfunktionen
+function getWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
+function getWeekDates(date: Date): Date[] {
+  const week: Date[] = [];
+  const current = new Date(date);
+  const day = current.getDay();
+  const diff = current.getDate() - day + (day === 0 ? -6 : 1);
+  current.setDate(diff);
+  
+  for (let i = 0; i < 7; i++) {
+    week.push(new Date(current));
+    current.setDate(current.getDate() + 1);
+  }
+  return week;
+}
+
+function formatDate(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+function calculateHoursFromShift(shift: Shift): number {
+  if (!shift.startTime || !shift.endTime) return 0;
+  const [startH, startM] = shift.startTime.split(':').map(Number);
+  const [endH, endM] = shift.endTime.split(':').map(Number);
+  let hours = endH - startH + (endM - startM) / 60;
+  if (hours < 0) hours += 24;
+  return hours;
+}
+
+export default function SchedulePage({ params }: SchedulePageProps) {
   const { user } = useAuth();
   const [resolvedParams, setResolvedParams] = useState<{ uid: string } | null>(null);
 
-  // State Management
+  // State
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showBulkCreateDialog, setShowBulkCreateDialog] = useState(false);
-  const [quickActionDate, setQuickActionDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedCell, setSelectedCell] = useState<{ employeeId: string; date: string } | null>(null);
+  const [editingShift, setEditingShift] = useState<Shift | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
 
   // Form State
   const [newShiftForm, setNewShiftForm] = useState({
-    employeeId: '',
-    date: new Date().toISOString().split('T')[0],
+    shiftType: '' as ShiftType | '',
     startTime: '09:00',
     endTime: '17:00',
-    position: '',
-    department: '',
     notes: '',
-    status: 'PLANNED' as Shift['status'],
   });
 
-  // Statistics
-  const scheduleStats = React.useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const thisWeek = new Date();
-    thisWeek.setDate(thisWeek.getDate() - thisWeek.getDay());
-    const weekEnd = new Date(thisWeek);
-    weekEnd.setDate(weekEnd.getDate() + 6);
+  // Berechnete Werte
+  const weekDates = useMemo(() => getWeekDates(currentDate), [currentDate]);
+  const weekNumber = useMemo(() => getWeekNumber(currentDate), [currentDate]);
 
-    const todayShifts = shifts.filter(shift => shift.date === today);
-    const weekShifts = shifts.filter(shift => {
-      const shiftDate = new Date(shift.date);
-      return shiftDate >= thisWeek && shiftDate <= weekEnd;
+  const departments = useMemo(() => {
+    const depts = new Set<string>();
+    employees.forEach(emp => {
+      if (emp.department) depts.add(emp.department);
     });
+    return Array.from(depts);
+  }, [employees]);
 
-    return {
-      todayTotal: todayShifts.length,
-      todayConfirmed: todayShifts.filter(s => s.status === 'CONFIRMED').length,
-      weekTotal: weekShifts.length,
-      weekPlanned: weekShifts.filter(s => s.status === 'PLANNED').length,
-      weekConfirmed: weekShifts.filter(s => s.status === 'CONFIRMED').length,
-      absences: shifts.filter(s => s.status === 'ABSENT' || s.status === 'SICK').length,
-    };
+  const filteredEmployees = useMemo(() => {
+    return employees
+      .filter(emp => emp.isActive)
+      .filter(emp => selectedDepartment === 'all' || emp.department === selectedDepartment);
+  }, [employees, selectedDepartment]);
+
+  // Schichten pro Mitarbeiter und Tag
+  const shiftsByEmployeeAndDate = useMemo(() => {
+    const map = new Map<string, Shift>();
+    shifts.forEach(shift => {
+      const key = `${shift.employeeId}-${shift.date}`;
+      map.set(key, shift);
+    });
+    return map;
   }, [shifts]);
+
+  // Wochenstunden pro Mitarbeiter
+  const weeklyHours = useMemo(() => {
+    const hours = new Map<string, number>();
+    const weekStart = formatDate(weekDates[0]);
+    const weekEnd = formatDate(weekDates[6]);
+    
+    shifts.forEach(shift => {
+      if (shift.date >= weekStart && shift.date <= weekEnd) {
+        const current = hours.get(shift.employeeId) || 0;
+        hours.set(shift.employeeId, current + calculateHoursFromShift(shift));
+      }
+    });
+    return hours;
+  }, [shifts, weekDates]);
+
+  // Betriebskennzahlen
+  const dailyStats = useMemo(() => {
+    return weekDates.map(date => {
+      const dateStr = formatDate(date);
+      const dayShifts = shifts.filter(s => s.date === dateStr);
+      let totalHours = 0;
+      dayShifts.forEach(s => {
+        totalHours += calculateHoursFromShift(s);
+      });
+      return {
+        date: dateStr,
+        shiftsCount: dayShifts.length,
+        totalHours,
+      };
+    });
+  }, [shifts, weekDates]);
 
   // Cleanup Subscriptions
   const cleanupSubscriptions = useCallback(() => {
@@ -160,48 +305,37 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
 
   // Realtime Subscriptions Setup
   const setupRealtimeSubscriptions = useCallback(() => {
-    if (!resolvedParams?.uid) {
-      console.log('❌ No resolvedParams.uid');
-      return;
-    }
+    if (!resolvedParams?.uid) return;
 
-    console.log('🔄 Setting up subscriptions for company:', resolvedParams.uid);
     setLoading(true);
 
-    // Mitarbeiter Realtime Subscription
     const employeesUnsubscribe = PersonalService.subscribeToEmployees(
       resolvedParams.uid,
       employeeList => {
-        console.log('👥 Employees loaded:', employeeList.length);
         setEmployees(employeeList);
       },
-      error => {
-        console.error('❌ Error loading employees:', error);
+      () => {
         toast.error('Fehler beim Laden der Mitarbeiter');
       }
     );
 
-    // Schichten Realtime Subscription
     const shiftsUnsubscribe = PersonalService.subscribeToShifts(
       resolvedParams.uid,
       shiftList => {
-        console.log('📅 Shifts loaded:', shiftList.length, shiftList);
         setShifts(shiftList);
         setLoading(false);
       },
-      error => {
-        console.error('❌ Error loading shifts:', error);
+      () => {
         toast.error('Fehler beim Laden der Schichten');
         setLoading(false);
       }
     );
 
-    // Speichere Unsubscribe-Funktionen
     window.employeesUnsubscribe = employeesUnsubscribe;
     window.shiftsUnsubscribe = shiftsUnsubscribe;
   }, [resolvedParams]);
 
-  // Resolve params from Promise
+  // Resolve params
   useEffect(() => {
     const resolveParams = async () => {
       const resolved = await params;
@@ -210,513 +344,708 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
     resolveParams();
   }, [params]);
 
-  // Load data when params are resolved - mit Realtime Subscriptions
+  // Load data
   useEffect(() => {
     if (resolvedParams?.uid) {
       setupRealtimeSubscriptions();
     }
-
-    // Cleanup bei Komponenten-Unmount
-    return () => {
-      cleanupSubscriptions();
-    };
+    return () => cleanupSubscriptions();
   }, [resolvedParams, setupRealtimeSubscriptions, cleanupSubscriptions]);
 
-  const loadData = async () => {
-    // Diese Methode wird nur noch für manuelle Refreshes verwendet
-    // Hauptdatenladung erfolgt über Realtime-Subscriptions
+  // Navigation
+  const navigateWeek = (direction: 'prev' | 'next') => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
+      return newDate;
+    });
   };
 
-  const handleCreateShift = async () => {
-    try {
-      if (!resolvedParams?.uid) {
-        toast.error('Fehler: Firma nicht gefunden');
-        return;
-      }
-
-      if (!newShiftForm.employeeId || !newShiftForm.position || !newShiftForm.department) {
-        toast.error('Bitte füllen Sie alle Pflichtfelder aus');
-        return;
-      }
-
-      const shiftData: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'> = {
-        companyId: resolvedParams.uid,
-        employeeId: newShiftForm.employeeId,
-        date: newShiftForm.date,
-        startTime: newShiftForm.startTime,
-        endTime: newShiftForm.endTime,
-        position: newShiftForm.position,
-        department: newShiftForm.department,
-        notes: newShiftForm.notes,
-        status: newShiftForm.status,
-      };
-
-      console.log('Creating shift:', shiftData);
-      const shiftId = await PersonalService.createShift(shiftData);
-      console.log('Shift created with ID:', shiftId);
-      toast.success('Schicht erfolgreich erstellt');
-
-      // Daten werden automatisch über Realtime-Subscription aktualisiert
-      setShowCreateDialog(false);
-
-      // Form zurücksetzen
-      setNewShiftForm({
-        employeeId: '',
-        date: new Date().toISOString().split('T')[0],
-        startTime: '09:00',
-        endTime: '17:00',
-        position: '',
-        department: '',
-        notes: '',
-        status: 'PLANNED',
-      });
-    } catch (error) {
-      toast.error('Fehler beim Erstellen der Schicht');
-    }
+  const goToToday = () => {
+    setCurrentDate(new Date());
   };
 
-  const handleQuickCreateShift = async (
-    template: (typeof QUICK_SHIFT_TEMPLATES)[0],
-    employeeId: string
-  ) => {
-    try {
-      if (!resolvedParams?.uid) {
-        toast.error('Fehler: Firma nicht gefunden');
-        return;
-      }
+  // Schichttyp ermitteln
+  const getShiftType = (shift: Shift): ShiftType => {
+    if (shift.status === 'ABSENT') return 'urlaub';
+    if (shift.status === 'SICK') return 'krank';
+    if (shift.notes?.toLowerCase().includes('wunschfrei')) return 'wunschfrei';
+    if (shift.notes?.toLowerCase().includes('guttage')) return 'guttagefrei';
+    if (!shift.startTime) return 'frei';
+    
+    const startHour = parseInt(shift.startTime.split(':')[0]);
+    if (startHour >= 5 && startHour < 12) return 'fruehschicht';
+    if (startHour >= 12 && startHour < 18) return 'spaetschicht';
+    return 'nachtschicht';
+  };
 
-      // Finde den Mitarbeiter um seine Abteilung und Position zu verwenden
+  // Quick Shift erstellen
+  const handleQuickShiftCreate = async (template: ShiftTemplate, employeeId: string, date: string) => {
+    if (!resolvedParams?.uid) return;
+
+    try {
       const employee = employees.find(emp => emp.id === employeeId);
+      const existingShift = shiftsByEmployeeAndDate.get(`${employeeId}-${date}`);
 
       const shiftData: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'> = {
         companyId: resolvedParams.uid,
         employeeId,
-        date: quickActionDate, // Verwende das ausgewählte Datum
+        date,
         startTime: template.startTime,
         endTime: template.endTime,
-        position: employee?.position || template.position,
-        department: employee?.department || 'Unbekannt',
-        notes: `Automatisch erstellt: ${template.name}`,
-        status: 'PLANNED',
+        position: employee?.position || 'Mitarbeiter',
+        department: employee?.department || 'Allgemein',
+        notes: template.name,
+        status: template.id === 'urlaub' ? 'ABSENT' : template.id === 'krank' ? 'SICK' : 'PLANNED',
       };
 
-      await PersonalService.createShift(shiftData);
-      toast.success(`${template.name} für Mitarbeiter erstellt`);
-
-      // Daten werden automatisch über Realtime-Subscription aktualisiert
-    } catch (error) {
+      if (existingShift?.id) {
+        await PersonalService.updateShift(resolvedParams.uid, existingShift.id, shiftData);
+        toast.success(`${template.name} aktualisiert`);
+      } else {
+        await PersonalService.createShift(shiftData);
+        toast.success(`${template.name} erstellt`);
+      }
+      setHasChanges(true);
+    } catch {
       toast.error('Fehler beim Erstellen der Schicht');
     }
   };
 
-  const handleShiftClick = (shift: Shift) => {
-    setSelectedShift(shift);
-  };
-
-  const handleSlotSelect = (slotInfo: any) => {
-    const selectedDate = slotInfo.start.toISOString().split('T')[0];
-    setNewShiftForm(prev => ({
-      ...prev,
-      date: selectedDate,
-      startTime: slotInfo.start.toTimeString().slice(0, 5),
-      endTime: slotInfo.end.toTimeString().slice(0, 5),
-    }));
-    setShowCreateDialog(true);
-  };
-
-  const handleShiftUpdate = async (shiftId: string, updates: Partial<Shift>) => {
-    try {
-      if (!resolvedParams) return;
-
-      await PersonalService.updateShift(resolvedParams.uid, shiftId, updates);
-      toast.success('Schicht erfolgreich verschoben');
-
-      // Daten werden automatisch über Realtime-Subscription aktualisiert
-    } catch (error) {
-      toast.error('Fehler beim Verschieben der Schicht');
+  // Schicht speichern
+  const handleSaveShift = async () => {
+    if (!resolvedParams?.uid) return;
+    if (!newShiftForm.shiftType) {
+      toast.error('Bitte Schichttyp auswählen');
+      return;
     }
+
+    try {
+      const template = SHIFT_TEMPLATES.find(t => t.id === newShiftForm.shiftType);
+      if (!template) return;
+
+      if (editingShift?.id) {
+        await PersonalService.updateShift(resolvedParams.uid, editingShift.id, {
+          startTime: template.startTime || newShiftForm.startTime,
+          endTime: template.endTime || newShiftForm.endTime,
+          notes: template.name + (newShiftForm.notes ? ` - ${newShiftForm.notes}` : ''),
+          status: template.id === 'urlaub' ? 'ABSENT' : template.id === 'krank' ? 'SICK' : 'PLANNED',
+        });
+        toast.success('Schicht aktualisiert');
+      } else if (selectedCell) {
+        const employee = employees.find(emp => emp.id === selectedCell.employeeId);
+        const shiftData: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'> = {
+          companyId: resolvedParams.uid,
+          employeeId: selectedCell.employeeId,
+          date: selectedCell.date,
+          startTime: template.startTime || newShiftForm.startTime,
+          endTime: template.endTime || newShiftForm.endTime,
+          position: employee?.position || 'Mitarbeiter',
+          department: employee?.department || 'Allgemein',
+          notes: template.name + (newShiftForm.notes ? ` - ${newShiftForm.notes}` : ''),
+          status: template.id === 'urlaub' ? 'ABSENT' : template.id === 'krank' ? 'SICK' : 'PLANNED',
+        };
+        await PersonalService.createShift(shiftData);
+        toast.success('Schicht erstellt');
+      }
+
+      setShowCreateDialog(false);
+      setEditingShift(null);
+      setSelectedCell(null);
+      setHasChanges(true);
+    } catch {
+      toast.error('Fehler beim Speichern');
+    }
+  };
+
+  // Schicht löschen
+  const handleDeleteShift = async () => {
+    if (!resolvedParams?.uid || !editingShift?.id) return;
+
+    try {
+      await PersonalService.deleteShift(resolvedParams.uid, editingShift.id);
+      toast.success('Schicht gelöscht');
+      setShowCreateDialog(false);
+      setEditingShift(null);
+      setHasChanges(true);
+    } catch {
+      toast.error('Fehler beim Löschen');
+    }
+  };
+
+  // Render Schicht-Zelle
+  const renderShiftCell = (employeeId: string, date: string) => {
+    const shift = shiftsByEmployeeAndDate.get(`${employeeId}-${date}`);
+    
+    if (!shift) {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="w-full h-full min-h-[60px] border border-dashed border-gray-200 rounded hover:border-[#14ad9f] hover:bg-gray-50 transition-colors flex items-center justify-center group"
+            >
+              <Plus className="h-4 w-4 text-gray-300 group-hover:text-[#14ad9f]" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-48">
+            <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">
+              Arbeitseinsatz hinzufügen:
+            </div>
+            <DropdownMenuSeparator />
+            {SHIFT_TEMPLATES.map(template => (
+              <DropdownMenuItem
+                key={template.id}
+                onClick={() => handleQuickShiftCreate(template, employeeId, date)}
+                className="cursor-pointer"
+              >
+                <div className={cn('w-3 h-3 rounded mr-2', template.bgColor, template.borderColor, 'border')} />
+                <span>{template.name}</span>
+                {template.startTime && (
+                  <span className="ml-auto text-xs text-gray-400">
+                    {template.startTime}
+                  </span>
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    }
+
+    const template = SHIFT_TEMPLATES.find(t => t.id === getShiftType(shift));
+    const isAbsence = shift.status === 'ABSENT' || shift.status === 'SICK' || !shift.startTime;
+    
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className={cn(
+              'w-full h-full min-h-[60px] rounded border p-1.5 text-left transition-colors hover:opacity-80',
+              template?.bgColor || 'bg-gray-100',
+              template?.borderColor || 'border-gray-300',
+              template?.textColor || 'text-gray-700'
+            )}
+          >
+            {isAbsence && (
+              <div className="flex items-center gap-1 mb-0.5">
+                <X className="h-3 w-3" />
+                <span className="text-xs font-medium">{template?.name || 'Frei'}</span>
+              </div>
+            )}
+            {!isAbsence && (
+              <>
+                <div className="text-xs font-semibold truncate">
+                  {template?.name || shift.position}
+                </div>
+                <div className="text-[10px] opacity-80">
+                  {shift.startTime} - {shift.endTime}
+                </div>
+              </>
+            )}
+            {isAbsence && shift.status !== 'SICK' && shift.status !== 'ABSENT' && (
+              <div className="text-[10px] opacity-70">ganztägig</div>
+            )}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-48">
+          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">
+            Schicht ändern:
+          </div>
+          <DropdownMenuSeparator />
+          {SHIFT_TEMPLATES.map(t => (
+            <DropdownMenuItem
+              key={t.id}
+              onClick={() => handleQuickShiftCreate(t, employeeId, date)}
+              className="cursor-pointer"
+            >
+              <div className={cn('w-3 h-3 rounded mr-2', t.bgColor, t.borderColor, 'border')} />
+              <span>{t.name}</span>
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => {
+              setEditingShift(shift);
+              setNewShiftForm({
+                shiftType: getShiftType(shift),
+                startTime: shift.startTime || '09:00',
+                endTime: shift.endTime || '17:00',
+                notes: shift.notes || '',
+              });
+              setShowCreateDialog(true);
+            }}
+            className="cursor-pointer"
+          >
+            <Pencil className="h-3 w-3 mr-2" />
+            Bearbeiten
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={async () => {
+              if (shift.id && resolvedParams?.uid) {
+                await PersonalService.deleteShift(resolvedParams.uid, shift.id);
+                toast.success('Schicht gelöscht');
+              }
+            }}
+            className="cursor-pointer text-red-600"
+          >
+            <Trash2 className="h-3 w-3 mr-2" />
+            Löschen
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
+  // Wunschfrei-Indikator
+  const renderWunschfreiIndicator = (employeeId: string) => {
+    const hasWunschfrei = weekDates.some(date => {
+      const shift = shiftsByEmployeeAndDate.get(`${employeeId}-${formatDate(date)}`);
+      return shift?.notes?.toLowerCase().includes('wunschfrei');
+    });
+
+    if (!hasWunschfrei) return null;
+
+    return (
+      <div className="absolute right-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-rose-500 rounded-full" title="Wunschfrei" />
+    );
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#14ad9f]"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#14ad9f]"></div>
       </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="container max-w-7xl mx-auto p-6 space-y-8"
-    >
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Calendar className="h-8 w-8 text-[#14ad9f]" />
-            Dienstplan
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Verwalten Sie Schichten und Arbeitszeiten Ihrer Mitarbeiter
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setShowBulkCreateDialog(true)}
-            className="hover:bg-[#14ad9f]/10 hover:border-[#14ad9f]"
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Bulk erstellen
-          </Button>
-
-          <Button
-            onClick={() => setShowCreateDialog(true)}
-            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Neue Schicht
-          </Button>
-        </div>
-      </div>
-
-      {/* Statistics */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-      >
-        <Card className="border-l-4 border-l-[#14ad9f] hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Heute</p>
-                <p className="text-2xl font-bold text-[#14ad9f]">
-                  {scheduleStats.todayConfirmed}/{scheduleStats.todayTotal}
-                </p>
-                <p className="text-xs text-gray-500">Bestätigt/Geplant</p>
-              </div>
-              <div className="p-3 bg-[#14ad9f]/10 rounded-full">
-                <CheckCircle className="h-6 w-6 text-[#14ad9f]" />
+      <div className="bg-white border-b sticky top-0 z-20">
+        <div className="px-4 py-3">
+          {/* Top Row - Navigation & Actions */}
+          <div className="flex items-center justify-between gap-4 mb-3">
+            {/* Zeitraum */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 uppercase tracking-wide">Zeitraum</span>
+              <Button variant="ghost" size="sm" onClick={goToToday} className="text-sm">
+                Heute
+              </Button>
+              <div className="flex items-center border rounded-lg">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateWeek('prev')}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="px-3 text-sm font-medium min-w-[140px] text-center">
+                  {formatDate(weekDates[0]).slice(8)}.{formatDate(weekDates[0]).slice(5, 7)} - {formatDate(weekDates[6]).slice(8)}.{formatDate(weekDates[6]).slice(5, 7)}.{currentDate.getFullYear()}
+                </span>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateWeek('next')}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Diese Woche</p>
-                <p className="text-2xl font-bold text-blue-600">{scheduleStats.weekTotal}</p>
-                <p className="text-xs text-gray-500">Schichten geplant</p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Abwesenheiten</p>
-                <p className="text-2xl font-bold text-orange-600">{scheduleStats.absences}</p>
-                <p className="text-xs text-gray-500">Urlaub/Krank</p>
-              </div>
-              <div className="p-3 bg-orange-100 rounded-full">
-                <UserX className="h-6 w-6 text-orange-600" />
+            {/* Ansicht */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 uppercase tracking-wide">Ansicht</span>
+              <div className="flex border rounded-lg overflow-hidden">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  className={cn('rounded-none h-8', viewMode === 'grid' && 'bg-[#14ad9f] hover:bg-[#0d9488]')}
+                  onClick={() => setViewMode('grid')}
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  className={cn('rounded-none h-8', viewMode === 'list' && 'bg-[#14ad9f] hover:bg-[#0d9488]')}
+                  onClick={() => setViewMode('list')}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card className="border-l-4 border-l-purple-500 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Mitarbeiter</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {employees.filter(emp => emp.isActive).length}
-                </p>
-                <p className="text-xs text-gray-500">Aktiv</p>
-              </div>
-              <div className="p-3 bg-purple-100 rounded-full">
-                <Users className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Quick Actions - Optimiert für viele Mitarbeiter */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-[#14ad9f]" />
-              Schnellaktionen
-            </CardTitle>
-            <CardDescription>Effiziente Schichterstellung für mehrere Mitarbeiter</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {QUICK_SHIFT_TEMPLATES.map(template => (
-                <Dialog key={template.id}>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="h-20 flex flex-col gap-2 border-2 hover:border-[#14ad9f] hover:bg-[#14ad9f]/5"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                        <Clock className="h-4 w-4 text-[#14ad9f]" />
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium text-sm">{template.name}</div>
-                        <div className="text-xs text-gray-500">
-                          {template.startTime}-{template.endTime}
-                        </div>
-                      </div>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>{template.name} zuweisen</DialogTitle>
-                      <DialogDescription>
-                        Wählen Sie Mitarbeiter für die {template.name} ({template.startTime}-
-                        {template.endTime}) aus
-                      </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                        <Calendar className="h-5 w-5 text-[#14ad9f]" />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-4">
-                            <div>
-                              <Label htmlFor="quickDate" className="text-sm font-medium">
-                                Datum
-                              </Label>
-                              <Input
-                                id="quickDate"
-                                type="date"
-                                value={quickActionDate}
-                                onChange={e => setQuickActionDate(e.target.value)}
-                                className="mt-1"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-sm font-medium">Zeit</Label>
-                              <p className="text-sm text-gray-600 mt-1">
-                                {template.startTime} - {template.endTime}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
-                        {employees
-                          .filter(emp => emp.isActive)
-                          .map(employee => (
-                            <Button
-                              key={employee.id}
-                              variant="outline"
-                              onClick={() => handleQuickCreateShift(template, employee.id!)}
-                              className="justify-start h-auto p-3 hover:bg-[#14ad9f]/10 hover:border-[#14ad9f]"
-                            >
-                              <Avatar className="h-8 w-8 mr-3">
-                                <AvatarFallback className="bg-[#14ad9f]/10 text-[#14ad9f]">
-                                  {employee.firstName?.[0]}
-                                  {employee.lastName?.[0]}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="text-left">
-                                <div className="font-medium">
-                                  {employee.firstName} {employee.lastName}
-                                </div>
-                                <div className="text-xs text-gray-500">{employee.position}</div>
-                              </div>
-                            </Button>
-                          ))}
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Calendar */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <ModernScheduleView
-          shifts={shifts}
-          employees={employees}
-          onShiftClick={handleShiftClick}
-          onSlotSelect={handleSlotSelect}
-          onShiftUpdate={handleShiftUpdate}
-        />
-      </motion.div>
-
-      {/* Create Shift Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-[#14ad9f]" />
-              Neue Schicht erstellen
-            </DialogTitle>
-            <DialogDescription>
-              Erstellen Sie eine neue Schicht für einen Mitarbeiter
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="employee">Mitarbeiter *</Label>
-              <Select
-                value={newShiftForm.employeeId}
-                onValueChange={value => setNewShiftForm(prev => ({ ...prev, employeeId: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Mitarbeiter auswählen" />
+            {/* Anzeige Filter */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 uppercase tracking-wide">Anzeige</span>
+              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                <SelectTrigger className="w-[140px] h-8">
+                  <SelectValue placeholder="Alle Abteilungen" />
                 </SelectTrigger>
                 <SelectContent>
-                  {employees.length === 0 ? (
-                    <div className="px-2 py-6 text-center text-sm text-gray-500">
-                      Keine Mitarbeiter vorhanden
-                    </div>
-                  ) : (
-                    employees
-                      .filter(emp => emp.id)
-                      .map(employee => (
-                        <SelectItem key={employee.id} value={employee.id || ''}>
-                          {employee.firstName} {employee.lastName}
-                          {employee.position && ` - ${employee.position}`}
-                          {!employee.isActive && (
-                            <span className="text-gray-400 ml-2">(Inaktiv)</span>
-                          )}
-                        </SelectItem>
-                      ))
-                  )}
+                  <SelectItem value="all">Alle Abteilungen</SelectItem>
+                  {departments.map(dept => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="date">Datum *</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={newShiftForm.date}
-                  onChange={e => setNewShiftForm(prev => ({ ...prev, date: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={newShiftForm.status}
-                  onValueChange={(value: Shift['status']) =>
-                    setNewShiftForm(prev => ({ ...prev, status: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PLANNED">Geplant</SelectItem>
-                    <SelectItem value="CONFIRMED">Bestätigt</SelectItem>
-                    <SelectItem value="ABSENT">Abwesend</SelectItem>
-                    <SelectItem value="SICK">Krank</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Aktionen */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 uppercase tracking-wide">Aktionen</span>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="Exportieren">
+                  <Download className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="Aktualisieren">
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="Einstellungen">
+                  <Settings className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="startTime">Startzeit *</Label>
-                <Input
-                  id="startTime"
-                  type="time"
-                  value={newShiftForm.startTime}
-                  onChange={e => setNewShiftForm(prev => ({ ...prev, startTime: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="endTime">Endzeit *</Label>
-                <Input
-                  id="endTime"
-                  type="time"
-                  value={newShiftForm.endTime}
-                  onChange={e => setNewShiftForm(prev => ({ ...prev, endTime: e.target.value }))}
-                />
+            {/* Save & Publish */}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={!hasChanges}>
+                Speichern
+              </Button>
+              <Button size="sm" className="bg-[#14ad9f] hover:bg-[#0d9488]">
+                Dienstplan öffentlich
+              </Button>
+            </div>
+          </div>
+
+          {/* Week Info Row */}
+          <div className="flex items-start gap-4">
+            {/* KW Info */}
+            <div className="min-w-[180px] pr-4 border-r">
+              <div className="text-lg font-bold text-gray-900">KW {weekNumber}</div>
+              <div className="text-sm text-gray-500">Jahr {currentDate.getFullYear()}</div>
+              <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
+                <Gift className="h-3 w-3" />
+                <span>Geburtstage</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="position">Position *</Label>
-                <Input
-                  id="position"
-                  placeholder="z.B. Servicekraft"
-                  value={newShiftForm.position}
-                  onChange={e => setNewShiftForm(prev => ({ ...prev, position: e.target.value }))}
-                />
+            {/* Tage Header */}
+            <div className="flex-1 grid grid-cols-7 gap-2">
+              {weekDates.map((date, index) => {
+                const isToday = formatDate(date) === formatDate(new Date());
+                const dayName = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'][index];
+                
+                return (
+                  <div
+                    key={index}
+                    className={cn(
+                      'text-center py-2 rounded-lg',
+                      isToday && 'bg-[#14ad9f]/10 border border-[#14ad9f]'
+                    )}
+                  >
+                    <div className={cn(
+                      'text-lg font-bold',
+                      isToday ? 'text-[#14ad9f]' : 'text-gray-900',
+                      (index === 5 || index === 6) && 'text-gray-400'
+                    )}>
+                      {dayName} {date.getDate().toString().padStart(2, '0')}.{(date.getMonth() + 1).toString().padStart(2, '0')}
+                    </div>
+                    <div className="flex items-center justify-center gap-1 text-xs text-gray-400 mt-0.5">
+                      <Cloud className="h-3 w-3" />
+                      <span>--°C</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Stunden Header */}
+            <div className="min-w-20 text-center text-sm font-medium text-gray-500">
+              Stunden
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Dienstplan Grid */}
+      <div className="p-4">
+        {/* Abteilungen */}
+        {(selectedDepartment === 'all' ? departments : [selectedDepartment]).map(department => (
+          <div key={department} className="mb-6">
+            {/* Abteilung Header */}
+            <div className="flex items-center gap-2 mb-2 px-2">
+              <div className="flex items-center gap-2 text-sm font-semibold text-[#14ad9f]">
+                <span>−</span>
+                <span>{department}</span>
               </div>
-              <div>
-                <Label htmlFor="department">Abteilung *</Label>
-                <Input
-                  id="department"
-                  placeholder="z.B. Service"
-                  value={newShiftForm.department}
-                  onChange={e => setNewShiftForm(prev => ({ ...prev, department: e.target.value }))}
-                />
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <Copy className="h-3 w-3" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <Pencil className="h-3 w-3" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <Key className="h-3 w-3" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <MoreHorizontal className="h-3 w-3" />
+                </Button>
               </div>
             </div>
 
+            {/* Mitarbeiter Zeilen */}
+            <div className="bg-white rounded-lg border overflow-hidden">
+              {filteredEmployees
+                .filter(emp => emp.department === department || selectedDepartment !== 'all')
+                .map(employee => {
+                  const hours = weeklyHours.get(employee.id || '') || 0;
+                  
+                  return (
+                    <div
+                      key={employee.id}
+                      className="flex items-stretch border-b last:border-b-0 hover:bg-gray-50/50"
+                    >
+                      {/* Mitarbeiter Info */}
+                      <div className="min-w-[180px] p-2 flex items-center gap-2 border-r bg-gray-50/50 relative">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={employee.avatar} />
+                          <AvatarFallback className="bg-[#14ad9f]/10 text-[#14ad9f] text-xs">
+                            {employee.firstName?.[0]}{employee.lastName?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">
+                            {employee.firstName} {employee.lastName}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate">
+                            {employee.employmentType === 'FULL_TIME' ? 'Vollzeit' :
+                             employee.employmentType === 'PART_TIME' ? 'Teilzeit' :
+                             employee.employmentType === 'INTERN' ? 'Praktikant' :
+                             employee.position || 'Mitarbeiter'}
+                          </div>
+                        </div>
+                        {renderWunschfreiIndicator(employee.id || '')}
+                      </div>
+
+                      {/* Schicht-Zellen */}
+                      <div className="flex-1 grid grid-cols-7 gap-1 p-1">
+                        {weekDates.map((date, index) => (
+                          <div key={index} className="min-h-[60px]">
+                            {renderShiftCell(employee.id || '', formatDate(date))}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Stunden */}
+                      <div className="min-w-20 flex items-center justify-center border-l bg-gray-50/50">
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-gray-900">{Math.round(hours)}</div>
+                          <div className="flex items-center justify-center gap-0.5 text-gray-400">
+                            <RefreshCw className="h-3 w-3" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        ))}
+
+        {/* Fallback wenn keine Abteilungen */}
+        {departments.length === 0 && filteredEmployees.length > 0 && (
+          <div className="mb-6">
+            <div className="bg-white rounded-lg border overflow-hidden">
+              {filteredEmployees.map(employee => {
+                const hours = weeklyHours.get(employee.id || '') || 0;
+                
+                return (
+                  <div
+                    key={employee.id}
+                    className="flex items-stretch border-b last:border-b-0 hover:bg-gray-50/50"
+                  >
+                    <div className="min-w-[180px] p-2 flex items-center gap-2 border-r bg-gray-50/50 relative">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={employee.avatar} />
+                        <AvatarFallback className="bg-[#14ad9f]/10 text-[#14ad9f] text-xs">
+                          {employee.firstName?.[0]}{employee.lastName?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {employee.firstName} {employee.lastName}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate">
+                          {employee.position || 'Mitarbeiter'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 grid grid-cols-7 gap-1 p-1">
+                      {weekDates.map((date, index) => (
+                        <div key={index} className="min-h-[60px]">
+                          {renderShiftCell(employee.id || '', formatDate(date))}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="min-w-20 flex items-center justify-center border-l bg-gray-50/50">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-gray-900">{Math.round(hours)}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Betriebskennzahlen */}
+        <div className="mt-8 bg-white rounded-lg border p-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Betriebskennzahlen</h3>
+          
+          <div className="space-y-3">
+            {/* Kostenlimit */}
+            <div className="flex items-center">
+              <div className="min-w-[120px] text-sm text-gray-600">Kostenlimit</div>
+              <div className="flex-1 grid grid-cols-7 gap-2">
+                {dailyStats.map((stat, index) => (
+                  <div key={index} className="text-center">
+                    <div className="text-sm font-medium">{stat.totalHours}</div>
+                    <div className="h-6 bg-gray-100 rounded relative mt-1">
+                      <div
+                        className="absolute inset-y-0 left-0 bg-[#14ad9f]/20 rounded"
+                        style={{ width: `${Math.min((stat.totalHours / 100) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="min-w-20 text-center text-sm font-bold">
+                {Math.round(dailyStats.reduce((acc, s) => acc + s.totalHours, 0))} h
+              </div>
+            </div>
+
+            {/* Produktivität */}
+            <div className="flex items-center">
+              <div className="min-w-[120px] text-sm text-gray-600">Produktivität</div>
+              <div className="flex-1 grid grid-cols-7 gap-2">
+                {dailyStats.map((stat, index) => (
+                  <div key={index} className="text-center">
+                    <div className="h-8 bg-gray-100 rounded relative flex items-end justify-center gap-0.5 p-1">
+                      <div className="w-1.5 bg-[#14ad9f] rounded-t" style={{ height: `${Math.random() * 60 + 20}%` }} />
+                      <div className="w-1.5 bg-[#14ad9f]/60 rounded-t" style={{ height: `${Math.random() * 60 + 20}%` }} />
+                      <div className="w-1.5 bg-[#14ad9f]/30 rounded-t" style={{ height: `${Math.random() * 60 + 20}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="min-w-20" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingShift ? 'Schicht bearbeiten' : 'Neue Schicht erstellen'}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedCell && employees.find(e => e.id === selectedCell.employeeId)?.firstName}{' '}
+              {selectedCell && employees.find(e => e.id === selectedCell.employeeId)?.lastName} am{' '}
+              {selectedCell?.date}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Schichttyp Grid */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Schichttyp</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {SHIFT_TEMPLATES.map(template => (
+                  <button
+                    key={template.id}
+                    onClick={() => setNewShiftForm(prev => ({ ...prev, shiftType: template.id }))}
+                    className={cn(
+                      'p-3 rounded-lg border-2 text-left transition-all',
+                      newShiftForm.shiftType === template.id
+                        ? 'border-[#14ad9f] bg-[#14ad9f]/5'
+                        : 'border-gray-200 hover:border-gray-300',
+                      template.bgColor
+                    )}
+                  >
+                    <div className={cn('font-medium text-sm', template.textColor)}>
+                      {template.name}
+                    </div>
+                    {template.startTime && (
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {template.startTime} - {template.endTime}
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Time */}
+            {newShiftForm.shiftType && ['fruehschicht', 'spaetschicht', 'nachtschicht'].includes(newShiftForm.shiftType) && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="startTime">Startzeit</Label>
+                  <Input
+                    id="startTime"
+                    type="time"
+                    value={newShiftForm.startTime}
+                    onChange={e => setNewShiftForm(prev => ({ ...prev, startTime: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="endTime">Endzeit</Label>
+                  <Input
+                    id="endTime"
+                    type="time"
+                    value={newShiftForm.endTime}
+                    onChange={e => setNewShiftForm(prev => ({ ...prev, endTime: e.target.value }))}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Notizen */}
             <div>
               <Label htmlFor="notes">Notizen</Label>
               <Textarea
                 id="notes"
-                placeholder="Optionale Notizen zur Schicht"
+                placeholder="Optionale Notizen..."
                 value={newShiftForm.notes}
                 onChange={e => setNewShiftForm(prev => ({ ...prev, notes: e.target.value }))}
-                rows={3}
+                rows={2}
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                Abbrechen
-              </Button>
-              <Button
-                onClick={handleCreateShift}
-                className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
-              >
-                Schicht erstellen
-              </Button>
+            {/* Actions */}
+            <div className="flex justify-between pt-4">
+              {editingShift && (
+                <Button variant="destructive" onClick={handleDeleteShift}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Löschen
+                </Button>
+              )}
+              <div className="flex gap-2 ml-auto">
+                <Button variant="outline" onClick={() => {
+                  setShowCreateDialog(false);
+                  setEditingShift(null);
+                  setSelectedCell(null);
+                }}>
+                  Abbrechen
+                </Button>
+                <Button onClick={handleSaveShift} className="bg-[#14ad9f] hover:bg-[#0d9488]">
+                  <Save className="h-4 w-4 mr-2" />
+                  Speichern
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
-    </motion.div>
+    </div>
   );
 }

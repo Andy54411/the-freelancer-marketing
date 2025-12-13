@@ -184,6 +184,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (!isRedirecting) {
               let needsRedirect = false;
               let targetPath = '';
+              
+              // Lese redirectTo aus der URL (nur im Browser verfügbar)
+              const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+              const redirectTo = urlParams?.get('redirectTo');
 
               // 1. Nach Login-Redirect ODER Homepage-Redirect
               if (pathname?.includes('/login') || pathname === '/') {
@@ -201,14 +205,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               if (needsRedirect) {
                 setIsRedirecting(true);
 
-                targetPath =
-                  finalRole === 'firma'
-                    ? `/dashboard/company/${fbUser.uid}`
-                    : finalRole === 'kunde'
-                      ? `/dashboard/user/${fbUser.uid}`
-                      : finalRole === 'master' || finalRole === 'support'
-                        ? '/dashboard/admin'
-                        : `/dashboard/user/${fbUser.uid}`; // Fallback
+                // Nutze redirectTo wenn vorhanden und passend für die Rolle
+                if (redirectTo) {
+                  const isValidRedirect = 
+                    (finalRole === 'firma' && redirectTo.includes(`/dashboard/company/${fbUser.uid}`)) ||
+                    (finalRole === 'kunde' && redirectTo.includes(`/dashboard/user/${fbUser.uid}`)) ||
+                    ((finalRole === 'master' || finalRole === 'support') && redirectTo.includes('/dashboard/admin'));
+                  
+                  if (isValidRedirect) {
+                    targetPath = redirectTo;
+                  }
+                }
+                
+                // Fallback auf Standard-Dashboard wenn kein gültiges redirectTo
+                if (!targetPath) {
+                  targetPath =
+                    finalRole === 'firma'
+                      ? `/dashboard/company/${fbUser.uid}`
+                      : finalRole === 'kunde'
+                        ? `/dashboard/user/${fbUser.uid}`
+                        : finalRole === 'master' || finalRole === 'support'
+                          ? '/dashboard/admin'
+                          : `/dashboard/user/${fbUser.uid}`; // Fallback
+                }
 
                 // ROBUSTES REDIRECT mit Fallback
                 try {

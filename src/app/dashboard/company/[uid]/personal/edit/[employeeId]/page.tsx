@@ -6,7 +6,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, User } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ArrowLeft, User, MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { PersonalService, Employee } from '@/services/personalService';
 import BasicInfoTab from '@/components/personal/BasicInfoTab';
@@ -18,6 +24,7 @@ import ComplianceTab from '@/components/personal/ComplianceTab';
 import DisciplinaryTab from '@/components/personal/DisciplinaryTab';
 import ContractsTab from '@/components/personal/ContractsTab';
 import VacationContainer from '@/components/personal/tabs/VacationContainer';
+import WorkSettingsTab from '@/components/personal/tabs/WorkSettingsTab';
 import { AppAccessTab } from '@/components/personal/AppAccessTab';
 
 interface EditEmployeePageProps {
@@ -193,42 +200,69 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
       <Card>
         <CardContent className="p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10 gap-1">
+            <TabsList className="flex w-full justify-start gap-1 flex-wrap">
               <TabsTrigger value="basic" className="text-xs">
                 Grunddaten
               </TabsTrigger>
-              <TabsTrigger value="documents" className="text-xs">
-                Dokumente
+              <TabsTrigger value="worksettings" className="text-xs">
+                Arbeitszeit-Einst.
               </TabsTrigger>
               <TabsTrigger value="vacation" className="text-xs">
                 Urlaub
               </TabsTrigger>
-              <TabsTrigger value="qualifications" className="text-xs">
-                Qualifikationen
-              </TabsTrigger>
-              <TabsTrigger value="compliance" className="text-xs">
-                Compliance
-              </TabsTrigger>
-              <TabsTrigger value="contracts" className="text-xs">
-                Verträge
-              </TabsTrigger>
-              <TabsTrigger value="disciplinary" className="text-xs">
-                Disziplin
-              </TabsTrigger>
-              <TabsTrigger value="feedback" className="text-xs">
-                Feedback
-              </TabsTrigger>
               <TabsTrigger value="time" className="text-xs">
                 Arbeitszeit
+              </TabsTrigger>
+              <TabsTrigger value="documents" className="text-xs">
+                Dokumente
+              </TabsTrigger>
+              <TabsTrigger value="qualifications" className="text-xs">
+                Qualifikationen
               </TabsTrigger>
               <TabsTrigger value="app" className="text-xs">
                 App-Zugang
               </TabsTrigger>
+              
+              {/* Dropdown für weitere Tabs */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 px-2 text-xs data-[state=open]:bg-muted">
+                    <MoreHorizontal className="h-4 w-4 mr-1" />
+                    Mehr
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setActiveTab('compliance')}>
+                    Compliance
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab('contracts')}>
+                    Verträge
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab('disciplinary')}>
+                    Disziplin
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab('feedback')}>
+                    Feedback
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </TabsList>
 
             <TabsContent value="basic" className="mt-6">
               <BasicInfoTab
                 employee={employee}
+                isEditing={isEditing}
+                onUpdate={handleUpdate}
+                onSave={handleSave}
+                onCancel={handleCancel}
+                onEdit={() => setIsEditing(true)}
+              />
+            </TabsContent>
+
+            <TabsContent value="worksettings" className="mt-6">
+              <WorkSettingsTab
+                employee={employee}
+                companyId={resolvedParams.uid}
                 isEditing={isEditing}
                 onUpdate={handleUpdate}
                 onSave={handleSave}

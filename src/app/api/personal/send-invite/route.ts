@@ -9,19 +9,20 @@ interface InviteEmailRequest {
   employeeName: string;
   companyId: string;
   registrationUrl: string;
+  companyCode?: string; // NEU: Firmencode für die App
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body: InviteEmailRequest = await req.json();
-    const { employeeEmail, employeeName, companyId, registrationUrl } = body;
+    const { employeeEmail, employeeName, companyId, registrationUrl, companyCode } = body;
 
-    console.log('[send-invite] Request received:', { employeeEmail, employeeName, companyId, registrationUrl: registrationUrl?.substring(0, 50) });
+    console.log('[send-invite] Request received:', { employeeEmail, employeeName, companyId, companyCode });
 
-    if (!employeeEmail || !registrationUrl || !companyId) {
+    if (!employeeEmail || !companyId) {
       console.log('[send-invite] Missing required fields');
       return NextResponse.json(
-        { success: false, error: 'E-Mail-Adresse, Firmen-ID und Registrierungslink sind erforderlich' },
+        { success: false, error: 'E-Mail-Adresse und Firmen-ID sind erforderlich' },
         { status: 400 }
       );
     }
@@ -41,6 +42,9 @@ export async function POST(req: NextRequest) {
     }
 
     const service = ResendEmailService.getInstance();
+    
+    // App-Login URL
+    const appLoginUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://taskilo.de'}/employee/login`;
 
     const htmlMessage = `
 <!DOCTYPE html>
@@ -58,7 +62,7 @@ export async function POST(req: NextRequest) {
     <p style="font-size: 16px;">Hallo ${employeeName || 'Mitarbeiter'},</p>
     
     <p style="font-size: 16px;">
-      Sie wurden von <strong>${companyName || 'Ihrem Unternehmen'}</strong> eingeladen, 
+      Sie wurden von <strong>${companyName}</strong> eingeladen, 
       die Taskilo Mitarbeiter-App zu nutzen.
     </p>
     
@@ -73,18 +77,31 @@ export async function POST(req: NextRequest) {
       <li>Wichtige Dokumente</li>
     </ul>
     
+    <div style="background: #f0fdfa; border: 2px solid #14b8a6; border-radius: 12px; padding: 20px; margin: 25px 0; text-align: center;">
+      <p style="font-size: 14px; color: #0d9488; margin: 0 0 10px 0; font-weight: 600;">Ihr Firmencode f&uuml;r die Anmeldung:</p>
+      <p style="font-size: 24px; font-weight: bold; color: #0d9488; margin: 0; font-family: monospace; letter-spacing: 2px;">${companyCode || companyId}</p>
+    </div>
+    
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${registrationUrl}" 
+      <p style="font-size: 14px; color: #6b7280; margin-bottom: 15px;">
+        <strong>So geht's:</strong>
+      </p>
+      <ol style="text-align: left; font-size: 14px; color: #4b5563; padding-left: 20px; margin-bottom: 20px;">
+        <li style="margin-bottom: 8px;">Klicken Sie auf den Button unten oder &ouml;ffnen Sie die Taskilo-App</li>
+        <li style="margin-bottom: 8px;">Melden Sie sich mit Ihrem Taskilo-Konto an (oder registrieren Sie sich kostenlos)</li>
+        <li style="margin-bottom: 8px;">Geben Sie den Firmencode ein</li>
+        <li>Fertig! Sie sind jetzt mit Ihrem Unternehmen verbunden.</li>
+      </ol>
+      <a href="${appLoginUrl}?code=${companyCode || companyId}" 
          style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); 
                 color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; 
                 font-weight: 600; font-size: 16px;">
-        Jetzt registrieren
+        Zur Mitarbeiter-Anmeldung
       </a>
     </div>
     
     <p style="font-size: 14px; color: #6b7280;">
-      Dieser Link ist 7 Tage g&uuml;ltig. Falls Sie Probleme bei der Registrierung haben, 
-      wenden Sie sich bitte an Ihren Arbeitgeber.
+      <strong>Noch kein Taskilo-Konto?</strong> Kein Problem! Bei der Anmeldung k&ouml;nnen Sie sich kostenlos registrieren.
     </p>
     
     <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
@@ -100,7 +117,7 @@ export async function POST(req: NextRequest) {
     const textMessage = `
 Hallo ${employeeName || 'Mitarbeiter'},
 
-Sie wurden von ${companyName || 'Ihrem Unternehmen'} eingeladen, die Taskilo Mitarbeiter-App zu nutzen.
+Sie wurden von ${companyName} eingeladen, die Taskilo Mitarbeiter-App zu nutzen.
 
 Mit der App haben Sie Zugriff auf:
 - Zeiterfassung
@@ -108,9 +125,13 @@ Mit der App haben Sie Zugriff auf:
 - Urlaubsanträge
 - Wichtige Dokumente
 
-Registrieren Sie sich hier: ${registrationUrl}
+IHR FIRMENCODE: ${companyCode || companyId}
 
-Dieser Link ist 7 Tage gültig.
+So geht's:
+1. Öffnen Sie: ${appLoginUrl}
+2. Melden Sie sich mit Ihrem Taskilo-Konto an (oder registrieren Sie sich kostenlos)
+3. Geben Sie den Firmencode ein
+4. Fertig! Sie sind jetzt mit Ihrem Unternehmen verbunden.
 
 Mit freundlichen Grüßen,
 Ihr Taskilo Team

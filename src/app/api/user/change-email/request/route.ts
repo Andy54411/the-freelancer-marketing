@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
     if (adminDb) {
       await adminDb.collection('users').doc(userId).update({
         emailChangeRequest: {
+          currentEmail, // Alte E-Mail für die Suche in employees
           newEmail,
           token: verificationToken,
           expiresAt: tokenExpiry.toISOString(),

@@ -24,7 +24,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -35,6 +39,9 @@ import {
   Grid3X3,
   List,
   BarChart3,
+  Pencil,
+  Trash2,
+  Save,
 } from 'lucide-react';
 import { Shift, Employee } from '@/services/personalService';
 import { cn } from '@/lib/utils';
@@ -58,6 +65,7 @@ interface ModernScheduleViewProps {
   employees: Employee[];
   onShiftClick?: (shift: Shift) => void;
   onShiftUpdate?: (shiftId: string, updates: Partial<Shift>) => void;
+  onShiftDelete?: (shiftId: string) => void;
   onSlotSelect?: (slotInfo: any) => void;
   className?: string;
 }
@@ -67,6 +75,7 @@ export default function ModernScheduleView({
   employees = [],
   onShiftClick,
   onShiftUpdate,
+  onShiftDelete,
   onSlotSelect,
   className,
 }: ModernScheduleViewProps) {
@@ -75,6 +84,16 @@ export default function ModernScheduleView({
   const [filterEmployee, setFilterEmployee] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    date: '',
+    startTime: '',
+    endTime: '',
+    position: '',
+    department: '',
+    notes: '',
+    status: 'PLANNED' as Shift['status'],
+  });
 
   // Events für Kalender
   const events: CalendarEvent[] = useMemo(() => {
@@ -358,26 +377,237 @@ export default function ModernScheduleView({
       </Card>
 
       {/* Shift Detail Modal */}
-      <Dialog open={!!selectedShift} onOpenChange={() => setSelectedShift(null)}>
-        <DialogContent>
+      <Dialog open={!!selectedShift} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedShift(null);
+          setIsEditing(false);
+        }
+      }}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Schichtdetails</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{isEditing ? 'Schicht bearbeiten' : 'Schichtdetails'}</span>
+              {!isEditing && selectedShift && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditForm({
+                        date: selectedShift.date,
+                        startTime: selectedShift.startTime,
+                        endTime: selectedShift.endTime,
+                        position: selectedShift.position,
+                        department: selectedShift.department || '',
+                        notes: selectedShift.notes || '',
+                        status: selectedShift.status,
+                      });
+                      setIsEditing(true);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </DialogTitle>
           </DialogHeader>
-          {selectedShift && (
+          {selectedShift && !isEditing && (
             <div className="space-y-4">
-              <div>
-                <strong>Mitarbeiter:</strong>{' '}
-                {employees.find((e) => e.id === selectedShift.employeeId)?.firstName}
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-10 h-10 bg-[#14ad9f]/10 rounded-full flex items-center justify-center">
+                  <Users className="h-5 w-5 text-[#14ad9f]" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Mitarbeiter</p>
+                  <p className="font-medium">
+                    {employees.find((e) => e.id === selectedShift.employeeId)?.firstName}{' '}
+                    {employees.find((e) => e.id === selectedShift.employeeId)?.lastName}
+                  </p>
+                </div>
               </div>
-              <div>
-                <strong>Position:</strong> {selectedShift.position}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Position</p>
+                  <p className="font-medium">{selectedShift.position}</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Abteilung</p>
+                  <p className="font-medium">{selectedShift.department || '-'}</p>
+                </div>
               </div>
-              <div>
-                <strong>Zeit:</strong> {selectedShift.startTime} - {selectedShift.endTime}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Datum</p>
+                  <p className="font-medium">{new Date(selectedShift.date).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Zeit</p>
+                  <p className="font-medium">{selectedShift.startTime} - {selectedShift.endTime}</p>
+                </div>
               </div>
-              <div>
-                <strong>Datum:</strong> {selectedShift.date}
+              
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500">Status</p>
+                <Badge variant={selectedShift.status === 'CONFIRMED' ? 'default' : 'secondary'} className="mt-1">
+                  {selectedShift.status === 'PLANNED' && 'Geplant'}
+                  {selectedShift.status === 'CONFIRMED' && 'Bestätigt'}
+                  {selectedShift.status === 'ABSENT' && 'Abwesend'}
+                  {selectedShift.status === 'SICK' && 'Krank'}
+                </Badge>
               </div>
+              
+              {selectedShift.notes && (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Notizen</p>
+                  <p className="text-sm mt-1">{selectedShift.notes}</p>
+                </div>
+              )}
+              
+              <DialogFooter className="flex gap-2 pt-4">
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    if (selectedShift.id && onShiftDelete) {
+                      onShiftDelete(selectedShift.id);
+                      setSelectedShift(null);
+                    }
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Löschen
+                </Button>
+                <Button
+                  onClick={() => {
+                    setEditForm({
+                      date: selectedShift.date,
+                      startTime: selectedShift.startTime,
+                      endTime: selectedShift.endTime,
+                      position: selectedShift.position,
+                      department: selectedShift.department || '',
+                      notes: selectedShift.notes || '',
+                      status: selectedShift.status,
+                    });
+                    setIsEditing(true);
+                  }}
+                  className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Bearbeiten
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+          
+          {selectedShift && isEditing && (
+            <div className="space-y-4">
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-600">
+                  Mitarbeiter: {employees.find((e) => e.id === selectedShift.employeeId)?.firstName}{' '}
+                  {employees.find((e) => e.id === selectedShift.employeeId)?.lastName}
+                </p>
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-date">Datum</Label>
+                <Input
+                  id="edit-date"
+                  type="date"
+                  value={editForm.date}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-startTime">Startzeit</Label>
+                  <Input
+                    id="edit-startTime"
+                    type="time"
+                    value={editForm.startTime}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, startTime: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-endTime">Endzeit</Label>
+                  <Input
+                    id="edit-endTime"
+                    type="time"
+                    value={editForm.endTime}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, endTime: e.target.value }))}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-position">Position</Label>
+                  <Input
+                    id="edit-position"
+                    value={editForm.position}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, position: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-department">Abteilung</Label>
+                  <Input
+                    id="edit-department"
+                    value={editForm.department}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, department: e.target.value }))}
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-status">Status</Label>
+                <Select
+                  value={editForm.status}
+                  onValueChange={(value: Shift['status']) => setEditForm(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PLANNED">Geplant</SelectItem>
+                    <SelectItem value="CONFIRMED">Bestätigt</SelectItem>
+                    <SelectItem value="ABSENT">Abwesend</SelectItem>
+                    <SelectItem value="SICK">Krank</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-notes">Notizen</Label>
+                <Textarea
+                  id="edit-notes"
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              
+              <DialogFooter className="flex gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditing(false)}
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (selectedShift.id && onShiftUpdate) {
+                      onShiftUpdate(selectedShift.id, editForm);
+                      setSelectedShift(null);
+                      setIsEditing(false);
+                    }
+                  }}
+                  className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Speichern
+                </Button>
+              </DialogFooter>
             </div>
           )}
         </DialogContent>
