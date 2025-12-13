@@ -4,6 +4,7 @@ export interface RawFirestoreUserData {
   companyName?: string;
   email?: string;
   displayName?: string;
+  photoURL?: string;
   profileBannerImage?: string;
   taxNumber?: string;
   taxNumberForBackend?: string;
@@ -14,6 +15,14 @@ export interface RawFirestoreUserData {
   profilePictureFirebaseUrl?: string;
   identityFrontUrlStripeId?: string;
   identityBackUrlStripeId?: string;
+  // E-Mail-Änderungsanfrage
+  emailChangeRequest?: {
+    newEmail: string;
+    token: string;
+    expiresAt: string;
+    createdAt?: unknown;
+  };
+  emailChangedAt?: unknown;
   // User Profile Data (Clean structure)
   profile?: {
     firstName?: string;

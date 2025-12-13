@@ -9,10 +9,21 @@ import {
   uploadBytesResumable,
   getDownloadURL,
 } from 'firebase/storage'; // NEU: Firebase Storage Imports
-import { FiLoader, FiSave, FiUser, FiLock, FiImage, FiMapPin } from 'react-icons/fi';
+import { FiLoader, FiSave, FiUser, FiLock, FiImage, FiMapPin, FiMail } from 'react-icons/fi';
 import { toast } from 'sonner';
 import { RawFirestoreUserData } from '@/types/settings'; // Wiederverwenden des Typs
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Mail, Send, CheckCircle, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 // Interne Datenstruktur für das User-Einstellungsformular
 import {
@@ -54,6 +65,12 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // E-Mail-Änderung States
+  const [showEmailChangeDialog, setShowEmailChangeDialog] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [sendingEmailChange, setSendingEmailChange] = useState(false);
+  const [emailChangePending, setEmailChangePending] = useState(false);
 
   useEffect(() => {
     if (userData) {
@@ -82,6 +99,11 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
         newPassword: '',
         confirmNewPassword: '',
       });
+      
+      // Prüfe ob eine E-Mail-Änderung aussteht
+      if (userData.emailChangeRequest) {
+        setEmailChangePending(true);
+      }
     }
   }, [userData]);
 
@@ -94,6 +116,55 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
     },
     []
   );
+
+  const handleEmailChangeRequest = async () => {
+    if (!form || !newEmail) {
+      toast.error('Bitte geben Sie eine neue E-Mail-Adresse ein.');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      toast.error('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
+      return;
+    }
+
+    if (newEmail === form.email) {
+      toast.error('Die neue E-Mail-Adresse ist identisch mit der aktuellen.');
+      return;
+    }
+
+    setSendingEmailChange(true);
+
+    try {
+      const response = await fetch('/api/user/change-email/request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: form.uid,
+          currentEmail: form.email,
+          newEmail: newEmail,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Bestätigungs-E-Mail wurde gesendet. Bitte prüfen Sie Ihr Postfach.');
+        setShowEmailChangeDialog(false);
+        setEmailChangePending(true);
+        setNewEmail('');
+      } else {
+        toast.error(result.error || 'Fehler beim Senden der Bestätigungs-E-Mail');
+      }
+    } catch (error) {
+      toast.error('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+    } finally {
+      setSendingEmailChange(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!form || !form.uid) {
@@ -330,13 +401,31 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
             >
               E-Mail
             </label>
-            <input
-              type="email"
-              id="email"
-              value={form.email}
-              readOnly
-              className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm sm:text-sm bg-gray-100 dark:bg-gray-700 dark:text-gray-400 p-2 cursor-not-allowed"
-            />
+            <div className="mt-1 flex gap-2">
+              <input
+                type="email"
+                id="email"
+                value={form.email}
+                readOnly
+                className="flex-1 border-gray-300 dark:border-gray-600 rounded-md shadow-sm sm:text-sm bg-gray-100 dark:bg-gray-700 dark:text-gray-400 p-2 cursor-not-allowed"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEmailChangeDialog(true)}
+                className="whitespace-nowrap"
+              >
+                <Mail className="h-4 w-4 mr-1" />
+                Ändern
+              </Button>
+            </div>
+            {emailChangePending && (
+              <div className="mt-2 flex items-center gap-2 text-sm text-amber-600 bg-amber-50 p-2 rounded-md">
+                <Clock className="h-4 w-4" />
+                <span>E-Mail-Änderung ausstehend. Bitte bestätigen Sie die neue Adresse.</span>
+              </div>
+            )}
           </div>
           <div>
             <label
@@ -592,6 +681,82 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
           )}
         </button>
       </div>
+
+      {/* E-Mail-Änderung Dialog */}
+      <Dialog open={showEmailChangeDialog} onOpenChange={setShowEmailChangeDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-teal-600" />
+              E-Mail-Adresse ändern
+            </DialogTitle>
+            <DialogDescription>
+              Geben Sie Ihre neue E-Mail-Adresse ein. Sie erhalten eine Bestätigungs-E-Mail an die neue Adresse.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="currentEmail">Aktuelle E-Mail</Label>
+              <Input
+                id="currentEmail"
+                value={form.email}
+                disabled
+                className="bg-gray-100"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newEmail">Neue E-Mail-Adresse</Label>
+              <Input
+                id="newEmail"
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="neue-email@beispiel.de"
+              />
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium">2-Faktor-Verifizierung</p>
+                  <p className="text-blue-600">
+                    Nach dem Absenden erhalten Sie eine E-Mail mit einem Bestätigungslink an die neue Adresse. 
+                    Erst nach Klick auf diesen Link wird Ihre E-Mail-Adresse geändert.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEmailChangeDialog(false);
+                setNewEmail('');
+              }}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              onClick={handleEmailChangeRequest}
+              disabled={sendingEmailChange || !newEmail}
+              className="bg-teal-600 hover:bg-teal-700"
+            >
+              {sendingEmailChange ? (
+                <>
+                  <FiLoader className="animate-spin h-4 w-4 mr-2" />
+                  Wird gesendet...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Bestätigungs-E-Mail senden
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,0 +1,154 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { ResendEmailService } from '@/lib/resend-email-service';
+import { db as adminDb } from '@/firebase/server';
+
+export const runtime = 'nodejs';
+
+interface InviteEmailRequest {
+  employeeEmail: string;
+  employeeName: string;
+  companyId: string;
+  registrationUrl: string;
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body: InviteEmailRequest = await req.json();
+    const { employeeEmail, employeeName, companyId, registrationUrl } = body;
+
+    console.log('[send-invite] Request received:', { employeeEmail, employeeName, companyId, registrationUrl: registrationUrl?.substring(0, 50) });
+
+    if (!employeeEmail || !registrationUrl || !companyId) {
+      console.log('[send-invite] Missing required fields');
+      return NextResponse.json(
+        { success: false, error: 'E-Mail-Adresse, Firmen-ID und Registrierungslink sind erforderlich' },
+        { status: 400 }
+      );
+    }
+
+    // Lade Firmennamen aus Firestore
+    let companyName = 'Ihr Unternehmen';
+    try {
+      if (adminDb) {
+        const companyDoc = await adminDb.collection('companies').doc(companyId).get();
+        if (companyDoc.exists) {
+          const companyData = companyDoc.data();
+          companyName = companyData?.companyName || companyData?.name || companyData?.step1?.firmenname || 'Ihr Unternehmen';
+        }
+      }
+    } catch (companyError) {
+      // Fallback auf Standard-Firmennamen
+    }
+
+    const service = ResendEmailService.getInstance();
+
+    const htmlMessage = `
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Willkommen bei Taskilo</h1>
+  </div>
+  
+  <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+    <p style="font-size: 16px;">Hallo ${employeeName || 'Mitarbeiter'},</p>
+    
+    <p style="font-size: 16px;">
+      Sie wurden von <strong>${companyName || 'Ihrem Unternehmen'}</strong> eingeladen, 
+      die Taskilo Mitarbeiter-App zu nutzen.
+    </p>
+    
+    <p style="font-size: 16px;">
+      Mit der App haben Sie Zugriff auf:
+    </p>
+    
+    <ul style="font-size: 16px; padding-left: 20px;">
+      <li>Zeiterfassung</li>
+      <li>Ihren Dienstplan</li>
+      <li>Urlaubsantr&auml;ge</li>
+      <li>Wichtige Dokumente</li>
+    </ul>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${registrationUrl}" 
+         style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); 
+                color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; 
+                font-weight: 600; font-size: 16px;">
+        Jetzt registrieren
+      </a>
+    </div>
+    
+    <p style="font-size: 14px; color: #6b7280;">
+      Dieser Link ist 7 Tage g&uuml;ltig. Falls Sie Probleme bei der Registrierung haben, 
+      wenden Sie sich bitte an Ihren Arbeitgeber.
+    </p>
+    
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+    
+    <p style="font-size: 12px; color: #9ca3af; text-align: center;">
+      Diese E-Mail wurde automatisch von Taskilo versandt.
+    </p>
+  </div>
+</body>
+</html>
+    `.trim();
+
+    const textMessage = `
+Hallo ${employeeName || 'Mitarbeiter'},
+
+Sie wurden von ${companyName || 'Ihrem Unternehmen'} eingeladen, die Taskilo Mitarbeiter-App zu nutzen.
+
+Mit der App haben Sie Zugriff auf:
+- Zeiterfassung
+- Ihren Dienstplan
+- Urlaubsanträge
+- Wichtige Dokumente
+
+Registrieren Sie sich hier: ${registrationUrl}
+
+Dieser Link ist 7 Tage gültig.
+
+Mit freundlichen Grüßen,
+Ihr Taskilo Team
+    `.trim();
+
+    const result = await service.sendEmail({
+      from: 'Taskilo <noreply@taskilo.de>',
+      to: [employeeEmail],
+      subject: `Einladung zur Taskilo Mitarbeiter-App - ${companyName || 'Ihr Unternehmen'}`,
+      htmlContent: htmlMessage,
+      textContent: textMessage,
+      metadata: {
+        type: 'employee-invite',
+        companyName,
+        employeeEmail,
+      },
+    });
+
+    console.log('[send-invite] Resend result:', JSON.stringify(result));
+
+    if (!result.success) {
+      console.log('[send-invite] Email failed:', result.error);
+      return NextResponse.json(
+        { success: false, error: result.error || 'E-Mail konnte nicht gesendet werden' },
+        { status: 500 }
+      );
+    }
+
+    console.log('[send-invite] Email sent successfully to:', employeeEmail, 'messageId:', result.messageId);
+    return NextResponse.json({
+      success: true,
+      messageId: result.messageId,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    return NextResponse.json(
+      { success: false, error: errorMessage },
+      { status: 500 }
+    );
+  }
+}
