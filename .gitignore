@@ -84,3 +84,4 @@ AuthKey_*.p8
 # Lambda/Deployment Scripts with secrets
 firebase_functions/.env.lambda.template
 firebase_functions/deploy-lambda.sh
+.whatsapp-auth/
