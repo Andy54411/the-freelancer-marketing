@@ -702,16 +702,41 @@ export interface AbsenceRequest {
 
 export class PersonalService {
   /**
+   * Hilfsfunktion zur Konvertierung von verschiedenen Datumsformaten
+   */
+  private static toDate(value: unknown): Date | undefined {
+    if (!value) return undefined;
+    // Firestore Timestamp
+    if (typeof value === 'object' && 'toDate' in value && typeof (value as { toDate: () => Date }).toDate === 'function') {
+      return (value as { toDate: () => Date }).toDate();
+    }
+    // Bereits ein Date
+    if (value instanceof Date) {
+      return value;
+    }
+    // String oder Number
+    if (typeof value === 'string' || typeof value === 'number') {
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? undefined : date;
+    }
+    return undefined;
+  }
+
+  /**
    * Lädt alle Mitarbeiter für ein Unternehmen
    */
   static async getEmployees(companyId: string): Promise<Employee[]> {
+    if (!companyId) {
+      console.error('[PersonalService] getEmployees: companyId ist leer');
+      return [];
+    }
+    
     try {
-      const employeesQuery = query(
-        collection(db, 'companies', companyId, 'employees'),
-        orderBy('lastName', 'asc')
-      );
-
-      const employeesSnap = await getDocs(employeesQuery);
+      console.log('[PersonalService] getEmployees für companyId:', companyId);
+      // HINWEIS: Kein orderBy() verwenden - sortiere client-side (Firestore Best Practice)
+      const employeesRef = collection(db, 'companies', companyId, 'employees');
+      const employeesSnap = await getDocs(employeesRef);
+      console.log('[PersonalService] Gefundene Mitarbeiter:', employeesSnap.size);
       const employees: Employee[] = [];
 
       employeesSnap.forEach(doc => {
@@ -719,13 +744,17 @@ export class PersonalService {
         employees.push({
           id: doc.id,
           ...data,
-          createdAt: data.createdAt?.toDate(),
-          updatedAt: data.updatedAt?.toDate(),
+          createdAt: this.toDate(data.createdAt),
+          updatedAt: this.toDate(data.updatedAt),
         } as Employee);
       });
 
+      // Client-side Sortierung nach Nachname
+      employees.sort((a, b) => a.lastName.localeCompare(b.lastName, 'de'));
+
       return employees;
     } catch (error) {
+      console.error('[PersonalService] getEmployees Fehler:', error);
       throw error;
     }
   }

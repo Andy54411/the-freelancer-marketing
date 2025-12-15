@@ -29,8 +29,9 @@ interface TimesheetSummary {
   targetHours: number;
 }
 
-export default function TimesheetPage({ params }: { params: { uid: string } }) {
+export default function TimesheetPage({ params }: { params: Promise<{ uid: string }> }) {
   const { user } = useAuth();
+  const resolvedParams = React.use(params);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [summaries, setSummaries] = useState<TimesheetSummary[]>([]);
@@ -42,15 +43,15 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
   const [selectedTimeEntry, setSelectedTimeEntry] = useState<TimeEntry | null>(null);
 
   useEffect(() => {
-    if (user && params.uid) {
+    if (user && resolvedParams.uid) {
       loadData();
     }
-  }, [user, params.uid, selectedWeek, selectedEmployee]);
+  }, [user, resolvedParams.uid, selectedWeek, selectedEmployee]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const employeeData = await PersonalService.getEmployees(params.uid);
+      const employeeData = await PersonalService.getEmployees(resolvedParams.uid);
       setEmployees(employeeData.filter(emp => emp.isActive));
 
       // Lade echte Zeiterfassungsdaten aus Firestore
@@ -60,7 +61,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
 
       try {
         const timeData = await PersonalService.getTimeEntries(
-          params.uid,
+          resolvedParams.uid,
           selectedEmployee === 'all' ? undefined : selectedEmployee,
           weekStart,
           weekEnd
@@ -80,7 +81,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
         const mockEntries: TimeEntry[] = [
           {
             id: '1',
-            companyId: params.uid,
+            companyId: resolvedParams.uid,
             employeeId: 'emp1',
             date: '2025-08-11',
             startTime: '09:00',
@@ -94,7 +95,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
           },
           {
             id: '2',
-            companyId: params.uid,
+            companyId: resolvedParams.uid,
             employeeId: 'emp1',
             date: '2025-08-12',
             startTime: '09:15',
@@ -139,7 +140,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
   // Event Handlers
   const startTimer = async (employeeId: string) => {
     try {
-      await PersonalService.startTimer(params.uid, employeeId, 'Arbeitszeit');
+      await PersonalService.startTimer(resolvedParams.uid, employeeId, 'Arbeitszeit');
       setActiveTimers(prev => new Set(prev).add(employeeId));
       toast.success('Timer gestartet');
 
@@ -152,7 +153,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
 
   const stopTimer = async (employeeId: string) => {
     try {
-      await PersonalService.stopTimer(params.uid, employeeId);
+      await PersonalService.stopTimer(resolvedParams.uid, employeeId);
       setActiveTimers(prev => {
         const newSet = new Set(prev);
         newSet.delete(employeeId);
@@ -173,7 +174,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
       const weekEnd = new Date(selectedWeek);
       weekEnd.setDate(weekEnd.getDate() + 6);
 
-      const csv = await PersonalService.exportTimeEntriesCSV(params.uid, weekStart, weekEnd);
+      const csv = await PersonalService.exportTimeEntriesCSV(resolvedParams.uid, weekStart, weekEnd);
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -196,7 +197,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
 
       const today = new Date();
       const newEntry: Omit<TimeEntry, 'id' | 'createdAt' | 'updatedAt'> = {
-        companyId: params.uid,
+        companyId: resolvedParams.uid,
         employeeId: employees[0].id!,
         date: today.toISOString().split('T')[0],
         startTime: '09:00',
@@ -230,7 +231,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
     if (!selectedTimeEntry?.id) return;
 
     try {
-      await PersonalService.updateTimeEntry(params.uid, selectedTimeEntry.id, {
+      await PersonalService.updateTimeEntry(resolvedParams.uid, selectedTimeEntry.id, {
         startTime: selectedTimeEntry.startTime,
         endTime: selectedTimeEntry.endTime,
         breakTime: selectedTimeEntry.breakTime,
@@ -255,7 +256,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
     if (!entryId) return;
 
     try {
-      await PersonalService.deleteTimeEntry(params.uid, entryId);
+      await PersonalService.deleteTimeEntry(resolvedParams.uid, entryId);
       setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
       setShowTimeDialog(false);
       toast.success('Zeiteintrag gelöscht');
