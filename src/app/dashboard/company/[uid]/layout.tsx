@@ -67,6 +67,17 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   // AuthContext für zusätzliche Fallback-Daten
   const { user } = useAuth();
 
+  // Ermittle ob User ein Mitarbeiter ist und hole die Berechtigungen
+  const isEmployee = user?.user_type === 'mitarbeiter' || 
+    (user?.linkedCompanies?.some(c => c.companyId === uid) ?? false);
+  
+  // Finde die Berechtigungen für diese Firma
+  const employeePermissions = useMemo(() => {
+    if (!isEmployee || !user?.linkedCompanies) return undefined;
+    const linkedCompany = user.linkedCompanies.find(c => c.companyId === uid);
+    return linkedCompany?.permissions;
+  }, [isEmployee, user?.linkedCompanies, uid]);
+
   // Update Notifications
   const {
     unseenUpdates,
@@ -391,6 +402,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
                   getCurrentView={getCurrentView}
                   isCollapsed={isSidebarCollapsed}
                   onToggleCollapsed={setIsSidebarCollapsed}
+                  isEmployee={isEmployee}
+                  employeePermissions={employeePermissions}
                 />
               </div>
             </aside>
@@ -405,6 +418,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
               onToggleExpanded={toggleExpanded}
               onNavigate={handleNavigation}
               getCurrentView={getCurrentView}
+              isEmployee={isEmployee}
+              employeePermissions={employeePermissions}
             />
           </div>
 

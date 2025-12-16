@@ -385,6 +385,249 @@ const navigationItems: NavigationItem[] = [
   },
 ];
 
+// Eingeschränkte Navigation für Mitarbeiter (keine Admin-Bereiche)
+const employeeNavigationItems: NavigationItem[] = [
+  {
+    label: 'Übersicht',
+    icon: FiGrid,
+    value: 'dashboard',
+  },
+  {
+    label: 'Kalender',
+    icon: FiCalendar,
+    value: 'calendar',
+    href: 'calendar',
+  },
+  {
+    label: 'Mein Bereich',
+    icon: FiUser,
+    value: 'personal-self',
+    subItems: [
+      { label: 'Dienstplan', value: 'personal-schedule', href: 'personal/schedule' },
+      { label: 'Arbeitszeit', value: 'personal-timesheet', href: 'personal/timesheet' },
+      { label: 'Urlaub & Abwesenheit', value: 'personal-absence', href: 'personal/absence' },
+      { label: 'Meine Dokumente', value: 'personal-documents', href: 'personal/documents' },
+    ],
+  },
+  {
+    label: 'Workspace',
+    icon: FiFolder,
+    value: 'workspace',
+    subItems: [
+      { label: 'Übersicht', value: 'workspace-overview', href: 'workspace' },
+      { label: 'Meine Aufgaben', value: 'workspace-tasks', href: 'workspace?type=task' },
+      { label: 'Zeiterfassung', value: 'workspace-time-tracking', href: 'finance/time-tracking' },
+    ],
+  },
+  {
+    label: 'Support',
+    icon: FiHelpCircle,
+    value: 'support',
+    href: 'support',
+  },
+];
+
+// Berechtigungen für Mitarbeiter-Dashboard-Zugang
+export interface EmployeePermissions {
+  overview: boolean;
+  personal: boolean;
+  employees: boolean;
+  shiftPlanning: boolean;
+  timeTracking: boolean;
+  absences: boolean;
+  evaluations: boolean;
+  orders: boolean;
+  quotes: boolean;
+  invoices: boolean;
+  customers: boolean;
+  calendar: boolean;
+  workspace: boolean;
+  finance: boolean;
+  expenses: boolean;
+  inventory: boolean;
+  settings: boolean;
+}
+
+interface CompanySidebarProps {
+  companyName?: string;
+  uid: string;
+  expandedItems: string[];
+  onToggleExpanded: (itemValue: string) => void;
+  onNavigate: (value: string, href?: string) => void;
+  getCurrentView: () => string;
+  isCollapsed?: boolean;
+  onToggleCollapsed?: (collapsed: boolean) => void;
+  isEmployee?: boolean; // Mitarbeiter-Modus
+  employeePermissions?: EmployeePermissions; // Berechtigungen für Mitarbeiter
+}
+
+// Funktion um Navigation basierend auf Berechtigungen zu filtern
+function getEmployeeNavigation(permissions: EmployeePermissions, allNavItems: NavigationItem[]): NavigationItem[] {
+  const filteredItems: NavigationItem[] = [];
+
+  // Übersicht
+  if (permissions.overview) {
+    filteredItems.push({
+      label: 'Übersicht',
+      icon: FiGrid,
+      value: 'dashboard',
+    });
+  }
+
+  // Kalender
+  if (permissions.calendar) {
+    filteredItems.push({
+      label: 'Kalender',
+      icon: FiCalendar,
+      value: 'calendar',
+      href: 'calendar',
+    });
+  }
+
+  // Personal-Bereich (wenn mindestens eine Berechtigung)
+  if (permissions.personal || permissions.shiftPlanning || permissions.timeTracking || permissions.absences) {
+    const personalSubItems: NavigationSubItem[] = [];
+    
+    if (permissions.shiftPlanning) {
+      personalSubItems.push({ label: 'Dienstplan', value: 'personal-schedule', href: 'personal/schedule' });
+    }
+    if (permissions.timeTracking) {
+      personalSubItems.push({ label: 'Zeiterfassung', value: 'personal-timesheet', href: 'personal/timesheet' });
+    }
+    if (permissions.absences) {
+      personalSubItems.push({ label: 'Urlaub & Abwesenheit', value: 'personal-absence', href: 'personal/absence' });
+    }
+    
+    if (personalSubItems.length > 0) {
+      filteredItems.push({
+        label: 'Mein Bereich',
+        icon: FiUser,
+        value: 'personal-self',
+        subItems: personalSubItems,
+      });
+    }
+  }
+
+  // Mitarbeiter-Verwaltung (für Schichtleiter etc.)
+  if (permissions.employees) {
+    filteredItems.push({
+      label: 'Mitarbeiter',
+      icon: FiUsers,
+      value: 'personal-employees',
+      href: 'personal/employees',
+    });
+  }
+
+  // Auswertungen
+  if (permissions.evaluations) {
+    filteredItems.push({
+      label: 'Auswertungen',
+      icon: FiBarChart3,
+      value: 'personal-evaluations',
+      href: 'personal/evaluations',
+    });
+  }
+
+  // Aufträge
+  if (permissions.orders) {
+    filteredItems.push({
+      label: 'Aufträge',
+      icon: FiClipboardList,
+      value: 'orders',
+      href: 'orders/overview',
+    });
+  }
+
+  // Angebote
+  if (permissions.quotes) {
+    filteredItems.push({
+      label: 'Angebote',
+      icon: FiFileText,
+      value: 'quotes',
+      href: 'quotes',
+    });
+  }
+
+  // Rechnungen
+  if (permissions.invoices) {
+    filteredItems.push({
+      label: 'Rechnungen',
+      icon: FiDollarSign,
+      value: 'invoices',
+      href: 'invoices',
+    });
+  }
+
+  // Kunden
+  if (permissions.customers) {
+    filteredItems.push({
+      label: 'Kunden',
+      icon: FiUserPlus,
+      value: 'customers',
+      href: 'customers',
+    });
+  }
+
+  // Workspace
+  if (permissions.workspace) {
+    filteredItems.push({
+      label: 'Workspace',
+      icon: FiFolder,
+      value: 'workspace',
+      subItems: [
+        { label: 'Übersicht', value: 'workspace-overview', href: 'workspace' },
+        { label: 'Meine Aufgaben', value: 'workspace-tasks', href: 'workspace?type=task' },
+      ],
+    });
+  }
+
+  // Finanzen
+  if (permissions.finance) {
+    const financeSubItems: NavigationSubItem[] = [
+      { label: 'Übersicht', value: 'finance-overview', href: 'finance' },
+    ];
+    if (permissions.expenses) {
+      financeSubItems.push({ label: 'Ausgaben', value: 'finance-expenses', href: 'finance/expenses' });
+    }
+    filteredItems.push({
+      label: 'Finanzen',
+      icon: FiDollarSign,
+      value: 'finance',
+      subItems: financeSubItems,
+    });
+  }
+
+  // Lager
+  if (permissions.inventory) {
+    filteredItems.push({
+      label: 'Lager',
+      icon: FiBoxes,
+      value: 'inventory',
+      href: 'inventory',
+    });
+  }
+
+  // Einstellungen (nur eigenes Profil)
+  if (permissions.settings) {
+    filteredItems.push({
+      label: 'Einstellungen',
+      icon: FiSettings,
+      value: 'settings',
+      href: 'settings?view=profile',
+    });
+  }
+
+  // Support immer zeigen
+  filteredItems.push({
+    label: 'Support',
+    icon: FiHelpCircle,
+    value: 'support',
+    href: 'support',
+  });
+
+  return filteredItems;
+}
+
 export default function CompanySidebar({
   companyName,
   uid,
@@ -394,6 +637,8 @@ export default function CompanySidebar({
   getCurrentView,
   isCollapsed: isCollapsedProp,
   onToggleCollapsed,
+  isEmployee = false,
+  employeePermissions,
 }: CompanySidebarProps) {
   const pathname = usePathname();
   const [hasBankConnection, setHasBankConnection] = useState(false);
@@ -784,7 +1029,21 @@ export default function CompanySidebar({
 
           {/* Navigation */}
           <nav className="flex-1 px-2 space-y-1">
-            {navigationItems.map(item => {
+            {/* Verwende dynamische Mitarbeiter-Navigation basierend auf Berechtigungen, oder vollständige Navigation */}
+            {(() => {
+              let navItems: NavigationItem[];
+              if (isEmployee && employeePermissions) {
+                // Dynamische Navigation basierend auf Admin-definierten Berechtigungen
+                navItems = getEmployeeNavigation(employeePermissions, navigationItems);
+              } else if (isEmployee) {
+                // Fallback auf Standard-Mitarbeiter-Navigation
+                navItems = employeeNavigationItems;
+              } else {
+                // Vollständige Navigation für Admin/Inhaber
+                navItems = navigationItems;
+              }
+              return navItems;
+            })().map(item => {
               const isMainActive = isItemActive(item);
               const isItemExpanded = isExpanded(item.value);
 

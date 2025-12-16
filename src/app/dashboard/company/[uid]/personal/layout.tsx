@@ -42,7 +42,7 @@ export default function PersonalLayout({ children }: PersonalLayoutProps) {
     { href: `${basePath}/schedule`, label: 'Dienstplan', icon: Calendar },
     { href: `${basePath}/timesheet`, label: 'Zeiterfassung', icon: Clock },
     { href: `${basePath}/absence`, label: 'Abwesenheiten', icon: Plane },
-    { href: `${basePath}/analytics`, label: 'Auswertungen', icon: BarChart3 },
+    { href: `${basePath}/auswertung`, label: 'Auswertung', icon: BarChart3 },
   ];
 
   const moreNavItems = [

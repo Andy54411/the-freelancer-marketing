@@ -20,9 +20,14 @@ import {
   ArrowRight,
   Save,
   X,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+  Euro,
+  FileWarning,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { PersonalService, TimeTracking, Shift, Employee, VacationRequest, AbsenceRequest } from '@/services/personalService';
+import { PersonalService, TimeTracking, Shift, Employee, AbsenceRequest, TimeConflict, PlanActualComparison } from '@/services/personalService';
 import {
   Dialog,
   DialogContent,
@@ -60,6 +65,12 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
   const [todaysShift, setTodaysShift] = useState<Shift | null>(null);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>([]);
+  // Gastromatic: Neue States
+  const [conflicts, setConflicts] = useState<TimeConflict[]>([]);
+  const [planActualData, setPlanActualData] = useState<PlanActualComparison[]>([]);
+  const [totalSurcharges, setTotalSurcharges] = useState(0);
+  const [showConflicts, setShowConflicts] = useState(false);
+  
   const [newEntry, setNewEntry] = useState<{
     date: string;
     type: 'work' | 'break' | 'vacation' | 'sick' | 'overtime';
@@ -90,6 +101,58 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
     loadEmployeeData();
     loadAbsenceRequests();
   }, [employeeId, companyId]);
+
+  // Gastromatic: Konflikte und Zuschläge berechnen wenn Daten geladen
+  useEffect(() => {
+    if (employee && timeEntries.length > 0) {
+      calculateGastromaticData();
+    }
+  }, [employee, timeEntries]);
+
+  const calculateGastromaticData = async () => {
+    if (!employee) return;
+    
+    // Konflikte für alle Einträge berechnen
+    const allConflicts: TimeConflict[] = [];
+    let surchargesTotal = 0;
+    
+    for (let i = 0; i < timeEntries.length; i++) {
+      const entry = timeEntries[i];
+      const previousEntry = i > 0 ? timeEntries[i - 1] : null;
+      
+      // Konflikte prüfen
+      const entryConflicts = PersonalService.checkTimeConflicts(
+        entry,
+        employee,
+        previousEntry?.clockOut
+      );
+      allConflicts.push(...entryConflicts);
+      
+      // Zuschläge berechnen
+      const surcharges = PersonalService.calculateSurcharges(entry, employee);
+      surchargesTotal += surcharges.totalSurcharge;
+    }
+    
+    setConflicts(allConflicts);
+    setTotalSurcharges(surchargesTotal);
+    
+    // Plan-Ist-Vergleich laden (aktueller Monat)
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    
+    try {
+      const comparison = await PersonalService.getPlanActualComparison(
+        companyId,
+        employeeId,
+        startOfMonth,
+        endOfMonth
+      );
+      setPlanActualData(comparison);
+    } catch (error) {
+      // Fehler ignorieren
+    }
+  };
 
   const loadAbsenceRequests = async () => {
     try {
@@ -504,6 +567,202 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
           </CardContent>
         </Card>
       </div>
+
+      {/* Arbeitszeitkonto (AZK) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-amber-600" />
+            Arbeitszeitkonto (AZK)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-amber-50 rounded-lg">
+              <div className={`text-2xl font-bold ${(employee?.timeAccount?.balance || 0) >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
+                {(employee?.timeAccount?.balance || 0) >= 0 ? '+' : ''}{(employee?.timeAccount?.balance || 0).toFixed(1)}h
+              </div>
+              <div className="text-sm text-amber-800">Aktueller Stand</div>
+            </div>
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">
+                {employee?.timeAccount?.targetHoursPerMonth || employee?.workSettings?.weeklyWorkHours ? ((employee?.workSettings?.weeklyWorkHours || 40) * 4.33).toFixed(1) : '0'}h
+              </div>
+              <div className="text-sm text-blue-800">Monatl. Sollstunden</div>
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-2xl font-bold text-purple-600">
+                {employee?.timeAccount?.overtimeLimit || 100}h
+              </div>
+              <div className="text-sm text-purple-800">Max. Überstunden</div>
+            </div>
+            <div className="text-center p-4 bg-teal-50 rounded-lg">
+              <div className="text-2xl font-bold text-teal-600">
+                {employee?.timeAccount?.carryOverLimit || 40}h
+              </div>
+              <div className="text-sm text-teal-800">Max. Übertrag</div>
+            </div>
+          </div>
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600">
+              <span className="font-medium">Ausgleichsart:</span>{' '}
+              {employee?.timeAccount?.compensationType === 'PAYOUT' ? 'Auszahlung' :
+               employee?.timeAccount?.compensationType === 'TIME_OFF' ? 'Freizeitausgleich' : 'Gemischt'}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Überstunden werden automatisch auf das AZK gebucht, wenn die Sollstunden erreicht sind.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Gastromatic: Konfliktanzeige */}
+      {conflicts.length > 0 && (
+        <Card className="border-orange-300 bg-orange-50">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-orange-700">
+                <AlertTriangle className="h-5 w-5" />
+                Arbeitszeitkonflikte ({conflicts.length})
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowConflicts(!showConflicts)}
+                className="text-orange-700"
+              >
+                {showConflicts ? 'Ausblenden' : 'Details anzeigen'}
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          {showConflicts && (
+            <CardContent>
+              <div className="space-y-2">
+                {conflicts.map((conflict, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-3 rounded-lg flex items-start gap-3 ${
+                      conflict.severity === 'ERROR' ? 'bg-red-100' : 'bg-yellow-100'
+                    }`}
+                  >
+                    {conflict.severity === 'ERROR' ? (
+                      <FileWarning className="h-5 w-5 text-red-600 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    )}
+                    <div>
+                      <p className={`font-medium ${
+                        conflict.severity === 'ERROR' ? 'text-red-800' : 'text-yellow-800'
+                      }`}>
+                        {conflict.message}
+                      </p>
+                      {conflict.details && (
+                        <p className={`text-sm ${
+                          conflict.severity === 'ERROR' ? 'text-red-600' : 'text-yellow-600'
+                        }`}>
+                          {conflict.details}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
+      {/* Gastromatic: Zuschläge Übersicht */}
+      {totalSurcharges > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Euro className="h-5 w-5 text-green-600" />
+              Zuschläge (diesen Monat)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+              <div>
+                <p className="text-sm text-green-800">Berechnete Zuschläge</p>
+                <p className="text-xs text-green-600">Nacht-, Wochenend-, Feiertags- und Überstundenzuschläge</p>
+              </div>
+              <div className="text-2xl font-bold text-green-700">
+                +{totalSurcharges.toFixed(2)} EUR
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Gastromatic: Plan-Ist-Abgleich */}
+      {planActualData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-blue-600" />
+              Plan-Ist-Abgleich (diesen Monat)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-2">Datum</th>
+                    <th className="text-right py-2 px-2">Plan</th>
+                    <th className="text-right py-2 px-2">Ist</th>
+                    <th className="text-right py-2 px-2">Differenz</th>
+                    <th className="text-center py-2 px-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {planActualData.slice(0, 10).map((row, idx) => (
+                    <tr key={idx} className="border-b last:border-0 hover:bg-gray-50">
+                      <td className="py-2 px-2">
+                        {new Date(row.date).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}
+                      </td>
+                      <td className="text-right py-2 px-2">
+                        {row.plannedHours > 0 ? `${row.plannedHours.toFixed(1)}h` : '-'}
+                      </td>
+                      <td className="text-right py-2 px-2">
+                        {row.actualHours > 0 ? `${row.actualHours.toFixed(1)}h` : '-'}
+                      </td>
+                      <td className={`text-right py-2 px-2 font-medium ${
+                        row.difference > 0 ? 'text-green-600' : row.difference < 0 ? 'text-red-600' : 'text-gray-500'
+                      }`}>
+                        {row.difference > 0 ? '+' : ''}{row.difference.toFixed(1)}h
+                      </td>
+                      <td className="text-center py-2 px-2">
+                        {row.hasConflict ? (
+                          <Badge variant="destructive" className="text-xs">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Konflikt
+                          </Badge>
+                        ) : row.actualHours > 0 ? (
+                          <Badge variant="outline" className="text-xs text-green-600 border-green-600">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            OK
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            Offen
+                          </Badge>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {planActualData.length > 10 && (
+                <p className="text-sm text-gray-500 mt-2 text-center">
+                  ... und {planActualData.length - 10} weitere Tage
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Neuen Eintrag hinzufügen */}
       <Card>

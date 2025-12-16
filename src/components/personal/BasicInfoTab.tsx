@@ -229,7 +229,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                 value={employee.employmentType || ''}
                 onValueChange={value =>
                   onUpdate({
-                    employmentType: value as 'FULL_TIME' | 'PART_TIME' | 'FREELANCER' | 'INTERN',
+                    employmentType: value as 'FULL_TIME' | 'PART_TIME' | 'FREELANCER' | 'INTERN' | 'MINIJOB' | 'WERKSTUDENT' | 'AUSHILFE',
                   })
                 }
                 disabled={!isEditing}
@@ -240,6 +240,9 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                 <SelectContent>
                   <SelectItem value="FULL_TIME">Vollzeit</SelectItem>
                   <SelectItem value="PART_TIME">Teilzeit</SelectItem>
+                  <SelectItem value="MINIJOB">Minijob (538€)</SelectItem>
+                  <SelectItem value="WERKSTUDENT">Werkstudent</SelectItem>
+                  <SelectItem value="AUSHILFE">Aushilfe</SelectItem>
                   <SelectItem value="FREELANCER">Freelancer</SelectItem>
                   <SelectItem value="INTERN">Praktikant</SelectItem>
                 </SelectContent>
@@ -273,6 +276,179 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                   <SelectItem value="TERMINATED">Beendet</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Arbeitsvertrag - NEU für Gastromatic-Auswertung */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Arbeitsvertrag</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="contractType">Vertragsart</Label>
+              <Select
+                value={employee.contractType || ''}
+                onValueChange={value =>
+                  onUpdate({
+                    contractType: value as 'PERMANENT' | 'TEMPORARY' | 'PROJECT_BASED',
+                  })
+                }
+                disabled={!isEditing}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Vertragsart wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PERMANENT">Unbefristet</SelectItem>
+                  <SelectItem value="TEMPORARY">Befristet</SelectItem>
+                  <SelectItem value="PROJECT_BASED">Projektbasiert</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="probationPeriodEnd">Probezeit bis</Label>
+              <Input
+                id="probationPeriodEnd"
+                type="date"
+                value={employee.probationPeriodEnd || ''}
+                onChange={e => onUpdate({ probationPeriodEnd: e.target.value })}
+                disabled={!isEditing}
+              />
+            </div>
+            <div>
+              <Label htmlFor="endDate">Vertragsende</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={employee.endDate || ''}
+                onChange={e => onUpdate({ endDate: e.target.value })}
+                disabled={!isEditing}
+                placeholder="Nur bei befristeten Verträgen"
+              />
+            </div>
+            <div>
+              <Label htmlFor="weeklyHours">Wöchentliche Sollstunden</Label>
+              <Input
+                id="weeklyHours"
+                type="number"
+                step="0.5"
+                value={employee.workingHours?.weekly || ''}
+                onChange={e =>
+                  onUpdate({
+                    workingHours: {
+                      weekly: parseFloat(e.target.value) || 0,
+                      daily: employee.workingHours?.daily || 8,
+                    },
+                  })
+                }
+                disabled={!isEditing}
+                placeholder="z.B. 40"
+              />
+            </div>
+            <div>
+              <Label htmlFor="dailyHours">Tägliche Sollstunden</Label>
+              <Input
+                id="dailyHours"
+                type="number"
+                step="0.5"
+                value={employee.workingHours?.daily || ''}
+                onChange={e =>
+                  onUpdate({
+                    workingHours: {
+                      weekly: employee.workingHours?.weekly || 40,
+                      daily: parseFloat(e.target.value) || 0,
+                    },
+                  })
+                }
+                disabled={!isEditing}
+                placeholder="z.B. 8"
+              />
+            </div>
+            <div>
+              <Label htmlFor="hourlyRate">Stundenlohn (€)</Label>
+              <Input
+                id="hourlyRate"
+                type="number"
+                step="0.01"
+                value={employee.hourlyRate || ''}
+                onChange={e => onUpdate({ hourlyRate: parseFloat(e.target.value) || 0 })}
+                disabled={!isEditing}
+                placeholder="z.B. 15.50"
+              />
+            </div>
+            <div>
+              <Label htmlFor="taxClass">Steuerklasse</Label>
+              <Select
+                value={employee.socialSecurity?.taxClass || ''}
+                onValueChange={value =>
+                  onUpdate({
+                    socialSecurity: {
+                      ...employee.socialSecurity,
+                      employerContribution: employee.socialSecurity?.employerContribution || 0,
+                      employeeContribution: employee.socialSecurity?.employeeContribution || 0,
+                      taxClass: value,
+                    },
+                  })
+                }
+                disabled={!isEditing}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Steuerklasse wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Klasse 1 - Ledig</SelectItem>
+                  <SelectItem value="2">Klasse 2 - Alleinerziehend</SelectItem>
+                  <SelectItem value="3">Klasse 3 - Verheiratet (Alleinverdiener)</SelectItem>
+                  <SelectItem value="4">Klasse 4 - Verheiratet (beide berufstätig)</SelectItem>
+                  <SelectItem value="5">Klasse 5 - Verheiratet (Partner Klasse 3)</SelectItem>
+                  <SelectItem value="6">Klasse 6 - Zweitjob</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="employeeNumber">Personalnummer</Label>
+              <Input
+                id="employeeNumber"
+                value={employee.employeeNumber || ''}
+                onChange={e => onUpdate({ employeeNumber: e.target.value })}
+                disabled={!isEditing}
+                placeholder="z.B. MA-001"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Arbeitsbereiche - für Gastromatic-Auswertung */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Arbeitsbereiche & Einsatzplanung</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="primaryWorkArea">Hauptarbeitsbereich</Label>
+              <Input
+                id="primaryWorkArea"
+                value={employee.primaryWorkArea || ''}
+                onChange={e => onUpdate({ primaryWorkArea: e.target.value })}
+                disabled={!isEditing}
+                placeholder="z.B. Küche, Service, Lager"
+              />
+            </div>
+            <div>
+              <Label htmlFor="workAreas">Weitere Arbeitsbereiche (kommagetrennt)</Label>
+              <Input
+                id="workAreas"
+                value={employee.workAreas?.join(', ') || ''}
+                onChange={e => onUpdate({ workAreas: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                disabled={!isEditing}
+                placeholder="z.B. Bar, Terrasse, Events"
+              />
             </div>
           </div>
         </CardContent>

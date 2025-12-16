@@ -15,9 +15,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Users, Search, Filter, Plus, Download, Upload, Eye, Trash2 } from 'lucide-react';
+import { Users, Search, Filter, Plus, Download, Upload, Eye, Trash2, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
+import { EmployeeInviteDialog } from '@/components/personal/EmployeeInviteDialog';
 
 export default function EmployeesPage({ params }: { params: Promise<{ uid: string }> }) {
   const { user } = useAuth();
@@ -30,6 +31,8 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [inviteEmployee, setInviteEmployee] = useState<Employee | null>(null);
 
   // Retry-Limiter für Firebase Calls (verhindert endlose Loops)
   const [retryCount, setRetryCount] = useState(0);
@@ -358,6 +361,21 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
                     <Eye className="h-4 w-4" />
                   </Button>
                 </Link>
+                {/* Dashboard-Zugang erstellen Button */}
+                {(!employee.dashboardAccess?.enabled || !employee.dashboardAccess?.authUid) && employee.email && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    onClick={() => {
+                      setInviteEmployee(employee);
+                      setShowInviteDialog(true);
+                    }}
+                    title="Dashboard-Zugang erstellen"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                )}
                 <Link
                   href={`/dashboard/company/${resolvedParams.uid}/personal/edit/${employee.id}`}
                 >
@@ -405,6 +423,36 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
                     }
                   >
                     {employee.isActive ? 'Aktiv' : 'Inaktiv'}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">App-Zugang</span>
+                  <Badge
+                    className={
+                      employee.appAccess?.registered
+                        ? 'bg-teal-100 text-teal-800'
+                        : 'bg-gray-100 text-gray-600'
+                    }
+                  >
+                    {employee.appAccess?.registered ? 'Registriert' : 'Nicht eingeladen'}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Dashboard-Zugang</span>
+                  <Badge
+                    className={
+                      employee.dashboardAccess?.enabled && employee.dashboardAccess?.linkedUserId
+                        ? 'bg-teal-100 text-teal-800'
+                        : employee.dashboardAccess?.enabled
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-gray-100 text-gray-600'
+                    }
+                  >
+                    {employee.dashboardAccess?.enabled && employee.dashboardAccess?.linkedUserId 
+                      ? 'Aktiv' 
+                      : employee.dashboardAccess?.enabled 
+                        ? 'Wartend' 
+                        : 'Nicht aktiviert'}
                   </Badge>
                 </div>
               </div>
@@ -457,6 +505,24 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Mitarbeiter-Einlade-Dialog */}
+      {inviteEmployee && inviteEmployee.id && (
+        <EmployeeInviteDialog
+          isOpen={showInviteDialog}
+          onClose={() => {
+            setShowInviteDialog(false);
+            setInviteEmployee(null);
+          }}
+          onSuccess={() => {
+            loadEmployees();
+          }}
+          companyId={resolvedParams.uid}
+          employeeId={inviteEmployee.id}
+          employeeName={`${inviteEmployee.firstName} ${inviteEmployee.lastName}`}
+          employeeEmail={inviteEmployee.email}
+        />
+      )}
     </div>
   );
 }

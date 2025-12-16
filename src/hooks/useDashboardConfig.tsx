@@ -88,18 +88,25 @@ const getDefaultComponents = (uid: string): DashboardComponent[] => [
     order: 10,
   },
   {
+    id: 'contract-alerts',
+    title: 'Personalwarnungen',
+    width: 'half',
+    enabled: true,
+    order: 11,
+  },
+  {
     id: 'orders-table',
     title: 'Aufträge Übersicht',
     width: 'full',
     enabled: true,
-    order: 11,
+    order: 12,
   },
   {
     id: 'view-all-orders',
     title: 'Alle Aufträge Button',
     width: 'full',
     enabled: true,
-    order: 12,
+    order: 13,
   },
 ];
 

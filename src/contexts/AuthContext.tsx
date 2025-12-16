@@ -12,15 +12,44 @@ import { userPresence } from '@/lib/userPresence'; // NEU: User Presence importi
  * Definiert ein einheitliches Benutzerprofil, das Daten aus Firebase Auth
  * und Firestore kombiniert. Dies wird zum neuen 'user'-Objekt.
  */
+export interface LinkedCompany {
+  companyId: string;
+  companyName: string;
+  employeeId: string;
+  role: 'mitarbeiter';
+  linkedAt: string;
+  permissions?: {
+    overview: boolean;
+    personal: boolean;
+    employees: boolean;
+    shiftPlanning: boolean;
+    timeTracking: boolean;
+    absences: boolean;
+    evaluations: boolean;
+    orders: boolean;
+    quotes: boolean;
+    invoices: boolean;
+    customers: boolean;
+    calendar: boolean;
+    workspace: boolean;
+    finance: boolean;
+    expenses: boolean;
+    inventory: boolean;
+    settings: boolean;
+  };
+}
+
 export interface UserProfile {
   uid: string;
   email: string | null;
-  user_type: 'master' | 'support' | 'firma' | 'kunde'; // Verwende user_type statt role für Konsistenz
+  user_type: 'master' | 'support' | 'firma' | 'kunde' | 'mitarbeiter'; // Mitarbeiter für Firmen-Angestellte
   firstName?: string;
   lastName?: string;
-  profilePictureURL?: string; // NEU: Avatar-URL für alle Benutzerprofile
-  companyName?: string; // NEU: Firmenname für Unternehmenskonten
-  // Fügen Sie hier weitere globale Profilfelder hinzu
+  profilePictureURL?: string; // Avatar-URL für alle Benutzerprofile
+  companyName?: string; // Firmenname für Unternehmenskonten
+  companyId?: string; // Company ID für Mitarbeiter (verweist auf Arbeitgeber)
+  employeeId?: string; // Employee Document ID für Mitarbeiter
+  linkedCompanies?: LinkedCompany[]; // Multi-Firma-Zugang für Mitarbeiter
 }
 
 // NEU: Interface für die Chat-Vorschau, die im Header benötigt wird.
@@ -38,10 +67,10 @@ export interface AuthContextType {
   user: UserProfile | null;
   firebaseUser: FirebaseUser | null;
   loading: boolean;
-  logout: () => Promise<void>; // NEU: Logout-Funktion hinzufügen
-  userRole: 'master' | 'support' | 'firma' | 'kunde' | null;
+  logout: () => Promise<void>;
+  userRole: 'master' | 'support' | 'firma' | 'kunde' | 'mitarbeiter' | null;
   unreadMessagesCount: number;
-  recentChats: HeaderChatPreview[]; // NEU: Fügt die letzten Chats zum Context hinzu
+  recentChats: HeaderChatPreview[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -155,12 +184,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     ? 'firma'
                     : idTokenResult.claims.role === 'kunde'
                       ? 'kunde'
-                      : null;
-            const roleFromDb = (profileData.user_type as UserProfile['user_type']) || 'kunde';
+                      : idTokenResult.claims.role === 'mitarbeiter'
+                        ? 'mitarbeiter'
+                        : null;
+            const roleFromDb = (profileData.user_type as UserProfile['user_type']) ?? 'kunde';
 
-            const finalRole = roleFromClaim || roleFromDb;
+            const finalRole = roleFromClaim ?? roleFromDb;
 
-            console.log('[AuthContext] 🎯 FINAL ROLE DETERMINED:', {
+            console.log('[AuthContext] FINAL ROLE DETERMINED:', {
               roleFromClaim,
               roleFromDb,
               finalRole,
@@ -168,16 +199,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               willSetUserType: finalRole
             });
 
-            const userData = {
+            // Prüfe auf pending Firmenverknüpfungen (Multi-Login System)
+            let linkedCompanies = profileData.linkedCompanies ?? [];
+            try {
+              const idToken = await fbUser.getIdToken();
+              const checkLinksResponse = await fetch('/api/auth/check-company-links', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${idToken}`,
+                  'Content-Type': 'application/json',
+                },
+              });
+              if (checkLinksResponse.ok) {
+                const checkLinksData = await checkLinksResponse.json();
+                if (checkLinksData.success && checkLinksData.linkedCompanies) {
+                  linkedCompanies = checkLinksData.linkedCompanies;
+                  console.log('[AuthContext] LinkedCompanies updated:', linkedCompanies.length);
+                }
+              }
+            } catch (linkError) {
+              console.error('[AuthContext] Error checking company links:', linkError);
+            }
+
+            const userData: UserProfile = {
               uid: fbUser.uid,
               email: fbUser.email,
               user_type: finalRole,
               firstName: profileData.firstName,
               lastName: profileData.lastName,
-              profilePictureURL: profileData.profilePictureURL || undefined,
+              profilePictureURL: profileData.profilePictureURL ?? undefined,
+              // Mitarbeiter-spezifische Felder
+              companyId: profileData.companyId ?? undefined,
+              employeeId: profileData.employeeId ?? undefined,
+              companyName: profileData.companyName ?? undefined,
+              // Multi-Login Firmenverknüpfungen
+              linkedCompanies: linkedCompanies.length > 0 ? linkedCompanies : undefined,
             };
 
-            console.log('[AuthContext] 🚀 Setting user state with:', userData);
+            console.log('[AuthContext] Setting user state with:', userData);
             setUser(userData);
 
             // KRITISCH: AUTO-REDIRECT nach LOGIN basierend auf user_type
@@ -201,32 +260,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               else if (finalRole === 'kunde' && pathname?.includes('/dashboard/company/')) {
                 needsRedirect = true;
               }
+              // 4. Mitarbeiter auf Admin Dashboard - SOFORT UMLEITEN!
+              else if (finalRole === 'mitarbeiter' && pathname?.includes('/dashboard/admin')) {
+                needsRedirect = true;
+              }
 
               if (needsRedirect) {
                 setIsRedirecting(true);
 
                 // Nutze redirectTo wenn vorhanden und passend für die Rolle
                 if (redirectTo) {
+                  const companyIdForEmployee = profileData.companyId;
                   const isValidRedirect = 
                     (finalRole === 'firma' && redirectTo.includes(`/dashboard/company/${fbUser.uid}`)) ||
                     (finalRole === 'kunde' && redirectTo.includes(`/dashboard/user/${fbUser.uid}`)) ||
-                    ((finalRole === 'master' || finalRole === 'support') && redirectTo.includes('/dashboard/admin'));
+                    ((finalRole === 'master' || finalRole === 'support') && redirectTo.includes('/dashboard/admin')) ||
+                    // Mitarbeiter darf nur auf Company Dashboard des Arbeitgebers
+                    (finalRole === 'mitarbeiter' && companyIdForEmployee && redirectTo.includes(`/dashboard/company/${companyIdForEmployee}`));
                   
                   if (isValidRedirect) {
                     targetPath = redirectTo;
                   }
                 }
                 
-                // Fallback auf Standard-Dashboard wenn kein gültiges redirectTo
+                // Standard-Dashboard wenn kein gültiges redirectTo
                 if (!targetPath) {
-                  targetPath =
-                    finalRole === 'firma'
-                      ? `/dashboard/company/${fbUser.uid}`
-                      : finalRole === 'kunde'
-                        ? `/dashboard/user/${fbUser.uid}`
-                        : finalRole === 'master' || finalRole === 'support'
-                          ? '/dashboard/admin'
-                          : `/dashboard/user/${fbUser.uid}`; // Fallback
+                  if (finalRole === 'firma') {
+                    targetPath = `/dashboard/company/${fbUser.uid}`;
+                  } else if (finalRole === 'kunde') {
+                    targetPath = `/dashboard/user/${fbUser.uid}`;
+                  } else if (finalRole === 'master' || finalRole === 'support') {
+                    targetPath = '/dashboard/admin';
+                  } else if (finalRole === 'mitarbeiter') {
+                    // Mitarbeiter wird zum Company Dashboard des Arbeitgebers geleitet
+                    // Priorität: 1. companyId aus Profil, 2. Erste verknüpfte Firma aus linkedCompanies
+                    const employeeCompanyId = profileData.companyId ?? linkedCompanies[0]?.companyId;
+                    if (employeeCompanyId) {
+                      targetPath = `/dashboard/company/${employeeCompanyId}`;
+                    } else {
+                      targetPath = `/dashboard/user/${fbUser.uid}`; // Fallback wenn keine Firma
+                    }
+                  } else {
+                    targetPath = `/dashboard/user/${fbUser.uid}`; // Fallback
+                  }
                 }
 
                 // ROBUSTES REDIRECT mit Fallback

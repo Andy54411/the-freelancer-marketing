@@ -54,15 +54,34 @@ export interface Employee {
   // Arbeitsplatz-bezogene Daten
   position: string;
   department: string;
-  employmentType: 'FULL_TIME' | 'PART_TIME' | 'FREELANCER' | 'INTERN';
+  employmentType: 'FULL_TIME' | 'PART_TIME' | 'FREELANCER' | 'INTERN' | 'MINIJOB' | 'WERKSTUDENT' | 'AUSHILFE';
   contractType: 'PERMANENT' | 'TEMPORARY' | 'PROJECT_BASED';
   startDate: string;
   endDate?: string;
   probationPeriodEnd?: string;
 
+  // Schichtleiter / Rolle in der Abteilung
+  isShiftLeader?: boolean; // Ist Schichtleiter/Teamleiter
+  roleInDepartment?: 'LEADER' | 'SUPERVISOR' | 'MEMBER'; // Rolle: Leiter, Vorgesetzter, Mitarbeiter
+
+  // Arbeitsbereiche (für Gastromatic-Auswertung)
+  workAreas?: string[]; // z.B. ['Küche', 'Service', 'Bar']
+  primaryWorkArea?: string; // Hauptarbeitsbereich
+  
+  // Arbeitszeitkonto (AZK) für Gastromatic-Auswertung
+  timeAccount?: {
+    balance: number; // Aktueller Stundenstand (positiv = Überstunden, negativ = Minusstunden)
+    targetHoursPerMonth: number; // Monatliche Sollstunden
+    overtimeLimit: number; // Max. Überstunden die angesammelt werden können
+    compensationType: 'PAYOUT' | 'TIME_OFF' | 'MIXED'; // Wie werden Überstunden ausgeglichen
+    resetDate?: string; // Wann wird das Konto zurückgesetzt (YYYY-MM-DD)
+    carryOverLimit: number; // Max. Stunden die ins nächste Jahr übertragen werden
+  };
+
   // Gehalts- und Leistungsdaten
   grossSalary: number;
   hourlyRate?: number;
+  minijobLimit?: number; // 538€ für Minijobber (2024)
   bankAccount?: {
     iban: string;
     bic: string;
@@ -71,11 +90,19 @@ export interface Employee {
   workingHours: {
     weekly: number;
     daily: number;
+    minDaily?: number; // Minimale tägliche Arbeitszeit
+    maxDaily?: number; // Maximale tägliche Arbeitszeit (gesetzlich 10h)
+    breakRules?: {
+      after6Hours: number; // Pause nach 6h (min. 30 Min)
+      after9Hours: number; // Pause nach 9h (min. 45 Min)
+    };
   };
   socialSecurity: {
     employerContribution: number;
     employeeContribution: number;
     taxClass?: string;
+    churchTax?: boolean; // Kirchensteuer
+    childAllowance?: number; // Kinderfreibetrag
   };
   additionalCosts: {
     healthInsurance: number;
@@ -364,6 +391,43 @@ export interface Employee {
     };
   };
 
+  // Dashboard-Zugang für Mitarbeiter (Desktop/Web)
+  dashboardAccess?: {
+    enabled: boolean; // Hat der Mitarbeiter Dashboard-Zugang?
+    authUid?: string; // Firebase Auth UID des Mitarbeiter-Accounts
+    createdAt?: string; // Wann wurde der Zugang erstellt?
+    lastLogin?: string;
+    // Berechtigungen für Sidebar-Menüpunkte
+    permissions: {
+      // Übersicht
+      overview: boolean;
+      // Personal-Bereich
+      personal: boolean;
+      employees: boolean;
+      shiftPlanning: boolean;
+      timeTracking: boolean;
+      absences: boolean;
+      evaluations: boolean;
+      // Auftragswesen
+      orders: boolean;
+      quotes: boolean;
+      invoices: boolean;
+      // Kunden
+      customers: boolean;
+      // Kalender
+      calendar: boolean;
+      // Workspace/Dokumente
+      workspace: boolean;
+      // Finanzen
+      finance: boolean;
+      expenses: boolean;
+      // Lager
+      inventory: boolean;
+      // Einstellungen (nur eigenes Profil)
+      settings: boolean;
+    };
+  };
+
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -502,6 +566,73 @@ export interface TimeTracking {
   approvalDate?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  // Gastromatic-Erweiterungen
+  plannedStart?: string; // Geplante Startzeit aus Dienstplan
+  plannedEnd?: string; // Geplante Endzeit aus Dienstplan
+  conflicts?: TimeConflict[]; // Arbeitszeitverstöße
+  surcharges?: SurchargeCalculation; // Berechnete Zuschläge
+}
+
+// Gastromatic: Arbeitszeitkonflikte/Verstöße
+export interface TimeConflict {
+  type: 'MAX_DAILY_HOURS' | 'MIN_REST_TIME' | 'MISSING_BREAK' | 'LATE_START' | 'EARLY_END' | 'OVERTIME_LIMIT' | 'MINIJOB_LIMIT';
+  severity: 'WARNING' | 'ERROR';
+  message: string;
+  details?: string;
+}
+
+// Gastromatic: Zuschlagsberechnung
+export interface SurchargeCalculation {
+  baseHours: number; // Normale Arbeitsstunden
+  nightHours: number; // Nachtstunden (22:00-06:00)
+  weekendHours: number; // Wochenendstunden
+  holidayHours: number; // Feiertagsstunden
+  overtimeHours: number; // Überstunden
+  nightSurcharge: number; // Nachtzuschlag in EUR
+  weekendSurcharge: number; // Wochenendzuschlag in EUR
+  holidaySurcharge: number; // Feiertagszuschlag in EUR
+  overtimeSurcharge: number; // Überstundenzuschlag in EUR
+  totalSurcharge: number; // Gesamtzuschlag in EUR
+}
+
+// Gastromatic: Plan-Ist-Abgleich
+export interface PlanActualComparison {
+  employeeId: string;
+  employeeName: string;
+  date: string;
+  plannedHours: number;
+  actualHours: number;
+  difference: number; // positiv = mehr gearbeitet, negativ = weniger
+  plannedStart?: string;
+  plannedEnd?: string;
+  actualStart?: string;
+  actualEnd?: string;
+  hasConflict: boolean;
+  conflicts: TimeConflict[];
+}
+
+// Gastromatic: Auswertungs-Übersicht pro Mitarbeiter
+export interface EmployeeEvaluation {
+  employeeId: string;
+  employeeName: string;
+  period: { start: string; end: string };
+  // Stunden
+  plannedHours: number;
+  actualHours: number;
+  overtimeHours: number;
+  // AZK (Arbeitszeitkonto)
+  azkBalance: number;
+  azkChange: number; // Änderung in diesem Zeitraum
+  // Konflikte
+  totalConflicts: number;
+  unreviewedEntries: number;
+  // Urlaub
+  vacationDaysTaken: number;
+  vacationDaysRemaining: number;
+  // Zuschläge
+  totalSurcharges: number;
+  // Lohn (geschätzt)
+  estimatedGrossPay: number;
 }
 
 // Leistungsbeurteilungen und Entwicklung
@@ -2693,4 +2824,445 @@ export class PersonalService {
       return () => {};
     }
   }
+
+  // ============================================
+  // GASTROMATIC FUNKTIONEN
+  // ============================================
+
+  /**
+   * Deutsche Feiertage für ein Jahr berechnen
+   * Beinhaltet bundesweite und wichtige regionale Feiertage
+   */
+  static getGermanHolidays(year: number): Map<string, string> {
+    const holidays = new Map<string, string>();
+    
+    // Feste Feiertage
+    holidays.set(`${year}-01-01`, 'Neujahr');
+    holidays.set(`${year}-05-01`, 'Tag der Arbeit');
+    holidays.set(`${year}-10-03`, 'Tag der Deutschen Einheit');
+    holidays.set(`${year}-12-25`, 'Erster Weihnachtstag');
+    holidays.set(`${year}-12-26`, 'Zweiter Weihnachtstag');
+    
+    // Bewegliche Feiertage (Ostern-basiert)
+    const easter = this.calculateEaster(year);
+    
+    // Karfreitag (2 Tage vor Ostern)
+    const karfreitag = new Date(easter);
+    karfreitag.setDate(karfreitag.getDate() - 2);
+    holidays.set(karfreitag.toISOString().split('T')[0], 'Karfreitag');
+    
+    // Ostermontag (1 Tag nach Ostern)
+    const ostermontag = new Date(easter);
+    ostermontag.setDate(ostermontag.getDate() + 1);
+    holidays.set(ostermontag.toISOString().split('T')[0], 'Ostermontag');
+    
+    // Christi Himmelfahrt (39 Tage nach Ostern)
+    const himmelfahrt = new Date(easter);
+    himmelfahrt.setDate(himmelfahrt.getDate() + 39);
+    holidays.set(himmelfahrt.toISOString().split('T')[0], 'Christi Himmelfahrt');
+    
+    // Pfingstmontag (50 Tage nach Ostern)
+    const pfingstmontag = new Date(easter);
+    pfingstmontag.setDate(pfingstmontag.getDate() + 50);
+    holidays.set(pfingstmontag.toISOString().split('T')[0], 'Pfingstmontag');
+    
+    return holidays;
+  }
+
+  /**
+   * Ostersonntag nach Gauss-Algorithmus berechnen
+   */
+  static calculateEaster(year: number): Date {
+    const a = year % 19;
+    const b = Math.floor(year / 100);
+    const c = year % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31);
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(year, month - 1, day);
+  }
+
+  /**
+   * Prüft ob ein Datum ein Feiertag ist
+   */
+  static isHoliday(dateStr: string): { isHoliday: boolean; name?: string } {
+    const year = new Date(dateStr).getFullYear();
+    const holidays = this.getGermanHolidays(year);
+    const holidayName = holidays.get(dateStr);
+    return { isHoliday: !!holidayName, name: holidayName };
+  }
+
+  /**
+   * Prüft ob ein Datum am Wochenende liegt
+   */
+  static isWeekend(dateStr: string): boolean {
+    const date = new Date(dateStr);
+    const day = date.getDay();
+    return day === 0 || day === 6; // Sonntag = 0, Samstag = 6
+  }
+
+  /**
+   * Berechnet Nachtstunden (22:00-06:00)
+   */
+  static calculateNightHours(clockIn: string, clockOut: string): number {
+    if (!clockIn || !clockOut) return 0;
+    
+    const [inHour, inMin] = clockIn.split(':').map(Number);
+    const [outHour, outMin] = clockOut.split(':').map(Number);
+    
+    let nightMinutes = 0;
+    
+    // Vereinfachte Berechnung: Stunden zwischen 22:00 und 06:00
+    for (let h = inHour; h !== outHour || (h === inHour && inMin > 0); h = (h + 1) % 24) {
+      if (h >= 22 || h < 6) {
+        nightMinutes += 60;
+      }
+      if (h === outHour && outMin > 0) break;
+    }
+    
+    return Math.round(nightMinutes / 60 * 100) / 100;
+  }
+
+  /**
+   * Arbeitszeitkonflikte prüfen (Gastromatic-Konfliktanzeige)
+   */
+  static checkTimeConflicts(
+    entry: TimeTracking,
+    employee: Employee,
+    previousDayEndTime?: string
+  ): TimeConflict[] {
+    const conflicts: TimeConflict[] = [];
+    const workSettings = employee.workSettings;
+    
+    if (!entry.totalHours) return conflicts;
+    
+    // 1. Maximale tägliche Arbeitszeit (Standard: 10 Stunden nach ArbZG)
+    const maxDaily = workSettings?.maxDailyHours || 10;
+    if (entry.totalHours > maxDaily) {
+      conflicts.push({
+        type: 'MAX_DAILY_HOURS',
+        severity: 'ERROR',
+        message: `Maximale Arbeitszeit überschritten`,
+        details: `${entry.totalHours.toFixed(1)}h gearbeitet, max. ${maxDaily}h erlaubt (ArbZG)`
+      });
+    }
+    
+    // 2. Ruhezeit-Prüfung (min. 11 Stunden zwischen Schichten)
+    if (previousDayEndTime && entry.clockIn) {
+      const [prevH, prevM] = previousDayEndTime.split(':').map(Number);
+      const [currH, currM] = entry.clockIn.split(':').map(Number);
+      
+      // Vereinfachte Berechnung: Annahme dass vorheriger Tag am Vortag war
+      const restHours = (24 - prevH) + currH + (currM - prevM) / 60;
+      
+      if (restHours < 11) {
+        conflicts.push({
+          type: 'MIN_REST_TIME',
+          severity: 'ERROR',
+          message: `Ruhezeit unterschritten`,
+          details: `Nur ${restHours.toFixed(1)}h Ruhezeit, min. 11h erforderlich (ArbZG)`
+        });
+      }
+    }
+    
+    // 3. Pausenregelung prüfen (30 Min nach 6h, 45 Min nach 9h)
+    const breakDuration = entry.breakDuration || 0;
+    if (entry.totalHours > 9 && breakDuration < 45) {
+      conflicts.push({
+        type: 'MISSING_BREAK',
+        severity: 'WARNING',
+        message: `Pausenzeit zu kurz`,
+        details: `Bei ${entry.totalHours.toFixed(1)}h Arbeit sind min. 45 Min Pause erforderlich`
+      });
+    } else if (entry.totalHours > 6 && breakDuration < 30) {
+      conflicts.push({
+        type: 'MISSING_BREAK',
+        severity: 'WARNING',
+        message: `Pausenzeit zu kurz`,
+        details: `Bei ${entry.totalHours.toFixed(1)}h Arbeit sind min. 30 Min Pause erforderlich`
+      });
+    }
+    
+    // 4. Minijob-Grenze prüfen (538€ = ca. 45h bei 12€/h Mindestlohn)
+    if (employee.employmentType === 'MINIJOB') {
+      // Dies sollte monatlich geprüft werden, hier nur Warnung
+      const hourlyRate = employee.hourlyRate || 12;
+      const monthlyLimit = 538 / hourlyRate;
+      // Warnung wenn einzelner Tag > 10h (unrealistisch für Minijob)
+      if (entry.totalHours > 10) {
+        conflicts.push({
+          type: 'MINIJOB_LIMIT',
+          severity: 'WARNING',
+          message: `Minijob-Arbeitszeit prüfen`,
+          details: `Hohe Arbeitszeit für Minijobber - Monatsgrenze beachten`
+        });
+      }
+    }
+    
+    // 5. Überstundenlimit aus AZK prüfen
+    if (employee.timeAccount?.overtimeLimit) {
+      const currentBalance = employee.timeAccount.balance || 0;
+      if (currentBalance > employee.timeAccount.overtimeLimit) {
+        conflicts.push({
+          type: 'OVERTIME_LIMIT',
+          severity: 'WARNING',
+          message: `Überstundenlimit erreicht`,
+          details: `AZK-Stand: ${currentBalance.toFixed(1)}h, Limit: ${employee.timeAccount.overtimeLimit}h`
+        });
+      }
+    }
+    
+    return conflicts;
+  }
+
+  /**
+   * Zuschläge berechnen (Gastromatic-Zuschlagsberechnung)
+   */
+  static calculateSurcharges(
+    entry: TimeTracking,
+    employee: Employee
+  ): SurchargeCalculation {
+    const hourlyRate = employee.hourlyRate || (employee.grossSalary / (employee.workingHours?.weekly || 40) / 4.33);
+    const workSettings = employee.workSettings;
+    
+    const totalHours = entry.totalHours || 0;
+    const overtimeThreshold = workSettings?.dailyWorkHours || 8;
+    
+    // Stunden aufteilen
+    const baseHours = Math.min(totalHours, overtimeThreshold);
+    const overtimeHours = Math.max(0, totalHours - overtimeThreshold);
+    const nightHours = this.calculateNightHours(entry.clockIn, entry.clockOut || entry.clockIn);
+    
+    // Wochenende/Feiertag prüfen
+    const isWeekendDay = this.isWeekend(entry.date);
+    const holidayInfo = this.isHoliday(entry.date);
+    
+    const weekendHours = isWeekendDay ? totalHours : 0;
+    const holidayHours = holidayInfo.isHoliday ? totalHours : 0;
+    
+    // Zuschläge berechnen (Multiplier aus WorkSettings)
+    const overtimeMultiplier = (workSettings?.overtimeMultiplier || 1.25) - 1; // z.B. 0.25 für 25%
+    const weekendMultiplier = (workSettings?.weekendMultiplier || 1.5) - 1; // z.B. 0.5 für 50%
+    const holidayMultiplier = (workSettings?.holidayMultiplier || 2.0) - 1; // z.B. 1.0 für 100%
+    const nightMultiplier = 0.25; // 25% Nachtzuschlag (Standard)
+    
+    const nightSurcharge = nightHours * hourlyRate * nightMultiplier;
+    const weekendSurcharge = weekendHours * hourlyRate * weekendMultiplier;
+    const holidaySurcharge = holidayHours * hourlyRate * holidayMultiplier;
+    const overtimeSurcharge = overtimeHours * hourlyRate * overtimeMultiplier;
+    
+    const totalSurcharge = nightSurcharge + weekendSurcharge + holidaySurcharge + overtimeSurcharge;
+    
+    return {
+      baseHours,
+      nightHours,
+      weekendHours,
+      holidayHours,
+      overtimeHours,
+      nightSurcharge: Math.round(nightSurcharge * 100) / 100,
+      weekendSurcharge: Math.round(weekendSurcharge * 100) / 100,
+      holidaySurcharge: Math.round(holidaySurcharge * 100) / 100,
+      overtimeSurcharge: Math.round(overtimeSurcharge * 100) / 100,
+      totalSurcharge: Math.round(totalSurcharge * 100) / 100
+    };
+  }
+
+  /**
+   * Plan-Ist-Abgleich für einen Mitarbeiter (Gastromatic-Auswertung)
+   */
+  static async getPlanActualComparison(
+    companyId: string,
+    employeeId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<PlanActualComparison[]> {
+    const comparisons: PlanActualComparison[] = [];
+    
+    // Zeiteinträge laden
+    const timeEntries = await this.getEmployeeTimeTracking(companyId, employeeId);
+    
+    // Schichten laden
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const shifts = await this.getShifts(companyId, start, end);
+    const employeeShifts = shifts.filter(s => s.employeeId === employeeId);
+    
+    // Mitarbeiter laden
+    const employee = await this.getEmployee(companyId, employeeId);
+    if (!employee) return comparisons;
+    
+    // Für jeden Tag im Zeitraum vergleichen
+    const current = new Date(startDate);
+    while (current <= end) {
+      const dateStr = current.toISOString().split('T')[0];
+      
+      // Geplante Schicht finden
+      const shift = employeeShifts.find(s => s.date === dateStr);
+      
+      // Tatsächlicher Zeiteintrag finden
+      const entry = timeEntries.find(e => e.date === dateStr);
+      
+      if (shift || entry) {
+        const plannedHours = shift ? this.calculateHoursBetween(shift.startTime, shift.endTime) : 0;
+        const actualHours = entry?.totalHours || 0;
+        
+        // Konflikte prüfen
+        const conflicts = entry ? this.checkTimeConflicts(entry, employee) : [];
+        
+        comparisons.push({
+          employeeId,
+          employeeName: `${employee.firstName} ${employee.lastName}`,
+          date: dateStr,
+          plannedHours,
+          actualHours,
+          difference: actualHours - plannedHours,
+          plannedStart: shift?.startTime,
+          plannedEnd: shift?.endTime,
+          actualStart: entry?.clockIn,
+          actualEnd: entry?.clockOut,
+          hasConflict: conflicts.length > 0,
+          conflicts
+        });
+      }
+      
+      current.setDate(current.getDate() + 1);
+    }
+    
+    return comparisons;
+  }
+
+  /**
+   * Hilfsfunktion: Stunden zwischen zwei Uhrzeiten berechnen
+   */
+  static calculateHoursBetween(start: string, end: string): number {
+    if (!start || !end) return 0;
+    const [startH, startM] = start.split(':').map(Number);
+    const [endH, endM] = end.split(':').map(Number);
+    
+    let hours = endH - startH + (endM - startM) / 60;
+    if (hours < 0) hours += 24; // Nachtschicht über Mitternacht
+    
+    return Math.round(hours * 100) / 100;
+  }
+
+  /**
+   * Gastromatic-Auswertung: Mitarbeiter-Evaluation für Zeitraum
+   */
+  static async getEmployeeEvaluation(
+    companyId: string,
+    employeeId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<EmployeeEvaluation | null> {
+    const employee = await this.getEmployee(companyId, employeeId);
+    if (!employee) return null;
+    
+    // Zeiteinträge laden
+    const timeEntries = await this.getEmployeeTimeTracking(companyId, employeeId);
+    const periodEntries = timeEntries.filter(e => e.date >= startDate && e.date <= endDate);
+    
+    // Schichten laden
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const shifts = await this.getShifts(companyId, start, end);
+    const employeeShifts = shifts.filter(s => s.employeeId === employeeId);
+    
+    // Abwesenheitsanträge laden
+    const absences = await this.getAbsenceRequests(companyId);
+    const employeeAbsences = absences.filter(a => 
+      a.employeeId === employeeId && 
+      a.status === 'APPROVED' &&
+      a.type === 'VACATION'
+    );
+    
+    // Berechnen
+    const plannedHours = employeeShifts.reduce((sum, s) => 
+      sum + this.calculateHoursBetween(s.startTime, s.endTime), 0);
+    
+    const actualHours = periodEntries.reduce((sum, e) => sum + (e.totalHours || 0), 0);
+    const overtimeHours = periodEntries.reduce((sum, e) => sum + (e.overtimeHours || 0), 0);
+    
+    // Konflikte zählen
+    let totalConflicts = 0;
+    let unreviewedEntries = 0;
+    let totalSurcharges = 0;
+    
+    for (const entry of periodEntries) {
+      const conflicts = this.checkTimeConflicts(entry, employee);
+      totalConflicts += conflicts.length;
+      
+      if (entry.status !== 'REVIEWED') {
+        unreviewedEntries++;
+      }
+      
+      const surcharges = this.calculateSurcharges(entry, employee);
+      totalSurcharges += surcharges.totalSurcharge;
+    }
+    
+    // Urlaub berechnen
+    const vacationDaysTaken = employeeAbsences.reduce((sum, a) => sum + a.days, 0);
+    const vacationDaysRemaining = this.calculateAvailableVacationDays(employee) - vacationDaysTaken;
+    
+    // AZK
+    const weeklyHours = employee.workingHours?.weekly || 40;
+    const targetHoursPerMonth = employee.timeAccount?.targetHoursPerMonth || (weeklyHours * 4.33);
+    const azkChange = actualHours - plannedHours;
+    const azkBalance = (employee.timeAccount?.balance || 0) + azkChange;
+    
+    // Lohn schätzen
+    const hourlyRate = employee.hourlyRate || (employee.grossSalary / weeklyHours / 4.33);
+    const estimatedGrossPay = (actualHours * hourlyRate) + totalSurcharges;
+    
+    return {
+      employeeId,
+      employeeName: `${employee.firstName} ${employee.lastName}`,
+      period: { start: startDate, end: endDate },
+      plannedHours: Math.round(plannedHours * 100) / 100,
+      actualHours: Math.round(actualHours * 100) / 100,
+      overtimeHours: Math.round(overtimeHours * 100) / 100,
+      azkBalance: Math.round(azkBalance * 100) / 100,
+      azkChange: Math.round(azkChange * 100) / 100,
+      totalConflicts,
+      unreviewedEntries,
+      vacationDaysTaken,
+      vacationDaysRemaining,
+      totalSurcharges: Math.round(totalSurcharges * 100) / 100,
+      estimatedGrossPay: Math.round(estimatedGrossPay * 100) / 100
+    };
+  }
+
+  /**
+   * Gastromatic: AZK aktualisieren nach Zeiterfassung
+   */
+  static async updateTimeAccountBalance(
+    companyId: string,
+    employeeId: string,
+    hoursChange: number
+  ): Promise<void> {
+    const employee = await this.getEmployee(companyId, employeeId);
+    if (!employee) return;
+    
+    const currentBalance = employee.timeAccount?.balance || 0;
+    const newBalance = currentBalance + hoursChange;
+    
+    await this.updateEmployee(companyId, employeeId, {
+      timeAccount: {
+        ...employee.timeAccount,
+        balance: newBalance,
+        targetHoursPerMonth: employee.timeAccount?.targetHoursPerMonth || 0,
+        overtimeLimit: employee.timeAccount?.overtimeLimit || 100,
+        compensationType: employee.timeAccount?.compensationType || 'MIXED',
+        carryOverLimit: employee.timeAccount?.carryOverLimit || 40
+      }
+    });
+  }
 }
+

@@ -29,6 +29,7 @@ import ProductsServicesCard from '@/components/dashboard/ProductsServicesCard';
 import ActivityHistoryCard from '@/components/dashboard/ActivityHistoryCard';
 import TopExpensesCard from '@/components/dashboard/TopExpensesCard';
 import TopCustomersCard from '@/components/dashboard/TopCustomersCard';
+import ContractAlertsCard from '@/components/dashboard/ContractAlertsCard';
 import DraggableDashboardGrid, {
   DashboardComponent,
 } from '@/components/dashboard/DraggableDashboardGrid';
@@ -240,6 +241,8 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
             return <ProductsServicesCard key="products-services" />;
           case 'activity-history':
             return <ActivityHistoryCard key="activity-history" />;
+          case 'contract-alerts':
+            return <ContractAlertsCard key="contract-alerts" />;
           case 'orders-table':
             return (
               <div key="orders-table" className="bg-white rounded-lg border shadow-sm p-6">

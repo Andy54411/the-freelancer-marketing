@@ -1,0 +1,396 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db, auth as adminAuth } from '@/firebase/server';
+import { z } from 'zod';
+import { ResendEmailService } from '@/lib/resend-email-service';
+
+// Zod Schema für Dashboard-Zugang erstellen
+const createDashboardAccessSchema = z.object({
+  employeeId: z.string().min(1, 'Employee ID ist erforderlich'),
+  password: z.string().min(6, 'Passwort muss mindestens 6 Zeichen haben'),
+  permissions: z.object({
+    overview: z.boolean().default(true),
+    personal: z.boolean().default(false),
+    employees: z.boolean().default(false),
+    shiftPlanning: z.boolean().default(true),
+    timeTracking: z.boolean().default(true),
+    absences: z.boolean().default(true),
+    evaluations: z.boolean().default(false),
+    orders: z.boolean().default(false),
+    quotes: z.boolean().default(false),
+    invoices: z.boolean().default(false),
+    customers: z.boolean().default(false),
+    calendar: z.boolean().default(true),
+    workspace: z.boolean().default(true),
+    finance: z.boolean().default(false),
+    expenses: z.boolean().default(false),
+    inventory: z.boolean().default(false),
+    settings: z.boolean().default(true),
+  }).optional(),
+});
+
+// Standard-Berechtigungen für neue Mitarbeiter
+const defaultPermissions = {
+  overview: true,
+  personal: false,
+  employees: false,
+  shiftPlanning: true,
+  timeTracking: true,
+  absences: true,
+  evaluations: false,
+  orders: false,
+  quotes: false,
+  invoices: false,
+  customers: false,
+  calendar: true,
+  workspace: true,
+  finance: false,
+  expenses: false,
+  inventory: false,
+  settings: true,
+};
+
+export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+  try {
+    if (!db || !adminAuth) {
+      return NextResponse.json(
+        { success: false, error: 'Server-Dienste nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
+    const { uid: companyId } = await params;
+
+    if (!companyId) {
+      return NextResponse.json(
+        { success: false, error: 'Company ID fehlt' },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    const validation = createDashboardAccessSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { success: false, error: validation.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
+    const { employeeId, password, permissions } = validation.data;
+
+    // Prüfe ob die Firma existiert
+    const companyRef = db.collection('companies').doc(companyId);
+    const companySnap = await companyRef.get();
+
+    if (!companySnap.exists) {
+      return NextResponse.json(
+        { success: false, error: 'Firma nicht gefunden' },
+        { status: 404 }
+      );
+    }
+
+    // Hole den Mitarbeiter
+    const employeeRef = db.collection('companies').doc(companyId).collection('employees').doc(employeeId);
+    const employeeSnap = await employeeRef.get();
+
+    if (!employeeSnap.exists) {
+      return NextResponse.json(
+        { success: false, error: 'Mitarbeiter nicht gefunden' },
+        { status: 404 }
+      );
+    }
+
+    const employeeData = employeeSnap.data();
+
+    if (!employeeData) {
+      return NextResponse.json(
+        { success: false, error: 'Mitarbeiterdaten nicht verfügbar' },
+        { status: 404 }
+      );
+    }
+
+    // Prüfe ob der Mitarbeiter bereits Dashboard-Zugang hat
+    if (employeeData.dashboardAccess?.enabled && employeeData.dashboardAccess?.authUid) {
+      return NextResponse.json(
+        { success: false, error: 'Mitarbeiter hat bereits Dashboard-Zugang' },
+        { status: 400 }
+      );
+    }
+
+    // Prüfe ob eine E-Mail vorhanden ist
+    if (!employeeData.email) {
+      return NextResponse.json(
+        { success: false, error: 'Mitarbeiter hat keine E-Mail-Adresse hinterlegt' },
+        { status: 400 }
+      );
+    }
+
+    const employeeEmail = employeeData.email.toLowerCase().trim();
+    const employeeName = `${employeeData.firstName} ${employeeData.lastName}`;
+    const companyData = companySnap.data();
+    const companyName = companyData?.step2?.companyName ?? companyData?.companyName ?? 'Ihr Arbeitgeber';
+
+    // Prüfe ob bereits ein Firebase Auth User mit dieser E-Mail existiert
+    let authUid: string;
+    let userAlreadyExisted = false;
+
+    try {
+      const existingUser = await adminAuth.getUserByEmail(employeeEmail);
+      // User existiert bereits - verknüpfen
+      authUid = existingUser.uid;
+      userAlreadyExisted = true;
+    } catch {
+      // User existiert nicht - neu erstellen
+      try {
+        const newUser = await adminAuth.createUser({
+          email: employeeEmail,
+          password: password,
+          displayName: employeeName,
+          emailVerified: true, // Admin-erstellte Accounts sind verifiziert
+        });
+        authUid = newUser.uid;
+      } catch (createError) {
+        const errorMessage = createError instanceof Error ? createError.message : 'Unbekannter Fehler';
+        return NextResponse.json(
+          { success: false, error: `Fehler beim Erstellen des Accounts: ${errorMessage}` },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Erstelle/Aktualisiere das User-Dokument in Firestore
+    const userRef = db.collection('users').doc(authUid);
+    const userSnap = await userRef.get();
+    
+    const linkedCompanyEntry = {
+      companyId,
+      companyName,
+      employeeId,
+      role: 'mitarbeiter',
+      linkedAt: new Date().toISOString(),
+      permissions: permissions ?? defaultPermissions,
+    };
+
+    if (userSnap.exists) {
+      // User existiert - linkedCompanies aktualisieren
+      const userData = userSnap.data();
+      const linkedCompanies = userData?.linkedCompanies ?? [];
+      
+      // Prüfe ob diese Firma schon verknüpft ist
+      const existingIndex = linkedCompanies.findIndex((c: { companyId: string }) => c.companyId === companyId);
+      if (existingIndex >= 0) {
+        linkedCompanies[existingIndex] = linkedCompanyEntry;
+      } else {
+        linkedCompanies.push(linkedCompanyEntry);
+      }
+
+      // Update mit allen notwendigen Feldern
+      const updateData: Record<string, unknown> = {
+        linkedCompanies,
+        updatedAt: new Date(),
+      };
+      
+      // Setze companyId und employeeId falls noch nicht vorhanden (erster Firmen-Zugang)
+      if (!userData?.companyId) {
+        updateData.companyId = companyId;
+        updateData.employeeId = employeeId;
+        updateData.companyName = companyName;
+      }
+      
+      // Falls user_type nicht 'mitarbeiter' ist und kein Firmen-Owner, setze auf 'mitarbeiter'
+      if (userData?.user_type !== 'firma' && userData?.user_type !== 'master' && userData?.user_type !== 'support') {
+        updateData.user_type = 'mitarbeiter';
+      }
+
+      await userRef.update(updateData);
+    } else {
+      // Neues User-Dokument erstellen
+      await userRef.set({
+        uid: authUid,
+        email: employeeEmail,
+        firstName: employeeData.firstName,
+        lastName: employeeData.lastName,
+        user_type: 'mitarbeiter', // Mitarbeiter-Rolle für Dashboard-Redirect
+        companyId, // Haupt-Firma für Redirect
+        employeeId, // Mitarbeiter-ID für Berechtigungsprüfung
+        companyName, // Firmenname für Anzeige
+        linkedCompanies: [linkedCompanyEntry],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+
+    // WICHTIG: Custom Claims für Firebase Auth Token setzen
+    // Das stellt sicher, dass der Mitarbeiter nach dem Login korrekt weitergeleitet wird
+    try {
+      await adminAuth.setCustomUserClaims(authUid, { role: 'mitarbeiter' });
+    } catch (claimError) {
+      // Log but don't fail - the Firestore trigger should also set this
+      console.error('Failed to set custom claims:', claimError);
+    }
+
+    // Aktualisiere den Mitarbeiter mit dem Dashboard-Zugang
+    await employeeRef.update({
+      dashboardAccess: {
+        enabled: true,
+        authUid,
+        createdAt: new Date().toISOString(),
+        permissions: permissions ?? defaultPermissions,
+      },
+      updatedAt: new Date(),
+    });
+
+    // E-Mail an den Mitarbeiter senden
+    const emailService = ResendEmailService.getInstance();
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://taskilo.de';
+    const loginUrl = `${baseUrl}/login`;
+
+    const emailResult = await emailService.sendEmail({
+      from: 'Taskilo <noreply@taskilo.de>',
+      to: [employeeEmail],
+      subject: `Ihre Zugangsdaten für ${companyName}`,
+      htmlContent: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #374151; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">Ihr Dashboard-Zugang</h1>
+          </div>
+          
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px;">
+            <p style="font-size: 16px; margin-bottom: 20px;">Hallo ${employeeName},</p>
+            
+            <p style="font-size: 16px; margin-bottom: 20px;">
+              <strong>${companyName}</strong> hat Ihnen Zugang zum Firmen-Dashboard freigeschaltet.
+            </p>
+            
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <p style="margin: 0 0 10px 0; font-size: 14px; color: #6b7280;">Ihre Zugangsdaten:</p>
+              <p style="margin: 0 0 5px 0;"><strong>E-Mail:</strong> ${employeeEmail}</p>
+              <p style="margin: 0;"><strong>Passwort:</strong> ${password}</p>
+            </div>
+            
+            <p style="font-size: 14px; color: #dc2626; margin-bottom: 20px;">
+              Bitte ändern Sie Ihr Passwort nach dem ersten Login.
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${loginUrl}" 
+                 style="background: #0d9488; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block;">
+                Jetzt einloggen
+              </a>
+            </div>
+          </div>
+          
+          <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+            <p style="margin: 0;">Diese E-Mail wurde automatisch von Taskilo versendet.</p>
+          </div>
+        </body>
+        </html>
+      `,
+      textContent: `
+Hallo ${employeeName},
+
+${companyName} hat Ihnen Zugang zum Firmen-Dashboard freigeschaltet.
+
+Ihre Zugangsdaten:
+E-Mail: ${employeeEmail}
+Passwort: ${password}
+
+Bitte ändern Sie Ihr Passwort nach dem ersten Login.
+
+Jetzt einloggen: ${loginUrl}
+
+Mit freundlichen Grüßen,
+Ihr Taskilo Team
+      `.trim(),
+    });
+
+    return NextResponse.json({
+      success: true,
+      authUid,
+      userAlreadyExisted,
+      employeeName,
+      employeeEmail,
+      companyName,
+      emailSent: emailResult.success,
+      emailError: emailResult.error,
+      message: userAlreadyExisted 
+        ? 'Dashboard-Zugang aktiviert. Der Mitarbeiter kann sich mit seinem bestehenden Account einloggen.'
+        : 'Dashboard-Zugang erstellt. Der Mitarbeiter hat seine Zugangsdaten per E-Mail erhalten.',
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    return NextResponse.json(
+      {
+        success: false,
+        error: errorMessage,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// GET: Prüfe Status aller Mitarbeiter mit Dashboard-Zugang
+export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+  try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
+    const { uid: companyId } = await params;
+
+    if (!companyId) {
+      return NextResponse.json(
+        { success: false, error: 'Company ID fehlt' },
+        { status: 400 }
+      );
+    }
+
+    // Hole alle Mitarbeiter mit Dashboard-Zugang
+    const employeesRef = db.collection('companies').doc(companyId).collection('employees');
+    const employeesSnap = await employeesRef.get();
+
+    const dashboardAccess = employeesSnap.docs
+      .filter(docSnap => docSnap.data().dashboardAccess?.enabled)
+      .map(docSnap => {
+        const data = docSnap.data();
+        return {
+          employeeId: docSnap.id,
+          employeeName: `${data.firstName} ${data.lastName}`,
+          email: data.email,
+          enabled: data.dashboardAccess?.enabled ?? false,
+          authUid: data.dashboardAccess?.authUid,
+          createdAt: data.dashboardAccess?.createdAt,
+          lastLogin: data.dashboardAccess?.lastLogin,
+          permissions: data.dashboardAccess?.permissions,
+        };
+      });
+
+    return NextResponse.json({
+      success: true,
+      employees: dashboardAccess,
+      total: dashboardAccess.length,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Fehler beim Abrufen der Dashboard-Zugänge',
+        details: errorMessage,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
+  }
+}

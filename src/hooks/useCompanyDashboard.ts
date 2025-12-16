@@ -54,13 +54,16 @@ export function useCompanyDashboard() {
       return;
     }
 
+    // Autorisierungslogik: Firma-Owner ODER Mitarbeiter der Firma
+    const isOwner = user?.uid === uid;
+    const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
+    
     // Wenn die Authentifizierung abgeschlossen ist, aber kein Benutzer da ist
-    // oder die UID nicht mit der URL übereinstimmt, ist der Zugriff nicht gestattet.
-    if (!user || user.uid !== uid) {
+    // oder weder Owner noch Mitarbeiter ist, ist der Zugriff nicht gestattet.
+    if (!user || (!isOwner && !isEmployee)) {
       setIsAuthorized(false);
       setIsChecking(false);
       // Die <ProtectedRoute>-Komponente kümmert sich um die Weiterleitung.
-      // Die Aufgabe dieses Hooks ist hier beendet.
       return;
     }
 

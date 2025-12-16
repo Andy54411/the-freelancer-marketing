@@ -222,6 +222,11 @@ export default function SchedulePage({ params }: SchedulePageProps) {
   const [selectedCell, setSelectedCell] = useState<{ employeeId: string; date: string } | null>(null);
   const [editingShift, setEditingShift] = useState<Shift | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [weatherData, setWeatherData] = useState<Map<string, { temp: number; icon: string }>>(new Map());
+  const [isPublished, setIsPublished] = useState(false);
+  const [copiedShifts, setCopiedShifts] = useState<Shift[]>([]);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [editingDepartment, setEditingDepartment] = useState<string | null>(null);
 
   // Form State
   const [newShiftForm, setNewShiftForm] = useState({
@@ -245,8 +250,9 @@ export default function SchedulePage({ params }: SchedulePageProps) {
 
   const filteredEmployees = useMemo(() => {
     return employees
+      .filter(emp => emp.id) // Nur Mitarbeiter mit ID
       .filter(emp => emp.isActive)
-      .filter(emp => selectedDepartment === 'all' || emp.department === selectedDepartment);
+      .filter(emp => selectedDepartment === 'all' || emp.department === selectedDepartment) as (Employee & { id: string })[];
   }, [employees, selectedDepartment]);
 
   // Schichten pro Mitarbeiter und Tag
@@ -273,6 +279,64 @@ export default function SchedulePage({ params }: SchedulePageProps) {
     });
     return hours;
   }, [shifts, weekDates]);
+
+  // Verfügbare/Freie Stunden pro Mitarbeiter (Soll - Ist)
+  const availableHours = useMemo(() => {
+    const available = new Map<string, { target: number; planned: number; free: number }>();
+    
+    employees
+      .filter(emp => emp.id)
+      .forEach(emp => {
+        const empId = emp.id as string;
+        // Wöchentliche Sollstunden aus Vertragsdaten
+        const weeklyTarget = emp.workingHours?.weekly ?? 
+          (emp.employmentType === 'FULL_TIME' ? 40 :
+           emp.employmentType === 'PART_TIME' ? 20 :
+           emp.employmentType === 'MINIJOB' ? 10 :
+           emp.employmentType === 'WERKSTUDENT' ? 20 :
+           emp.employmentType === 'AUSHILFE' ? 15 : 40);
+        
+        const planned = weeklyHours.get(empId) ?? 0;
+        const free = weeklyTarget - planned;
+        
+        available.set(empId, {
+          target: weeklyTarget,
+          planned,
+          free: Math.max(0, free), // Keine negativen freien Stunden
+        });
+      });
+    
+    return available;
+  }, [employees, weeklyHours]);
+
+  // Geburtstage in der Woche
+  const birthdaysInWeek = useMemo(() => {
+    const birthdays: { employeeId: string; name: string; date: string; day: number }[] = [];
+    employees
+      .filter(emp => emp.id && emp.dateOfBirth)
+      .forEach(emp => {
+        const empId = emp.id as string;
+        const dob = emp.dateOfBirth as string;
+        // dateOfBirth ist im Format YYYY-MM-DD
+        const birthMonth = dob.slice(5, 7);
+        const birthDay = dob.slice(8, 10);
+        
+        weekDates.forEach((date, index) => {
+          const dateMonth = (date.getMonth() + 1).toString().padStart(2, '0');
+          const dateDay = date.getDate().toString().padStart(2, '0');
+          
+          if (birthMonth === dateMonth && birthDay === dateDay) {
+            birthdays.push({
+              employeeId: empId,
+              name: `${emp.firstName} ${emp.lastName}`,
+              date: formatDate(date),
+              day: index,
+            });
+          }
+        });
+      });
+    return birthdays;
+  }, [employees, weekDates]);
 
   // Betriebskennzahlen
   const dailyStats = useMemo(() => {
@@ -365,6 +429,135 @@ export default function SchedulePage({ params }: SchedulePageProps) {
     setCurrentDate(new Date());
   };
 
+  // Wetter laden (OpenWeatherMap kostenlose API)
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        // Koordinaten für Deutschland (Berlin als Default)
+        const lat = 52.52;
+        const lon = 13.405;
+        const response = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,weathercode&timezone=Europe/Berlin`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          const newWeatherData = new Map<string, { temp: number; icon: string }>();
+          data.daily.time.forEach((date: string, index: number) => {
+            const temp = Math.round(data.daily.temperature_2m_max[index]);
+            const code = data.daily.weathercode[index];
+            // Wetter-Icon basierend auf Code
+            let icon = 'cloud';
+            if (code <= 1) icon = 'sun';
+            else if (code <= 3) icon = 'cloud-sun';
+            else if (code >= 61 && code <= 67) icon = 'cloud-rain';
+            else if (code >= 71 && code <= 77) icon = 'snowflake';
+            newWeatherData.set(date, { temp, icon });
+          });
+          setWeatherData(newWeatherData);
+        }
+      } catch {
+        // Wetter-Fehler ignorieren
+      }
+    };
+    fetchWeather();
+  }, [currentDate]);
+
+  // Export-Funktion
+  const handleExport = () => {
+    const csvContent = [
+      ['Mitarbeiter', 'Datum', 'Schicht', 'Start', 'Ende', 'Stunden'].join(','),
+      ...shifts
+        .filter(shift => shift.employeeId)
+        .map(shift => {
+          const emp = employees.find(e => e.id === shift.employeeId);
+          if (!emp) return null;
+          const hours = calculateHoursFromShift(shift);
+          return [
+            `${emp.firstName} ${emp.lastName}`,
+            shift.date,
+            shift.notes ?? '-',
+            shift.startTime ?? '-',
+            shift.endTime ?? '-',
+            hours.toFixed(1)
+          ].join(',');
+        })
+        .filter(Boolean)
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Dienstplan_KW${weekNumber}_${currentDate.getFullYear()}.csv`;
+    link.click();
+    toast.success('Dienstplan exportiert');
+  };
+
+  // Dienstplan veröffentlichen
+  const handlePublish = async () => {
+    if (!resolvedParams?.uid) return;
+    setIsPublished(true);
+    toast.success('Dienstplan wurde veröffentlicht');
+    // TODO: Hier könnte eine Benachrichtigung an alle Mitarbeiter gesendet werden
+  };
+
+  // Woche kopieren für eine Abteilung
+  const handleCopyWeek = (department: string) => {
+    const weekStart = formatDate(weekDates[0]);
+    const weekEnd = formatDate(weekDates[6]);
+    const deptShifts = shifts.filter(s => 
+      s.department === department && 
+      s.date >= weekStart && 
+      s.date <= weekEnd
+    );
+    
+    if (deptShifts.length === 0) {
+      toast.error('Keine Schichten zum Kopieren in dieser Woche');
+      return;
+    }
+    
+    setCopiedShifts(deptShifts);
+    toast.success(`${deptShifts.length} Schichten kopiert - Navigiere zur Zielwoche und klicke "Einfügen"`);
+  };
+
+  // Woche einfügen für eine Abteilung
+  const handlePasteWeek = async (department: string) => {
+    if (!resolvedParams?.uid || copiedShifts.length === 0) {
+      toast.error('Keine Schichten zum Einfügen');
+      return;
+    }
+
+    try {
+      const weekStart = weekDates[0];
+      let pastedCount = 0;
+
+      for (const shift of copiedShifts) {
+        // Berechne den Wochentag der Original-Schicht
+        const originalDate = new Date(shift.date);
+        const dayOfWeek = originalDate.getDay() === 0 ? 6 : originalDate.getDay() - 1; // Mo=0, So=6
+        
+        // Berechne das neue Datum in der Zielwoche
+        const newDate = new Date(weekStart);
+        newDate.setDate(newDate.getDate() + dayOfWeek);
+        
+        const newShiftData: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'> = {
+          ...shift,
+          date: formatDate(newDate),
+          companyId: resolvedParams.uid,
+        };
+        delete (newShiftData as Partial<Shift>).id;
+        
+        await PersonalService.createShift(newShiftData);
+        pastedCount++;
+      }
+
+      toast.success(`${pastedCount} Schichten eingefügt`);
+      setCopiedShifts([]);
+      setHasChanges(true);
+    } catch {
+      toast.error('Fehler beim Einfügen');
+    }
+  };
+
   // Schichttyp ermitteln
   const getShiftType = (shift: Shift): ShiftType => {
     if (shift.status === 'ABSENT') return 'urlaub';
@@ -385,6 +578,10 @@ export default function SchedulePage({ params }: SchedulePageProps) {
 
     try {
       const employee = employees.find(emp => emp.id === employeeId);
+      if (!employee) {
+        toast.error('Mitarbeiter nicht gefunden');
+        return;
+      }
       const existingShift = shiftsByEmployeeAndDate.get(`${employeeId}-${date}`);
 
       const shiftData: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -393,8 +590,8 @@ export default function SchedulePage({ params }: SchedulePageProps) {
         date,
         startTime: template.startTime,
         endTime: template.endTime,
-        position: employee?.position || 'Mitarbeiter',
-        department: employee?.department || 'Allgemein',
+        position: employee.position,
+        department: employee.department,
         notes: template.name,
         status: template.id === 'urlaub' ? 'ABSENT' : template.id === 'krank' ? 'SICK' : 'PLANNED',
       };
@@ -424,24 +621,32 @@ export default function SchedulePage({ params }: SchedulePageProps) {
       const template = SHIFT_TEMPLATES.find(t => t.id === newShiftForm.shiftType);
       if (!template) return;
 
+      // Benutzerdefinierte Zeiten haben Priorität über Template-Zeiten
+      const startTime = newShiftForm.startTime || template.startTime;
+      const endTime = newShiftForm.endTime || template.endTime;
+
       if (editingShift?.id) {
         await PersonalService.updateShift(resolvedParams.uid, editingShift.id, {
-          startTime: template.startTime || newShiftForm.startTime,
-          endTime: template.endTime || newShiftForm.endTime,
+          startTime,
+          endTime,
           notes: template.name + (newShiftForm.notes ? ` - ${newShiftForm.notes}` : ''),
           status: template.id === 'urlaub' ? 'ABSENT' : template.id === 'krank' ? 'SICK' : 'PLANNED',
         });
         toast.success('Schicht aktualisiert');
       } else if (selectedCell) {
         const employee = employees.find(emp => emp.id === selectedCell.employeeId);
+        if (!employee) {
+          toast.error('Mitarbeiter nicht gefunden');
+          return;
+        }
         const shiftData: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'> = {
           companyId: resolvedParams.uid,
           employeeId: selectedCell.employeeId,
           date: selectedCell.date,
-          startTime: template.startTime || newShiftForm.startTime,
-          endTime: template.endTime || newShiftForm.endTime,
-          position: employee?.position || 'Mitarbeiter',
-          department: employee?.department || 'Allgemein',
+          startTime,
+          endTime,
+          position: employee.position,
+          department: employee.department,
           notes: template.name + (newShiftForm.notes ? ` - ${newShiftForm.notes}` : ''),
           status: template.id === 'urlaub' ? 'ABSENT' : template.id === 'krank' ? 'SICK' : 'PLANNED',
         };
@@ -487,7 +692,7 @@ export default function SchedulePage({ params }: SchedulePageProps) {
               <Plus className="h-4 w-4 text-gray-300 group-hover:text-[#14ad9f]" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-48">
+          <DropdownMenuContent className="w-48 z-50">
             <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">
               Arbeitseinsatz hinzufügen:
             </div>
@@ -515,27 +720,34 @@ export default function SchedulePage({ params }: SchedulePageProps) {
     const template = SHIFT_TEMPLATES.find(t => t.id === getShiftType(shift));
     const isAbsence = shift.status === 'ABSENT' || shift.status === 'SICK' || !shift.startTime;
     
+    // Template-Styles mit Frei-Fallback
+    const freiTemplate = SHIFT_TEMPLATES.find(t => t.id === 'frei');
+    const bgColor = template?.bgColor ?? freiTemplate?.bgColor ?? 'bg-gray-100';
+    const borderColor = template?.borderColor ?? freiTemplate?.borderColor ?? 'border-gray-300';
+    const textColor = template?.textColor ?? freiTemplate?.textColor ?? 'text-gray-700';
+    const templateName = template?.name ?? 'Frei';
+    
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
               'w-full h-full min-h-[60px] rounded border p-1.5 text-left transition-colors hover:opacity-80',
-              template?.bgColor || 'bg-gray-100',
-              template?.borderColor || 'border-gray-300',
-              template?.textColor || 'text-gray-700'
+              bgColor,
+              borderColor,
+              textColor
             )}
           >
             {isAbsence && (
               <div className="flex items-center gap-1 mb-0.5">
                 <X className="h-3 w-3" />
-                <span className="text-xs font-medium">{template?.name || 'Frei'}</span>
+                <span className="text-xs font-medium">{templateName}</span>
               </div>
             )}
             {!isAbsence && (
               <>
                 <div className="text-xs font-semibold truncate">
-                  {template?.name || shift.position}
+                  {template?.name ?? shift.position}
                 </div>
                 <div className="text-[10px] opacity-80">
                   {shift.startTime} - {shift.endTime}
@@ -547,7 +759,7 @@ export default function SchedulePage({ params }: SchedulePageProps) {
             )}
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-48">
+        <DropdownMenuContent className="w-48 z-50">
           <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">
             Schicht ändern:
           </div>
@@ -568,9 +780,9 @@ export default function SchedulePage({ params }: SchedulePageProps) {
               setEditingShift(shift);
               setNewShiftForm({
                 shiftType: getShiftType(shift),
-                startTime: shift.startTime || '09:00',
-                endTime: shift.endTime || '17:00',
-                notes: shift.notes || '',
+                startTime: shift.startTime ?? '09:00',
+                endTime: shift.endTime ?? '17:00',
+                notes: shift.notes ?? '',
               });
               setShowCreateDialog(true);
             }}
@@ -635,7 +847,7 @@ export default function SchedulePage({ params }: SchedulePageProps) {
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateWeek('prev')}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="px-3 text-sm font-medium min-w-[140px] text-center">
+                <span className="px-3 text-sm font-medium whitespace-nowrap">
                   {formatDate(weekDates[0]).slice(8)}.{formatDate(weekDates[0]).slice(5, 7)} - {formatDate(weekDates[6]).slice(8)}.{formatDate(weekDates[6]).slice(5, 7)}.{currentDate.getFullYear()}
                 </span>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateWeek('next')}>
@@ -687,13 +899,13 @@ export default function SchedulePage({ params }: SchedulePageProps) {
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500 uppercase tracking-wide">Aktionen</span>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" title="Exportieren">
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="Exportieren" onClick={handleExport}>
                   <Download className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" title="Aktualisieren">
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="Aktualisieren" onClick={setupRealtimeSubscriptions}>
                   <RefreshCw className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" title="Einstellungen">
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="Einstellungen" onClick={() => setShowSettingsDialog(true)}>
                   <Settings className="h-4 w-4" />
                 </Button>
               </div>
@@ -701,11 +913,11 @@ export default function SchedulePage({ params }: SchedulePageProps) {
 
             {/* Save & Publish */}
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled={!hasChanges}>
+              <Button variant="outline" size="sm" disabled={!hasChanges} onClick={() => { setHasChanges(false); toast.success('Änderungen gespeichert'); }}>
                 Speichern
               </Button>
-              <Button size="sm" className="bg-[#14ad9f] hover:bg-[#0d9488]">
-                Dienstplan öffentlich
+              <Button size="sm" className={isPublished ? 'bg-green-600 hover:bg-green-700' : 'bg-[#14ad9f] hover:bg-[#0d9488]'} onClick={handlePublish}>
+                {isPublished ? 'Veröffentlicht' : 'Dienstplan öffentlich'}
               </Button>
             </div>
           </div>
@@ -716,10 +928,21 @@ export default function SchedulePage({ params }: SchedulePageProps) {
             <div className="min-w-[180px] pr-4 border-r">
               <div className="text-lg font-bold text-gray-900">KW {weekNumber}</div>
               <div className="text-sm text-gray-500">Jahr {currentDate.getFullYear()}</div>
-              <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
-                <Gift className="h-3 w-3" />
-                <span>Geburtstage</span>
-              </div>
+              {birthdaysInWeek.length > 0 ? (
+                <div className="mt-1">
+                  {birthdaysInWeek.map((bday, idx) => (
+                    <div key={idx} className="flex items-center gap-1 text-xs text-pink-600">
+                      <Gift className="h-3 w-3" />
+                      <span>{bday.name}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
+                  <Gift className="h-3 w-3" />
+                  <span>Keine Geburtstage</span>
+                </div>
+              )}
             </div>
 
             {/* Tage Header */}
@@ -727,6 +950,8 @@ export default function SchedulePage({ params }: SchedulePageProps) {
               {weekDates.map((date, index) => {
                 const isToday = formatDate(date) === formatDate(new Date());
                 const dayName = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'][index];
+                const dateStr = formatDate(date);
+                const weather = weatherData.get(dateStr);
                 
                 return (
                   <div
@@ -745,7 +970,7 @@ export default function SchedulePage({ params }: SchedulePageProps) {
                     </div>
                     <div className="flex items-center justify-center gap-1 text-xs text-gray-400 mt-0.5">
                       <Cloud className="h-3 w-3" />
-                      <span>--°C</span>
+                      <span>{weather ? `${weather.temp}°C` : '--°C'}</span>
                     </div>
                   </div>
                 );
@@ -753,14 +978,16 @@ export default function SchedulePage({ params }: SchedulePageProps) {
             </div>
 
             {/* Stunden Header */}
-            <div className="min-w-20 text-center text-sm font-medium text-gray-500">
-              Stunden
+            <div className="min-w-[100px] text-center">
+              <div className="text-sm font-medium text-gray-500">Geplant</div>
+              <div className="text-xs text-gray-400">/ Verfügbar</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Dienstplan Grid */}
+      {viewMode === 'grid' && (
       <div className="p-4">
         {/* Abteilungen */}
         {(selectedDepartment === 'all' ? departments : [selectedDepartment]).map(department => (
@@ -772,18 +999,80 @@ export default function SchedulePage({ params }: SchedulePageProps) {
                 <span>{department}</span>
               </div>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <Copy className="h-3 w-3" />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6"
+                  title={copiedShifts.length > 0 ? "Woche einfügen" : "Woche kopieren"}
+                  onClick={() => {
+                    if (copiedShifts.length > 0) {
+                      handlePasteWeek(department);
+                    } else {
+                      handleCopyWeek(department);
+                    }
+                  }}
+                >
+                  <Copy className={cn("h-3 w-3", copiedShifts.length > 0 && "text-[#14ad9f]")} />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6"
+                  title="Abteilung bearbeiten"
+                  onClick={() => setEditingDepartment(department)}
+                >
                   <Pencil className="h-3 w-3" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <Key className="h-3 w-3" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <MoreHorizontal className="h-3 w-3" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6"
+                      title="Weitere Optionen"
+                    >
+                      <MoreHorizontal className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-48">
+                    <DropdownMenuItem onClick={() => handleCopyWeek(department)}>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Woche kopieren
+                    </DropdownMenuItem>
+                    {copiedShifts.length > 0 && (
+                      <DropdownMenuItem onClick={() => handlePasteWeek(department)}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Woche einfügen ({copiedShifts.length})
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => {
+                      // Alle Schichten der Abteilung in dieser Woche löschen
+                      const weekStart = formatDate(weekDates[0]);
+                      const weekEnd = formatDate(weekDates[6]);
+                      const deptShifts = shifts.filter(s => 
+                        s.department === department && 
+                        s.date >= weekStart && 
+                        s.date <= weekEnd
+                      );
+                      if (deptShifts.length === 0) {
+                        toast.info('Keine Schichten zum Löschen');
+                        return;
+                      }
+                      if (confirm(`${deptShifts.length} Schichten in ${department} löschen?`)) {
+                        deptShifts.forEach(async (shift) => {
+                          if (shift.id && resolvedParams?.uid) {
+                            await PersonalService.deleteShift(resolvedParams.uid, shift.id);
+                          }
+                        });
+                        toast.success(`${deptShifts.length} Schichten gelöscht`);
+                      }
+                    }} className="text-red-600">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Woche leeren
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
@@ -792,7 +1081,7 @@ export default function SchedulePage({ params }: SchedulePageProps) {
               {filteredEmployees
                 .filter(emp => emp.department === department || selectedDepartment !== 'all')
                 .map(employee => {
-                  const hours = weeklyHours.get(employee.id || '') || 0;
+                  const hours = weeklyHours.get(employee.id) ?? 0;
                   
                   return (
                     <div
@@ -808,34 +1097,53 @@ export default function SchedulePage({ params }: SchedulePageProps) {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-900 truncate">
-                            {employee.firstName} {employee.lastName}
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm font-medium text-gray-900 truncate">
+                              {employee.firstName} {employee.lastName}
+                            </span>
+                            {employee.isShiftLeader && (
+                              <Key className="h-3 w-3 text-amber-500" title="Schichtleiter" />
+                            )}
                           </div>
                           <div className="text-xs text-gray-500 truncate">
-                            {employee.employmentType === 'FULL_TIME' ? 'Vollzeit' :
+                            {employee.isShiftLeader ? 'Schichtleiter' :
+                             employee.employmentType === 'FULL_TIME' ? 'Vollzeit' :
                              employee.employmentType === 'PART_TIME' ? 'Teilzeit' :
                              employee.employmentType === 'INTERN' ? 'Praktikant' :
-                             employee.position || 'Mitarbeiter'}
+                             employee.position}
                           </div>
                         </div>
-                        {renderWunschfreiIndicator(employee.id || '')}
+                        {renderWunschfreiIndicator(employee.id)}
                       </div>
 
                       {/* Schicht-Zellen */}
                       <div className="flex-1 grid grid-cols-7 gap-1 p-1">
                         {weekDates.map((date, index) => (
                           <div key={index} className="min-h-[60px]">
-                            {renderShiftCell(employee.id || '', formatDate(date))}
+                            {renderShiftCell(employee.id, formatDate(date))}
                           </div>
                         ))}
                       </div>
 
                       {/* Stunden */}
-                      <div className="min-w-20 flex items-center justify-center border-l bg-gray-50/50">
+                      <div className="min-w-[100px] flex items-center justify-center border-l bg-gray-50/50">
                         <div className="text-center">
-                          <div className="text-lg font-bold text-gray-900">{Math.round(hours)}</div>
-                          <div className="flex items-center justify-center gap-0.5 text-gray-400">
-                            <RefreshCw className="h-3 w-3" />
+                          <div className="text-lg font-bold text-gray-900">{Math.round(hours)}h</div>
+                          {(() => {
+                            const avail = availableHours.get(employee.id);
+                            if (!avail) return null;
+                            const freeHrs = avail.free;
+                            return (
+                              <div className={cn(
+                                "text-xs font-medium",
+                                freeHrs > 0 ? "text-emerald-600" : "text-gray-400"
+                              )}>
+                                {freeHrs > 0 ? `+${Math.round(freeHrs)}h frei` : 'voll'}
+                              </div>
+                            );
+                          })()}
+                          <div className="text-[10px] text-gray-400">
+                            Soll: {availableHours.get(employee.id)?.target ?? 40}h
                           </div>
                         </div>
                       </div>
@@ -851,7 +1159,7 @@ export default function SchedulePage({ params }: SchedulePageProps) {
           <div className="mb-6">
             <div className="bg-white rounded-lg border overflow-hidden">
               {filteredEmployees.map(employee => {
-                const hours = weeklyHours.get(employee.id || '') || 0;
+                const hours = weeklyHours.get(employee.id) ?? 0;
                 
                 return (
                   <div
@@ -866,11 +1174,16 @@ export default function SchedulePage({ params }: SchedulePageProps) {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 truncate">
-                          {employee.firstName} {employee.lastName}
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-medium text-gray-900 truncate">
+                            {employee.firstName} {employee.lastName}
+                          </span>
+                          {employee.isShiftLeader && (
+                            <Key className="h-3 w-3 text-amber-500" title="Schichtleiter" />
+                          )}
                         </div>
                         <div className="text-xs text-gray-500 truncate">
-                          {employee.position || 'Mitarbeiter'}
+                          {employee.isShiftLeader ? 'Schichtleiter' : employee.position}
                         </div>
                       </div>
                     </div>
@@ -878,14 +1191,30 @@ export default function SchedulePage({ params }: SchedulePageProps) {
                     <div className="flex-1 grid grid-cols-7 gap-1 p-1">
                       {weekDates.map((date, index) => (
                         <div key={index} className="min-h-[60px]">
-                          {renderShiftCell(employee.id || '', formatDate(date))}
+                          {renderShiftCell(employee.id, formatDate(date))}
                         </div>
                       ))}
                     </div>
 
-                    <div className="min-w-20 flex items-center justify-center border-l bg-gray-50/50">
+                    <div className="min-w-[100px] flex items-center justify-center border-l bg-gray-50/50">
                       <div className="text-center">
-                        <div className="text-lg font-bold text-gray-900">{Math.round(hours)}</div>
+                        <div className="text-lg font-bold text-gray-900">{Math.round(hours)}h</div>
+                        {(() => {
+                          const avail = availableHours.get(employee.id);
+                          if (!avail) return null;
+                          const freeHrs = avail.free;
+                          return (
+                            <div className={cn(
+                              "text-xs font-medium",
+                              freeHrs > 0 ? "text-emerald-600" : "text-gray-400"
+                            )}>
+                              {freeHrs > 0 ? `+${Math.round(freeHrs)}h frei` : 'voll'}
+                            </div>
+                          );
+                        })()}
+                        <div className="text-[10px] text-gray-400">
+                          Soll: {availableHours.get(employee.id)?.target ?? 40}h
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -940,6 +1269,121 @@ export default function SchedulePage({ params }: SchedulePageProps) {
           </div>
         </div>
       </div>
+      )}
+
+      {/* Dienstplan List-Ansicht */}
+      {viewMode === 'list' && (
+        <div className="p-4 space-y-4">
+          {/* Verfügbare Stunden Übersicht */}
+          <div className="bg-white rounded-lg border p-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Verfügbare Kapazitäten - KW {weekNumber}</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {filteredEmployees
+                .map(emp => {
+                  const avail = availableHours.get(emp.id);
+                  return { emp, avail };
+                })
+                .sort((a, b) => (b.avail?.free ?? 0) - (a.avail?.free ?? 0))
+                .map(({ emp, avail }) => (
+                  <div 
+                    key={emp.id} 
+                    className={cn(
+                      "p-3 rounded-lg border-2 transition-colors",
+                      avail && avail.free > 0 
+                        ? "border-emerald-200 bg-emerald-50" 
+                        : "border-gray-200 bg-gray-50"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={emp.avatar} />
+                        <AvatarFallback className="text-[10px]">
+                          {emp.firstName?.[0]}{emp.lastName?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium truncate">{emp.firstName} {emp.lastName?.[0]}.</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">
+                        {avail?.planned ?? 0}/{avail?.target ?? 40}h
+                      </span>
+                      <span className={cn(
+                        "text-sm font-bold",
+                        avail && avail.free > 0 ? "text-emerald-600" : "text-gray-400"
+                      )}>
+                        {avail && avail.free > 0 ? `+${Math.round(avail.free)}h` : 'voll'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          {/* Schichten Tabelle */}
+          <div className="bg-white rounded-lg border overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 border-b">
+                  <th className="text-left py-3 px-4 font-medium text-sm">Mitarbeiter</th>
+                  <th className="text-left py-3 px-2 font-medium text-sm">Abteilung</th>
+                  <th className="text-left py-3 px-2 font-medium text-sm">Datum</th>
+                  <th className="text-left py-3 px-2 font-medium text-sm">Schicht</th>
+                  <th className="text-center py-3 px-2 font-medium text-sm">Zeit</th>
+                  <th className="text-right py-3 px-4 font-medium text-sm">Stunden</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shifts
+                  .filter(shift => {
+                    const weekStart = formatDate(weekDates[0]);
+                    const weekEnd = formatDate(weekDates[6]);
+                    return shift.date >= weekStart && shift.date <= weekEnd;
+                  })
+                  .sort((a, b) => a.date.localeCompare(b.date))
+                  .map(shift => {
+                    const employee = employees.find(e => e.id === shift.employeeId);
+                    const hours = calculateHoursFromShift(shift);
+                    const template = SHIFT_TEMPLATES.find(t => t.id === getShiftType(shift));
+                    
+                    return (
+                      <tr key={shift.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={employee?.avatar} />
+                              <AvatarFallback className="bg-[#14ad9f]/10 text-[#14ad9f] text-xs">
+                                {employee?.firstName?.[0]}{employee?.lastName?.[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium">{employee?.firstName} {employee?.lastName}</span>
+                              {employee?.isShiftLeader && (
+                                <Key className="h-3 w-3 text-amber-500" title="Schichtleiter" />
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2 text-gray-600">{shift.department}</td>
+                        <td className="py-3 px-2">
+                          {new Date(shift.date).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}
+                        </td>
+                        <td className="py-3 px-2">
+                          <span className={cn('px-2 py-1 rounded text-xs font-medium', template?.bgColor, template?.textColor)}>
+                            {template?.name ?? shift.notes ?? shift.position}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center">
+                          {shift.startTime && shift.endTime ? `${shift.startTime} - ${shift.endTime}` : '-'}
+                        </td>
+                        <td className="py-3 px-4 text-right font-medium">{hours.toFixed(1)}h</td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
@@ -963,7 +1407,13 @@ export default function SchedulePage({ params }: SchedulePageProps) {
                 {SHIFT_TEMPLATES.map(template => (
                   <button
                     key={template.id}
-                    onClick={() => setNewShiftForm(prev => ({ ...prev, shiftType: template.id }))}
+                    onClick={() => setNewShiftForm(prev => ({ 
+                      ...prev, 
+                      shiftType: template.id,
+                      // Template-Zeiten als Vorschlag setzen, wenn vorhanden
+                      startTime: template.startTime || prev.startTime,
+                      endTime: template.endTime || prev.endTime,
+                    }))}
                     className={cn(
                       'p-3 rounded-lg border-2 text-left transition-all',
                       newShiftForm.shiftType === template.id
@@ -1042,6 +1492,142 @@ export default function SchedulePage({ params }: SchedulePageProps) {
                   Speichern
                 </Button>
               </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Abteilung bearbeiten Dialog */}
+      <Dialog open={!!editingDepartment} onOpenChange={() => setEditingDepartment(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Abteilung: {editingDepartment}</DialogTitle>
+            <DialogDescription>
+              Schichtleiter und Positionen der Mitarbeiter verwalten
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            <div>
+              <Label className="text-sm font-medium">Mitarbeiter in dieser Abteilung</Label>
+              <div className="mt-2 space-y-3">
+                {employees
+                  .filter(emp => emp.department === editingDepartment)
+                  .map(emp => (
+                    <div key={emp.id} className="p-3 bg-gray-50 rounded-lg space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={emp.avatar} />
+                          <AvatarFallback className="text-xs bg-[#14ad9f]/10 text-[#14ad9f]">
+                            {emp.firstName?.[0]}{emp.lastName?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <span className="font-medium">{emp.firstName} {emp.lastName}</span>
+                          {emp.isShiftLeader && (
+                            <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
+                              Schichtleiter
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs text-gray-500">Position</Label>
+                          <Input
+                            value={emp.position}
+                            onChange={async (e) => {
+                              if (!emp.id || !resolvedParams?.uid) return;
+                              try {
+                                await PersonalService.updateEmployee(resolvedParams.uid, emp.id, {
+                                  position: e.target.value
+                                });
+                                setEmployees(prev => prev.map(em => 
+                                  em.id === emp.id ? { ...em, position: e.target.value } : em
+                                ));
+                              } catch {
+                                toast.error('Fehler beim Speichern');
+                              }
+                            }}
+                            className="h-8 text-sm"
+                            placeholder="z.B. Koch, Kellner..."
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-500">Rolle</Label>
+                          <Select
+                            value={emp.roleInDepartment ?? 'MEMBER'}
+                            onValueChange={async (value) => {
+                              if (!emp.id || !resolvedParams?.uid) return;
+                              try {
+                                const isLeader = value === 'LEADER' || value === 'SUPERVISOR';
+                                await PersonalService.updateEmployee(resolvedParams.uid, emp.id, {
+                                  roleInDepartment: value as 'LEADER' | 'SUPERVISOR' | 'MEMBER',
+                                  isShiftLeader: isLeader
+                                });
+                                setEmployees(prev => prev.map(em => 
+                                  em.id === emp.id ? { 
+                                    ...em, 
+                                    roleInDepartment: value as 'LEADER' | 'SUPERVISOR' | 'MEMBER',
+                                    isShiftLeader: isLeader 
+                                  } : em
+                                ));
+                                toast.success('Rolle aktualisiert');
+                              } catch {
+                                toast.error('Fehler beim Speichern');
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-8 text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="LEADER">Schichtleiter</SelectItem>
+                              <SelectItem value="SUPERVISOR">Stellvertreter</SelectItem>
+                              <SelectItem value="MEMBER">Mitarbeiter</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <Button variant="outline" onClick={() => setEditingDepartment(null)}>
+                Schließen
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Einstellungen Dialog */}
+      <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Dienstplan-Einstellungen</DialogTitle>
+            <DialogDescription>
+              Einstellungen für die Dienstplanung
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Schichtvorlagen</Label>
+              <div className="mt-2 space-y-2">
+                {SHIFT_TEMPLATES.map(template => (
+                  <div key={template.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                    <div className={cn('w-4 h-4 rounded', template.bgColor)} />
+                    <span className="text-sm flex-1">{template.name}</span>
+                    <span className="text-xs text-gray-500">{template.startTime} - {template.endTime}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowSettingsDialog(false)}>
+                Schließen
+              </Button>
             </div>
           </div>
         </DialogContent>

@@ -4,6 +4,7 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import type { EmployeePermissions } from '@/components/dashboard/CompanySidebar';
 import {
   Grid as FiGrid,
   Calendar as FiCalendar,
@@ -250,6 +251,96 @@ const navigationItems: NavigationItem[] = [
   },
 ];
 
+// Eingeschränkte Navigation für Mitarbeiter
+const employeeNavigationItems: NavigationItem[] = [
+  {
+    label: 'Übersicht',
+    icon: FiGrid,
+    value: 'dashboard',
+  },
+  {
+    label: 'Kalender',
+    icon: FiCalendar,
+    value: 'calendar',
+    href: 'calendar',
+  },
+  {
+    label: 'Mein Bereich',
+    icon: FiUser,
+    value: 'personal-self',
+    subItems: [
+      { label: 'Dienstplan', value: 'personal-schedule', href: 'personal/schedule' },
+      { label: 'Arbeitszeit', value: 'personal-timesheet', href: 'personal/timesheet' },
+      { label: 'Urlaub & Abwesenheit', value: 'personal-absence', href: 'personal/absence' },
+      { label: 'Meine Dokumente', value: 'personal-documents', href: 'personal/documents' },
+    ],
+  },
+  {
+    label: 'Workspace',
+    icon: FiFolder,
+    value: 'workspace',
+    subItems: [
+      { label: 'Übersicht', value: 'workspace-overview', href: 'workspace' },
+      { label: 'Meine Aufgaben', value: 'workspace-tasks', href: 'workspace?type=task' },
+    ],
+  },
+];
+
+interface CompanyMobileSidebarProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  expandedItems: string[];
+  onToggleExpanded: (itemValue: string) => void;
+  onNavigate: (value: string, href?: string) => void;
+  getCurrentView: () => string;
+  isEmployee?: boolean;
+  employeePermissions?: EmployeePermissions;
+}
+
+// Funktion um Navigation basierend auf Berechtigungen zu filtern (gleiche Logik wie Desktop)
+function getEmployeeNavigation(permissions: EmployeePermissions): NavigationItem[] {
+  const filteredItems: NavigationItem[] = [];
+
+  if (permissions.overview) {
+    filteredItems.push({ label: 'Übersicht', icon: FiGrid, value: 'dashboard' });
+  }
+  if (permissions.calendar) {
+    filteredItems.push({ label: 'Kalender', icon: FiCalendar, value: 'calendar', href: 'calendar' });
+  }
+  if (permissions.shiftPlanning || permissions.timeTracking || permissions.absences) {
+    const subItems: NavigationSubItem[] = [];
+    if (permissions.shiftPlanning) subItems.push({ label: 'Dienstplan', value: 'personal-schedule', href: 'personal/schedule' });
+    if (permissions.timeTracking) subItems.push({ label: 'Zeiterfassung', value: 'personal-timesheet', href: 'personal/timesheet' });
+    if (permissions.absences) subItems.push({ label: 'Urlaub & Abwesenheit', value: 'personal-absence', href: 'personal/absence' });
+    if (subItems.length > 0) {
+      filteredItems.push({ label: 'Mein Bereich', icon: FiUser, value: 'personal-self', subItems });
+    }
+  }
+  if (permissions.workspace) {
+    filteredItems.push({
+      label: 'Workspace', icon: FiFolder, value: 'workspace',
+      subItems: [
+        { label: 'Übersicht', value: 'workspace-overview', href: 'workspace' },
+        { label: 'Meine Aufgaben', value: 'workspace-tasks', href: 'workspace?type=task' },
+      ],
+    });
+  }
+  if (permissions.orders) {
+    filteredItems.push({ label: 'Aufträge', icon: FiClipboardList, value: 'orders', href: 'orders/overview' });
+  }
+  if (permissions.customers) {
+    filteredItems.push({ label: 'Kunden', icon: FiUsers, value: 'customers', href: 'customers' });
+  }
+  if (permissions.invoices) {
+    filteredItems.push({ label: 'Rechnungen', icon: FiFileText, value: 'invoices', href: 'finance/invoices' });
+  }
+  if (permissions.settings) {
+    filteredItems.push({ label: 'Einstellungen', icon: FiSettings, value: 'settings', href: 'settings?view=profile' });
+  }
+
+  return filteredItems;
+}
+
 export default function CompanyMobileSidebar({
   isOpen,
   onOpenChange,
@@ -257,6 +348,8 @@ export default function CompanyMobileSidebar({
   onToggleExpanded,
   onNavigate,
   getCurrentView,
+  isEmployee = false,
+  employeePermissions,
 }: CompanyMobileSidebarProps) {
   const pathname = usePathname();
 
@@ -282,7 +375,17 @@ export default function CompanyMobileSidebar({
 
           {/* Mobile Navigation */}
           <nav className="flex-1 px-2 py-4 space-y-1">
-            {navigationItems.map(item => {
+            {(() => {
+              let navItems: NavigationItem[];
+              if (isEmployee && employeePermissions) {
+                navItems = getEmployeeNavigation(employeePermissions);
+              } else if (isEmployee) {
+                navItems = employeeNavigationItems;
+              } else {
+                navItems = navigationItems;
+              }
+              return navItems;
+            })().map(item => {
               const currentView = getCurrentView();
               // Präzise Pfad-Erkennung für aktive Zustände
               const isMainActive = (() => {
