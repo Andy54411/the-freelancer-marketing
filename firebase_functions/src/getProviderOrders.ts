@@ -108,12 +108,17 @@ export const getProviderOrders = onRequest(
 
             logger.info(`[getProviderOrders] Called for provider: ${providerId}`);
 
-            // 3. Authorization Check
-            if (decodedToken.uid !== providerId) {
-                logger.error(`[getProviderOrders] Security violation: User ${decodedToken.uid} tried to access orders for provider ${providerId}.`);
+            // 3. Authorization Check - Inhaber ODER Mitarbeiter dieser Company
+            const isOwner = decodedToken.uid === providerId;
+            const isEmployee = decodedToken.role === 'mitarbeiter' && decodedToken.companyId === providerId;
+            
+            if (!isOwner && !isEmployee) {
+                logger.error(`[getProviderOrders] Security violation: User ${decodedToken.uid} (role: ${decodedToken.role}, companyId: ${decodedToken.companyId}) tried to access orders for provider ${providerId}.`);
                 response.status(403).json({ error: 'You are not authorized to view these orders.' });
                 return;
             }
+            
+            logger.info(`[getProviderOrders] Access granted - isOwner: ${isOwner}, isEmployee: ${isEmployee}`);
 
             const db = getDb();
 

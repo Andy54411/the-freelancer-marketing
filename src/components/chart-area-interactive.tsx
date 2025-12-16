@@ -136,10 +136,10 @@ const chartConfigStatic = {
 
 export function ChartAreaInteractive({
   companyUid,
-  onFinancialDataChange,
+  onFinancialDataChangeAction,
 }: {
   companyUid: string;
-  onFinancialDataChange?: (data: {
+  onFinancialDataChangeAction?: (data: {
     totalRevenue: number;
     totalExpenses: number;
     netRevenue: number;
@@ -298,7 +298,33 @@ export function ChartAreaInteractive({
       setLoading(false);
     }, 2000);
 
+    // Mitarbeiter haben keine Firestore-Berechtigungen, daher direkt HTTP-API verwenden
+    const isEmployee = user.user_type === 'mitarbeiter';
+
     const fetchOrders = () => {
+      // Mitarbeiter: Nur HTTP-API verwenden (keine Firestore-Berechtigungen)
+      if (isEmployee) {
+        const fetchViaHttp = async () => {
+          try {
+            const result = await callHttpsFunction(
+              'getProviderOrders',
+              { providerId: companyUid },
+              'GET'
+            );
+            setOrders(result.orders || []);
+            updateIndicator();
+          } catch (httpErr) {
+            console.error('HTTP fetch failed for employee:', httpErr);
+            setError('Fehler beim Laden der Umsatzdaten');
+          } finally {
+            setLoading(false);
+          }
+        };
+        fetchViaHttp();
+        return () => {}; // Kein Unsubscribe nötig für HTTP
+      }
+
+      // Firmeninhaber: Firestore-Listener mit HTTP-Fallback
       try {
         // Erst Real-time listener für Aufträge/Orders versuchen
         const ordersQuery = query(
@@ -401,40 +427,49 @@ export function ChartAreaInteractive({
 
     const fetchExpenses = () => {
       try {
+        // Verwende Company-Subcollection statt globaler customers Collection
         const expensesQuery = query(
-          collection(db, 'customers'),
-          where('companyId', '==', companyUid),
+          collection(db, 'companies', companyUid, 'customers'),
           where('isSupplier', '==', true)
         );
 
         // Real-time listener für Ausgaben - dieselbe Logik wie SectionCards
-        const unsubscribe = onSnapshot(expensesQuery, expensesSnapshot => {
-          const expenseData: ExpenseData[] = [];
-          let totalAmount = 0;
+        const unsubscribe = onSnapshot(
+          expensesQuery,
+          expensesSnapshot => {
+            const expenseData: ExpenseData[] = [];
+            let totalAmount = 0;
 
-          expensesSnapshot.forEach(doc => {
-            const supplier = doc.data();
-            if (supplier.totalAmount && supplier.totalAmount > 0) {
-              totalAmount += supplier.totalAmount;
-            }
-          });
-
-          // Erstelle einen einzelnen Expense-Eintrag mit der Gesamtsumme für heute
-          if (totalAmount > 0) {
-            expenseData.push({
-              id: 'total-expenses',
-              amount: totalAmount,
-              date: new Date(), // Immer heute
-              createdAt: new Date(),
+            expensesSnapshot.forEach(doc => {
+              const supplier = doc.data();
+              if (supplier.totalAmount && supplier.totalAmount > 0) {
+                totalAmount += supplier.totalAmount;
+              }
             });
-          }
 
-          setExpenses(expenseData);
-          updateIndicator();
-        });
+            // Erstelle einen einzelnen Expense-Eintrag mit der Gesamtsumme für heute
+            if (totalAmount > 0) {
+              expenseData.push({
+                id: 'total-expenses',
+                amount: totalAmount,
+                date: new Date(), // Immer heute
+                createdAt: new Date(),
+              });
+            }
+
+            setExpenses(expenseData);
+            updateIndicator();
+          },
+          error => {
+            console.error('Expenses Firestore error:', error);
+            // Bei Fehler leeres Array setzen
+            setExpenses([]);
+          }
+        );
 
         return unsubscribe;
       } catch (err) {
+        console.error('Fehler beim Setup der Expenses-Listener:', err);
         return () => {};
       }
     };
@@ -947,8 +982,8 @@ export function ChartAreaInteractive({
 
   // Übertrage berechnete Werte an Parent-Komponente
   React.useEffect(() => {
-    if (onFinancialDataChange && (totalRevenue > 0 || totalExpenses > 0)) {
-      onFinancialDataChange({
+    if (onFinancialDataChangeAction && (totalRevenue > 0 || totalExpenses > 0)) {
+      onFinancialDataChangeAction({
         totalRevenue,
         totalExpenses,
         netRevenue,
@@ -962,7 +997,7 @@ export function ChartAreaInteractive({
     netRevenue,
     grossProfitBeforeTax,
     vatAmount,
-    onFinancialDataChange,
+    onFinancialDataChangeAction,
   ]);
 
   if (loading) {
@@ -1027,7 +1062,7 @@ export function ChartAreaInteractive({
               if (value) setTimeRange(value);
             }}
             variant="outline"
-            className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
+            className="hidden *:data-[slot=toggle-group-item]:px-4! @[767px]/card:flex"
           >
             <ToggleGroupItem value="365d">1 Jahr</ToggleGroupItem>
             <ToggleGroupItem value="90d">90 Tage</ToggleGroupItem>
@@ -1308,7 +1343,7 @@ export function ChartAreaInteractive({
                           toggleCategory(key as keyof typeof activeCategories);
                         }
                       }}
-                      className={`group relative flex items-center gap-2 p-2.5 rounded-lg text-left transition-all duration-200 border-2 min-h-[3rem] w-full ${
+                      className={`group relative flex items-center gap-2 p-2.5 rounded-lg text-left transition-all duration-200 border-2 min-h-12 w-full ${
                         isActive
                           ? 'bg-white shadow-md border-gray-200 hover:shadow-lg'
                           : 'bg-gray-50/50 border-gray-100 hover:bg-gray-100 hover:border-gray-200'
@@ -1418,7 +1453,7 @@ export function ChartAreaInteractive({
             <div className="relative" ref={negativeDropdownRef}>
               <button
                 onClick={() => setShowNegativeDropdown(!showNegativeDropdown)}
-                className={`group relative flex items-center gap-2 p-2.5 rounded-lg text-left transition-all duration-200 border-2 min-h-[3rem] w-full ${
+                className={`group relative flex items-center gap-2 p-2.5 rounded-lg text-left transition-all duration-200 border-2 min-h-12 w-full ${
                   activeCategories.stornos || activeCategories.rueckerstattungen
                     ? 'bg-white shadow-md border-gray-200 hover:shadow-lg'
                     : 'bg-gray-50/50 border-gray-100 hover:bg-gray-100 hover:border-gray-200'

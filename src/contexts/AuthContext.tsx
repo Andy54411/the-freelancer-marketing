@@ -1,12 +1,13 @@
 'use client';
 
 import { type User as FirebaseUser, onAuthStateChanged, signOut } from '@/firebase/clients';
-import { createContext, useState, useEffect, useContext, ReactNode, useMemo } from 'react';
+import { createContext, useState, useEffect, useContext, ReactNode, useMemo, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { orderBy, limit } from 'firebase/firestore'; // NEU: orderBy und limit importieren
 import { auth, db } from '@/firebase/clients';
 import { userPresence } from '@/lib/userPresence'; // NEU: User Presence importieren
+import { logEmployeeLogin } from '@/lib/employeeActivityLogger'; // NEU: Employee Activity Logger
 
 /**
  * Definiert ein einheitliches Benutzerprofil, das Daten aus Firebase Auth
@@ -47,9 +48,8 @@ export interface UserProfile {
   lastName?: string;
   profilePictureURL?: string; // Avatar-URL für alle Benutzerprofile
   companyName?: string; // Firmenname für Unternehmenskonten
-  companyId?: string; // Company ID für Mitarbeiter (verweist auf Arbeitgeber)
-  employeeId?: string; // Employee Document ID für Mitarbeiter
-  linkedCompanies?: LinkedCompany[]; // Multi-Firma-Zugang für Mitarbeiter
+  companyId?: string; // Company ID für Mitarbeiter (aus Custom Claims)
+  employeeId?: string; // Employee Document ID für Mitarbeiter (aus Custom Claims)
 }
 
 // NEU: Interface für die Chat-Vorschau, die im Header benötigt wird.
@@ -172,6 +172,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }
 
+          // MITARBEITER: Wenn kein User-Dokument gefunden, aber Custom Claims 'mitarbeiter' vorhanden
+          if (!userFound && idTokenResult.claims.role === 'mitarbeiter') {
+            const employeeCompanyId = idTokenResult.claims.companyId as string;
+            const employeeIdClaim = idTokenResult.claims.employeeId as string;
+            
+            if (employeeCompanyId && employeeIdClaim) {
+              console.log('[AuthContext] ✅ Mitarbeiter erkannt über Custom Claims:', {
+                companyId: employeeCompanyId,
+                employeeId: employeeIdClaim,
+              });
+              
+              // Lade Mitarbeiter-Daten aus der Company Subcollection
+              try {
+                const employeeDocRef = doc(db, 'companies', employeeCompanyId, 'employees', employeeIdClaim);
+                const employeeDocSnap = await getDoc(employeeDocRef);
+                
+                if (employeeDocSnap.exists()) {
+                  const empData = employeeDocSnap.data();
+                  profileData = {
+                    firstName: empData.firstName,
+                    lastName: empData.lastName,
+                    profilePictureURL: empData.avatar,
+                    user_type: 'mitarbeiter',
+                  };
+                  userFound = true;
+                  console.log('[AuthContext] ✅ Mitarbeiter-Daten geladen:', profileData);
+                }
+              } catch (empError) {
+                console.error('[AuthContext] Fehler beim Laden der Mitarbeiter-Daten:', empError);
+              }
+            }
+          }
+
           if (userFound && profileData) {
             // Rollenbestimmung: Custom Claim hat Vorrang.
             const roleFromClaim = idTokenResult.claims.master
@@ -199,27 +232,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               willSetUserType: finalRole
             });
 
-            // Prüfe auf pending Firmenverknüpfungen (Multi-Login System)
-            let linkedCompanies = profileData.linkedCompanies ?? [];
-            try {
-              const idToken = await fbUser.getIdToken();
-              const checkLinksResponse = await fetch('/api/auth/check-company-links', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${idToken}`,
-                  'Content-Type': 'application/json',
-                },
-              });
-              if (checkLinksResponse.ok) {
-                const checkLinksData = await checkLinksResponse.json();
-                if (checkLinksData.success && checkLinksData.linkedCompanies) {
-                  linkedCompanies = checkLinksData.linkedCompanies;
-                  console.log('[AuthContext] LinkedCompanies updated:', linkedCompanies.length);
-                }
-              }
-            } catch (linkError) {
-              console.error('[AuthContext] Error checking company links:', linkError);
-            }
+            // Für Mitarbeiter: companyId und employeeId aus Custom Claims
+            const employeeCompanyId = (idTokenResult.claims.companyId as string) ?? undefined;
+            const employeeId = (idTokenResult.claims.employeeId as string) ?? undefined;
 
             const userData: UserProfile = {
               uid: fbUser.uid,
@@ -228,16 +243,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               firstName: profileData.firstName,
               lastName: profileData.lastName,
               profilePictureURL: profileData.profilePictureURL ?? undefined,
-              // Mitarbeiter-spezifische Felder
-              companyId: profileData.companyId ?? undefined,
-              employeeId: profileData.employeeId ?? undefined,
+              // Mitarbeiter-spezifische Felder aus Custom Claims
+              companyId: employeeCompanyId ?? profileData.companyId ?? undefined,
+              employeeId: employeeId ?? profileData.employeeId ?? undefined,
               companyName: profileData.companyName ?? undefined,
-              // Multi-Login Firmenverknüpfungen
-              linkedCompanies: linkedCompanies.length > 0 ? linkedCompanies : undefined,
             };
 
             console.log('[AuthContext] Setting user state with:', userData);
             setUser(userData);
+
+            // NEU: Logge Mitarbeiter-Login für Firmeninhaber-Übersicht
+            if (finalRole === 'mitarbeiter' && employeeCompanyId) {
+              // Asynchron loggen, nicht auf Ergebnis warten
+              logEmployeeLogin().catch(() => {
+                // Ignoriere Fehler beim Loggen - Login soll trotzdem funktionieren
+              });
+            }
 
             // KRITISCH: AUTO-REDIRECT nach LOGIN basierend auf user_type
             if (!isRedirecting) {
@@ -270,7 +291,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
                 // Nutze redirectTo wenn vorhanden und passend für die Rolle
                 if (redirectTo) {
-                  const companyIdForEmployee = profileData.companyId;
+                  const companyIdForEmployee = (idTokenResult.claims.companyId as string) ?? profileData.companyId;
                   const isValidRedirect = 
                     (finalRole === 'firma' && redirectTo.includes(`/dashboard/company/${fbUser.uid}`)) ||
                     (finalRole === 'kunde' && redirectTo.includes(`/dashboard/user/${fbUser.uid}`)) ||
@@ -293,8 +314,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     targetPath = '/dashboard/admin';
                   } else if (finalRole === 'mitarbeiter') {
                     // Mitarbeiter wird zum Company Dashboard des Arbeitgebers geleitet
-                    // Priorität: 1. companyId aus Profil, 2. Erste verknüpfte Firma aus linkedCompanies
-                    const employeeCompanyId = profileData.companyId ?? linkedCompanies[0]?.companyId;
+                    // companyId aus Custom Claims holen (gesetzt beim Dashboard-Zugang erstellen)
+                    const employeeCompanyId = (idTokenResult.claims.companyId as string) ?? profileData.companyId;
                     if (employeeCompanyId) {
                       targetPath = `/dashboard/company/${employeeCompanyId}`;
                     } else {
@@ -345,13 +366,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     ? 'firma'
                     : idTokenResult.claims.role === 'kunde'
                       ? 'kunde'
-                      : 'kunde';
+                      : idTokenResult.claims.role === 'mitarbeiter'
+                        ? 'mitarbeiter'
+                        : 'kunde';
+
+            const employeeCompanyIdFromClaim = (idTokenResult.claims.companyId as string) ?? undefined;
+            const employeeIdFromClaim = (idTokenResult.claims.employeeId as string) ?? undefined;
 
             setUser({
               uid: fbUser.uid,
               email: fbUser.email,
               user_type: roleFromClaim,
+              companyId: employeeCompanyIdFromClaim,
+              employeeId: employeeIdFromClaim,
             });
+
+            // Mitarbeiter-Redirect wenn kein DB-Dokument gefunden wurde
+            if (roleFromClaim === 'mitarbeiter' && employeeCompanyIdFromClaim && !isRedirecting) {
+              const currentPath = window.location.pathname;
+              if (currentPath.includes('/login') || currentPath === '/') {
+                setIsRedirecting(true);
+                window.location.assign(`/dashboard/company/${employeeCompanyIdFromClaim}`);
+                return;
+              }
+            }
 
             // NEU: Initialisiere User Presence auch für Fallback-Fall
             userPresence.initializePresence(fbUser.uid).catch(console.error);

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Grid as FiGrid,
   Calendar as FiCalendar,
@@ -461,8 +462,36 @@ interface CompanySidebarProps {
   employeePermissions?: EmployeePermissions; // Berechtigungen für Mitarbeiter
 }
 
+// Prüfe ob alle Permissions aktiviert sind (voller Zugang wie Inhaber)
+function hasFullAccess(permissions: EmployeePermissions): boolean {
+  return (
+    permissions.overview &&
+    permissions.personal &&
+    permissions.employees &&
+    permissions.shiftPlanning &&
+    permissions.timeTracking &&
+    permissions.absences &&
+    permissions.evaluations &&
+    permissions.orders &&
+    permissions.quotes &&
+    permissions.invoices &&
+    permissions.customers &&
+    permissions.calendar &&
+    permissions.workspace &&
+    permissions.finance &&
+    permissions.expenses &&
+    permissions.inventory &&
+    permissions.settings
+  );
+}
+
 // Funktion um Navigation basierend auf Berechtigungen zu filtern
 function getEmployeeNavigation(permissions: EmployeePermissions, allNavItems: NavigationItem[]): NavigationItem[] {
+  // Bei vollem Zugang: Komplette Navigation wie Inhaber
+  if (hasFullAccess(permissions)) {
+    console.log('[CompanySidebar] Full access detected - using complete navigation');
+    return allNavItems;
+  }
   const filteredItems: NavigationItem[] = [];
 
   // Übersicht
@@ -641,6 +670,11 @@ export default function CompanySidebar({
   employeePermissions,
 }: CompanySidebarProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  
+  // Die effektive User-ID für benutzer-spezifische E-Mails
+  const effectiveUserId = user?.uid || uid;
+  
   const [hasBankConnection, setHasBankConnection] = useState(false);
   const [unreadEmailCounts, setUnreadEmailCounts] = useState<Record<string, number>>({
     inbox: 0,
@@ -744,8 +778,8 @@ export default function CompanySidebar({
 
     const loadUnreadCounts = async () => {
       try {
-        // Use single API call to get all counts
-        const response = await fetch(`/api/company/${uid}/emails/counts`);
+        // Use single API call to get all counts - with userId for user-specific emails
+        const response = await fetch(`/api/company/${uid}/emails/counts?userId=${effectiveUserId}`);
 
         if (response.ok) {
           const data = await response.json();
@@ -784,7 +818,7 @@ export default function CompanySidebar({
     return () => {
       isMounted = false;
     };
-  }, [uid, pathname]);
+  }, [uid, pathname, effectiveUserId]);
 
   const isExpanded = (itemValue: string) => expandedItems.includes(itemValue);
   const isItemActive = (item: NavigationItem) => {
@@ -1062,11 +1096,11 @@ export default function CompanySidebar({
                   {/* Main Button */}
                   <button
                     onClick={async () => {
-                      // ✅ Gmail-Verbindungsprüfung für E-Mail-Menü
+                      // ✅ Gmail-Verbindungsprüfung für E-Mail-Menü (mit userId)
                       if (item.value === 'email') {
-                        console.log('🔍 E-Mail Icon geklickt, prüfe Gmail-Status...');
+                        console.log('🔍 E-Mail Icon geklickt, prüfe Gmail-Status für User:', effectiveUserId);
                         try {
-                          const apiUrl = `/api/company/${uid}/gmail-auth-status`;
+                          const apiUrl = `/api/company/${uid}/gmail-auth-status?userId=${effectiveUserId}`;
                           console.log('📡 API-Aufruf:', apiUrl);
 
                           const response = await fetch(apiUrl);

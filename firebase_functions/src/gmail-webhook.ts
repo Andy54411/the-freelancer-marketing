@@ -518,15 +518,16 @@ async function saveEmailsToFirestore(userEmail: string, emails: any[]): Promise<
       emailCount: emails.length 
     });
 
-    // Finde Company ID für diese E-Mail-Adresse
-    const companyId = await findCompanyIdByEmail(userEmail);
+    // Finde Company ID und User ID für diese E-Mail-Adresse
+    const result = await findCompanyAndUserIdByEmail(userEmail);
     
-    if (!companyId) {
+    if (!result) {
       logger.error(`❌ Keine Company ID gefunden für E-Mail: ${userEmail}`);
       return;
     }
 
-    logger.info('🔍 DEBUG: Company ID gefunden:', { companyId });
+    const { companyId, userId } = result;
+    logger.info('🔍 DEBUG: Company ID und User ID gefunden:', { companyId, userId });
 
     // Batch-Processing in kleineren Chunks (max 10 pro Batch wegen Payload-Größe)
     const BATCH_SIZE = 10;
@@ -573,6 +574,7 @@ async function saveEmailsToFirestore(userEmail: string, emails: any[]): Promise<
             sizeEstimate: email.sizeEstimate || 0,
             source: 'gmail',
             companyId: companyId,
+            userId: userId, // Benutzer-spezifische E-Mails
             folder: email.folder || 'inbox',
             priority: email.priority || 'normal',
             createdAt: new Date(),
@@ -606,11 +608,11 @@ async function saveEmailsToFirestore(userEmail: string, emails: any[]): Promise<
 }
 
 /**
- * Finde Company ID basierend auf E-Mail-Adresse
+ * Finde Company ID und User ID basierend auf E-Mail-Adresse
  */
-async function findCompanyIdByEmail(userEmail: string): Promise<string | null> {
+async function findCompanyAndUserIdByEmail(userEmail: string): Promise<{ companyId: string; userId: string } | null> {
   try {
-    logger.info('🔍 DEBUG: Suche Company ID für E-Mail:', { userEmail });
+    logger.info('🔍 DEBUG: Suche Company ID und User ID für E-Mail:', { userEmail });
 
     // Suche in emailConfigs Subcollections
     const companiesSnapshot = await db.collection('companies').get();
@@ -622,10 +624,13 @@ async function findCompanyIdByEmail(userEmail: string): Promise<string | null> {
         .get();
       
       if (!emailConfigsSnapshot.empty) {
-        logger.info('🔍 DEBUG: Company ID gefunden in emailConfigs:', { 
-          companyId: companyDoc.id 
+        const configData = emailConfigsSnapshot.docs[0].data();
+        const userId = configData.userId || companyDoc.id;
+        logger.info('🔍 DEBUG: Company ID und User ID gefunden in emailConfigs:', { 
+          companyId: companyDoc.id,
+          userId: userId
         });
-        return companyDoc.id;
+        return { companyId: companyDoc.id, userId };
       }
     }
 
@@ -640,7 +645,7 @@ async function findCompanyIdByEmail(userEmail: string): Promise<string | null> {
       const pathParts = doc.ref.path.split('/');
       const companyId = pathParts[1];
       logger.info('🔍 DEBUG: Company ID gefunden in gmail_credentials:', { companyId });
-      return companyId;
+      return { companyId, userId: companyId }; // Legacy: userId = companyId
     }
 
     logger.warn(`❌ Company ID nicht gefunden für E-Mail: ${userEmail}`);
@@ -649,4 +654,12 @@ async function findCompanyIdByEmail(userEmail: string): Promise<string | null> {
     logger.error('❌ Fehler beim Finden der Company ID:', error);
     return null;
   }
+}
+
+/**
+ * Helper: Finde nur Company ID basierend auf E-Mail-Adresse (für Kompatibilität)
+ */
+async function findCompanyIdByEmail(userEmail: string): Promise<string | null> {
+  const result = await findCompanyAndUserIdByEmail(userEmail);
+  return result?.companyId || null;
 }

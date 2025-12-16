@@ -215,6 +215,10 @@ export function EmployeeInviteDialog({
           emailError: data.emailError,
         });
         onSuccess?.();
+        // Dialog nach 2 Sekunden automatisch schließen
+        setTimeout(() => {
+          handleClose();
+        }, 2000);
       } else {
         setResult({
           success: false,

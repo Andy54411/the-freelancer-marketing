@@ -906,7 +906,9 @@ export default function CreateQuotePage() {
   // Kunden laden - direkt aus Firebase Subcollection
   useEffect(() => {
     const loadCustomers = async () => {
-      if (!uid || !user || user.uid !== uid) return;
+      const isOwner = user?.uid === uid;
+      const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
+      if (!uid || !user || (!isOwner && !isEmployee)) return;
       try {
         setLoadingCustomers(true);
 
@@ -977,7 +979,9 @@ export default function CreateQuotePage() {
   // Wichtig: settings als Dependency, damit Template-Daten automatisch aktualisiert werden
   useEffect(() => {
     const loadCompany = async () => {
-      if (!uid || !user || user.uid !== uid) return;
+      const isOwner = user?.uid === uid;
+      const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
+      if (!uid || !user || (!isOwner && !isEmployee)) return;
       try {
         const snap = await getDoc(doc(db, 'companies', uid));
         if (snap.exists()) {
@@ -1929,7 +1933,10 @@ export default function CreateQuotePage() {
   };
 
   // Guard
-  if (!user || user.uid !== uid) {
+  const isOwner = user?.uid === uid;
+  const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
+
+  if (!user || (!isOwner && !isEmployee)) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="text-center">
@@ -2283,8 +2290,8 @@ export default function CreateQuotePage() {
       } catch (numberError) {
         console.error('❌ Fehler bei Rechnungsnummer-Generierung:', {
           error: numberError,
-          errorMessage: numberError?.message,
-          errorStack: numberError?.stack,
+          errorMessage: numberError instanceof Error ? numberError.message : 'Unknown error',
+          errorStack: numberError instanceof Error ? numberError.stack : undefined,
           uid
         });
         // Fallback nur im Notfall

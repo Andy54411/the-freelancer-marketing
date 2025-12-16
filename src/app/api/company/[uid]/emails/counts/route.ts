@@ -4,16 +4,27 @@ import { db, withFirebase } from '@/firebase/server';
 export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
     const { uid } = await params;
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
 
-    console.log(`📊 API: Getting email counts for company ${uid}`);
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'userId is required' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`📊 API: Getting email counts for company ${uid}, user ${userId}`);
 
     const counts: Record<string, { total: number; unread: number }> = {};
 
     await withFirebase(async () => {
       const emailCacheRef = db!.collection('companies').doc(uid).collection('emailCache');
-      const snapshot = await emailCacheRef.get();
+      
+      // Lade E-Mails für diesen spezifischen User
+      const snapshot = await emailCacheRef.where('userId', '==', userId).get();
 
-      console.log(`📧 Found ${snapshot.size} total emails in cache`);
+      console.log(`📧 Found ${snapshot.size} emails for user ${userId} in cache`);
 
       // Initialize counts
       const folders = ['inbox', 'sent', 'drafts', 'spam', 'trash', 'starred', 'archived'];

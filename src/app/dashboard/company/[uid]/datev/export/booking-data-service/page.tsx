@@ -43,7 +43,10 @@ export default function DatevBookingDataServicePage() {
     router.push(`/dashboard/company/${uid}/datev/export/booking-data-service/transfer`);
   };
 
-  if (!user || user.uid !== uid) {
+  const isOwner = user?.uid === uid;
+  const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
+
+  if (!user || (!isOwner && !isEmployee)) {
     return null;
   }
 

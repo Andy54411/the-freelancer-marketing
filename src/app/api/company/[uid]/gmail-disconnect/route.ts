@@ -8,11 +8,18 @@ export async function POST(
 ) {
   try {
     const { uid } = await params;
-    console.log(`🗑️ Gmail Disconnect für Company: ${uid}`);
     
-    // Alle Gmail-Konfigurationen in der emailConfigs Subcollection löschen
+    // userId aus Query-Parameter holen (für benutzer-spezifische Löschung)
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId') || uid;
+    
+    console.log(`🗑️ Gmail Disconnect für Company: ${uid}, User: ${userId}`);
+    
+    // Gmail-Konfigurationen für diesen User in der emailConfigs Subcollection löschen
     const emailConfigsSnapshot = await withFirebase(async () =>
-      db!.collection('companies').doc(uid).collection('emailConfigs').get()
+      db!.collection('companies').doc(uid).collection('emailConfigs')
+        .where('userId', '==', userId)
+        .get()
     );
     
     if (emailConfigsSnapshot.empty) {
@@ -22,14 +29,14 @@ export async function POST(
       });
     }
 
-    // Lösche alle emailConfigs komplett
+    // Lösche die gefundenen emailConfigs
     const batch = db!.batch();
     emailConfigsSnapshot.docs.forEach(doc => {
       batch.delete(doc.ref);
     });
 
     await withFirebase(async () => batch.commit());
-    console.log(`✅ ${emailConfigsSnapshot.size} Gmail-Konfigurationen gelöscht`);
+    console.log(`✅ ${emailConfigsSnapshot.size} Gmail-Konfigurationen für User ${userId} gelöscht`);
 
     // Lösche auch gmail_sync_status falls vorhanden
     let deletedSyncStatuses = 0;
@@ -51,11 +58,13 @@ export async function POST(
       console.log('⚠️ Gmail sync status bereits gelöscht oder nicht vorhanden');
     }
 
-    // Lösche auch emailCache falls vorhanden (optional - E-Mails behalten oder löschen?)
+    // Lösche auch emailCache für diesen User (nur die E-Mails dieses Users)
     let deletedCacheEntries = 0;
     try {
       const cacheSnapshot = await withFirebase(async () =>
-        db!.collection('companies').doc(uid).collection('emailCache').get()
+        db!.collection('companies').doc(uid).collection('emailCache')
+          .where('userId', '==', userId)
+          .get()
       );
 
       if (!cacheSnapshot.empty) {
@@ -65,7 +74,7 @@ export async function POST(
         });
         await withFirebase(async () => cacheBatch.commit());
         deletedCacheEntries = cacheSnapshot.size;
-        console.log(`✅ ${deletedCacheEntries} E-Mail Cache Einträge gelöscht`);
+        console.log(`✅ ${deletedCacheEntries} E-Mail Cache Einträge für User ${userId} gelöscht`);
       }
     } catch (cacheError) {
       console.log('⚠️ Email cache bereits gelöscht oder nicht vorhanden');

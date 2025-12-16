@@ -11,6 +11,7 @@ import { EmailProviderGrid } from './EmailProviderGrid';
 import { EmailTemplates } from './EmailTemplates';
 import { EmailSettingsCard } from './EmailSettingsCard';
 import { EmailConfig, EmailSettings, EmailTemplate } from './types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EmailPageProps {
   companyId: string;
@@ -18,6 +19,7 @@ interface EmailPageProps {
 
 export function EmailPage({ companyId }: EmailPageProps) {
   const searchParams = useSearchParams();
+  const { user } = useAuth();
   const [emailConfig, setEmailConfig] = useState<EmailConfig | null>(null);
   const [emailSettings, setEmailSettings] = useState<EmailSettings>({
     defaultFrom: '',
@@ -30,6 +32,10 @@ export function EmailPage({ companyId }: EmailPageProps) {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Die tatsächliche User-ID für die E-Mail-Konfiguration
+  // Mitarbeiter haben ihre eigene Config, Inhaber nutzen die Company-ID
+  const effectiveUserId = user?.uid || companyId;
+
   // URL Parameter für Fehlermeldungen
   const watchError = searchParams?.get('watchError');
 
@@ -37,21 +43,21 @@ export function EmailPage({ companyId }: EmailPageProps) {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // E-Mail-Konfiguration laden
-        const configResponse = await fetch(`/api/company/${companyId}/email-config`);
+        // E-Mail-Konfiguration laden - mit userId für benutzer-spezifische Config
+        const configResponse = await fetch(`/api/company/${companyId}/email-config?userId=${effectiveUserId}`);
         if (configResponse.ok) {
           const config = await configResponse.json();
           setEmailConfig(config);
         }
 
         // E-Mail-Einstellungen laden
-        const settingsResponse = await fetch(`/api/company/${companyId}/email-settings`);
+        const settingsResponse = await fetch(`/api/company/${companyId}/email-settings?userId=${effectiveUserId}`);
         if (settingsResponse.ok) {
           const settings = await settingsResponse.json();
           setEmailSettings(settings);
         }
 
-        // E-Mail-Vorlagen laden
+        // E-Mail-Vorlagen laden (bleiben auf Company-Ebene)
         const templatesResponse = await fetch(`/api/company/${companyId}/email-templates`);
         if (templatesResponse.ok) {
           const templates = await templatesResponse.json();
@@ -64,18 +70,20 @@ export function EmailPage({ companyId }: EmailPageProps) {
       }
     };
 
-    loadData();
-  }, [companyId]);
+    if (effectiveUserId) {
+      loadData();
+    }
+  }, [companyId, effectiveUserId]);
 
-  // Gmail verbinden
+  // Gmail verbinden - mit userId für benutzer-spezifische Verbindung
   const handleGmailConnect = () => {
-    window.location.href = `/api/gmail/connect?uid=${companyId}`;
+    window.location.href = `/api/gmail/connect?uid=${companyId}&userId=${effectiveUserId}`;
   };
 
   // Gmail trennen
   const handleGmailDisconnect = async () => {
     try {
-      const response = await fetch(`/api/company/${companyId}/gmail-disconnect`, {
+      const response = await fetch(`/api/company/${companyId}/gmail-disconnect?userId=${effectiveUserId}`, {
         method: 'POST'
       });
       
@@ -90,7 +98,7 @@ export function EmailPage({ companyId }: EmailPageProps) {
   // Einstellungen speichern
   const handleSaveSettings = async (settings: EmailSettings) => {
     try {
-      const response = await fetch(`/api/company/${companyId}/email-settings`, {
+      const response = await fetch(`/api/company/${companyId}/email-settings?userId=${effectiveUserId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

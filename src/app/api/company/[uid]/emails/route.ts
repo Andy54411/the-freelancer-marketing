@@ -10,9 +10,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const limit = parseInt(searchParams.get('limit') || '500');
     const offset = parseInt(searchParams.get('offset') || '0');
     const forceRefresh = searchParams.get('force') === 'true';
+    const userId = searchParams.get('userId') || uid; // Benutzer-spezifische E-Mails
 
     console.log(
-      `📦 API: Loading emails for ${uid}, folder: ${folder}, limit: ${limit}, offset: ${offset}, force: ${forceRefresh}`
+      `📦 API: Loading emails for company ${uid}, user ${userId}, folder: ${folder}, limit: ${limit}, offset: ${offset}, force: ${forceRefresh}`
     );
 
     // Wenn force refresh, triggere Gmail Sync Function
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           },
           body: JSON.stringify({
             companyId: uid,
+            userId: userId,
             force: true,
             action: 'sync'
           }),
@@ -57,22 +59,24 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     let emails: any[] = [];
 
     try {
-      // 1. Versuche emailCache Collection
-      console.log(`🔍 API: Searching in companies/${uid}/emailCache with limit ${limit}`);
+      // 1. Versuche emailCache Collection - gefiltert nach userId
+      console.log(`🔍 API: Searching in companies/${uid}/emailCache for user ${userId} with limit ${limit}`);
 
-      // Lade ALLE E-Mails (ohne Filter) und filtere dann nach Labels
+      // Lade E-Mails für diesen spezifischen User
       const emailCacheSnapshot = await withFirebase(async () => {
-        return await db!.collection('companies').doc(uid).collection('emailCache').get();
+        return await db!.collection('companies').doc(uid).collection('emailCache')
+          .where('userId', '==', userId)
+          .get();
       });
 
       if (emailCacheSnapshot && !emailCacheSnapshot.empty) {
-        // Lade alle E-Mails
+        // Lade alle E-Mails für diesen User
         const allEmails = emailCacheSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
         }));
 
-        console.log(`📧 API: Found ${allEmails.length} total emails in emailCache`);
+        console.log(`📧 API: Found ${allEmails.length} emails for user ${userId} in emailCache`);
 
         // Filtere nach Folder/Label
         const folderLabelMap: Record<string, string> = {

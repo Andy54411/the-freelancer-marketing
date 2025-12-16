@@ -6,8 +6,17 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
     const { uid } = await params;
+    const body = await request.json().catch(() => ({}));
+    const userId = body.userId;
 
-    console.log(`🔄 Force Resync requested for company: ${uid}`);
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'userId is required' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`🔄 Force Resync requested for company: ${uid}, userId: ${userId}`);
 
     // Rufe Firebase Function auf für Force Sync
     const functionUrl =
@@ -25,6 +34,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
       body: JSON.stringify({
         companyId: uid,
+        userId: userId, // Benutzer-spezifische E-Mails
         force: true, // Force = hole alle E-Mails neu
         action: 'force_sync',
       }),

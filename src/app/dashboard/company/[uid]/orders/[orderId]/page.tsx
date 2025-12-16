@@ -122,8 +122,11 @@ export default function CompanyOrderDetailPage() {
       return;
     }
 
-    // Security check: Ensure the logged-in user is the one whose dashboard is being viewed.
-    if (currentUser.uid !== companyUid) {
+    // Security check: Ensure the logged-in user is the owner OR an employee of this company.
+    const isOwner = currentUser.uid === companyUid;
+    const isEmployee = currentUser.user_type === 'mitarbeiter' && currentUser.companyId === companyUid;
+    
+    if (!isOwner && !isEmployee) {
       setError('Zugriff verweigert. Sie sind nicht berechtigt, diese Seite anzuzeigen.');
       setLoadingOrder(false);
       return;

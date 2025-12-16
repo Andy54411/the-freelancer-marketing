@@ -17,7 +17,9 @@ export default function DatevExportPage() {
   const [selectedExportMethod, setSelectedExportMethod] = useState<'bds' | 'file' | null>(null);
 
   useEffect(() => {
-    if (!user || user.uid !== uid) {
+    const isOwner = user?.uid === uid;
+    const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
+    if (!user || (!isOwner && !isEmployee)) {
       router.push(`/dashboard/company/${uid}`);
     }
   }, [user, uid, router]);
@@ -43,7 +45,10 @@ export default function DatevExportPage() {
     }
   };
 
-  if (!user || user.uid !== uid) {
+  const isOwner = user?.uid === uid;
+  const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
+
+  if (!user || (!isOwner && !isEmployee)) {
     return null;
   }
 

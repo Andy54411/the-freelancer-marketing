@@ -3,29 +3,58 @@ import { db, auth as adminAuth } from '@/firebase/server';
 import { z } from 'zod';
 import { ResendEmailService } from '@/lib/resend-email-service';
 
+// Interface für LinkedCompany
+interface LinkedCompany {
+  companyId: string;
+  companyName: string;
+  role: string;
+  permissions: {
+    overview: boolean;
+    personal: boolean;
+    employees: boolean;
+    shiftPlanning: boolean;
+    timeTracking: boolean;
+    absences: boolean;
+    evaluations: boolean;
+    orders: boolean;
+    quotes: boolean;
+    invoices: boolean;
+    customers: boolean;
+    calendar: boolean;
+    workspace: boolean;
+    finance: boolean;
+    expenses: boolean;
+    inventory: boolean;
+    settings: boolean;
+  };
+}
+
+// Permissions Schema (wiederverwendbar)
+const permissionsSchema = z.object({
+  overview: z.boolean().default(true),
+  personal: z.boolean().default(false),
+  employees: z.boolean().default(false),
+  shiftPlanning: z.boolean().default(true),
+  timeTracking: z.boolean().default(true),
+  absences: z.boolean().default(true),
+  evaluations: z.boolean().default(false),
+  orders: z.boolean().default(false),
+  quotes: z.boolean().default(false),
+  invoices: z.boolean().default(false),
+  customers: z.boolean().default(false),
+  calendar: z.boolean().default(true),
+  workspace: z.boolean().default(true),
+  finance: z.boolean().default(false),
+  expenses: z.boolean().default(false),
+  inventory: z.boolean().default(false),
+  settings: z.boolean().default(true),
+});
+
 // Zod Schema für Dashboard-Zugang erstellen
 const createDashboardAccessSchema = z.object({
   employeeId: z.string().min(1, 'Employee ID ist erforderlich'),
   password: z.string().min(6, 'Passwort muss mindestens 6 Zeichen haben'),
-  permissions: z.object({
-    overview: z.boolean().default(true),
-    personal: z.boolean().default(false),
-    employees: z.boolean().default(false),
-    shiftPlanning: z.boolean().default(true),
-    timeTracking: z.boolean().default(true),
-    absences: z.boolean().default(true),
-    evaluations: z.boolean().default(false),
-    orders: z.boolean().default(false),
-    quotes: z.boolean().default(false),
-    invoices: z.boolean().default(false),
-    customers: z.boolean().default(false),
-    calendar: z.boolean().default(true),
-    workspace: z.boolean().default(true),
-    finance: z.boolean().default(false),
-    expenses: z.boolean().default(false),
-    inventory: z.boolean().default(false),
-    settings: z.boolean().default(true),
-  }).optional(),
+  permissions: permissionsSchema.optional(),
 });
 
 // Standard-Berechtigungen für neue Mitarbeiter
@@ -110,12 +139,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       );
     }
 
-    // Prüfe ob der Mitarbeiter bereits Dashboard-Zugang hat
-    if (employeeData.dashboardAccess?.enabled && employeeData.dashboardAccess?.authUid) {
-      return NextResponse.json(
-        { success: false, error: 'Mitarbeiter hat bereits Dashboard-Zugang' },
-        { status: 400 }
-      );
+    // Wenn Dashboard-Zugang existiert, alten Auth User löschen und neu erstellen
+    if (employeeData.dashboardAccess?.authUid) {
+      try {
+        await adminAuth.deleteUser(employeeData.dashboardAccess.authUid);
+      } catch {
+        // User existiert vielleicht nicht mehr - ignorieren
+      }
     }
 
     // Prüfe ob eine E-Mail vorhanden ist
@@ -159,78 +189,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     }
 
-    // Erstelle/Aktualisiere das User-Dokument in Firestore
-    const userRef = db.collection('users').doc(authUid);
-    const userSnap = await userRef.get();
-    
-    const linkedCompanyEntry = {
-      companyId,
-      companyName,
-      employeeId,
-      role: 'mitarbeiter',
-      linkedAt: new Date().toISOString(),
-      permissions: permissions ?? defaultPermissions,
-    };
-
-    if (userSnap.exists) {
-      // User existiert - linkedCompanies aktualisieren
-      const userData = userSnap.data();
-      const linkedCompanies = userData?.linkedCompanies ?? [];
-      
-      // Prüfe ob diese Firma schon verknüpft ist
-      const existingIndex = linkedCompanies.findIndex((c: { companyId: string }) => c.companyId === companyId);
-      if (existingIndex >= 0) {
-        linkedCompanies[existingIndex] = linkedCompanyEntry;
-      } else {
-        linkedCompanies.push(linkedCompanyEntry);
-      }
-
-      // Update mit allen notwendigen Feldern
-      const updateData: Record<string, unknown> = {
-        linkedCompanies,
-        updatedAt: new Date(),
-      };
-      
-      // Setze companyId und employeeId falls noch nicht vorhanden (erster Firmen-Zugang)
-      if (!userData?.companyId) {
-        updateData.companyId = companyId;
-        updateData.employeeId = employeeId;
-        updateData.companyName = companyName;
-      }
-      
-      // Falls user_type nicht 'mitarbeiter' ist und kein Firmen-Owner, setze auf 'mitarbeiter'
-      if (userData?.user_type !== 'firma' && userData?.user_type !== 'master' && userData?.user_type !== 'support') {
-        updateData.user_type = 'mitarbeiter';
-      }
-
-      await userRef.update(updateData);
-    } else {
-      // Neues User-Dokument erstellen
-      await userRef.set({
-        uid: authUid,
-        email: employeeEmail,
-        firstName: employeeData.firstName,
-        lastName: employeeData.lastName,
-        user_type: 'mitarbeiter', // Mitarbeiter-Rolle für Dashboard-Redirect
-        companyId, // Haupt-Firma für Redirect
-        employeeId, // Mitarbeiter-ID für Berechtigungsprüfung
-        companyName, // Firmenname für Anzeige
-        linkedCompanies: [linkedCompanyEntry],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-    }
-
     // WICHTIG: Custom Claims für Firebase Auth Token setzen
     // Das stellt sicher, dass der Mitarbeiter nach dem Login korrekt weitergeleitet wird
+    // Custom Claims enthalten: role, companyId, employeeId
     try {
-      await adminAuth.setCustomUserClaims(authUid, { role: 'mitarbeiter' });
+      await adminAuth.setCustomUserClaims(authUid, { 
+        role: 'mitarbeiter',
+        companyId,
+        employeeId,
+      });
     } catch (claimError) {
-      // Log but don't fail - the Firestore trigger should also set this
       console.error('Failed to set custom claims:', claimError);
     }
 
-    // Aktualisiere den Mitarbeiter mit dem Dashboard-Zugang
+    // Aktualisiere NUR den Mitarbeiter in der Company-Subcollection mit dem Dashboard-Zugang
+    // KEINE Daten in der users Collection speichern!
     await employeeRef.update({
       dashboardAccess: {
         enabled: true,
@@ -337,6 +310,79 @@ Ihr Taskilo Team
   }
 }
 
+// PATCH: Berechtigungen nachträglich ändern
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+  try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
+    const { uid: companyId } = await params;
+    const body = await request.json();
+    
+    const updateSchema = z.object({
+      employeeId: z.string().min(1, 'Mitarbeiter-ID fehlt'),
+      permissions: permissionsSchema,
+    });
+
+    const validatedData = updateSchema.parse(body);
+    const { employeeId, permissions } = validatedData;
+
+    // Hole den Mitarbeiter
+    const employeeRef = db.collection('companies').doc(companyId).collection('employees').doc(employeeId);
+    const employeeSnap = await employeeRef.get();
+
+    if (!employeeSnap.exists) {
+      return NextResponse.json(
+        { success: false, error: 'Mitarbeiter nicht gefunden' },
+        { status: 404 }
+      );
+    }
+
+    const employeeData = employeeSnap.data();
+    const authUid = employeeData?.dashboardAccess?.authUid;
+
+    if (!authUid) {
+      return NextResponse.json(
+        { success: false, error: 'Mitarbeiter hat keinen Dashboard-Zugang' },
+        { status: 400 }
+      );
+    }
+
+    // Update Berechtigungen NUR im Mitarbeiter-Dokument (Company Subcollection)
+    await employeeRef.update({
+      'dashboardAccess.permissions': permissions,
+      'dashboardAccess.updatedAt': new Date().toISOString(),
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Berechtigungen wurden aktualisiert',
+      permissions,
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, error: 'Validierungsfehler', details: error.errors },
+        { status: 400 }
+      );
+    }
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Fehler beim Aktualisieren der Berechtigungen',
+        details: errorMessage,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
+  }
+}
+
 // GET: Prüfe Status aller Mitarbeiter mit Dashboard-Zugang
 export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
@@ -387,6 +433,81 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       {
         success: false,
         error: 'Fehler beim Abrufen der Dashboard-Zugänge',
+        details: errorMessage,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE: Dashboard-Zugang zurücksetzen (für Neuerstellung)
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+  try {
+    if (!db || !adminAuth) {
+      return NextResponse.json(
+        { success: false, error: 'Server-Dienste nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
+    const { uid: companyId } = await params;
+    const { searchParams } = new URL(request.url);
+    const employeeId = searchParams.get('employeeId');
+
+    if (!employeeId) {
+      return NextResponse.json(
+        { success: false, error: 'Mitarbeiter-ID fehlt' },
+        { status: 400 }
+      );
+    }
+
+    // Hole den Mitarbeiter
+    const employeeRef = db.collection('companies').doc(companyId).collection('employees').doc(employeeId);
+    const employeeSnap = await employeeRef.get();
+
+    if (!employeeSnap.exists) {
+      return NextResponse.json(
+        { success: false, error: 'Mitarbeiter nicht gefunden' },
+        { status: 404 }
+      );
+    }
+
+    const employeeData = employeeSnap.data();
+    const authUid = employeeData?.dashboardAccess?.authUid;
+
+    // Lösche den Firebase Auth User wenn vorhanden
+    if (authUid) {
+      try {
+        await adminAuth.deleteUser(authUid);
+      } catch (deleteError) {
+        // User existiert vielleicht nicht mehr - ignorieren
+        console.log('Firebase Auth User konnte nicht gelöscht werden:', deleteError);
+      }
+    }
+
+    // Setze dashboardAccess zurück
+    await employeeRef.update({
+      dashboardAccess: {
+        enabled: false,
+        authUid: null,
+        permissions: null,
+        createdAt: null,
+        updatedAt: new Date().toISOString(),
+      },
+      updatedAt: new Date(),
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Dashboard-Zugang wurde zurückgesetzt. Der Mitarbeiter kann jetzt neu eingeladen werden.',
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Fehler beim Zurücksetzen des Dashboard-Zugangs',
         details: errorMessage,
         timestamp: new Date().toISOString(),
       },

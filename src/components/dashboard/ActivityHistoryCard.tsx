@@ -63,6 +63,7 @@ export default function ActivityHistoryCard({
   const [selectedTimeRange, setSelectedTimeRange] = useState<string>('all');
   const [selectedCustomer, setSelectedCustomer] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [activitySource, setActivitySource] = useState<'all' | 'customers' | 'employees'>('all');
 
   // Use companyId from props or fall back to user's uid (companies are stored with user's uid as id)
   const activeCompanyId = companyId || user?.uid;
@@ -74,12 +75,10 @@ export default function ActivityHistoryCard({
       return;
     }
 
-
-
-    loadCustomerActivities();
+    loadAllActivities();
   }, [activeCompanyId]);
 
-  const loadCustomerActivities = async () => {
+  const loadAllActivities = async () => {
     if (!activeCompanyId) {
       setError('Keine Company ID verfügbar');
       setLoading(false);
@@ -89,13 +88,162 @@ export default function ActivityHistoryCard({
     try {
       setLoading(true);
 
+      const allActivities: ActivityItem[] = [];
+
+      // 1. Lade Kundenaktivitäten
+      const customerActivities = await loadCustomerActivitiesInternal();
+      allActivities.push(...customerActivities);
+
+      // 2. Lade Mitarbeiteraktivitäten
+      const employeeActivities = await loadEmployeeActivities();
+      allActivities.push(...employeeActivities);
+
+      // 3. Sortiere alle Aktivitäten nach Timestamp (neueste zuerst)
+      allActivities.sort((a, b) => {
+        const timestampA = a.timestamp?.toDate()?.getTime() || 0;
+        const timestampB = b.timestamp?.toDate()?.getTime() || 0;
+        return timestampB - timestampA;
+      });
+
+      setActivities(allActivities);
+      setFilteredActivities(allActivities);
+      setError(null);
+    } catch (error) {
+      console.error('Error loading activities:', error);
+      setError('Fehler beim Laden der Aktivitäten');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadEmployeeActivities = async (): Promise<ActivityItem[]> => {
+    if (!activeCompanyId) return [];
+
+    try {
+      const logsRef = collection(db, 'companies', activeCompanyId, 'employeeActivityLogs');
+      const logsQuery = query(
+        logsRef,
+        orderBy('createdAt', 'desc'),
+        limit(50)
+      );
+
+      const snapshot = await getDocs(logsQuery);
+      const employeeActivities: ActivityItem[] = [];
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        try {
+          const timestamp = data.createdAt?.toDate() || new Date();
+
+          employeeActivities.push({
+            id: `employee_${doc.id}`,
+            type: mapEmployeeEntityToActivityType(data.entityType),
+            user: data.employeeName || 'Mitarbeiter',
+            email: data.employeeEmail,
+            userId: data.employeeId,
+            action: data.description || formatEmployeeAction(data.action, data.entityType),
+            target: data.entityName,
+            targetLink: generateEmployeeTargetLink(data.entityType, data.entityId),
+            date: timestamp.toLocaleDateString('de-DE', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric'
+            }).toUpperCase(),
+            time: timestamp.toLocaleTimeString('de-DE', {
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            timestamp: data.createdAt,
+            description: data.description,
+            metadata: { ...data.metadata, isEmployeeActivity: true }
+          });
+        } catch (parseError) {
+          console.warn('Error parsing employee activity:', doc.id, parseError);
+        }
+      });
+
+      return employeeActivities;
+    } catch (error) {
+      console.warn('Error loading employee activities:', error);
+      return [];
+    }
+  };
+
+  const mapEmployeeEntityToActivityType = (entityType: string): 'invoice' | 'customer' | 'document' | 'quote' | 'expense' | 'system' => {
+    const typeMap: Record<string, 'invoice' | 'customer' | 'document' | 'quote' | 'expense' | 'system'> = {
+      invoice: 'invoice',
+      quote: 'quote',
+      customer: 'customer',
+      expense: 'expense',
+      document: 'document',
+      order: 'system',
+      timeEntry: 'system',
+      calendar: 'system',
+      settings: 'system',
+      dashboard: 'system',
+      session: 'system',
+      shift: 'system',
+    };
+    return typeMap[entityType] || 'system';
+  };
+
+  const formatEmployeeAction = (action: string, entityType: string): string => {
+    const actionLabels: Record<string, string> = {
+      created: 'erstellt',
+      updated: 'aktualisiert',
+      deleted: 'gelöscht',
+      viewed: 'angesehen',
+      sent: 'gesendet',
+      downloaded: 'heruntergeladen',
+      uploaded: 'hochgeladen',
+      approved: 'genehmigt',
+      rejected: 'abgelehnt',
+      login: 'angemeldet',
+      logout: 'abgemeldet',
+    };
+
+    const entityLabels: Record<string, string> = {
+      invoice: 'Rechnung',
+      quote: 'Angebot',
+      customer: 'Kunde',
+      expense: 'Ausgabe',
+      document: 'Dokument',
+      order: 'Auftrag',
+      timeEntry: 'Zeiteintrag',
+      calendar: 'Kalendereintrag',
+      settings: 'Einstellungen',
+      dashboard: 'Dashboard',
+      session: 'Sitzung',
+      shift: 'Schicht',
+    };
+
+    return `${entityLabels[entityType] || entityType} ${actionLabels[action] || action}`;
+  };
+
+  const generateEmployeeTargetLink = (entityType: string, entityId?: string): string | undefined => {
+    if (!entityId || !activeCompanyId) return undefined;
+
+    const linkMap: Record<string, string> = {
+      invoice: `/dashboard/company/${activeCompanyId}/finance/invoices/${entityId}`,
+      quote: `/dashboard/company/${activeCompanyId}/finance/quotes/${entityId}`,
+      customer: `/dashboard/company/${activeCompanyId}/customers/${entityId}`,
+      shift: `/dashboard/company/${activeCompanyId}/personal/schedule`,
+    };
+
+    return linkMap[entityType];
+  };
+
+  const loadCustomerActivitiesInternal = async (): Promise<ActivityItem[]> => {
+    if (!activeCompanyId) {
+      return [];
+    }
+
+    try {
       // 1. Lade alle Kunden der Company
       const customersRef = collection(db, 'companies', activeCompanyId, 'customers');
       const customersSnapshot = await getDocs(customersRef);
 
-
-
-      const allActivities: ActivityItem[] = [];
+      const customerActivities: ActivityItem[] = [];
 
       // 2. Für jeden Kunden, lade dessen Aktivitäten
       for (const customerDoc of customersSnapshot.docs) {
@@ -113,8 +261,6 @@ export default function ActivityHistoryCard({
           );
 
           const activitiesSnapshot = await getDocs(activitiesQuery);
-
-
 
           activitiesSnapshot.forEach((activityDoc) => {
             const data = activityDoc.data() as FirestoreActivityItem;
@@ -144,36 +290,23 @@ export default function ActivityHistoryCard({
                 }),
                 timestamp: data.timestamp,
                 description: data.description,
-                metadata: { ...data.metadata, customerId, customerName }
+                metadata: { ...data.metadata, customerId, customerName, isCustomerActivity: true }
               };
 
-              allActivities.push(activityItem);
+              customerActivities.push(activityItem);
             } catch (parseError) {
-              console.warn('⚠️ ActivityHistoryCard: Error parsing activity:', activityDoc.id, parseError);
+              console.warn('Error parsing activity:', activityDoc.id, parseError);
             }
           });
         } catch (customerError) {
-          console.warn(`⚠️ ActivityHistoryCard: Error loading activities for customer ${customerId}:`, customerError);
+          console.warn(`Error loading activities for customer ${customerId}:`, customerError);
         }
       }
 
-      // 3. Sortiere alle Aktivitäten nach Timestamp (neueste zuerst)
-      allActivities.sort((a, b) => {
-        const timestampA = a.timestamp?.toDate()?.getTime() || 0;
-        const timestampB = b.timestamp?.toDate()?.getTime() || 0;
-        return timestampB - timestampA;
-      });
-
-
-
-      setActivities(allActivities);
-      setFilteredActivities(allActivities); // Initial gefilterte Liste
-      setError(null);
+      return customerActivities;
     } catch (error) {
-      console.error('❌ ActivityHistoryCard: Error loading customer activities:', error);
-      setError('Fehler beim Laden der Aktivitäten');
-    } finally {
-      setLoading(false);
+      console.error('Error loading customer activities:', error);
+      return [];
     }
   };
 

@@ -14,6 +14,20 @@ service cloud.firestore {
               exists(/databases/$(database)/documents/companies/$(request.auth.uid)));
     }
     
+    // NEUE FUNKTION: Prüft ob User ein Mitarbeiter einer bestimmten Company ist
+    // Mitarbeiter haben Custom Claims: role='mitarbeiter', companyId=<companyUid>
+    function isEmployeeOf(companyId) {
+      return request.auth != null && 
+             request.auth.token.role == 'mitarbeiter' && 
+             request.auth.token.companyId == companyId;
+    }
+    
+    // NEUE FUNKTION: Prüft ob User Owner oder Mitarbeiter einer Company ist
+    function isOwnerOrEmployeeOf(companyId) {
+      return request.auth != null && 
+             (request.auth.uid == companyId || isEmployeeOf(companyId));
+    }
+    
     // NEUE FUNKTION: Prüft Company-Status über Firestore-Dokument
     function isCompanyFromFirestore(companyId) {
       return request.auth != null && 
@@ -332,6 +346,8 @@ service cloud.firestore {
       allow get: if request.auth != null && resource != null && (
         resource.data.customerFirebaseUid == request.auth.uid ||
         resource.data.selectedAnbieterId == request.auth.uid ||
+        // Mitarbeiter dürfen Aufträge ihrer Company lesen
+        isEmployeeOf(resource.data.selectedAnbieterId) ||
         isSupportStaff()
       );
 
@@ -340,6 +356,7 @@ service cloud.firestore {
       // oder Kunden filtern. Dies ist entscheidend für die `getProviderOrders`-Funktion.
       // Support-Staff darf alle Aufträge ohne Einschränkungen abfragen.
       // HINZUGEFÜGT: Öffentlicher Lesezugriff für CategoryGrid-Komponente zur Tag-Generierung
+      // HINZUGEFÜGT: Mitarbeiter können nach ihrer Company-ID filtern
       allow list: if request.auth != null &&
                    (
                      isSupportStaff() ||
@@ -352,6 +369,26 @@ service cloud.firestore {
                            request.query.where[0].path == 'selectedAnbieterId' &&
                            request.query.where[0].op == '==' &&
                            request.query.where[0].value == request.auth.uid
+                         ) ||
+                         // Mitarbeiter: Abfrage mit companyId aus Custom Claims
+                         (
+                           request.query.where[0].path == 'selectedAnbieterId' &&
+                           request.query.where[0].op == '==' &&
+                           request.auth.token.role == 'mitarbeiter' &&
+                           request.query.where[0].value == request.auth.token.companyId
+                         ) ||
+                         // Alternative: providerId statt selectedAnbieterId
+                         (
+                           request.query.where[0].path == 'providerId' &&
+                           request.query.where[0].op == '==' &&
+                           request.query.where[0].value == request.auth.uid
+                         ) ||
+                         // Mitarbeiter: Abfrage mit providerId
+                         (
+                           request.query.where[0].path == 'providerId' &&
+                           request.query.where[0].op == '==' &&
+                           request.auth.token.role == 'mitarbeiter' &&
+                           request.query.where[0].value == request.auth.token.companyId
                          ) ||
                          (
                            request.query.where[0].path == 'customerFirebaseUid' &&
@@ -378,10 +415,12 @@ service cloud.firestore {
 
       // Provider können ihre eigenen Aufträge für TimeTracking aktualisieren
       // Kunden können ihre eigenen Aufträge aktualisieren  
+      // Mitarbeiter können Aufträge ihrer Company aktualisieren
       // Support-Staff kann alle Aufträge verwalten
       allow update: if request.auth != null && resource != null && (
         resource.data.selectedAnbieterId == request.auth.uid ||
         resource.data.customerFirebaseUid == request.auth.uid ||
+        isEmployeeOf(resource.data.selectedAnbieterId) ||
         isSupportStaff()
       );
 
@@ -1215,22 +1254,24 @@ service cloud.firestore {
     
     // Personal: Employees Collection (Mitarbeiterverwaltung)
     match /companies/{companyId}/employees/{employeeId} {
-      // Lesen: Nur eigene Firma oder Support Staff (VEREINFACHT für bessere Kompatibilität)
+      // Lesen: Eigene Firma, Mitarbeiter (eigenes Dokument) oder Support Staff
       allow read: if request.auth != null && 
                      (request.auth.uid == companyId) ||
+                     isEmployeeOf(companyId) ||
                      isSupportStaff();
       
-      // Listen-Abfragen: Nur eigene Firma (VEREINFACHT für bessere Kompatibilität)
+      // Listen-Abfragen: Eigene Firma oder Mitarbeiter
       allow list: if request.auth != null && 
                     (request.auth.uid == companyId) ||
+                    isEmployeeOf(companyId) ||
                     isSupportStaff();
       
-      // Erstellen: Nur eigene Firma (VEREINFACHT für bessere Kompatibilität)
+      // Erstellen: Nur eigene Firma
       allow create: if request.auth != null && 
                        request.auth.uid == companyId &&
                        request.resource.data.companyId == companyId;
       
-      // Aktualisieren: Nur eigene Firma (VEREINFACHT)
+      // Aktualisieren: Nur eigene Firma
       allow update: if request.auth != null && 
                        request.auth.uid == companyId &&
                        resource.data.companyId == companyId;
@@ -1239,6 +1280,28 @@ service cloud.firestore {
       allow delete: if request.auth != null && 
                        ((request.auth.uid == companyId && isCompany()) ||
                         isSupportStaff());
+    }
+    
+    // Employee Activity Logs (Mitarbeiter-Aktivitätsprotokoll)
+    // Firmeninhaber können alle Logs lesen, Mitarbeiter können eigene Logs erstellen
+    match /companies/{companyId}/employeeActivityLogs/{logId} {
+      // Lesen: Nur Firmeninhaber oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur Firmeninhaber oder Support Staff
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId) ||
+                    isSupportStaff();
+      
+      // Erstellen: Mitarbeiter der Firma oder Firmeninhaber
+      allow create: if request.auth != null && 
+                       ((request.auth.uid == companyId) ||
+                        isEmployeeOf(companyId));
+      
+      // Aktualisieren/Löschen: Nur Support Staff (Audit-Trail)
+      allow update, delete: if isSupportStaff();
     }
     
     // Personal: Employee Documents Collection (Mitarbeiter-Dokumente)
@@ -1661,26 +1724,28 @@ service cloud.firestore {
 
     // Quotes Collection (Angebote)
     match /companies/{companyId}/quotes/{quoteId} {
-      // Lesen: Nur eigene Firma oder Support Staff
+      // Lesen: Eigene Firma, Mitarbeiter oder Support Staff
       allow read: if request.auth != null && 
                      (request.auth.uid == companyId && isCompany()) ||
+                     isEmployeeOf(companyId) ||
                      isSupportStaff();
       
-      // Listen-Abfragen: Nur eigene Firma
+      // Listen-Abfragen: Eigene Firma oder Mitarbeiter
       allow list: if request.auth != null && 
                     (request.auth.uid == companyId && isCompany()) ||
+                    isEmployeeOf(companyId) ||
                     isSupportStaff();
       
-      // Erstellen: Nur eigene Firma
+      // Erstellen: Eigene Firma oder Mitarbeiter
       allow create: if request.auth != null && 
-                       request.auth.uid == companyId &&
-                       isCompany() &&
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId)) &&
                        request.resource.data.createdAt == request.time;
       
-      // Aktualisieren: Nur eigene Firma
+      // Aktualisieren: Eigene Firma oder Mitarbeiter
       allow update: if request.auth != null && 
-                       request.auth.uid == companyId &&
-                       isCompany() &&
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId)) &&
                        request.resource.data.updatedAt == request.time;
       
       // Löschen: Nur eigene Firma oder Support Staff
@@ -1717,26 +1782,28 @@ service cloud.firestore {
 
     // Customers Collection (Kunden) - als Subcollection
     match /companies/{companyId}/customers/{customerId} {
-      // Lesen: Nur eigene Firma oder Support Staff
+      // Lesen: Eigene Firma, Mitarbeiter oder Support Staff
       allow read: if request.auth != null && 
                      (request.auth.uid == companyId) ||
+                     isEmployeeOf(companyId) ||
                      isSupportStaff();
       
-      // Listen-Abfragen: Nur eigene Firma
+      // Listen-Abfragen: Eigene Firma oder Mitarbeiter
       allow list: if request.auth != null && 
                     (request.auth.uid == companyId) ||
+                    isEmployeeOf(companyId) ||
                     isSupportStaff();
       
-      // Erstellen: Nur eigene Firma
+      // Erstellen: Eigene Firma oder Mitarbeiter
       allow create: if request.auth != null && 
-                       request.auth.uid == companyId &&
-                       isCompany() &&
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId)) &&
                        request.resource.data.createdAt == request.time;
       
-      // Aktualisieren: Nur eigene Firma
+      // Aktualisieren: Eigene Firma oder Mitarbeiter
       allow update: if request.auth != null && 
-                       request.auth.uid == companyId &&
-                       isCompany() &&
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId)) &&
                        request.resource.data.updatedAt == request.time;
       
       // Löschen: Nur eigene Firma oder Support Staff
@@ -1746,26 +1813,27 @@ service cloud.firestore {
 
       // Activities Subcollection für Customer History
       match /activities/{activityId} {
-        // Lesen: Nur eigene Firma oder Support Staff
+        // Lesen: Eigene Firma, Mitarbeiter oder Support Staff
         allow read: if request.auth != null && 
                        (request.auth.uid == companyId) ||
+                       isEmployeeOf(companyId) ||
                        isSupportStaff();
         
-        // Listen-Abfragen: Nur eigene Firma
+        // Listen-Abfragen: Eigene Firma oder Mitarbeiter
         allow list: if request.auth != null && 
                       (request.auth.uid == companyId) ||
+                      isEmployeeOf(companyId) ||
                       isSupportStaff();
         
-        // Erstellen: Nur eigene Firma
+        // Erstellen: Eigene Firma oder Mitarbeiter
         allow create: if request.auth != null && 
-                         request.auth.uid == companyId &&
-                         isCompany();
+                         ((request.auth.uid == companyId && isCompany()) ||
+                          isEmployeeOf(companyId));
         
-        // Aktualisieren: Nur eigene Firma
+        // Aktualisieren: Eigene Firma oder Mitarbeiter
         allow update: if request.auth != null && 
-                         request.auth.uid == companyId &&
-                         isCompany() &&
-                         resource.data.userId == request.auth.uid;
+                         ((request.auth.uid == companyId && isCompany()) ||
+                          isEmployeeOf(companyId));
         
         // Löschen: Nur eigene Firma oder Support Staff
         allow delete: if request.auth != null && 
@@ -2078,27 +2146,29 @@ service cloud.firestore {
 
     // Invoices Collection (Rechnungen) - als Subcollection unter companies
     match /companies/{companyId}/invoices/{invoiceId} {
-      // Lesen: Nur eigene Firma oder Support Staff
+      // Lesen: Eigene Firma, Mitarbeiter oder Support Staff
       allow read: if request.auth != null && 
                      (request.auth.uid == companyId && isCompany()) ||
+                     isEmployeeOf(companyId) ||
                      isSupportStaff();
       
-      // Listen-Abfragen: Nur eigene Firma
+      // Listen-Abfragen: Eigene Firma oder Mitarbeiter
       allow list: if request.auth != null && 
                     (request.auth.uid == companyId && isCompany()) ||
+                    isEmployeeOf(companyId) ||
                     isSupportStaff();
       
-      // Erstellen: Nur eigene Firma - inklusive Storno-Rechnungen
+      // Erstellen: Eigene Firma oder Mitarbeiter - inklusive Storno-Rechnungen
       allow create: if request.auth != null && 
-                       request.auth.uid == companyId &&
-                       isCompany() &&
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId)) &&
                        request.resource.data.companyId == companyId &&
                        request.resource.data.createdAt == request.time;
       
-      // Aktualisieren: Nur eigene Firma, GoBD-Status darf immer geändert werden
+      // Aktualisieren: Eigene Firma oder Mitarbeiter, GoBD-Status darf immer geändert werden
       allow update: if request.auth != null && 
-                       request.auth.uid == companyId &&
-                       isCompany() &&
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isEmployeeOf(companyId)) &&
                        (
                          // Normale Updates nur wenn nicht festgeschrieben
                          ((!('gobdStatus' in resource.data) || !resource.data.gobdStatus.isLocked) &&

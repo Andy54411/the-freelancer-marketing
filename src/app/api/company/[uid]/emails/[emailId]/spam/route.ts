@@ -8,9 +8,16 @@ export async function POST(
   try {
     const { uid, emailId } = await params;
     const body = await request.json();
-    const { spam } = body;
+    const { spam, userId } = body;
 
-    console.log(`🚫 Toggle spam for email ${emailId}, spam: ${spam}`);
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'userId is required' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`🚫 Toggle spam for email ${emailId}, spam: ${spam}, userId: ${userId}`);
 
     // Update email in emailCache
     await withFirebase(async () => {
@@ -23,6 +30,12 @@ export async function POST(
       }
 
       const emailData = emailDoc.data();
+
+      // Validiere, dass die E-Mail dem anfragenden Benutzer gehört
+      if (emailData?.userId && emailData.userId !== userId) {
+        throw new Error('Unauthorized: Email belongs to another user');
+      }
+
       const labels = emailData?.labels || emailData?.labelIds || [];
 
       let updatedLabels: string[];

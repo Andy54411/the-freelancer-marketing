@@ -98,7 +98,9 @@ export default function SettingsPage() {
         return;
       }
 
-      if (user.uid !== uid) {
+      const isOwner = user.uid === uid;
+      const isEmployee = user.user_type === 'mitarbeiter' && user.companyId === uid;
+      if (!isOwner && !isEmployee) {
         setLoading(false);
         return;
       }

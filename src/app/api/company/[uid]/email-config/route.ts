@@ -9,9 +9,16 @@ export async function GET(
   try {
     const { uid } = await params;
     
+    // userId aus Query-Parameter holen (für benutzer-spezifische Config)
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId') || uid;
+    
     // Prüfe Gmail-Konfiguration in emailConfigs Subcollection
+    // Filter nach userId, um benutzer-spezifische Configs zu finden
     const emailConfigsSnapshot = await withFirebase(async () =>
-      db!.collection('companies').doc(uid).collection('emailConfigs').get()
+      db!.collection('companies').doc(uid).collection('emailConfigs')
+        .where('userId', '==', userId)
+        .get()
     );
 
     if (emailConfigsSnapshot.empty) {
@@ -21,7 +28,7 @@ export async function GET(
       }, { status: 404 });
     }
 
-    // Nehme die erste (und normalerweise einzige) Gmail-Konfiguration
+    // Nehme die erste passende Gmail-Konfiguration
     const emailConfigDoc = emailConfigsSnapshot.docs[0];
     const gmailConfig = emailConfigDoc.data();
 
@@ -43,6 +50,7 @@ export async function GET(
       userInfo: gmailConfig.userInfo,
       gmailProfile: gmailConfig.gmailProfile,
       isActive: gmailConfig.isActive,
+      userId: gmailConfig.userId,
       createdAt: gmailConfig.createdAt,
       updatedAt: gmailConfig.updatedAt,
       requiresReauth: !hasValidTokens

@@ -383,16 +383,24 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
   }, [currentUser?.uid, loadProfilePictureFromFirestore]);
 
-  // 🔔 EMAIL NOTIFICATIONS: Listener für ungelesene E-Mails
+  // 🔔 EMAIL NOTIFICATIONS: Listener für ungelesene E-Mails (benutzer-spezifisch)
   useEffect(() => {
     if (!currentUid) {
       setUnreadEmailsCount(0);
       return;
     }
 
-    // Listener auf emailCache für ungelesene E-Mails
+    // Die effektive User-ID - für Mitarbeiter ihre eigene UID, für Inhaber die Company-UID
+    const effectiveUserId = currentUser?.uid || currentUid;
+
+    console.log(`📧 [UserHeader] Email Listener für User: ${effectiveUserId}`);
+
+    // Listener auf emailCache für ungelesene E-Mails - MIT userId Filter!
     const emailCacheRef = collection(db, 'companies', currentUid, 'emailCache');
-    const unreadEmailsQuery = query(emailCacheRef);
+    const unreadEmailsQuery = query(
+      emailCacheRef,
+      where('userId', '==', effectiveUserId)
+    );
 
     const unsubscribe = onSnapshot(
       unreadEmailsQuery,
@@ -424,7 +432,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     return () => {
       unsubscribe();
     };
-  }, [currentUid]);
+  }, [currentUid, currentUser?.uid]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

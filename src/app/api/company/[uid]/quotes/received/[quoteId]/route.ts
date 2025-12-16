@@ -79,7 +79,7 @@ export async function GET(
     const token = authHeader.split('Bearer ')[1];
 
     // Get Firebase services with robust error handling
-    const { db, admin: firebaseAdmin } = await getFirebaseServices();
+    const { db, admin: firebaseAdmin } = await getFirebaseServices(uid);
 
     let decodedToken;
     try {
@@ -89,8 +89,11 @@ export async function GET(
     }
 
     // Check if user is authorized to access this company's data
+    // Inhaber ODER Mitarbeiter dieser Company dürfen zugreifen
+    const isOwner = decodedToken.uid === uid;
+    const isEmployee = decodedToken.role === 'mitarbeiter' && decodedToken.companyId === uid;
 
-    if (decodedToken.uid !== uid) {
+    if (!isOwner && !isEmployee) {
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 });
     }
 
@@ -310,7 +313,11 @@ export async function POST(
     }
 
     // Check if the user is authorized to access this company's data
-    if (decodedToken.uid !== uid) {
+    // Inhaber ODER Mitarbeiter dieser Company dürfen zugreifen
+    const isOwnerPut = decodedToken.uid === uid;
+    const isEmployeePut = decodedToken.role === 'mitarbeiter' && decodedToken.companyId === uid;
+    
+    if (!isOwnerPut && !isEmployeePut) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -328,7 +335,7 @@ export async function POST(
     // Get the quote document - first try quotes collection, then requests collection
     let quoteDoc = await db!
       .collection('companies')
-      .doc(companyId)
+      .doc(uid)
       .collection('quotes')
       .doc(quoteId)
       .get();
@@ -357,7 +364,7 @@ export async function POST(
       try {
         const proposalsSnapshot = await db
           .collection('companies')
-          .doc(companyId)
+          .doc(uid)
           .collection('quotes')
           .doc(quoteId)
           .collection('proposals')

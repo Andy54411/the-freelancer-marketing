@@ -73,8 +73,11 @@ const CompanyOrdersOverviewPage = () => {
       return;
     }
 
-    // Sicherheitsüberprüfung: Nur der Inhaber des Dashboards darf seine Aufträge sehen
-    if (uidFromParams && user.uid !== uidFromParams) {
+    // Sicherheitsüberprüfung: Inhaber ODER Mitarbeiter dieser Company dürfen Aufträge sehen
+    const isOwner = user.uid === uidFromParams;
+    const isEmployee = user.user_type === 'mitarbeiter' && user.companyId === uidFromParams;
+    
+    if (uidFromParams && !isOwner && !isEmployee) {
       setError('Zugriff verweigert. Sie sind nicht berechtigt, diese Aufträge einzusehen.');
       setIsLoading(false);
       return;
@@ -249,7 +252,7 @@ const CompanyOrdersOverviewPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 pt-[var(--global-header-height)]">
+    <div className="container mx-auto px-4 py-8 pt-[--global-header-height]">
       {' '}
       {/* Füge Padding für den sticky Header hinzu */}
       <h1 className="text-3xl font-semibold text-gray-800 mb-6">Aufträge</h1>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PersonalService, Employee, Shift } from '@/services/personalService';
+import { logShiftCreated, logShiftUpdated, logShiftDeleted } from '@/lib/employeeActivityLogger';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -208,7 +209,7 @@ function calculateHoursFromShift(shift: Shift): number {
 }
 
 export default function SchedulePage({ params }: SchedulePageProps) {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [resolvedParams, setResolvedParams] = useState<{ uid: string } | null>(null);
 
   // State
@@ -546,7 +547,15 @@ export default function SchedulePage({ params }: SchedulePageProps) {
         };
         delete (newShiftData as Partial<Shift>).id;
         
-        await PersonalService.createShift(newShiftData);
+        const shiftId = await PersonalService.createShift(newShiftData);
+        
+        // Mitarbeiter-Aktivität loggen (nur wenn Mitarbeiter)
+        if (userRole === 'mitarbeiter') {
+          const employee = employees.find(emp => emp.id === shift.employeeId);
+          const employeeName = employee ? `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Unbekannt' : 'Unbekannt';
+          await logShiftCreated(shiftId, employeeName, formatDate(newDate), shift.notes || 'Schicht');
+        }
+        
         pastedCount++;
       }
 
@@ -596,11 +605,25 @@ export default function SchedulePage({ params }: SchedulePageProps) {
         status: template.id === 'urlaub' ? 'ABSENT' : template.id === 'krank' ? 'SICK' : 'PLANNED',
       };
 
+      const employeeName = `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Unbekannt';
+
       if (existingShift?.id) {
         await PersonalService.updateShift(resolvedParams.uid, existingShift.id, shiftData);
+        
+        // Mitarbeiter-Aktivität loggen
+        if (userRole === 'mitarbeiter') {
+          await logShiftUpdated(existingShift.id, employeeName, date, template.name);
+        }
+        
         toast.success(`${template.name} aktualisiert`);
       } else {
-        await PersonalService.createShift(shiftData);
+        const shiftId = await PersonalService.createShift(shiftData);
+        
+        // Mitarbeiter-Aktivität loggen
+        if (userRole === 'mitarbeiter') {
+          await logShiftCreated(shiftId, employeeName, date, template.name);
+        }
+        
         toast.success(`${template.name} erstellt`);
       }
       setHasChanges(true);
@@ -626,12 +649,21 @@ export default function SchedulePage({ params }: SchedulePageProps) {
       const endTime = newShiftForm.endTime || template.endTime;
 
       if (editingShift?.id) {
+        const employee = employees.find(emp => emp.id === editingShift.employeeId);
+        const employeeName = employee ? `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Unbekannt' : 'Unbekannt';
+
         await PersonalService.updateShift(resolvedParams.uid, editingShift.id, {
           startTime,
           endTime,
           notes: template.name + (newShiftForm.notes ? ` - ${newShiftForm.notes}` : ''),
           status: template.id === 'urlaub' ? 'ABSENT' : template.id === 'krank' ? 'SICK' : 'PLANNED',
         });
+        
+        // Mitarbeiter-Aktivität loggen
+        if (userRole === 'mitarbeiter') {
+          await logShiftUpdated(editingShift.id, employeeName, editingShift.date, template.name);
+        }
+        
         toast.success('Schicht aktualisiert');
       } else if (selectedCell) {
         const employee = employees.find(emp => emp.id === selectedCell.employeeId);
@@ -639,6 +671,9 @@ export default function SchedulePage({ params }: SchedulePageProps) {
           toast.error('Mitarbeiter nicht gefunden');
           return;
         }
+        
+        const employeeName = `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Unbekannt';
+        
         const shiftData: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'> = {
           companyId: resolvedParams.uid,
           employeeId: selectedCell.employeeId,
@@ -650,7 +685,14 @@ export default function SchedulePage({ params }: SchedulePageProps) {
           notes: template.name + (newShiftForm.notes ? ` - ${newShiftForm.notes}` : ''),
           status: template.id === 'urlaub' ? 'ABSENT' : template.id === 'krank' ? 'SICK' : 'PLANNED',
         };
-        await PersonalService.createShift(shiftData);
+        
+        const shiftId = await PersonalService.createShift(shiftData);
+        
+        // Mitarbeiter-Aktivität loggen
+        if (userRole === 'mitarbeiter') {
+          await logShiftCreated(shiftId, employeeName, selectedCell.date, template.name);
+        }
+        
         toast.success('Schicht erstellt');
       }
 
@@ -668,7 +710,16 @@ export default function SchedulePage({ params }: SchedulePageProps) {
     if (!resolvedParams?.uid || !editingShift?.id) return;
 
     try {
+      const employee = employees.find(emp => emp.id === editingShift.employeeId);
+      const employeeName = employee ? `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Unbekannt' : 'Unbekannt';
+
       await PersonalService.deleteShift(resolvedParams.uid, editingShift.id);
+      
+      // Mitarbeiter-Aktivität loggen
+      if (userRole === 'mitarbeiter') {
+        await logShiftDeleted(editingShift.id, employeeName, editingShift.date);
+      }
+      
       toast.success('Schicht gelöscht');
       setShowCreateDialog(false);
       setEditingShift(null);
@@ -794,7 +845,16 @@ export default function SchedulePage({ params }: SchedulePageProps) {
           <DropdownMenuItem
             onClick={async () => {
               if (shift.id && resolvedParams?.uid) {
+                const employee = employees.find(emp => emp.id === shift.employeeId);
+                const employeeName = employee ? `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Unbekannt' : 'Unbekannt';
+                
                 await PersonalService.deleteShift(resolvedParams.uid, shift.id);
+                
+                // Mitarbeiter-Aktivität loggen
+                if (userRole === 'mitarbeiter') {
+                  await logShiftDeleted(shift.id, employeeName, shift.date);
+                }
+                
                 toast.success('Schicht gelöscht');
               }
             }}
@@ -1046,7 +1106,7 @@ export default function SchedulePage({ params }: SchedulePageProps) {
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => {
+                    <DropdownMenuItem onClick={async () => {
                       // Alle Schichten der Abteilung in dieser Woche löschen
                       const weekStart = formatDate(weekDates[0]);
                       const weekEnd = formatDate(weekDates[6]);
@@ -1060,11 +1120,19 @@ export default function SchedulePage({ params }: SchedulePageProps) {
                         return;
                       }
                       if (confirm(`${deptShifts.length} Schichten in ${department} löschen?`)) {
-                        deptShifts.forEach(async (shift) => {
+                        for (const shift of deptShifts) {
                           if (shift.id && resolvedParams?.uid) {
+                            const employee = employees.find(emp => emp.id === shift.employeeId);
+                            const employeeName = employee ? `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Unbekannt' : 'Unbekannt';
+                            
                             await PersonalService.deleteShift(resolvedParams.uid, shift.id);
+                            
+                            // Mitarbeiter-Aktivität loggen
+                            if (userRole === 'mitarbeiter') {
+                              await logShiftDeleted(shift.id, employeeName, shift.date);
+                            }
                           }
-                        });
+                        }
                         toast.success(`${deptShifts.length} Schichten gelöscht`);
                       }
                     }} className="text-red-600">

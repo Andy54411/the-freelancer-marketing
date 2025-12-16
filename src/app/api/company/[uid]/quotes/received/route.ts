@@ -35,7 +35,11 @@ export async function GET(
     }
 
     // Check if the user is authorized to access this company's data
-    if (decodedToken.uid !== uid) {
+    // Inhaber ODER Mitarbeiter dieser Company dürfen zugreifen
+    const isOwner = decodedToken.uid === uid;
+    const isEmployee = decodedToken.role === 'mitarbeiter' && decodedToken.companyId === uid;
+    
+    if (!isOwner && !isEmployee) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

@@ -31,7 +31,9 @@ export default function DatevMainPage() {
   const [selectedExportType, setSelectedExportType] = useState<'accounting' | 'invoices'>('invoices');
 
   useEffect(() => {
-    if (!user || user.uid !== uid || !firebaseUser) return;
+    const isOwner = user?.uid === uid;
+    const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
+    if (!user || (!isOwner && !isEmployee) || !firebaseUser) return;
     loadDatevConnections();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid, user, firebaseUser]);
@@ -82,7 +84,10 @@ export default function DatevMainPage() {
     router.push(`/dashboard/company/${uid}/datev/setup`);
   };
 
-  if (!user || user.uid !== uid) {
+  const isOwner = user?.uid === uid;
+  const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
+
+  if (!user || (!isOwner && !isEmployee)) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="text-center">

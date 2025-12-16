@@ -17,6 +17,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { EmailList, MemoizedEmailList } from './EmailList';
+import { EmailListSkeleton, EmailLoadingOverlay } from './EmailSkeleton';
 import { EmailViewer } from './EmailViewer';
 import { EmailCompose } from './EmailCompose';
 import type {
@@ -27,6 +28,7 @@ import type {
 } from './types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 // useOptimizedGmail Hook entfernt
 
 // Global Type Declaration für Performance Tracking
@@ -87,6 +89,29 @@ export function EmailClient({
 }: EmailClientProps) {
   const searchParams = useSearchParams();
   const searchQuery = searchParams?.get('search') || '';
+  const { user, loading: authLoading } = useAuth();
+  
+  // Die effektive User-ID für benutzer-spezifische E-Mails
+  // KRITISCH: Warte bis Auth geladen ist, verwende NIEMALS companyId als Fallback!
+  const effectiveUserId = user?.uid;
+
+  // Wenn Auth noch lädt oder kein User, zeige Loading
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+        <span className="ml-2 text-gray-500">Lade Benutzer...</span>
+      </div>
+    );
+  }
+
+  if (!effectiveUserId) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="text-red-500">Nicht angemeldet</span>
+      </div>
+    );
+  }
 
   // State
   const [folders, setFolders] = useState<EmailFolder[]>([
@@ -135,9 +160,10 @@ export function EmailClient({
 
       try {
         // Lade E-Mails von der API - IMMER mit force=true für neueste E-Mails
-        const apiUrl = `/api/company/${companyId}/emails?folder=${selectedFolder}&force=true`;
+        // userId wird mitgesendet für benutzer-spezifische E-Mails
+        const apiUrl = `/api/company/${companyId}/emails?folder=${selectedFolder}&force=true&userId=${effectiveUserId}`;
         
-        console.log(`🔄 RefreshCachedEmails: IMMER force=true, URL=${apiUrl}`);
+        console.log(`🔄 RefreshCachedEmails: IMMER force=true, userId=${effectiveUserId}, URL=${apiUrl}`);
 
         const response = await fetch(apiUrl, {
           method: 'GET',
@@ -217,7 +243,7 @@ export function EmailClient({
         setCacheLoading(false);
       }
     },
-    [companyId, selectedFolder]
+    [companyId, selectedFolder, effectiveUserId]
   );
 
   // Auto-Polling: NUR beim ersten Laden, wenn keine E-Mails da sind
@@ -291,16 +317,16 @@ export function EmailClient({
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [lastActivity, setLastActivity] = useState<Date | null>(null);
 
-  // ✅ GMAIL VERBINDUNGS-CHECK - Prüfe ob Gmail verbunden ist
+  // ✅ GMAIL VERBINDUNGS-CHECK - Prüfe ob Gmail verbunden ist (mit userId)
   useEffect(() => {
     const checkGmailConnection = async () => {
       if (!companyId) return;
 
       try {
-        const response = await fetch(`/api/company/${companyId}/gmail-auth-status`);
+        const response = await fetch(`/api/company/${companyId}/gmail-auth-status?userId=${effectiveUserId}`);
         const data = await response.json();
         
-        console.log('📧 EmailClient Gmail-Status:', data);
+        console.log('📧 EmailClient Gmail-Status für User', effectiveUserId, ':', data);
 
         // Prüfe auf gültige Verbindung (gleiche Logik wie in CompanySidebar)
         const hasValidConnection = data.hasConfig && 
@@ -324,18 +350,24 @@ export function EmailClient({
     };
 
     checkGmailConnection();
-  }, [companyId]);
+  }, [companyId, effectiveUserId]);
 
   useEffect(() => {
-    if (!companyId || !selectedFolder) {
-      console.warn('⚠️ Direct email listener: No companyId or folder');
+    if (!companyId || !selectedFolder || !effectiveUserId) {
+      console.warn('⚠️ Direct email listener: Missing companyId, folder, or userId');
       return;
     }
 
-    // DIREKTE Verbindung zur emailCache Collection
+    console.log(`🔄 EmailClient: Starte Firestore Listener für User ${effectiveUserId}`);
+
+    // DIREKTE Verbindung zur emailCache Collection - MIT userId Filter!
     const emailCacheRef = collection(db, 'companies', companyId, 'emailCache');
-    // WICHTIG: Sortiere nach internalDate (Gmail Original), NICHT nach timestamp (Firestore Update-Zeit)!
-    const emailQuery = query(emailCacheRef, orderBy('internalDate', 'desc'));
+    // KRITISCH: Filtere nach userId damit jeder User nur seine eigenen E-Mails sieht!
+    const emailQuery = query(
+      emailCacheRef, 
+      where('userId', '==', effectiveUserId),
+      orderBy('internalDate', 'desc')
+    );
 
     const unsubscribe = onSnapshot(
       emailQuery,
@@ -397,7 +429,7 @@ export function EmailClient({
     return () => {
       unsubscribe();
     };
-  }, [companyId, selectedFolder]);
+  }, [companyId, selectedFolder, effectiveUserId]);
 
   // 🔥 BACKUP: Gmail Push Notifications Listener (Fallback)
   useEffect(() => {
@@ -429,46 +461,6 @@ export function EmailClient({
 
     return () => unsubscribe();
   }, [companyId]);
-
-  /*
-  OLD REALTIME CODE REMOVED
-  const { isConnected: isRealtimeConnected, lastActivity } = useRealtimeEmails({
-    companyId,
-    onNewEmails: () => {
-      console.log('🔥 REAL-TIME EVENT RECEIVED: Triggering force refresh of emails!');
-      console.log(' Real-time: Neue E-Mails empfangen - aktualisiere sofort');
-      
-      // Force a complete refresh - clear current emails first
-      setEmails([]);
-      setIsLoading(true);
-      
-      loadEmails(true).then(() => {
-        console.log('✅ Real-time email refresh completed');
-        // Force UI update by triggering a re-render
-        setTimeout(() => {
-          console.log('🎯 UI refresh triggered after email load');
-        }, 100);
-      }).catch((error) => {
-        console.error('❌ Real-time email refresh failed:', error);
-        setIsLoading(false);
-      });
-    },
-    onEmailsUpdated: (emailData) => {
-      console.log('🚀 WEBHOOK DIRECT UPDATE: E-Mails direkt vom Webhook erhalten!');
-       
-      // DIREKT die E-Mail-Daten vom Webhook verwenden - KEINE API-Calls nötig!
-      if (emailData.emails && Array.isArray(emailData.emails)) {
-        console.log('✅ WEBHOOK: E-Mails direkt in UI übernommen - SOFORT verfügbar!');
-        setEmails([...emailData.emails]);
-        setIsLoading(false);
-        
-        // Force UI refresh
-        setTimeout(() => {
-          console.log('🎯 WEBHOOK: UI-Update abgeschlossen');
-        }, 50);
-      } else {
-  OLD REALTIME CODE REMOVED - END
-  */
 
   // Performance Tracking Setup
   useEffect(() => {
@@ -508,13 +500,6 @@ export function EmailClient({
     const handleFocus = () => {
       const now = Date.now();
       const timeSinceLastFocus = now - lastFocusTime;
-
-      // DEAKTIVIERT: Window focus refresh - NUR über Webhooks!
-      // if (timeSinceLastFocus > 120000) {
-      //   console.log('👀 App focus detected after long absence - refreshing emails');
-      //   loadEmails(true);
-      // }
-
       lastFocusTime = now;
     };
 
@@ -806,7 +791,7 @@ export function EmailClient({
         const response = await fetch(`/api/company/${companyId}/emails/${emailId}/star`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ starred: newStarredState }),
+          body: JSON.stringify({ starred: newStarredState, userId: effectiveUserId }),
         });
 
         if (!response.ok) {
@@ -828,7 +813,7 @@ export function EmailClient({
         toast.error('Fehler beim Markieren der E-Mail');
       }
     },
-    [emails, companyId, selectedEmail, loadEmails]
+    [emails, companyId, selectedEmail, loadEmails, effectiveUserId]
   );
 
   const handleMarkAsSpam = useCallback(
@@ -847,7 +832,7 @@ export function EmailClient({
         const response = await fetch(`/api/company/${companyId}/emails/${emailId}/spam`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ spam: isSpam }),
+          body: JSON.stringify({ spam: isSpam, userId: effectiveUserId }),
         });
 
         if (!response.ok) {
@@ -873,7 +858,7 @@ export function EmailClient({
         toast.error('Fehler beim Markieren als Spam');
       }
     },
-    [emails, companyId, selectedEmail, selectedFolder, loadEmails]
+    [emails, companyId, selectedEmail, selectedFolder, loadEmails, effectiveUserId]
   );
 
   const handleArchiveEmails = useCallback(
@@ -894,7 +879,7 @@ export function EmailClient({
           const response = await fetch(`/api/company/${companyId}/emails/${emailId}/archive`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ archived: true }),
+            body: JSON.stringify({ archived: true, userId: effectiveUserId }),
           });
 
           if (!response.ok) {
@@ -915,7 +900,7 @@ export function EmailClient({
         toast.error('Fehler beim Archivieren');
       }
     },
-    [emails, companyId, selectedEmail, loadEmails]
+    [emails, companyId, selectedEmail, loadEmails, effectiveUserId]
   );
 
   const handleDeleteEmails = useCallback(
@@ -936,7 +921,7 @@ export function EmailClient({
           const response = await fetch(`/api/company/${companyId}/emails/${emailId}/trash`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ trash: true }),
+            body: JSON.stringify({ trash: true, userId: effectiveUserId }),
           });
 
           if (!response.ok) {
@@ -959,7 +944,7 @@ export function EmailClient({
         toast.error('Fehler beim Verschieben in den Papierkorb');
       }
     },
-    [emails, companyId, selectedEmail, loadEmails]
+    [emails, companyId, selectedEmail, loadEmails, effectiveUserId]
   );
 
   // Handler für Gmail Neu-Authentifizierung
@@ -1100,31 +1085,40 @@ export function EmailClient({
       {/* Email List - Fixed Width */}
       <div
         className={cn(
-          'bg-white flex flex-col overflow-hidden border-r border-gray-200',
+          'bg-white flex flex-col overflow-hidden border-r border-gray-200 relative',
           selectedEmail ? 'w-80' : 'flex-1'
         )}
       >
-        <MemoizedEmailList
-          emails={emails}
-          selectedEmails={selectedEmails}
-          onSelectEmail={handleEmailSelect}
-          onSelectAll={handleSelectAll}
-          onEmailClick={handleEmailClick}
-          onStarEmail={handleStarEmail}
-          onArchiveEmails={handleArchiveEmails}
-          onDeleteEmails={handleDeleteEmails}
-          onMarkAsRead={handleMarkAsRead}
-          onMarkAsSpam={handleMarkAsSpam}
-          filter={filter}
-          onFilterChange={setFilter}
-          onSync={handleRefresh}
-          isLoading={isLoading}
-          isCompact={!!selectedEmail}
-          realtimeStatus={{
-            connected: isRealtimeConnected,
-            lastActivity: lastActivity,
-          }}
-        />
+        {/* Gmail-Style Loading Skeleton */}
+        {cacheLoading && cachedEmails.length === 0 ? (
+          <EmailListSkeleton count={12} />
+        ) : (
+          <>
+            {/* Loading Overlay wenn Refresh läuft aber bereits E-Mails da sind */}
+            {cacheLoading && cachedEmails.length > 0 && <EmailLoadingOverlay />}
+            <MemoizedEmailList
+              emails={emails}
+              selectedEmails={selectedEmails}
+              onSelectEmail={handleEmailSelect}
+              onSelectAll={handleSelectAll}
+              onEmailClick={handleEmailClick}
+              onStarEmail={handleStarEmail}
+              onArchiveEmails={handleArchiveEmails}
+              onDeleteEmails={handleDeleteEmails}
+              onMarkAsRead={handleMarkAsRead}
+              onMarkAsSpam={handleMarkAsSpam}
+              filter={filter}
+              onFilterChange={setFilter}
+              onSync={handleRefresh}
+              isLoading={isLoading}
+              isCompact={!!selectedEmail}
+              realtimeStatus={{
+                connected: isRealtimeConnected,
+                lastActivity: lastActivity,
+              }}
+            />
+          </>
+        )}
       </div>
 
       {/* Email Viewer - Takes Remaining Space */}

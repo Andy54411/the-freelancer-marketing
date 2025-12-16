@@ -1013,7 +1013,9 @@ export default function CreateQuotePage() {
   // Wichtig: settings als Dependency, damit Template-Daten automatisch aktualisiert werden
   useEffect(() => {
     const loadCompany = async () => {
-      if (!uid || !user || user.uid !== uid) return;
+      const isOwner = user?.uid === uid;
+      const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
+      if (!uid || !user || (!isOwner && !isEmployee)) return;
       try {
         const snap = await getDoc(doc(db, 'companies', uid));
         if (snap.exists()) {
@@ -1932,7 +1934,10 @@ export default function CreateQuotePage() {
   };
 
   // Guard
-  if (!user || user.uid !== uid) {
+  const isOwner = user?.uid === uid;
+  const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
+
+  if (!user || (!isOwner && !isEmployee)) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="text-center">

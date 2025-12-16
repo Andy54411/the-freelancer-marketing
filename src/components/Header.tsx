@@ -198,18 +198,27 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
     return undefined;
   }, [currentUser, firestoreUserData, subscribeToRecentChats]);
 
-  // 🔔 NEUE EMAIL NOTIFICATIONS: Listener für ungelesene E-Mails
+  // 🔔 NEUE EMAIL NOTIFICATIONS: Listener für ungelesene E-Mails (benutzer-spezifisch)
   useEffect(() => {
     if (!company?.uid) {
       setUnreadEmailsCount(0);
       return;
     }
 
-    // Listener auf emailCache - ALLE Emails laden, dann filtern (kein Index nötig)
+    // Die effektive User-ID - für Mitarbeiter ihre eigene UID, für Inhaber die Company-UID
+    const effectiveUserId = currentUser?.uid || company.uid;
+
+    console.log(`📧 [Header] Email Listener für User: ${effectiveUserId}`);
+
+    // Listener auf emailCache - MIT userId Filter!
     const emailCacheRef = collection(db, 'companies', company.uid, 'emailCache');
+    const emailQuery = query(
+      emailCacheRef,
+      where('userId', '==', effectiveUserId)
+    );
 
     const unsubscribe = onSnapshot(
-      emailCacheRef,
+      emailQuery,
       snapshot => {
         // Filtere im Code nach ungelesenen Emails
         const unreadEmails = snapshot.docs.filter(doc => {
@@ -241,7 +250,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
     return () => {
       unsubscribe();
     };
-  }, [company?.uid]);
+  }, [company?.uid, currentUser?.uid]);
 
   const loadProfilePictureFromStorage = useCallback(async (uid: string) => {
     if (!uid) {

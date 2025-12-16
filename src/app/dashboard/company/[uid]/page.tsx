@@ -20,7 +20,6 @@ import CompanyReviewManagement from '@/components/CompanyReviewManagement';
 import FinanceComponent from '@/components/FinanceComponent';
 import { useCompanyOnboardingCheck } from '@/hooks/useCompanyOnboardingCheck';
 import OnboardingBanner from '@/components/onboarding/OnboardingBanner';
-import AdminApprovalStatus from '@/components/AdminApprovalStatus';
 import OutstandingInvoicesCard from '@/components/dashboard/OutstandingInvoicesCard';
 import VatPreRegistrationCard from '@/components/dashboard/VatPreRegistrationCard';
 import BankAccountCard from '@/components/dashboard/BankAccountCard';
@@ -151,6 +150,10 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
 
   const { user: authUser, firebaseUser } = useAuth();
 
+  // Ermittle ob User ein Mitarbeiter ist (nicht Firmeninhaber)
+  // user_type 'mitarbeiter' UND companyId (aus Custom Claims)
+  const isEmployee = authUser?.user_type === 'mitarbeiter' && authUser?.companyId === uid;
+
   const [financialData, setFinancialData] = useState({
     netRevenue: 0,
     totalExpenses: 0,
@@ -196,8 +199,9 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
       component: (() => {
         switch (comp.id) {
           case 'onboarding-banner':
+            // Nur für Firmeninhaber anzeigen, nicht für Mitarbeiter
             return (
-              uid && (
+              uid && !isEmployee && (
                 <OnboardingBanner
                   key="onboarding-banner"
                   companyUid={uid}
@@ -216,7 +220,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
                 {uid && isAuthorized && !isChecking ? (
                   <ChartAreaInteractive
                     companyUid={uid}
-                    onFinancialDataChange={handleFinancialDataChange}
+                    onFinancialDataChangeAction={handleFinancialDataChange}
                   />
                 ) : (
                   <div className="flex h-[350px] w-full items-center justify-center">
@@ -284,6 +288,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
     currentStep,
     isChecking,
     isAuthorized,
+    isEmployee,
     handleFinancialDataChange,
     orders,
     loadingOrders,

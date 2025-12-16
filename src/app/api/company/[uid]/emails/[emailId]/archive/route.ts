@@ -8,9 +8,16 @@ export async function POST(
   try {
     const { uid, emailId } = await params;
     const body = await request.json();
-    const { archived } = body;
+    const { archived, userId } = body;
 
-    console.log(`📦 Toggle archive for email ${emailId}, archived: ${archived}`);
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'userId is required' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`📦 Toggle archive for email ${emailId}, archived: ${archived}, userId: ${userId}`);
 
     let result: any;
 
@@ -23,6 +30,12 @@ export async function POST(
       }
 
       const emailData = emailDoc.data();
+
+      // Validiere, dass die E-Mail dem anfragenden Benutzer gehört
+      if (emailData?.userId && emailData.userId !== userId) {
+        throw new Error('Unauthorized: Email belongs to another user');
+      }
+
       const labels = emailData?.labels || emailData?.labelIds || [];
 
       let updatedLabels: string[];

@@ -18,7 +18,10 @@ export default function SuppliersPage() {
   }, [user, uid, router]);
 
   // Autorisierung prüfen
-  if (!user || user.uid !== uid) {
+  const isOwner = user?.uid === uid;
+  const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
+
+  if (!user || (!isOwner && !isEmployee)) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="text-center">

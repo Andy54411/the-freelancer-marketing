@@ -6,24 +6,36 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
-    const state = searchParams.get('state'); // This is the companyId
+    const state = searchParams.get('state'); // This can be "companyId" or "companyId|userId"
     const error = searchParams.get('error');
+
+    // Parse state to extract companyId and optional userId
+    let companyId: string;
+    let userId: string | null = null;
+    
+    if (state?.includes('|')) {
+      const [cid, uid] = state.split('|');
+      companyId = cid;
+      userId = uid;
+    } else {
+      companyId = state || '';
+    }
 
     if (error) {
       console.error('❌ OAuth error:', error);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state}/email-integration?error=gmail_auth_failed`
+        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${companyId}/email-integration?error=gmail_auth_failed`
       );
     }
 
-    if (!code || !state) {
+    if (!code || !companyId) {
       console.error('❌ Missing code or state in callback');
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state || 'unknown'}/email-integration?error=invalid_callback`
+        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${companyId || 'unknown'}/email-integration?error=invalid_callback`
       );
     }
 
-    console.log(`🔄 Processing Gmail OAuth callback for company: ${state}`);
+    console.log(`🔄 Processing Gmail OAuth callback for company: ${companyId}, userId: ${userId || companyId}`);
 
     // Exchange code for tokens
     const oauth2Client = new google.auth.OAuth2(
@@ -47,12 +59,17 @@ export async function GET(request: NextRequest) {
 
     console.log(`✅ Got tokens for email: ${userInfo.data.email}`);
 
+    // Die effektive User-ID für die Speicherung (Mitarbeiter oder Inhaber)
+    const effectiveUserId = userId || companyId;
+
     // Konfiguration in Firestore speichern (neue Subcollection Struktur)
+    // userId wird hinzugefügt, um benutzer-spezifische Configs zu ermöglichen
     const emailConfig = {
-      id: `gmail_${state}_${Date.now()}`,
+      id: `gmail_${effectiveUserId}_${Date.now()}`,
       provider: 'gmail',
       email: userInfo.data.email,
-      companyId: state,
+      companyId: companyId,
+      userId: effectiveUserId, // Die User-ID (kann Mitarbeiter oder Inhaber sein)
       isActive: true,
       tokens: {
         access_token: tokens.access_token,
@@ -80,11 +97,11 @@ export async function GET(request: NextRequest) {
     // In neue Subcollection Struktur speichern
     await db
       .collection('companies')
-      .doc(state)
+      .doc(companyId)
       .collection('emailConfigs')
       .doc(emailConfig.id)
       .set(emailConfig);
-    console.log('✅ Gmail Config in emailConfigs Subcollection gespeichert');
+    console.log(`✅ Gmail Config gespeichert für User: ${effectiveUserId} in Company: ${companyId}`);
 
     // KRITISCH: Gmail Watch für Real-time Push Notifications einrichten
     try {
@@ -136,7 +153,8 @@ export async function GET(request: NextRequest) {
       // Watch Status in Firestore speichern für Tracking
       const watchData = {
         userEmail: userInfo.data.email,
-        companyId: state,
+        companyId: companyId,
+        userId: effectiveUserId,
         pushNotificationsEnabled: true,
         lastHistoryId: watchResponse.data.historyId,
         watchExpiration: new Date(parseInt(watchResponse.data.expiration!)),
@@ -149,7 +167,7 @@ export async function GET(request: NextRequest) {
 
       await db
         .collection('companies')
-        .doc(state)
+        .doc(companyId)
         .collection('gmail_sync_status')
         .doc(userInfo.data.email!)
         .set(watchData);
@@ -158,7 +176,7 @@ export async function GET(request: NextRequest) {
       // DOPPELTE Verifikation: Prüfe ob gespeichert wurde
       const verifyDoc = await db
         .collection('companies')
-        .doc(state)
+        .doc(companyId)
         .collection('gmail_sync_status')
         .doc(userInfo.data.email!)
         .get();
@@ -170,7 +188,7 @@ export async function GET(request: NextRequest) {
       // Zusätzlich: Update emailConfig mit Watch Status - NUR BEI ERFOLG!
       await db
         .collection('companies')
-        .doc(state)
+        .doc(companyId)
         .collection('emailConfigs')
         .doc(emailConfig.id)
         .update({
@@ -194,7 +212,8 @@ export async function GET(request: NextRequest) {
       // Speichere Fehler für Debugging
       const errorWatchData = {
         userEmail: userInfo.data.email,
-        companyId: state,
+        companyId: companyId,
+        userId: effectiveUserId,
         pushNotificationsEnabled: false,
         setupAt: new Date(),
         setupSuccess: false,
@@ -213,7 +232,7 @@ export async function GET(request: NextRequest) {
       try {
         await db
           .collection('companies')
-          .doc(state)
+          .doc(companyId)
           .collection('gmail_sync_status')
           .doc(userInfo.data.email!)
           .set(errorWatchData);
@@ -227,7 +246,7 @@ export async function GET(request: NextRequest) {
       try {
         await db
           .collection('companies')
-          .doc(state)
+          .doc(companyId)
           .collection('emailConfigs')
           .doc(emailConfig.id)
           .update({
@@ -245,7 +264,7 @@ export async function GET(request: NextRequest) {
       console.log('❌ KRITISCHER WATCH SETUP FEHLER - Benutzer muss informiert werden!');
 
       // Bei Watch-Fehler NICHT zur Email-Seite, sondern zurück zur Integration mit Fehler
-      const errorUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state}/settings/email-integration?error=watch_setup_failed&details=${encodeURIComponent(watchError instanceof Error ? watchError.message : String(watchError))}`;
+      const errorUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${companyId}/settings/email-integration?error=watch_setup_failed&details=${encodeURIComponent(watchError instanceof Error ? watchError.message : String(watchError))}`;
       console.log('🔄 Redirecting to integration page with error:', errorUrl);
 
       return new Response(null, {
@@ -270,7 +289,8 @@ export async function GET(request: NextRequest) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          companyId: state,
+          companyId: companyId,
+          userId: effectiveUserId,
           userEmail: userInfo.data.email,
           force: true,
           initialSync: true,
@@ -299,7 +319,7 @@ export async function GET(request: NextRequest) {
       process.env.NODE_ENV === 'development'
         ? 'http://localhost:3000'
         : process.env.NEXT_PUBLIC_APP_URL;
-    const redirectUrl = `${baseUrl}/dashboard/company/${state}/emails?folder=inbox`;
+    const redirectUrl = `${baseUrl}/dashboard/company/${companyId}/emails?folder=inbox`;
     console.log('🔄 Redirecting to Email Client:', redirectUrl);
     return NextResponse.redirect(redirectUrl);
   } catch (error) {
@@ -308,7 +328,9 @@ export async function GET(request: NextRequest) {
     // Zur Error-Seite mit Fehlermeldung
     const { searchParams } = new URL(request.url);
     const state = searchParams.get('state') || '';
-    const errorUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state}/email-integration?error=connection_failed`;
+    // Parse state to get companyId
+    const cid = state.includes('|') ? state.split('|')[0] : state;
+    const errorUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${cid}/email-integration?error=connection_failed`;
     return NextResponse.redirect(errorUrl);
   }
 }

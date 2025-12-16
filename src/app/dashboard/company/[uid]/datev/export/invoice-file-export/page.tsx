@@ -127,7 +127,10 @@ export default function DatevInvoiceFileExportPage() {
     }
   };
 
-  if (!user || user.uid !== uid) {
+  const isOwner = user?.uid === uid;
+  const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
+
+  if (!user || (!isOwner && !isEmployee)) {
     return null;
   }
 

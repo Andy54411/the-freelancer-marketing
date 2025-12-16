@@ -32,8 +32,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Missing providerId parameter' }, { status: 400, headers });
     }
 
-    // Authorization check - user can only access their own orders
-    if (decodedToken.uid !== providerId) {
+    // Authorization check - user can only access their own orders OR employee of the company
+    const isOwner = decodedToken.uid === providerId;
+    const isEmployee = decodedToken.role === 'mitarbeiter' && decodedToken.companyId === providerId;
+    
+    if (!isOwner && !isEmployee) {
       return NextResponse.json({ error: 'Unauthorized access' }, { status: 403, headers });
     }
 

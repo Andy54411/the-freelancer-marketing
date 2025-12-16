@@ -15,7 +15,11 @@ export async function POST(request: NextRequest) {
     const decodedToken = await admin.auth().verifyIdToken(token);
     const companyId = request.headers.get('x-company-id');
 
-    if (!companyId || decodedToken.uid !== companyId) {
+    // Inhaber ODER Mitarbeiter dieser Company dürfen zugreifen
+    const isOwner = decodedToken.uid === companyId;
+    const isEmployee = decodedToken.role === 'mitarbeiter' && decodedToken.companyId === companyId;
+    
+    if (!companyId || (!isOwner && !isEmployee)) {
       return NextResponse.json(
         { success: false, error: 'Zugriff verweigert' },
         { status: 403 }

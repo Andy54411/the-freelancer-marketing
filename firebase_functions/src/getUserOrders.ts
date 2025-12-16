@@ -96,12 +96,19 @@ export const getUserOrders = onRequest(
             const idToken = authHeader.split('Bearer ')[1];
             const decodedToken = await authInstance.verifyIdToken(idToken);
             const requestingUid = decodedToken.uid;
-            const targetUid = userId;            // 2. Authorization Check
-            if (requestingUid !== targetUid) {
-                logger.error(`[getUserOrders] Forbidden: User ${requestingUid} attempted to access orders for ${targetUid}.`);
+            const targetUid = userId;
+            
+            // 2. Authorization Check - Inhaber ODER Mitarbeiter dieser Company
+            const isOwner = requestingUid === targetUid;
+            const isEmployee = decodedToken.role === 'mitarbeiter' && decodedToken.companyId === targetUid;
+            
+            if (!isOwner && !isEmployee) {
+                logger.error(`[getUserOrders] Forbidden: User ${requestingUid} (role: ${decodedToken.role}, companyId: ${decodedToken.companyId}) attempted to access orders for ${targetUid}.`);
                 res.status(403).json({ error: 'Forbidden: You are not authorized to view these orders.' });
                 return;
             }
+            
+            logger.info(`[getUserOrders] Access granted - isOwner: ${isOwner}, isEmployee: ${isEmployee}`);
 
             const db = getDb(); // Get DB instance from shared helper
 

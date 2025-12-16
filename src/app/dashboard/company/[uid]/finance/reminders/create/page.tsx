@@ -477,7 +477,9 @@ export default function CreateReminderPage() {
   }, [formData.invoiceId, items.length]);
 
   const loadCompany = async () => {
-    if (!uid || !user || user.uid !== uid) return;
+    const isOwner = user?.uid === uid;
+    const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
+    if (!uid || !user || (!isOwner && !isEmployee)) return;
     try {
       const snap = await getDoc(doc(db, 'companies', uid));
       if (snap.exists()) {

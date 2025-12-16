@@ -82,7 +82,11 @@ const IncomingOrdersPage = () => {
       return;
     }
 
-    if (uidFromParams && user.uid !== uidFromParams) {
+    // Sicherheitsüberprüfung: Inhaber ODER Mitarbeiter dieser Company dürfen Aufträge sehen
+    const isOwner = user.uid === uidFromParams;
+    const isEmployee = user.user_type === 'mitarbeiter' && user.companyId === uidFromParams;
+    
+    if (uidFromParams && !isOwner && !isEmployee) {
       setError('Zugriff verweigert. Sie sind nicht berechtigt, diese Aufträge einzusehen.');
       setIsLoading(false);
       return;

@@ -4,19 +4,25 @@ import { db, withFirebase } from '@/firebase/server';
 export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
     const { uid } = await params;
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId') || uid;
 
-    console.log(`🔍 Checking Gmail Watch Status for company: ${uid}`);
+    console.log(`🔍 Checking Gmail Watch Status for company: ${uid}, user: ${userId}`);
 
-    // Gmail Konfigurationen aus emailConfigs laden
+    // Gmail Konfigurationen aus emailConfigs laden - gefiltert nach userId
     const emailConfigsSnapshot = await withFirebase(async () =>
-      db!.collection('companies').doc(uid).collection('emailConfigs').get()
+      db!.collection('companies').doc(uid).collection('emailConfigs')
+        .where('userId', '==', userId)
+        .limit(1)
+        .get()
     );
 
     if (emailConfigsSnapshot.empty) {
       return NextResponse.json({
         watchActive: false,
-        error: 'No Gmail configuration found',
-        message: 'Gmail needs to be connected first'
+        error: 'Keine Gmail-Konfiguration für diesen Benutzer gefunden',
+        message: 'Gmail muss zuerst verbunden werden',
+        userId: userId
       });
     }
 

@@ -3,6 +3,8 @@
 
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 import UserHeader from '@/components/UserHeader';
 import CompanySidebar from '@/components/dashboard/CompanySidebar';
 import CompanyMobileSidebar from '@/components/dashboard/CompanyMobileSidebar';
@@ -65,18 +67,93 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   }, []);
 
   // AuthContext für zusätzliche Fallback-Daten
-  const { user } = useAuth();
+  const { user, firebaseUser } = useAuth();
 
-  // Ermittle ob User ein Mitarbeiter ist und hole die Berechtigungen
-  const isEmployee = user?.user_type === 'mitarbeiter' || 
-    (user?.linkedCompanies?.some(c => c.companyId === uid) ?? false);
+  // Ermittle ob User der Owner dieser Company ist
+  // Owner = user_type 'firma' UND uid stimmt mit URL überein
+  const isOwner = user?.user_type === 'firma' && user?.uid === uid;
   
-  // Finde die Berechtigungen für diese Firma
-  const employeePermissions = useMemo(() => {
-    if (!isEmployee || !user?.linkedCompanies) return undefined;
-    const linkedCompany = user.linkedCompanies.find(c => c.companyId === uid);
-    return linkedCompany?.permissions;
-  }, [isEmployee, user?.linkedCompanies, uid]);
+  // Mitarbeiter-Daten aus Custom Claims (companyId, employeeId)
+  const [employeeData, setEmployeeData] = useState<{
+    companyId: string;
+    employeeId: string;
+    permissions?: Record<string, boolean>;
+  } | null>(null);
+  
+  // Lade Mitarbeiter-Daten aus Custom Claims und Employee-Subcollection
+  useEffect(() => {
+    const loadEmployeeData = async () => {
+      if (!firebaseUser || isOwner) return;
+      
+      try {
+        // Hole Custom Claims vom Firebase Auth Token
+        const tokenResult = await firebaseUser.getIdTokenResult();
+        const claims = tokenResult.claims as { role?: string; companyId?: string; employeeId?: string };
+        
+        if (claims.role === 'mitarbeiter' && claims.companyId && claims.employeeId) {
+          // Lade Berechtigungen aus Employee-Subcollection
+          const employeeRef = doc(db, 'companies', claims.companyId, 'employees', claims.employeeId);
+          const employeeSnap = await getDoc(employeeRef);
+          
+          if (employeeSnap.exists()) {
+            const empData = employeeSnap.data();
+            setEmployeeData({
+              companyId: claims.companyId,
+              employeeId: claims.employeeId,
+              permissions: empData.dashboardAccess?.permissions,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('[Layout] Error loading employee data:', error);
+      }
+    };
+    
+    loadEmployeeData();
+  }, [firebaseUser, isOwner]);
+  
+  // Ermittle ob User ein Mitarbeiter ist
+  const isEmployee = !!employeeData && employeeData.companyId === uid;
+  
+  // Redirect Mitarbeiter zur richtigen Company wenn auf falscher URL
+  useEffect(() => {
+    if (employeeData && employeeData.companyId !== uid) {
+      console.log('[Layout] Redirecting employee to correct company:', employeeData.companyId);
+      router.replace(`/dashboard/company/${employeeData.companyId}`);
+    }
+  }, [employeeData, uid, router]);
+  
+  // Berechtigungen aus Employee-Subcollection
+  // Wenn keine Permissions gesetzt sind, standardmäßig ALLE aktivieren (volles Dashboard wie Inhaber)
+  const employeePermissions = employeeData?.permissions ?? (isEmployee ? {
+    overview: true,
+    personal: true,
+    employees: true,
+    shiftPlanning: true,
+    timeTracking: true,
+    absences: true,
+    evaluations: true,
+    orders: true,
+    quotes: true,
+    invoices: true,
+    customers: true,
+    calendar: true,
+    workspace: true,
+    finance: true,
+    expenses: true,
+    inventory: true,
+    settings: true, // Volle Einstellungen wie Inhaber
+  } : undefined);
+  
+  // Debug-Log für Mitarbeiter-Berechtigungen
+  if (isEmployee) {
+    console.log('[Layout] Employee Mode:', {
+      isEmployee,
+      employeeId: employeeData?.employeeId,
+      hasCustomPermissions: !!employeeData?.permissions,
+      permissions: employeePermissions,
+    });
+  }
 
   // Update Notifications
   const {
@@ -441,8 +518,10 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
                     </div>
                   </div>
 
-                  {/* Admin Approval Status Banner */}
-                  <AdminApprovalStatus companyId={uid} className="mb-6 print:hidden" />
+                  {/* Admin Approval Status Banner - nur für Firmeninhaber, nicht für Mitarbeiter */}
+                  {!isEmployee && (
+                    <AdminApprovalStatus companyId={uid} className="mb-6 print:hidden" />
+                  )}
 
                   {children}
                 </div>

@@ -29,12 +29,15 @@ export const gmailSyncHttp = onRequest(
         return;
       }
 
-      const { companyId, userEmail, force = false, initialSync = false, action } = req.body;
+      const { companyId, userEmail, userId, force = false, initialSync = false, action } = req.body;
 
       if (!companyId) {
         res.status(400).json({ error: 'CompanyId ist erforderlich' });
         return;
       }
+
+      // Die effektive User-ID für benutzer-spezifische E-Mails
+      const effectiveUserId = userId || companyId;
 
       // Handle Watch Renewal Action
       if (action === 'renewWatch') {
@@ -50,27 +53,35 @@ export const gmailSyncHttp = onRequest(
         return;
       }
 
-      logger.info('🔄 Starte Gmail Sync:', { companyId, userEmail, force, initialSync });
+      logger.info('🔄 Starte Gmail Sync:', { companyId, userEmail, userId: effectiveUserId, force, initialSync });
 
-      // Finde E-Mail-Konfiguration für die Company
+      // Finde E-Mail-Konfiguration für die Company und User
       let targetUserEmail = userEmail;
+      let configUserId = effectiveUserId;
       
       if (!targetUserEmail) {
-        // Finde erste verfügbare E-Mail-Konfiguration
+        // Finde E-Mail-Konfiguration für diesen spezifischen User
         const emailConfigsSnapshot = await db
           .collection('companies')
           .doc(companyId)
           .collection('emailConfigs')
+          .where('userId', '==', effectiveUserId)
           .limit(1)
           .get();
 
         if (emailConfigsSnapshot.empty) {
-          res.status(404).json({ error: 'Keine Gmail-Konfiguration gefunden' });
+          logger.warn(`⚠️ Keine Gmail-Konfiguration für User ${effectiveUserId} gefunden`);
+          res.status(404).json({ 
+            error: 'Keine Gmail-Konfiguration gefunden', 
+            message: 'Bitte verbinden Sie zuerst Ihr Gmail-Konto in den E-Mail-Einstellungen.',
+            userId: effectiveUserId
+          });
           return;
         }
 
         const emailConfig = emailConfigsSnapshot.docs[0].data();
         targetUserEmail = emailConfig.email;
+        configUserId = emailConfig.userId || effectiveUserId;
       }
 
       logger.info('🔍 Target E-Mail gefunden:', { targetUserEmail });
@@ -105,13 +116,14 @@ export const gmailSyncHttp = onRequest(
       logger.info('📧 E-Mails von Gmail erhalten:', { count: emails.length });
 
       if (emails.length > 0) {
-        // E-Mails in emailCache speichern
-        await saveEmailsToFirestore(companyId, targetUserEmail, emails);
+        // E-Mails in emailCache speichern - mit userId für benutzer-spezifische E-Mails
+        await saveEmailsToFirestore(companyId, targetUserEmail, emails, configUserId);
 
         // Real-time Update triggern
         await triggerRealtimeUpdate('manual_sync_emails', {
           userEmail: targetUserEmail,
           companyId: companyId,
+          userId: configUserId,
           count: emails.length,
           source: 'manual_sync',
           syncType: force ? 'force' : (initialSync ? 'initial' : 'incremental'),
@@ -214,33 +226,69 @@ async function getGmailCredentials(
 /**
  * E-Mails in Firestore emailCache speichern
  */
-async function saveEmailsToFirestore(companyId: string, userEmail: string, emails: any[]): Promise<void> {
+async function saveEmailsToFirestore(companyId: string, userEmail: string, emails: any[], userId?: string): Promise<void> {
   try {
+    // Die effektive User-ID für benutzer-spezifische E-Mails
+    const effectiveUserId = userId || companyId;
+    
     logger.info('🔍 Speichere E-Mails in Firestore:', { 
       companyId,
-      userEmail, 
+      userEmail,
+      userId: effectiveUserId,
       emailCount: emails.length 
     });
 
     // Batch für bessere Performance
     const batch = db.batch();
     let savedCount = 0;
+    let updatedCount = 0;
 
     for (const email of emails) {
       try {
-        // E-Mail-Dokument in emailCache Subcollection erstellen
+        // E-Mail-Dokument in emailCache Subcollection erstellen/aktualisieren
         const emailRef = db.collection('companies').doc(companyId).collection('emailCache').doc(email.id);
         
         // Prüfe ob E-Mail bereits existiert
         const existingEmail = await emailRef.get();
+        
         if (existingEmail.exists) {
-          logger.info(`📧 E-Mail bereits vorhanden: ${email.id}`);
+          // E-Mail existiert - Labels und userId von Gmail aktualisieren
+          // WICHTIG: Labels von Gmail haben Priorität über lokale Labels
+          const existingData = existingEmail.data();
+          const needsUpdate = 
+            !existingData?.userId || // Hat keine userId
+            existingData.userId !== effectiveUserId || // Falsche userId
+            JSON.stringify(existingData.labels) !== JSON.stringify(email.labels); // Labels geändert
+          
+          if (needsUpdate) {
+            batch.update(emailRef, {
+              labels: email.labels || [],
+              labelIds: email.labels || [],
+              userId: effectiveUserId,
+              updatedAt: new Date()
+            });
+            updatedCount++;
+            logger.info(`📧 E-Mail aktualisiert: ${email.id} mit Labels: ${email.labels?.join(', ')}`);
+          }
           continue;
         }
 
-        // 📧 Parse Email Address Helper
-        const parseEmailAddress = (emailString: string): { email: string; name?: string } | string => {
-          if (!emailString) return '';
+        // 📧 Parse Email Address Helper - unterstützt String und Objekt
+        const parseEmailAddress = (emailInput: any): { email: string; name?: string } | string => {
+          // Null/undefined check
+          if (!emailInput) return '';
+          
+          // Wenn bereits ein Objekt, einfach zurückgeben
+          if (typeof emailInput === 'object') {
+            return emailInput;
+          }
+          
+          // Wenn kein String, in String konvertieren
+          if (typeof emailInput !== 'string') {
+            return String(emailInput);
+          }
+          
+          const emailString = emailInput;
           
           // Format: "Name <email@example.com>" oder nur "email@example.com"
           const match = emailString.match(/^(.+?)\s*<(.+?)>$/);
@@ -283,6 +331,7 @@ async function saveEmailsToFirestore(companyId: string, userEmail: string, email
           sizeEstimate: email.sizeEstimate || 0,
           source: 'gmail_http_sync',
           companyId: companyId,
+          userId: effectiveUserId, // Benutzer-spezifische E-Mails
           folder: email.folder || 'inbox',
           priority: email.priority || 'normal',
           createdAt: new Date(),
@@ -299,12 +348,12 @@ async function saveEmailsToFirestore(companyId: string, userEmail: string, email
       }
     }
 
-    // Batch ausführen
-    if (savedCount > 0) {
+    // Batch ausführen wenn Änderungen vorhanden
+    if (savedCount > 0 || updatedCount > 0) {
       await batch.commit();
-      logger.info(`✅ ${savedCount} E-Mails erfolgreich in companies/${companyId}/emailCache gespeichert`);
+      logger.info(`✅ ${savedCount} neue E-Mails gespeichert, ${updatedCount} E-Mails aktualisiert in companies/${companyId}/emailCache`);
     } else {
-      logger.info('📭 Keine neuen E-Mails zum Speichern');
+      logger.info('📭 Keine E-Mail-Änderungen zum Speichern');
     }
 
   } catch (error) {

@@ -15,10 +15,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Users, Search, Filter, Plus, Download, Upload, Eye, Trash2, UserPlus } from 'lucide-react';
+import { Users, Search, Filter, Plus, Download, Upload, Eye, Trash2, UserPlus, Shield, RotateCcw, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { EmployeeInviteDialog } from '@/components/personal/EmployeeInviteDialog';
+import { EmployeePermissionsDialog } from '@/components/personal/EmployeePermissionsDialog';
 
 export default function EmployeesPage({ params }: { params: Promise<{ uid: string }> }) {
   const { user } = useAuth();
@@ -32,7 +33,9 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);
   const [inviteEmployee, setInviteEmployee] = useState<Employee | null>(null);
+  const [permissionsEmployee, setPermissionsEmployee] = useState<Employee | null>(null);
 
   // Retry-Limiter für Firebase Calls (verhindert endlose Loops)
   const [retryCount, setRetryCount] = useState(0);
@@ -88,6 +91,24 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
     }
 
     setFilteredEmployees(filtered);
+  };
+
+  const resetDashboardAccess = async (employeeId: string) => {
+    try {
+      const response = await fetch(
+        `/api/company/${resolvedParams.uid}/employees/invite?employeeId=${employeeId}`,
+        { method: 'DELETE' }
+      );
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Dashboard-Zugang zurückgesetzt');
+        loadEmployees();
+      } else {
+        toast.error(data.error ?? 'Fehler beim Zurücksetzen');
+      }
+    } catch {
+      toast.error('Fehler beim Zurücksetzen');
+    }
   };
 
   const exportEmployees = async () => {
@@ -361,19 +382,40 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
                     <Eye className="h-4 w-4" />
                   </Button>
                 </Link>
-                {/* Dashboard-Zugang erstellen Button */}
-                {(!employee.dashboardAccess?.enabled || !employee.dashboardAccess?.authUid) && employee.email && (
+                {/* Dashboard-Zugang erstellen/neu erstellen Button */}
+                {employee.email && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    className={employee.dashboardAccess?.authUid 
+                      ? "text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                      : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    }
                     onClick={() => {
                       setInviteEmployee(employee);
                       setShowInviteDialog(true);
                     }}
-                    title="Dashboard-Zugang erstellen"
+                    title={employee.dashboardAccess?.authUid 
+                      ? "Dashboard-Zugang neu erstellen" 
+                      : "Dashboard-Zugang erstellen"
+                    }
                   >
-                    <UserPlus className="h-4 w-4" />
+                    {employee.dashboardAccess?.authUid ? <RotateCcw className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                  </Button>
+                )}
+                {/* Berechtigungen bearbeiten Button (nur wenn Dashboard-Zugang aktiv) */}
+                {employee.dashboardAccess?.enabled && employee.dashboardAccess?.authUid && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                    onClick={() => {
+                      setPermissionsEmployee(employee);
+                      setShowPermissionsDialog(true);
+                    }}
+                    title="Berechtigungen bearbeiten"
+                  >
+                    <Shield className="h-4 w-4" />
                   </Button>
                 )}
                 <Link
@@ -441,14 +483,14 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
                   <span className="text-sm text-gray-600">Dashboard-Zugang</span>
                   <Badge
                     className={
-                      employee.dashboardAccess?.enabled && employee.dashboardAccess?.linkedUserId
+                      employee.dashboardAccess?.enabled && (employee.dashboardAccess?.linkedUserId || employee.dashboardAccess?.authUid)
                         ? 'bg-teal-100 text-teal-800'
                         : employee.dashboardAccess?.enabled
                           ? 'bg-amber-100 text-amber-800'
                           : 'bg-gray-100 text-gray-600'
                     }
                   >
-                    {employee.dashboardAccess?.enabled && employee.dashboardAccess?.linkedUserId 
+                    {employee.dashboardAccess?.enabled && (employee.dashboardAccess?.linkedUserId || employee.dashboardAccess?.authUid) 
                       ? 'Aktiv' 
                       : employee.dashboardAccess?.enabled 
                         ? 'Wartend' 
@@ -521,6 +563,24 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
           employeeId={inviteEmployee.id}
           employeeName={`${inviteEmployee.firstName} ${inviteEmployee.lastName}`}
           employeeEmail={inviteEmployee.email}
+        />
+      )}
+
+      {/* Berechtigungen bearbeiten Dialog */}
+      {permissionsEmployee && permissionsEmployee.id && permissionsEmployee.dashboardAccess?.permissions && (
+        <EmployeePermissionsDialog
+          isOpen={showPermissionsDialog}
+          onClose={() => {
+            setShowPermissionsDialog(false);
+            setPermissionsEmployee(null);
+          }}
+          onSuccess={() => {
+            loadEmployees();
+          }}
+          companyId={resolvedParams.uid}
+          employeeId={permissionsEmployee.id}
+          employeeName={`${permissionsEmployee.firstName} ${permissionsEmployee.lastName}`}
+          currentPermissions={permissionsEmployee.dashboardAccess.permissions}
         />
       )}
     </div>

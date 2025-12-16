@@ -355,7 +355,10 @@ export default function CompanyInboxPage() {
     );
   }
 
-  if (!currentUser || currentUser.uid !== uidFromParams) {
+  const isOwner = currentUser?.uid === uidFromParams;
+  const isEmployee = currentUser?.user_type === 'mitarbeiter' && currentUser?.companyId === uidFromParams;
+
+  if (!currentUser || (!isOwner && !isEmployee)) {
     return (
       <div className="text-center py-10 text-red-500">
         Zugriff verweigert oder Benutzer nicht angemeldet.

@@ -40,22 +40,29 @@ export async function GET(
 ) {
   try {
     const { uid } = await params;
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId') || uid;
     
-    // Check Gmail configuration in emailConfigs subcollection (same as email-config API)
+    // Check Gmail configuration in emailConfigs subcollection - filtered by userId
     if (!db) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
     
-    const emailConfigsSnapshot = await db.collection('companies').doc(uid).collection('emailConfigs').get();
+    // Suche nach Config für diesen spezifischen User
+    const emailConfigsSnapshot = await db.collection('companies').doc(uid).collection('emailConfigs')
+      .where('userId', '==', userId)
+      .limit(1)
+      .get();
 
     if (emailConfigsSnapshot.empty) {
       return NextResponse.json({
         hasConfig: false,
-        error: 'No Gmail configuration found in emailConfigs'
+        error: 'Keine Gmail-Konfiguration gefunden für diesen Benutzer',
+        userId: userId
       });
     }
 
-    // Take the first (and usually only) Gmail configuration
+    // Get the user-specific Gmail configuration
     const emailConfigDoc = emailConfigsSnapshot.docs[0];
     const gmailConfig = emailConfigDoc.data();
     

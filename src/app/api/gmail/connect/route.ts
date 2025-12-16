@@ -11,7 +11,8 @@ const oauth2Client = new google.auth.OAuth2(
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const uid = searchParams.get('uid');
+    const uid = searchParams.get('uid'); // companyId
+    const userId = searchParams.get('userId'); // Die tatsächliche User-ID (kann Mitarbeiter sein)
 
     if (!uid) {
       return NextResponse.json({ error: 'Missing uid parameter' }, { status: 400 });
@@ -25,11 +26,14 @@ export async function GET(request: NextRequest) {
       'https://www.googleapis.com/auth/userinfo.profile'
     ];
 
+    // State enthält sowohl companyId als auch userId (getrennt durch "|")
+    const stateData = userId && userId !== uid ? `${uid}|${userId}` : uid;
+
     // Erstelle Google Auth URL mit korrektiger Redirect URI
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: scopes,
-      state: uid, // CompanyId als State parameter
+      state: stateData, // CompanyId und optional UserId als State parameter
       prompt: 'consent'
     });
 

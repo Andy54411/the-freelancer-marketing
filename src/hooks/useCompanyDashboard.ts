@@ -55,7 +55,9 @@ export function useCompanyDashboard() {
     }
 
     // Autorisierungslogik: Firma-Owner ODER Mitarbeiter der Firma
-    const isOwner = user?.uid === uid;
+    // Owner = user_type 'firma' UND uid stimmt mit URL überein
+    const isOwner = user?.user_type === 'firma' && user?.uid === uid;
+    // Mitarbeiter = user_type 'mitarbeiter' UND companyId entspricht dieser Firma (aus Custom Claims)
     const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
     
     // Wenn die Authentifizierung abgeschlossen ist, aber kein Benutzer da ist

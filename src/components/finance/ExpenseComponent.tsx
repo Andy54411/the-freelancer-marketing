@@ -1255,7 +1255,7 @@ export function ExpenseComponent({
                     <TableHead>Lieferant</TableHead>
                     <TableHead className="text-right">Betrag</TableHead>
                     <TableHead>Datum</TableHead>
-                    <TableHead className="w-[80px]"></TableHead>
+                    <TableHead className="w-20"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
