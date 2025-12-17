@@ -405,18 +405,30 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     const unsubscribe = onSnapshot(
       unreadEmailsQuery,
       snapshot => {
-        // Zähle MANUELL ungelesene Emails (read === false oder read nicht vorhanden)
+        // Zähle ungelesene INBOX-Emails (keine TRASH, SPAM, SENT, DRAFT)
         const unreadCount = snapshot.docs.filter(doc => {
           const data = doc.data();
-          return data.read === false || data.read === undefined;
+          const labels = data.labels || data.labelIds || [];
+          
+          // Prüfe ob Email im Posteingang ist (nicht TRASH, SPAM, SENT, DRAFT)
+          const isInInbox = !labels.includes('TRASH') && 
+                           !labels.includes('SPAM') && 
+                           !labels.includes('SENT') &&
+                           !labels.includes('DRAFT');
+          
+          // Prüfe read-Status: false oder undefined = ungelesen
+          const isUnread = data.read === false || data.read === undefined;
+          
+          return isInInbox && isUnread;
         }).length;
 
+        console.log(`📧 [UserHeader] Ungelesene Inbox-Emails: ${unreadCount}`);
         setUnreadEmailsCount(unreadCount);
 
         // Optional: Browser-Notification bei neuen Emails (nur wenn Tab im Hintergrund)
         if (unreadCount > 0 && document.hidden) {
           if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Neue E-Mail erhalten! 📧', {
+            new Notification('Neue E-Mail erhalten!', {
               body: `Du hast ${unreadCount} ungelesene E-Mail${unreadCount > 1 ? 's' : ''}`,
               icon: '/favicon.ico',
             });
