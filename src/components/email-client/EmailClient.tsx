@@ -777,9 +777,12 @@ export function EmailClient({
         const email = emails.find(e => e.id === emailId);
         if (!email) return;
 
-        // Optimistic UI update
+        // Optimistic UI update - BEIDE States!
         const newStarredState = !email.starred;
         setEmails(prev =>
+          prev.map(e => (e.id === emailId ? { ...e, starred: newStarredState } : e))
+        );
+        setCachedEmails(prev =>
           prev.map(e => (e.id === emailId ? { ...e, starred: newStarredState } : e))
         );
 
@@ -795,8 +798,11 @@ export function EmailClient({
         });
 
         if (!response.ok) {
-          // Revert on failure
+          // Revert on failure - BEIDE States!
           setEmails(prev =>
+            prev.map(e => (e.id === emailId ? { ...e, starred: !newStarredState } : e))
+          );
+          setCachedEmails(prev =>
             prev.map(e => (e.id === emailId ? { ...e, starred: !newStarredState } : e))
           );
           if (selectedEmail?.id === emailId) {
@@ -805,15 +811,14 @@ export function EmailClient({
           toast.error('Fehler beim Markieren der E-Mail');
         } else {
           toast.success(newStarredState ? 'Als Favorit markiert' : 'Favorit entfernt');
-          // Reload emails to ensure correct filtering (especially for starred folder)
-          await loadEmails();
+          // KEIN loadEmails() - der Firestore Listener handled das automatisch
         }
       } catch (error) {
         console.error('Fehler beim Markieren mit Stern:', error);
         toast.error('Fehler beim Markieren der E-Mail');
       }
     },
-    [emails, companyId, selectedEmail, loadEmails, effectiveUserId]
+    [emails, companyId, selectedEmail, effectiveUserId]
   );
 
   const handleMarkAsSpam = useCallback(
@@ -822,8 +827,9 @@ export function EmailClient({
         const email = emails.find(e => e.id === emailId);
         if (!email) return;
 
-        // Optimistic UI update
+        // Optimistic UI update - BEIDE States!
         setEmails(prev => prev.filter(e => e.id !== emailId));
+        setCachedEmails(prev => prev.filter(e => e.id !== emailId));
         if (selectedEmail?.id === emailId) {
           setSelectedEmail(null);
         }
@@ -836,8 +842,9 @@ export function EmailClient({
         });
 
         if (!response.ok) {
-          // Revert on failure
+          // Revert on failure - BEIDE States!
           setEmails(prev => [...prev, email]);
+          setCachedEmails(prev => [...prev, email]);
           toast.error('Fehler beim Markieren als Spam');
         } else {
           toast.success(isSpam ? 'Als Spam markiert' : 'Spam-Markierung entfernt');
@@ -850,101 +857,133 @@ export function EmailClient({
             console.warn('Could not clear localStorage:', e);
           }
 
-          // Reload emails to ensure correct filtering
-          await loadEmails();
+          // KEIN loadEmails() - der Firestore Listener handled das automatisch
         }
       } catch (error) {
         console.error('Fehler beim Markieren als Spam:', error);
         toast.error('Fehler beim Markieren als Spam');
       }
     },
-    [emails, companyId, selectedEmail, selectedFolder, loadEmails, effectiveUserId]
+    [emails, companyId, selectedEmail, selectedFolder, effectiveUserId]
   );
 
   const handleArchiveEmails = useCallback(
     async (emailIds: string[]) => {
       try {
-        // Archive emails one by one
-        for (const emailId of emailIds) {
-          const email = emails.find(e => e.id === emailId);
-          if (!email) continue;
-
-          // Optimistic UI update
-          setEmails(prev => prev.filter(e => e.id !== emailId));
-          if (selectedEmail?.id === emailId) {
-            setSelectedEmail(null);
-          }
-
-          // API call
-          const response = await fetch(`/api/company/${companyId}/emails/${emailId}/archive`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ archived: true, userId: effectiveUserId }),
-          });
-
-          if (!response.ok) {
-            // Revert on failure
-            setEmails(prev => [...prev, email]);
-            toast.error('Fehler beim Archivieren');
-          }
+        // Speichere originale E-Mails für Rollback
+        const originalEmails = emails.filter(e => emailIds.includes(e.id));
+        
+        // Optimistic UI update - BEIDE States auf einmal!
+        setEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
+        setCachedEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
+        setSelectedEmails([]);
+        
+        if (selectedEmail && emailIds.includes(selectedEmail.id)) {
+          setSelectedEmail(null);
         }
 
-        // Clear selection and reload emails
-        setSelectedEmails([]);
-        toast.success(
-          emailIds.length === 1 ? 'Archiviert' : `${emailIds.length} E-Mails archiviert`
+        // Alle API-Aufrufe parallel ausführen
+        const results = await Promise.allSettled(
+          emailIds.map(emailId =>
+            fetch(`/api/company/${companyId}/emails/${emailId}/archive`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ archived: true, userId: effectiveUserId }),
+            })
+          )
         );
-        await loadEmails();
+
+        // Prüfe auf Fehler
+        const failedIds: string[] = [];
+        results.forEach((result, index) => {
+          if (result.status === 'rejected' || (result.status === 'fulfilled' && !result.value.ok)) {
+            failedIds.push(emailIds[index]);
+          }
+        });
+
+        if (failedIds.length > 0) {
+          // Rollback für fehlgeschlagene E-Mails - BEIDE States!
+          const failedEmails = originalEmails.filter(e => failedIds.includes(e.id));
+          setEmails(prev => [...prev, ...failedEmails]);
+          setCachedEmails(prev => [...prev, ...failedEmails]);
+          toast.error(`${failedIds.length} E-Mail(s) konnten nicht archiviert werden`);
+        } else {
+          toast.success(
+            emailIds.length === 1 ? 'Archiviert' : `${emailIds.length} E-Mails archiviert`
+          );
+        }
+
+        // KEIN loadEmails() - der Firestore Listener handled das automatisch
       } catch (error) {
         console.error('Fehler beim Archivieren:', error);
         toast.error('Fehler beim Archivieren');
       }
     },
-    [emails, companyId, selectedEmail, loadEmails, effectiveUserId]
+    [emails, companyId, selectedEmail, effectiveUserId]
   );
 
   const handleDeleteEmails = useCallback(
     async (emailIds: string[]) => {
+      if (emailIds.length === 0) return;
+      
+      console.log(`🗑️ Lösche ${emailIds.length} E-Mails:`, emailIds);
+      
       try {
-        // Move emails to trash one by one
-        for (const emailId of emailIds) {
-          const email = emails.find(e => e.id === emailId);
-          if (!email) continue;
+        // Speichere originale E-Mails für Rollback
+        const originalEmails = emails.filter(e => emailIds.includes(e.id));
+        
+        // Optimistic UI update - BEIDE States updaten!
+        // Das verhindert Race Conditions zwischen setEmails und dem Firestore Listener
+        setEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
+        setCachedEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
+        if (selectedEmail && emailIds.includes(selectedEmail.id)) {
+          setSelectedEmail(null);
+        }
+        setSelectedEmails([]);
 
-          // Optimistic UI update
-          setEmails(prev => prev.filter(e => e.id !== emailId));
-          if (selectedEmail?.id === emailId) {
-            setSelectedEmail(null);
+        // Alle API-Aufrufe parallel ausführen
+        const results = await Promise.allSettled(
+          emailIds.map(emailId =>
+            fetch(`/api/company/${companyId}/emails/${emailId}/trash`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ trash: true, userId: effectiveUserId }),
+            })
+          )
+        );
+
+        // Prüfe auf Fehler
+        const failedIds: string[] = [];
+        results.forEach((result, index) => {
+          if (result.status === 'rejected' || (result.status === 'fulfilled' && !result.value.ok)) {
+            failedIds.push(emailIds[index]);
           }
+        });
 
-          // API call
-          const response = await fetch(`/api/company/${companyId}/emails/${emailId}/trash`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ trash: true, userId: effectiveUserId }),
-          });
-
-          if (!response.ok) {
-            // Revert on failure
-            setEmails(prev => [...prev, email]);
-            toast.error('Fehler beim Verschieben in den Papierkorb');
-          }
+        if (failedIds.length > 0) {
+          // Rollback für fehlgeschlagene E-Mails - BEIDE States!
+          const failedEmails = originalEmails.filter(e => failedIds.includes(e.id));
+          setEmails(prev => [...prev, ...failedEmails]);
+          setCachedEmails(prev => [...prev, ...failedEmails]);
+          toast.error(`${failedIds.length} E-Mail(s) konnten nicht gelöscht werden`);
+        } else {
+          toast.success(
+            emailIds.length === 1
+              ? 'In Papierkorb verschoben'
+              : `${emailIds.length} E-Mails in Papierkorb verschoben`
+          );
         }
 
-        // Clear selection and reload emails
-        setSelectedEmails([]);
-        toast.success(
-          emailIds.length === 1
-            ? 'In Papierkorb verschoben'
-            : `${emailIds.length} E-Mails in Papierkorb verschoben`
-        );
-        await loadEmails();
+        // KEIN loadEmails() mehr! Der Firestore Listener updated automatisch
+        // Das verhindert Race Conditions, bei denen loadEmails() stale Daten zurückgibt
       } catch (error) {
         console.error('Fehler beim Löschen:', error);
         toast.error('Fehler beim Verschieben in den Papierkorb');
+        // Nur bei Fehlern refreshen
+        refreshCachedEmails(true);
       }
     },
-    [emails, companyId, selectedEmail, loadEmails, effectiveUserId]
+    [emails, companyId, selectedEmail, effectiveUserId, refreshCachedEmails]
   );
 
   // Handler für Gmail Neu-Authentifizierung
