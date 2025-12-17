@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { FiX, FiLoader, FiAlertCircle, FiCheckCircle, FiCreditCard } from 'react-icons/fi';
 
@@ -27,9 +27,28 @@ export default function FinAPIWebFormModal({
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
+  // Refs für Cleanup bei Unmount
+  const popupCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const popupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const popupRef = useRef<Window | null>(null);
+
   // Client-side mounting guard
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Cleanup bei Unmount - verhindert Memory Leaks
+  useEffect(() => {
+    return () => {
+      if (popupCheckIntervalRef.current) {
+        clearInterval(popupCheckIntervalRef.current);
+        popupCheckIntervalRef.current = null;
+      }
+      if (popupTimeoutRef.current) {
+        clearTimeout(popupTimeoutRef.current);
+        popupTimeoutRef.current = null;
+      }
+    };
   }, []);
 
   // Body scroll lock when modal is open
@@ -45,6 +64,7 @@ export default function FinAPIWebFormModal({
         document.body.style.width = '';
       };
     }
+    return undefined; // Expliziter Return für TypeScript
   }, [isOpen]);
 
   // Listen to iframe messages for WebForm completion
@@ -88,10 +108,21 @@ export default function FinAPIWebFormModal({
         window.removeEventListener('message', handleMessage);
       };
     }
+    return undefined; // Expliziter Return für TypeScript
   }, [isOpen, onSuccess, onError, onClose]);
 
   // Handle popup window for WebForm (CSP workaround)
   const handleOpenWebFormPopup = () => {
+    // Cleanup vorherige Intervals/Timeouts
+    if (popupCheckIntervalRef.current) {
+      clearInterval(popupCheckIntervalRef.current);
+      popupCheckIntervalRef.current = null;
+    }
+    if (popupTimeoutRef.current) {
+      clearTimeout(popupTimeoutRef.current);
+      popupTimeoutRef.current = null;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -110,40 +141,31 @@ export default function FinAPIWebFormModal({
       return;
     }
 
+    popupRef.current = popup;
     let hasReceivedMessage = false;
-    let popupClosedByUser = false;
     const popupOpenTime = Date.now();
 
     // Listen for focus event when user returns to main window
     const handleWindowFocus = () => {
       if (popup.closed && !hasReceivedMessage) {
-        // Debug-Log entfernt
-
         // Wait a moment then check if we should refresh
         setTimeout(() => {
           // Check if we received a success message
           const successReceived = (window as any).finapiSuccessReceived;
 
           if (successReceived === true) {
-            // Debug-Log entfernt
             onSuccess('success-confirmed');
             onClose();
             window.location.reload();
           } else if (successReceived === false) {
-            // Debug-Log entfernt
             // Don't refresh, user cancelled or error occurred
           } else {
             // No message received - assume success if popup was open long enough
-            // Debug-Log entfernt
-            // Only refresh if user was in popup for more than 30 seconds (likely completed flow)
             const timeInPopup = Date.now() - popupOpenTime;
             if (timeInPopup > 30000) {
-              // Debug-Log entfernt
               onSuccess('time-based-success');
               onClose();
               window.location.reload();
-            } else {
-              // Debug-Log entfernt
             }
           }
         }, 1000);
@@ -154,26 +176,29 @@ export default function FinAPIWebFormModal({
 
     window.addEventListener('focus', handleWindowFocus);
 
-    // Monitor popup for closing
-    const checkClosed = setInterval(() => {
+    // Monitor popup for closing - speichere in Ref für Cleanup
+    popupCheckIntervalRef.current = setInterval(() => {
       if (popup.closed) {
-        clearInterval(checkClosed);
-        clearTimeout(timeoutTimer);
-        setIsLoading(false);
-
-        // Don't automatically refresh here - wait for focus event
-        if (!hasReceivedMessage) {
-          // Debug-Log entfernt
+        if (popupCheckIntervalRef.current) {
+          clearInterval(popupCheckIntervalRef.current);
+          popupCheckIntervalRef.current = null;
         }
+        if (popupTimeoutRef.current) {
+          clearTimeout(popupTimeoutRef.current);
+          popupTimeoutRef.current = null;
+        }
+        setIsLoading(false);
       }
     }, 1000);
 
-    // Timeout after 10 minutes
-    const timeoutTimer = setTimeout(() => {
+    // Timeout after 10 minutes - speichere in Ref für Cleanup
+    popupTimeoutRef.current = setTimeout(() => {
       if (!popup.closed) {
-        clearInterval(checkClosed);
+        if (popupCheckIntervalRef.current) {
+          clearInterval(popupCheckIntervalRef.current);
+          popupCheckIntervalRef.current = null;
+        }
         popup.close();
-        popupClosedByUser = true;
         hasReceivedMessage = true;
         window.removeEventListener('focus', handleWindowFocus);
         setError('WebForm-Timeout erreicht. Bitte versuchen Sie es erneut.');
@@ -203,7 +228,7 @@ export default function FinAPIWebFormModal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-transparent backdrop-blur-md flex items-center justify-center p-4 z-[9999]"
+      className="fixed inset-0 bg-transparent backdrop-blur-md flex items-center justify-center p-4 z-9999"
       onClick={e => {
         if (e.target === e.currentTarget) {
           handleClose();

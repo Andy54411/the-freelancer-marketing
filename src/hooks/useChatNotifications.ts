@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/clients';
 import { collection, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
@@ -20,6 +20,10 @@ export function useChatNotifications() {
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
   const { firebaseUser } = useAuth();
 
+  // Verwende Refs statt Arrays um Listener-Akkumulation zu vermeiden
+  const chatListenersRef = useRef<Map<string, () => void>>(new Map());
+  const quotesListenersRef = useRef<(() => void)[]>([]);
+
   useEffect(() => {
     if (!firebaseUser?.uid) {
       setNotifications([]);
@@ -27,30 +31,18 @@ export function useChatNotifications() {
       return;
     }
 
-    // Alle Quotes des Users finden (sowohl als Customer als auch als Provider)
-    const quotesRef = collection(db, 'quotes');
-    const customerQuery = query(quotesRef, where('customerUid', '==', firebaseUser.uid));
-    const providerQuery = query(quotesRef, where('providerId', '==', firebaseUser.uid));
-
-    const unsubscribers: (() => void)[] = [];
-
-    // Customer Quotes überwachen
-    const unsubscribeCustomer = onSnapshot(customerQuery, snapshot => {
-      snapshot.docs.forEach(quoteDoc => {
-        setupChatListener(quoteDoc.id, 'customer');
-      });
-    });
-
-    // Provider Quotes überwachen
-    const unsubscribeProvider = onSnapshot(providerQuery, snapshot => {
-      snapshot.docs.forEach(quoteDoc => {
-        setupChatListener(quoteDoc.id, 'provider');
-      });
-    });
-
-    unsubscribers.push(unsubscribeCustomer, unsubscribeProvider);
+    // Cleanup alte Listener BEVOR neue erstellt werden
+    chatListenersRef.current.forEach(unsubscribe => unsubscribe());
+    chatListenersRef.current.clear();
+    quotesListenersRef.current.forEach(unsubscribe => unsubscribe());
+    quotesListenersRef.current = [];
 
     const setupChatListener = (quoteId: string, userRole: 'customer' | 'provider') => {
+      // Prüfe ob bereits ein Listener für diese Quote existiert
+      if (chatListenersRef.current.has(quoteId)) {
+        return; // Bereits registriert, nicht nochmal
+      }
+
       const chatRef = collection(db, 'quotes', quoteId, 'chat');
       const chatQuery = query(
         chatRef,
@@ -94,11 +86,38 @@ export function useChatNotifications() {
         });
       });
 
-      unsubscribers.push(unsubscribeChat);
+      // Speichere Listener in Map mit quoteId als Key
+      chatListenersRef.current.set(quoteId, unsubscribeChat);
     };
 
+    // Alle Quotes des Users finden (sowohl als Customer als auch als Provider)
+    const quotesRef = collection(db, 'quotes');
+    const customerQuery = query(quotesRef, where('customerUid', '==', firebaseUser.uid));
+    const providerQuery = query(quotesRef, where('providerId', '==', firebaseUser.uid));
+
+    // Customer Quotes überwachen
+    const unsubscribeCustomer = onSnapshot(customerQuery, snapshot => {
+      snapshot.docs.forEach(quoteDoc => {
+        setupChatListener(quoteDoc.id, 'customer');
+      });
+    });
+
+    // Provider Quotes überwachen
+    const unsubscribeProvider = onSnapshot(providerQuery, snapshot => {
+      snapshot.docs.forEach(quoteDoc => {
+        setupChatListener(quoteDoc.id, 'provider');
+      });
+    });
+
+    quotesListenersRef.current.push(unsubscribeCustomer, unsubscribeProvider);
+
     return () => {
-      unsubscribers.forEach(unsubscribe => unsubscribe());
+      // Cleanup: Alle Chat-Listener
+      chatListenersRef.current.forEach(unsubscribe => unsubscribe());
+      chatListenersRef.current.clear();
+      // Cleanup: Quotes-Listener
+      quotesListenersRef.current.forEach(unsubscribe => unsubscribe());
+      quotesListenersRef.current = [];
     };
   }, [firebaseUser?.uid]);
 

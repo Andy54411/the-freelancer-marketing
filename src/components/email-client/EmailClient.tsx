@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { db } from '@/firebase/clients';
@@ -90,30 +90,13 @@ export function EmailClient({
   const searchParams = useSearchParams();
   const searchQuery = searchParams?.get('search') || '';
   const { user, loading: authLoading } = useAuth();
-  
+
   // Die effektive User-ID für benutzer-spezifische E-Mails
   // KRITISCH: Warte bis Auth geladen ist, verwende NIEMALS companyId als Fallback!
   const effectiveUserId = user?.uid;
 
-  // Wenn Auth noch lädt oder kein User, zeige Loading
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
-        <span className="ml-2 text-gray-500">Lade Benutzer...</span>
-      </div>
-    );
-  }
-
-  if (!effectiveUserId) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <span className="text-red-500">Nicht angemeldet</span>
-      </div>
-    );
-  }
-
-  // State
+  // ALLE HOOKS MÜSSEN VOR BEDINGTEN RETURNS STEHEN (React Rules of Hooks)
+  // State - IMMER initialisieren, auch wenn Auth noch lädt
   const [folders, setFolders] = useState<EmailFolder[]>([
     { id: 'inbox', name: 'Posteingang', type: 'inbox', count: 0, unreadCount: 0 },
     { id: 'sent', name: 'Gesendet', type: 'sent', count: 0, unreadCount: 0 },
@@ -162,8 +145,10 @@ export function EmailClient({
         // Lade E-Mails von der API - IMMER mit force=true für neueste E-Mails
         // userId wird mitgesendet für benutzer-spezifische E-Mails
         const apiUrl = `/api/company/${companyId}/emails?folder=${selectedFolder}&force=true&userId=${effectiveUserId}`;
-        
-        console.log(`🔄 RefreshCachedEmails: IMMER force=true, userId=${effectiveUserId}, URL=${apiUrl}`);
+
+        console.log(
+          `🔄 RefreshCachedEmails: IMMER force=true, userId=${effectiveUserId}, URL=${apiUrl}`
+        );
 
         const response = await fetch(apiUrl, {
           method: 'GET',
@@ -247,30 +232,54 @@ export function EmailClient({
   );
 
   // Auto-Polling: NUR beim ersten Laden, wenn keine E-Mails da sind
+  // FIX: Verwende Refs um Interval/Timeout bei jedem Cleanup zu clearen
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollStopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
-    if (isInitialLoad && cachedEmails.length === 0 && !cacheLoading) {
-      const pollInterval = setInterval(() => {
-        refreshCachedEmails(false);
-      }, 2000); // Alle 2 Sekunden
-
-      // Stop polling nach 30 Sekunden oder wenn E-Mails gefunden wurden
-      const stopTimeout = setTimeout(() => {
-        clearInterval(pollInterval);
-        setIsInitialLoad(false); // Markiere als nicht mehr initial
-      }, 30000);
-
-      return () => {
-        clearInterval(pollInterval);
-        clearTimeout(stopTimeout);
-      };
+    // Cleanup vorherige Intervals/Timeouts IMMER zuerst
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    if (pollStopTimeoutRef.current) {
+      clearTimeout(pollStopTimeoutRef.current);
+      pollStopTimeoutRef.current = null;
     }
 
     // Wenn E-Mails gefunden wurden, stop polling
     if (cachedEmails.length > 0 && isInitialLoad) {
       setIsInitialLoad(false);
+      return; // Kein Cleanup nötig, Refs sind bereits null
     }
 
-    return undefined;
+    // Nur polling starten wenn initial und keine E-Mails
+    if (isInitialLoad && cachedEmails.length === 0 && !cacheLoading) {
+      pollIntervalRef.current = setInterval(() => {
+        refreshCachedEmails(false);
+      }, 2000); // Alle 2 Sekunden
+
+      // Stop polling nach 30 Sekunden
+      pollStopTimeoutRef.current = setTimeout(() => {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        setIsInitialLoad(false); // Markiere als nicht mehr initial
+      }, 30000);
+    }
+
+    // Cleanup function - IMMER ausführen bei Unmount/Re-run
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      if (pollStopTimeoutRef.current) {
+        clearTimeout(pollStopTimeoutRef.current);
+        pollStopTimeoutRef.current = null;
+      }
+    };
   }, [cachedEmails.length, cacheLoading, isInitialLoad, refreshCachedEmails]);
 
   // Sync cached emails with component state
@@ -323,19 +332,22 @@ export function EmailClient({
       if (!companyId) return;
 
       try {
-        const response = await fetch(`/api/company/${companyId}/gmail-auth-status?userId=${effectiveUserId}`);
+        const response = await fetch(
+          `/api/company/${companyId}/gmail-auth-status?userId=${effectiveUserId}`
+        );
         const data = await response.json();
-        
+
         console.log('📧 EmailClient Gmail-Status für User', effectiveUserId, ':', data);
 
         // Prüfe auf gültige Verbindung (gleiche Logik wie in CompanySidebar)
-        const hasValidConnection = data.hasConfig && 
-                                 data.hasTokens && 
-                                 !data.tokenExpired && 
-                                 data.status !== 'authentication_required';
-        
+        const hasValidConnection =
+          data.hasConfig &&
+          data.hasTokens &&
+          !data.tokenExpired &&
+          data.status !== 'authentication_required';
+
         console.log('📧 EmailClient Verbindung gültig:', hasValidConnection);
-        
+
         if (!hasValidConnection) {
           console.log('📧 EmailClient: Weiterleitung zur Integration');
           window.location.href = `/dashboard/company/${companyId}/email-integration`;
@@ -364,7 +376,7 @@ export function EmailClient({
     const emailCacheRef = collection(db, 'companies', companyId, 'emailCache');
     // KRITISCH: Filtere nach userId damit jeder User nur seine eigenen E-Mails sieht!
     const emailQuery = query(
-      emailCacheRef, 
+      emailCacheRef,
       where('userId', '==', effectiveUserId),
       orderBy('internalDate', 'desc')
     );
@@ -465,15 +477,17 @@ export function EmailClient({
   // Performance Tracking Setup
   useEffect(() => {
     setupGlobalPerformanceTracking(companyId);
-    
+
     // Expose debug functions to window for browser console
     if (typeof window !== 'undefined') {
       (window as any).emailDebug = {
         refresh: handleRefresh,
         resync: forceResync,
-        companyId: companyId
+        companyId: companyId,
       };
-      console.log('🔧 Email debug functions available: window.emailDebug.refresh() or window.emailDebug.resync()');
+      console.log(
+        '🔧 Email debug functions available: window.emailDebug.refresh() or window.emailDebug.resync()'
+      );
     }
   }, [companyId]);
 
@@ -541,72 +555,91 @@ export function EmailClient({
   }, [autoCompose]);
 
   // 🚀 OPTIMIZED: Use Smart Cache statt direkter API-Calls
-  const loadEmails = async (forceRefresh = false) => {
-    try {
-      // Use optimized cache service
-      await refreshCachedEmails(forceRefresh);
+  const loadEmails = useCallback(
+    async (forceRefresh = false) => {
+      try {
+        // Use optimized cache service
+        await refreshCachedEmails(forceRefresh);
 
-      // Update folder counts (approximate)
-      setFolders(prev =>
-        prev.map(folder =>
-          folder.id === selectedFolder
-            ? {
-                ...folder,
-                count: cachedEmails.length,
-                unreadCount: cachedEmails.filter(e => !e.read).length,
-              }
-            : folder
-        )
-      );
-    } catch (error) {
-      console.error('Smart Cache Load Fehler:', error);
-      setAuthError(error instanceof Error ? error.message : 'Fehler beim Laden der E-Mails');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        // Update folder counts (approximate)
+        setFolders(prev =>
+          prev.map(folder =>
+            folder.id === selectedFolder
+              ? {
+                  ...folder,
+                  count: cachedEmails.length,
+                  unreadCount: cachedEmails.filter(e => !e.read).length,
+                }
+              : folder
+          )
+        );
+      } catch (error) {
+        console.error('Smart Cache Load Fehler:', error);
+        setAuthError(error instanceof Error ? error.message : 'Fehler beim Laden der E-Mails');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [refreshCachedEmails, selectedFolder, cachedEmails]
+  );
 
   // Manual refresh function
-  const handleRefresh = () => {
-    console.log('🔄 HandleRefresh: Force refresh triggered');
+  const handleRefresh = useCallback(() => {
     refreshCachedEmails(true);
-  };
+  }, [refreshCachedEmails]);
 
   // Debug function für Webhook-Testing (nur für Development)
-  const testWebhookRefresh = () => {
+  const testWebhookRefresh = useCallback(() => {
     loadEmails(true).then(() => {});
-  };
+  }, [loadEmails]);
 
   // EINFACHE Lösung - Lade die neuesten E-Mails direkt
-  const forceResync = async () => {
-    console.log('🔄 Lade neueste E-Mails...');
+  const forceResync = useCallback(async () => {
     setIsLoading(true);
     setCachedEmails([]);
-    
+
     try {
       // Lade E-Mails mit force refresh
       await refreshCachedEmails(true);
-      console.log('✅ E-Mails neu geladen');
     } catch (error) {
-      console.error('❌ Laden fehlgeschlagen:', error);
+      console.error('Laden fehlgeschlagen:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [refreshCachedEmails]);
 
   // Expose test functions to window for browser console testing
+  // FIX: Dependencies hinzufügen um stale closures zu vermeiden
   useEffect(() => {
     if (typeof window !== 'undefined') {
       (window as any).testWebhookRefresh = testWebhookRefresh;
       (window as any).emailClientDebug = {
         testRefresh: testWebhookRefresh,
         loadEmails: () => loadEmails(true),
+        forceResync: forceResync,
+        refresh: handleRefresh,
         isConnected: isRealtimeConnected,
         lastActivity: lastActivity,
         companyId: companyId,
       };
     }
-  }, []); // Removed realtime dependencies
+
+    // Cleanup bei Unmount
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).testWebhookRefresh;
+        delete (window as any).emailClientDebug;
+      }
+    };
+  }, [
+    isRealtimeConnected,
+    lastActivity,
+    companyId,
+    testWebhookRefresh,
+    loadEmails,
+    forceResync,
+    handleRefresh,
+  ]);
 
   // Event handlers
   const handleFolderSelect = (folderId: string) => {
@@ -872,12 +905,12 @@ export function EmailClient({
       try {
         // Speichere originale E-Mails für Rollback
         const originalEmails = emails.filter(e => emailIds.includes(e.id));
-        
+
         // Optimistic UI update - BEIDE States auf einmal!
         setEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
         setCachedEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
         setSelectedEmails([]);
-        
+
         if (selectedEmail && emailIds.includes(selectedEmail.id)) {
           setSelectedEmail(null);
         }
@@ -925,13 +958,13 @@ export function EmailClient({
   const handleDeleteEmails = useCallback(
     async (emailIds: string[]) => {
       if (emailIds.length === 0) return;
-      
+
       console.log(`🗑️ Lösche ${emailIds.length} E-Mails:`, emailIds);
-      
+
       try {
         // Speichere originale E-Mails für Rollback
         const originalEmails = emails.filter(e => emailIds.includes(e.id));
-        
+
         // Optimistic UI update - BEIDE States updaten!
         // Das verhindert Race Conditions zwischen setEmails und dem Firestore Listener
         setEmails(prev => prev.filter(e => !emailIds.includes(e.id)));
@@ -1005,7 +1038,27 @@ export function EmailClient({
     }
   };
 
-  // Zeige Authentifizierungs-Fehler UI
+  // BEDINGTE RETURNS NACH ALLEN HOOKS (React Rules of Hooks konform)
+  // 1. Auth Loading State
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+        <span className="ml-2 text-gray-500">Lade Benutzer...</span>
+      </div>
+    );
+  }
+
+  // 2. Nicht angemeldet
+  if (!effectiveUserId) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="text-red-500">Nicht angemeldet</span>
+      </div>
+    );
+  }
+
+  // 3. Zeige Authentifizierungs-Fehler UI
   if (requiresReauth) {
     return (
       <div className={cn('h-full flex items-center justify-center bg-gray-50', className)}>

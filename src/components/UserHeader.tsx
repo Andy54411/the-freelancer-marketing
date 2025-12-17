@@ -383,67 +383,38 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
   }, [currentUser?.uid, loadProfilePictureFromFirestore]);
 
-  // 🔔 EMAIL NOTIFICATIONS: Listener für ungelesene E-Mails (benutzer-spezifisch)
+  // 🔔 EMAIL NOTIFICATIONS: Polling statt Listener (Performance)
   useEffect(() => {
     if (!currentUid) {
       setUnreadEmailsCount(0);
       return;
     }
 
-    // Die effektive User-ID - für Mitarbeiter ihre eigene UID, für Inhaber die Company-UID
     const effectiveUserId = currentUser?.uid || currentUid;
 
-    console.log(`📧 [UserHeader] Email Listener für User: ${effectiveUserId}`);
-
-    // Listener auf emailCache für ungelesene E-Mails - MIT userId Filter!
-    const emailCacheRef = collection(db, 'companies', currentUid, 'emailCache');
-    const unreadEmailsQuery = query(
-      emailCacheRef,
-      where('userId', '==', effectiveUserId)
-    );
-
-    const unsubscribe = onSnapshot(
-      unreadEmailsQuery,
-      snapshot => {
-        // Zähle ungelesene INBOX-Emails (keine TRASH, SPAM, SENT, DRAFT)
-        const unreadCount = snapshot.docs.filter(doc => {
-          const data = doc.data();
-          const labels = data.labels || data.labelIds || [];
-          
-          // Prüfe ob Email im Posteingang ist (nicht TRASH, SPAM, SENT, DRAFT)
-          const isInInbox = !labels.includes('TRASH') && 
-                           !labels.includes('SPAM') && 
-                           !labels.includes('SENT') &&
-                           !labels.includes('DRAFT');
-          
-          // Prüfe read-Status: false oder undefined = ungelesen
-          const isUnread = data.read === false || data.read === undefined;
-          
-          return isInInbox && isUnread;
-        }).length;
-
-        console.log(`📧 [UserHeader] Ungelesene Inbox-Emails: ${unreadCount}`);
-        setUnreadEmailsCount(unreadCount);
-
-        // Optional: Browser-Notification bei neuen Emails (nur wenn Tab im Hintergrund)
-        if (unreadCount > 0 && document.hidden) {
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Neue E-Mail erhalten!', {
-              body: `Du hast ${unreadCount} ungelesene E-Mail${unreadCount > 1 ? 's' : ''}`,
-              icon: '/favicon.ico',
-            });
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch(
+          `/api/company/${currentUid}/emails/counts?userId=${effectiveUserId}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.counts?.inbox) {
+            setUnreadEmailsCount(data.counts.inbox.unread || 0);
           }
         }
-      },
-      error => {
-        console.error('❌ [UserHeader] Email notification listener error:', error);
-        setUnreadEmailsCount(0);
+      } catch (error) {
+        console.error('Email count fetch error:', error);
       }
-    );
-
-    return () => {
-      unsubscribe();
     };
+
+    // Initial fetch
+    fetchUnreadCount();
+
+    // Poll every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+
+    return () => clearInterval(interval);
   }, [currentUid, currentUser?.uid]);
 
   useEffect(() => {

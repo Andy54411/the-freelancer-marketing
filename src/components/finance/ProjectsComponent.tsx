@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   collection,
   getDocs,
@@ -99,9 +99,9 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Realtime listeners
-  const [projectsUnsubscribe, setProjectsUnsubscribe] = useState<Unsubscribe | null>(null);
-  const [timeEntriesUnsubscribe, setTimeEntriesUnsubscribe] = useState<Unsubscribe | null>(null);
+  // Verwende Refs statt State für Unsubscribe-Funktionen (verhindert Stale Closures)
+  const projectsUnsubscribeRef = useRef<Unsubscribe | null>(null);
+  const timeEntriesUnsubscribeRef = useRef<Unsubscribe | null>(null);
 
   // Form state for new project
   const [newProject, setNewProject] = useState({
@@ -120,22 +120,26 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
     // Cleanup function: Unsubscribe von allen Listeners
     return () => {
-      if (projectsUnsubscribe) {
-        projectsUnsubscribe();
+      if (projectsUnsubscribeRef.current) {
+        projectsUnsubscribeRef.current();
+        projectsUnsubscribeRef.current = null;
       }
-      if (timeEntriesUnsubscribe) {
-        timeEntriesUnsubscribe();
+      if (timeEntriesUnsubscribeRef.current) {
+        timeEntriesUnsubscribeRef.current();
+        timeEntriesUnsubscribeRef.current = null;
       }
     };
   }, [companyId]);
 
   const setupRealtimeListeners = () => {
     // Cleanup existing listeners
-    if (projectsUnsubscribe) {
-      projectsUnsubscribe();
+    if (projectsUnsubscribeRef.current) {
+      projectsUnsubscribeRef.current();
+      projectsUnsubscribeRef.current = null;
     }
-    if (timeEntriesUnsubscribe) {
-      timeEntriesUnsubscribe();
+    if (timeEntriesUnsubscribeRef.current) {
+      timeEntriesUnsubscribeRef.current();
+      timeEntriesUnsubscribeRef.current = null;
     }
 
     // Debug-Log entfernt
@@ -179,7 +183,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       }
     );
 
-    setProjectsUnsubscribe(() => projectsUnsub);
+    projectsUnsubscribeRef.current = projectsUnsub;
 
     // Time Entries Realtime Listener (für alle Projekte der Company)
     const timeEntriesQuery = query(
@@ -191,8 +195,6 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
     const timeEntriesUnsub = onSnapshot(
       timeEntriesQuery,
       snapshot => {
-        // Debug-Log entfernt
-
         // Aktualisiere tracked hours für alle betroffenen Projekte
         const currentProjectsData = [...projects];
         loadTrackedHoursForProjects(currentProjectsData);
@@ -200,7 +202,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       error => {}
     );
 
-    setTimeEntriesUnsubscribe(() => timeEntriesUnsub);
+    timeEntriesUnsubscribeRef.current = timeEntriesUnsub;
 
     // Lade Customers (einmalig, da diese sich selten ändern)
     loadCustomers();

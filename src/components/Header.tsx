@@ -80,8 +80,6 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true); // Loading-State für Auth
 
-  // Debug: Log state changes
-  useEffect(() => {}, [profilePictureURLFromStorage, currentUser?.photoURL, currentUser?.uid]);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false); // State für Such-Dropdown
   const [isInboxDropdownOpen, setIsInboxDropdownOpen] = useState(false); // NEU: State für Posteingang-Dropdown
@@ -94,6 +92,16 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
   const [recentChats, setRecentChats] = useState<HeaderChatPreview[]>([]); // NEU: State für die letzten Chats
   const inboxHoverTimeout = useRef<NodeJS.Timeout | null>(null); // NEU: Ref für den Hover-Timeout
   const router = useRouter();
+
+  // Cleanup Hover-Timeout bei Unmount - verhindert Memory Leak
+  useEffect(() => {
+    return () => {
+      if (inboxHoverTimeout.current) {
+        clearTimeout(inboxHoverTimeout.current);
+        inboxHoverTimeout.current = null;
+      }
+    };
+  }, []);
 
   const subscribeToRecentChats = useCallback(
     (uid: string | undefined, user_type: FirestoreUserData['user_type']) => {
@@ -198,69 +206,38 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
     return undefined;
   }, [currentUser, firestoreUserData, subscribeToRecentChats]);
 
-  // 🔔 NEUE EMAIL NOTIFICATIONS: Listener für ungelesene E-Mails (benutzer-spezifisch)
+  // 🔔 NEUE EMAIL NOTIFICATIONS: Polling statt Listener (Performance)
   useEffect(() => {
     if (!company?.uid) {
       setUnreadEmailsCount(0);
       return;
     }
 
-    // Die effektive User-ID - für Mitarbeiter ihre eigene UID, für Inhaber die Company-UID
     const effectiveUserId = currentUser?.uid || company.uid;
 
-    console.log(`📧 [Header] Email Listener für User: ${effectiveUserId}`);
-
-    // Listener auf emailCache - MIT userId Filter!
-    const emailCacheRef = collection(db, 'companies', company.uid, 'emailCache');
-    const emailQuery = query(
-      emailCacheRef,
-      where('userId', '==', effectiveUserId)
-    );
-
-    const unsubscribe = onSnapshot(
-      emailQuery,
-      snapshot => {
-        // Filtere nach ungelesenen INBOX-Emails (keine TRASH, SPAM)
-        const unreadEmails = snapshot.docs.filter(doc => {
-          const data = doc.data();
-          const labels = data.labels || data.labelIds || [];
-          
-          // Prüfe ob Email im Posteingang ist (nicht TRASH, SPAM, SENT, DRAFT)
-          const isInInbox = !labels.includes('TRASH') && 
-                           !labels.includes('SPAM') && 
-                           !labels.includes('SENT') &&
-                           !labels.includes('DRAFT');
-          
-          // Prüfe read-Status: false oder undefined = ungelesen
-          const isUnread = data.read === false || data.read === undefined;
-          
-          return isInInbox && isUnread;
-        });
-
-        const unreadCount = unreadEmails.length;
-        console.log(`📧 [Header] Ungelesene Inbox-Emails: ${unreadCount}`);
-
-        setUnreadEmailsCount(unreadCount);
-
-        // Optional: Browser-Notification wenn neue Email
-        if (unreadCount > 0 && document.hidden) {
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Neue E-Mail erhalten!', {
-              body: `Du hast ${unreadCount} ungelesene E-Mail${unreadCount > 1 ? 's' : ''}`,
-              icon: '/favicon.ico',
-            });
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch(
+          `/api/company/${company.uid}/emails/counts?userId=${effectiveUserId}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.counts?.inbox) {
+            setUnreadEmailsCount(data.counts.inbox.unread || 0);
           }
         }
-      },
-      error => {
-        console.error('❌ Email notification listener error:', error);
-        setUnreadEmailsCount(0);
+      } catch (error) {
+        console.error('Email count fetch error:', error);
       }
-    );
-
-    return () => {
-      unsubscribe();
     };
+
+    // Initial fetch
+    fetchUnreadCount();
+
+    // Poll every 30 seconds instead of real-time listener
+    const interval = setInterval(fetchUnreadCount, 30000);
+
+    return () => clearInterval(interval);
   }, [company?.uid, currentUser?.uid]);
 
   const loadProfilePictureFromStorage = useCallback(async (uid: string) => {
