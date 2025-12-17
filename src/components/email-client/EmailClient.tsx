@@ -13,10 +13,9 @@ import {
   onSnapshot,
   doc,
   getDoc,
-  updateDoc,
   writeBatch,
 } from 'firebase/firestore';
-import { EmailList, MemoizedEmailList } from './EmailList';
+import { MemoizedEmailList } from './EmailList';
 import { EmailListSkeleton, EmailLoadingOverlay } from './EmailSkeleton';
 import { EmailViewer } from './EmailViewer';
 import { EmailCompose } from './EmailCompose';
@@ -35,8 +34,8 @@ import { useAuth } from '@/contexts/AuthContext';
 declare global {
   interface Window {
     gmailPerformanceTracker?: {
-      trackLoadEvent: (event: any) => void;
-      trackCacheEvent: (event: any) => void;
+      trackLoadEvent: (event: Record<string, unknown>) => void;
+      trackCacheEvent: (event: Record<string, unknown>) => void;
     };
   }
 }
@@ -45,7 +44,7 @@ declare global {
 const setupGlobalPerformanceTracking = (userId: string) => {
   if (typeof window !== 'undefined') {
     window.gmailPerformanceTracker = {
-      trackLoadEvent: (event: any) => {
+      trackLoadEvent: (event: Record<string, unknown>) => {
         const storageKey = `gmail_performance_${userId}`;
         const stored = localStorage.getItem(storageKey);
         const history = stored ? JSON.parse(stored) : [];
@@ -58,7 +57,7 @@ const setupGlobalPerformanceTracking = (userId: string) => {
         localStorage.setItem(storageKey, JSON.stringify(history.slice(0, 100)));
       },
 
-      trackCacheEvent: (event: any) => {
+      trackCacheEvent: (event: Record<string, unknown>) => {
         const storageKey = `gmail_cache_events_${userId}`;
         const stored = localStorage.getItem(storageKey);
         const events = stored ? JSON.parse(stored) : [];
@@ -97,7 +96,7 @@ export function EmailClient({
 
   // ALLE HOOKS MÜSSEN VOR BEDINGTEN RETURNS STEHEN (React Rules of Hooks)
   // State - IMMER initialisieren, auch wenn Auth noch lädt
-  const [folders, setFolders] = useState<EmailFolder[]>([
+  const [_folders, _setFolders] = useState<EmailFolder[]>([
     { id: 'inbox', name: 'Posteingang', type: 'inbox', count: 0, unreadCount: 0 },
     { id: 'sent', name: 'Gesendet', type: 'sent', count: 0, unreadCount: 0 },
     { id: 'drafts', name: 'Entwürfe', type: 'drafts', count: 0, unreadCount: 0 },
@@ -127,11 +126,11 @@ export function EmailClient({
   const [cacheError, setCacheError] = useState<string | null>(null);
   const [cacheSource, setCacheSource] = useState<'local' | 'api' | 'cache'>('local');
   const [newEmailsCount, setNewEmailsCount] = useState(0);
-  const [cacheHitRatio, setCacheHitRatio] = useState(0);
+  const [cacheHitRatio, _setCacheHitRatio] = useState(0);
   const [isInitialLoad, setIsInitialLoad] = useState(true); // Flag für ersten Ladevorgang
 
   const refreshCachedEmails = useCallback(
-    async (forceRefresh = false) => {
+    async (_forceRefresh = false) => {
       if (!companyId) {
         setCacheError('Keine Company-ID verfügbar');
         setCacheLoading(false);
@@ -142,12 +141,13 @@ export function EmailClient({
       setCacheError(null);
 
       try {
-        // Lade E-Mails von der API - IMMER mit force=true für neueste E-Mails
+        // Lade E-Mails von der API - force nur bei explizitem Refresh (nicht bei jedem Laden)
         // userId wird mitgesendet für benutzer-spezifische E-Mails
-        const apiUrl = `/api/company/${companyId}/emails?folder=${selectedFolder}&force=true&userId=${effectiveUserId}`;
+        const useForce = _forceRefresh ? 'true' : 'false';
+        const apiUrl = `/api/company/${companyId}/emails?folder=${selectedFolder}&force=${useForce}&userId=${effectiveUserId}`;
 
         console.log(
-          `🔄 RefreshCachedEmails: IMMER force=true, userId=${effectiveUserId}, URL=${apiUrl}`
+          `🔄 RefreshCachedEmails: force=${useForce}, userId=${effectiveUserId}, URL=${apiUrl}`
         );
 
         const response = await fetch(apiUrl, {
@@ -167,24 +167,27 @@ export function EmailClient({
         if (data.emails && Array.isArray(data.emails)) {
           // Sortiere E-Mails nach Datum (neueste zuerst)
           // WICHTIG: Verwende IMMER internalDate als primären Sort-Key + Email-ID als Tiebreaker
-          const sortedEmails = data.emails.sort((a: any, b: any) => {
-            const getTimestamp = (email: any) => {
+          const sortedEmails = data.emails.sort((a: EmailMessage, b: EmailMessage) => {
+            const getTimestamp = (email: EmailMessage) => {
               // PRIORITÄT 1: Gmail internalDate (unveränderlich!)
               if (email.internalDate && typeof email.internalDate === 'string') {
                 return parseInt(email.internalDate);
               }
               // PRIORITÄT 2: Firestore Timestamp
-              if (email.timestamp && email.timestamp._seconds) {
+              if (email.timestamp && typeof email.timestamp === 'object' && '_seconds' in email.timestamp) {
                 return email.timestamp._seconds * 1000;
               }
               // FALLBACK 3: Date string
               if (email.date) {
                 return new Date(email.date).getTime();
               }
-              // FALLBACK 4: Number timestamp
-              if (typeof email.timestamp === 'number') {
-                // Wenn in Sekunden (< Jahr 2100), konvertiere zu Millisekunden
-                return email.timestamp < 4102444800 ? email.timestamp * 1000 : email.timestamp;
+              // FALLBACK 4: String timestamp
+              if (typeof email.timestamp === 'string') {
+                const parsed = parseInt(email.timestamp);
+                if (!isNaN(parsed)) {
+                  // Wenn in Sekunden (< Jahr 2100), konvertiere zu Millisekunden
+                  return parsed < 4102444800 ? parsed * 1000 : parsed;
+                }
               }
               return 0;
             };
@@ -286,7 +289,7 @@ export function EmailClient({
   useEffect(() => {
     // DEBUG: Zeige erste 3 Emails mit read-Status
     if (cachedEmails.length > 0) {
-      const preview = cachedEmails.slice(0, 3).map(e => ({
+      const _preview = cachedEmails.slice(0, 3).map(e => ({
         subject: e.subject?.substring(0, 20),
         read: e.read,
         id: e.id?.substring(0, 8),
@@ -375,10 +378,10 @@ export function EmailClient({
     // DIREKTE Verbindung zur emailCache Collection - MIT userId Filter!
     const emailCacheRef = collection(db, 'companies', companyId, 'emailCache');
     // KRITISCH: Filtere nach userId damit jeder User nur seine eigenen E-Mails sieht!
+    // HINWEIS: orderBy entfernt - Client-Side Sorting ist schneller und vermeidet Index-Probleme
     const emailQuery = query(
       emailCacheRef,
-      where('userId', '==', effectiveUserId),
-      orderBy('internalDate', 'desc')
+      where('userId', '==', effectiveUserId)
     );
 
     const unsubscribe = onSnapshot(
@@ -388,7 +391,7 @@ export function EmailClient({
         const changes = snapshot.docChanges();
         if (changes.length > 0) {
           changes.forEach(change => {
-            const data = change.doc.data();
+            const _data = change.doc.data();
           });
         } else {
         }
@@ -412,17 +415,28 @@ export function EmailClient({
           } as unknown as EmailMessage;
         });
 
-        // Filter by selected folder
+        // Filter by selected folder - MIT INBOX Label Check!
         const filteredEmails = allEmails.filter(email => {
+          const labels = email.labels || [];
           if (selectedFolder === 'inbox')
-            return !email.labels?.includes('TRASH') && !email.labels?.includes('SENT');
-          if (selectedFolder === 'sent') return email.labels?.includes('SENT');
-          if (selectedFolder === 'trash') return email.labels?.includes('TRASH');
-          if (selectedFolder === 'drafts') return email.labels?.includes('DRAFT');
-          if (selectedFolder === 'spam') return email.labels?.includes('SPAM');
-          if (selectedFolder === 'starred') return email.labels?.includes('STARRED');
-          if (selectedFolder === 'archived') return email.labels?.includes('ARCHIVED');
+            return labels.includes('INBOX') && !labels.includes('TRASH') && !labels.includes('SPAM');
+          if (selectedFolder === 'sent') return labels.includes('SENT');
+          if (selectedFolder === 'trash') return labels.includes('TRASH');
+          if (selectedFolder === 'drafts') return labels.includes('DRAFT');
+          if (selectedFolder === 'spam') return labels.includes('SPAM');
+          if (selectedFolder === 'starred') return labels.includes('STARRED');
+          if (selectedFolder === 'archived') return labels.includes('ARCHIVED');
           return true;
+        });
+
+        // Sort by timestamp (newest first) - Client-Side Sorting
+        filteredEmails.sort((a, b) => {
+          const getTs = (e: EmailMessage) => {
+            if (typeof e.timestamp === 'number') return e.timestamp;
+            if (typeof e.timestamp === 'string') return parseInt(e.timestamp) || 0;
+            return 0;
+          };
+          return getTs(b) - getTs(a);
         });
 
         setCachedEmails(filteredEmails);
@@ -477,18 +491,6 @@ export function EmailClient({
   // Performance Tracking Setup
   useEffect(() => {
     setupGlobalPerformanceTracking(companyId);
-
-    // Expose debug functions to window for browser console
-    if (typeof window !== 'undefined') {
-      (window as any).emailDebug = {
-        refresh: handleRefresh,
-        resync: forceResync,
-        companyId: companyId,
-      };
-      console.log(
-        '🔧 Email debug functions available: window.emailDebug.refresh() or window.emailDebug.resync()'
-      );
-    }
   }, [companyId]);
 
   // Update filter when search query changes
@@ -513,7 +515,7 @@ export function EmailClient({
 
     const handleFocus = () => {
       const now = Date.now();
-      const timeSinceLastFocus = now - lastFocusTime;
+      const _timeSinceLastFocus = now - lastFocusTime;
       lastFocusTime = now;
     };
 
@@ -543,6 +545,7 @@ export function EmailClient({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-open compose dialog if requested
@@ -554,95 +557,32 @@ export function EmailClient({
     }
   }, [autoCompose]);
 
-  // 🚀 OPTIMIZED: Use Smart Cache statt direkter API-Calls
-  const loadEmails = useCallback(
-    async (forceRefresh = false) => {
-      try {
-        // Use optimized cache service
-        await refreshCachedEmails(forceRefresh);
-
-        // Update folder counts (approximate)
-        setFolders(prev =>
-          prev.map(folder =>
-            folder.id === selectedFolder
-              ? {
-                  ...folder,
-                  count: cachedEmails.length,
-                  unreadCount: cachedEmails.filter(e => !e.read).length,
-                }
-              : folder
-          )
-        );
-      } catch (error) {
-        console.error('Smart Cache Load Fehler:', error);
-        setAuthError(error instanceof Error ? error.message : 'Fehler beim Laden der E-Mails');
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [refreshCachedEmails, selectedFolder, cachedEmails]
-  );
-
   // Manual refresh function
   const handleRefresh = useCallback(() => {
     refreshCachedEmails(true);
   }, [refreshCachedEmails]);
 
-  // Debug function für Webhook-Testing (nur für Development)
-  const testWebhookRefresh = useCallback(() => {
-    loadEmails(true).then(() => {});
-  }, [loadEmails]);
-
-  // EINFACHE Lösung - Lade die neuesten E-Mails direkt
-  const forceResync = useCallback(async () => {
-    setIsLoading(true);
-    setCachedEmails([]);
-
-    try {
-      // Lade E-Mails mit force refresh
-      await refreshCachedEmails(true);
-    } catch (error) {
-      console.error('Laden fehlgeschlagen:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [refreshCachedEmails]);
-
   // Expose test functions to window for browser console testing
-  // FIX: Dependencies hinzufügen um stale closures zu vermeiden
+  // SIMPLIFIED: Nur einmal beim Mount, um Endlos-Loops zu vermeiden
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as any).testWebhookRefresh = testWebhookRefresh;
-      (window as any).emailClientDebug = {
-        testRefresh: testWebhookRefresh,
-        loadEmails: () => loadEmails(true),
-        forceResync: forceResync,
-        refresh: handleRefresh,
-        isConnected: isRealtimeConnected,
-        lastActivity: lastActivity,
-        companyId: companyId,
+      // Verwende Refs für Debug-Zugriff statt Dependencies
+      (window as unknown as { emailClientDebug?: { getCompanyId: () => string; refresh: () => void } }).emailClientDebug = {
+        getCompanyId: () => companyId,
+        refresh: () => refreshCachedEmails(true),
       };
     }
 
     // Cleanup bei Unmount
     return () => {
       if (typeof window !== 'undefined') {
-        delete (window as any).testWebhookRefresh;
-        delete (window as any).emailClientDebug;
+        delete (window as unknown as { emailClientDebug?: unknown }).emailClientDebug;
       }
     };
-  }, [
-    isRealtimeConnected,
-    lastActivity,
-    companyId,
-    testWebhookRefresh,
-    loadEmails,
-    forceResync,
-    handleRefresh,
-  ]);
+  }, [companyId, refreshCachedEmails]);
 
   // Event handlers
-  const handleFolderSelect = (folderId: string) => {
+  const _handleFolderSelect = (folderId: string) => {
     setSelectedFolder(folderId);
     setSelectedEmail(null);
     setSelectedEmails([]);
@@ -772,7 +712,7 @@ export function EmailClient({
       }
 
       // Refresh emails to show sent message
-      await loadEmails();
+      await refreshCachedEmails(true);
       setIsComposeOpen(false);
 
       // Show success message
@@ -1097,7 +1037,7 @@ export function EmailClient({
                 onClick={() => {
                   setRequiresReauth(false);
                   setAuthError(null);
-                  loadEmails();
+                  refreshCachedEmails(true);
                 }}
                 className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors"
               >

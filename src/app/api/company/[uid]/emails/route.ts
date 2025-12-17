@@ -10,15 +10,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const limit = parseInt(searchParams.get('limit') || '500');
     const offset = parseInt(searchParams.get('offset') || '0');
     const forceRefresh = searchParams.get('force') === 'true';
+    const triggerSync = searchParams.get('sync') === 'true'; // Neuer Parameter für expliziten Sync
     const userId = searchParams.get('userId') || uid; // Benutzer-spezifische E-Mails
 
     console.log(
-      `📦 API: Loading emails for company ${uid}, user ${userId}, folder: ${folder}, limit: ${limit}, offset: ${offset}, force: ${forceRefresh}`
+      `📦 API: Loading emails for company ${uid}, user ${userId}, folder: ${folder}, limit: ${limit}, offset: ${offset}, force: ${forceRefresh}, sync: ${triggerSync}`
     );
 
-    // Wenn force refresh, triggere Gmail Sync Function
-    if (forceRefresh) {
-      console.log('🔄 API: Force refresh - triggering Gmail sync');
+    // Gmail Sync NUR wenn explizit angefordert (sync=true), NICHT bei force refresh
+    // Das verhindert, dass lokale Änderungen (TRASH/SPAM) überschrieben werden
+    if (triggerSync) {
+      console.log('🔄 API: Explicit sync requested - triggering Gmail sync');
       try {
         const functionUrl = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
                            'https://europe-west1-tilvo-f142f.cloudfunctions.net';
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           body: JSON.stringify({
             companyId: uid,
             userId: userId,
-            force: true,
+            force: false, // NIEMALS force=true, um lokale Labels zu bewahren
             action: 'sync'
           }),
 
@@ -55,7 +57,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
-    // Fallback: Suche E-Mails im Cache
+    // Lade E-Mails aus dem Cache (ohne Gmail Sync)
     let emails: any[] = [];
 
     try {

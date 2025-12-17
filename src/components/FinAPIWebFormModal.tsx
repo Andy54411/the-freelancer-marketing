@@ -84,7 +84,7 @@ export default function FinAPIWebFormModal({
       if (event.data.type === 'BANK_CONNECTION_SUCCESS') {
         // Debug-Log entfernt
         // Mark that we received a success message
-        (window as any).finapiSuccessReceived = true;
+        (window as Window & { finapiSuccessReceived?: boolean }).finapiSuccessReceived = true;
         onSuccess(event.data.bankConnectionId);
         onClose();
         // Force page refresh to show new bank connection
@@ -93,11 +93,11 @@ export default function FinAPIWebFormModal({
         }, 500);
       } else if (event.data.type === 'BANK_CONNECTION_ERROR') {
         // Debug-Log entfernt
-        (window as any).finapiSuccessReceived = false;
+        (window as Window & { finapiSuccessReceived?: boolean }).finapiSuccessReceived = false;
         onError(event.data.error || 'Bank-Verbindung fehlgeschlagen');
       } else if (event.data.type === 'WEBFORM_CANCELLED') {
         // Debug-Log entfernt
-        (window as any).finapiSuccessReceived = false;
+        (window as Window & { finapiSuccessReceived?: boolean }).finapiSuccessReceived = false;
         onClose();
       }
     };
@@ -151,7 +151,7 @@ export default function FinAPIWebFormModal({
         // Wait a moment then check if we should refresh
         setTimeout(() => {
           // Check if we received a success message
-          const successReceived = (window as any).finapiSuccessReceived;
+          const successReceived = (window as Window & { finapiSuccessReceived?: boolean }).finapiSuccessReceived;
 
           if (successReceived === true) {
             onSuccess('success-confirmed');
@@ -208,7 +208,7 @@ export default function FinAPIWebFormModal({
   };
 
   // Handle iframe error (fallback)
-  const handleIframeError = () => {
+  const _handleIframeError = () => {
     setIsLoading(false);
     setError(
       'finAPI kann nicht in einem iframe geladen werden (CSP). Verwenden Sie die Popup-Option.'

@@ -252,13 +252,37 @@ async function saveEmailsToFirestore(companyId: string, userEmail: string, email
         const existingEmail = await emailRef.get();
         
         if (existingEmail.exists) {
-          // E-Mail existiert - Labels und userId von Gmail aktualisieren
-          // WICHTIG: Labels von Gmail haben Priorität über lokale Labels
+          // E-Mail existiert - userId aktualisieren, aber LOKALE Labels beibehalten!
+          // WICHTIG: Lokale Labels (TRASH, SPAM) haben Priorität über Gmail Labels
           const existingData = existingEmail.data();
+          const existingLabels = existingData?.labels || [];
+          
+          // Prüfe ob E-Mail lokal als gelöscht/spam markiert wurde ODER locallyModified Flag gesetzt ist
+          const hasLocalTrash = existingLabels.includes('TRASH');
+          const hasLocalSpam = existingLabels.includes('SPAM');
+          const hasLocalArchive = existingLabels.includes('ARCHIVED');
+          const isLocallyModified = existingData?.locallyModified === true;
+          
+          // Wenn lokale Label-Änderungen existieren, NICHT mit Gmail überschreiben
+          if (hasLocalTrash || hasLocalSpam || hasLocalArchive || isLocallyModified) {
+            logger.info(`📧 E-Mail ${email.id} hat lokale Änderungen (TRASH/SPAM/ARCHIVED/locallyModified) - überspringe Gmail-Update`);
+            
+            // Nur userId aktualisieren falls nötig
+            if (!existingData?.userId || existingData.userId !== effectiveUserId) {
+              batch.update(emailRef, {
+                userId: effectiveUserId,
+                updatedAt: new Date()
+              });
+              updatedCount++;
+            }
+            continue;
+          }
+          
+          // Keine lokalen Änderungen - Gmail Labels übernehmen
           const needsUpdate = 
             !existingData?.userId || // Hat keine userId
             existingData.userId !== effectiveUserId || // Falsche userId
-            JSON.stringify(existingData.labels) !== JSON.stringify(email.labels); // Labels geändert
+            JSON.stringify(existingLabels) !== JSON.stringify(email.labels); // Labels geändert
           
           if (needsUpdate) {
             batch.update(emailRef, {

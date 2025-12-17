@@ -20,7 +20,9 @@ export interface EmailMessage {
   body: string;
   htmlBody?: string;
   attachments?: EmailAttachment[];
-  timestamp: string;
+  timestamp: string | { _seconds: number };
+  internalDate?: string;
+  date?: string;
   read: boolean;
   starred: boolean;
   folder: EmailFolder;
