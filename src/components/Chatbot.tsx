@@ -85,13 +85,16 @@ const Chatbot = () => {
       const modelMessage: Message = { role: 'model', parts: [{ text: data.text }] };
       setMessages(prev => [...prev, modelMessage]);
     } catch (error) {
+      let errorText = 'Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.';
+      
+      // Prüfe auf Rate Limit Fehler
+      if (error instanceof Error && error.message.includes('429')) {
+        errorText = 'Der Support-Chat ist derzeit überlastet. Bitte versuchen Sie es in einer Minute erneut.';
+      }
+      
       const errorMessage: Message = {
         role: 'model',
-        parts: [
-          {
-            text: 'Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.',
-          },
-        ],
+        parts: [{ text: errorText }],
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {

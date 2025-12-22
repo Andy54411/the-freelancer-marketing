@@ -9,7 +9,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/firebase/server'; // Korrekt: Server-Instanz für API-Routen verwenden
 import { getSystemInstruction } from '@/shared/chatbot-utils';
 
-const MODEL_NAME = 'models/gemini-2.0-flash-exp'; // ✅ Aktuelles, stabiles Modell
+// Aktuelles stabiles Modell
+const MODEL_NAME = 'gemini-2.5-flash';
 
 export async function POST(request: Request) {
   try {
@@ -153,10 +154,24 @@ export async function POST(request: Request) {
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
+    
+    console.error('[Chat API Error]:', errorMessage);
+
+    // Prüfe auf Rate Limit / Quota Fehler
+    if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('Too Many Requests')) {
+      return NextResponse.json(
+        { 
+          error: 'Der Support-Chat ist derzeit überlastet. Bitte versuchen Sie es in einer Minute erneut.',
+          retryable: true,
+          debug: errorMessage
+        },
+        { status: 429 }
+      );
+    }
 
     // Return a more generic error for other cases to avoid leaking implementation details
     return NextResponse.json(
-      { error: 'Ein interner Serverfehler ist aufgetreten.' },
+      { error: 'Ein interner Serverfehler ist aufgetreten.', debug: errorMessage },
       { status: 500 }
     );
   }
