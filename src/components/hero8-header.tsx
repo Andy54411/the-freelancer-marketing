@@ -221,11 +221,10 @@ export const HeroHeader = () => {
               </div>
             </div>
 
-            {/* Right Section incl. Mobile Dropdown */}
+            {/* Right Section - Desktop only */}
             <div
               className={cn(
-                'w-full lg:w-fit flex-col lg:flex-row items-end lg:items-center justify-end gap-6',
-                'flex' // Entferne hidden, damit die Buttons immer sichtbar sind
+                'hidden lg:flex w-fit flex-row items-center justify-end gap-6'
               )}
             >
               {!isLoading &&
@@ -377,8 +376,40 @@ export const HeroHeader = () => {
                         </Button>
                       </>
                     ) : (
-                      // Unauthenticated user - mobile (keine Buttons mehr)
-                      <></>
+                      // Unauthenticated user - mobile
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setMenuState(false);
+                            handleOpenLoginPopup();
+                          }}
+                          className="w-full"
+                        >
+                          Anmelden
+                        </Button>
+                        <Button
+                          asChild
+                          size="sm"
+                          className="bg-[#14ad9f] hover:bg-[#0f9a8d] text-white font-semibold w-full"
+                        >
+                          <Link href="/register/company">
+                            Mit Taskilo starten
+                          </Link>
+                        </Button>
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="w-full"
+                        >
+                          <Link href="/webmail">
+                            <Mail className="w-4 h-4 mr-2" />
+                            Mail Account erstellen
+                          </Link>
+                        </Button>
+                      </>
                     ))}
                 </div>
               </div>
