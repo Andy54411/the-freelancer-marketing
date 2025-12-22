@@ -39,7 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { TicketData, TicketComment } from '@/lib/aws-ticket-storage';
+import { TicketData, TicketComment } from '@/services/admin/FirebaseTicketService';
 import { getAvailableAgents, AdminAgent } from '@/lib/admin-agents';
 
 interface AdminTicketDetailProps {

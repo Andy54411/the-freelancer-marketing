@@ -50,8 +50,8 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-// AWS S3 import
-import { AWSS3Service } from '@/lib/aws-s3-service';
+// Firebase Storage Service (ersetzt AWS S3)
+import { WorkspaceStorageService } from '@/services/admin/WorkspaceStorageService';
 import { adminWorkspaceService } from '@/services/AdminWorkspaceService';
 import type {
   AdminWorkspace,
@@ -329,12 +329,12 @@ export default function AdminTaskDetailSlider({
         // Setze Upload-Progress
         setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
 
-        // Erstelle AWS S3 Pfad
-        const s3Key = AWSS3Service.generateWorkspacePath(workspace.id, task.id, fileId, file.name);
+        // Erstelle Firebase Storage Pfad
+        const storagePath = WorkspaceStorageService.generateWorkspacePath(workspace.id, task.id, fileId, file.name);
 
-        // Upload Datei zu AWS S3
+        // Upload Datei zu Firebase Storage
         setUploadProgress(prev => ({ ...prev, [fileId]: 50 }));
-        const uploadResult = await AWSS3Service.uploadFile(file, s3Key, {
+        const uploadResult = await WorkspaceStorageService.uploadFile(file, storagePath, {
           contentType: file.type,
           workspaceId: workspace.id,
           taskId: task.id,
@@ -404,9 +404,9 @@ export default function AdminTaskDetailSlider({
     if (!task || !workspace) return;
 
     try {
-      // Lösche Datei aus AWS S3
+      // Lösche Datei aus Firebase Storage
       if (attachment.s3Key) {
-        await AWSS3Service.deleteFile(attachment.s3Key);
+        await WorkspaceStorageService.deleteFile(attachment.s3Key);
       }
 
       // Entferne Attachment aus lokaler Liste

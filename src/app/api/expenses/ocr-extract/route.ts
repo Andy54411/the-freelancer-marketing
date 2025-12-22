@@ -291,16 +291,140 @@ async function extractExpenseFromFile(file: File, filename: string): Promise<Ext
 }
 
 /**
- * � MULTI-PAGE OCR ENHANCEMENT
- * Process multiple files as ONE document
+ * GOOGLE CLOUD VISION OCR - Single File Processing
+ * Calls Firebase Cloud Function with Google Cloud Vision
+ */
+async function processFileWithGoogleVision(
+  file: File,
+  companyId: string
+): Promise<Partial<ExtractedExpenseData>> {
+  console.log(`[Google Vision OCR] Processing file: ${file.name}`);
+
+  // Convert file to base64
+  const fileBuffer = await file.arrayBuffer();
+  let buffer = Buffer.from(fileBuffer);
+  let mimeType = file.type;
+
+  // Image validation and conversion for Google Vision compatibility
+  if (file.type.includes('image')) {
+    console.log('[Image Processing] Validating and converting image...');
+
+    const sharp = (await import('sharp')).default;
+
+    try {
+      const metadata = await sharp(buffer).metadata();
+      console.log('[Image Metadata]:', {
+        format: metadata.format,
+        width: metadata.width,
+        height: metadata.height,
+        size: `${(buffer.length / 1024).toFixed(2)} KB`,
+      });
+
+      if (metadata.format === 'heif') {
+        throw new Error(
+          'HEIF/HEIC Format wird nicht unterstützt. Bitte konvertieren Sie das Bild zu JPEG oder PNG auf Ihrem Gerät.'
+        );
+      }
+
+      const processedBuffer = await sharp(buffer)
+        .resize(10000, 10000, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .jpeg({
+          quality: 92,
+          progressive: false,
+        })
+        .toBuffer();
+
+      buffer = Buffer.from(processedBuffer);
+      mimeType = 'image/jpeg';
+
+      console.log('[Image Processing] Image converted:', {
+        originalSize: `${(fileBuffer.byteLength / 1024).toFixed(2)} KB`,
+        processedSize: `${(buffer.length / 1024).toFixed(2)} KB`,
+        format: 'JPEG',
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[Image Processing] Failed:', errorMessage);
+      
+      if (errorMessage.includes('HEIF') || errorMessage.includes('heif')) {
+        throw new Error(
+          'iPhone HEIC-Format wird nicht unterstützt.\n\nBitte öffnen Sie das Bild und:\n1. Teilen > Speichern als JPEG\n2. Oder in Einstellungen > Kamera > "Kompatibel" wählen'
+        );
+      }
+      throw new Error(`Bild konnte nicht verarbeitet werden: ${errorMessage}`);
+    }
+  }
+
+  // Call Firebase Cloud Function with Google Vision
+  const firebaseUrl =
+    process.env.FIREBASE_FUNCTION_URL ||
+    'https://europe-west1-tilvo-f142f.cloudfunctions.net/financeApiWithOCR';
+  const ocrEndpoint = `${firebaseUrl}/ocr/extract-receipt`;
+
+  console.log('[Google Vision OCR] Calling Firebase function:', ocrEndpoint);
+
+  // Convert buffer to base64 for transmission
+  const base64Content = buffer.toString('base64');
+
+  const response = await fetch(ocrEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-user-id': companyId,
+      'x-company-id': companyId,
+    },
+    body: JSON.stringify({
+      fileContent: base64Content,
+      fileName: file.name,
+      mimeType,
+      companyId,
+      enhancedMode: true,
+      germanCompliance: true,
+      extractVatDetails: true,
+      detectInvoiceFields: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('[Google Vision OCR] Firebase error:', errorText);
+    throw new Error(`OCR-Verarbeitung fehlgeschlagen: ${response.status}`);
+  }
+
+  const result = await response.json();
+  console.log('[Google Vision OCR] Response:', result);
+
+  const data = result.data || result;
+
+  return {
+    vendor: data.vendorName || data.vendor || data.companyName,
+    amount: data.totalGrossAmount || data.amount,
+    date: data.invoiceDate || data.date,
+    invoiceNumber: data.invoiceNumber,
+    vatAmount: data.totalVatAmount || data.vatAmount,
+    netAmount: data.totalNetAmount || data.netAmount,
+    vatRate: data.taxRate || data.vatRate || 19,
+    companyName: data.vendorName || data.companyName,
+    companyAddress: data.companyAddress,
+    companyCity: data.companyCity,
+    companyZip: data.companyZip,
+    companyCountry: data.companyCountry,
+    companyVatNumber: data.vendorVatId || data.companyVatNumber,
+  };
+}
+
+/**
+ * MULTI-PAGE OCR ENHANCEMENT
+ * Process multiple files as ONE document using Google Cloud Vision
  */
 async function tryMultiPageOCREnhancement(
   files: File[],
   companyId: string
 ): Promise<ExtractedExpenseData> {
-  console.log(`🚀 [Multi-Page OCR] Processing ${files.length} files as one document...`);
-
-  const { extractExpenseWithTextract } = await import('@/lib/aws-textract-ocr');
+  console.log(`[Multi-Page OCR] Processing ${files.length} files as one document...`);
 
   // FILES ARE UPLOADED IN REVERSE ORDER!
   // First file (files[0]) = Account statement/summary with amounts (Kontoblatt)
@@ -308,35 +432,11 @@ async function tryMultiPageOCREnhancement(
 
   // Process FIRST file for AMOUNTS (Kontoblatt/Account Statement)
   const summaryFile = files[0];
-  console.log(
-    `📄 [Multi-Page OCR] Processing file 1 (${summaryFile.name}) for amounts (Kontoblatt)`
-  );
+  console.log(`[Multi-Page OCR] Processing file 1 (${summaryFile.name}) for amounts`);
 
-  const summaryFileBuffer = await summaryFile.arrayBuffer();
-  let summaryBuffer = Buffer.from(summaryFileBuffer);
+  const summaryPageData = await processFileWithGoogleVision(summaryFile, companyId);
 
-  if (summaryFile.type.includes('image')) {
-    const sharp = (await import('sharp')).default;
-    const metadata = await sharp(summaryBuffer).metadata();
-
-    if (metadata.format === 'heif') {
-      throw new Error('HEIF/HEIC Format wird nicht unterstützt.');
-    }
-
-    const processedBuffer = await sharp(summaryBuffer)
-      .resize(10000, 10000, { fit: 'inside', withoutEnlargement: true })
-      .jpeg({ quality: 92, progressive: false })
-      .toBuffer();
-
-    summaryBuffer = Buffer.from(processedBuffer);
-  }
-
-  const summaryPageData = await extractExpenseWithTextract(
-    summaryBuffer,
-    summaryFile.type.includes('image') ? 'image/jpeg' : summaryFile.type
-  );
-
-  console.log('📄 [Multi-Page OCR] Summary page data:', {
+  console.log('[Multi-Page OCR] Summary page data:', {
     amount: summaryPageData.amount,
     netAmount: summaryPageData.netAmount,
     vatAmount: summaryPageData.vatAmount,
@@ -346,84 +446,16 @@ async function tryMultiPageOCREnhancement(
 
   // Process LAST file for VENDOR (Invoice Header)
   const headerFile = files[files.length - 1];
-  console.log(
-    `📄 [Multi-Page OCR] Processing file ${files.length} (${headerFile.name}) for vendor (Invoice Header)`
-  );
+  console.log(`[Multi-Page OCR] Processing file ${files.length} (${headerFile.name}) for vendor`);
 
-  const headerFileBuffer = await headerFile.arrayBuffer();
-  let headerBuffer = Buffer.from(headerFileBuffer);
+  const headerPageData = await processFileWithGoogleVision(headerFile, companyId);
 
-  if (headerFile.type.includes('image')) {
-    const sharp = (await import('sharp')).default;
-    const processedBuffer = await sharp(headerBuffer)
-      .resize(10000, 10000, { fit: 'inside', withoutEnlargement: true })
-      .jpeg({ quality: 92, progressive: false })
-      .toBuffer();
-
-    headerBuffer = Buffer.from(processedBuffer);
-  }
-
-  const headerPageData = await extractExpenseWithTextract(
-    headerBuffer,
-    headerFile.type.includes('image') ? 'image/jpeg' : headerFile.type
-  );
-
-  console.log('📄 [Multi-Page OCR] Header page data:', {
+  console.log('[Multi-Page OCR] Header page data:', {
     vendor: headerPageData.vendor,
     companyName: headerPageData.companyName,
   });
 
-  // Process ALL middle pages for line items (skip first and last)
-  const allLineItems: LineItem[] = [];
-
-  // Add line items from summary page and header page
-  if (summaryPageData.lineItems) {
-    allLineItems.push(...summaryPageData.lineItems);
-  }
-  if (headerPageData.lineItems) {
-    allLineItems.push(...headerPageData.lineItems);
-  }
-
-  // Process middle pages for additional line items
-  if (files.length > 2) {
-    console.log(
-      `📄 [Multi-Page OCR] Processing ${files.length - 2} middle pages for line items...`
-    );
-
-    for (let i = 1; i < files.length - 1; i++) {
-      const middleFile = files[i];
-      console.log(
-        `📄 [Multi-Page OCR] Processing page ${i + 1} (${middleFile.name}) for line items`
-      );
-
-      const middleFileBuffer = await middleFile.arrayBuffer();
-      let middleBuffer = Buffer.from(middleFileBuffer);
-
-      if (middleFile.type.includes('image')) {
-        const sharp = (await import('sharp')).default;
-        const processedBuffer = await sharp(middleBuffer)
-          .resize(10000, 10000, { fit: 'inside', withoutEnlargement: true })
-          .jpeg({ quality: 92, progressive: false })
-          .toBuffer();
-
-        middleBuffer = Buffer.from(processedBuffer);
-      }
-
-      const middlePageData = await extractExpenseWithTextract(
-        middleBuffer,
-        middleFile.type.includes('image') ? 'image/jpeg' : middleFile.type
-      );
-
-      if (middlePageData.lineItems && middlePageData.lineItems.length > 0) {
-        console.log(`📋 [Page ${i + 1}] Found ${middlePageData.lineItems.length} line items`);
-        allLineItems.push(...middlePageData.lineItems);
-      }
-    }
-  }
-
-  console.log(`📋 [Multi-Page OCR] Total line items extracted: ${allLineItems.length}`);
-
-  // Combine data: amounts from first file (Kontoblatt), vendor from last file (header)
+  // Combine data: amounts from first file, vendor from last file
   const filename = summaryFile.name.toLowerCase();
   const category = detectExpenseCategory(filename, headerPageData.vendor || '');
 
@@ -444,10 +476,10 @@ async function tryMultiPageOCREnhancement(
     companyZip: headerPageData.companyZip || '',
     companyCountry: headerPageData.companyCountry || '',
     companyVatNumber: headerPageData.companyVatNumber || '',
-    contactEmail: headerPageData.companyEmail || '',
-    contactPhone: headerPageData.companyPhone || '',
+    contactEmail: '',
+    contactPhone: '',
     taxDeductible: true,
-    lineItems: allLineItems.length > 0 ? allLineItems : undefined,
+    lineItems: undefined,
     metadata: {
       isMultiPage: true,
       totalPages: files.length,
@@ -458,126 +490,43 @@ async function tryMultiPageOCREnhancement(
 }
 
 /**
- * 🔄 ECHTER OCR MIT AWS TEXTRACT (Single File)
+ * OCR MIT GOOGLE CLOUD VISION (Single File)
  */
 async function tryOCREnhancement(
   file: File,
-  _companyId: string,
+  companyId: string,
   _filename: string
 ): Promise<Partial<ExtractedExpenseData>> {
-  console.log('🚀 [Expense OCR] Starting AWS Textract extraction...');
+  console.log('[Expense OCR] Starting Google Cloud Vision extraction...');
 
-  const { extractExpenseWithTextract } = await import('@/lib/aws-textract-ocr');
+  const result = await processFileWithGoogleVision(file, companyId);
 
-  // Convert File to Buffer
-  const fileBuffer = await file.arrayBuffer();
-  let buffer = Buffer.from(fileBuffer);
-  let mimeType = file.type;
-
-  // Image validation and conversion for AWS Textract compatibility
-  if (file.type.includes('image')) {
-    console.log('🖼️  [Image Processing] Validating and converting image for AWS Textract...');
-
-    const sharp = (await import('sharp')).default;
-
-    try {
-      // Get image metadata first to detect actual format
-      const metadata = await sharp(buffer).metadata();
-      console.log('📊 [Image Metadata]:', {
-        format: metadata.format,
-        width: metadata.width,
-        height: metadata.height,
-        size: `${(buffer.length / 1024).toFixed(2)} KB`,
-      });
-
-      // Check if image is HEIF/HEIC (iPhone format)
-      if (metadata.format === 'heif') {
-        console.warn(
-          '⚠️  [Image Format] HEIF/HEIC format detected (iPhone). Sharp needs libheif support.'
-        );
-        console.log('💡 [Fallback] Trying to process with native format...');
-
-        // Try to use original buffer - Textract might accept it
-        // If not, user needs to convert on device
-        throw new Error(
-          'HEIF/HEIC Format wird nicht unterstützt. Bitte konvertieren Sie das Bild zu JPEG oder PNG auf Ihrem Gerät.'
-        );
-      }
-
-      // Convert image to standard JPEG format that Textract accepts
-      // - Max dimensions: 10000x10000 pixels
-      // - Baseline JPEG (not progressive)
-      // - RGB color space (no CMYK)
-      const processedBuffer = await sharp(buffer)
-        .resize(10000, 10000, {
-          fit: 'inside',
-          withoutEnlargement: true,
-        })
-        .jpeg({
-          quality: 92,
-          progressive: false,
-          chromaSubsampling: '4:2:0',
-        })
-        .toBuffer();
-
-      buffer = Buffer.from(processedBuffer);
-      mimeType = 'image/jpeg';
-
-      console.log('✅ [Image Processing] Image converted:', {
-        originalSize: `${(fileBuffer.byteLength / 1024).toFixed(2)} KB`,
-        processedSize: `${(buffer.length / 1024).toFixed(2)} KB`,
-        format: 'JPEG',
-      });
-    } catch (error: any) {
-      console.error('❌ [Image Processing] Failed to convert image:', error.message);
-
-      // Provide user-friendly error message
-      if (error.message.includes('HEIF') || error.message.includes('heif')) {
-        throw new Error(
-          '📱 iPhone HEIC-Format wird nicht unterstützt.\n\nBitte öffnen Sie das Bild und:\n1. Teilen → Speichern als JPEG\n2. Oder in Einstellungen → Kamera → "Kompatibel" wählen'
-        );
-      }
-
-      throw new Error(`Bild konnte nicht verarbeitet werden: ${error.message}`);
-    }
-  }
-
-  // Call AWS Textract DIREKT - KEINE Firebase Function!
-  const result = await extractExpenseWithTextract(buffer, mimeType);
-
-  console.log('✅ [Expense OCR] AWS Textract full response:', {
+  console.log('[Expense OCR] Google Vision response:', {
     vendor: result.vendor,
     amount: result.amount,
     invoiceNumber: result.invoiceNumber,
     vatAmount: result.vatAmount,
     netAmount: result.netAmount,
     date: result.date,
-    confidence: result.confidence,
-    metadata: result.metadata,
   });
 
-  // Return structured data - KEINE Mappings, KEINE Fallbacks!
+  // Return structured data
   return {
     vendor: result.vendor,
     amount: result.amount,
-    date: result.date || undefined, // Convert null to undefined for consistency
+    date: result.date,
     description: `${result.vendor} - ${result.invoiceNumber || 'Beleg'}`,
     category: 'Sonstiges', // Wird später durch intelligente Erkennung ersetzt
     invoiceNumber: result.invoiceNumber,
     vatAmount: result.vatAmount,
     netAmount: result.netAmount,
     vatRate: result.vatRate,
-    // Firmeninformationen aus OCR
     companyName: result.companyName || result.vendor,
-    companyAddress: result.companyAddress || '',
-    companyCity: result.companyCity || '',
-    companyZip: result.companyZip || '',
-    companyCountry: result.companyCountry || '',
-    companyVatNumber: result.companyVatNumber || '',
-    contactEmail: result.companyEmail || '',
-    contactPhone: result.companyPhone || '',
-    // Metadata (multi-page info)
-    metadata: result.metadata,
+    companyAddress: result.companyAddress,
+    companyCity: result.companyCity,
+    companyZip: result.companyZip,
+    companyCountry: result.companyCountry,
+    companyVatNumber: result.companyVatNumber,
   };
 }
 
