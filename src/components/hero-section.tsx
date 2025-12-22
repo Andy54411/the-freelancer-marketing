@@ -143,13 +143,13 @@ export default function HeroSection() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.6 }}
-                  className="mt-8 sm:mt-12 flex flex-col items-center justify-center gap-3 sm:gap-2 sm:flex-row lg:justify-start"
+                  className="mt-8 sm:mt-12 flex flex-row items-center justify-center gap-2 sm:gap-2 lg:justify-start"
                 >
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
                     <Button
                       asChild
                       size="lg"
-                      className="w-full sm:w-auto px-5 text-base bg-[#14ad9f] text-white hover:bg-teal-700"
+                      className="px-3 sm:px-5 text-sm sm:text-base bg-[#14ad9f] text-white hover:bg-teal-700"
                       onClick={handleSearchClick}
                     >
                       <Link href="/auftrag/get-started">
@@ -162,7 +162,7 @@ export default function HeroSection() {
                       key={2}
                       size="lg"
                       variant="outline"
-                      className="w-full sm:w-auto px-5 text-base border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                      className="px-3 sm:px-5 text-sm sm:text-base border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
                       onClick={handleProviderClick}
                     >
                       <span className="text-nowrap">Hilfe anbieten</span>
