@@ -23,7 +23,6 @@ interface StoragePlan {
   price: number;
   description: string;
   popular?: boolean;
-  priceId: string; // Stripe Price ID
 }
 
 interface StorageUpgradeModalProps {
@@ -42,7 +41,6 @@ const STORAGE_PLANS: StoragePlan[] = [
     storage: 1 * 1024 * 1024 * 1024,
     price: 0.99,
     description: 'Kleine Unternehmen',
-    priceId: 'price_1SGgbzD5Lvjon30afg8y0RnG',
   },
   {
     id: '10gb',
@@ -51,7 +49,6 @@ const STORAGE_PLANS: StoragePlan[] = [
     price: 2.99,
     description: 'Wachsende Teams',
     popular: true,
-    priceId: 'price_1SGgc0D5Lvjon30awN46TFta',
   },
   {
     id: '30gb',
@@ -59,7 +56,6 @@ const STORAGE_PLANS: StoragePlan[] = [
     storage: 30 * 1024 * 1024 * 1024,
     price: 5.99,
     description: 'Große Datenmengen',
-    priceId: 'price_1SGgc0D5Lvjon30a1F3dSji5',
   },
   {
     id: '50gb',
@@ -67,7 +63,6 @@ const STORAGE_PLANS: StoragePlan[] = [
     storage: 50 * 1024 * 1024 * 1024,
     price: 9.99,
     description: 'Unternehmen',
-    priceId: 'price_1SGgc1D5Lvjon30aSEOc32sW',
   },
   {
     id: '100gb',
@@ -75,7 +70,6 @@ const STORAGE_PLANS: StoragePlan[] = [
     storage: 100 * 1024 * 1024 * 1024,
     price: 14.99,
     description: 'Große Unternehmen',
-    priceId: 'price_1SGgc2D5Lvjon30aeXWpEY2D',
   },
   {
     id: 'unlimited',
@@ -83,7 +77,6 @@ const STORAGE_PLANS: StoragePlan[] = [
     storage: Number.MAX_SAFE_INTEGER,
     price: 19.9,
     description: 'Ohne Limite',
-    priceId: 'price_1SGgc2D5Lvjon30amD74brGD',
   },
 ];
 
@@ -108,8 +101,9 @@ export function StorageUpgradeModal({
   const [currentPlanId, setCurrentPlanId] = useState<string>('free');
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [companyData, setCompanyData] = useState<{ email: string; companyName: string } | null>(null);
 
-  // Load current plan from Firestore
+  // Load current plan and company data from Firestore
   useEffect(() => {
     if (!companyId || !open) return;
 
@@ -122,15 +116,21 @@ export function StorageUpgradeModal({
           const data = companySnap.data();
           setCurrentPlanId(data.storagePlanId || 'free');
 
-          // Check if there's an active Stripe subscription
+          // Store company data for subscription API
+          setCompanyData({
+            email: data.email || data.billingEmail || data.contactEmail || '',
+            companyName: data.companyName || data.name || data.businessName || '',
+          });
+
+          // Check if there's an active subscription (Revolut or Stripe)
           const hasSubscription = !!(
-            data.stripeSubscriptionId &&
-            (data.subscriptionStatus === 'active' || data.subscriptionStatus === 'trialing')
+            (data.revolutStorageSubscriptionId || data.revolutStorageOrderId || data.stripeSubscriptionId) &&
+            (data.storageSubscriptionStatus === 'active' || data.subscriptionStatus === 'active' || data.subscriptionStatus === 'trialing')
           );
           setHasActiveSubscription(hasSubscription);
         }
       } catch (error) {
-        console.error('Error loading current plan:', error);
+        toast.error('Fehler beim Laden der Unternehmensdaten');
       }
     };
 
@@ -140,38 +140,41 @@ export function StorageUpgradeModal({
   const handleSelectPlan = async (plan: StoragePlan) => {
     if (loading) return;
 
+    // Validate company data
+    if (!companyData?.email || !companyData?.companyName) {
+      toast.error('Bitte vervollständigen Sie zuerst Ihre Unternehmensdaten (E-Mail und Name)');
+      return;
+    }
+
     setLoading(true);
     setSelectedPlan(plan.id);
 
     try {
-      // Create Stripe Checkout Session for company-wide storage
-      const response = await fetch('/api/storage/create-subscription', {
+      // Create Revolut Subscription for company-wide storage
+      const response = await fetch('/api/storage/create-revolut-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          priceId: plan.priceId,
           planId: plan.id,
-          storage: plan.storage,
           companyId,
-          successUrl: `${window.location.origin}/dashboard/company/${companyId}?storage=success`,
-          cancelUrl: `${window.location.origin}/dashboard/company/${companyId}?storage=canceled`,
+          email: companyData.email,
+          companyName: companyData.companyName,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Fehler beim Erstellen der Checkout-Session');
+        throw new Error(data.error || 'Fehler beim Erstellen des Abonnements');
       }
 
-      // Redirect to Stripe Checkout
+      // Redirect to Revolut Checkout
       if (data.url) {
         window.location.href = data.url;
       } else {
         throw new Error('Keine Checkout-URL erhalten');
       }
     } catch (error) {
-      console.error('Storage upgrade error:', error);
       toast.error(error instanceof Error ? error.message : 'Fehler beim Upgrade');
       setLoading(false);
       setSelectedPlan(null);
@@ -249,7 +252,7 @@ export function StorageUpgradeModal({
 
           {/* Trust Elements - Compact */}
           <div className="text-[10px] text-gray-500 text-center pt-1 border-t">
-            💳 Monatlich kündbar • Sichere Zahlung • Sofortige Aktivierung
+            Monatlich kuendbar | Sichere Zahlung via Revolut | Sofortige Aktivierung
           </div>
 
           {/* Cancel Button - Only show if user has active paid plan with Stripe subscription */}
@@ -269,7 +272,7 @@ export function StorageUpgradeModal({
           {/* Info message for paid plans without active subscription */}
           {currentPlanId !== 'free' && !hasActiveSubscription && (
             <div className="text-xs text-gray-500 text-center py-2 bg-gray-50 rounded-md">
-              ℹ️ Sie haben derzeit kein aktives Abonnement
+              Sie haben derzeit kein aktives Abonnement
             </div>
           )}
         </div>

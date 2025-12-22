@@ -8,13 +8,21 @@
 5. **Update-Notifications**: Bei jedem Commit via `/dashboard/admin/updates`
 6. **KEINE FALLBACKS**: Fehler müssen sichtbar sein! Keine `|| ''`, `|| 'default'`, `?? fallback` - Problem an der Wurzel lösen!
 7. **KEINE EMOJIS**: Professioneller Code und UI - KEINE Icons/Emojis in Code, Kommentaren oder UI
+8. **CHATBOT CRAWLER**: Bei neuen Seiten IMMER URLs in `/src/app/api/cron/refresh-knowledge-base/route.ts` hinzufügen!
+
+## CHATBOT KNOWLEDGE BASE
+Bei neuen Website-Seiten IMMER die URL in `WEBSITE_URLS` Array hinzufügen:
+- Datei: `/src/app/api/cron/refresh-knowledge-base/route.ts`
+- Wöchentliches Re-Crawling: Sonntag 3:00 Uhr (Vercel Cron)
+- Manuell: POST `/api/cron/refresh-knowledge-base`
+- Admin UI: `/dashboard/admin/chatbot-knowledge`
 
 ## STACK
 Next.js 15 + TypeScript + Firebase + Vercel
 
 **Dashboards**: `/dashboard/user/[uid]`, `/dashboard/company/[uid]`, `/dashboard/admin`
 
-**Collections**: users, companies, customers, auftraege, quotes, invoices, chats, notifications, escrowPayments, expenses, inventory, timeEntries, updates
+**Collections**: users, companies, customers, auftraege, quotes, invoices, chats, notifications, escrowPayments, expenses, inventory, timeEntries, updates, chatbot_knowledge, chatbot_website_content, chatbot_config
 
 ## CODE-PATTERNS
 

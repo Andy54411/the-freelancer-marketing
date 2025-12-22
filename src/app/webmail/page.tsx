@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { CreateEmailForm } from '@/components/email/CreateEmailForm';
 import { WebmailClient } from '@/components/webmail/WebmailClient';
 import { Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import { Logo } from '@/components/logo';
+import { HeroHeader } from '@/components/hero8-header';
 
 // Cookie helper functions
 const COOKIE_NAME = 'webmail_session';
@@ -177,37 +176,6 @@ export default function WebmailPage() {
           flex-direction: column;
         }
         
-        .webmail-header {
-          background: white;
-          padding: 0 40px;
-          height: 80px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          z-index: 100;
-        }
-        
-        .webmail-header-logo { display: flex; align-items: center; gap: 12px; }
-        .webmail-header-logo img { height: 50px; }
-        
-        .webmail-header-nav { display: flex; align-items: center; gap: 30px; }
-        .webmail-header-nav a {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-decoration: none;
-          color: #0d9488;
-          font-size: 12px;
-          gap: 4px;
-        }
-        .webmail-header-nav a svg { width: 24px; height: 24px; }
-        .webmail-header-nav a:hover { color: #0f766e; }
-        
         .webmail-main {
           flex: 1;
           display: flex;
@@ -215,6 +183,7 @@ export default function WebmailPage() {
           align-items: center;
           justify-content: center;
           padding: 100px 20px 60px;
+          margin-top: 60px;
         }
         
         .webmail-login-container { width: 100%; max-width: 500px; }
@@ -357,33 +326,12 @@ export default function WebmailPage() {
         }
         
         @media (max-width: 600px) {
-          .webmail-header { padding: 0 20px; }
           .webmail-login-title-big { font-size: 36px; }
         }
       `}</style>
 
       <div className="webmail-body">
-        <header className="webmail-header">
-          <div className="webmail-header-logo">
-            <Link href="/">
-              <Logo variant="default" />
-            </Link>
-          </div>
-          <nav className="webmail-header-nav">
-            <a href="https://taskilo.de/hilfe" target="_blank" rel="noopener noreferrer">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-              </svg>
-              <span>Hilfe</span>
-            </a>
-            <a href="#" onClick={(e) => e.preventDefault()}>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-              </svg>
-              <span>Deutsch</span>
-            </a>
-          </nav>
-        </header>
+        <HeroHeader />
 
         <main className="webmail-main">
           {showCreateForm ? (

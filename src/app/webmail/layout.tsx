@@ -54,6 +54,7 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<WebmailSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Load session from cookie
   useEffect(() => {
     const credentials = getCookie();
     if (credentials) {
@@ -65,6 +66,17 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
     }
     setIsLoading(false);
   }, []);
+
+  // Public pages that don't require authentication
+  const publicPaths = ['/webmail', '/webmail/pricing', '/webmail/pricing/checkout', '/webmail/pricing/success'];
+  const isPublicPage = publicPaths.some(path => pathname === path || pathname?.startsWith('/webmail/pricing'));
+
+  // Redirect to login if not authenticated and not on public page
+  useEffect(() => {
+    if (!isLoading && !session?.isAuthenticated && !isPublicPage) {
+      router.push('/webmail');
+    }
+  }, [isLoading, session?.isAuthenticated, pathname, router, isPublicPage]);
 
   const handleLogout = () => {
     deleteCookie();
@@ -84,14 +96,17 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // Show children directly for login page
-  if (isLoginPage) {
-    return <>{children}</>;
+  // Show children directly for login page and public pages
+  if (isLoginPage || (isPublicPage && !session?.isAuthenticated)) {
+    return (
+      <WebmailThemeProvider>
+        {children}
+      </WebmailThemeProvider>
+    );
   }
 
-  // Redirect to login if not authenticated
-  if (!session?.isAuthenticated && pathname !== '/webmail') {
-    router.push('/webmail');
+  // Show nothing while redirecting
+  if (!session?.isAuthenticated && !isPublicPage) {
     return null;
   }
 

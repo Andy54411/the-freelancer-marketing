@@ -16,6 +16,10 @@ import {
   Headphones,
   ChevronLeft,
   CheckCircle,
+  Mail,
+  Key,
+  Settings,
+  Inbox,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
@@ -31,10 +35,40 @@ interface QuickAction {
   icon: React.ElementType;
   label: string;
   message: string;
-  category: 'general' | 'billing' | 'technical' | 'account';
+  category: 'general' | 'billing' | 'technical' | 'account' | 'webmail';
 }
 
 const quickActions: QuickAction[] = [
+  // Webmail-Fragen (prominent oben)
+  {
+    id: 'webmail-setup',
+    icon: Mail,
+    label: 'Webmail einrichten',
+    message: 'Wie richte ich mein Taskilo Webmail-Konto ein?',
+    category: 'webmail',
+  },
+  {
+    id: 'webmail-password',
+    icon: Key,
+    label: 'E-Mail Passwort',
+    message: 'Wie kann ich mein Webmail-Passwort ändern oder zurücksetzen?',
+    category: 'webmail',
+  },
+  {
+    id: 'webmail-settings',
+    icon: Settings,
+    label: 'E-Mail Einstellungen',
+    message: 'Wie konfiguriere ich IMAP/SMTP für mein E-Mail-Programm?',
+    category: 'webmail',
+  },
+  {
+    id: 'webmail-storage',
+    icon: Inbox,
+    label: 'Speicherplatz',
+    message: 'Wie viel Speicherplatz habe ich und wie kann ich mehr bekommen?',
+    category: 'webmail',
+  },
+  // Allgemeine Taskilo-Fragen
   {
     id: 'order-status',
     icon: Clock,
@@ -60,14 +94,14 @@ const quickActions: QuickAction[] = [
     id: 'account-settings',
     icon: User,
     label: 'Kontoeinstellungen',
-    message: 'Wie kann ich meine Kontoeinstellungen aendern?',
+    message: 'Wie kann ich meine Kontoeinstellungen ändern?',
     category: 'account',
   },
   {
     id: 'find-provider',
     icon: HelpCircle,
     label: 'Dienstleister finden',
-    message: 'Wie finde ich den passenden Dienstleister fuer meinen Auftrag?',
+    message: 'Wie finde ich den passenden Dienstleister für meinen Auftrag?',
     category: 'general',
   },
   {
@@ -81,21 +115,21 @@ const quickActions: QuickAction[] = [
     id: 'invoice',
     icon: FileText,
     label: 'Rechnung anfordern',
-    message: 'Wie kann ich eine Rechnung fuer meinen Auftrag erhalten?',
+    message: 'Wie kann ich eine Rechnung für meinen Auftrag erhalten?',
     category: 'billing',
   },
   {
     id: 'human-support',
     icon: Headphones,
     label: 'Mit Mitarbeiter sprechen',
-    message: 'Ich moechte mit einem Support-Mitarbeiter sprechen.',
+    message: 'Ich möchte mit einem Support-Mitarbeiter sprechen.',
     category: 'general',
   },
 ];
 
 const initialMessage: Message = {
   role: 'model',
-  parts: [{ text: 'Hallo! Ich bin der Taskilo Support-Assistent. Wie kann ich Ihnen heute helfen?\n\nWaehlen Sie eine der haeufigen Fragen unten oder schreiben Sie mir direkt.' }],
+  parts: [{ text: 'Hallo! Ich bin der Taskilo Support-Assistent. Wie kann ich Ihnen heute helfen?\n\nWählen Sie eine der häufigen Fragen unten oder schreiben Sie mir direkt.' }],
 };
 
 const SupportChatbot = () => {
@@ -107,6 +141,7 @@ const SupportChatbot = () => {
   const [ticketCreated, setTicketCreated] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState('');
   const [userName, setUserName] = useState('');
+  const [problemDescription, setProblemDescription] = useState('');
   const [showEmailForm, setShowEmailForm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -158,12 +193,12 @@ const SupportChatbot = () => {
 
       const data = await response.json();
       
-      // Pruefe ob Eskalation zu Mitarbeiter gewuenscht
+      // Prüfe ob Eskalation zu Mitarbeiter gewünscht
       if (data.escalated || textToSend.toLowerCase().includes('mitarbeiter')) {
         setShowEmailForm(true);
         const escalationMessage: Message = {
           role: 'model',
-          parts: [{ text: 'Ich verstehe, dass Sie mit einem Mitarbeiter sprechen moechten. Bitte geben Sie Ihre E-Mail-Adresse an, damit wir ein Support-Ticket fuer Sie erstellen koennen.' }],
+          parts: [{ text: 'Ich verstehe, dass Sie mit einem Mitarbeiter sprechen möchten. Bitte geben Sie Ihre E-Mail-Adresse an, damit wir ein Support-Ticket für Sie erstellen können.' }],
         };
         setMessages(prev => [...prev, escalationMessage]);
       } else {
@@ -173,7 +208,7 @@ const SupportChatbot = () => {
     } catch {
       const errorMessage: Message = {
         role: 'model',
-        parts: [{ text: 'Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es spaeter erneut oder erstellen Sie ein Support-Ticket.' }],
+        parts: [{ text: 'Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut oder erstellen Sie ein Support-Ticket.' }],
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
@@ -187,7 +222,7 @@ const SupportChatbot = () => {
       setShowQuickActions(false);
       const escalationMessage: Message = {
         role: 'model',
-        parts: [{ text: 'Ich verbinde Sie mit unserem Support-Team. Bitte geben Sie Ihre Kontaktdaten an, damit wir uns bei Ihnen melden koennen.' }],
+        parts: [{ text: 'Ich verbinde Sie mit unserem Support-Team. Bitte geben Sie Ihre Kontaktdaten an, damit wir uns bei Ihnen melden können.' }],
       };
       setMessages(prev => [...prev, escalationMessage]);
     } else {
@@ -196,7 +231,7 @@ const SupportChatbot = () => {
   };
 
   const handleCreateTicket = async () => {
-    if (!userEmail.trim()) return;
+    if (!userEmail.trim() || !problemDescription.trim()) return;
 
     setIsLoading(true);
     
@@ -206,6 +241,9 @@ const SupportChatbot = () => {
       .map(m => `${m.role === 'user' ? 'Kunde' : 'Bot'}: ${m.parts[0].text}`)
       .join('\n');
 
+    // Erstelle die vollständige Beschreibung
+    const fullDescription = `**Problembeschreibung:**\n${problemDescription}\n\n---\n\n**Chat-Verlauf:**\n${chatContext}`;
+
     try {
       const response = await fetch('/api/support/create-ticket', {
         method: 'POST',
@@ -213,8 +251,10 @@ const SupportChatbot = () => {
         body: JSON.stringify({
           customerEmail: userEmail,
           customerName: userName || 'Unbekannt',
-          title: 'Support-Anfrage via Chat',
-          description: `Chat-Verlauf:\n\n${chatContext}`,
+          title: problemDescription.length > 50 
+            ? problemDescription.substring(0, 50) + '...' 
+            : problemDescription,
+          description: fullDescription,
           category: 'support',
           priority: 'medium',
           source: 'chatbot',
@@ -229,7 +269,7 @@ const SupportChatbot = () => {
         
         const successMessage: Message = {
           role: 'system',
-          parts: [{ text: `Ihr Support-Ticket wurde erstellt!\n\n**Ticket-Nummer:** ${data.ticketId}\n\nUnser Team wird sich innerhalb von 24 Stunden bei Ihnen melden. Sie erhalten eine Bestaetigung per E-Mail an ${userEmail}.` }],
+          parts: [{ text: `Ihr Support-Ticket wurde erstellt!\n\n**Ticket-Nummer:** ${data.ticketId}\n\nUnser Team wird sich innerhalb von 24 Stunden bei Ihnen melden. Sie erhalten eine Bestätigung per E-Mail an ${userEmail}.` }],
           ticketId: data.ticketId,
         };
         setMessages(prev => [...prev, successMessage]);
@@ -254,6 +294,7 @@ const SupportChatbot = () => {
     setShowEmailForm(false);
     setUserEmail('');
     setUserName('');
+    setProblemDescription('');
   };
 
   return (
@@ -263,7 +304,7 @@ const SupportChatbot = () => {
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="bg-[#14ad9f] text-white rounded-full p-4 shadow-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-transform transform hover:scale-110"
-          aria-label="Support Chat oeffnen"
+          aria-label="Support Chat öffnen"
         >
           {isOpen ? <X size={24} /> : <MessageSquare size={24} />}
         </button>
@@ -332,7 +373,11 @@ const SupportChatbot = () => {
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
                     }`}
                   >
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <div className={`prose prose-sm max-w-none ${
+                      msg.role === 'user' 
+                        ? 'prose-invert' 
+                        : 'dark:prose-invert prose-headings:text-gray-800 dark:prose-headings:text-gray-200 prose-strong:text-gray-800 dark:prose-strong:text-gray-200'
+                    }`}>
                       <Markdown>{msg.parts[0].text}</Markdown>
                     </div>
                   </div>
@@ -360,7 +405,7 @@ const SupportChatbot = () => {
             {/* Quick Actions */}
             {showQuickActions && !showEmailForm && (
               <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                <p className="text-xs text-gray-500 mb-2">Haeufige Fragen:</p>
+                <p className="text-xs text-gray-500 mb-2">Häufige Fragen:</p>
                 <div className="grid grid-cols-2 gap-2">
                   {quickActions.map(action => (
                     <button
@@ -378,7 +423,7 @@ const SupportChatbot = () => {
 
             {/* Email Form for Ticket Creation */}
             {showEmailForm && (
-              <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 space-y-3">
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 space-y-3 overflow-y-auto max-h-[300px]">
                 <input
                   type="text"
                   value={userName}
@@ -394,9 +439,22 @@ const SupportChatbot = () => {
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent dark:bg-gray-700 dark:text-white text-sm"
                   required
                 />
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    Problembeschreibung *
+                  </label>
+                  <textarea
+                    value={problemDescription}
+                    onChange={e => setProblemDescription(e.target.value)}
+                    placeholder="Bitte beschreiben Sie Ihr Problem oder Anliegen so detailliert wie möglich..."
+                    rows={4}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent dark:bg-gray-700 dark:text-white text-sm resize-none"
+                    required
+                  />
+                </div>
                 <button
                   onClick={handleCreateTicket}
-                  disabled={!userEmail.trim() || isLoading}
+                  disabled={!userEmail.trim() || !problemDescription.trim() || isLoading}
                   className="w-full bg-[#14ad9f] text-white py-2 px-4 rounded-md hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isLoading ? (

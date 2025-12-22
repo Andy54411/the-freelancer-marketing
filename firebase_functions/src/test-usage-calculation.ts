@@ -47,13 +47,25 @@ async function scanSubcollection(
 async function calculateUsageForCompany(companyId: string) {
   logger.info(`[Test] Scanning company: ${companyId}`);
 
+  // Alle Subcollections die zur Usage-Berechnung gehoeren
   const collections = [
+    // Kern-Business
     'customers', 'invoices', 'quotes', 'expenses', 'inventory',
     'employees', 'timeEntries', 'calendar_events', 'bookingAccounts',
     'reminders', 'reviews', 'servicePackages', 'settings',
     'stockMovements', 'transaction_links', 'projects', 'notifications',
     'stornoRechnungen', 'inlineInvoiceServices', 'kostenstellen',
-    'storage_subscriptions', 'emailCache',
+    'storage_subscriptions',
+    // E-Mail & Gmail
+    'emailCache', 'emailConfigs', 'gmail_sync_stats', 'gmail_sync_status',
+    // Personal & Zeiterfassung
+    'employeeActivityLogs', 'shifts',
+    // Jobs & Recruiting
+    'jobs', 'jobApplications',
+    // Advertising & Integrationen
+    'advertising_connections', 'campaign_drafts', 'integrations', 'integration_requests',
+    // Vorlagen & Events
+    'textTemplates', 'realtime_events',
   ];
 
   let totalSize = 0;

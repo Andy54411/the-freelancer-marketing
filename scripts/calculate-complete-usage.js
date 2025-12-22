@@ -24,12 +24,14 @@ if (!admin.apps.length) {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
         storageBucket: 'tilvo-f142f.firebasestorage.app',
+        databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
       });
       console.log('✅ Firebase Admin initialized with service account');
     } else {
       // Fallback: Application Default Credentials (works if gcloud is configured)
       admin.initializeApp({
         storageBucket: 'tilvo-f142f.firebasestorage.app',
+        databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
       });
       console.log('✅ Firebase Admin initialized with default credentials');
     }
@@ -41,6 +43,7 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
+const rtdb = admin.database();
 const bucket = admin.storage().bucket();
 
 /**
@@ -163,6 +166,58 @@ async function calculateStorageUsage(companyId) {
 }
 
 /**
+ * Berechnet Realtime Database Nutzung (Workspaces)
+ */
+async function calculateRealtimeDatabaseUsage(companyId) {
+  console.log(`\n🔄 Calculating Realtime Database (Workspaces)...`);
+
+  let totalSize = 0;
+  let totalItems = 0;
+  const breakdown = {
+    workspaces: { size: 0, count: 0 },
+    tasks: { size: 0, count: 0 },
+  };
+
+  try {
+    // Workspaces aus Realtime Database laden
+    const workspacesRef = rtdb.ref('workspaces');
+    const snapshot = await workspacesRef.once('value');
+    const allWorkspaces = snapshot.val() || {};
+
+    // Filtere Workspaces nach companyId
+    for (const [workspaceId, workspace] of Object.entries(allWorkspaces)) {
+      if (workspace && workspace.companyId === companyId) {
+        const workspaceJson = JSON.stringify(workspace);
+        const workspaceSize = Buffer.byteLength(workspaceJson, 'utf8');
+        
+        breakdown.workspaces.size += workspaceSize;
+        breakdown.workspaces.count++;
+        totalSize += workspaceSize;
+        totalItems++;
+
+        // Tasks innerhalb des Workspace zaehlen
+        if (workspace.tasks && typeof workspace.tasks === 'object') {
+          const tasksCount = Object.keys(workspace.tasks).length;
+          const tasksJson = JSON.stringify(workspace.tasks);
+          const tasksSize = Buffer.byteLength(tasksJson, 'utf8');
+          
+          breakdown.tasks.size += tasksSize;
+          breakdown.tasks.count += tasksCount;
+        }
+      }
+    }
+
+    console.log(`   ✅ Workspaces: ${breakdown.workspaces.count}, Tasks: ${breakdown.tasks.count}`);
+    console.log(`   ✅ Total Size: ${formatBytes(totalSize)}`);
+
+    return { totalSize, totalItems, breakdown };
+  } catch (error) {
+    console.error(`   ❌ Error calculating Realtime Database:`, error.message);
+    return { totalSize: 0, totalItems: 0, breakdown };
+  }
+}
+
+/**
  * Berechnet Firestore Datenbank Nutzung
  */
 async function calculateFirestoreUsage(companyId) {
@@ -172,9 +227,9 @@ async function calculateFirestoreUsage(companyId) {
   let totalDocs = 0;
   const breakdown = {};
 
-  // Wichtige Collections für Firmen
+  // Alle Subcollections die zur Usage-Berechnung gehoeren
   const collections = [
-    // Subcollections
+    // Subcollections - Kern-Business
     { name: 'customers', isSub: true },
     { name: 'invoices', isSub: true },
     { name: 'quotes', isSub: true },
@@ -184,7 +239,38 @@ async function calculateFirestoreUsage(companyId) {
     { name: 'timeEntries', isSub: true },
     { name: 'orderTimeTracking', isSub: true },
     { name: 'workspaces', isSub: true },
-    { name: 'emailCache', isSub: true }, // Gmail E-Mail Cache
+    { name: 'calendar_events', isSub: true },
+    { name: 'bookingAccounts', isSub: true },
+    { name: 'reminders', isSub: true },
+    { name: 'reviews', isSub: true },
+    { name: 'servicePackages', isSub: true },
+    { name: 'settings', isSub: true },
+    { name: 'stockMovements', isSub: true },
+    { name: 'transaction_links', isSub: true },
+    { name: 'projects', isSub: true },
+    { name: 'stornoRechnungen', isSub: true },
+    { name: 'inlineInvoiceServices', isSub: true },
+    { name: 'kostenstellen', isSub: true },
+    { name: 'storage_subscriptions', isSub: true },
+    // E-Mail & Gmail
+    { name: 'emailCache', isSub: true },
+    { name: 'emailConfigs', isSub: true },
+    { name: 'gmail_sync_stats', isSub: true },
+    { name: 'gmail_sync_status', isSub: true },
+    // Personal & Zeiterfassung
+    { name: 'employeeActivityLogs', isSub: true },
+    { name: 'shifts', isSub: true },
+    // Jobs & Recruiting
+    { name: 'jobs', isSub: true },
+    { name: 'jobApplications', isSub: true },
+    // Advertising & Integrationen
+    { name: 'advertising_connections', isSub: true },
+    { name: 'campaign_drafts', isSub: true },
+    { name: 'integrations', isSub: true },
+    { name: 'integration_requests', isSub: true },
+    // Vorlagen & Events
+    { name: 'textTemplates', isSub: true },
+    { name: 'realtime_events', isSub: true },
 
     // Root collections mit companyId Filter
     { name: 'auftraege', isSub: false },
@@ -222,8 +308,11 @@ async function calculateCompleteUsage(companyId) {
   // Firestore berechnen
   const firestore = await calculateFirestoreUsage(companyId);
 
-  // Gesamt
-  const totalUsage = storage.totalSize + firestore.totalSize;
+  // Realtime Database berechnen (Workspaces)
+  const realtimeDb = await calculateRealtimeDatabaseUsage(companyId);
+
+  // Gesamt (inkl. Realtime Database)
+  const totalUsage = storage.totalSize + firestore.totalSize + realtimeDb.totalSize;
 
   // Firestore aktualisieren
   try {
@@ -232,13 +321,17 @@ async function calculateCompleteUsage(companyId) {
     await companyRef.update({
       'usage.storageUsed': storage.totalSize,
       'usage.firestoreUsed': firestore.totalSize,
+      'usage.realtimeDbUsed': realtimeDb.totalSize,
       'usage.totalUsed': totalUsage,
       'usage.lastUpdate': admin.firestore.FieldValue.serverTimestamp(),
       'usage.storageBreakdown': storage.breakdown,
       'usage.firestoreBreakdown': firestore.breakdown,
+      'usage.realtimeDbBreakdown': realtimeDb.breakdown,
       'usage.stats': {
         totalFiles: storage.fileCount,
         totalDocuments: firestore.totalDocs,
+        totalWorkspaces: realtimeDb.breakdown.workspaces.count,
+        totalTasks: realtimeDb.breakdown.tasks.count,
       },
     });
 
@@ -257,6 +350,10 @@ async function calculateCompleteUsage(companyId) {
   console.log(`\nFirestore (Database):`);
   console.log(`  Documents: ${firestore.totalDocs}`);
   console.log(`  Size: ${formatBytes(firestore.totalSize)}`);
+  console.log(`\nRealtime Database (Workspaces):`);
+  console.log(`  Workspaces: ${realtimeDb.breakdown.workspaces.count}`);
+  console.log(`  Tasks: ${realtimeDb.breakdown.tasks.count}`);
+  console.log(`  Size: ${formatBytes(realtimeDb.totalSize)}`);
   console.log(`\nGESAMT:`);
   console.log(`  Combined: ${formatBytes(totalUsage)}`);
 
@@ -277,6 +374,7 @@ async function calculateCompleteUsage(companyId) {
   return {
     storage,
     firestore,
+    realtimeDb,
     totalUsage,
     limit,
     percentage,

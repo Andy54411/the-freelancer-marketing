@@ -2,12 +2,12 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
-import { CheckCircle2, Loader2, Mail, ArrowRight, Sun, Moon } from 'lucide-react';
+import { CheckCircle2, Loader2, Mail, ArrowRight } from 'lucide-react';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { HeroHeader } from '@/components/hero8-header';
 
 interface SessionData {
   customerEmail: string;
@@ -17,7 +17,7 @@ interface SessionData {
 }
 
 function SuccessContent() {
-  const { isDark, toggleTheme } = useWebmailTheme();
+  const { isDark } = useWebmailTheme();
   const searchParams = useSearchParams();
   const router = useRouter();
   const sessionId = searchParams.get('session_id');
@@ -90,33 +90,11 @@ function SuccessContent() {
 
   return (
     <div className={cn('min-h-screen transition-colors', isDark ? 'bg-[#202124]' : 'bg-[#f6f8fc]')}>
-      {/* Header */}
-      <header className={cn('border-b', isDark ? 'bg-[#202124] border-[#5f6368]' : 'bg-white border-gray-200')}>
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/webmail" className="flex items-center gap-3">
-            <Image
-              src="/images/Gemini_Generated_Image_pqjk64pqjk64pqjk.jpeg"
-              alt="Taskilo"
-              width={40}
-              height={40}
-              className="rounded-lg"
-            />
-            <span className={cn('font-semibold text-lg', isDark ? 'text-white' : 'text-gray-900')}>
-              Taskilo Mail
-            </span>
-          </Link>
-          <button
-            onClick={toggleTheme}
-            className={cn('p-2 rounded-full transition-colors', isDark ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-100 text-gray-600')}
-            aria-label={isDark ? 'Zu hellem Modus wechseln' : 'Zu dunklem Modus wechseln'}
-          >
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
-        </div>
-      </header>
+      {/* Unified Header */}
+      <HeroHeader />
 
       {/* Success Content */}
-      <main className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
+      <main className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)] mt-16">
         <div className={cn('rounded-2xl p-8 md:p-12 max-w-lg w-full text-center', isDark ? 'bg-[#292a2d]' : 'bg-white')}>
           {/* Success Icon */}
           <div className="mb-6">

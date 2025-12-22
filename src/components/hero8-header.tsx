@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { Logo } from './logo';
+import Image from 'next/image';
 import { Menu, X, User, LogOut, Settings, Star, Clock, FileUser, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import React, { Suspense, useEffect } from 'react';
@@ -43,6 +43,7 @@ export const HeroHeader = () => {
 
   const menuItems = [
     { name: 'Stellenanzeigen', href: '/jobs', labelKey: 'nav.jobs' },
+    { name: 'Preise', href: '/webmail/pricing', labelKey: 'nav.pricing' },
     { name: 'Über uns', href: '/about', labelKey: 'nav.about' },
     { name: 'Kontakt', href: '/contact', labelKey: 'nav.contact' },
   ];
@@ -134,14 +135,21 @@ export const HeroHeader = () => {
     <header>
       <nav
         data-state={menuState && 'active'}
-        className="bg-[#14ad9f]/95 fixed z-20 w-full border-b border-teal-700/30 backdrop-blur-sm shadow-lg"
+        className="bg-[#14ad9f]/95 fixed top-0 z-20 w-full border-b border-teal-700/30 backdrop-blur-sm shadow-lg"
       >
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex flex-wrap items-center justify-between py-3">
             {/* Left Section */}
             <div className="flex items-center justify-between w-full lg:w-auto gap-8">
-              <Link href="/" className="flex items-center space-x-2" aria-label="Taskilo Home">
-                <Logo variant="white" />
+              <Link href="/" className="flex items-center" aria-label="Taskilo Home">
+                <Image
+                  src="/images/taskilo-logo-white.png"
+                  alt="Taskilo"
+                  width={150}
+                  height={42}
+                  className="h-10 w-auto"
+                  priority
+                />
               </Link>
 
               {/* Mobile Menu Toggle */}
@@ -270,27 +278,16 @@ export const HeroHeader = () => {
                 ) : (
                   // Unauthenticated user
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <button
                       onClick={handleOpenLoginPopup}
-                      className="h-9 px-3 text-sm"
+                      className="h-9 px-4 text-sm font-medium rounded-md border border-white/60 text-white bg-transparent hover:bg-white/10 transition-colors"
                     >
                       Anmelden
-                    </Button>
+                    </button>
                     <Button
                       asChild
                       size="sm"
-                      className="bg-white/20 hover:bg-white/30 text-white font-semibold h-9 px-3 text-sm"
-                    >
-                      <Link href="/register/company">
-                        Mit Taskilo starten
-                      </Link>
-                    </Button>
-                    <Button
-                      asChild
-                      size="sm"
-                      className="bg-white hover:bg-gray-100 text-[#14ad9f] font-semibold h-9 px-3 text-sm ml-4"
+                      className="bg-white hover:bg-gray-100 text-[#14ad9f] font-semibold h-9 px-3 text-sm"
                     >
                       <Link href="/webmail">
                         <Mail className="w-4 h-4 mr-1" />

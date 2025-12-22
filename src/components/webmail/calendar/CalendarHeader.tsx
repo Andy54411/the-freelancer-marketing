@@ -104,11 +104,11 @@ export function CalendarHeader({
         
         <Link href="/webmail" className="flex items-center gap-3">
           <Image 
-            src="/images/Gemini_Generated_Image_pqjk64pqjk64pqjk.jpeg" 
+            src="/images/taskilo-logo-transparent.png" 
             alt="Taskilo" 
-            width={40} 
-            height={40} 
-            className="rounded-lg"
+            width={120} 
+            height={34} 
+            className="h-8 w-auto"
           />
           <span className={`text-xl font-normal ${isDark ? 'text-white' : 'text-gray-800'}`}>Kalender</span>
         </Link>

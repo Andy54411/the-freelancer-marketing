@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     if (!db) {
       return NextResponse.json(
-        { success: false, error: 'Datenbank nicht verfuegbar' },
+        { success: false, error: 'Datenbank nicht verfügbar' },
         { status: 500 }
       );
     }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       updatedAtTimestamp: FieldValue.serverTimestamp(),
     });
 
-    // Benachrichtigung fuer Admin erstellen
+    // Benachrichtigung für Admin erstellen
     await db.collection('notifications').add({
       type: 'new_support_ticket',
       title: 'Neues Support-Ticket',
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
 
     if (!db) {
       return NextResponse.json(
-        { success: false, error: 'Datenbank nicht verfuegbar' },
+        { success: false, error: 'Datenbank nicht verfügbar' },
         { status: 500 }
       );
     }
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
 
       const ticket = ticketDoc.data();
       
-      // Nur nicht-interne Kommentare zurueckgeben
+      // Nur nicht-interne Kommentare zurückgeben
       const publicComments = (ticket?.comments || []).filter(
         (c: { isInternal?: boolean }) => !c.isInternal
       );

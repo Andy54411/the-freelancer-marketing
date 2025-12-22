@@ -41,11 +41,11 @@ export function SubPageHeader({
         >
           {/* Taskilo Logo */}
           <Image
-            src="/images/Gemini_Generated_Image_pqjk64pqjk64pqjk.jpeg"
+            src="/images/taskilo-logo-transparent.png"
             alt="Taskilo"
-            width={40}
-            height={40}
-            className="rounded-lg"
+            width={120}
+            height={34}
+            className="h-8 w-auto"
           />
         </Link>
 

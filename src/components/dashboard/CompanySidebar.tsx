@@ -1098,10 +1098,28 @@ export default function CompanySidebar({
                     onClick={async () => {
                       // ✅ Gmail-Verbindungsprüfung für E-Mail-Menü (mit userId)
                       if (item.value === 'email') {
-                        console.log('🔍 E-Mail Icon geklickt, prüfe Gmail-Status für User:', effectiveUserId);
+                        console.log('🔍 E-Mail Icon geklickt, prüfe Email-Status für User:', effectiveUserId);
                         try {
+                          // Prüfe zuerst Webmail-Status
+                          const webmailUrl = `/api/company/${uid}/webmail-connect`;
+                          console.log('📡 Webmail API-Aufruf:', webmailUrl);
+                          
+                          const webmailResponse = await fetch(webmailUrl);
+                          if (webmailResponse.ok) {
+                            const webmailData = await webmailResponse.json();
+                            console.log('📋 Webmail status response:', webmailData);
+                            
+                            if (webmailData.connected) {
+                              console.log('✅ Webmail verbunden, navigiere zum Posteingang');
+                              onNavigate('email-inbox', 'emails');
+                              onToggleExpanded(item.value);
+                              return;
+                            }
+                          }
+                          
+                          // Fallback: Prüfe Gmail-Status
                           const apiUrl = `/api/company/${uid}/gmail-auth-status?userId=${effectiveUserId}`;
-                          console.log('📡 API-Aufruf:', apiUrl);
+                          console.log('📡 Gmail API-Aufruf:', apiUrl);
 
                           const response = await fetch(apiUrl);
                           console.log('📨 Response Status:', response.status, response.statusText);
@@ -1144,13 +1162,13 @@ export default function CompanySidebar({
                             onNavigate('email-integration', 'email-integration');
                             return;
                           } else {
-                            console.log('✅ Gültige Verbindung, navigiere zum Posteingang');
+                            console.log('✅ Gültige Gmail Verbindung, navigiere zum Posteingang');
                             onNavigate('email-inbox', 'emails');
                             onToggleExpanded(item.value);
                             return;
                           }
                         } catch (error) {
-                          console.error('💥 Gmail connection check failed:', error);
+                          console.error('💥 Email connection check failed:', error);
                           console.error('💥 Error details:', {
                             name: (error as Error).name,
                             message: (error as Error).message,

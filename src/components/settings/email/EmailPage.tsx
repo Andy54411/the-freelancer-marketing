@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -13,14 +13,27 @@ import { EmailSettingsCard } from './EmailSettingsCard';
 import { EmailConfig, EmailSettings, EmailTemplate } from './types';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface WebmailConfig {
+  id: string;
+  email: string;
+  provider: 'taskilo-webmail';
+  status: 'connected' | 'error' | 'disconnected';
+  connectedAt: string;
+  subscriptionPlan?: 'free' | 'domain' | 'pro' | 'business';
+  displayName?: string;
+}
+
 interface EmailPageProps {
   companyId: string;
 }
 
 export function EmailPage({ companyId }: EmailPageProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { user } = useAuth();
   const [emailConfig, setEmailConfig] = useState<EmailConfig | null>(null);
+  const [webmailConfig, setWebmailConfig] = useState<WebmailConfig | null>(null);
+  const [isConnectingWebmail, setIsConnectingWebmail] = useState(false);
   const [emailSettings, setEmailSettings] = useState<EmailSettings>({
     defaultFrom: '',
     signature: '',
@@ -32,22 +45,31 @@ export function EmailPage({ companyId }: EmailPageProps) {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Die tatsächliche User-ID für die E-Mail-Konfiguration
+  // Die tatsaechliche User-ID fuer die E-Mail-Konfiguration
   // Mitarbeiter haben ihre eigene Config, Inhaber nutzen die Company-ID
   const effectiveUserId = user?.uid || companyId;
 
-  // URL Parameter für Fehlermeldungen
+  // URL Parameter fuer Fehlermeldungen
   const watchError = searchParams?.get('watchError');
 
   // Lade E-Mail-Konfiguration, Einstellungen und Vorlagen
   useEffect(() => {
     const loadData = async () => {
       try {
-        // E-Mail-Konfiguration laden - mit userId für benutzer-spezifische Config
+        // E-Mail-Konfiguration laden - mit userId fuer benutzer-spezifische Config
         const configResponse = await fetch(`/api/company/${companyId}/email-config?userId=${effectiveUserId}`);
         if (configResponse.ok) {
           const config = await configResponse.json();
           setEmailConfig(config);
+        }
+
+        // Webmail-Konfiguration laden
+        const webmailResponse = await fetch(`/api/company/${companyId}/webmail-connect`);
+        if (webmailResponse.ok) {
+          const webmailData = await webmailResponse.json();
+          if (webmailData.connected && webmailData.config) {
+            setWebmailConfig(webmailData.config);
+          }
         }
 
         // E-Mail-Einstellungen laden
@@ -64,7 +86,7 @@ export function EmailPage({ companyId }: EmailPageProps) {
           setTemplates(templates);
         }
       } catch (error) {
-        console.error('Fehler beim Laden der Daten:', error);
+        // Fehler beim Laden werden ignoriert
       } finally {
         setIsLoading(false);
       }
@@ -75,7 +97,7 @@ export function EmailPage({ companyId }: EmailPageProps) {
     }
   }, [companyId, effectiveUserId]);
 
-  // Gmail verbinden - mit userId für benutzer-spezifische Verbindung
+  // Gmail verbinden - mit userId fuer benutzer-spezifische Verbindung
   const handleGmailConnect = () => {
     window.location.href = `/api/gmail/connect?uid=${companyId}&userId=${effectiveUserId}`;
   };
@@ -91,9 +113,65 @@ export function EmailPage({ companyId }: EmailPageProps) {
         setEmailConfig(null);
       }
     } catch (error) {
-      console.error('Fehler beim Trennen von Gmail:', error);
+      // Fehler beim Trennen werden ignoriert
     }
   };
+
+  // Webmail verbinden
+  const handleWebmailConnect = useCallback(async (email: string, password: string) => {
+    setIsConnectingWebmail(true);
+    try {
+      const response = await fetch(`/api/company/${companyId}/webmail-connect`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Verbindung fehlgeschlagen');
+      }
+      
+      if (data.config) {
+        setWebmailConfig(data.config);
+        
+        // Starte initialen E-Mail-Sync im Hintergrund
+        fetch(`/api/company/${companyId}/webmail-sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        }).catch(() => {
+          // Sync-Fehler ignorieren
+        });
+        
+        // Weiterleitung zum Posteingang
+        window.location.href = `/dashboard/company/${companyId}/emails`;
+      }
+    } catch (error) {
+      // Fehler weiterwerfen damit der Dialog ihn anzeigen kann
+      throw error;
+    } finally {
+      setIsConnectingWebmail(false);
+    }
+  }, [companyId]);
+
+  // Webmail trennen
+  const handleWebmailDisconnect = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/company/${companyId}/webmail-connect`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        setWebmailConfig(null);
+      }
+    } catch (error) {
+      // Fehler beim Trennen werden ignoriert
+    }
+  }, [companyId]);
 
   // Einstellungen speichern
   const handleSaveSettings = async (settings: EmailSettings) => {
@@ -110,7 +188,6 @@ export function EmailPage({ companyId }: EmailPageProps) {
         setEmailSettings(settings);
       }
     } catch (error) {
-      console.error('Fehler beim Speichern der Einstellungen:', error);
       throw error;
     }
   };
@@ -221,8 +298,12 @@ export function EmailPage({ companyId }: EmailPageProps) {
                 <EmailProviderGrid
                   companyId={companyId}
                   emailConfigs={emailConfig ? [emailConfig] : []}
+                  webmailConfig={webmailConfig ?? undefined}
                   onDeleteConfig={handleGmailDisconnect}
                   onConnectGmail={handleGmailConnect}
+                  onConnectWebmail={handleWebmailConnect}
+                  onDisconnectWebmail={handleWebmailDisconnect}
+                  isConnectingWebmail={isConnectingWebmail}
                 />
               </CardContent>
             </Card>

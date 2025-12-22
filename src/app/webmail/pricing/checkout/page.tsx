@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import { 
   ArrowLeft, 
@@ -11,8 +10,6 @@ import {
   Lock, 
   Mail, 
   User, 
-  Sun, 
-  Moon,
   Loader2,
   AlertCircle,
   Globe,
@@ -23,14 +20,30 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { z } from 'zod';
+import { HeroHeader } from '@/components/hero8-header';
 
-const PLANS = {
+interface PlanType {
+  id: string;
+  name: string;
+  price: number;
+  priceYearly: number;
+  hasDomain: boolean;
+  hasEmailAddon: boolean;
+  emailAddonPrice: number;
+  emailAddonPriceYearly: number;
+  features: string[];
+}
+
+const PLANS: Record<string, PlanType> = {
   domain: {
     id: 'domain',
     name: 'Eigene Domain',
     price: 1.99,
     priceYearly: 19.99,
     hasDomain: true,
+    hasEmailAddon: false,
+    emailAddonPrice: 0,
+    emailAddonPriceYearly: 0,
     features: [
       'FreeMail-Postfach inklusive',
       'Eigene Wunsch-Domain',
@@ -45,6 +58,9 @@ const PLANS = {
     price: 2.99,
     priceYearly: 29.99,
     hasDomain: false,
+    hasEmailAddon: false,
+    emailAddonPrice: 0,
+    emailAddonPriceYearly: 0,
     features: [
       '10 GB E-Mail-Speicher',
       '25 GB Cloud-Speicher',
@@ -55,17 +71,23 @@ const PLANS = {
   },
   business: {
     id: 'business',
-    name: 'BusinessMail',
-    price: 4.99,
-    priceYearly: 49.99,
-    hasDomain: true,
+    name: 'Taskilo Business',
+    price: 29.99,
+    priceYearly: 299.99,
+    hasDomain: false,
+    hasEmailAddon: true,
+    emailAddonPrice: 2.99,
+    emailAddonPriceYearly: 29.99,
     features: [
-      '50 GB E-Mail-Speicher',
-      '100 GB Cloud-Speicher',
-      'Eigene Wunsch-Domain',
-      '500 E-Mail-Adressen',
+      'Company Dashboard',
+      'Rechnungen & Angebote (GoBD)',
+      'Geschäftspartner (CRM)',
+      'Zeiterfassung',
+      'Personal & Recruiting',
+      'Workspace',
+      'Banking Integration',
+      'DATEV Export',
       'Premium Support',
-      'Team-Funktionen',
     ],
   },
 };
@@ -80,7 +102,7 @@ const CheckoutSchema = z.object({
 type BillingCycle = 'monthly' | 'yearly';
 
 export default function WebmailCheckoutPage() {
-  const { isDark, toggleTheme } = useWebmailTheme();
+  const { isDark } = useWebmailTheme();
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -89,6 +111,7 @@ export default function WebmailCheckoutPage() {
   const plan = PLANS[planId];
 
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
+  const [includeEmail, setIncludeEmail] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -109,7 +132,12 @@ export default function WebmailCheckoutPage() {
     return null;
   }
 
-  const currentPrice = billingCycle === 'monthly' ? plan.price : plan.priceYearly;
+  // Calculate prices with optional email addon
+  const basePrice = billingCycle === 'monthly' ? plan.price : plan.priceYearly;
+  const emailAddonPrice = plan.hasEmailAddon && includeEmail 
+    ? (billingCycle === 'monthly' ? plan.emailAddonPrice : plan.emailAddonPriceYearly) 
+    : 0;
+  const currentPrice = basePrice + (emailAddonPrice || 0);
   const savings = billingCycle === 'yearly' ? (plan.price * 12 - plan.priceYearly).toFixed(2) : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -174,54 +202,22 @@ export default function WebmailCheckoutPage() {
         isDark ? 'bg-[#202124]' : 'bg-[#f6f8fc]'
       )}
     >
-      {/* Header */}
-      <header
-        className={cn(
-          'sticky top-0 z-50 border-b backdrop-blur-sm',
-          isDark
-            ? 'bg-[#202124]/95 border-[#5f6368]'
-            : 'bg-white/95 border-gray-200'
-        )}
-      >
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/webmail/pricing"
-              className={cn(
-                'flex items-center gap-2 transition-colors',
-                isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
-              )}
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span>Zurueck zu den Tarifen</span>
-            </Link>
-          </div>
+      {/* Unified Header */}
+      <HeroHeader />
 
-          <div className="flex items-center gap-4">
-            <Link href="/webmail" className="flex items-center gap-3">
-              <Image
-                src="/images/Gemini_Generated_Image_pqjk64pqjk64pqjk.jpeg"
-                alt="Taskilo"
-                width={40}
-                height={40}
-                className="rounded-lg"
-              />
-            </Link>
-            <button
-              onClick={toggleTheme}
-              className={cn(
-                'p-2 rounded-full transition-colors',
-                isDark ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
-              )}
-              aria-label={isDark ? 'Zu hellem Modus wechseln' : 'Zu dunklem Modus wechseln'}
-            >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-          </div>
-        </div>
-      </header>
+      <main className="max-w-5xl mx-auto px-4 py-12 mt-16">
+        {/* Back Link */}
+        <Link
+          href="/webmail/pricing"
+          className={cn(
+            'inline-flex items-center gap-2 mb-6 transition-colors',
+            isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+          )}
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Zurueck zu den Tarifen</span>
+        </Link>
 
-      <main className="max-w-5xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Order Form */}
           <div className="lg:col-span-3">
@@ -290,6 +286,52 @@ export default function WebmailCheckoutPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* Email Add-on Option (only for business plan) */}
+                {plan.hasEmailAddon && (
+                  <div>
+                    <Label className={cn('mb-3 block', isDark ? 'text-gray-300' : 'text-gray-700')}>
+                      E-Mail & Domain hinzufügen
+                    </Label>
+                    <button
+                      type="button"
+                      onClick={() => setIncludeEmail(!includeEmail)}
+                      className={cn(
+                        'w-full p-4 rounded-xl border-2 transition-all text-left flex items-center gap-4',
+                        includeEmail
+                          ? 'border-teal-500 bg-teal-500/10'
+                          : isDark
+                            ? 'border-[#5f6368] hover:border-[#8f9398]'
+                            : 'border-gray-200 hover:border-gray-300'
+                      )}
+                    >
+                      <div className={cn(
+                        'w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0',
+                        includeEmail 
+                          ? 'bg-teal-500 border-teal-500' 
+                          : isDark ? 'border-[#5f6368]' : 'border-gray-300'
+                      )}>
+                        {includeEmail && <Check className="w-4 h-4 text-white" />}
+                      </div>
+                      <div className="flex-1">
+                        <div className={cn('font-semibold', isDark ? 'text-white' : 'text-gray-900')}>
+                          ProMail-Postfach hinzufügen
+                        </div>
+                        <div className={cn('text-sm', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                          10 GB E-Mail, 25 GB Cloud, eigene Domain, werbefreies Postfach
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-teal-500 font-semibold">
+                          +{billingCycle === 'monthly' ? plan.emailAddonPrice?.toFixed(2) : plan.emailAddonPriceYearly?.toFixed(2)} EUR
+                        </div>
+                        <div className={cn('text-xs', isDark ? 'text-gray-500' : 'text-gray-400')}>
+                          /{billingCycle === 'monthly' ? 'Monat' : 'Jahr'}
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                )}
 
                 {/* Personal Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -457,6 +499,24 @@ export default function WebmailCheckoutPage() {
                     {plan.name}
                   </span>
                   <span className={cn('font-semibold', isDark ? 'text-white' : 'text-gray-900')}>
+                    {(billingCycle === 'monthly' ? plan.price : plan.priceYearly).toFixed(2)} EUR
+                  </span>
+                </div>
+                {plan.hasEmailAddon && includeEmail && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className={cn('text-sm', isDark ? 'text-gray-300' : 'text-gray-600')}>
+                      + ProMail-Postfach
+                    </span>
+                    <span className={cn('text-sm font-medium', isDark ? 'text-gray-300' : 'text-gray-600')}>
+                      {(billingCycle === 'monthly' ? plan.emailAddonPrice : plan.emailAddonPriceYearly)?.toFixed(2)} EUR
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-2 border-t border-dashed mt-2">
+                  <span className={cn('font-semibold', isDark ? 'text-white' : 'text-gray-900')}>
+                    Gesamt
+                  </span>
+                  <span className="text-teal-500 font-bold text-lg">
                     {currentPrice.toFixed(2)} EUR
                   </span>
                 </div>

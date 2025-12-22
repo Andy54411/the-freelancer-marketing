@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { Check, Users, Shield, Zap, ArrowRight, Sun, Moon, Globe, Search, Loader2 } from 'lucide-react';
+import { Check, Users, Shield, Zap, ArrowRight, Search, Loader2 } from 'lucide-react';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { HeroHeader } from '@/components/hero8-header';
 
 interface PlanFeature {
   text: string;
@@ -59,7 +59,7 @@ const WEBMAIL_PLANS: Plan[] = [
     priceUnit: '/Monat',
     features: [
       { text: '1 GB E-Mail-Speicher', description: 'und bis zu 20 MB Anhänge' },
-      { text: '2 GB Cloud-Speicher', description: 'Platz für ca. 400 Fotos' },
+      { text: '2 GB Cloud-Speicher', description: 'Erweiterbar ab 0,99€/GB' },
       { text: '2 E-Mail-Adressen', description: '@taskilo.de' },
       { text: 'Webmail-Zugang', description: 'E-Mail, Kalender, Aufgaben' },
       { text: 'Standard Support' },
@@ -92,7 +92,7 @@ const WEBMAIL_PLANS: Plan[] = [
     popular: true,
     features: [
       { text: '10 GB E-Mail-Speicher', description: 'und bis zu 50 MB Anhänge' },
-      { text: '25 GB Cloud-Speicher', description: 'Platz für ca. 5.000 Fotos' },
+      { text: '25 GB Cloud-Speicher', description: 'Erweiterbar ab 0,99€/GB' },
       { text: '10 E-Mail-Adressen', description: '@taskilo.de' },
       { text: 'Werbefreies Postfach', description: 'Keine Werbebanner' },
       { text: 'Priorität Support', description: 'Schnellere Antwortzeiten' },
@@ -102,19 +102,26 @@ const WEBMAIL_PLANS: Plan[] = [
   },
   {
     id: 'business',
-    name: 'BusinessMail',
-    badge: 'Für Unternehmen',
-    price: 4.99,
+    name: 'Taskilo Business',
+    badge: 'Komplettlösung',
+    price: 29.99,
     priceUnit: '/Monat',
     features: [
-      { text: '50 GB E-Mail-Speicher', description: 'und bis zu 100 MB Anhänge' },
-      { text: '100 GB Cloud-Speicher', description: 'Platz für ca. 20.000 Fotos' },
-      { text: 'Eigene Wunsch-Domain', description: 'z.B. mail@ihre-firma.com' },
-      { text: '500 E-Mail-Adressen', description: 'unter Ihrer Domain' },
+      { text: 'Company Dashboard', description: 'Komplette Unternehmensverwaltung' },
+      { text: 'Rechnungen & Angebote', description: 'GoBD-konforme Buchhaltung mit E-Rechnung' },
+      { text: 'Geschäftspartner (CRM)', description: 'Kundenverwaltung & Kommunikation' },
+      { text: 'Zeiterfassung', description: 'Arbeitszeiten digital erfassen' },
+      { text: 'Personal & Recruiting', description: 'Mitarbeiter, Dienstplan, Gehaltsabrechnung' },
+      { text: 'Workspace', description: 'Projekte, Aufgaben & Dokumente' },
+      { text: 'Banking & Zahlungen', description: 'Revolut Business, Konten & Kassenbuch' },
+      { text: 'Online-Zahlungen', description: 'Kartenzahlungen via Revolut Merchant' },
+      { text: 'Lagerbestand', description: 'Inventar & Bestandsverwaltung' },
+      { text: 'Taskilo Advertising', description: 'Google, Meta & LinkedIn Ads' },
+      { text: 'WhatsApp Business', description: 'Kundenkommunikation per WhatsApp' },
+      { text: 'DATEV Export', description: 'Nahtlose Steuerberater-Anbindung' },
       { text: 'Premium Support', description: 'Telefonischer Support' },
-      { text: 'Team-Funktionen', description: 'Gemeinsame Kalender & Aufgaben' },
     ],
-    ctaText: 'Jetzt starten',
+    ctaText: 'Kostenlos testen',
     ctaHref: '/webmail/pricing/checkout?plan=business',
   },
 ];
@@ -458,7 +465,7 @@ function DomainSearchSection({ isDark }: { isDark: boolean }) {
 }
 
 export default function WebmailPricingPage() {
-  const { isDark, toggleTheme } = useWebmailTheme();
+  const { isDark } = useWebmailTheme();
 
   return (
     <div
@@ -467,77 +474,11 @@ export default function WebmailPricingPage() {
         isDark ? 'bg-[#202124]' : 'bg-[#f6f8fc]'
       )}
     >
-      {/* Header */}
-      <header
-        className={cn(
-          'sticky top-0 z-50 border-b backdrop-blur-sm',
-          isDark
-            ? 'bg-[#202124]/95 border-[#5f6368]'
-            : 'bg-white/95 border-gray-200'
-        )}
-      >
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/webmail" className="flex items-center gap-3">
-              <Image
-                src="/images/Gemini_Generated_Image_pqjk64pqjk64pqjk.jpeg"
-                alt="Taskilo"
-                width={40}
-                height={40}
-                className="rounded-lg"
-              />
-              <span className={cn('font-semibold text-lg', isDark ? 'text-white' : 'text-gray-900')}>
-                Taskilo Mail
-              </span>
-            </Link>
-            <div className={cn('h-6 w-px', isDark ? 'bg-[#5f6368]' : 'bg-gray-300')} />
-            <span className={cn('text-lg font-medium', isDark ? 'text-gray-300' : 'text-gray-600')}>
-              Unsere Tarife
-            </span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className={cn(
-                'p-2 rounded-full transition-colors',
-                isDark ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
-              )}
-              aria-label={isDark ? 'Zu hellem Modus wechseln' : 'Zu dunklem Modus wechseln'}
-            >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-
-            {/* Language Selector */}
-            <button
-              className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-lg transition-colors',
-                isDark ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
-              )}
-            >
-              <Globe className="w-4 h-4" />
-              <span className="text-sm">Deutsch</span>
-            </button>
-
-            {/* Login Link */}
-            <Link
-              href="/webmail"
-              className={cn(
-                'px-4 py-2 rounded-lg font-medium transition-colors',
-                isDark
-                  ? 'bg-teal-600 text-white hover:bg-teal-700'
-                  : 'bg-teal-500 text-white hover:bg-teal-600'
-              )}
-            >
-              Anmelden
-            </Link>
-          </div>
-        </div>
-      </header>
+      {/* Unified Header */}
+      <HeroHeader />
 
       {/* Hero Section */}
-      <section className="py-16 px-4">
+      <section className="py-16 px-4 mt-16">
         <div className="max-w-4xl mx-auto text-center">
           <h1
             className={cn(
@@ -546,7 +487,7 @@ export default function WebmailPricingPage() {
             )}
           >
             Wählen Sie Ihren{' '}
-            <span className="text-teal-500">E-Mail-Tarif</span>
+            <span className="text-teal-500">Taskilo-Tarif</span>
           </h1>
           <p
             className={cn(
@@ -554,15 +495,15 @@ export default function WebmailPricingPage() {
               isDark ? 'text-gray-400' : 'text-gray-600'
             )}
           >
-            Von kostenlosem E-Mail-Postfach bis zu Premium-Funktionen mit mehr Speicher,
-            eigener Domain und werbefreiem Postfach. Finden Sie den passenden Tarif.
+            Von kostenlosem E-Mail-Postfach bis zur kompletten Business-Lösung mit 
+            Rechnungswesen, CRM, Zeiterfassung und mehr. Finden Sie den passenden Tarif.
           </p>
         </div>
       </section>
 
       {/* Pricing Cards - 4 columns on large screens */}
       <section className="pb-12 px-4">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
           {WEBMAIL_PLANS.map((plan) => (
             <PlanCard key={plan.id} plan={plan} isDark={isDark} />
           ))}
@@ -576,74 +517,135 @@ export default function WebmailPricingPage() {
       <section
         className={cn(
           'py-16 px-4',
-          isDark ? 'bg-[#292a2d]' : 'bg-white'
+          isDark ? 'bg-[#292a2d]' : 'bg-linear-to-b from-white to-gray-50'
         )}
       >
         <div className="max-w-6xl mx-auto">
-          <h2
-            className={cn(
-              'text-2xl font-bold text-center mb-12',
-              isDark ? 'text-white' : 'text-gray-900'
-            )}
-          >
-            Alle Tarife im Vergleich
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-4">
+            <span className={isDark ? 'text-white' : 'text-gray-800'}>Alle Tarife </span>
+            <span className="text-teal-500">im Vergleich</span>
           </h2>
+          <p className={cn('text-center mb-12', isDark ? 'text-gray-400' : 'text-gray-500')}>
+            Finden Sie den passenden Tarif für Ihre Anforderungen
+          </p>
 
-          <div className={cn('rounded-xl overflow-x-auto border', isDark ? 'border-[#5f6368]' : 'border-gray-200')}>
-            <table className="w-full min-w-[600px]">
-              <thead>
-                <tr className={cn(isDark ? 'bg-[#303134]' : 'bg-gray-50')}>
-                  <th className={cn('px-4 py-4 text-left font-semibold', isDark ? 'text-white' : 'text-gray-900')}>
-                    Feature
-                  </th>
-                  {WEBMAIL_PLANS.map((plan) => (
-                    <th
-                      key={plan.id}
-                      className={cn(
-                        'px-4 py-4 text-center font-semibold whitespace-nowrap',
-                        isDark ? 'text-white' : 'text-gray-900'
-                      )}
-                    >
-                      {plan.name}
+          <div className={cn(
+            'rounded-2xl overflow-hidden shadow-lg',
+            isDark ? 'bg-[#303134] border border-[#5f6368]' : 'bg-white border border-gray-100'
+          )}>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px]">
+                <thead>
+                  <tr className={cn(
+                    'border-b-2',
+                    isDark ? 'bg-[#252528] border-teal-500/30' : 'bg-linear-to-r from-teal-500 to-teal-600'
+                  )}>
+                    <th className={cn(
+                      'px-6 py-5 text-left font-semibold',
+                      isDark ? 'text-teal-400' : 'text-white'
+                    )}>
+                      Feature
                     </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { feature: 'E-Mail-Speicher', values: ['1 GB', '1 GB', '10 GB', '50 GB'] },
-                  { feature: 'Cloud-Speicher', values: ['2 GB', '2 GB', '25 GB', '100 GB'] },
-                  { feature: 'Max. Anhangsgröße', values: ['20 MB', '20 MB', '50 MB', '100 MB'] },
-                  { feature: 'E-Mail-Adressen', values: ['2', '100', '10', '500'] },
-                  { feature: 'Eigene Domain', values: [false, true, false, true] },
-                  { feature: 'Werbefrei', values: [false, false, true, true] },
-                  { feature: 'Kalender & Aufgaben', values: [true, true, true, true] },
-                  { feature: 'Video-Meetings', values: [false, false, true, true] },
-                  { feature: 'Team-Funktionen', values: [false, false, false, true] },
-                  { feature: 'Priorität Support', values: [false, false, true, true] },
-                ].map((row, idx) => (
+                    {WEBMAIL_PLANS.map((plan, idx) => (
+                      <th
+                        key={plan.id}
+                        className={cn(
+                          'px-4 py-5 text-center font-semibold whitespace-nowrap',
+                          isDark ? 'text-white' : 'text-white',
+                          idx === WEBMAIL_PLANS.length - 1 && 'bg-white/10'
+                        )}
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          <span>{plan.name}</span>
+                          <span className={cn(
+                            'text-xs font-normal',
+                            isDark ? 'text-gray-400' : 'text-white/80'
+                          )}>
+                            {plan.price === 0 ? 'Kostenlos' : `${plan.price.toFixed(2)}€/Mon.`}
+                          </span>
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { feature: 'E-Mail-Speicher', values: ['1 GB', '1 GB', '10 GB', '+2,99€/Mon.*'], note: true },
+                    { feature: 'Cloud-Speicher', values: ['2 GB', '2 GB', '25 GB', 'inkl.*'] },
+                    { feature: 'Max. Anhangsgröße', values: ['20 MB', '20 MB', '50 MB', 'inkl.*'] },
+                    { feature: 'E-Mail-Adressen', values: ['2', '100', '10', 'inkl.*'] },
+                    { feature: 'Eigene Domain', values: [false, true, false, 'inkl.*'] },
+                    { feature: 'Werbefrei', values: [false, false, true, 'inkl.*'] },
+                    { feature: 'Kalender & Aufgaben', values: [true, true, true, true] },
+                  { feature: 'Company Dashboard', values: [false, false, false, true], highlight: true },
+                  { feature: 'Rechnungen & Angebote (GoBD)', values: [false, false, false, true], highlight: true },
+                  { feature: 'Geschäftspartner (CRM)', values: [false, false, false, true], highlight: true },
+                  { feature: 'Zeiterfassung', values: [false, false, false, true], highlight: true },
+                  { feature: 'Personal & Recruiting', values: [false, false, false, true], highlight: true },
+                  { feature: 'Workspace (Projekte & Aufgaben)', values: [false, false, false, true], highlight: true },
+                  { feature: 'Banking & Revolut Business', values: [false, false, false, true], highlight: true },
+                  { feature: 'Online-Zahlungen (Revolut Merchant)', values: [false, false, false, true], highlight: true },
+                  { feature: 'Lagerbestand', values: [false, false, false, true], highlight: true },
+                  { feature: 'Zusätzlicher Cloud-Speicher', values: ['Buchbar', 'Buchbar', 'Buchbar', 'Buchbar'] },
+                  { feature: 'Taskilo Advertising', values: [false, false, false, true], highlight: true },
+                  { feature: 'WhatsApp Business', values: [false, false, false, true], highlight: true },
+                  { feature: 'DATEV Export', values: [false, false, false, true], highlight: true },
+                  { feature: 'Premium Support', values: [false, false, true, true] },
+                ].map((row, idx, arr) => (
                   <tr
                     key={idx}
                     className={cn(
-                      'border-t',
-                      isDark ? 'border-[#5f6368]' : 'border-gray-200'
+                      'border-t transition-colors duration-200',
+                      isDark ? 'border-[#5f6368]' : 'border-gray-100',
+                      (row as { highlight?: boolean }).highlight 
+                        ? (isDark ? 'bg-teal-500/10 hover:bg-teal-500/15' : 'bg-teal-50/70 hover:bg-teal-50')
+                        : (isDark ? 'hover:bg-[#35363a]' : 'hover:bg-gray-50'),
+                      idx === arr.length - 1 && 'border-b-0'
                     )}
                   >
-                    <td className={cn('px-4 py-4', isDark ? 'text-gray-300' : 'text-gray-700')}>
+                    <td className={cn(
+                      'px-6 py-4', 
+                      isDark ? 'text-gray-300' : 'text-gray-700',
+                      (row as { highlight?: boolean }).highlight && (isDark ? 'text-teal-400 font-medium' : 'text-teal-700 font-medium')
+                    )}>
                       {row.feature}
                     </td>
                     {row.values.map((value, vIdx) => (
-                      <td key={vIdx} className="px-4 py-4 text-center">
+                      <td 
+                        key={vIdx} 
+                        className={cn(
+                          'px-4 py-4 text-center',
+                          vIdx === row.values.length - 1 && (isDark ? 'bg-teal-500/5' : 'bg-teal-50/30')
+                        )}
+                      >
                         {typeof value === 'boolean' ? (
                           value ? (
-                            <Check className="w-5 h-5 text-teal-500 mx-auto" />
+                            <div className="flex items-center justify-center">
+                              <div className={cn(
+                                'w-6 h-6 rounded-full flex items-center justify-center',
+                                isDark ? 'bg-teal-500/20' : 'bg-teal-100'
+                              )}>
+                                <Check className="w-4 h-4 text-teal-500" />
+                              </div>
+                            </div>
                           ) : (
-                            <span className={cn('text-sm', isDark ? 'text-gray-500' : 'text-gray-400')}>
-                              -
+                            <span className={cn('text-lg', isDark ? 'text-gray-600' : 'text-gray-300')}>
+                              —
                             </span>
                           )
+                        ) : value === '+2,99€/Mon.*' ? (
+                          <span className={cn(
+                            'inline-flex items-center text-xs px-3 py-1.5 rounded-full font-medium', 
+                            isDark ? 'bg-teal-500/20 text-teal-400' : 'bg-teal-100 text-teal-700'
+                          )}>
+                            +2,99€/Mon.*
+                          </span>
+                        ) : value === 'inkl.*' ? (
+                          <span className={cn('text-xs font-medium', isDark ? 'text-teal-400' : 'text-teal-600')}>
+                            inkl.*
+                          </span>
                         ) : (
-                          <span className={cn('font-medium text-sm', isDark ? 'text-white' : 'text-gray-900')}>
+                          <span className={cn('font-semibold text-sm', isDark ? 'text-white' : 'text-gray-800')}>
                             {value}
                           </span>
                         )}
@@ -654,23 +656,34 @@ export default function WebmailPricingPage() {
               </tbody>
             </table>
           </div>
+          </div>
+          <p className={cn('text-xs mt-6 text-center', isDark ? 'text-gray-500' : 'text-gray-500')}>
+            * Optional: ProMail-Postfach (E-Mail, Cloud, Domain) kann für einmalig +2,99€/Monat zum Taskilo Business Tarif hinzugebucht werden.
+          </p>
         </div>
       </section>
 
       {/* Trust Section */}
-      <section className="py-16 px-4">
+      <section className={cn('py-16 px-4', isDark ? 'bg-[#292a2d]' : 'bg-white')}>
         <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-xl md:text-2xl font-bold text-center mb-12">
+            <span className={isDark ? 'text-white' : 'text-gray-800'}>Warum </span>
+            <span className="text-teal-500">Taskilo?</span>
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="flex flex-col items-center">
+            <div className={cn(
+              'flex flex-col items-center p-6 rounded-xl transition-all duration-200',
+              isDark ? 'hover:bg-[#35363a]' : 'hover:bg-gray-50 hover:shadow-md'
+            )}>
               <div
                 className={cn(
                   'w-16 h-16 rounded-full flex items-center justify-center mb-4',
-                  isDark ? 'bg-teal-500/20' : 'bg-teal-50'
+                  isDark ? 'bg-teal-500/20' : 'bg-linear-to-br from-teal-100 to-teal-50'
                 )}
               >
                 <Shield className="w-8 h-8 text-teal-500" />
               </div>
-              <h3 className={cn('font-semibold mb-2', isDark ? 'text-white' : 'text-gray-900')}>
+              <h3 className={cn('font-semibold mb-2', isDark ? 'text-white' : 'text-gray-800')}>
                 DSGVO-konform
               </h3>
               <p className={cn('text-sm', isDark ? 'text-gray-400' : 'text-gray-600')}>
@@ -678,16 +691,19 @@ export default function WebmailPricingPage() {
               </p>
             </div>
 
-            <div className="flex flex-col items-center">
+            <div className={cn(
+              'flex flex-col items-center p-6 rounded-xl transition-all duration-200',
+              isDark ? 'hover:bg-[#35363a]' : 'hover:bg-gray-50 hover:shadow-md'
+            )}>
               <div
                 className={cn(
                   'w-16 h-16 rounded-full flex items-center justify-center mb-4',
-                  isDark ? 'bg-teal-500/20' : 'bg-teal-50'
+                  isDark ? 'bg-teal-500/20' : 'bg-linear-to-br from-teal-100 to-teal-50'
                 )}
               >
                 <Zap className="w-8 h-8 text-teal-500" />
               </div>
-              <h3 className={cn('font-semibold mb-2', isDark ? 'text-white' : 'text-gray-900')}>
+              <h3 className={cn('font-semibold mb-2', isDark ? 'text-white' : 'text-gray-800')}>
                 Schnell & Zuverlässig
               </h3>
               <p className={cn('text-sm', isDark ? 'text-gray-400' : 'text-gray-600')}>
@@ -695,16 +711,19 @@ export default function WebmailPricingPage() {
               </p>
             </div>
 
-            <div className="flex flex-col items-center">
+            <div className={cn(
+              'flex flex-col items-center p-6 rounded-xl transition-all duration-200',
+              isDark ? 'hover:bg-[#35363a]' : 'hover:bg-gray-50 hover:shadow-md'
+            )}>
               <div
                 className={cn(
                   'w-16 h-16 rounded-full flex items-center justify-center mb-4',
-                  isDark ? 'bg-teal-500/20' : 'bg-teal-50'
+                  isDark ? 'bg-teal-500/20' : 'bg-linear-to-br from-teal-100 to-teal-50'
                 )}
               >
                 <Users className="w-8 h-8 text-teal-500" />
               </div>
-              <h3 className={cn('font-semibold mb-2', isDark ? 'text-white' : 'text-gray-900')}>
+              <h3 className={cn('font-semibold mb-2', isDark ? 'text-white' : 'text-gray-800')}>
                 Deutscher Support
               </h3>
               <p className={cn('text-sm', isDark ? 'text-gray-400' : 'text-gray-600')}>

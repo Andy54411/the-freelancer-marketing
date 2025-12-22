@@ -91,6 +91,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     'kundenkommunikation',
     'perfektes-angebot',
     'rechnungsstellung-tipps',
+    // Neue Blog-Artikel
+    'digitalisierung-kleinunternehmen',
+    'e-rechnung-leitfaden',
+    'preisinformationen',
+    'zahlungsablaeufe',
   ].map(slug => ({
     url: `${baseUrl}/blog/${slug}`,
     lastModified: new Date(),
@@ -98,5 +103,106 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
-  return [...staticPages, ...categoryPages, ...blogPages];
+  // Feature-Seiten
+  const featurePages = [
+    'accounting',
+    'advertising',
+    'banking',
+    'business',
+    'calendar',
+    'email',
+    'employee-records',
+    'hr-management',
+    'inventory',
+    'recruiting',
+    'time-tracking',
+    'workspace',
+  ].map(feature => ({
+    url: `${baseUrl}/features/${feature}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
+
+  // Webmail-Seiten
+  const webmailPages = [
+    {
+      url: `${baseUrl}/webmail`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/webmail/pricing`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    },
+  ];
+
+  // Weitere wichtige Seiten
+  const additionalPages = [
+    {
+      url: `${baseUrl}/about`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/contact`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/careers`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/press`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/cookies`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly' as const,
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/nutzungsbedingungen`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly' as const,
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/privatsphaere`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly' as const,
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/newsletter`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/blog`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/features`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+  ];
+
+  return [...staticPages, ...categoryPages, ...blogPages, ...featurePages, ...webmailPages, ...additionalPages];
 }
