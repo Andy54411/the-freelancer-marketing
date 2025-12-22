@@ -21,12 +21,27 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const sessionId = searchParams.get('session_id');
+  const subscriptionId = searchParams.get('subscription_id');
 
   const [loading, setLoading] = useState(true);
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Revolut Subscription Flow - subscription_id
+    if (subscriptionId) {
+      // Subscription erfolgreich - zeige Erfolgsseite
+      setSessionData({
+        customerEmail: '',
+        planName: 'Taskilo ProMail',
+        amount: 299,
+        interval: 'month',
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Legacy Stripe Flow - session_id
     if (!sessionId) {
       router.push('/webmail/pricing');
       return;
@@ -50,7 +65,7 @@ function SuccessContent() {
     };
 
     fetchSession();
-  }, [sessionId, router]);
+  }, [sessionId, subscriptionId, router]);
 
   if (loading) {
     return (
