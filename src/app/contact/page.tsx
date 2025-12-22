@@ -1,12 +1,13 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { HeroHeader } from '@/components/hero8-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Mail, Phone, MapPin, Clock } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, HelpCircle, Rocket, BookOpen, CheckCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function ContactPage() {
@@ -134,236 +135,276 @@ export default function ContactPage() {
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         <HeroHeader />
-        <main className="py-20">
+        <main className="py-20 pt-32">
           <div className="max-w-6xl mx-auto px-6">
-            <div className="text-center mb-12">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-center mb-12"
+            >
               <h1 className="text-4xl font-bold text-white mb-4 drop-shadow-lg">Kontakt</h1>
               <p className="text-xl text-white/90 max-w-2xl mx-auto drop-shadow-md">
                 Haben Sie Fragen oder benötigen Sie Hilfe? Wir sind für Sie da und helfen Ihnen
                 gerne weiter.
               </p>
-            </div>
+            </motion.div>
 
             <div className="grid lg:grid-cols-2 gap-12">
               {/* Kontakt-Informationen */}
               <div className="space-y-8">
-                <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-white/20">
-                  <CardHeader>
-                    <CardTitle className="text-2xl text-gray-900">Kontakt-Informationen</CardTitle>
-                    <CardDescription>Erreichen Sie uns über die folgenden Kanäle</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="flex items-start gap-4">
-                      <Mail className="h-6 w-6 text-[#14ad9f] mt-1" />
-                      <div>
-                        <h3 className="font-semibold text-gray-900">E-Mail</h3>
-                        <p className="text-gray-600">info@taskilo.de</p>
-                        <p className="text-gray-600">support@taskilo.de</p>
-                        <p className="text-gray-600">legal@taskilo.de</p>
-                      </div>
-                    </div>
+                <motion.div
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                >
+                  <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-0">
+                    <CardHeader>
+                      <CardTitle className="text-2xl text-gray-900">Kontakt-Informationen</CardTitle>
+                      <CardDescription>Erreichen Sie uns über die folgenden Kanäle</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {[
+                        {
+                          icon: Mail,
+                          title: 'E-Mail',
+                          content: ['info@taskilo.de', 'support@taskilo.de', 'legal@taskilo.de'],
+                        },
+                        {
+                          icon: Phone,
+                          title: 'Telefon',
+                          content: ['Auf Anfrage per E-Mail'],
+                          extra: 'Mo-Fr: 9:00-18:00 Uhr',
+                        },
+                        {
+                          icon: MapPin,
+                          title: 'Adresse',
+                          content: [
+                            'The Freelancer Marketing Ltd.',
+                            'Sinasi Bei, 69 KINGS RESORT BLOCK C, Flat/Office A2',
+                            '8015, Paphos Cyprus',
+                            'Registrierungsnummer: HE 458650',
+                          ],
+                        },
+                        {
+                          icon: Clock,
+                          title: 'Öffnungszeiten',
+                          content: ['Montag - Freitag: 9:00 - 18:00 Uhr', 'Samstag - Sonntag: Geschlossen'],
+                        },
+                      ].map((item, index) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
+                          className="flex items-start gap-4 group"
+                        >
+                          <motion.div
+                            whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                            transition={{ duration: 0.5 }}
+                          >
+                            <item.icon className="h-6 w-6 text-[#14ad9f] mt-1" />
+                          </motion.div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{item.title}</h3>
+                            {item.content.map((line, i) => (
+                              <p key={i} className="text-gray-600">{line}</p>
+                            ))}
+                            {item.extra && <p className="text-sm text-gray-500">{item.extra}</p>}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </motion.div>
 
-                    <div className="flex items-start gap-4">
-                      <Phone className="h-6 w-6 text-[#14ad9f] mt-1" />
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Telefon</h3>
-                        <p className="text-gray-600">Auf Anfrage per E-Mail</p>
-                        <p className="text-sm text-gray-500">Mo-Fr: 9:00-18:00 Uhr</p>
+                <motion.div
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                >
+                  <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-0">
+                    <CardHeader>
+                      <CardTitle className="text-xl text-gray-900">Schnelle Hilfe</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 gap-3">
+                        {[
+                          { href: '/help', icon: BookOpen, text: 'Hilfe-Center besuchen' },
+                          { href: '/faq', icon: HelpCircle, text: 'Häufig gestellte Fragen' },
+                          { href: '/coming-soon', icon: Rocket, text: 'Neue Features' },
+                        ].map((link, index) => (
+                          <motion.div
+                            key={index}
+                            whileHover={{ x: 5, scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start bg-white/80 border-gray-200 hover:bg-[#14ad9f]/10 hover:border-[#14ad9f] group"
+                              asChild
+                            >
+                              <a href={link.href} className="flex items-center gap-2">
+                                <link.icon className="h-5 w-5 text-[#14ad9f]" />
+                                {link.text}
+                              </a>
+                            </Button>
+                          </motion.div>
+                        ))}
                       </div>
-                    </div>
-
-                    <div className="flex items-start gap-4">
-                      <MapPin className="h-6 w-6 text-[#14ad9f] mt-1" />
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Adresse</h3>
-                        <p className="text-gray-600">
-                          The Freelancer Marketing Ltd.
-                          <br />
-                          Sinasi Bei, 69 KINGS RESORT BLOCK C, Flat/Office A2
-                          <br />
-                          8015, Paphos Cyprus
-                          <br />
-                          Registrierungsnummer: HE 458650
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-4">
-                      <Clock className="h-6 w-6 text-[#14ad9f] mt-1" />
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Öffnungszeiten</h3>
-                        <div className="text-gray-600 space-y-1">
-                          <p>Montag - Freitag: 9:00 - 18:00 Uhr</p>
-                          <p>Samstag - Sonntag: Geschlossen</p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-white/20">
-                  <CardHeader>
-                    <CardTitle className="text-xl text-gray-900">Schnelle Hilfe</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 gap-3">
-                      <Button
-                        variant="outline"
-                        className="justify-start bg-white/80 border-white/30 hover:bg-white/90"
-                        asChild
-                      >
-                        <a href="/help" className="flex items-center gap-2">
-                          📚 Hilfe-Center besuchen
-                        </a>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="justify-start bg-white/80 border-white/30 hover:bg-white/90"
-                        asChild
-                      >
-                        <a href="/faq" className="flex items-center gap-2">
-                          ❓ Häufig gestellte Fragen
-                        </a>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="justify-start bg-white/80 border-white/30 hover:bg-white/90"
-                        asChild
-                      >
-                        <a href="/coming-soon" className="flex items-center gap-2">
-                          🚀 Neue Features
-                        </a>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </div>
 
               {/* Kontakt-Formular */}
-              <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-white/20">
-                <CardHeader>
-                  <CardTitle className="text-2xl text-gray-900">Nachricht senden</CardTitle>
-                  <CardDescription>
-                    Schreiben Sie uns eine Nachricht und wir melden uns schnellstmöglich bei Ihnen
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isSubmitted ? (
-                    <div className="text-center py-8">
-                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-2xl text-green-600">✓</span>
-                      </div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                        Nachricht gesendet!
-                      </h3>
-                      <p className="text-gray-600">
-                        Vielen Dank für Ihre Nachricht. Wir werden uns innerhalb von 24 Stunden bei
-                        Ihnen melden.
-                      </p>
-                      <Button
-                        className="mt-4 bg-[#14ad9f] hover:bg-teal-700"
-                        onClick={() => setIsSubmitted(false)}
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+              >
+                <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-0">
+                  <CardHeader>
+                    <CardTitle className="text-2xl text-gray-900">Nachricht senden</CardTitle>
+                    <CardDescription>
+                      Schreiben Sie uns eine Nachricht und wir melden uns schnellstmöglich bei Ihnen
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isSubmitted ? (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-center py-8"
                       >
-                        Neue Nachricht senden
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      {error && (
-                        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="text-red-600 text-sm">{error}</p>
-                        </div>
-                      )}
-                      <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="name">Name *</Label>
-                            <Input
-                              id="name"
-                              name="name"
-                              value={formData.name}
-                              onChange={handleChange}
-                              required
-                              placeholder="Ihr vollständiger Name"
-                              className="bg-white/80 border-white/30"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="email">E-Mail *</Label>
-                            <Input
-                              id="email"
-                              name="email"
-                              type="email"
-                              value={formData.email}
-                              onChange={handleChange}
-                              required
-                              placeholder="ihre.email@beispiel.de"
-                              className="bg-white/80 border-white/30"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="subject">Betreff *</Label>
-                          <Input
-                            id="subject"
-                            name="subject"
-                            value={formData.subject}
-                            onChange={handleChange}
-                            required
-                            placeholder="Worum geht es?"
-                            className="bg-white/80 border-white/30"
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="message">Nachricht *</Label>
-                          <Textarea
-                            id="message"
-                            name="message"
-                            value={formData.message}
-                            onChange={handleChange}
-                            required
-                            rows={6}
-                            placeholder="Beschreiben Sie Ihr Anliegen..."
-                            className="bg-white/80 border-white/30"
-                          />
-                        </div>
-
-                        {/* Spam-Schutz Captcha */}
-                        <div>
-                          <Label htmlFor="captcha">Spam-Schutz: {captcha.question} *</Label>
-                          <Input
-                            id="captcha"
-                            type="number"
-                            value={captchaInput}
-                            onChange={e => setCaptchaInput(e.target.value)}
-                            required
-                            placeholder="Antwort eingeben"
-                            className="bg-white/80 border-white/30"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">
-                            Bitte lösen Sie die einfache Rechenaufgabe zum Schutz vor Spam.
-                          </p>
-                        </div>
-
-                        <Button
-                          type="submit"
-                          className="w-full bg-[#14ad9f] hover:bg-teal-700"
-                          disabled={isLoading}
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: 'spring', stiffness: 200, damping: 10 }}
+                          className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"
                         >
-                          {isLoading ? 'Wird gesendet...' : 'Nachricht senden'}
-                        </Button>
-
-                        <p className="text-sm text-gray-500">
-                          * Pflichtfelder. Ihre Daten werden vertraulich behandelt und nicht an
-                          Dritte weitergegeben.
+                          <CheckCircle className="h-8 w-8 text-green-600" />
+                        </motion.div>
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                          Nachricht gesendet!
+                        </h3>
+                        <p className="text-gray-600">
+                          Vielen Dank für Ihre Nachricht. Wir werden uns innerhalb von 24 Stunden bei
+                          Ihnen melden.
                         </p>
-                      </form>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
+                          <Button
+                            className="mt-4 bg-[#14ad9f] hover:bg-teal-700"
+                            onClick={() => setIsSubmitted(false)}
+                          >
+                            Neue Nachricht senden
+                          </Button>
+                        </motion.div>
+                      </motion.div>
+                    ) : (
+                      <>
+                        {error && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg"
+                          >
+                            <p className="text-red-600 text-sm">{error}</p>
+                          </motion.div>
+                        )}
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="name">Name *</Label>
+                              <Input
+                                id="name"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                required
+                                placeholder="Ihr vollständiger Name"
+                                className="bg-white border-gray-200 focus:border-[#14ad9f]"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="email">E-Mail *</Label>
+                              <Input
+                                id="email"
+                                name="email"
+                                type="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                required
+                                placeholder="ihre.email@beispiel.de"
+                                className="bg-white border-gray-200 focus:border-[#14ad9f]"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label htmlFor="subject">Betreff *</Label>
+                            <Input
+                              id="subject"
+                              name="subject"
+                              value={formData.subject}
+                              onChange={handleChange}
+                              required
+                              placeholder="Worum geht es?"
+                              className="bg-white border-gray-200 focus:border-[#14ad9f]"
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor="message">Nachricht *</Label>
+                            <Textarea
+                              id="message"
+                              name="message"
+                              value={formData.message}
+                              onChange={handleChange}
+                              required
+                              rows={6}
+                              placeholder="Beschreiben Sie Ihr Anliegen..."
+                              className="bg-white border-gray-200 focus:border-[#14ad9f]"
+                            />
+                          </div>
+
+                          {/* Spam-Schutz Captcha */}
+                          <div>
+                            <Label htmlFor="captcha">Spam-Schutz: {captcha.question} *</Label>
+                            <Input
+                              id="captcha"
+                              type="number"
+                              value={captchaInput}
+                              onChange={e => setCaptchaInput(e.target.value)}
+                              required
+                              placeholder="Antwort eingeben"
+                              className="bg-white border-gray-200 focus:border-[#14ad9f]"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Bitte lösen Sie die einfache Rechenaufgabe zum Schutz vor Spam.
+                            </p>
+                          </div>
+
+                          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                            <Button
+                              type="submit"
+                              className="w-full bg-[#14ad9f] hover:bg-teal-700"
+                              disabled={isLoading}
+                            >
+                              {isLoading ? 'Wird gesendet...' : 'Nachricht senden'}
+                            </Button>
+                          </motion.div>
+
+                          <p className="text-sm text-gray-500">
+                            * Pflichtfelder. Ihre Daten werden vertraulich behandelt und nicht an
+                            Dritte weitergegeben.
+                          </p>
+                        </form>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
             </div>
           </div>
         </main>

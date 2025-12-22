@@ -38,7 +38,15 @@ async function getJob(id: string) {
   }
 
   if (!jobData) return null;
-  return { id: jobDoc.id, ...jobData } as JobPosting;
+  
+  // Convert Firestore Timestamps to ISO strings
+  return {
+    id: jobDoc.id,
+    ...jobData,
+    createdAt: jobData.createdAt?.toDate?.()?.toISOString() || jobData.createdAt,
+    postedAt: jobData.postedAt?.toDate?.()?.toISOString() || jobData.postedAt,
+    updatedAt: jobData.updatedAt?.toDate?.()?.toISOString() || jobData.updatedAt,
+  } as JobPosting;
 }
 
 export async function generateMetadata({
@@ -142,7 +150,16 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
       .get();
 
     similarJobs = similarJobsSnapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }) as JobPosting)
+      .map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+          postedAt: data.postedAt?.toDate?.()?.toISOString() || data.postedAt,
+          updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+        } as JobPosting;
+      })
       .filter(j => j.id !== job.id)
       .slice(0, 4);
   } catch (e) {

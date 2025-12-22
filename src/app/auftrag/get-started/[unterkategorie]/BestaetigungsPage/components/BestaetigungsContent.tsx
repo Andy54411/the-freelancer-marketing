@@ -5,9 +5,7 @@ import { useSearchParams, useParams } from 'next/navigation';
 import React, { useMemo } from 'react';
 import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
 import AnbieterDetailsFetcher from './AnbieterDetailsFetcher';
-import { PAGE_LOG, PAGE_WARN, PAGE_ERROR, TRUST_AND_SUPPORT_FEE_EUR } from '@/lib/constants';
-// FEHLER BEHOBEN: 'format' zu den Importen hinzugefügt
-import { differenceInCalendarDays, parseISO, isValid as isValidDate, format } from 'date-fns';
+import { differenceInCalendarDays, parseISO, isValid as isValidDate } from 'date-fns';
 
 function parseDurationStringToHours(durationStr?: string): number | null {
   if (!durationStr || typeof durationStr !== 'string') {
@@ -137,40 +135,40 @@ export default function BestaetigungsContent({
     if (!postalCodeJob) missingParams.push('Postleitzahl');
 
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen p-4 text-center text-red-600">
-        <FiAlertCircle size={48} className="mb-4" />
-        <p className="text-lg font-semibold">Fehlende Informationen</p>
-        <p>Notwendige Parameter: {missingParams.join(', ')}.</p>
+      <div className="flex flex-col justify-center items-center py-12 text-center">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+          <FiAlertCircle size={32} className="text-red-600" />
+        </div>
+        <p className="text-lg font-semibold text-gray-900 mb-2">Fehlende Informationen</p>
+        <p className="text-gray-600">Notwendige Parameter: {missingParams.join(', ')}.</p>
       </div>
     );
   }
 
   if (durationError) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen p-4 text-center text-red-600">
-        <FiAlertCircle size={48} className="mb-4" />
-        <p className="text-lg font-semibold">Fehler bei Auftragsdetails</p>
-        <p>{durationError}</p>
+      <div className="flex flex-col justify-center items-center py-12 text-center">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+          <FiAlertCircle size={32} className="text-red-600" />
+        </div>
+        <p className="text-lg font-semibold text-gray-900 mb-2">Fehler bei Auftragsdetails</p>
+        <p className="text-gray-600">{durationError}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-6">Auftragsdetails</h2>
-
-      <AnbieterDetailsFetcher
-        anbieterId={anbieterId}
-        unterkategorie={unterkategorie}
-        postalCodeJob={postalCodeJob}
-        initialJobDateFrom={initialJobDateFrom}
-        initialJobDateTo={initialJobDateTo}
-        initialJobTime={initialJobTime}
-        initialJobDescription={initialJobDescription}
-        initialJobDurationString={decodedAuftragsDauer}
-        onPriceCalculated={onPriceCalculated}
-        onDetailsChange={onDetailsChange}
-      />
-    </div>
+    <AnbieterDetailsFetcher
+      anbieterId={anbieterId}
+      unterkategorie={unterkategorie}
+      postalCodeJob={postalCodeJob}
+      initialJobDateFrom={initialJobDateFrom}
+      initialJobDateTo={initialJobDateTo}
+      initialJobTime={initialJobTime}
+      initialJobDescription={initialJobDescription}
+      initialJobDurationString={decodedAuftragsDauer}
+      onPriceCalculated={onPriceCalculated}
+      onDetailsChange={onDetailsChange}
+    />
   );
 }

@@ -2959,6 +2959,35 @@ service cloud.firestore {
       allow delete: if isSupportStaff();
     }
 
+    // --- Webmail Subscriptions Collection ---
+    match /webmailSubscriptions/{subscriptionId} {
+      // User kann eigene Subscriptions lesen
+      allow read: if request.auth != null && 
+                  (resource.data.userId == request.auth.uid || isSupportStaff());
+      
+      // Nur System/Support kann schreiben (API Routes)
+      allow write: if isSupportStaff();
+    }
+
+    // --- Webmail Invoices Collection ---
+    match /webmailInvoices/{invoiceId} {
+      // User kann eigene Rechnungen lesen
+      allow read: if request.auth != null && 
+                  (resource.data.userId == request.auth.uid || isSupportStaff());
+      
+      // Nur System/Support kann schreiben
+      allow write: if isSupportStaff();
+    }
+
+    // --- Global Settings Collection (System-Konfiguration) ---
+    match /settings/{settingId} {
+      // Jeder authentifizierte User kann lesen
+      allow read: if request.auth != null;
+      
+      // Nur Support/Admin kann schreiben
+      allow write: if isSupportStaff();
+    }
+
 
 
   }

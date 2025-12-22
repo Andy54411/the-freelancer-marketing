@@ -1,11 +1,29 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react'; // useEffect hinzugefügt
+import React, { useState, useCallback, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import ProgressBar from '@/components/ProgressBar';
-import { FiX, FiInfo, FiCheck } from 'react-icons/fi';
+import { X, Info, Check, ArrowRight, Wrench, Home, Truck, UtensilsCrossed, Monitor, Megaphone, Scale, Heart, GraduationCap, Palette, Calendar, PawPrint } from 'lucide-react';
 import PopupModal from '@/app/register/company/step4/components/PopupModal';
 import { useRegistration } from '@/contexts/Registration-Context';
+
+// Icon mapping for categories
+const categoryIcons: { [key: string]: React.ReactNode } = {
+  'Handwerk': <Wrench className="w-8 h-8" />,
+  'Haushalt & Reinigung': <Home className="w-8 h-8" />,
+  'Transport & Logistik': <Truck className="w-8 h-8" />,
+  'Hotel & Gastronomie': <UtensilsCrossed className="w-8 h-8" />,
+  'IT & Technik': <Monitor className="w-8 h-8" />,
+  'Marketing & Vertrieb': <Megaphone className="w-8 h-8" />,
+  'Finanzen & Recht': <Scale className="w-8 h-8" />,
+  'Gesundheit & Wellness': <Heart className="w-8 h-8" />,
+  'Bildung & Nachhilfe': <GraduationCap className="w-8 h-8" />,
+  'Kunst & Kultur': <Palette className="w-8 h-8" />,
+  'Veranstaltungen & Events': <Calendar className="w-8 h-8" />,
+  'Tiere & Pflanzen': <PawPrint className="w-8 h-8" />,
+};
 
 // --- Daten für die Kategorien und Unterkategorien ---
 interface CardData {
@@ -203,57 +221,54 @@ const SubcategorySelectionModal: React.FC<SubcategorySelectionModalProps> = ({
   onClose,
   isOpen,
 }) => {
-  // NEU: useEffect zur Steuerung des Body-Scrollens
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden'; // Scrollen des Body deaktivieren
+      document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = ''; // Scrollen des Body wieder aktivieren
+      document.body.style.overflow = '';
     }
-    // Cleanup-Funktion: Stellt sicher, dass overflow beim Unmounten zurückgesetzt wird
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isOpen]); // Abhängigkeit von isOpen
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    // Overlay für den Hintergrund des Modals (mit Weichzeichner)
-    <div className="fixed inset-0 bg-transparent bg-opacity-30 backdrop-blur-md flex justify-center items-center z-50 p-4">
-      {/* KORREKTUR: max-w-lg zu max-w-2xl erhöht, um mehr Platz zu schaffen */}
-      <div className="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-2xl border border-gray-200 relative">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 text-center">
-          Unterkategorien für &quot;{category.title}&quot;
+    <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.2 }}
+        className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-2xl border border-gray-100 relative"
+      >
+        <div className="flex items-center justify-center mb-2">
+          <div className="p-3 bg-[#14ad9f]/10 rounded-xl text-[#14ad9f]">
+            {categoryIcons[category.skill]}
+          </div>
+        </div>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6 text-center">
+          {category.title}
         </h2>
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
         >
-          <FiX className="text-2xl" />
+          <X className="w-5 h-5" />
         </button>
 
-        {/* KORREKTUR: Von grid zu flex, um dynamische Breiten zu ermöglichen */}
-        <div className="flex flex-wrap justify-center gap-4 max-h-80 overflow-y-auto pr-2">
+        <div className="flex flex-wrap justify-center gap-3 max-h-80 overflow-y-auto pr-2">
           {category.subcategories.map(subcat => (
             <button
               key={subcat}
-              onClick={() => {
-                onSelect(subcat);
-              }}
-              className={`
-                px-6 py-4 border-2 rounded-lg text-center transition-all duration-200
-                overflow-hidden // Behält Überlauf bei, lässt Text aber umbrechen
-                ${
-                  selectedSubcategory === subcat
-                    ? 'bg-teal-500 text-white border-teal-500 shadow-md'
-                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-teal-50 hover:text-teal-600'
-                }
-                // KEIN w-full, damit Breite sich an Inhalt anpasst
-              `}
+              onClick={() => onSelect(subcat)}
+              className={`px-4 py-3 border-2 rounded-xl text-center transition-all duration-200 ${
+                selectedSubcategory === subcat
+                  ? 'bg-[#14ad9f] text-white border-[#14ad9f] shadow-md'
+                  : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-teal-50 hover:border-[#14ad9f] hover:text-[#14ad9f]'
+              }`}
             >
-              {/* KORREKTUR: Textgröße für bessere Anpassung, keine nowrap oder ellipsis auf h4 */}
-              <h4 className="font-semibold text-base sm:text-lg">{subcat}</h4>
+              <span className="font-medium text-sm sm:text-base">{subcat}</span>
             </button>
           ))}
         </div>
@@ -261,12 +276,12 @@ const SubcategorySelectionModal: React.FC<SubcategorySelectionModalProps> = ({
         <div className="text-center mt-6">
           <button
             onClick={onClose}
-            className="py-2 px-6 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors duration-200 font-semibold"
+            className="py-2.5 px-8 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
           >
-            Schließen
+            Schliessen
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
@@ -289,40 +304,40 @@ const HorizontalCardGrid: React.FC<HorizontalCardGridProps> = ({
 }) => {
   return (
     <div className="w-full">
-      <div className="flex flex-wrap justify-center gap-6 p-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {categories.map(category => {
           const isSelected = selectedSkill === category.skill;
           const hasSelectedSubcategory = selectedSubcategorySkills[category.skill];
 
           return (
-            <div
+            <motion.div
               key={category.skill}
-              className={`
-                w-full sm:w-[calc(50%-1.5rem)] // Auf kleinen Bildschirmen 2 Spalten
-                lg:w-[calc(33.33%-1.5rem)] // KORREKTUR: Auf LG-Bildschirmen 3 Spalten (breitere Karten)
-                xl:w-[calc(25%-1.5rem)] // KORREKTUR: Auf XL-Bildschirmen 4 Spalten
-                h-48 shadow-lg rounded-xl overflow-hidden cursor-pointer
-                transition-all flex flex-col items-center justify-center p-4 text-center
-                transform hover:scale-105 duration-300
-                ${
-                  isSelected
-                    ? 'bg-teal-600 text-white border-4 border-teal-800 ring-2 ring-teal-500'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-                }
-              `}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`relative bg-white rounded-xl border-2 p-4 cursor-pointer transition-all ${
+                isSelected
+                  ? 'border-[#14ad9f] shadow-lg ring-2 ring-[#14ad9f]/20'
+                  : 'border-gray-200 hover:border-[#14ad9f]/50 hover:shadow-md'
+              }`}
               onClick={() => {
                 onSkillSelect(category.skill);
                 onOpenSubcategoryModal(category);
               }}
             >
-              <h3 className="font-bold text-xl mb-2">{category.title}</h3>
-              <p className="text-sm opacity-90">{category.description}</p>
+              <div className={`p-3 rounded-xl mb-3 w-fit ${isSelected ? 'bg-[#14ad9f] text-white' : 'bg-gray-100 text-gray-600'}`}>
+                {categoryIcons[category.skill]}
+              </div>
+              <h3 className={`font-bold text-base mb-1 ${isSelected ? 'text-[#14ad9f]' : 'text-gray-800'}`}>
+                {category.title}
+              </h3>
+              <p className="text-xs text-gray-500 line-clamp-2">{category.description}</p>
               {hasSelectedSubcategory && (
-                <div className="mt-2 text-xs font-semibold px-2 py-1 rounded-full bg-white bg-opacity-20 text-white">
-                  {hasSelectedSubcategory} <FiCheck className="inline-block ml-1" />
+                <div className="mt-2 flex items-center text-xs font-medium text-[#14ad9f] bg-teal-50 px-2 py-1 rounded-lg">
+                  <Check className="w-3 h-3 mr-1" />
+                  {hasSelectedSubcategory}
                 </div>
               )}
-            </div>
+            </motion.div>
           );
         })}
       </div>
@@ -412,56 +427,108 @@ export default function Step4() {
   const closeStepsModal = () => setIsStepsModalOpen(false);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br p-4 sm:p-6 font-sans">
-      {/* Top-Bereich */}
-      <div className="w-full max-w-xl lg:max-w-4xl mx-auto mb-6 px-4">
-        <div className="flex justify-between mb-4">
-          <button
-            onClick={() => router.push('/register/company/step3')}
-            className="text-[#14ad9f] hover:text-taskilo-hover text-base sm:text-lg flex items-center transition-colors duration-200"
-          >
-            <span className="mr-2">← Zurück zu Schritt 3</span>
-          </button>
-          <button
-            onClick={() => router.push('/')}
-            className="text-[#14ad9f] hover:text-teal-700 text-base sm:text-lg flex items-center transition-colors duration-200"
-          >
-            <span className="mr-2">Abbrechen</span>
-            <FiX className="text-xl" />
-          </button>
-        </div>
-        <div className="mb-6">
-          <ProgressBar currentStep={4} totalSteps={5} />
-        </div>
-        <div className="flex justify-between items-center mb-6">
-          <p className="text-lg sm:text-xl text-teal-600 font-semibold">Schritt 4/5</p>
-          <div className="flex items-center">
-            <button
-              onClick={openStepsModal}
-              className="text-sm sm:text-base text-teal-600 hover:underline mr-2 cursor-pointer"
+    <div className="min-h-screen flex flex-col">
+      {/* Hero Section */}
+      <div className="relative bg-linear-to-br from-[#14ad9f] via-teal-600 to-teal-800 text-white">
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-10"
+          style={{ backgroundImage: "url('/images/features/accounting-hero.png')" }}
+        />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          {/* Navigation */}
+          <div className="flex justify-between items-center mb-6">
+            <Link 
+              href="/register/company/step3"
+              className="flex items-center text-white/80 hover:text-white transition-colors"
             >
-              Schritte anzeigen
-            </button>
-            <FiInfo className="text-teal-600 text-xl sm:text-2xl" />
+              <span className="mr-2">Zurueck</span>
+            </Link>
+            <Link 
+              href="/"
+              className="flex items-center text-white/80 hover:text-white transition-colors"
+            >
+              <span className="mr-2">Abbrechen</span>
+              <X className="w-5 h-5" />
+            </Link>
           </div>
+
+          {/* Progress */}
+          <div className="max-w-2xl mx-auto mb-6">
+            <ProgressBar currentStep={4} totalSteps={5} />
+          </div>
+
+          {/* Title */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center"
+          >
+            <div className="flex items-center justify-center mb-4">
+              <p className="text-lg text-white/80">Schritt 4 von 5</p>
+              <button
+                onClick={openStepsModal}
+                className="ml-3 text-white/60 hover:text-white transition-colors"
+              >
+                <Info className="w-5 h-5" />
+              </button>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-3">
+              Faehigkeiten auswaehlen
+            </h1>
+            <p className="text-lg text-white/80 max-w-xl mx-auto">
+              Waehlen Sie eine Hauptkategorie und dann eine passende Unterkategorie.
+            </p>
+          </motion.div>
         </div>
       </div>
 
-      {/* Hauptinhalt der Seite */}
-      <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 text-center">
-        Fähigkeiten auswählen
-      </h2>
-      <p className="text-gray-600 text-center mb-8 max-w-xl">
-        Wählen Sie eine Hauptkategorie und dann eine passende Unterkategorie.
-      </p>
+      {/* Main Content */}
+      <div className="flex-1 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <HorizontalCardGrid
+              categories={categoriesData}
+              onSkillSelect={setSelectedSkill}
+              selectedSkill={selectedSkill}
+              onOpenSubcategoryModal={handleOpenSubcategoryModal}
+              selectedSubcategorySkills={selectedSubcategorySkills}
+            />
 
-      <HorizontalCardGrid
-        categories={categoriesData}
-        onSkillSelect={setSelectedSkill}
-        selectedSkill={selectedSkill}
-        onOpenSubcategoryModal={handleOpenSubcategoryModal}
-        selectedSubcategorySkills={selectedSubcategorySkills}
-      />
+            {/* Selected Info */}
+            {selectedSkill && selectedSubcategorySkills[selectedSkill] && (
+              <div className="mt-8 bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="p-2 bg-[#14ad9f]/10 rounded-lg text-[#14ad9f] mr-3">
+                    {categoryIcons[selectedSkill]}
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Ihre Auswahl</p>
+                    <p className="font-semibold text-gray-800">{selectedSkill} - {selectedSubcategorySkills[selectedSkill]}</p>
+                  </div>
+                </div>
+                <Check className="w-6 h-6 text-[#14ad9f]" />
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <div className="flex justify-center mt-8">
+              <button
+                onClick={handleNext}
+                disabled={!selectedSkill || !selectedSubcategorySkills[selectedSkill]}
+                className="px-12 py-4 bg-linear-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-teal-600 hover:to-teal-700 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                Weiter zu Schritt 5
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      </div>
 
       {/* Modals */}
       {isStepsModalOpen && (
@@ -472,7 +539,7 @@ export default function Step4() {
             'Firmenprofil anlegen',
             'Adresse eingeben',
             'Kontaktdaten angeben',
-            'Fähigkeiten auswählen',
+            'Faehigkeiten auswaehlen',
             'Zusammenfassung & Abschluss',
           ]}
         />
@@ -486,17 +553,6 @@ export default function Step4() {
           onSelect={handleSubcategorySelectInModal}
         />
       )}
-
-      {/* Weiter-Button */}
-      <div className="flex justify-center mt-8 w-full max-w-xl">
-        <button
-          onClick={handleNext}
-          className="w-full py-3 bg-teal-600 text-white font-bold rounded-lg hover:bg-teal-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50"
-          disabled={!selectedSkill || !selectedSubcategorySkills[selectedSkill]}
-        >
-          Weiter zu Schritt 5
-        </button>
-      </div>
     </div>
   );
 }

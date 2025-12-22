@@ -1,66 +1,63 @@
+/**
+ * Company Ticket Reply API Route
+ * 
+ * Firebase-basierte Ticket-Antworten fuer Kunden
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import { AWSTicketStorage } from '@/lib/aws-ticket-storage';
-
-// Company Ticket Replies API
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const ticketId = searchParams.get('ticketId');
-
-    if (!ticketId) {
-      return NextResponse.json(
-        { success: false, error: 'Ticket-ID erforderlich' },
-        { status: 400 }
-      );
-    }
-
-    const ticket = await AWSTicketStorage.getTicket(ticketId);
-
-    if (!ticket) {
-      return NextResponse.json({ success: false, error: 'Ticket nicht gefunden' }, { status: 404 });
-    }
-
-    // Filter non-internal comments (visible to customers)
-    const replies = ticket.comments.filter(comment => !comment.isInternal);
-
-    return NextResponse.json({
-      success: true,
-      replies,
-    });
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, error: 'Fehler beim Laden der Antworten' },
-      { status: 500 }
-    );
-  }
-}
+import { FirebaseTicketService } from '@/services/admin/FirebaseTicketService';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { ticketId, message, senderName, senderEmail } = body;
+    const { ticketId, content, authorName, authorEmail } = await request.json();
 
-    if (!ticketId || !message) {
+    if (!ticketId || !content) {
       return NextResponse.json(
-        { success: false, error: 'Ticket-ID und Nachricht sind erforderlich' },
+        { error: 'Ticket-ID und Nachricht sind erforderlich' },
         { status: 400 }
       );
     }
 
-    const updatedTicket = await AWSTicketStorage.addComment(ticketId, {
-      author: senderName || 'Kunde',
+    // Ticket abrufen und pruefen
+    const ticket = await FirebaseTicketService.getTicket(ticketId);
+
+    if (!ticket) {
+      return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
+    }
+
+    // Pruefen ob Kunde berechtigt ist
+    if (authorEmail && ticket.customerEmail !== authorEmail) {
+      return NextResponse.json(
+        { error: 'Nicht berechtigt, auf dieses Ticket zu antworten' },
+        { status: 403 }
+      );
+    }
+
+    // Kommentar hinzufuegen
+    const updatedTicket = await FirebaseTicketService.addComment(ticketId, {
+      author: authorName || 'Kunde',
       authorType: 'customer',
-      content: message,
+      content,
       isInternal: false,
     });
 
+    // Ticket wieder auf "open" setzen wenn es resolved war
+    if (ticket.status === 'resolved' || ticket.status === 'closed') {
+      await FirebaseTicketService.updateTicket(ticketId, { status: 'open' });
+    }
+
+    // Nur oeffentliche Kommentare zurueckgeben
+    const publicComments = updatedTicket.comments.filter(c => !c.isInternal);
+
     return NextResponse.json({
       success: true,
-      reply: updatedTicket.comments[updatedTicket.comments.length - 1],
+      ticket: { ...updatedTicket, comments: publicComments },
+      message: 'Antwort erfolgreich hinzugefuegt',
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
-      { success: false, error: 'Fehler beim Senden der Antwort' },
+      { error: 'Fehler beim Hinzufuegen der Antwort', details: errorMessage },
       { status: 500 }
     );
   }

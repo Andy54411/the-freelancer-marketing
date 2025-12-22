@@ -1,103 +1,68 @@
-// AWS Admin Login API
+/**
+ * Admin Login API
+ * 
+ * Firebase-basierte Admin-Authentifizierung
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
-import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
-import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
+import { AdminAuthService } from '@/services/admin/AdminAuthService';
+import { z } from 'zod';
 
-const dynamodb = new DynamoDBClient({
-  region: process.env.AWS_REGION || 'eu-central-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
+// Request Schema
+const LoginRequestSchema = z.object({
+  email: z.string().email('Gueltige E-Mail-Adresse erforderlich'),
+  password: z.string().min(1, 'Passwort ist erforderlich'),
 });
-
-// JWT Secret für Admin-Tokens
-const JWT_SECRET =
-  process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024';
-const JWT_SECRET_BYTES = new TextEncoder().encode(JWT_SECRET);
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
-
-    if (!email || !password) {
-      return NextResponse.json({ error: 'E-Mail und Passwort sind erforderlich' }, { status: 400 });
+    const body = await request.json();
+    
+    // Validierung
+    const validation = LoginRequestSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error.errors[0].message },
+        { status: 400 }
+      );
     }
-
-    // Benutzer aus DynamoDB abrufen
-    const command = new GetItemCommand({
-      TableName: 'taskilo-admin-data',
-      Key: marshall({ id: email }),
-    });
-
-    const result = await dynamodb!.send(command);
-
-    if (!result.Item) {
-      return NextResponse.json({ error: 'Ungültige Anmeldedaten' }, { status: 401 });
+    
+    const { email, password } = validation.data;
+    
+    // Initialen Master-Admin erstellen falls keine Admins existieren
+    await AdminAuthService.initializeMasterAdmin();
+    
+    // Login versuchen
+    const result = await AdminAuthService.login(email, password);
+    
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 401 }
+      );
     }
-
-    const user = unmarshall(result.Item);
-
-    // Passwort prüfen (in einer echten Anwendung sollte dies gehashed sein)
-    // Für jetzt verwenden wir ein Standard-Admin-Passwort
-    const validPasswords = ['admin123', 'taskilo2024', user.password || 'admin123'];
-
-    if (!validPasswords.includes(password)) {
-      return NextResponse.json({ error: 'Ungültige Anmeldedaten' }, { status: 401 });
-    }
-
-    // WorkMail Integration - Map Admin to WorkMail User
-    const workmailEmailMapping = {
-      'andy.staudinger@taskilo.de': 'andy.staudinger@taskilo.de',
-      'admin@taskilo.de': 'support@taskilo.de',
-      'support@taskilo.de': 'support@taskilo.de',
-    };
-
-    const adminEmail = user.email || user.id;
-    const workmailEmail = workmailEmailMapping[adminEmail] || 'support@taskilo.de';
-
-    // JWT Token erstellen
-    const token = await new SignJWT({
-      email: user.email || user.id,
-      name: user.name || 'Admin',
-      role: user.role || 'admin',
-      workmailEmail: workmailEmail,
-      workmailIntegration: true,
-      iat: Math.floor(Date.now() / 1000),
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('24h')
-      .sign(JWT_SECRET_BYTES);
-
+    
     // Cookie setzen
     const cookieStore = await cookies();
-    cookieStore.set('taskilo-admin-token', token, {
+    cookieStore.set('taskilo-admin-token', result.token!, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 24 * 60 * 60, // 24 Stunden
       path: '/',
     });
-
+    
     return NextResponse.json({
       success: true,
-      user: {
-        id: user.id,
-        email: user.email || user.id,
-        name: user.name || 'Admin',
-        role: user.role || 'admin',
-      },
-      workmail: {
-        email: workmailEmail,
-        organization: 'taskilo-org',
-        webInterface: 'https://taskilo-org.awsapps.com/mail',
-        ssoEnabled: true,
-      },
-      message: `Admin-Login erfolgreich. WorkMail SSO aktiviert für ${workmailEmail}`,
+      user: result.user,
+      message: 'Erfolgreich angemeldet',
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Anmeldung fehlgeschlagen' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    return NextResponse.json(
+      { error: `Login fehlgeschlagen: ${errorMessage}` },
+      { status: 500 }
+    );
   }
 }

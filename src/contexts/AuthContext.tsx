@@ -127,27 +127,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             throw new Error('Firestore DB-Instanz ist nicht initialisiert.');
           }
 
-          // Performance-Optimierung: User-Daten nur laden, wenn noch nicht vorhanden oder geändert
-          if (user?.uid === fbUser.uid && user?.email === fbUser.email) {
-            console.log('[AuthContext] 🟡 CACHED - User already loaded:', {
-              uid: user.uid,
-              user_type: user.user_type,
-              email: user.email
-            });
-            // User ist bereits geladen und unverändert, skip DB queries
-            setLoading(false);
-            return;
-          }
-
+          // IMMER frisch aus Firestore laden um korrekte Routing-Entscheidungen zu treffen
           console.log('[AuthContext] 🔵 LOADING user data from Firestore for:', fbUser.uid);
-          // Versuche zuerst users collection
+          
+          // Prüfe BEIDE Collections parallel für bessere Performance
           const userDocRef = doc(db, 'users', fbUser.uid);
-          const userDocSnap = await getDoc(userDocRef);
+          const companyDocRef = doc(db, 'companies', fbUser.uid);
+          
+          const [userDocSnap, companyDocSnap] = await Promise.all([
+            getDoc(userDocRef),
+            getDoc(companyDocRef)
+          ]);
 
           let profileData: any = null;
           let userFound = false;
 
-          if (userDocSnap.exists()) {
+          // PRIORITÄT: Companies Collection für Firmen-Accounts
+          // Wenn in companies gefunden UND user_type ist 'firma', verwende companies
+          if (companyDocSnap.exists()) {
+            const companyData = companyDocSnap.data();
+            if (companyData.user_type === 'firma' || companyData.accountType === 'business') {
+              profileData = companyData;
+              userFound = true;
+              console.log('[AuthContext] ✅ User found in COMPANIES collection (priority):', {
+                uid: fbUser.uid,
+                user_type: profileData.user_type,
+                companyName: profileData.companyName
+              });
+            }
+          }
+          
+          // Fallback: Users Collection für Kunden
+          if (!userFound && userDocSnap.exists()) {
             profileData = userDocSnap.data();
             userFound = true;
             console.log('[AuthContext] ✅ User found in USERS collection:', {
@@ -155,21 +166,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               user_type: profileData.user_type,
               firstName: profileData.firstName
             });
-          } else {
-            console.log('[AuthContext] ❌ Not in users collection, checking COMPANIES...');
-            // FALLBACK: Prüfe companies collection (wie UserHeader)
-            const companyDocRef = doc(db, 'companies', fbUser.uid);
-            const companyDocSnap = await getDoc(companyDocRef);
-
-            if (companyDocSnap.exists()) {
-              profileData = companyDocSnap.data();
-              userFound = true;
-              console.log('[AuthContext] ✅ User found in COMPANIES collection:', {
-                uid: fbUser.uid,
-                user_type: profileData.user_type,
-                companyName: profileData.companyName
-              });
-            }
+          }
+          
+          // Letzter Fallback: Companies ohne expliziten user_type check
+          if (!userFound && companyDocSnap.exists()) {
+            profileData = companyDocSnap.data();
+            userFound = true;
+            console.log('[AuthContext] ✅ User found in COMPANIES collection (fallback):', {
+              uid: fbUser.uid,
+              user_type: profileData.user_type,
+              companyName: profileData.companyName
+            });
           }
 
           // MITARBEITER: Wenn kein User-Dokument gefunden, aber Custom Claims 'mitarbeiter' vorhanden
@@ -213,15 +220,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 ? 'master'
                 : idTokenResult.claims.role === 'support'
                   ? 'support'
-                  : idTokenResult.claims.role === 'firma'
-                    ? 'firma'
-                    : idTokenResult.claims.role === 'kunde'
-                      ? 'kunde'
-                      : idTokenResult.claims.role === 'mitarbeiter'
-                        ? 'mitarbeiter'
-                        : null;
+                  : idTokenResult.claims.role === 'mitarbeiter'
+                    ? 'mitarbeiter'
+                    : null; // firma/kunde werden NICHT aus Claims übernommen - DB hat Vorrang!
             const roleFromDb = (profileData.user_type as UserProfile['user_type']) ?? 'kunde';
 
+            // PRIORITÄT: DB hat Vorrang für firma/kunde, Claims nur für master/support/mitarbeiter
             const finalRole = roleFromClaim ?? roleFromDb;
 
             console.log('[AuthContext] FINAL ROLE DETERMINED:', {
@@ -269,8 +273,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
               const redirectTo = urlParams?.get('redirectTo');
 
-              // 1. Nach Login-Redirect ODER Homepage-Redirect
-              if (pathname?.includes('/login') || pathname === '/') {
+              // 1. Nach Login-Redirect ODER Homepage-Redirect ODER Dashboard-Base-Route
+              if (pathname?.includes('/login') || pathname === '/' || pathname === '/dashboard') {
                 needsRedirect = true;
               }
               // 2. Firma User auf User Dashboard - SOFORT UMLEITEN!

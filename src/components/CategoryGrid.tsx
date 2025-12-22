@@ -2,10 +2,11 @@
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { db } from '@/firebase/clients';
 import { collection, getDocs, limit, query, orderBy } from 'firebase/firestore';
-import { SERVICE_TAG_MAPPING, getTagMapping, generateServiceUrl } from '@/lib/serviceTagMapping';
+import { getTagMapping, generateServiceUrl } from '@/lib/serviceTagMapping';
 
 const getCategoriesWithDynamicTags = (categoryTags: Record<string, string[]>) => [
   {
@@ -218,92 +219,188 @@ export default function CategoryGrid() {
     return (
       <div className="w-full max-w-6xl mx-auto px-4 space-y-8">
         <div className="flex justify-center items-center h-64">
-          <div className="text-white/80 drop-shadow-md">Lade Kategorien...</div>
+          <div className="text-gray-500">Lade Kategorien...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 space-y-8">
+    <section className="py-16 md:py-24">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        viewport={{ once: true, margin: '-50px' }}
+        className="w-full max-w-6xl mx-auto px-4 space-y-8"
+      >
+      {/* Section Header */}
+      <div className="text-center mb-12">
+        <motion.span
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          viewport={{ once: true }}
+          className="inline-block px-4 py-1.5 bg-[#d2f4ef] text-[#14ad9f] text-sm font-semibold rounded-full mb-4"
+        >
+          Unsere Kategorien
+        </motion.span>
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          viewport={{ once: true }}
+          className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
+        >
+          Finde den passenden Service
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          viewport={{ once: true }}
+          className="text-lg text-gray-600 max-w-2xl mx-auto"
+        >
+          Entdecke unsere beliebtesten Dienstleistungen und finde genau den Tasker, den du brauchst
+        </motion.p>
+      </div>
+
       {/* Kategorie-Icons im 3x2 Grid */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-6 justify-items-center border-b pb-6">
-        {categories.map(cat => (
-          <button
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-6 justify-items-center border-b border-gray-200 pb-6">
+        {categories.map((cat, index) => (
+          <motion.button
             key={cat.id}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: index * 0.1 }}
+            viewport={{ once: true }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setActive(cat.id)}
             className="flex flex-col items-center group"
           >
-            <div
+            <motion.div
               className={cn(
                 'flex items-center justify-center w-16 h-16 rounded-full mb-1 transition-all',
-                active === cat.id ? 'bg-[#d2f4ef] border-2 border-[#14ad9f]' : 'bg-gray-100'
+                active === cat.id ? 'bg-[#d2f4ef] border-2 border-[#14ad9f]' : 'bg-gray-100 hover:bg-gray-200'
               )}
+              whileHover={{ rotate: [0, -5, 5, 0] }}
+              transition={{ duration: 0.3 }}
             >
               {cat.icon}
-            </div>
+            </motion.div>
             <span
               className={cn(
-                'text-sm mt-1 text-center',
+                'text-sm mt-1 text-center transition-colors',
                 active === cat.id
-                  ? 'text-white font-semibold drop-shadow-md'
-                  : 'text-white/80 drop-shadow-md'
+                  ? 'text-[#14ad9f] font-semibold'
+                  : 'text-gray-600 group-hover:text-gray-900'
               )}
             >
               {cat.label}
             </span>
-            {active === cat.id && <div className="h-1 w-6 mt-2 bg-[#14ad9f] rounded" />}
-          </button>
+            {active === cat.id && (
+              <motion.div
+                layoutId="activeIndicator"
+                className="h-1 w-6 mt-2 bg-[#14ad9f] rounded"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              />
+            )}
+          </motion.button>
         ))}
       </div>
 
       {/* Tags mit Navigation */}
-      <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-        {selected.tags.map(tag => (
-          <button
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-wrap gap-4 justify-center md:justify-start"
+      >
+        {selected.tags.map((tag, index) => (
+          <motion.button
             key={tag}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => handleTagClick(tag)}
-            className="px-6 py-2 border border-white/30 rounded-full text-base font-medium text-white/90 hover:bg-white/10 hover:border-white/50 transition-all duration-200 drop-shadow-md hover:drop-shadow-lg"
+            className="px-6 py-2 border border-[#14ad9f] rounded-full text-base font-medium text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white transition-all duration-200"
           >
             {tag}
-          </button>
+          </motion.button>
         ))}
-      </div>
+      </motion.div>
 
-      {/* Bild & Infobox */}
-      <div className="relative bg-transparent rounded-2xl p-6 overflow-hidden">
-        <div className="relative flex flex-col md:flex-row items-center md:items-start md:justify-start">
-          {/* Infobox */}
-          <div className="md:absolute md:left-6 md:top-1/2 md:-translate-y-1/2 bg-white p-6 rounded-xl shadow-lg z-10 w-full max-w-sm">
-            <h3 className="text-xl font-bold mb-4">{selected.title}</h3>
-            <ul className="list-none text-gray-700 space-y-4">
-              <li className="flex gap-2">
-                <span className="text-[#14ad9f]">✓</span>
-                <span>{selected.text}</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-[#14ad9f]">✓</span>
-                <span>
-                  Aktuelle Trends: Geschwungene Sofas, Computer-Schreibtische und nachhaltige
-                  Materialien.
-                </span>
-              </li>
-            </ul>
-          </div>
+      {/* Bild & Infobox mit Slide-Animation */}
+      <div className="relative bg-transparent rounded-2xl p-6 overflow-hidden min-h-[400px]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={active}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="relative flex flex-col md:flex-row items-center md:items-start md:justify-start"
+          >
+            {/* Infobox - slidet von links */}
+            <motion.div
+              initial={{ opacity: 0, x: -100 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ 
+                duration: 0.6, 
+                delay: 0.1,
+                type: 'spring',
+                stiffness: 100,
+                damping: 15
+              }}
+              whileHover={{ scale: 1.02 }}
+              className="md:absolute md:left-6 md:top-1/2 md:-translate-y-1/2 bg-white p-6 rounded-xl shadow-lg z-10 w-full max-w-sm"
+            >
+              <h3 className="text-xl font-bold text-gray-900 mb-4">{selected.title}</h3>
+              <ul className="list-none text-gray-700 space-y-4">
+                <li className="flex gap-2">
+                  <span className="text-[#14ad9f] font-bold">✓</span>
+                  <span>{selected.text}</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-[#14ad9f] font-bold">✓</span>
+                  <span>
+                    Aktuelle Trends: Geschwungene Sofas, Computer-Schreibtische und nachhaltige
+                    Materialien.
+                  </span>
+                </li>
+              </ul>
+            </motion.div>
 
-          {/* Bild */}
-          <div className="md:ml-[200px] w-full mt-6 md:mt-0">
-            <Image
-              src={selected.image}
-              alt={selected.title}
-              width={800} // Example width, adjust for aspect ratio
-              height={450} // Example height, adjust for aspect ratio
-              className="rounded-2xl w-full h-auto object-cover"
-              priority // This image changes dynamically, consider if priority is always needed
-            />
-          </div>
-        </div>
+            {/* Bild - slidet von rechts */}
+            <motion.div
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ 
+                duration: 0.6, 
+                delay: 0.15,
+                type: 'spring',
+                stiffness: 100,
+                damping: 15
+              }}
+              className="md:ml-[200px] w-full mt-6 md:mt-0"
+            >
+              <Image
+                src={selected.image}
+                alt={selected.title}
+                width={800}
+                height={450}
+                className="rounded-2xl w-full h-auto object-cover shadow-lg"
+                priority
+              />
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
+    </section>
   );
 }

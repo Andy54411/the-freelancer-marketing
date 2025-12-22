@@ -1,7 +1,7 @@
 // /Users/andystaudinger/taskilo/src/app/auftrag/get-started/[unterkategorie]/BestaetigungsPage/components/AnbieterDetailsFetcher.tsx
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react'; // useMemo entfernt
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
 import { OrderSummary } from './OrderSummary';
 import { DateTimeSelectionPopup } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup';
@@ -12,20 +12,9 @@ import { calculateDaysBetween } from '@/utils/orderCalculations';
 
 import type {
   Company as AnbieterDetailsType,
-  // TaskDetails, // Nicht verwendet
-  // ExpandedDescriptionsMap, // Nicht verwendet
-  // RatingMap, // Nicht verwendet
 } from '@/types/types';
 
 import {
-  PAGE_LOG, // Wird für Debug-Logs verwendet
-  PAGE_WARN,
-  PAGE_ERROR,
-  TRUST_AND_SUPPORT_FEE_EUR,
-} from '@/lib/constants';
-
-import {
-  differenceInCalendarDays,
   parseISO,
   isValid as isValidDate,
   format as formatDateFns,
@@ -43,22 +32,6 @@ function parseDurationStringToHours(durationStr?: string): number | null {
   }
   const parsedNum = parseFloat(durationStr);
   return isNaN(parsedNum) ? null : parsedNum;
-}
-
-function calculateWorkingDays(startDate: Date, endDate: Date): number {
-  let count = 0;
-  const current = new Date(startDate);
-
-  while (current <= endDate) {
-    const dayOfWeek = current.getDay();
-    // 1 = Montag, 2 = Dienstag, ..., 5 = Freitag (0 = Sonntag, 6 = Samstag)
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-      count++;
-    }
-    current.setDate(current.getDate() + 1);
-  }
-
-  return count;
 }
 
 interface AnbieterDetailsFetcherProps {
@@ -123,7 +96,7 @@ export default function AnbieterDetailsFetcher({
       formattedAnbieterData: AnbieterDetailsType | null;
     } => {
       if (!fetchedAnbieterData?.hourlyRate) {
-        const errorMsg = 'Stundensatz des Anbieters nicht verfügbar für Preisberechnung.';
+        const _errorMsg = 'Stundensatz des Anbieters nicht verfuegbar fuer Preisberechnung.';
 
         return {
           displayDuration: 'Fehler',
@@ -245,21 +218,30 @@ export default function AnbieterDetailsFetcher({
         formattedAnbieterData: anbieterDataForDisplay,
       };
     },
-    [anbieterId, postalCodeJob, unterkategorie, onPriceCalculated]
+    [anbieterId, postalCodeJob, unterkategorie, onPriceCalculated, registration.jobDateTo]
   );
 
+  // Use ref to track if initial fetch has happened
+  const hasFetchedRef = useRef(false);
+
   useEffect(() => {
+    // Only fetch once initially, or when key parameters change
+    if (hasFetchedRef.current && anbieterDetails) {
+      return;
+    }
+
     const fetchDataAndCalc = async () => {
       if (!anbieterId) {
-        setError('Keine Anbieter-ID vorhanden für Detailabruf.');
+        setError('Keine Anbieter-ID vorhanden fuer Detailabruf.');
         setIsLoading(false);
         return;
       }
 
+      hasFetchedRef.current = true;
       setIsLoading(true);
       setError(null);
       try {
-        // FIX: Benutze die zentrale Konstante für die API-Base-URL, damit immer die richtige Umgebung verwendet wird.
+        // FIX: Benutze die zentrale Konstante fuer die API-Base-URL, damit immer die richtige Umgebung verwendet wird.
         const apiBaseUrl = FIREBASE_FUNCTIONS_BASE_URL;
         const url = `${apiBaseUrl}/searchCompanyProfiles?id=${encodeURIComponent(anbieterId)}`;
 
@@ -317,10 +299,8 @@ export default function AnbieterDetailsFetcher({
       }
     };
 
-    // Nur ausführen wenn noch nicht geladen oder wichtige Parameter sich geändert haben
-    if (!anbieterDetails || error) {
-      fetchDataAndCalc();
-    }
+    fetchDataAndCalc();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     anbieterId,
     currentDateFrom,
@@ -330,8 +310,6 @@ export default function AnbieterDetailsFetcher({
     currentTaskDesc,
     calculateAndReportPrice,
     onPriceCalculated,
-    // Entferne anbieterDetails und error aus den Dependencies um Endlosschleife zu vermeiden
-    // unterkategorie und postalCodeJob sind schon in calculateAndReportPrice als Dependencies
   ]);
 
   const handleOpenEditModal = () => {
@@ -427,37 +405,45 @@ export default function AnbieterDetailsFetcher({
 
   if (isLoading && !anbieterDetails) {
     return (
-      <div className="flex justify-center items-center min-h-[300px] h-full">
-        <FiLoader className="animate-spin text-3xl text-[#14ad9f]" />
-        <span className="ml-3 text-gray-700">Anbieterdetails werden geladen...</span>
+      <div className="flex justify-center items-center py-12">
+        <div className="text-center">
+          <FiLoader className="animate-spin text-4xl text-[#14ad9f] mx-auto mb-4" />
+          <span className="text-gray-600 font-medium">Anbieterdetails werden geladen...</span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-red-600 text-center p-6 h-full flex flex-col items-center justify-center bg-red-50 rounded-lg">
-        <FiAlertCircle size={32} className="mb-2" />
-        <p className="font-semibold">Fehler:</p>
-        <p>{error}</p>
+      <div className="py-12">
+        <div className="max-w-md mx-auto bg-red-50 rounded-xl p-6 text-center">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FiAlertCircle className="w-6 h-6 text-red-600" />
+          </div>
+          <p className="font-semibold text-gray-900 mb-2">Fehler</p>
+          <p className="text-sm text-gray-600">{error}</p>
+        </div>
       </div>
     );
   }
 
   if (!anbieterDetails) {
     return (
-      <div className="flex justify-center items-center min-h-[300px] h-full">
-        <FiAlertCircle className="text-2xl text-gray-500 mr-2" />
-        <span className="text-gray-600">
-          Keine Anbieterdetails zum Anzeigen vorhanden oder Fehler beim Laden.
-        </span>
+      <div className="flex justify-center items-center py-12">
+        <div className="text-center">
+          <FiAlertCircle className="text-3xl text-gray-400 mx-auto mb-3" />
+          <span className="text-gray-600">
+            Keine Anbieterdetails zum Anzeigen vorhanden.
+          </span>
+        </div>
       </div>
     );
   }
 
   return (
     <>
-      <div className="h-full flex flex-col bg-white shadow-lg rounded-lg p-6">
+      <div className="h-full flex flex-col">
         <OrderSummary
           anbieterDetails={anbieterDetails}
           taskDetails={{ description: currentTaskDesc }}
@@ -469,16 +455,17 @@ export default function AnbieterDetailsFetcher({
       </div>
 
       {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-xl relative">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-60 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xl relative">
             <button
               onClick={() => setIsEditModalOpen(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors"
             >
-              &times;
+              <span className="sr-only">Schliessen</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <h3 className="text-xl font-semibold mb-6 text-center">Auftragsdetails bearbeiten</h3>
-            <div className="mb-4 p-4 border rounded-md bg-gray-50">
+            <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">Auftragsdetails bearbeiten</h3>
+            <div className="mb-4 p-4 border border-gray-200 rounded-xl bg-gray-50">
               <DateTimeSelectionPopup
                 isOpen={true}
                 onClose={() => setIsEditModalOpen(false)}
@@ -499,7 +486,7 @@ export default function AnbieterDetailsFetcher({
             <div className="mt-4 mb-6">
               <Label
                 htmlFor="editDescriptionModal"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-semibold text-gray-700 mb-2"
               >
                 Beschreibung anpassen
               </Label>
@@ -508,15 +495,15 @@ export default function AnbieterDetailsFetcher({
                 value={editDescription}
                 onChange={e => setEditDescription(e.target.value)}
                 rows={4}
-                className="w-full mt-1 shadow-sm focus:ring-teal-500 focus:border-teal-500 border-gray-300 rounded-md"
-                placeholder="Beschreiben Sie hier detailliert Ihre Wünsche..."
+                className="w-full mt-1 rounded-xl border-2 border-gray-200 focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-all"
+                placeholder="Beschreiben Sie hier detailliert Ihre Wuensche..."
               />
             </div>
             <div className="flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setIsEditModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] transition-all"
               >
                 Abbrechen
               </button>

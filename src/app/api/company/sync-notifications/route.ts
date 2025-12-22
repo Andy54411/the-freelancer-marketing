@@ -1,68 +1,66 @@
-// API zum Erstellen von Notifications für bestehende ungelesene Tickets
+/**
+ * Company Sync Notifications API Route
+ * 
+ * Firebase-basierte Benachrichtigungen fuer Kunden
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import { AWSTicketStorage } from '@/lib/aws-ticket-storage';
-import { TicketNotificationService } from '@/lib/ticket-notifications';
+import { FirebaseTicketService } from '@/services/admin/FirebaseTicketService';
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const { userUid } = await request.json();
-
-    if (!userUid) {
-      return NextResponse.json({ success: false, error: 'userUid erforderlich' }, { status: 400 });
-    }
-
-    // UID zu E-Mail Mapping
-    const uidToEmailMap: Record<string, string> = {
-      '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1': 'a.staudinger32@icloud.com',
-    };
-
-    const customerEmail = uidToEmailMap[userUid];
+    const { searchParams } = new URL(request.url);
+    const customerEmail = searchParams.get('email');
 
     if (!customerEmail) {
       return NextResponse.json(
-        { success: false, error: 'Keine E-Mail für UID gefunden' },
-        { status: 404 }
+        { error: 'E-Mail-Adresse ist erforderlich' },
+        { status: 400 }
       );
     }
 
-    // Lade alle Tickets für diesen User
-    const tickets = await AWSTicketStorage.getTickets({ customerEmail });
+    // Offene Tickets fuer Kunde abrufen
+    const tickets = await FirebaseTicketService.getTicketsByCustomer(customerEmail);
+    
+    // Nur offene/in-progress Tickets
+    const activeTickets = tickets.filter(t => 
+      t.status === 'open' || t.status === 'in-progress'
+    );
 
-    let notificationsCreated = 0;
-
-    for (const ticket of tickets) {
-      // Prüfe ob es ungelesene Admin-Antworten gibt
-      const adminReplies =
-        ticket.comments?.filter(comment => comment.authorType === 'admin' && !comment.isInternal) ||
-        [];
-
-      if (adminReplies.length > 0) {
-        try {
-          // Erstelle Notification für das Ticket mit Admin-Antworten
-          const lastAdminReply = adminReplies[adminReplies.length - 1];
-          await TicketNotificationService.createTicketReplyNotification(
-            userUid,
-            ticket.id,
-            ticket.title,
-            lastAdminReply.author || 'Support Team'
-          );
-          notificationsCreated++;
-        } catch (error) {}
-      }
-    }
+    // Ungelesene Antworten zaehlen
+    const unreadCount = activeTickets.reduce((count, ticket) => {
+      // Zaehle Kommentare die nach dem letzten Kunden-Kommentar kamen
+      const customerComments = ticket.comments.filter(c => c.authorType === 'customer');
+      const lastCustomerComment = customerComments[customerComments.length - 1];
+      
+      if (!lastCustomerComment) return count;
+      
+      const newAdminReplies = ticket.comments.filter(c => 
+        c.authorType === 'admin' && 
+        !c.isInternal && 
+        new Date(c.timestamp) > new Date(lastCustomerComment.timestamp)
+      );
+      
+      return count + newAdminReplies.length;
+    }, 0);
 
     return NextResponse.json({
       success: true,
-      message: `${notificationsCreated} Notifications erstellt`,
-      ticketsChecked: tickets.length,
-      notificationsCreated,
+      notifications: {
+        activeTickets: activeTickets.length,
+        unreadReplies: unreadCount,
+        tickets: activeTickets.map(t => ({
+          id: t.id,
+          title: t.title,
+          status: t.status,
+          lastUpdate: t.updatedAt,
+        })),
+      },
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unbekannter Fehler',
-      },
+      { error: 'Fehler beim Laden der Benachrichtigungen', details: errorMessage },
       { status: 500 }
     );
   }

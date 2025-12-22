@@ -1,98 +1,62 @@
-// Pure AWS Ticket Comments API - NO Firebase Dependencies
+// Firebase-basierte Ticket Comments API
 import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
-import { AWSTicketStorage } from '@/lib/aws-ticket-storage';
-import { EnhancedTicketService } from '@/lib/aws-ticket-enhanced';
+import { FirebaseTicketService } from '@/services/admin/FirebaseTicketService';
+import { AdminAuthService } from '@/services/admin/AdminAuthService';
 
-// JWT Secret für Admin-Tokens
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024'
-);
-
-// Admin-Authentifizierung prüfen
-async function verifyAdminAuth() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('taskilo-admin-token')?.value;
-
-  if (!token) {
+// Admin-Authentifizierung pruefen
+async function verifyAdminAuth(request: NextRequest) {
+  const admin = await AdminAuthService.verifyFromRequest(request);
+  if (!admin) {
     throw new Error('Nicht autorisiert');
   }
-
-  try {
-    await jwtVerify(token, JWT_SECRET);
-  } catch (error) {
-    throw new Error('Ungültiger Token');
-  }
+  return admin;
 }
 
-// POST - Kommentar zu Ticket hinzufügen
+// POST - Kommentar zu Ticket hinzufuegen
 export async function POST(request: NextRequest) {
   try {
-    await verifyAdminAuth();
+    const admin = await verifyAdminAuth(request);
 
     const { ticketId, content, author, authorType, isInternal } = await request.json();
 
-    if (!ticketId || !content || !author) {
+    if (!ticketId || !content) {
       return NextResponse.json(
-        { error: 'Ticket-ID, Inhalt und Autor sind erforderlich' },
+        { error: 'Ticket-ID und Inhalt sind erforderlich' },
         { status: 400 }
       );
     }
 
-    // Add comment using AWS DynamoDB storage
-    const updatedTicket = await AWSTicketStorage.addComment(ticketId, {
-      author,
+    // Add comment using Firebase storage
+    const updatedTicket = await FirebaseTicketService.addComment(ticketId, {
+      author: author || admin.name,
       authorType: authorType || 'admin',
       content,
       isInternal: isInternal || false,
     });
 
-    // Log to CloudWatch
-    await EnhancedTicketService.logToCloudWatch(
-      'ticket-comments',
-      {
-        action: 'comment_added',
-        ticketId,
-        author,
-        authorType: authorType || 'admin',
-        isInternal: isInternal || false,
-        contentLength: content.length,
-      },
-      'INFO'
-    );
-
     return NextResponse.json({
       success: true,
       ticket: updatedTicket,
-      message: 'Kommentar erfolgreich hinzugefügt',
-      source: 'aws-dynamodb',
+      message: 'Kommentar erfolgreich hinzugefuegt',
+      source: 'firebase',
     });
   } catch (error) {
-    await EnhancedTicketService.logToCloudWatch(
-      'ticket-comments-errors',
-      {
-        action: 'comment_creation_failed',
-        error: error.message,
-      },
-      'ERROR'
-    );
-
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
       {
-        error: 'Fehler beim Hinzufügen des Kommentars',
-        details: error.message,
-        source: 'aws-dynamodb',
+        error: 'Fehler beim Hinzufuegen des Kommentars',
+        details: errorMessage,
+        source: 'firebase',
       },
       { status: 500 }
     );
   }
 }
 
-// GET - Kommentare für ein Ticket abrufen
+// GET - Kommentare fuer ein Ticket abrufen
 export async function GET(request: NextRequest) {
   try {
-    await verifyAdminAuth();
+    await verifyAdminAuth(request);
 
     const { searchParams } = new URL(request.url);
     const ticketId = searchParams.get('ticketId');
@@ -101,8 +65,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Ticket-ID ist erforderlich' }, { status: 400 });
     }
 
-    // Get ticket with comments from AWS DynamoDB
-    const ticket = await AWSTicketStorage.getTicket(ticketId);
+    // Get ticket with comments from Firebase
+    const ticket = await FirebaseTicketService.getTicket(ticketId);
 
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
@@ -112,14 +76,15 @@ export async function GET(request: NextRequest) {
       success: true,
       comments: ticket.comments,
       ticketId,
-      source: 'aws-dynamodb',
+      source: 'firebase',
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
       {
         error: 'Fehler beim Laden der Kommentare',
-        details: error.message,
-        source: 'aws-dynamodb',
+        details: errorMessage,
+        source: 'firebase',
       },
       { status: 500 }
     );

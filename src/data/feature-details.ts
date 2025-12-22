@@ -406,6 +406,85 @@ export const allFeatureDetails = {
       secondary: { text: 'Integration einrichten', href: '/settings/integrations' },
     },
   },
+
+  // Business Solutions
+  'time-tracking': {
+    title: 'Zeiterfassung',
+    subtitle: 'Arbeitszeiten digital und gesetzeskonform erfassen',
+    description:
+      'Professionelle Zeiterfassung fur Ihr Unternehmen. Erfassen Sie Arbeitszeiten Ihrer Mitarbeiter digital, gesetzeskonform und effizient - mit mobiler App und Auswertungen.',
+    category: 'Business Solutions',
+    benefits: [
+      'Gesetzeskonforme Arbeitszeiterfassung nach deutschem Arbeitsrecht',
+      'Mobile Stempeluhr fur Mitarbeiter im Aussendienst',
+      'Automatische Pausen- und Uberstundenberechnung',
+      'Projektbezogene Zeiterfassung fur genaue Kostenrechnung',
+      'Integration mit Lohnbuchhaltung und DATEV',
+      'GPS-Tracking fur Aussendienst-Mitarbeiter (optional)',
+    ],
+    useCases: [
+      'Handwerksbetriebe mit Aussendienst-Teams',
+      'Dienstleister mit projektbezogener Abrechnung',
+      'Unternehmen mit Compliance-Anforderungen',
+      'Teams mit Home-Office und flexiblen Arbeitszeiten',
+      'Schichtbetriebe mit Wechselschichten',
+    ],
+    howItWorks: [
+      'Mitarbeiter stempeln per App, Terminal oder Browser ein und aus',
+      'System erfasst automatisch Arbeitszeiten und Pausen',
+      'Vorgesetzte prufen und genehmigen Zeiteintraege',
+      'Automatische Berechnung von Uberstunden und Zuschlaegen',
+      'Export der Daten zur Lohnabrechnung oder DATEV',
+    ],
+    stats: [
+      { value: '100%', label: 'Gesetzeskonform' },
+      { value: '< 3 Sek', label: 'Stempeln per App' },
+      { value: '24/7', label: 'Mobile Erfassung' },
+    ],
+    callToAction: {
+      primary: { text: 'Jetzt kostenlos testen', href: '/register/company' },
+      secondary: { text: 'Demo anfordern', href: '/contact' },
+    },
+  },
+
+  'employee-records': {
+    title: 'Digitale Mitarbeiterakte',
+    subtitle: 'Personalverwaltung vollstandig digitalisieren',
+    description:
+      'Alle Mitarbeiterdaten sicher und zentral verwaltet. Von Arbeitsvertragen uber Gehaltsabrechnungen bis zu Weiterbildungen - alles digital und DSGVO-konform.',
+    category: 'Business Solutions',
+    benefits: [
+      'Zentrale Verwaltung aller Personaldokumente',
+      'DSGVO-konforme Speicherung mit Zugriffsrechten',
+      'Automatische Erinnerungen fur Fristen und Termine',
+      'Digitale Unterschriften fur Vertrage und Dokumente',
+      'Vollstandige Audit-Trails fur Compliance',
+      'Self-Service Portal fur Mitarbeiter',
+    ],
+    useCases: [
+      'Aufbewahrung von Arbeitsvertragen und Anderungen',
+      'Verwaltung von Zertifikaten und Qualifikationen',
+      'Dokumentation von Mitarbeitergesprachen',
+      'Urlaubsantraege und Abwesenheitsmanagement',
+      'Onboarding neuer Mitarbeiter',
+    ],
+    howItWorks: [
+      'Mitarbeiter werden im System angelegt mit Stammdaten',
+      'Dokumente werden digital hochgeladen und kategorisiert',
+      'Automatische Erinnerungen bei ablaufenden Dokumenten',
+      'Mitarbeiter haben Self-Service Zugang zu ihren Daten',
+      'Vorgesetzte und HR erhalten rollenbasierte Zugriffsrechte',
+    ],
+    stats: [
+      { value: '100%', label: 'DSGVO-konform' },
+      { value: '10 Jahre', label: 'Dokumentenarchiv' },
+      { value: '256-Bit', label: 'Verschlusselung' },
+    ],
+    callToAction: {
+      primary: { text: 'Jetzt digitalisieren', href: '/register/company' },
+      secondary: { text: 'Funktionen entdecken', href: '/features' },
+    },
+  },
 };
 
 export type FeatureDetail = (typeof allFeatureDetails)[keyof typeof allFeatureDetails];

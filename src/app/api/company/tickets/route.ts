@@ -1,106 +1,99 @@
+/**
+ * Company Tickets API Route
+ * 
+ * Firebase-basierte Ticket-Verwaltung fuer Kunden
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import { AWSTicketStorage } from '@/lib/aws-ticket-storage';
-import { TicketNotificationService } from '@/lib/ticket-notifications';
+import { FirebaseTicketService } from '@/services/admin/FirebaseTicketService';
 
-// Company Tickets API - für Company Dashboard
-// Nutzt die gleiche AWS DynamoDB-Infrastruktur wie Admin, aber ohne Admin-Auth
-
+// GET - Tickets fuer Kunde abrufen
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const customerEmail = searchParams.get('customerEmail');
-    const ticketId = searchParams.get('id');
+    const ticketId = searchParams.get('ticketId');
+    const customerEmail = searchParams.get('email');
 
+    // Einzelnes Ticket abrufen
     if (ticketId) {
-      // Einzelnes Ticket laden
-      const ticket = await AWSTicketStorage.getTicket(ticketId);
+      const ticket = await FirebaseTicketService.getTicket(ticketId);
 
       if (!ticket) {
-        return NextResponse.json(
-          { success: false, error: 'Ticket nicht gefunden' },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
       }
 
-      return NextResponse.json({
-        success: true,
-        ticket,
-      });
-    } else if (customerEmail) {
-      // Tickets für Customer E-Mail laden
-      const tickets = await AWSTicketStorage.getTickets({ customerEmail });
+      // Nur oeffentliche Kommentare zurueckgeben
+      const publicComments = ticket.comments.filter(c => !c.isInternal);
 
       return NextResponse.json({
         success: true,
-        tickets: tickets || [],
+        ticket: { ...ticket, comments: publicComments },
       });
-    } else {
+    }
+
+    // Alle Tickets fuer Kunde abrufen
+    if (!customerEmail) {
       return NextResponse.json(
-        { success: false, error: 'Parameter fehlt: customerEmail oder id erforderlich' },
+        { error: 'E-Mail-Adresse ist erforderlich' },
         { status: 400 }
       );
     }
+
+    const tickets = await FirebaseTicketService.getTicketsByCustomer(customerEmail);
+
+    // Nur oeffentliche Kommentare zurueckgeben
+    const publicTickets = tickets.map(ticket => ({
+      ...ticket,
+      comments: ticket.comments.filter(c => !c.isInternal),
+    }));
+
+    return NextResponse.json({
+      success: true,
+      tickets: publicTickets,
+      total: publicTickets.length,
+    });
   } catch (error) {
-    return NextResponse.json({ success: false, error: 'Interner Server-Fehler' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    return NextResponse.json(
+      { error: 'Fehler beim Laden der Tickets', details: errorMessage },
+      { status: 500 }
+    );
   }
 }
 
+// POST - Neues Ticket erstellen
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { title, description, priority, category, customerEmail, customerName } = body;
+    const { title, description, category, customerEmail, customerName } = await request.json();
 
-    // Validation
     if (!title || !description || !customerEmail) {
       return NextResponse.json(
-        { success: false, error: 'Titel, Beschreibung und Kunden-E-Mail sind erforderlich' },
+        { error: 'Titel, Beschreibung und E-Mail sind erforderlich' },
         { status: 400 }
       );
     }
 
-    const ticket = await AWSTicketStorage.createTicket({
+    const ticket = await FirebaseTicketService.createTicket({
       title,
       description,
-      priority: priority || 'medium',
       category: category || 'support',
+      priority: 'medium',
+      status: 'open',
       customerEmail,
       customerName: customerName || 'Kunde',
-      status: 'open',
       tags: [],
       comments: [],
     });
 
-    // Test-Notification erstellen um zu sehen, ob das System funktioniert
-    try {
-      // Extrahiere UID aus dem Request (falls verfügbar) oder verwende E-Mail-Mapping
-      const uidToEmailMap: Record<string, string> = {
-        '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1': 'a.staudinger32@icloud.com',
-      };
-
-      const customerUid = Object.keys(uidToEmailMap).find(
-        uid => uidToEmailMap[uid] === customerEmail
-      );
-
-      if (customerUid) {
-        // Erstelle eine "Ticket erstellt" Notification für den User
-        await TicketNotificationService.createTicketReplyNotification(
-          customerUid,
-          ticket.id,
-          `Ticket "${title}" erstellt`,
-          'System'
-        );
-      }
-    } catch (notificationError) {
-      // Nicht weiterleiten, da Ticket-Erstellung erfolgreich war
-    }
-
     return NextResponse.json({
       success: true,
       ticket,
+      message: 'Ticket erfolgreich erstellt',
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
-      { success: false, error: 'Fehler beim Erstellen des Tickets' },
+      { error: 'Fehler beim Erstellen des Tickets', details: errorMessage },
       { status: 500 }
     );
   }

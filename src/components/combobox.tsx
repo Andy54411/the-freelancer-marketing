@@ -49,15 +49,15 @@ export function Combobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="p-0">
+      <DialogContent className="p-0 max-w-md max-h-[70vh] overflow-hidden">
         <VisuallyHidden>
-          <DialogTitle>Option auswählen</DialogTitle>
-          <DialogDescription>Wählen Sie eine Option aus der Liste aus.</DialogDescription>
+          <DialogTitle>Option auswaehlen</DialogTitle>
+          <DialogDescription>Waehlen Sie eine Option aus der Liste aus.</DialogDescription>
         </VisuallyHidden>
-        <Command>
+        <Command className="max-h-[60vh]">
           <CommandInput placeholder="Suchen..." />
           <CommandEmpty>Keine Ergebnisse gefunden.</CommandEmpty>
-          <CommandGroup>
+          <CommandGroup className="overflow-y-auto max-h-[50vh]">
             {options.map(option => (
               <CommandItem
                 key={option}

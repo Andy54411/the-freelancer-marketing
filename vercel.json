@@ -4,6 +4,12 @@
   "regions": [
     "fra1"
   ],
+  "crons": [
+    {
+      "path": "/api/cron/webmail-billing",
+      "schedule": "0 6 * * *"
+    }
+  ],
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30

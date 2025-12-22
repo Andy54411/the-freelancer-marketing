@@ -3,14 +3,13 @@
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Logo } from './logo';
-import { Menu, X, User, LogOut, Settings, Star } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, Star, Clock, FileUser, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import React, { Suspense, useEffect } from 'react';
-import { ModeToggle } from './mode-toggle';
 import LoginPopup from '@/components/LoginPopup';
-import { User as FirebaseUser, onAuthStateChanged, signOut, getAuth } from 'firebase/auth';
+import { onAuthStateChanged, signOut, getAuth } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { app, storage, db } from '@/firebase/clients';
+import { app, db } from '@/firebase/clients';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +18,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from '@/components/ui/navigation-menu';
 
 interface User {
   uid: string;
@@ -36,9 +43,29 @@ export const HeroHeader = () => {
 
   const menuItems = [
     { name: 'Stellenanzeigen', href: '/jobs', labelKey: 'nav.jobs' },
-    { name: 'Dienstleistungen', href: '/services', labelKey: 'nav.services' },
     { name: 'Über uns', href: '/about', labelKey: 'nav.about' },
     { name: 'Kontakt', href: '/contact', labelKey: 'nav.contact' },
+  ];
+
+  const businessSolutionsItems = [
+    { 
+      name: 'Dienstleistungen', 
+      href: '/services', 
+      description: 'Alle Dienstleistungen durchsuchen',
+      icon: Star
+    },
+    { 
+      name: 'Zeiterfassung', 
+      href: '/features/time-tracking', 
+      description: 'Arbeitszeiten digital erfassen',
+      icon: Clock
+    },
+    { 
+      name: 'Digitale Mitarbeiterakte', 
+      href: '/features/employee-records', 
+      description: 'Personalverwaltung digitalisieren',
+      icon: FileUser
+    },
   ];
 
   useEffect(() => {
@@ -68,7 +95,7 @@ export const HeroHeader = () => {
           } else {
             setProfilePictureUrl(null);
           }
-        } catch (error) {
+        } catch {
           setProfilePictureUrl(null);
         }
       } else {
@@ -100,17 +127,17 @@ export const HeroHeader = () => {
       const auth = getAuth(app);
       await signOut(auth);
       window.location.href = '/';
-    } catch (error) {}
+    } catch {}
   };
 
   return (
     <header>
       <nav
         data-state={menuState && 'active'}
-        className="bg-background/50 fixed z-20 w-full border-b backdrop-blur-3xl"
+        className="bg-[#14ad9f]/95 fixed z-20 w-full border-b border-teal-700/30 backdrop-blur-sm shadow-lg"
       >
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="flex flex-wrap items-center justify-between py-4">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="flex flex-wrap items-center justify-between py-3">
             {/* Left Section */}
             <div className="flex items-center justify-between w-full lg:w-auto gap-8">
               <Link href="/" className="flex items-center space-x-2" aria-label="Taskilo Home">
@@ -138,18 +165,60 @@ export const HeroHeader = () => {
               </button>
 
               {/* Desktop Nav */}
-              <ul className="hidden lg:flex gap-8 text-sm">
-                {menuItems.map((item, i) => (
-                  <li key={i}>
-                    <Link
-                      href={item.href}
-                      className="text-white/90 hover:text-white font-medium drop-shadow-md transition-colors"
-                    >
-                      {item.name}
-                    </Link>
-                  </li>
+              <div className="hidden lg:flex items-center gap-8 text-sm">
+                {menuItems.slice(0, 1).map((item, i) => (
+                  <Link
+                    key={i}
+                    href={item.href}
+                    className="text-white/90 hover:text-white font-medium drop-shadow-md transition-colors"
+                  >
+                    {item.name}
+                  </Link>
                 ))}
-              </ul>
+                
+                {/* Unternehmenslösungen Dropdown */}
+                <NavigationMenu>
+                  <NavigationMenuList>
+                    <NavigationMenuItem>
+                      <NavigationMenuTrigger className="bg-transparent text-white! hover:text-white! hover:bg-white/10 focus:bg-white/10 data-[state=open]:bg-white/10 data-[state=open]:text-white! font-medium drop-shadow-md data-active:text-white!">
+                        Unternehmenslösungen
+                      </NavigationMenuTrigger>
+                      <NavigationMenuContent>
+                        <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] bg-white">
+                          {businessSolutionsItems.map((item) => (
+                            <li key={item.name}>
+                              <NavigationMenuLink asChild>
+                                <Link
+                                  href={item.href}
+                                  className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-teal-50 hover:text-[#14ad9f] focus:bg-teal-50 focus:text-[#14ad9f]"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <item.icon className="h-4 w-4 text-[#14ad9f]" />
+                                    <div className="text-sm font-medium leading-none text-gray-900">{item.name}</div>
+                                  </div>
+                                  <p className="line-clamp-2 text-sm leading-snug text-gray-600 mt-1">
+                                    {item.description}
+                                  </p>
+                                </Link>
+                              </NavigationMenuLink>
+                            </li>
+                          ))}
+                        </ul>
+                      </NavigationMenuContent>
+                    </NavigationMenuItem>
+                  </NavigationMenuList>
+                </NavigationMenu>
+
+                {menuItems.slice(1).map((item, i) => (
+                  <Link
+                    key={i}
+                    href={item.href}
+                    className="text-white/90 hover:text-white font-medium drop-shadow-md transition-colors"
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
             </div>
 
             {/* Right Section incl. Mobile Dropdown */}
@@ -198,33 +267,37 @@ export const HeroHeader = () => {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <div className="flex items-center gap-2">
-                      <ModeToggle />
-                    </div>
                   </div>
                 ) : (
                   // Unauthenticated user
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleOpenLoginPopup}
-                      className="min-w-[100px] h-10 px-4"
+                      className="h-9 px-3 text-sm"
                     >
-                      <span>Anmelden</span>
+                      Anmelden
                     </Button>
                     <Button
                       asChild
                       size="sm"
-                      className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white shadow-lg font-semibold transition-all duration-300 min-w-[140px] h-10 px-4"
+                      className="bg-white/20 hover:bg-white/30 text-white font-semibold h-9 px-3 text-sm"
                     >
                       <Link href="/register/company">
-                        <span>Mit Taskilo starten</span>
+                        Mit Taskilo starten
                       </Link>
                     </Button>
-                    <div className="flex items-center h-10">
-                      <ModeToggle />
-                    </div>
+                    <Button
+                      asChild
+                      size="sm"
+                      className="bg-white hover:bg-gray-100 text-[#14ad9f] font-semibold h-9 px-3 text-sm ml-4"
+                    >
+                      <Link href="/webmail">
+                        <Mail className="w-4 h-4 mr-1" />
+                        Mail Account erstellen
+                      </Link>
+                    </Button>
                   </div>
                 ))}
             </div>
@@ -233,7 +306,36 @@ export const HeroHeader = () => {
             {menuState && (
               <div className="lg:hidden absolute top-full left-0 w-full bg-background z-10 border-t shadow-xl">
                 <ul className="px-6 py-4 space-y-4 text-base">
-                  {menuItems.map((item, i) => (
+                  {menuItems.slice(0, 1).map((item, i) => (
+                    <li key={i}>
+                      <Link
+                        href={item.href}
+                        className="block text-foreground hover:text-[#14ad9f] font-medium transition"
+                      >
+                        {item.name}
+                      </Link>
+                    </li>
+                  ))}
+                  
+                  {/* Unternehmenslösungen Section */}
+                  <li>
+                    <p className="text-sm font-semibold text-muted-foreground mb-2">Unternehmenslösungen</p>
+                    <ul className="pl-4 space-y-2">
+                      {businessSolutionsItems.map((item, i) => (
+                        <li key={i}>
+                          <Link
+                            href={item.href}
+                            className="flex items-center gap-2 text-foreground hover:text-[#14ad9f] font-medium transition"
+                          >
+                            <item.icon className="h-4 w-4 text-[#14ad9f]" />
+                            {item.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                  
+                  {menuItems.slice(1).map((item, i) => (
                     <li key={i}>
                       <Link
                         href={item.href}

@@ -9,15 +9,14 @@ import React, {
   AnimationEvent,
   useCallback,
 } from 'react';
-import Image from 'next/image'; // Importiere next/image
+import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import ProgressBar from '@/components/ProgressBar';
-import { FiX, FiInfo, FiLoader, FiCheckCircle, FiAlertCircle } from 'react-icons/fi'; // FiAlertCircle hinzugefügt
-import PopupModal from '@/app/register/company/step4/components/PopupModal'; // Pfad prüfen
+import { X, Info, Loader2, CheckCircle, AlertCircle, Upload, User, FileText, Award, Building2, Euro, ArrowLeft, ArrowRight } from 'lucide-react';
+import PopupModal from '@/app/register/company/step4/components/PopupModal';
 import { useRegistration } from '@/contexts/Registration-Context';
-import { PAGE_LOG, PAGE_ERROR } from '@/lib/constants';
-
-const STEP3_PAGE_LOG = '[Register Company Step3 LOG]';
 
 const steps: string[] = [
   'Über Sie',
@@ -458,460 +457,416 @@ export default function Step3CompanyPage() {
     router.push('/register/company/step4'); // Navigiere zum nächsten Schritt
   };
 
-  // Hilfsfunktion zur Bestimmung der CSS-Klasse für die Steuer-Input-Karten
-  const getTaxInputCardClass = useCallback(
-    (type: TaxInputType): string => {
-      const baseClasses =
-        'p-4 border-2 rounded-lg cursor-pointer text-center transition-all duration-200 hover:shadow-md flex items-center justify-center';
-      const isActive = activeTaxInput === type;
-      const hasValue =
-        (type === 'hrn' && companyRegister) ||
-        (type === 'taxId' && taxNumber) ||
-        (type === 'vatId' && vatId);
-
-      // Bestimme, ob dieses Feld erforderlich ist und fehlt
-      const { isValid: isTaxIdValid, missingFields: taxIdMissing } = validateTaxId();
-      const isRequiredAndMissing =
-        !isTaxIdValid &&
-        taxIdMissing.some(
-          field =>
-            (type === 'hrn' && field.includes('Handelsregisternummer')) ||
-            (type === 'taxId' && field.includes('Steuernummer')) ||
-            (type === 'vatId' && field.includes('USt-IdNr.')) ||
-            (field.includes('Steuerliche Identifikation') &&
-              (type === 'hrn' || type === 'taxId' || type === 'vatId'))
-        );
-
-      if (isActive) {
-        return `${baseClasses} bg-teal-500 text-white border-teal-500 ring-2 ring-offset-2 ring-teal-500`;
-      } else if (errorMessage !== null && isRequiredAndMissing && !hasValue) {
-        // Zeigt Fehler an, wenn Formular eingereicht und Feld fehlt
-        return `${baseClasses} bg-red-50 text-red-700 border-red-500 hover:bg-red-100`;
-      } else {
-        return `${baseClasses} bg-white text-gray-700 border-gray-300 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-500`;
-      }
-    },
-    [activeTaxInput, companyRegister, taxNumber, vatId, validateTaxId, errorMessage]
-  ); // legalForm entfernt, da in validateTaxId enthalten
-
-  // Hilfsfunktion zur Bestimmung der CSS-Klasse für Input-Felder (mit Fehler-Highlighting)
-  const getInputFieldClass = useCallback((hasError: boolean): string => {
-    return `w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${hasError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-teal-500'} text-gray-800`;
-  }, []);
-
-  // Hilfsfunktion zur Bestimmung der CSS-Klasse für Labels (mit Fehler-Highlighting)
-  const getLabelClass = useCallback((hasError: boolean): string => {
-    return `block text-gray-700 text-sm font-semibold mb-2 ${hasError ? 'text-red-600' : ''}`;
-  }, []);
-
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br p-4 sm:p-6 font-sans">
+    <div className="min-h-screen flex flex-col">
+      {/* Processing Overlay */}
       {isProcessingImage && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white p-4 rounded-lg shadow-xl flex items-center">
-            <FiLoader className="animate-spin h-5 w-5 mr-3 text-teal-600" />
-            <span>Bild wird verarbeitet...</span>
+        <div className="fixed inset-0 bg-gray-900/75 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-2xl flex items-center">
+            <Loader2 className="animate-spin h-6 w-6 mr-3 text-[#14ad9f]" />
+            <span className="text-gray-700 font-medium">Bild wird verarbeitet...</span>
           </div>
         </div>
       )}
-      <div className="w-full max-w-xl lg:max-w-4xl mx-auto mb-6 px-4">
-        <div className="flex justify-between mb-4">
-          <button
-            onClick={() => router.push('/register/company/step2')}
-            className="text-[#14ad9f] hover:text-taskilo-hover text-base sm:text-lg flex items-center transition-colors duration-200"
-            disabled={isProcessingImage}
+
+      {/* Hero Section */}
+      <div className="relative bg-linear-to-br from-[#14ad9f] via-teal-600 to-teal-800 text-white">
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-10"
+          style={{ backgroundImage: "url('/images/features/accounting-hero.png')" }}
+        />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          {/* Navigation */}
+          <div className="flex justify-between items-center mb-6">
+            <Link 
+              href="/register/company/step2"
+              className="flex items-center text-white/80 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              <span>Zurück</span>
+            </Link>
+            <Link 
+              href="/"
+              className="flex items-center text-white/80 hover:text-white transition-colors"
+            >
+              <span className="mr-2">Abbrechen</span>
+              <X className="w-5 h-5" />
+            </Link>
+          </div>
+
+          {/* Progress */}
+          <div className="max-w-2xl mx-auto mb-6">
+            <ProgressBar currentStep={3} totalSteps={5} />
+          </div>
+
+          {/* Title */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center"
           >
-            <span className="mr-2">← Zurück zu Schritt 2</span>
-          </button>
-          <button
-            onClick={() => router.push('/')}
-            className="text-[#14ad9f] hover:text-teal-700 text-base sm:text-lg flex items-center transition-colors duration-200"
-            disabled={isProcessingImage}
-          >
-            <span className="mr-2">Abbrechen</span> <FiX />
-          </button>
-        </div>
-        <div className="mb-6">
-          <ProgressBar currentStep={3} totalSteps={5} />
-        </div>
-        <div className="flex justify-between items-center mb-6">
-          <p className="text-lg sm:text-xl text-teal-600 font-semibold">
-            Schritt 3/5: Profil & Nachweise
-          </p>
-          <div className="flex items-center">
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="text-sm sm:text-base text-teal-600 hover:underline mr-2 cursor-pointer"
-              disabled={isProcessingImage}
-            >
-              Schritte anzeigen
-            </button>
-            <FiInfo className="text-teal-600 text-xl sm:text-2xl" />
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-xl w-full bg-white p-6 sm:p-8 rounded-xl shadow-2xl border border-gray-200">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 text-center">
-          Profil und Nachweise
-        </h2>
-        <p className="text-gray-600 text-center mb-8">
-          Laden Sie Ihr Profilbild, Ihren Gewerbeschein und optional den Meisterbrief hoch.
-        </p>
-
-        <form className="space-y-6" onSubmit={handleNextSubmit}>
-          {errorMessage && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg flex items-center mb-4">
-              <FiAlertCircle className="mr-2 text-xl" />
-              <p className="text-sm">{errorMessage}</p>
-            </div>
-          )}
-
-          {/* Profilbild Upload */}
-          <div className="text-center">
-            <label
-              htmlFor="profilePictureInput"
-              className={`${getLabelClass(!registration.profilePictureFile && errorMessage !== null)} text-center p-2`}
-            >
-              Profilbild* (min. {MIN_PROFILE_PIC_DIMENSION}x{MIN_PROFILE_PIC_DIMENSION}px, max.{' '}
-              {(MAX_PROFILE_PIC_SIZE_BYTES / 1024).toFixed(0)}KB, JPEG/PNG)
-            </label>
-            <div
-              className={`mt-2 mb-4 w-24 h-24 mx-auto border-2 ${!registration.profilePictureFile && errorMessage !== null ? 'border-red-500' : 'border-teal-500'} rounded-full flex justify-center items-center bg-gray-200 overflow-hidden shadow-sm`}
-            >
-              {profilePicturePreview ? (
-                <Image
-                  src={profilePicturePreview}
-                  alt="Profilbild Vorschau"
-                  width={96} // w-24 -> 24*4 = 96px
-                  height={96} // h-24 -> 24*4 = 96px
-                  className="object-cover"
-                />
-              ) : (
-                <span className="text-gray-400 text-sm">Vorschau</span>
-              )}
-            </div>
-            <div className="w-64 mx-auto">
-              <input
-                type="file"
-                onChange={e =>
-                  handleFileChange(
-                    e,
-                    setProfilePictureFile,
-                    setProfilePicturePreview,
-                    MAX_PROFILE_PIC_SIZE_BYTES,
-                    'Profilbild',
-                    true
-                  )
-                }
-                className="hidden"
-                id="profilePictureInput"
-                accept="image/jpeg, image/png"
-                disabled={isProcessingImage}
-              />
+            <div className="flex items-center justify-center mb-4">
+              <p className="text-lg text-white/80">Schritt 3 von 5</p>
               <button
-                type="button"
-                disabled={isProcessingImage}
-                className="w-full py-2 px-4 border-2 border-teal-500 rounded-lg text-teal-600 hover:bg-teal-50 disabled:opacity-50 transition-colors duration-200"
-                onClick={() => {
-                  const el = document.getElementById('profilePictureInput');
-                  if (el) el.click();
-                }}
+                onClick={() => setIsModalOpen(true)}
+                className="ml-3 text-white/60 hover:text-white transition-colors"
               >
-                Datei auswählen
+                <Info className="w-5 h-5" />
               </button>
-              {registration.profilePictureFile && (
-                <p className="mt-1 text-xs text-gray-600">
-                  {registration.profilePictureFile.name} (
-                  {(registration.profilePictureFile.size / 1024).toFixed(2)}KB)
-                </p>
-              )}
             </div>
-          </div>
-
-          {/* Stundenpreis */}
-          <div>
-            <label
-              htmlFor="hourlyRateInput"
-              className={`${getLabelClass(!hourlyRate && errorMessage !== null)} text-center p-2`}
-            >
-              Stundenpreis (€)*
-            </label>
-            <input
-              type="number"
-              id="hourlyRateInput"
-              value={hourlyRate || ''}
-              onChange={e => setHourlyRate(e.target.value)}
-              className={`${getInputFieldClass(!hourlyRate && errorMessage !== null)} text-center`}
-              placeholder="z.B. 50"
-              required // HTML5 required Attribut beibehalten
-              min="1"
-              disabled={isProcessingImage}
-            />
-          </div>
-
-          {/* Gewerbeschein Upload */}
-          <div>
-            <label
-              htmlFor="businessLicenseInput"
-              className={`${getLabelClass(!registration.businessLicenseFile && errorMessage !== null)} text-center p-2`}
-            >
-              Gewerbeschein hochladen* (max.{' '}
-              {(MAX_BUSINESS_LICENSE_SIZE_BYTES / (1024 * 1024)).toFixed(0)}MB)
-            </label>
-            <div className="w-64 mx-auto">
-              <input
-                type="file"
-                onChange={e =>
-                  handleFileChange(
-                    e,
-                    setBusinessLicenseFile,
-                    setBusinessLicensePreview,
-                    MAX_BUSINESS_LICENSE_SIZE_BYTES,
-                    'Gewerbeschein',
-                    false
-                  )
-                }
-                className="hidden"
-                id="businessLicenseInput"
-                accept=".pdf, image/jpeg, image/png, .heic, .heif"
-                disabled={isProcessingImage}
-              />
-              <button
-                type="button"
-                disabled={isProcessingImage}
-                className="w-full py-2 px-4 border-2 border-teal-500 rounded-lg text-teal-600 hover:bg-teal-50 disabled:opacity-50 transition-colors duration-200"
-                onClick={() => {
-                  const el = document.getElementById('businessLicenseInput');
-                  if (el) el.click();
-                }}
-              >
-                Datei auswählen
-              </button>
-              {registration.businessLicenseFile && (
-                <p className="mt-1 text-xs text-gray-600">
-                  {registration.businessLicenseFile.name}
-                </p>
-              )}
-              {businessLicensePreview && (
-                <Image
-                  src={businessLicensePreview}
-                  alt="Gewerbeschein Vorschau"
-                  width={180} // Beispielbreite
-                  height={128} // max-h-32 -> 32*4 = 128px
-                  objectFit="contain"
-                  className="my-2 rounded border mx-auto"
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Meisterbrief Upload (optional) */}
-          <div>
-            <label
-              htmlFor="masterCraftsmanCertificateInput"
-              className="block text-gray-700 font-semibold text-center p-2"
-            >
-              Meisterbrief hochladen (optional, max.{' '}
-              {(MAX_MASTER_CERT_SIZE_BYTES / (1024 * 1024)).toFixed(0)}MB)
-            </label>
-            <div className="w-64 mx-auto">
-              <input
-                type="file"
-                onChange={e =>
-                  handleFileChange(
-                    e,
-                    setMasterCraftsmanCertificateFile,
-                    setMasterCraftsmanCertificatePreview,
-                    MAX_MASTER_CERT_SIZE_BYTES,
-                    'Meisterbrief',
-                    false
-                  )
-                }
-                className="hidden"
-                id="masterCraftsmanCertificateInput"
-                accept=".pdf, image/jpeg, image/png, .heic, .heif"
-                disabled={isProcessingImage}
-              />
-              <button
-                type="button"
-                disabled={isProcessingImage}
-                className="w-full py-2 px-4 border-2 border-teal-500 rounded-lg text-teal-600 hover:bg-teal-50 disabled:opacity-50 transition-colors duration-200"
-                onClick={() => {
-                  const el = document.getElementById('masterCraftsmanCertificateInput');
-                  if (el) el.click();
-                }}
-              >
-                Datei auswählen
-              </button>
-              {registration.masterCraftsmanCertificateFile && (
-                <p className="mt-1 text-xs text-gray-600">
-                  {registration.masterCraftsmanCertificateFile.name}
-                </p>
-              )}
-              {masterCraftsmanCertificatePreview && (
-                <Image
-                  src={masterCraftsmanCertificatePreview}
-                  alt="Meisterbrief Vorschau"
-                  width={180} // Beispielbreite
-                  height={128} // max-h-32 -> 32*4 = 128px
-                  objectFit="contain"
-                  className="my-2 rounded border mx-auto"
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Rechtsform Auswahl */}
-          <div className="border-t border-gray-200 pt-6">
-            <label
-              htmlFor="legalFormInput"
-              className={`${getLabelClass(!legalForm && errorMessage !== null)} text-center p-2 mb-2`}
-            >
-              Rechtsform Ihres Unternehmens*
-            </label>
-            <select
-              id="legalFormInput"
-              value={legalForm || ''} // Nutze legalForm direkt vom Context
-              onChange={e => setLegalForm(e.target.value || null)} // Setze direkt in den Kontext
-              className={`${getInputFieldClass(!legalForm && errorMessage !== null)} text-center bg-white`}
-              required // HTML5 required Attribut beibehalten
-              disabled={isProcessingImage}
-            >
-              <option value="">Bitte wählen...</option>
-              {germanLegalForms.map(formType => (
-                <option key={formType} value={formType}>
-                  {formType}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Steuerliche Identifikation */}
-          <div className="pt-4">
-            <p
-              className={`text-sm text-center mb-4 ${!validateTaxId().isValid && errorMessage !== null ? 'text-red-600' : 'text-gray-700'}`}
-            >
-              Steuerliche Identifikation:
-              {legalForm &&
-              (legalForm.includes('GmbH') ||
-                legalForm.includes('UG') ||
-                legalForm.includes('AG') ||
-                legalForm.includes('e.K.'))
-                ? ' Handelsregisternummer ist für Ihre Rechtsform erforderlich.'
-                : ' Mindestens eine Angabe (HRN, Steuernr. oder USt-IdNr.) ist erforderlich.'}
-              {/* Optional: Detailiertere Fehlermeldung, wenn ungültig */}
-              {!validateTaxId().isValid &&
-                errorMessage !== null &&
-                validateTaxId().missingFields.length > 0 && (
-                  <span className="block text-red-500 mt-1">
-                    ({validateTaxId().missingFields.join(', ')})
-                  </span>
-                )}
+            <h1 className="text-3xl sm:text-4xl font-bold mb-3">
+              Profil & Nachweise
+            </h1>
+            <p className="text-lg text-white/80 max-w-xl mx-auto">
+              Laden Sie Ihr Profilbild, Ihren Gewerbeschein und optional den Meisterbrief hoch.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-              <div onClick={() => setActiveTaxInput('hrn')} className={getTaxInputCardClass('hrn')}>
-                HRN
-                {companyRegister && (
-                  <FiCheckCircle className="inline-block ml-1 text-base text-green-500" />
-                )}
-              </div>
-              <div
-                onClick={() => setActiveTaxInput('taxId')}
-                className={getTaxInputCardClass('taxId')}
-              >
-                Steuernr.
-                {taxNumber && (
-                  <FiCheckCircle className="inline-block ml-1 text-base text-green-500" />
-                )}
-              </div>
-              <div
-                onClick={() => setActiveTaxInput('vatId')}
-                className={getTaxInputCardClass('vatId')}
-              >
-                USt-IdNr.
-                {vatId && <FiCheckCircle className="inline-block ml-1 text-base text-green-500" />}
-              </div>
-            </div>
-            {activeTaxInput === 'hrn' && (
-              <div className="mt-2">
-                <label
-                  htmlFor="companyRegisterInput"
-                  className="block text-teal-600 font-semibold text-center p-1"
-                >
-                  Handelsregisternummer eingeben
-                </label>
-                <input
-                  type="text"
-                  id="companyRegisterInput"
-                  value={companyRegister || ''}
-                  onChange={e => setCompanyRegister(e.target.value)}
-                  onAnimationStart={(e: AnimationEvent<HTMLInputElement>) =>
-                    handleAutofillSync(e, setCompanyRegister)
-                  }
-                  className={`${getInputFieldClass(!companyRegister && errorMessage !== null && activeTaxInput === 'hrn' && !validateTaxId().isValid)} text-center`}
-                  placeholder="z.B. HRB 12345"
-                  disabled={isProcessingImage}
-                />
-              </div>
-            )}
-            {activeTaxInput === 'taxId' && (
-              <div className="mt-2">
-                <label
-                  htmlFor="taxNumberInput"
-                  className="block text-teal-600 font-semibold text-center p-1"
-                >
-                  Steuernummer eingeben
-                </label>
-                <input
-                  type="text"
-                  id="taxNumberInput"
-                  value={taxNumber || ''}
-                  onChange={e => setTaxNumber(e.target.value)}
-                  onAnimationStart={(e: AnimationEvent<HTMLInputElement>) =>
-                    handleAutofillSync(e, setTaxNumber)
-                  }
-                  className={`${getInputFieldClass(!taxNumber && errorMessage !== null && activeTaxInput === 'taxId' && !validateTaxId().isValid)} text-center`}
-                  placeholder="Ihre nationale Steuernummer"
-                  disabled={isProcessingImage}
-                />
-              </div>
-            )}
-            {activeTaxInput === 'vatId' && (
-              <div className="mt-2">
-                <label
-                  htmlFor="vatIdInput"
-                  className="block text-teal-600 font-semibold text-center p-1"
-                >
-                  Umsatzsteuer-ID (USt-IdNr.) eingeben
-                </label>
-                <input
-                  type="text"
-                  id="vatIdInput"
-                  value={vatId || ''}
-                  onChange={e => setVatId(e.target.value)}
-                  onAnimationStart={(e: AnimationEvent<HTMLInputElement>) =>
-                    handleAutofillSync(e, setVatId)
-                  }
-                  className={`${getInputFieldClass(!vatId && errorMessage !== null && activeTaxInput === 'vatId' && !validateTaxId().isValid)} text-center`}
-                  placeholder="z.B. DE123456789"
-                  disabled={isProcessingImage}
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="mt-6 text-center">
-            <button
-              type="submit"
-              disabled={isProcessingImage}
-              className="w-full py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition duration-300 font-semibold disabled:opacity-50"
-            >
-              Weiter zu Schritt 4
-            </button>
-          </div>
-        </form>
+          </motion.div>
+        </div>
       </div>
+
+      {/* Main Content */}
+      <div className="flex-1 bg-gray-50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-start mb-6">
+                <AlertCircle className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
+                <p className="text-sm">{errorMessage}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleNextSubmit} className="space-y-8">
+              {/* Upload Section - Grid Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Profilbild */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                  <div className="flex items-center mb-4">
+                    <User className="w-5 h-5 text-[#14ad9f] mr-2" />
+                    <label className={`font-semibold ${!registration.profilePictureFile && errorMessage ? 'text-red-600' : 'text-gray-800'}`}>
+                      Profilbild*
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Min. {MIN_PROFILE_PIC_DIMENSION}x{MIN_PROFILE_PIC_DIMENSION}px, max. {(MAX_PROFILE_PIC_SIZE_BYTES / 1024).toFixed(0)}KB, JPEG/PNG
+                  </p>
+                  
+                  <div className={`w-24 h-24 mx-auto mb-4 border-2 ${!registration.profilePictureFile && errorMessage ? 'border-red-300' : 'border-[#14ad9f]'} rounded-full flex justify-center items-center bg-gray-100 overflow-hidden`}>
+                    {profilePicturePreview ? (
+                      <Image
+                        src={profilePicturePreview}
+                        alt="Profilbild Vorschau"
+                        width={96}
+                        height={96}
+                        className="object-cover"
+                      />
+                    ) : (
+                      <User className="w-10 h-10 text-gray-400" />
+                    )}
+                  </div>
+                  
+                  <input
+                    type="file"
+                    onChange={e => handleFileChange(e, setProfilePictureFile, setProfilePicturePreview, MAX_PROFILE_PIC_SIZE_BYTES, 'Profilbild', true)}
+                    className="hidden"
+                    id="profilePictureInput"
+                    accept="image/jpeg, image/png"
+                    disabled={isProcessingImage}
+                  />
+                  <button
+                    type="button"
+                    disabled={isProcessingImage}
+                    className="w-full py-2.5 px-4 border-2 border-[#14ad9f] rounded-xl text-[#14ad9f] hover:bg-teal-50 disabled:opacity-50 transition-colors font-medium flex items-center justify-center"
+                    onClick={() => document.getElementById('profilePictureInput')?.click()}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Datei auswählen
+                  </button>
+                  {registration.profilePictureFile && (
+                    <p className="mt-2 text-xs text-gray-600 text-center truncate">
+                      {registration.profilePictureFile.name}
+                    </p>
+                  )}
+                </div>
+
+                {/* Gewerbeschein */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                  <div className="flex items-center mb-4">
+                    <FileText className="w-5 h-5 text-[#14ad9f] mr-2" />
+                    <label className={`font-semibold ${!registration.businessLicenseFile && errorMessage ? 'text-red-600' : 'text-gray-800'}`}>
+                      Gewerbeschein*
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Max. {(MAX_BUSINESS_LICENSE_SIZE_BYTES / (1024 * 1024)).toFixed(0)}MB, PDF/JPEG/PNG
+                  </p>
+                  
+                  <div className={`w-24 h-24 mx-auto mb-4 border-2 ${!registration.businessLicenseFile && errorMessage ? 'border-red-300' : 'border-gray-200'} rounded-xl flex justify-center items-center bg-gray-100 overflow-hidden`}>
+                    {businessLicensePreview ? (
+                      <Image
+                        src={businessLicensePreview}
+                        alt="Gewerbeschein Vorschau"
+                        width={96}
+                        height={96}
+                        className="object-contain"
+                      />
+                    ) : (
+                      <FileText className="w-10 h-10 text-gray-400" />
+                    )}
+                  </div>
+                  
+                  <input
+                    type="file"
+                    onChange={e => handleFileChange(e, setBusinessLicenseFile, setBusinessLicensePreview, MAX_BUSINESS_LICENSE_SIZE_BYTES, 'Gewerbeschein', false)}
+                    className="hidden"
+                    id="businessLicenseInput"
+                    accept=".pdf, image/jpeg, image/png, .heic, .heif"
+                    disabled={isProcessingImage}
+                  />
+                  <button
+                    type="button"
+                    disabled={isProcessingImage}
+                    className="w-full py-2.5 px-4 border-2 border-[#14ad9f] rounded-xl text-[#14ad9f] hover:bg-teal-50 disabled:opacity-50 transition-colors font-medium flex items-center justify-center"
+                    onClick={() => document.getElementById('businessLicenseInput')?.click()}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Datei auswählen
+                  </button>
+                  {registration.businessLicenseFile && (
+                    <p className="mt-2 text-xs text-gray-600 text-center truncate">
+                      {registration.businessLicenseFile.name}
+                    </p>
+                  )}
+                </div>
+
+                {/* Meisterbrief (optional) */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                  <div className="flex items-center mb-4">
+                    <Award className="w-5 h-5 text-[#14ad9f] mr-2" />
+                    <label className="font-semibold text-gray-800">
+                      Meisterbrief
+                    </label>
+                    <span className="ml-2 text-xs text-gray-400">(optional)</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Max. {(MAX_MASTER_CERT_SIZE_BYTES / (1024 * 1024)).toFixed(0)}MB, PDF/JPEG/PNG
+                  </p>
+                  
+                  <div className="w-24 h-24 mx-auto mb-4 border-2 border-gray-200 rounded-xl flex justify-center items-center bg-gray-100 overflow-hidden">
+                    {masterCraftsmanCertificatePreview ? (
+                      <Image
+                        src={masterCraftsmanCertificatePreview}
+                        alt="Meisterbrief Vorschau"
+                        width={96}
+                        height={96}
+                        className="object-contain"
+                      />
+                    ) : (
+                      <Award className="w-10 h-10 text-gray-400" />
+                    )}
+                  </div>
+                  
+                  <input
+                    type="file"
+                    onChange={e => handleFileChange(e, setMasterCraftsmanCertificateFile, setMasterCraftsmanCertificatePreview, MAX_MASTER_CERT_SIZE_BYTES, 'Meisterbrief', false)}
+                    className="hidden"
+                    id="masterCraftsmanCertificateInput"
+                    accept=".pdf, image/jpeg, image/png, .heic, .heif"
+                    disabled={isProcessingImage}
+                  />
+                  <button
+                    type="button"
+                    disabled={isProcessingImage}
+                    className="w-full py-2.5 px-4 border-2 border-gray-300 rounded-xl text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors font-medium flex items-center justify-center"
+                    onClick={() => document.getElementById('masterCraftsmanCertificateInput')?.click()}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Datei auswählen
+                  </button>
+                  {registration.masterCraftsmanCertificateFile && (
+                    <p className="mt-2 text-xs text-gray-600 text-center truncate">
+                      {registration.masterCraftsmanCertificateFile.name}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Business Details Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Stundenpreis */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                  <div className="flex items-center mb-4">
+                    <Euro className="w-5 h-5 text-[#14ad9f] mr-2" />
+                    <label htmlFor="hourlyRateInput" className={`font-semibold ${!hourlyRate && errorMessage ? 'text-red-600' : 'text-gray-800'}`}>
+                      Stundenpreis*
+                    </label>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      id="hourlyRateInput"
+                      value={hourlyRate || ''}
+                      onChange={e => setHourlyRate(e.target.value)}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] text-gray-800 text-lg ${!hourlyRate && errorMessage ? 'border-red-300' : 'border-gray-200'}`}
+                      placeholder="z.B. 50"
+                      required
+                      min="1"
+                      disabled={isProcessingImage}
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg font-medium">EUR/h</span>
+                  </div>
+                </div>
+
+                {/* Rechtsform */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                  <div className="flex items-center mb-4">
+                    <Building2 className="w-5 h-5 text-[#14ad9f] mr-2" />
+                    <label htmlFor="legalFormInput" className={`font-semibold ${!legalForm && errorMessage ? 'text-red-600' : 'text-gray-800'}`}>
+                      Rechtsform*
+                    </label>
+                  </div>
+                  <select
+                    id="legalFormInput"
+                    value={legalForm || ''}
+                    onChange={e => setLegalForm(e.target.value || null)}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] text-gray-800 bg-white ${!legalForm && errorMessage ? 'border-red-300' : 'border-gray-200'}`}
+                    required
+                    disabled={isProcessingImage}
+                  >
+                    <option value="">Bitte wählen...</option>
+                    {germanLegalForms.map(formType => (
+                      <option key={formType} value={formType}>
+                        {formType}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Tax Identification Section */}
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                <h3 className={`font-semibold mb-2 ${!validateTaxId().isValid && errorMessage ? 'text-red-600' : 'text-gray-800'}`}>
+                  Steuerliche Identifikation*
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  {legalForm && (legalForm.includes('GmbH') || legalForm.includes('UG') || legalForm.includes('AG') || legalForm.includes('e.K.'))
+                    ? 'Handelsregisternummer ist für Ihre Rechtsform erforderlich.'
+                    : 'Mindestens eine Angabe (HRN, Steuernr. oder USt-IdNr.) ist erforderlich.'}
+                </p>
+
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTaxInput('hrn')}
+                    className={`p-4 rounded-xl border-2 transition-all flex items-center justify-center font-medium ${
+                      activeTaxInput === 'hrn'
+                        ? 'bg-[#14ad9f] text-white border-[#14ad9f]'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-[#14ad9f] hover:text-[#14ad9f]'
+                    }`}
+                  >
+                    HRN
+                    {companyRegister && <CheckCircle className="w-4 h-4 ml-2 text-green-400" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTaxInput('taxId')}
+                    className={`p-4 rounded-xl border-2 transition-all flex items-center justify-center font-medium ${
+                      activeTaxInput === 'taxId'
+                        ? 'bg-[#14ad9f] text-white border-[#14ad9f]'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-[#14ad9f] hover:text-[#14ad9f]'
+                    }`}
+                  >
+                    Steuernr.
+                    {taxNumber && <CheckCircle className="w-4 h-4 ml-2 text-green-400" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTaxInput('vatId')}
+                    className={`p-4 rounded-xl border-2 transition-all flex items-center justify-center font-medium ${
+                      activeTaxInput === 'vatId'
+                        ? 'bg-[#14ad9f] text-white border-[#14ad9f]'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-[#14ad9f] hover:text-[#14ad9f]'
+                    }`}
+                  >
+                    USt-IdNr.
+                    {vatId && <CheckCircle className="w-4 h-4 ml-2 text-green-400" />}
+                  </button>
+                </div>
+
+                {activeTaxInput === 'hrn' && (
+                  <div>
+                    <label htmlFor="companyRegisterInput" className="block text-sm font-medium text-gray-700 mb-2">
+                      Handelsregisternummer
+                    </label>
+                    <input
+                      type="text"
+                      id="companyRegisterInput"
+                      value={companyRegister || ''}
+                      onChange={e => setCompanyRegister(e.target.value)}
+                      onAnimationStart={(e: AnimationEvent<HTMLInputElement>) => handleAutofillSync(e, setCompanyRegister)}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] text-gray-800"
+                      placeholder="z.B. HRB 12345"
+                      disabled={isProcessingImage}
+                    />
+                  </div>
+                )}
+                {activeTaxInput === 'taxId' && (
+                  <div>
+                    <label htmlFor="taxNumberInput" className="block text-sm font-medium text-gray-700 mb-2">
+                      Steuernummer
+                    </label>
+                    <input
+                      type="text"
+                      id="taxNumberInput"
+                      value={taxNumber || ''}
+                      onChange={e => setTaxNumber(e.target.value)}
+                      onAnimationStart={(e: AnimationEvent<HTMLInputElement>) => handleAutofillSync(e, setTaxNumber)}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] text-gray-800"
+                      placeholder="Ihre nationale Steuernummer"
+                      disabled={isProcessingImage}
+                    />
+                  </div>
+                )}
+                {activeTaxInput === 'vatId' && (
+                  <div>
+                    <label htmlFor="vatIdInput" className="block text-sm font-medium text-gray-700 mb-2">
+                      Umsatzsteuer-ID (USt-IdNr.)
+                    </label>
+                    <input
+                      type="text"
+                      id="vatIdInput"
+                      value={vatId || ''}
+                      onChange={e => setVatId(e.target.value)}
+                      onAnimationStart={(e: AnimationEvent<HTMLInputElement>) => handleAutofillSync(e, setVatId)}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] text-gray-800"
+                      placeholder="z.B. DE123456789"
+                      disabled={isProcessingImage}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Submit Button */}
+              <div className="flex justify-center">
+                <button
+                  type="submit"
+                  disabled={isProcessingImage}
+                  className="px-12 py-4 bg-linear-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-teal-600 hover:to-teal-700 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl disabled:opacity-50 flex items-center"
+                >
+                  Weiter zu Schritt 4
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      </div>
+
       <PopupModal isOpen={isModalOpen} onClose={closeModal} steps={steps} />
     </div>
   );

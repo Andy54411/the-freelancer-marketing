@@ -1,52 +1,44 @@
-// Pure AWS Ticket Management API - NO Firebase Dependencies
+/**
+ * Admin Tickets API Route
+ * 
+ * Firebase-basierte Ticket-Verwaltung
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
+import { FirebaseTicketService } from '@/services/admin/FirebaseTicketService';
+import { AdminAuthService } from '@/services/admin/AdminAuthService';
 import { cookies } from 'next/headers';
-import { AWSTicketStorage, TicketData } from '@/lib/aws-ticket-storage';
-import { EnhancedTicketService } from '@/lib/aws-ticket-enhanced';
 
-// JWT Secret für Admin-Tokens
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024'
-);
-
-// Admin-Authentifizierung prüfen
-async function verifyAdminAuth() {
-  // Temporärer Bypass für Demo/Development - ENTFERNEN FÜR PRODUCTION
-  if (process.env.NODE_ENV === 'development' || process.env.BYPASS_ADMIN_AUTH === 'true') {
-    return;
+// Admin-Authentifizierung pruefen
+async function verifyAdminAuth(): Promise<{ valid: boolean; error?: string }> {
+  // Bypass fuer Development
+  if (process.env.NODE_ENV === 'development' && process.env.BYPASS_ADMIN_AUTH === 'true') {
+    return { valid: true };
   }
 
   const cookieStore = await cookies();
   const token = cookieStore.get('taskilo-admin-token')?.value;
 
   if (!token) {
-    throw new Error('Nicht autorisiert');
+    return { valid: false, error: 'Nicht autorisiert' };
   }
 
-  try {
-    await jwtVerify(token, JWT_SECRET);
-  } catch (error) {
-    throw new Error('Ungültiger Token');
-  }
+  return AdminAuthService.verifyToken(token);
 }
 
-// GET - Alle Tickets aus AWS DynamoDB abrufen
+// GET - Alle Tickets abrufen
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Auth temporär deaktiviert für Testing
-    // await verifyAdminAuth();
-
     const { searchParams } = new URL(request.url);
     const ticketId = searchParams.get('id');
 
     // Einzelnes Ticket abrufen
     if (ticketId) {
-      const ticket = await AWSTicketStorage.getTicket(ticketId);
+      const ticket = await FirebaseTicketService.getTicket(ticketId);
 
       if (!ticket) {
         return NextResponse.json(
-          { error: 'Ticket nicht gefunden', source: 'aws-dynamodb' },
+          { error: 'Ticket nicht gefunden' },
           { status: 404 }
         );
       }
@@ -54,7 +46,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         ticket,
-        source: 'aws-dynamodb',
       });
     }
 
@@ -66,7 +57,7 @@ export async function GET(request: NextRequest) {
     const customerEmail = searchParams.get('customerEmail') || undefined;
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    const tickets = await AWSTicketStorage.getTickets({
+    const tickets = await FirebaseTicketService.getTickets({
       status,
       priority,
       category,
@@ -79,24 +70,23 @@ export async function GET(request: NextRequest) {
       success: true,
       tickets,
       total: tickets.length,
-      source: 'aws-dynamodb',
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
-      {
-        error: 'Fehler beim Laden der Tickets aus AWS',
-        details: error.message,
-        source: 'aws-dynamodb',
-      },
+      { error: 'Fehler beim Laden der Tickets', details: errorMessage },
       { status: 500 }
     );
   }
 }
 
-// POST - Neues Ticket in AWS DynamoDB erstellen
+// POST - Neues Ticket erstellen
 export async function POST(request: NextRequest) {
   try {
-    await verifyAdminAuth();
+    const authResult = await verifyAdminAuth();
+    if (!authResult.valid) {
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
+    }
 
     const {
       title,
@@ -116,8 +106,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create ticket using AWS DynamoDB
-    const ticket = await AWSTicketStorage.createTicket({
+    const ticket = await FirebaseTicketService.createTicket({
       title,
       description,
       priority: priority || 'medium',
@@ -130,52 +119,27 @@ export async function POST(request: NextRequest) {
       comments: [],
     });
 
-    // Log creation to CloudWatch
-    await EnhancedTicketService.logToCloudWatch(
-      'ticket-creation',
-      {
-        action: 'ticket_created',
-        ticketId: ticket.id,
-        category: ticket.category,
-        priority: ticket.priority,
-        aiClassified: ticket.aiClassified,
-        hasAI: !!ticket.aiSentiment,
-      },
-      'INFO'
-    );
-
     return NextResponse.json({
       success: true,
       ticket,
-      message: 'Ticket erfolgreich in AWS DynamoDB erstellt',
-      source: 'aws-dynamodb',
+      message: 'Ticket erfolgreich erstellt',
     });
   } catch (error) {
-    await EnhancedTicketService.logToCloudWatch(
-      'ticket-creation-errors',
-      {
-        action: 'ticket_creation_failed',
-        error: error.message,
-        stack: error.stack,
-      },
-      'ERROR'
-    );
-
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
-      {
-        error: 'Fehler beim Erstellen des Tickets in AWS',
-        details: error.message,
-        source: 'aws-dynamodb',
-      },
+      { error: 'Fehler beim Erstellen des Tickets', details: errorMessage },
       { status: 500 }
     );
   }
 }
 
-// PUT - Ticket in AWS DynamoDB aktualisieren
+// PUT - Ticket aktualisieren
 export async function PUT(request: NextRequest) {
   try {
-    await verifyAdminAuth();
+    const authResult = await verifyAdminAuth();
+    if (!authResult.valid) {
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
+    }
 
     const { id, ...updates } = await request.json();
 
@@ -183,40 +147,29 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Ticket-ID ist erforderlich' }, { status: 400 });
     }
 
-    // Update ticket using AWS DynamoDB
-    const updatedTicket = await AWSTicketStorage.updateTicket(id, updates);
+    const updatedTicket = await FirebaseTicketService.updateTicket(id, updates);
 
     return NextResponse.json({
       success: true,
       ticket: updatedTicket,
-      message: 'Ticket erfolgreich in AWS DynamoDB aktualisiert',
-      source: 'aws-dynamodb',
+      message: 'Ticket erfolgreich aktualisiert',
     });
   } catch (error) {
-    await EnhancedTicketService.logToCloudWatch(
-      'ticket-update-errors',
-      {
-        action: 'ticket_update_failed',
-        error: error.message,
-      },
-      'ERROR'
-    );
-
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
-      {
-        error: 'Fehler beim Aktualisieren des Tickets in AWS',
-        details: error.message,
-        source: 'aws-dynamodb',
-      },
+      { error: 'Fehler beim Aktualisieren des Tickets', details: errorMessage },
       { status: 500 }
     );
   }
 }
 
-// DELETE - Ticket in AWS DynamoDB löschen (soft delete)
+// DELETE - Ticket loeschen (soft delete)
 export async function DELETE(request: NextRequest) {
   try {
-    await verifyAdminAuth();
+    const authResult = await verifyAdminAuth();
+    if (!authResult.valid) {
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
+    }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -225,27 +178,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Ticket-ID ist erforderlich' }, { status: 400 });
     }
 
-    const success = await AWSTicketStorage.deleteTicket(id);
+    await FirebaseTicketService.deleteTicket(id);
 
-    if (success) {
-      return NextResponse.json({
-        success: true,
-        message: 'Ticket erfolgreich aus AWS DynamoDB gelöscht',
-        source: 'aws-dynamodb',
-      });
-    } else {
-      return NextResponse.json(
-        { error: 'Ticket konnte nicht gelöscht werden', source: 'aws-dynamodb' },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({
+      success: true,
+      message: 'Ticket erfolgreich geschlossen',
+    });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
-      {
-        error: 'Fehler beim Löschen des Tickets aus AWS',
-        details: error.message,
-        source: 'aws-dynamodb',
-      },
+      { error: 'Fehler beim Loeschen des Tickets', details: errorMessage },
       { status: 500 }
     );
   }

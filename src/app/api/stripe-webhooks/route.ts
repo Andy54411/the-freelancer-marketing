@@ -1260,6 +1260,197 @@ export async function POST(req: NextRequest) {
       // END STORAGE SUBSCRIPTION EVENTS
       // ========================================
 
+      // ========================================
+      // DISPUTE HANDLING
+      // ========================================
+      case 'charge.dispute.created': {
+        const dispute = event.data.object as Stripe.Dispute;
+        console.log('[Webhook] Dispute erstellt:', dispute.id);
+
+        try {
+          // Finde den zugehoerigen Auftrag ueber PaymentIntent
+          const paymentIntentId = typeof dispute.payment_intent === 'string' 
+            ? dispute.payment_intent 
+            : dispute.payment_intent?.id;
+
+          if (!paymentIntentId) {
+            console.warn('[Webhook] Dispute ohne PaymentIntent:', dispute.id);
+            break;
+          }
+
+          // Suche Auftrag mit diesem PaymentIntent
+          const ordersSnapshot = await db!
+            .collection('auftraege')
+            .where('paymentIntentId', '==', paymentIntentId)
+            .limit(1)
+            .get();
+
+          if (ordersSnapshot.empty) {
+            console.warn('[Webhook] Kein Auftrag fuer PaymentIntent gefunden:', paymentIntentId);
+            break;
+          }
+
+          const orderDoc = ordersSnapshot.docs[0];
+          const orderData = orderDoc.data();
+
+          // Aktualisiere Auftragsstatus
+          await orderDoc.ref.update({
+            hasDispute: true,
+            disputeId: dispute.id,
+            disputeStatus: dispute.status,
+            disputeReason: dispute.reason,
+            disputeAmount: dispute.amount,
+            disputeCreatedAt: admin.firestore.Timestamp.fromMillis(dispute.created * 1000),
+            previousStatusBeforeDispute: orderData.status,
+            status: 'dispute_opened',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            statusHistory: admin.firestore.FieldValue.arrayUnion({
+              status: 'dispute_opened',
+              timestamp: admin.firestore.Timestamp.now(),
+              reason: `Stripe Dispute eroeffnet: ${dispute.reason}`,
+              disputeId: dispute.id,
+            }),
+          });
+
+          // Erstelle Admin-Benachrichtigung
+          await db!.collection('admin_alerts').add({
+            type: 'dispute_created',
+            severity: 'high',
+            title: 'Neue Streitigkeit (Dispute)',
+            message: `Ein Kunde hat eine Streitigkeit fuer Auftrag #${orderDoc.id.slice(-6).toUpperCase()} eroeffnet. Grund: ${dispute.reason}`,
+            orderId: orderDoc.id,
+            disputeId: dispute.id,
+            amount: dispute.amount,
+            currency: dispute.currency,
+            customerId: orderData.customerId || orderData.kundeId,
+            providerId: orderData.providerId || orderData.selectedAnbieterId,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            resolved: false,
+          });
+
+          // Benachrichtige Provider
+          const providerId = orderData.providerId || orderData.selectedAnbieterId;
+          if (providerId) {
+            await db!.collection('notifications').add({
+              userId: providerId,
+              type: 'dispute_opened',
+              title: 'Achtung: Streitigkeit eroeffnet',
+              message: `Ein Kunde hat eine Streitigkeit fuer einen Ihrer Auftraege eroeffnet. Bitte ueberpruefen Sie die Details im Dashboard.`,
+              data: {
+                orderId: orderDoc.id,
+                disputeId: dispute.id,
+                reason: dispute.reason,
+              },
+              read: false,
+              createdAt: admin.firestore.Timestamp.now(),
+            });
+          }
+
+          console.log('[Webhook] Dispute verarbeitet:', dispute.id, 'Auftrag:', orderDoc.id);
+
+        } catch (disputeError) {
+          console.error('[Webhook] Fehler bei Dispute-Verarbeitung:', disputeError);
+        }
+        break;
+      }
+
+      case 'charge.dispute.updated': {
+        const dispute = event.data.object as Stripe.Dispute;
+        console.log('[Webhook] Dispute aktualisiert:', dispute.id, 'Status:', dispute.status);
+
+        try {
+          // Suche Auftrag mit dieser disputeId
+          const ordersSnapshot = await db!
+            .collection('auftraege')
+            .where('disputeId', '==', dispute.id)
+            .limit(1)
+            .get();
+
+          if (!ordersSnapshot.empty) {
+            const orderDoc = ordersSnapshot.docs[0];
+            
+            await orderDoc.ref.update({
+              disputeStatus: dispute.status,
+              disputeUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
+        } catch (updateError) {
+          console.error('[Webhook] Fehler bei Dispute-Update:', updateError);
+        }
+        break;
+      }
+
+      case 'charge.dispute.closed': {
+        const dispute = event.data.object as Stripe.Dispute;
+        console.log('[Webhook] Dispute geschlossen:', dispute.id, 'Status:', dispute.status);
+
+        try {
+          const ordersSnapshot = await db!
+            .collection('auftraege')
+            .where('disputeId', '==', dispute.id)
+            .limit(1)
+            .get();
+
+          if (!ordersSnapshot.empty) {
+            const orderDoc = ordersSnapshot.docs[0];
+            const orderData = orderDoc.data();
+
+            // Status basierend auf Dispute-Ergebnis
+            let newStatus = orderData.previousStatusBeforeDispute || 'in_bearbeitung';
+            let resolutionMessage = '';
+
+            if (dispute.status === 'won') {
+              resolutionMessage = 'Streitigkeit zu Gunsten des Haendlers entschieden';
+            } else if (dispute.status === 'lost') {
+              newStatus = 'storniert';
+              resolutionMessage = 'Streitigkeit zu Gunsten des Kunden entschieden - Rueckerstattung erfolgt';
+            } else {
+              resolutionMessage = `Streitigkeit beendet: ${dispute.status}`;
+            }
+
+            await orderDoc.ref.update({
+              hasDispute: false,
+              disputeResolved: true,
+              disputeStatus: dispute.status,
+              disputeClosedAt: admin.firestore.FieldValue.serverTimestamp(),
+              disputeResolution: resolutionMessage,
+              status: newStatus,
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              statusHistory: admin.firestore.FieldValue.arrayUnion({
+                status: newStatus,
+                timestamp: admin.firestore.Timestamp.now(),
+                reason: resolutionMessage,
+                disputeId: dispute.id,
+              }),
+            });
+
+            // Update Admin-Alert
+            const alertsSnapshot = await db!
+              .collection('admin_alerts')
+              .where('disputeId', '==', dispute.id)
+              .limit(1)
+              .get();
+
+            if (!alertsSnapshot.empty) {
+              await alertsSnapshot.docs[0].ref.update({
+                resolved: true,
+                resolution: resolutionMessage,
+                resolvedAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
+            }
+
+            console.log('[Webhook] Dispute geschlossen:', dispute.id, 'Neuer Status:', newStatus);
+          }
+        } catch (closeError) {
+          console.error('[Webhook] Fehler bei Dispute-Close:', closeError);
+        }
+        break;
+      }
+      // ========================================
+      // END DISPUTE HANDLING
+      // ========================================
+
       default:
       // Es ist wichtig, für unbehandelte Events trotzdem 200 OK zu senden,
       // damit Stripe nicht versucht, sie erneut zu senden.

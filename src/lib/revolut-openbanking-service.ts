@@ -5,6 +5,38 @@ import fs from 'fs';
 import https from 'https';
 import jwt from 'jsonwebtoken';
 
+// Revolut API Response Types
+interface RevolutAccount {
+  id: string;
+  name: string;
+  balance: number;
+  currency: string;
+  state: string;
+  public: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface RevolutTransaction {
+  id: string;
+  type: string;
+  state: string;
+  created_at: string;
+  completed_at?: string;
+  reference?: string;
+  amount: number;
+  currency: string;
+  description?: string;
+}
+
+// RevolutTokenResponse is used in refreshToken method return type
+type _RevolutTokenResponse = {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token?: string;
+};
+
 export class RevolutOpenBankingService {
   private baseUrl: string;
   private authUrl: string;
@@ -44,7 +76,7 @@ export class RevolutOpenBankingService {
           this.transportCert = 'placeholder-cert';
           this.privateKey = 'placeholder-key';
         }
-      } catch (error) {
+      } catch {
         this.transportCert = 'placeholder-cert';
         this.privateKey = 'placeholder-key';
       }
@@ -77,8 +109,9 @@ export class RevolutOpenBankingService {
             kid: this.clientId, // Use client ID as key ID
           },
         });
-      } catch (error: any) {
-        reject(new Error(`JWT signing failed: ${error.message}`));
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        reject(new Error(`JWT signing failed: ${message}`));
         return;
       }
 
@@ -120,7 +153,7 @@ export class RevolutOpenBankingService {
             const tokenData = JSON.parse(data);
 
             resolve(tokenData.access_token);
-          } catch (error) {
+          } catch {
             reject(new Error(`Failed to parse token response: ${data}`));
           }
         });
@@ -138,11 +171,11 @@ export class RevolutOpenBankingService {
   /**
    * Make authenticated API request with access token
    */
-  private async makeAuthenticatedRequest(
+  private async makeAuthenticatedRequest<T = unknown>(
     endpoint: string,
     accessToken: string,
     method: string = 'GET'
-  ): Promise<any> {
+  ): Promise<T> {
     return new Promise((resolve, reject) => {
       const url = new URL(`${this.baseUrl}${endpoint}`);
 
@@ -175,14 +208,14 @@ export class RevolutOpenBankingService {
           try {
             const responseData = JSON.parse(data);
             resolve(responseData);
-          } catch (error) {
+          } catch {
             reject(new Error(`Failed to parse API response: ${data}`));
           }
         });
       });
 
-      req.on('error', error => {
-        reject(new Error(`API Request failed: ${error.message}`));
+      req.on('error', err => {
+        reject(new Error(`API Request failed: ${err.message}`));
       });
 
       req.end();
@@ -193,17 +226,17 @@ export class RevolutOpenBankingService {
    * Get account information
    * https://developer.revolut.com/docs/business/business-api#accounts
    */
-  async getAccounts(): Promise<any[]> {
+  async getAccounts(): Promise<RevolutAccount[]> {
     const accessToken = await this.getAccessToken('READ');
-    return this.makeAuthenticatedRequest('/1.0/accounts', accessToken);
+    return this.makeAuthenticatedRequest<RevolutAccount[]>('/1.0/accounts', accessToken);
   }
 
   /**
    * Get account balance (Business API uses the account details endpoint)
    */
-  async getAccountBalance(accountId: string): Promise<any> {
+  async getAccountBalance(accountId: string): Promise<RevolutAccount> {
     const accessToken = await this.getAccessToken('READ');
-    return this.makeAuthenticatedRequest(`/1.0/accounts/${accountId}`, accessToken);
+    return this.makeAuthenticatedRequest<RevolutAccount>(`/1.0/accounts/${accountId}`, accessToken);
   }
 
   /**
@@ -213,7 +246,7 @@ export class RevolutOpenBankingService {
     accountId: string,
     fromDate?: string,
     toDate?: string
-  ): Promise<any[]> {
+  ): Promise<RevolutTransaction[]> {
     const accessToken = await this.getAccessToken('READ');
 
     let endpoint = `/1.0/transactions`;
@@ -227,7 +260,7 @@ export class RevolutOpenBankingService {
       endpoint += `?${params.toString()}`;
     }
 
-    return this.makeAuthenticatedRequest(endpoint, accessToken);
+    return this.makeAuthenticatedRequest<RevolutTransaction[]>(endpoint, accessToken);
   }
 
   /**
@@ -259,14 +292,14 @@ export class RevolutOpenBankingService {
         Accept: 'application/json',
       },
       body: body.toString(),
-      // @ts-ignore - Node.js specific
+      // @ts-expect-error - Node.js specific agent option
       agent: httpsAgent,
     });
 
     if (!response.ok) {
-      const error = await response.text();
+      const errorText = await response.text();
 
-      throw new Error(`Failed to refresh token: ${response.status} - ${error}`);
+      throw new Error(`Failed to refresh token: ${response.status} - ${errorText}`);
     }
 
     const tokenData = await response.json();
@@ -278,7 +311,7 @@ export class RevolutOpenBankingService {
    * Test connection - get all accounts and basic info
    */
   async testConnection(): Promise<{
-    accounts: any[];
+    accounts: RevolutAccount[];
     totalAccounts: number;
     environment: string;
   }> {

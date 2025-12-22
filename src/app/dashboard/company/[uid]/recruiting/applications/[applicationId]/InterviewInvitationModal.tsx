@@ -133,7 +133,7 @@ export function InterviewInvitationModal({
 
         <div className="grid gap-6 py-4">
           {/* 🎯 Meeting-Typ Auswahl */}
-          <div className="flex flex-col gap-4 p-4 border rounded-lg bg-gradient-to-br from-teal-50 to-blue-50">
+          <div className="flex flex-col gap-4 p-4 border rounded-lg bg-linear-to-br from-teal-50 to-blue-50">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-lg flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-[#14ad9f]" />

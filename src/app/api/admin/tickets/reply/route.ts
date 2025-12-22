@@ -1,65 +1,43 @@
-// Ticket Reply API - Speziell für Antworten auf Support-Tickets
+// Firebase-basierte Ticket Reply API
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
-import { AWSTicketStorage } from '@/lib/aws-ticket-storage';
-import { EnhancedTicketService } from '@/lib/aws-ticket-enhanced';
+import { FirebaseTicketService } from '@/services/admin/FirebaseTicketService';
+import { AdminAuthService } from '@/services/admin/AdminAuthService';
 import { db } from '@/firebase/server';
 
-// JWT Secret für Admin-Tokens
+// JWT Secret fuer Admin-Tokens
 const JWT_SECRET = new TextEncoder().encode(
   process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024'
 );
 
-// Authentifizierung prüfen (Admin oder User)
+// Authentifizierung pruefen (Admin oder User)
 async function verifyAuth(request: NextRequest) {
-  const cookieHeader = request.headers.get('cookie');
-  const authHeader = request.headers.get('authorization');
-
-  // Prüfe Admin-Cookie
-  if (cookieHeader) {
-    const cookies = cookieHeader.split(';').reduce(
-      (acc, cookie) => {
-        const [key, value] = cookie.trim().split('=');
-        acc[key] = value;
-        return acc;
-      },
-      {} as Record<string, string>
-    );
-
-    const adminToken = cookies['taskilo-admin-token'];
-    if (adminToken) {
-      try {
-        const { payload } = await jwtVerify(adminToken, JWT_SECRET);
-        const decoded = payload as any;
-        if (decoded.role === 'admin') {
-          return {
-            success: true,
-            user_type: 'admin',
-            userId: decoded.email,
-            userName: decoded.name || 'Admin',
-          };
-        }
-      } catch (error) {
-        // Admin-Token ungültig, versuche User-Auth
-      }
-    }
+  // Pruefe Admin-Auth zuerst
+  const admin = await AdminAuthService.verifyFromRequest(request);
+  if (admin) {
+    return {
+      success: true,
+      user_type: 'admin',
+      userId: admin.email,
+      userName: admin.name,
+    };
   }
 
-  // Prüfe Bearer Token (für API-Aufrufe)
+  // Pruefe Bearer Token (fuer API-Aufrufe)
+  const authHeader = request.headers.get('authorization');
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
     try {
       const { payload } = await jwtVerify(token, JWT_SECRET);
-      const decoded = payload as any;
+      const decoded = payload as Record<string, unknown>;
       return {
         success: true,
-        user_type: decoded.role || 'user',
-        userId: decoded.email || decoded.userId,
-        userName: decoded.name || decoded.firstName || 'User',
+        user_type: (decoded.role as string) || 'user',
+        userId: (decoded.email as string) || (decoded.userId as string),
+        userName: (decoded.name as string) || (decoded.firstName as string) || 'User',
       };
-    } catch (error) {
-      // Bearer-Token ungültig
+    } catch {
+      // Bearer-Token ungueltig
     }
   }
 
@@ -69,7 +47,7 @@ async function verifyAuth(request: NextRequest) {
 // POST - Antwort auf Ticket senden
 export async function POST(request: NextRequest) {
   try {
-    // Authentifizierung prüfen
+    // Authentifizierung pruefen
     const authResult = await verifyAuth(request);
     if (!authResult.success) {
       return NextResponse.json({ error: authResult.error }, { status: 401 });
@@ -86,11 +64,11 @@ export async function POST(request: NextRequest) {
 
     // Bestimme Autor-Typ basierend auf Authentifizierung
     const authorType = authResult.user_type === 'admin' ? 'admin' : 'customer';
-    const isInternalReply = isInternal && authResult.user_type === 'admin'; // Nur Admins können interne Antworten schreiben
+    const isInternalReply = isInternal && authResult.user_type === 'admin';
 
-    // Antwort hinzufügen
-    const updatedTicket = await AWSTicketStorage.addComment(ticketId, {
-      author: authResult.userName,
+    // Antwort hinzufuegen
+    const updatedTicket = await FirebaseTicketService.addComment(ticketId, {
+      author: authResult.userName || 'Unbekannt',
       authorType,
       content: message.trim(),
       isInternal: isInternalReply,
@@ -102,96 +80,41 @@ export async function POST(request: NextRequest) {
 
     // Automatische Ticket-Status-Aktualisierung bei Admin-Antworten
     if (authResult.user_type === 'admin' && updatedTicket.status === 'open') {
-      await AWSTicketStorage.updateTicket(ticketId, {
+      await FirebaseTicketService.updateTicket(ticketId, {
         status: 'in-progress',
         assignedTo: authResult.userId,
       });
     }
 
-    // E-Mail-Benachrichtigung senden (wenn nicht intern)
-    if (!isInternalReply) {
+    // Firebase Bell-Notification erstellen (nur fuer Admin -> Customer)
+    if (!isInternalReply && authResult.user_type === 'admin' && updatedTicket.customerEmail && db) {
       try {
-        // Konvertiere TicketData zu Ticket-Format für E-Mail-Benachrichtigung
-        const ticketForEmail = {
-          ...updatedTicket,
-          reportedBy: updatedTicket.customerEmail || 'Unbekannt',
-          comments: updatedTicket.comments || [],
-          createdAt: new Date(updatedTicket.createdAt),
-          updatedAt: new Date(updatedTicket.updatedAt),
-        } as any; // Type assertion da verschiedene TicketComment-Typen existieren
+        // Finde User mit dieser E-Mail
+        const usersSnapshot = await db
+          .collection('users')
+          .where('email', '==', updatedTicket.customerEmail)
+          .limit(1)
+          .get();
 
-        if (authResult.user_type === 'admin') {
-          // Admin antwortet -> Benachrichtige Customer
-          await EnhancedTicketService.sendTicketNotification(
-            ticketForEmail,
-            'commented',
-            {
-              id: `reply_${Date.now()}`,
-              ticketId: ticketId,
-              userId: authResult.userId,
-              userDisplayName: authResult.userName,
-              userRole: 'admin',
-              content: message.trim(),
-              createdAt: new Date(),
-              isInternal: false,
-            },
-            [updatedTicket.customerEmail || '']
-          );
-        } else {
-          // Customer antwortet -> Benachrichtige Admin
-          await EnhancedTicketService.sendTicketNotification(
-            ticketForEmail,
-            'commented',
-            {
-              id: `reply_${Date.now()}`,
-              ticketId: ticketId,
-              userId: authResult.userId,
-              userDisplayName: authResult.userName,
-              userRole: 'company',
-              content: message.trim(),
-              createdAt: new Date(),
-              isInternal: false,
-            },
-            [process.env.ADMIN_EMAIL || 'admin@taskilo.de']
-          );
-        }
-      } catch (emailError) {
-        // Fehler bei E-Mail nicht weiterleiten, da die Antwort erfolgreich gespeichert wurde
-      }
+        if (!usersSnapshot.empty) {
+          const customerUid = usersSnapshot.docs[0].id;
 
-      // Firebase Bell-Notification erstellen (nur für Admin -> Customer)
-      if (authResult.user_type === 'admin' && updatedTicket.customerEmail) {
-        try {
-          // Extrahiere UID aus customerEmail (falls verfügbar)
-          const uidToEmailMap: Record<string, string> = {
-            '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1': 'a.staudinger32@icloud.com',
+          const notification = {
+            userId: customerUid,
+            type: 'support',
+            title: 'Neue Antwort auf Ihr Support-Ticket',
+            message: `${authResult.userName} hat auf Ihr Ticket "${updatedTicket.title}" geantwortet`,
+            ticketId: ticketId,
+            ticketTitle: updatedTicket.title,
+            link: `/dashboard/company/${customerUid}/support`,
+            isRead: false,
+            createdAt: new Date(),
           };
 
-          // Finde UID für diese E-Mail
-          const customerUid = Object.keys(uidToEmailMap).find(
-            uid => uidToEmailMap[uid] === updatedTicket.customerEmail
-          );
-
-          if (customerUid) {
-            // Erstelle Notification mit Admin SDK
-            const notification = {
-              userId: customerUid,
-              type: 'support',
-              title: 'Neue Antwort auf Ihr Support-Ticket',
-              message: `${authResult.userName} hat auf Ihr Ticket "${updatedTicket.title}" geantwortet`,
-              ticketId: ticketId,
-              ticketTitle: updatedTicket.title,
-              link: `/dashboard/company/${customerUid}/support`,
-              isRead: false,
-              createdAt: new Date(),
-            };
-
-            await db!.collection('notifications').add(notification);
-          } else {
-          }
-        } catch (notificationError) {
-          // Nicht weiterleiten, da dies optional ist
+          await db.collection('notifications').add(notification);
         }
+      } catch {
+        // Nicht weiterleiten, da dies optional ist
       }
     }
 
@@ -204,6 +127,7 @@ export async function POST(request: NextRequest) {
         commentCount: updatedTicket.comments?.length || 0,
         lastReply: new Date().toISOString(),
       },
+      source: 'firebase',
     });
   } catch (error) {
     return NextResponse.json(
@@ -216,10 +140,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET - Antworten für ein Ticket abrufen
+// GET - Antworten fuer ein Ticket abrufen
 export async function GET(request: NextRequest) {
   try {
-    // Authentifizierung prüfen
+    // Authentifizierung pruefen
     const authResult = await verifyAuth(request);
     if (!authResult.success) {
       return NextResponse.json({ error: authResult.error }, { status: 401 });
@@ -233,18 +157,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Ticket mit Kommentaren abrufen
-    const ticket = await AWSTicketStorage.getTicket(ticketId);
+    const ticket = await FirebaseTicketService.getTicket(ticketId);
 
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
     }
 
-    // Prüfe Berechtigung: Admin sieht alles, User nur eigene Tickets
+    // Pruefe Berechtigung: Admin sieht alles, User nur eigene Tickets
     if (authResult.user_type !== 'admin' && ticket.customerEmail !== authResult.userId) {
-      return NextResponse.json({ error: 'Keine Berechtigung für dieses Ticket' }, { status: 403 });
+      return NextResponse.json({ error: 'Keine Berechtigung fuer dieses Ticket' }, { status: 403 });
     }
 
-    // Filter interne Kommentare für normale User
+    // Filter interne Kommentare fuer normale User
     const visibleComments =
       authResult.user_type === 'admin'
         ? ticket.comments || []
@@ -268,6 +192,7 @@ export async function GET(request: NextRequest) {
         timestamp: comment.timestamp,
         isInternal: comment.isInternal,
       })),
+      source: 'firebase',
     });
   } catch (error) {
     return NextResponse.json(

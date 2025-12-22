@@ -131,9 +131,17 @@ export function JobBoard() {
             )
           );
           if (!jobsSnapshot.empty) {
-            fetchedJobs = jobsSnapshot.docs.map(
-              doc => ({ id: doc.id, ...doc.data() }) as JobPosting
-            );
+            fetchedJobs = jobsSnapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                ...data,
+                // Convert Firestore Timestamps to ISO strings
+                createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+                postedAt: data.postedAt?.toDate?.()?.toISOString() || data.postedAt,
+                updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+              } as JobPosting;
+            });
           }
         } catch (e) {
           console.error('Firestore jobs fetch failed', e);

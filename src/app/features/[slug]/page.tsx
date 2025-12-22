@@ -19,8 +19,8 @@ export default function FeatureDetailPage({ params }: { params: Promise<{ slug: 
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
-      <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] to-teal-600 relative">
+      <div className="absolute inset-0 bg-white/5 pointer-events-none"></div>
       <div className="relative z-10">
         {/* Navigation Header */}
         <HeroHeader />

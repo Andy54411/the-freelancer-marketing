@@ -1,68 +1,44 @@
-// Admin-Benutzer API - Erstellen, Bearbeiten, Löschen von Admin-Benutzern
+/**
+ * Admin-Benutzer Verwaltung API Route
+ * 
+ * Firebase-basierte Admin-Benutzerverwaltung
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
+import { AdminAuthService } from '@/services/admin/AdminAuthService';
 import { cookies } from 'next/headers';
-import { AWSTicketStorage } from '@/lib/aws-ticket-storage';
-import { AdminUser, AdminRole, DEFAULT_ADMIN_ROLES, getRoleById } from '@/lib/admin-roles';
 
-// Temporäre In-Memory-Speicherung (bis AWS DynamoDB Integration)
-const adminUsersStore: AdminUser[] = [
-  {
-    id: 'admin-1',
-    email: 'andy.staudinger@taskilo.de',
-    name: 'Andy Staudinger',
-    role: DEFAULT_ADMIN_ROLES[0], // Master Admin
-    departments: ['Management', 'Technical'],
-    isActive: true,
-    createdAt: '2024-01-01T00:00:00Z',
-    lastLogin: '2024-08-13T10:30:00Z',
-    loginCount: 45,
-    createdBy: 'system',
-    phone: '+49 123 456789',
-    notes: 'System Administrator und Gründer',
-  },
-];
+// Admin-Authentifizierung pruefen
+async function verifyAdminAuth(): Promise<{ valid: boolean; error?: string; payload?: { sub: string; role: string } }> {
+  if (process.env.NODE_ENV === 'development' && process.env.BYPASS_ADMIN_AUTH === 'true') {
+    return { valid: true, payload: { sub: 'dev-admin', role: 'master-admin' } };
+  }
 
-// JWT Secret für Admin-Tokens
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024'
-);
-
-// Admin-Authentifizierung prüfen
-async function verifyAdminAuth() {
   const cookieStore = await cookies();
   const token = cookieStore.get('taskilo-admin-token')?.value;
 
   if (!token) {
-    throw new Error('Nicht autorisiert');
+    return { valid: false, error: 'Nicht autorisiert' };
   }
 
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload;
-  } catch (error) {
-    throw new Error('Ungültiger Token');
-  }
+  return AdminAuthService.verifyToken(token);
 }
 
 // GET - Alle Admin-Benutzer abrufen
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    // TODO: Auth temporär deaktiviert für Testing
-    // await verifyAdminAuth();
+    const adminUsers = await AdminAuthService.getAllAdminUsers();
 
     return NextResponse.json({
       success: true,
-      adminUsers: adminUsersStore,
-      count: adminUsersStore.length,
+      adminUsers,
+      count: adminUsers.length,
       message: 'Admin-Benutzer erfolgreich geladen',
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
-      {
-        error: 'Fehler beim Laden der Admin-Benutzer',
-        details: error.message,
-      },
+      { error: 'Fehler beim Laden der Admin-Benutzer', details: errorMessage },
       { status: 500 }
     );
   }
@@ -71,142 +47,93 @@ export async function GET(request: NextRequest) {
 // POST - Neuen Admin-Benutzer erstellen
 export async function POST(request: NextRequest) {
   try {
-    // TODO: Auth temporär deaktiviert für Testing
-    // const authPayload = await verifyAdminAuth();
-    const authPayload = { sub: 'current-admin' }; // Temporär
+    const authResult = await verifyAdminAuth();
+    if (!authResult.valid) {
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
+    }
 
-    const body = await request.json();
-
-    const { email, name, phone, roleId, departments, notes } = body;
-
-    if (!email || !name || !roleId) {
+    // Nur Master-Admin kann neue Admins erstellen
+    if (authResult.payload?.role !== 'master-admin') {
       return NextResponse.json(
-        { error: 'E-Mail, Name und Rolle sind erforderlich' },
+        { error: 'Nur Master-Admins koennen neue Admin-Benutzer erstellen' },
+        { status: 403 }
+      );
+    }
+
+    const { email, name, password, role, departments, permissions, phone, notes } = await request.json();
+
+    if (!email || !name || !password || !role) {
+      return NextResponse.json(
+        { error: 'E-Mail, Name, Passwort und Rolle sind erforderlich' },
         { status: 400 }
       );
     }
 
-    const role = getRoleById(roleId);
-    if (!role) {
-      return NextResponse.json({ error: 'Ungültige Rolle' }, { status: 400 });
-    }
-
-    // Prüfen ob E-Mail bereits existiert
-    const existingUser = adminUsersStore.find(user => user.email === email);
-    if (existingUser) {
-      return NextResponse.json({ error: 'E-Mail-Adresse wird bereits verwendet' }, { status: 400 });
-    }
-
-    const newAdminUser: AdminUser = {
-      id: `admin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    const result = await AdminAuthService.createAdminUser({
       email,
       name,
-      phone: phone || '',
+      password,
       role,
-      departments: departments || [],
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      loginCount: 0,
-      createdBy: authPayload?.sub || 'unknown',
-      notes: notes || '',
-    };
+      departments,
+      permissions,
+      phone,
+      notes,
+    });
 
-    // In In-Memory Store speichern
-    adminUsersStore.push(newAdminUser);
-
-    // TODO: Send welcome email with login credentials
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
 
     return NextResponse.json({
       success: true,
-      adminUser: newAdminUser,
-      message: `Admin-Benutzer ${name} erfolgreich erstellt`,
+      userId: result.userId,
+      message: 'Admin-Benutzer erfolgreich erstellt',
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
-      {
-        error: 'Fehler beim Erstellen des Admin-Benutzers',
-        details: error.message,
-      },
+      { error: 'Fehler beim Erstellen des Admin-Benutzers', details: errorMessage },
       { status: 500 }
     );
   }
 }
 
-// PUT - Admin-Benutzer aktualisieren
+// PUT - Admin-Benutzer aktualisieren (Status togglen)
 export async function PUT(request: NextRequest) {
   try {
-    // TODO: Auth temporär deaktiviert für Testing
-    // const authPayload = await verifyAdminAuth();
-    const { id, ...updates } = await request.json();
-
-    if (!id) {
-      return NextResponse.json({ error: 'Benutzer-ID ist erforderlich' }, { status: 400 });
+    const authResult = await verifyAdminAuth();
+    if (!authResult.valid) {
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
     }
 
-    const userIndex = adminUsersStore.findIndex(user => user.id === id);
-    if (userIndex === -1) {
-      return NextResponse.json({ error: 'Admin-Benutzer nicht gefunden' }, { status: 404 });
-    }
+    const { userId, action } = await request.json();
 
-    // Benutzer aktualisieren
-    adminUsersStore[userIndex] = { ...adminUsersStore[userIndex], ...updates };
-
-    return NextResponse.json({
-      success: true,
-      adminUser: adminUsersStore[userIndex],
-      message: 'Admin-Benutzer erfolgreich aktualisiert',
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        error: 'Fehler beim Aktualisieren des Admin-Benutzers',
-        details: error.message,
-      },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE - Admin-Benutzer löschen
-export async function DELETE(request: NextRequest) {
-  try {
-    // TODO: Auth temporär deaktiviert für Testing
-    // const authPayload = await verifyAdminAuth();
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json({ error: 'Benutzer-ID ist erforderlich' }, { status: 400 });
-    }
-
-    const userIndex = adminUsersStore.findIndex(user => user.id === id);
-    if (userIndex === -1) {
-      return NextResponse.json({ error: 'Admin-Benutzer nicht gefunden' }, { status: 404 });
-    }
-
-    const user = adminUsersStore[userIndex];
-
-    // Master Admin darf nicht gelöscht werden
-    if (user.role.id === 'master-admin') {
+    if (!userId || !action) {
       return NextResponse.json(
-        { error: 'Master Admin kann nicht gelöscht werden' },
+        { error: 'userId und action sind erforderlich' },
         { status: 400 }
       );
     }
 
-    // Benutzer aus Store entfernen
-    adminUsersStore.splice(userIndex, 1);
+    switch (action) {
+      case 'toggle-status':
+        const result = await AdminAuthService.toggleUserStatus(userId);
+        if (!result.success) {
+          return NextResponse.json({ error: result.error }, { status: 400 });
+        }
+        return NextResponse.json({
+          success: true,
+          isActive: result.isActive,
+          message: result.isActive ? 'Benutzer aktiviert' : 'Benutzer deaktiviert',
+        });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Admin-Benutzer erfolgreich gelöscht',
-    });
+      default:
+        return NextResponse.json({ error: 'Unbekannte Aktion' }, { status: 400 });
+    }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
-      {
-        error: 'Fehler beim Löschen des Admin-Benutzers',
-        details: error.message,
-      },
+      { error: 'Fehler beim Aktualisieren', details: errorMessage },
       { status: 500 }
     );
   }

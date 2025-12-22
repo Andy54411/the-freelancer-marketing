@@ -191,8 +191,7 @@ export default function FooterSection() {
   ];
 
   return (
-    <footer className="bg-linear-to-tr from-[#14ad9f] via-teal-600 to-blue-600 text-white pt-20 relative overflow-hidden">
-      <div className="absolute inset-0 bg-black/20"></div>
+    <footer className="bg-linear-to-r from-[#14ad9f] to-teal-600 text-white pt-20 relative overflow-hidden">
       <div className="relative z-10 mb-8 border-b border-white/20 md:mb-12">
         <div className="mx-auto flex max-w-5xl flex-wrap items-end justify-between gap-6 px-6 pb-6">
           <Link href="/" aria-label="go home" className="block size-fit">
@@ -427,6 +426,42 @@ export default function FooterSection() {
             </div>
           </form>
         </div>
+
+        {/* App Store Badges */}
+        <div className="mt-12 border-t border-white/20 pt-8">
+          <div className="flex flex-col items-center gap-4">
+            <p className="text-white/90 font-medium text-sm">Laden Sie unsere App herunter</p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <a
+                href="https://apps.apple.com/de/app/taskilo"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Download on App Store"
+                className="transition-transform hover:scale-105"
+              >
+                <img
+                  src="/app_svg/app-store-badge.3b027f0f.svg"
+                  alt="Download on the App Store"
+                  className="h-10 w-auto"
+                />
+              </a>
+              <a
+                href="https://play.google.com/store/apps/details?id=de.taskilo.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Get it on Google Play"
+                className="transition-transform hover:scale-105"
+              >
+                <img
+                  src="/app_svg/google-play-badge.63c04d3e.svg"
+                  alt="Get it on Google Play"
+                  className="h-10 w-auto"
+                />
+              </a>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-12 flex flex-wrap items-end justify-between gap-6 border-t border-white/20 py-6">
           <small className="text-white/70 order-last block text-center text-sm md:order-first">
             © {new Date().getFullYear()} Taskilo. Alle Rechte vorbehalten.

@@ -14,6 +14,7 @@ export default function ConditionalChatbot() {
     '/admin',
     '/staff',
     '/onboarding',
+    '/webmail',
   ];
 
   // Prüfe ob aktueller Pfad Chatbot verstecken soll

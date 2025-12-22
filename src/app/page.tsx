@@ -6,22 +6,45 @@ import IntegrationsSection1 from '@/components/integrations-8';
 import ContentSection from '@/components/content-5';
 import Testimonial from '@/components/testimonials';
 import CallToAction from '@/components/call-to-action';
-import ComingSoonBanner from '@/components/ComingSoonBanner';
+import EmailCTA from '@/components/EmailCTA';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
-      <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
-      <div className="relative z-10">
-        <HeroSection />
+    <div className="min-h-screen">
+      {/* Hero mit eigenem Hintergrund */}
+      <HeroSection />
+      
+      {/* Kategorien - weißer Hintergrund für Kontrast */}
+      <div className="bg-white">
         <CategoryGrid />
-        <FeaturesSection />
-        <IntegrationsSection />
-        <IntegrationsSection1 />
-        <ContentSection />
-        <Testimonial />
-        <CallToAction />
       </div>
+      
+      {/* Features mit Teal Gradient */}
+      <FeaturesSection />
+      
+      {/* Service-Kategorien - heller Hintergrund */}
+      <div className="bg-gray-50">
+        <IntegrationsSection />
+      </div>
+      
+      {/* Stats mit Teal Gradient */}
+      <IntegrationsSection1 />
+      
+      {/* Email CTA - Kostenlose E-Mail-Adresse */}
+      <EmailCTA />
+      
+      {/* Content - weißer Hintergrund */}
+      <div className="bg-white">
+        <ContentSection />
+      </div>
+      
+      {/* Testimonials - heller Hintergrund */}
+      <div className="bg-gray-50">
+        <Testimonial />
+      </div>
+      
+      {/* CTA mit eigenem Hintergrund */}
+      <CallToAction />
     </div>
   );
 }

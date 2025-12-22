@@ -176,10 +176,12 @@ export default function SidebarFilters({
   }, [isLoaded]); // NUR isLoaded als Abhängigkeit
 
   return (
-    <div className="w-full lg:w-1/3 bg-white rounded-lg shadow-md p-4 space-y-6 shrink-0 self-start">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">Filter & Standort</h2>
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold text-gray-800 mb-4">Filter & Standort</h2>
+      
+      {/* Ort oder Adresse */}
       <div>
-        <Label className="text-base font-medium text-gray-800 dark:text-white">
+        <Label className="text-sm font-semibold text-gray-700 mb-2 block">
           Ort oder Adresse
         </Label>
         {isLoaded ? (
@@ -189,7 +191,7 @@ export default function SidebarFilters({
             value={city}
             onChange={e => setCity(e.target.value)}
             placeholder="Adresse, Stadt oder Land"
-            className="w-full rounded-md border p-2 mt-2"
+            className="w-full rounded-xl border-2 border-gray-200 p-3 mt-1 text-gray-800 placeholder-gray-400 focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 focus:outline-none transition-all"
           />
         ) : (
           <input
@@ -197,31 +199,35 @@ export default function SidebarFilters({
             value={city}
             onChange={e => setCity(e.target.value)}
             placeholder="Kartenkomponente wird geladen..."
-            className="w-full rounded-md border p-2 mt-2 bg-gray-100"
+            className="w-full rounded-xl border-2 border-gray-200 p-3 mt-1 bg-gray-50 text-gray-400"
             disabled
           />
         )}
       </div>
+      
+      {/* Postleitzahl */}
       <div>
-        <Label className="text-base font-medium text-gray-800 dark:text-white">Postleitzahl</Label>
+        <Label className="text-sm font-semibold text-gray-700 mb-2 block">Postleitzahl</Label>
         <input
           type="text"
           value={postalCode}
           onChange={e => setPostalCode(e.target.value)}
-          placeholder="Postleitzahl"
-          className="w-full rounded-md border p-2 mt-2"
+          placeholder="z.B. 10115"
+          className="w-full rounded-xl border-2 border-gray-200 p-3 mt-1 text-gray-800 placeholder-gray-400 focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 focus:outline-none transition-all"
         />
       </div>
 
       {shouldShowDateTimeFilters && (
         <>
-          <DateSelector
-            selectedSubcategory={selectedSubcategory}
-            finalSelectedDateRange={finalSelectedDateRange}
-            onDateTimeConfirm={onDateTimeConfirm}
-            onOpenDatePicker={onOpenDatePicker}
-            finalSelectedTime={finalSelectedTime}
-          />
+          <div className="pt-4 border-t border-gray-100">
+            <DateSelector
+              selectedSubcategory={selectedSubcategory}
+              finalSelectedDateRange={finalSelectedDateRange}
+              onDateTimeConfirm={onDateTimeConfirm}
+              onOpenDatePicker={onOpenDatePicker}
+              finalSelectedTime={finalSelectedTime}
+            />
+          </div>
 
           <DateTimeSelector
             finalSelectedTime={finalSelectedTime}
@@ -231,25 +237,26 @@ export default function SidebarFilters({
       )}
 
       {/* Preisfilter-Komponente */}
-      <PriceFilter
-        currentMaxPrice={currentMaxPrice}
-        dynamicSliderMin={dynamicSliderMin}
-        dynamicSliderMax={dynamicSliderMax}
-        handlePriceSliderChange={handlePriceSliderChange}
-        resetPriceFilter={resetPriceFilter}
-        loadingSubcategoryData={loadingSubcategoryData}
-        averagePriceForSubcategory={averagePriceForSubcategory}
-        priceDistribution={priceDistribution}
-      />
+      <div className="pt-4 border-t border-gray-100">
+        <PriceFilter
+          currentMaxPrice={currentMaxPrice}
+          dynamicSliderMin={dynamicSliderMin}
+          dynamicSliderMax={dynamicSliderMax}
+          handlePriceSliderChange={handlePriceSliderChange}
+          resetPriceFilter={resetPriceFilter}
+          loadingSubcategoryData={loadingSubcategoryData}
+          averagePriceForSubcategory={averagePriceForSubcategory}
+          priceDistribution={priceDistribution}
+        />
+      </div>
 
-      <div className="pt-4 border-t border-gray-200">
-        <Label className="text-sm font-medium text-gray-700">Kategorien</Label>
-        <div className="mt-2 text-sm text-gray-600">
-          <div>
-            <input type="checkbox" className="mr-2 accent-[#14ad9f]" />
-            Pro-Tasker
-          </div>
-        </div>
+      {/* Kategorien */}
+      <div className="pt-4 border-t border-gray-100">
+        <Label className="text-sm font-semibold text-gray-700 mb-3 block">Kategorien</Label>
+        <label className="flex items-center p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-[#14ad9f]/5 transition-colors">
+          <input type="checkbox" className="w-5 h-5 rounded border-2 border-gray-300 text-[#14ad9f] focus:ring-[#14ad9f] focus:ring-offset-0" />
+          <span className="ml-3 text-gray-700 font-medium">Pro-Tasker</span>
+        </label>
       </div>
     </div>
   );

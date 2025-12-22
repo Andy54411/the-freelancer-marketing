@@ -3,7 +3,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Providers } from './providers';
-import { ThemeProvider } from '@/components/theme-provider';
 import { AnalyticsProvider } from '@/contexts/AnalyticsContext';
 import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
 import { AlertProvider } from '@/components/ui/AlertProvider';
@@ -151,7 +150,7 @@ export function generateViewport() {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de" suppressHydrationWarning>
+    <html lang="de">
       <head>
         {/* Performance Optimizations - Preconnect zu kritischen Ressourcen */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -282,24 +281,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <StructuredData type="WebSite" />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <CookieConsentProvider>
-            <AnalyticsProvider>
-              <AlertProvider>
-                <Providers>
-                  {children}
-                  <SmoothRedirectOverlay />
-                  <ConditionalFooter />
-                  <ConditionalChatbot />
-                  <CookieBanner />
-                  {/* GoogleAnalytics removed - GTM handles all analytics */}
-                  <Analytics />
-                  <SpeedInsights />
-                </Providers>
-              </AlertProvider>
-            </AnalyticsProvider>
-          </CookieConsentProvider>
-        </ThemeProvider>
+        <CookieConsentProvider>
+          <AnalyticsProvider>
+            <AlertProvider>
+              <Providers>
+                {children}
+                <SmoothRedirectOverlay />
+                <ConditionalFooter />
+                <ConditionalChatbot />
+                <CookieBanner />
+                {/* GoogleAnalytics removed - GTM handles all analytics */}
+                <Analytics />
+                <SpeedInsights />
+              </Providers>
+            </AlertProvider>
+          </AnalyticsProvider>
+        </CookieConsentProvider>
       </body>
     </html>
   );

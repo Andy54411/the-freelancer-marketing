@@ -19,6 +19,7 @@ import {
   XCircle,
   MessageSquare,
   Bell,
+  CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -47,6 +48,7 @@ const navigation = [
   { name: 'Benutzer', href: '/dashboard/admin/users', icon: Users },
   { name: 'Admin-Benutzer', href: '/dashboard/admin/admin-users', icon: Shield },
   { name: 'E-Mail System', href: '/dashboard/admin/email', icon: Mail },
+  { name: 'Webmail-Abrechnung', href: '/dashboard/admin/webmail-billing', icon: CreditCard },
   { name: 'Einstellungen', href: '/dashboard/admin/settings', icon: Settings },
 ];
 

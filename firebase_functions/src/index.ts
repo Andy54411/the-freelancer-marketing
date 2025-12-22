@@ -23,7 +23,8 @@ import * as httpOrders from './http_orders';
 
 // Explicitly import and export functions to ensure Firebase CLI can correctly parse them.
 
-// Stripe import entfernt - migriert zu Next.js API Routes
+// Stripe Callable Functions (einige nach Next.js migriert, aber Frontend nutzt noch httpsCallable)
+import * as callableStripe from './callable_stripe';
 import * as callableGeneral from './callable_general';
 import * as httpGeneral from './http_general';
 import * as httpWebhooks from './http_webhooks';
@@ -51,7 +52,15 @@ import * as jobAlertNotifications from './job_alert_notifications';
 import * as triggersJobApplications from './triggers_job_applications';
 export const onJobApplicationCreated = triggersJobApplications.onJobApplicationCreated;
 
-// Stripe Functions wurden nach Next.js API Routes migriert
+// Stripe Callable Functions (Frontend nutzt noch httpsCallable)
+export const createStripeAccountIfComplete = callableStripe.createStripeAccountIfComplete;
+export const getOrCreateStripeCustomer = callableStripe.getOrCreateStripeCustomer;
+export const updateStripeCompanyDetails = callableStripe.updateStripeCompanyDetails;
+export const getOrderParticipantDetails = callableStripe.getOrderParticipantDetails;
+export const createSetupIntent = callableStripe.createSetupIntent;
+export const getStripeAccountStatus = callableStripe.getStripeAccountStatus;
+export const getSavedPaymentMethods = callableStripe.getSavedPaymentMethods;
+export const getProviderStripeAccountId = callableStripe.getProviderStripeAccountId;
 
 // General Callables
 export const getClientIp = callableGeneral.getClientIp;
@@ -171,6 +180,11 @@ export const dailyUsageCalculation = scheduledUsageCalculation.dailyUsageCalcula
 
 import { scheduledRecurringInvoices } from './scheduled-recurring-invoices';
 export { scheduledRecurringInvoices };
+
+// Clearing Release - Automatische Freigabe nach Clearing-Periode
+import * as scheduledClearingReleaseModule from './scheduled-clearing-release';
+export const scheduledClearingRelease = scheduledClearingReleaseModule.scheduledClearingRelease;
+export const triggerClearingReleaseManually = scheduledClearingReleaseModule.triggerClearingReleaseManually;
 
 // Test Functions
 import * as testUsageCalculationModule from './test-usage-calculation';

@@ -1,10 +1,10 @@
 'use client';
 
-import type { Metadata } from 'next';
 import { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Zap, Shield, Target, Wrench, Home, Truck, Laptop, Leaf, Sparkles, Utensils, TrendingUp, Briefcase, GraduationCap, Dog, Palette, PartyPopper, FileText } from 'lucide-react';
 import { categories } from '@/lib/categoriesData';
-import Header from '@/components/Header';
+import { HeroHeader } from '@/components/hero8-header';
+import ProviderCTA from '@/components/provider-cta';
 import Link from 'next/link';
 
 export default function ServicesPage() {
@@ -21,41 +21,39 @@ export default function ServicesPage() {
   const normalizeToSlug = (str: string) =>
     str.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '%26');
 
-  // Category Icons Mapping für bessere visuelle Darstellung
+  // Category Icons Mapping mit Lucide Icons
   const getCategoryIcon = (title: string) => {
-    const iconMap: { [key: string]: string } = {
-      Handwerk: '🔧',
-      Haushalt: '🏠',
-      Transport: '🚚',
-      'IT & Digital': '💻',
-      Garten: '🌱',
-      Wellness: '💆',
-      'Hotel & Gastronomie': '🍽️',
-      'Marketing & Vertrieb': '📈',
-      'Finanzen & Recht': '💼',
-      'Bildung & Unterstützung': '🎓',
-      'Tiere & Pflanzen': '🐕',
-      'Kreativ & Kunst': '🎨',
-      'Event & Veranstaltung': '🎉',
-      'Büro & Administration': '📋',
+    const iconMap: { [key: string]: React.ElementType } = {
+      'Handwerk': Wrench,
+      'Haushalt': Home,
+      'Transport': Truck,
+      'IT & Digital': Laptop,
+      'Garten': Leaf,
+      'Wellness': Sparkles,
+      'Hotel & Gastronomie': Utensils,
+      'Marketing & Vertrieb': TrendingUp,
+      'Finanzen & Recht': Briefcase,
+      'Bildung & Unterstützung': GraduationCap,
+      'Tiere & Pflanzen': Dog,
+      'Kreativ & Kunst': Palette,
+      'Event & Veranstaltung': PartyPopper,
+      'Büro & Administration': FileText,
     };
-    return iconMap[title] || '💼';
+    return iconMap[title] || Briefcase;
   };
 
   return (
     <>
-      <Header />
-      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-[#129488] to-[#0f8a7e]">
-        <div className="absolute inset-0 bg-black/10" />
-
-        <div className="relative z-10 py-20">
+      <HeroHeader />
+      <div className="min-h-screen">
+        {/* Hero Section */}
+        <div className="bg-linear-to-br from-[#14ad9f] to-teal-600 text-white pt-32 pb-20">
           <div className="max-w-7xl mx-auto px-6">
-            {/* Hero Section */}
             <div className="text-center mb-16">
-              <h1 className="text-6xl font-bold text-white drop-shadow-lg mb-6">
+              <h1 className="text-4xl md:text-6xl font-bold drop-shadow-lg mb-6">
                 Professionelle Services buchen
               </h1>
-              <p className="text-xl text-white/90 drop-shadow-lg mb-8 max-w-4xl mx-auto">
+              <p className="text-lg md:text-xl text-white/90 drop-shadow-lg mb-8 max-w-4xl mx-auto">
                 Entdecken Sie qualifizierte Dienstleister auf Taskilo - Ihre Plattform für lokale
                 Handwerker, digitale Freelancer und Business-Experten. Von einfachen
                 Haushalts-Services bis zu komplexen B2B-Projekten.
@@ -64,21 +62,21 @@ export default function ServicesPage() {
               {/* Value Propositions */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                  <div className="text-3xl mb-3">⚡</div>
+                  <Zap className="w-10 h-10 mx-auto mb-3 text-white" />
                   <h2 className="font-semibold text-white mb-2 text-lg">Sofort verfügbar</h2>
                   <p className="text-white/80 text-sm">
                     Lokale Anbieter in Ihrer Nähe finden und direkt buchen
                   </p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                  <div className="text-3xl mb-3">🛡️</div>
+                  <Shield className="w-10 h-10 mx-auto mb-3 text-white" />
                   <h2 className="font-semibold text-white mb-2 text-lg">Geprüft & Sicher</h2>
                   <p className="text-white/80 text-sm">
                     Verifizierte Anbieter mit Bewertungssystem und Stripe-Payment
                   </p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                  <div className="text-3xl mb-3">🎯</div>
+                  <Target className="w-10 h-10 mx-auto mb-3 text-white" />
                   <h2 className="font-semibold text-white mb-2 text-lg">B2C & B2B</h2>
                   <p className="text-white/80 text-sm">
                     Für Privatpersonen und Unternehmen - flexible Abrechnung
@@ -87,7 +85,7 @@ export default function ServicesPage() {
               </div>
 
               {/* Search Bar */}
-              <div className="relative max-w-2xl mx-auto mb-8">
+              <div className="relative max-w-2xl mx-auto">
                 <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 text-gray-400 h-6 w-6" />
                 <input
                   type="text"
@@ -98,30 +96,38 @@ export default function ServicesPage() {
                 />
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* Categories Grid */}
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-white text-center drop-shadow-lg mb-12">
-                Service-Kategorien
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredCategories.map((category, index) => (
-                <Link
-                  key={index}
-                  href={`/services/${normalizeToSlug(category.title)}`}
-                  className="group"
-                >
-                  <div className="bg-white rounded-2xl p-8 border border-gray-100 hover:border-[#14ad9f] hover:shadow-2xl transition-all duration-300 transform hover:scale-105 h-full">
-                    {/* Category Icon */}
-                    <div className="text-5xl mb-6 group-hover:scale-110 transition-transform duration-300">
-                      {getCategoryIcon(category.title)}
-                    </div>
+        {/* Categories Section */}
+        <div className="max-w-7xl mx-auto px-6 py-16">
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 text-center mb-4">
+              Service-Kategorien
+            </h2>
+            <p className="text-gray-600 text-center max-w-2xl mx-auto">
+              Wählen Sie aus über 14 Kategorien die passende Dienstleistung für Ihre Bedürfnisse
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredCategories.map((category, index) => {
+                const IconComponent = getCategoryIcon(category.title);
+                return (
+                  <Link
+                    key={index}
+                    href={`/services/${normalizeToSlug(category.title)}`}
+                    className="group"
+                  >
+                    <div className="bg-white rounded-xl p-8 border border-gray-200 hover:border-[#14ad9f] hover:shadow-xl transition-all duration-300 h-full">
+                      {/* Category Icon */}
+                      <div className="mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <IconComponent className="w-12 h-12 text-[#14ad9f]" />
+                      </div>
 
-                    {/* Category Title */}
-                    <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-[#14ad9f] transition-colors duration-300">
-                      {category.title}
-                    </h3>
+                      {/* Category Title */}
+                      <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-[#14ad9f] transition-colors duration-300">
+                        {category.title}
+                      </h3>
 
                     {/* Category Description */}
                     <p className="text-gray-600 mb-6 text-sm leading-relaxed">
@@ -159,105 +165,84 @@ export default function ServicesPage() {
                       )}
                     </div>
 
-                    {/* Services Count & CTA */}
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-500">
-                        {category.subcategories.length} Services
-                      </div>
-                      <div className="text-[#14ad9f] text-sm font-medium group-hover:text-taskilo-hover transition-colors duration-300">
-                        Anzeigen →
+                      {/* Services Count & CTA */}
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-500">
+                          {category.subcategories.length} Services
+                        </div>
+                        <div className="text-[#14ad9f] text-sm font-medium group-hover:text-teal-700 transition-colors duration-300">
+                          Anzeigen →
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+                  </Link>
+                );
+              })}
+          </div>
 
-            {/* No Results */}
-            {filteredCategories.length === 0 && (
-              <div className="text-center py-16">
-                <div className="bg-white rounded-2xl p-12 max-w-md mx-auto border border-gray-100">
-                  <div className="text-6xl mb-6">🔍</div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Keine Services gefunden</h3>
-                  <p className="text-gray-600 mb-6">
-                    Versuchen Sie einen anderen Suchbegriff oder durchstöbern Sie alle Kategorien.
-                  </p>
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="bg-[#14ad9f] text-white px-6 py-3 rounded-xl font-medium hover:bg-taskilo-hover transition-colors duration-300"
-                  >
-                    Alle Kategorien anzeigen
-                  </button>
-                </div>
+          {/* No Results */}
+          {filteredCategories.length === 0 && (
+            <div className="text-center py-16">
+              <div className="bg-white rounded-2xl p-12 max-w-md mx-auto border border-gray-200 shadow-sm">
+                <Search className="w-16 h-16 mx-auto mb-6 text-gray-400" />
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">Keine Services gefunden</h3>
+                <p className="text-gray-600 mb-6">
+                  Versuchen Sie einen anderen Suchbegriff oder durchstöbern Sie alle Kategorien.
+                </p>
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="bg-[#14ad9f] text-white px-6 py-3 rounded-xl font-medium hover:bg-teal-700 transition-colors duration-300"
+                >
+                  Alle Kategorien anzeigen
+                </button>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Popular Services Section */}
-            {filteredCategories.length > 0 && (
-              <div className="mt-20">
-                <div className="bg-white rounded-3xl p-12 border border-gray-100">
-                  <div className="text-center mb-12">
-                    <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                      Beliebteste Services auf Taskilo
-                    </h2>
-                    <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-                      Diese Services werden am häufigsten gebucht - von Privatkunden und Unternehmen
-                    </p>
-                  </div>
+          {/* Popular Services Section */}
+          {filteredCategories.length > 0 && (
+            <div className="mt-16 mb-16">
+              <div className="bg-gray-50 rounded-2xl p-8 md:p-12">
+                <div className="text-center mb-10">
+                  <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
+                    Beliebteste Services
+                  </h2>
+                  <p className="text-gray-600 max-w-2xl mx-auto">
+                    Diese Services werden am häufigsten gebucht
+                  </p>
+                </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                    {[
-                      { name: 'Klempner', icon: '🔧', category: 'Handwerk' },
-                      { name: 'Webentwicklung', icon: '💻', category: 'IT & Digital' },
-                      { name: 'Reinigungskraft', icon: '🏠', category: 'Haushalt' },
-                      { name: 'Mietkoch', icon: '🍽️', category: 'Hotel & Gastronomie' },
-                      { name: 'Fotograf', icon: '📸', category: 'Kreativ & Kunst' },
-                      { name: 'Buchhaltung', icon: '💼', category: 'Finanzen & Recht' },
-                    ].map((service, index) => (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {[
+                    { name: 'Klempner', icon: Wrench, category: 'Handwerk' },
+                    { name: 'Webentwicklung', icon: Laptop, category: 'IT & Digital' },
+                    { name: 'Reinigungskraft', icon: Home, category: 'Haushalt' },
+                    { name: 'Mietkoch', icon: Utensils, category: 'Hotel & Gastronomie' },
+                    { name: 'Fotograf', icon: Palette, category: 'Kreativ & Kunst' },
+                    { name: 'Buchhaltung', icon: Briefcase, category: 'Finanzen & Recht' },
+                  ].map((service, index) => {
+                    const ServiceIcon = service.icon;
+                    return (
                       <Link
                         key={index}
                         href={`/services/${normalizeToSlug(service.category)}/${normalizeToSlug(service.name)}`}
-                        className="group text-center p-4 rounded-xl hover:bg-gray-50 transition-colors duration-300"
+                        className="group text-center p-4 bg-white rounded-xl hover:shadow-md transition-all duration-300 border border-gray-100"
                       >
-                        <div className="text-3xl mb-3 group-hover:scale-110 transition-transform duration-300">
-                          {service.icon}
-                        </div>
+                        <ServiceIcon className="w-8 h-8 mx-auto mb-2 text-[#14ad9f] group-hover:scale-110 transition-transform duration-300" />
                         <div className="text-sm font-medium text-gray-900 group-hover:text-[#14ad9f] transition-colors duration-300">
                           {service.name}
                         </div>
                       </Link>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* CTA Section */}
-            <div className="mt-20">
-              <div className="bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-3xl p-12 text-center">
-                <h2 className="text-4xl font-bold text-white mb-4">Als Anbieter registrieren</h2>
-                <p className="text-white/90 mb-8 max-w-2xl mx-auto text-lg">
-                  Werden Sie Teil der Taskilo Community! Bieten Sie Ihre Services an und erreichen
-                  Sie neue Kunden - sowohl Privatpersonen als auch Unternehmen.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link
-                    href="/register/company"
-                    className="bg-white text-[#14ad9f] px-8 py-4 rounded-xl font-semibold hover:bg-gray-100 transition-colors duration-300 shadow-lg"
-                  >
-                    Als Anbieter registrieren
-                  </Link>
-                  <Link
-                    href="/contact"
-                    className="border-2 border-white text-white px-8 py-4 rounded-xl font-semibold hover:bg-white hover:text-[#14ad9f] transition-colors duration-300"
-                  >
-                    Beratung anfragen
-                  </Link>
+                    );
+                  })}
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
+
+        {/* CTA Section */}
+        <ProviderCTA />
       </div>
     </>
   );

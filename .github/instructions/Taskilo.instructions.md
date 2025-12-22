@@ -39,6 +39,8 @@ interface TaxSettings {
 }
 ```
 
+
+## Es gibt server.ts für Admin SDK und clients.ts für Client SDK.
 ## UI/UX
 - **Color**: Teal (NEVER black)
 - **Info**: Lucide icons for tooltips, NO emojis

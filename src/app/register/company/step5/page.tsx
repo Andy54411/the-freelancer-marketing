@@ -1,5 +1,6 @@
 'use client';
 import Image from 'next/image';
+import Link from 'next/link';
 
 import React, {
   ChangeEvent,
@@ -10,8 +11,9 @@ import React, {
   useCallback,
 } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import ProgressBar from '@/components/ProgressBar';
-import { FiX, FiCheckCircle, FiAlertCircle, FiLoader } from 'react-icons/fi';
+import { X, CheckCircle, AlertCircle, Loader2, CreditCard, Upload, Shield, ArrowRight, Lock, Building2, User, MapPin, Briefcase } from 'lucide-react';
 import { useRegistration } from '@/contexts/Registration-Context';
 import {
   getAuth,
@@ -19,7 +21,7 @@ import {
   UserCredential,
   User as AuthUser,
   getIdToken,
-} from 'firebase/auth'; // FieldValue,
+} from 'firebase/auth';
 import {
   doc,
   setDoc,
@@ -31,7 +33,6 @@ import {
 import { db, app as firebaseApp } from '../../../../firebase/clients';
 import { functions as firebaseFunctions } from '../../../../firebase/clients';
 import { httpsCallable } from 'firebase/functions';
-import { PAGE_ERROR, PAGE_WARN } from '@/lib/constants';
 import type Stripe from 'stripe';
 
 interface CreateStripeAccountCallableResult {
@@ -1284,11 +1285,12 @@ export default function Step5CompanyPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 font-sans">
+    <div className="min-h-screen flex flex-col">
+      {/* Loading Overlay */}
       {(isLoading || isConvertingImage || isProcessingImage || isRedirecting) && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-[101]">
-          <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center max-w-sm mx-4">
-            <FiLoader className="animate-spin h-8 w-8 mb-4 text-teal-600" />
+        <div className="fixed inset-0 bg-gray-900/75 flex items-center justify-center z-[101]">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm mx-4">
+            <Loader2 className="animate-spin h-10 w-10 mb-4 text-[#14ad9f]" />
             <span className="text-lg font-medium text-gray-800 text-center mb-2">
               {currentStepMessage || 'Bitte warten...'}
             </span>
@@ -1300,249 +1302,389 @@ export default function Step5CompanyPage() {
           </div>
         </div>
       )}
-      <div className="w-full max-w-xl lg:max-w-4xl mx-auto mb-6 px-4">
-        <div className="flex justify-between mb-4">
-          <button
-            onClick={() => router.push('/register/company/step4')}
-            className="text-[#14ad9f] hover:text-taskilo-hover text-base sm:text-lg flex items-center transition-colors duration-200"
-            disabled={isLoading || isConvertingImage || isRedirecting}
-          >
-            <span className="mr-2">← Zurück zu Schritt 4</span>
-          </button>
-          <button
-            onClick={() => router.push('/')}
-            className="text-[#14ad9f] hover:text-teal-700 text-base sm:text-lg flex items-center transition-colors duration-200"
-            disabled={isLoading || isConvertingImage || isRedirecting}
-          >
-            <span className="mr-2">Abbrechen</span> <FiX />
-          </button>
-        </div>
-        <div className="mb-6">
-          <ProgressBar currentStep={5} totalSteps={5} />
-        </div>
-        <div className="flex justify-between items-center mb-6">
-          <p className="text-lg sm:text-xl text-teal-600 font-semibold">
-            Schritt 5/5: Abschluss & Verifizierung
-          </p>
-        </div>
-      </div>
-      <div className="flex-grow flex items-center justify-center w-full px-4 sm:px-6">
-        <div className="max-w-xl w-full bg-white p-6 sm:p-8 rounded-xl shadow-2xl border border-gray-200 flex flex-col items-center">
-          <FiCheckCircle className="text-5xl text-green-500 mb-4" />
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-center text-gray-800">
-            Fast geschafft!
-          </h2>
-          <p className="text-center text-gray-600 mb-6">
-            Bitte gib deine Bankverbindung für Auszahlungen an und lade die Vorder- und Rückseite
-            deines Ausweisdokuments hoch, um deine Identität zu verifizieren. Diese Informationen
-            werden sicher an unseren Zahlungsdienstleister Stripe übermittelt.
-          </p>
-          {formError && (
-            <div
-              className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-center mb-4 w-full"
-              role="alert"
+
+      {/* Hero Section */}
+      <div className="relative bg-linear-to-br from-[#14ad9f] via-teal-600 to-teal-800 text-white">
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-10"
+          style={{ backgroundImage: "url('/images/features/accounting-hero.png')" }}
+        />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          {/* Navigation */}
+          <div className="flex justify-between items-center mb-6">
+            <Link 
+              href="/register/company/step4"
+              className={`flex items-center text-white/80 hover:text-white transition-colors ${isLoading || isRedirecting ? 'pointer-events-none opacity-50' : ''}`}
             >
-              <FiAlertCircle className="h-6 w-6 text-red-500 mr-3 shrink-0" />
-              <div>
-                <p className="font-bold">Fehler bei der Registrierung:</p>
-                <p className="text-sm">{formError}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="w-full space-y-6 mb-8">
-            <div>
-              <label
-                htmlFor="accountHolder"
-                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !accountHolder?.trim() ? 'text-red-600' : 'text-gray-700'}`}
-              >
-                Name des Kontoinhabers*
-              </label>
-              <input
-                type="text"
-                id="accountHolder"
-                value={accountHolder || ''}
-                onChange={e => setAccountHolder(e.target.value)}
-                className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !accountHolder?.trim() ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="Max Mustermann"
-                disabled={isLoading || isConvertingImage}
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="iban"
-                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !iban?.trim() ? 'text-red-600' : 'text-gray-700'}`}
-              >
-                IBAN*
-              </label>
-              <input
-                type="text"
-                id="iban"
-                value={iban || ''}
-                onChange={e => setIban(e.target.value.replace(/\s/g, ''))}
-                className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !iban?.trim() ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="DE89..."
-                disabled={isLoading || isConvertingImage}
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="bic"
-                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !bic?.trim() ? 'text-red-600' : 'text-gray-700'}`}
-              >
-                BIC*
-              </label>
-              <input
-                type="text"
-                id="bic"
-                value={bic || ''}
-                onChange={e => setBic(e.target.value.toUpperCase())}
-                className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !bic?.trim() ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="COBADEFFXXX"
-                disabled={isLoading || isConvertingImage}
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="bankName"
-                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !bankName?.trim() ? 'text-red-600' : 'text-gray-700'}`}
-              >
-                Bank Name*
-              </label>
-              <input
-                type="text"
-                id="bankName"
-                value={bankName || ''}
-                onChange={e => setBankName(e.target.value)}
-                className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !bankName?.trim() ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="Commerzbank AG"
-                disabled={isLoading || isConvertingImage}
-              />
-            </div>
-            <div className="mt-6">
-              <label
-                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !(identityFrontFile instanceof File) ? 'text-red-600' : 'text-gray-700'}`}
-              >
-                Ausweis Vorderseite* (max. {MAX_ID_DOC_SIZE_BYTES / (1024 * 1024)}MB, JPEG/PNG)
-              </label>
-              {identityFrontPreview && (
-                <div className="my-2 max-h-32 rounded-lg border border-gray-300 p-1 flex justify-center items-center overflow-hidden">
-                  <Image
-                    src={identityFrontPreview}
-                    alt="Vorschau Vorderseite"
-                    width={200}
-                    height={128}
-                    style={{ objectFit: 'contain' }}
-                    className="max-h-full max-w-full"
-                  />
-                </div>
-              )}
-              <input
-                type="file"
-                id="identityFrontInput"
-                accept="image/jpeg, image/png"
-                onChange={e =>
-                  handleFileChangeAndPreview(
-                    e,
-                    setIdentityFrontFile,
-                    setIdentityFrontPreview,
-                    MAX_ID_DOC_SIZE_BYTES,
-                    'Ausweis Vorderseite',
-                    false
-                  )
-                }
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
-              />
-
-              {identityFrontFile && (
-                <p className="mt-1 text-xs text-gray-600">
-                  {identityFrontFile.name} ({(identityFrontFile.size / (1024 * 1024)).toFixed(2)}MB)
-                </p>
-              )}
-              {hasAttemptedSubmit && !(identityFrontFile instanceof File) && (
-                <p className="mt-1 text-xs text-red-500">Ausweis Vorderseite ist erforderlich.</p>
-              )}
-            </div>
-            <div>
-              <label
-                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !(identityBackFile instanceof File) ? 'text-red-600' : 'text-gray-700'}`}
-              >
-                Ausweis Rückseite* (max. {MAX_ID_DOC_SIZE_BYTES / (1024 * 1024)}MB, JPEG/PNG)
-              </label>
-              {identityBackPreview && (
-                <div className="my-2 max-h-32 rounded-lg border border-gray-300 p-1 flex justify-center items-center overflow-hidden">
-                  <Image
-                    src={identityBackPreview}
-                    alt="Vorschau Rückseite"
-                    width={200}
-                    height={128}
-                    style={{ objectFit: 'contain' }}
-                    className="max-h-full max-w-full"
-                  />
-                </div>
-              )}
-              <input
-                type="file"
-                id="identityBackInput"
-                accept="image/jpeg, image/png"
-                onChange={e =>
-                  handleFileChangeAndPreview(
-                    e,
-                    setIdentityBackFile,
-                    setIdentityBackPreview,
-                    MAX_ID_DOC_SIZE_BYTES,
-                    'Ausweis Rückseite',
-                    false
-                  )
-                }
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
-              />
-
-              {identityBackFile && (
-                <p className="mt-1 text-xs text-gray-600">
-                  {identityBackFile.name} ({(identityBackFile.size / (1024 * 1024)).toFixed(2)}MB)
-                </p>
-              )}
-              {hasAttemptedSubmit && !(identityBackFile instanceof File) && (
-                <p className="mt-1 text-xs text-red-500">Ausweis Rückseite ist erforderlich.</p>
-              )}
-            </div>
+              <span>Zurueck</span>
+            </Link>
+            <Link 
+              href="/"
+              className={`flex items-center text-white/80 hover:text-white transition-colors ${isLoading || isRedirecting ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              <span className="mr-2">Abbrechen</span>
+              <X className="w-5 h-5" />
+            </Link>
           </div>
 
-          <button
-            type="button"
-            onClick={handleRegistration}
-            disabled={
-              isLoading ||
-              isConvertingImage ||
-              isProcessingImage ||
-              isRedirecting ||
-              (hasAttemptedSubmit && !isFormValid())
-            }
-            className={`w-full py-3 px-6 rounded-lg font-semibold text-lg text-white transition-colors duration-150 ease-in-out
-              ${
-                !isFormValid() ||
-                isLoading ||
-                isConvertingImage ||
-                isProcessingImage ||
-                isRedirecting
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2'
-              }`}
+          {/* Progress */}
+          <div className="max-w-2xl mx-auto mb-6">
+            <ProgressBar currentStep={5} totalSteps={5} />
+          </div>
+
+          {/* Title */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center"
           >
-            {isLoading || isConvertingImage || isProcessingImage || isRedirecting ? (
-              <span className="flex items-center justify-center">
-                <FiLoader className="animate-spin h-5 w-5 mr-3" />
-                <span>{currentStepMessage || 'Bitte warten...'}</span>
-              </span>
-            ) : (
-              'Registrierung abschließen & Zahlungskonto einrichten'
+            <p className="text-lg text-white/80 mb-4">Schritt 5 von 5</p>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-3">
+              Abschluss & Verifizierung
+            </h1>
+            <p className="text-lg text-white/80 max-w-xl mx-auto">
+              Fast geschafft! Geben Sie Ihre Bankverbindung an und verifizieren Sie Ihre Identitaet.
+            </p>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 bg-linear-to-b from-gray-50 to-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            {/* Summary Card - Shows what user has entered */}
+            <div className="bg-linear-to-r from-[#14ad9f]/5 to-teal-50 rounded-2xl border border-[#14ad9f]/20 p-6 mb-8">
+              <div className="flex items-center mb-4">
+                <CheckCircle className="w-6 h-6 text-[#14ad9f] mr-3" />
+                <h3 className="text-lg font-bold text-gray-800">Ihre bisherigen Angaben</h3>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="flex items-center">
+                  <div className="p-2 bg-white rounded-lg shadow-sm mr-3">
+                    <Building2 className="w-4 h-4 text-[#14ad9f]" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Firma</p>
+                    <p className="text-sm font-medium text-gray-800 truncate max-w-[120px]">{companyName || '-'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <div className="p-2 bg-white rounded-lg shadow-sm mr-3">
+                    <User className="w-4 h-4 text-[#14ad9f]" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Name</p>
+                    <p className="text-sm font-medium text-gray-800 truncate max-w-[120px]">{firstName} {lastName}</p>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <div className="p-2 bg-white rounded-lg shadow-sm mr-3">
+                    <MapPin className="w-4 h-4 text-[#14ad9f]" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Standort</p>
+                    <p className="text-sm font-medium text-gray-800 truncate max-w-[120px]">{companyCity || '-'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <div className="p-2 bg-white rounded-lg shadow-sm mr-3">
+                    <Briefcase className="w-4 h-4 text-[#14ad9f]" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Branche</p>
+                    <p className="text-sm font-medium text-gray-800 truncate max-w-[120px]">{selectedCategory || '-'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {formError && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-start mb-6"
+              >
+                <AlertCircle className="w-5 h-5 mr-3 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-semibold">Fehler bei der Registrierung:</p>
+                  <p className="text-sm">{formError}</p>
+                </div>
+              </motion.div>
             )}
-          </button>
-          <p className="text-xs text-gray-500 mt-4 text-center">
-            Mit Klick bestätigst du die Richtigkeit deiner Angaben und stimmst unseren AGB &
-            Datenschutzbestimmungen zu.
-          </p>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Banking Section */}
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <div className="p-3 bg-[#14ad9f]/10 rounded-xl mr-3">
+                      <CreditCard className="w-6 h-6 text-[#14ad9f]" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-800">Bankverbindung</h2>
+                  </div>
+                  <div className="flex items-center text-xs text-gray-500">
+                    <Lock className="w-3 h-3 mr-1" />
+                    SSL
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="accountHolder" className={`block text-sm font-medium mb-2 ${hasAttemptedSubmit && !accountHolder?.trim() ? 'text-red-600' : 'text-gray-700'}`}>
+                      Kontoinhaber*
+                    </label>
+                    <input
+                      type="text"
+                      id="accountHolder"
+                      value={accountHolder || ''}
+                      onChange={e => setAccountHolder(e.target.value)}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] text-gray-800 transition-all ${hasAttemptedSubmit && !accountHolder?.trim() ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                      placeholder="Max Mustermann"
+                      disabled={isLoading || isConvertingImage}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="iban" className={`block text-sm font-medium mb-2 ${hasAttemptedSubmit && !iban?.trim() ? 'text-red-600' : 'text-gray-700'}`}>
+                      IBAN*
+                    </label>
+                    <input
+                      type="text"
+                      id="iban"
+                      value={iban || ''}
+                      onChange={e => setIban(e.target.value.replace(/\s/g, ''))}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] text-gray-800 font-mono transition-all ${hasAttemptedSubmit && !iban?.trim() ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                      placeholder="DE89 3704 0044 0532 0130 00"
+                      disabled={isLoading || isConvertingImage}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="bic" className={`block text-sm font-medium mb-2 ${hasAttemptedSubmit && !bic?.trim() ? 'text-red-600' : 'text-gray-700'}`}>
+                        BIC*
+                      </label>
+                      <input
+                        type="text"
+                        id="bic"
+                        value={bic || ''}
+                        onChange={e => setBic(e.target.value.toUpperCase())}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] text-gray-800 font-mono transition-all ${hasAttemptedSubmit && !bic?.trim() ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                        placeholder="COBADEFFXXX"
+                        disabled={isLoading || isConvertingImage}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="bankName" className={`block text-sm font-medium mb-2 ${hasAttemptedSubmit && !bankName?.trim() ? 'text-red-600' : 'text-gray-700'}`}>
+                        Bank*
+                      </label>
+                      <input
+                        type="text"
+                        id="bankName"
+                        value={bankName || ''}
+                        onChange={e => setBankName(e.target.value)}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f]/20 focus:border-[#14ad9f] text-gray-800 transition-all ${hasAttemptedSubmit && !bankName?.trim() ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                        placeholder="Commerzbank"
+                        disabled={isLoading || isConvertingImage}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stripe Trust Badge */}
+                <div className="mt-6 pt-4 border-t border-gray-100">
+                  <div className="flex items-center justify-center text-xs text-gray-500">
+                    <Lock className="w-3 h-3 mr-1" />
+                    <span>Sichere Zahlungsabwicklung durch</span>
+                    <span className="ml-1 font-semibold text-[#635bff]">Stripe</span>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Identity Verification Section */}
+              <motion.div 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <div className="p-3 bg-[#14ad9f]/10 rounded-xl mr-3">
+                      <Shield className="w-6 h-6 text-[#14ad9f]" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-800">Identitaet</h2>
+                  </div>
+                  <div className="flex items-center text-xs text-gray-500">
+                    <Lock className="w-3 h-3 mr-1" />
+                    Verschluesselt
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Front ID */}
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${hasAttemptedSubmit && !(identityFrontFile instanceof File) ? 'text-red-600' : 'text-gray-700'}`}>
+                      Ausweis Vorderseite*
+                    </label>
+                    <div 
+                      onClick={() => !isLoading && document.getElementById('identityFrontInput')?.click()}
+                      className={`relative border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all hover:border-[#14ad9f] hover:bg-teal-50/50 ${
+                        hasAttemptedSubmit && !(identityFrontFile instanceof File) 
+                          ? 'border-red-300 bg-red-50' 
+                          : identityFrontFile 
+                            ? 'border-[#14ad9f] bg-teal-50/30' 
+                            : 'border-gray-200'
+                      }`}
+                    >
+                      {identityFrontPreview ? (
+                        <div className="relative">
+                          <Image
+                            src={identityFrontPreview}
+                            alt="Vorschau Vorderseite"
+                            width={180}
+                            height={100}
+                            style={{ objectFit: 'contain' }}
+                            className="mx-auto rounded-lg"
+                          />
+                          <div className="absolute top-1 right-1 p-1 bg-green-500 rounded-full">
+                            <CheckCircle className="w-3 h-3 text-white" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="py-4">
+                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-600">Klicken zum Hochladen</p>
+                          <p className="text-xs text-gray-400 mt-1">JPEG oder PNG, max. 8MB</p>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        id="identityFrontInput"
+                        accept="image/jpeg, image/png"
+                        onChange={e => handleFileChangeAndPreview(e, setIdentityFrontFile, setIdentityFrontPreview, MAX_ID_DOC_SIZE_BYTES, 'Ausweis Vorderseite', false)}
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Back ID */}
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${hasAttemptedSubmit && !(identityBackFile instanceof File) ? 'text-red-600' : 'text-gray-700'}`}>
+                      Ausweis Rueckseite*
+                    </label>
+                    <div 
+                      onClick={() => !isLoading && document.getElementById('identityBackInput')?.click()}
+                      className={`relative border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all hover:border-[#14ad9f] hover:bg-teal-50/50 ${
+                        hasAttemptedSubmit && !(identityBackFile instanceof File) 
+                          ? 'border-red-300 bg-red-50' 
+                          : identityBackFile 
+                            ? 'border-[#14ad9f] bg-teal-50/30' 
+                            : 'border-gray-200'
+                      }`}
+                    >
+                      {identityBackPreview ? (
+                        <div className="relative">
+                          <Image
+                            src={identityBackPreview}
+                            alt="Vorschau Rueckseite"
+                            width={180}
+                            height={100}
+                            style={{ objectFit: 'contain' }}
+                            className="mx-auto rounded-lg"
+                          />
+                          <div className="absolute top-1 right-1 p-1 bg-green-500 rounded-full">
+                            <CheckCircle className="w-3 h-3 text-white" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="py-4">
+                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-600">Klicken zum Hochladen</p>
+                          <p className="text-xs text-gray-400 mt-1">JPEG oder PNG, max. 8MB</p>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        id="identityBackInput"
+                        accept="image/jpeg, image/png"
+                        onChange={e => handleFileChangeAndPreview(e, setIdentityBackFile, setIdentityBackPreview, MAX_ID_DOC_SIZE_BYTES, 'Ausweis Rueckseite', false)}
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Security Info */}
+                <div className="mt-6 pt-4 border-t border-gray-100">
+                  <div className="flex items-center justify-center text-xs text-gray-500">
+                    <Shield className="w-3 h-3 mr-1" />
+                    <span>Daten werden verschluesselt uebertragen</span>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Submit Button */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              className="mt-8 flex flex-col items-center"
+            >
+              <button
+                type="button"
+                onClick={handleRegistration}
+                disabled={isLoading || isConvertingImage || isProcessingImage || isRedirecting || (hasAttemptedSubmit && !isFormValid())}
+                className={`group w-full max-w-md py-4 px-8 rounded-xl font-semibold text-lg text-white transition-all duration-300 flex items-center justify-center ${
+                  !isFormValid() || isLoading || isConvertingImage || isProcessingImage || isRedirecting
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-linear-to-r from-[#14ad9f] to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-lg hover:shadow-xl hover:scale-[1.02]'
+                }`}
+              >
+                {isLoading || isConvertingImage || isProcessingImage || isRedirecting ? (
+                  <>
+                    <Loader2 className="animate-spin w-5 h-5 mr-3" />
+                    <span>{currentStepMessage || 'Bitte warten...'}</span>
+                  </>
+                ) : (
+                  <>
+                    Registrierung abschliessen
+                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+              
+              <div className="mt-6 flex items-center justify-center space-x-6 text-xs text-gray-500">
+                <div className="flex items-center">
+                  <Lock className="w-3 h-3 mr-1" />
+                  <span>256-bit SSL</span>
+                </div>
+                <div className="flex items-center">
+                  <Shield className="w-3 h-3 mr-1" />
+                  <span>DSGVO konform</span>
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  <span>Stripe Partner</span>
+                </div>
+              </div>
+              
+              <p className="text-xs text-gray-500 mt-4 text-center max-w-md">
+                Mit Klick bestaetigst du die Richtigkeit deiner Angaben und stimmst unseren AGB & Datenschutzbestimmungen zu.
+              </p>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
     </div>

@@ -6,28 +6,25 @@ import { auth, db } from '@/firebase/clients';
 import { createUserWithEmailAndPassword, User as FirebaseUser, AuthError } from 'firebase/auth';
 import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Flag from 'react-world-flags';
 import LoginPopup from '@/components/LoginPopup';
-import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext'; // NEU: Google Maps Context importieren
-import { useRegistration } from '@/contexts/Registration-Context'; // NEU: Registration-Context importieren
-import { Eye, EyeOff } from 'lucide-react';
+import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext';
+import { useRegistration } from '@/contexts/Registration-Context';
+import { Eye, EyeOff, Shield, CheckCircle, User, Mail, Lock, MapPin, Phone, Loader2, ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
 
-const PAGE_LOG = 'UserRegisterPage:';
-const PAGE_ERROR = 'UserRegisterPage ERROR:';
-const PAGE_WARN = 'UserRegisterPage WARN:';
+const _PAGE_LOG = 'UserRegisterPage:';
+const _PAGE_ERROR = 'UserRegisterPage ERROR:';
+const _PAGE_WARN = 'UserRegisterPage WARN:';
 
 async function linkJobToUser(
   jobId: string | null,
   userId: string,
-  actionType: 'login' | 'register'
+  _actionType: 'login' | 'register'
 ) {
-  const LOG_CONTEXT = `${PAGE_LOG} linkJobToUser (${actionType}):`;
-  const WARN_CONTEXT = `${PAGE_WARN} linkJobToUser (${actionType}):`;
-  const ERROR_CONTEXT = `${PAGE_ERROR} linkJobToUser (${actionType}):`;
-
   if (!jobId || !userId) {
     return;
   }
@@ -39,18 +36,20 @@ async function linkJobToUser(
       kundeId: userId,
       status: 'draft_authenticated_user',
     });
-  } catch (error: unknown) {}
+  } catch (_error: unknown) {
+    // Error handled silently
+  }
 }
 
 // Diese Komponente enthält die eigentliche Logik und verwendet Client-Hooks
 function UserRegisterFormContent() {
   'use client'; // Wichtig: Diese Komponente ist eine Client-Komponente
 
-  const router = useRouter();
+  const _router = useRouter();
   const searchParams = useSearchParams(); // useSearchParams wird hier verwendet
-  const { isLoaded: isGoogleMapsLoaded, google } = useGoogleMaps(); // NEU: Google Maps Context verwenden
-  const registration = useRegistration(); // NEU: Registration-Context verwenden
-  const streetInputRef = useRef<HTMLInputElement>(null); // Geändert: Ref für das Straßen-Inputfeld
+  const { isLoaded: isGoogleMapsLoaded, google } = useGoogleMaps();
+  const registration = useRegistration();
+  const streetInputRef = useRef<HTMLInputElement>(null);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -282,283 +281,381 @@ function UserRegisterFormContent() {
 
   return (
     <>
-      <main className="bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative grid place-items-center min-h-screen mx-auto p-6 md:p-12">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <Card className="relative z-10 w-full max-w-md shadow-lg rounded-lg bg-white">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-semibold text-[#14ad9f]">
-              Benutzer Registrierung
-            </CardTitle>
-            <CardDescription className="text-sm text-[#14ad9f]">
-              Erstelle dein Benutzerkonto
-            </CardDescription>
-          </CardHeader>
-          {registrationSuccess && (
-            <CardContent className="text-center p-6">
-              <div className="text-green-600 font-semibold text-lg">
-                ✅ Registrierung erfolgreich!
-              </div>
-              <p className="text-sm text-gray-600 mt-2">Ihr Konto wurde erstellt.</p>
-              <p className="text-sm text-gray-600 mt-1">
-                Sie werden in 2 Sekunden zur Bestellung weitergeleitet...
-              </p>
-              {/* Debug-Information für den Benutzer */}
-              {redirectToFromParams && (
-                <p className="text-xs text-gray-400 mt-2">
-                  Weiterleitung zu: {redirectToFromParams.substring(0, 50)}...
-                </p>
-              )}
-              {/* Lade-Spinner */}
-              <div className="mt-4">
-                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#14ad9f]"></div>
-              </div>
-            </CardContent>
-          )}
-          {!registrationSuccess && (
-            <CardContent>
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="emailReg" className="text-[#14ad9f] font-medium">
-                    E-Mail
-                  </Label>
-                  <Input
-                    type="email"
-                    id="emailReg"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                    className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
-                    autoComplete="email" // Hinzugefügt für Browser-Hinweis
-                  />
+      <main className="min-h-screen bg-gray-50">
+        {/* Hero Section */}
+        <div className="relative bg-linear-to-br from-[#14ad9f] via-teal-600 to-teal-700 overflow-hidden">
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-10"
+            style={{ backgroundImage: 'url(/images/hero-pattern.svg)' }}
+          />
+          <div className="absolute inset-0 bg-black/10" />
+          
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+            {/* Navigation */}
+            <div className="flex items-center justify-between mb-8">
+              <Link 
+                href="/auftrag/get-started"
+                className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span className="font-medium">Zurueck</span>
+              </Link>
+              <Link href="/" className="text-2xl font-bold text-white">
+                Taskilo
+              </Link>
+            </div>
+            
+            {/* Hero Content */}
+            <div className="text-center pb-16">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
+                  <User className="w-4 h-4 text-white" />
+                  <span className="text-white text-sm font-medium">Privatkunden-Registrierung</span>
                 </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="passwordReg" className="text-[#14ad9f] font-medium">
-                    Passwort
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? 'text' : 'password'}
-                      id="passwordReg"
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      required
-                      className="px-3 py-2 pr-10 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
-                      autoComplete="new-password"
-                    />
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+                  Erstellen Sie Ihr Konto
+                </h1>
+                <p className="text-lg text-white/90 max-w-2xl mx-auto">
+                  Registrieren Sie sich kostenlos und beauftragen Sie Profis fuer Ihre Projekte
+                </p>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+
+        {/* Registration Form Card - Overlapping Hero */}
+        <div className="relative z-20 max-w-xl mx-auto px-4 sm:px-6 -mt-12 pb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-white rounded-2xl shadow-xl overflow-hidden"
+          >
+            {registrationSuccess ? (
+              /* Success State */
+              <div className="p-8 text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                  className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"
+                >
+                  <CheckCircle className="w-10 h-10 text-green-600" />
+                </motion.div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  Registrierung erfolgreich!
+                </h2>
+                <p className="text-gray-600 mb-4">
+                  Ihr Konto wurde erstellt. Sie werden weitergeleitet...
+                </p>
+                <div className="flex items-center justify-center gap-2 text-[#14ad9f]">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-sm">Weiterleitung...</span>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Form Header */}
+                <div className="bg-gray-50 border-b border-gray-100 px-6 py-5">
+                  <h2 className="text-xl font-bold text-gray-900">Konto erstellen</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Bereits registriert?{' '}
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      onClick={() => {
+                        setError(null);
+                        setIsLoginPopupOpen(true);
+                      }}
+                      className="text-[#14ad9f] hover:text-teal-700 font-semibold transition-colors"
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      Hier einloggen
                     </button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="firstnameReg" className="text-[#14ad9f] font-medium">
-                      Vorname
-                    </Label>
-                    <Input
-                      type="text"
-                      id="firstnameReg"
-                      value={firstname}
-                      onChange={e => setFirstname(e.target.value)}
-                      required
-                      className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
-                      autoComplete="given-name" // Hinzugefügt für Browser-Hinweis
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="lastnameReg" className="text-[#14ad9f] font-medium">
-                      Nachname
-                    </Label>
-                    <Input
-                      type="text"
-                      id="lastnameReg"
-                      value={lastname}
-                      onChange={e => setLastname(e.target.value)}
-                      required
-                      className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
-                      autoComplete="family-name" // Hinzugefügt für Browser-Hinweis
-                    />
-                  </div>
+                  </p>
                 </div>
 
-                <div className="grid gap-1.5">
-                  <Label htmlFor="streetReg" className="text-[#14ad9f] font-medium">
-                    Straße & Hausnummer
-                  </Label>
-                  <Input
-                    ref={streetInputRef} // Ref hier an das Straßenfeld binden
-                    type="text"
-                    id="streetReg"
-                    value={street}
-                    onChange={e => setStreet(e.target.value)}
-                    required
-                    className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
-                    // autoComplete="off" // Deaktivieren, wenn Google Places aktiv ist, oder "street-address" für Fallback
-                    autoComplete="street-address"
-                  />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="cityReg" className="text-[#14ad9f] font-medium">
-                      Stadt
+                {/* Form Content */}
+                <form onSubmit={handleRegister} className="p-6 space-y-5">
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <Label htmlFor="emailReg" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-[#14ad9f]" />
+                      E-Mail-Adresse
                     </Label>
                     <Input
-                      type="text"
-                      id="cityReg"
-                      value={city}
-                      onChange={e => setCity(e.target.value)}
+                      type="email"
+                      id="emailReg"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
                       required
-                      className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
-                      autoComplete="address-level2" // Bleibt für manuelle Eingabe/Korrektur
+                      placeholder="ihre@email.de"
+                      className="h-12 rounded-xl border-2 border-gray-200 focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-all"
+                      autoComplete="email"
                     />
                   </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="postalCodeReg" className="text-[#14ad9f] font-medium">
-                      Postleitzahl
-                    </Label>
-                    <Input
-                      type="text"
-                      id="postalCodeReg"
-                      value={postalCode}
-                      onChange={e => setPostalCode(e.target.value)}
-                      required
-                      className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
-                      autoComplete="postal-code" // Bleibt für manuelle Eingabe/Korrektur
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="countryReg" className="text-[#14ad9f] font-medium">
-                    Land
-                  </Label>
-                  <Input
-                    type="text"
-                    id="countryReg"
-                    value={country}
-                    onChange={e => setCountry(e.target.value)}
-                    required
-                    placeholder="z.B. DE oder Deutschland"
-                    className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#14ad9f] w-full h-10 text-sm"
-                    autoComplete="country-name"
-                  />
-                </div>
 
-                <div className="grid gap-1.5">
-                  <Label htmlFor="phoneReg" className="text-[#14ad9f] font-medium">
-                    Telefonnummer
-                  </Label>
-                  <div className="flex items-center gap-2">
+                  {/* Password */}
+                  <div className="space-y-2">
+                    <Label htmlFor="passwordReg" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-[#14ad9f]" />
+                      Passwort
+                    </Label>
                     <div className="relative">
+                      <Input
+                        type={showPassword ? 'text' : 'password'}
+                        id="passwordReg"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        required
+                        placeholder="Mindestens 6 Zeichen"
+                        className="h-12 rounded-xl border-2 border-gray-200 focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 pr-12 transition-all"
+                        autoComplete="new-password"
+                      />
                       <button
                         type="button"
-                        className="px-3 py-2 border rounded-l-md focus:ring-2 focus:ring-[#14ad9f] flex items-center h-10 text-sm bg-gray-50 hover:bg-gray-100"
-                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        aria-haspopup="true"
-                        aria-expanded={isDropdownOpen}
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                       >
-                        <Flag
-                          code={
-                            europeanCountryCodes.find(
-                              country => country.dialCode === selectedCountryCode
-                            )?.flag
-                          }
-                          className="w-5 h-auto mr-1.5"
-                        />
-                        {selectedCountryCode}
-                        <svg
-                          className={`w-4 h-4 ml-1 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M19 9l-7 7-7-7"
-                          ></path>
-                        </svg>
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
-                      {isDropdownOpen && (
-                        <div className="absolute z-20 mt-1 w-52 bg-white shadow-lg rounded-md max-h-48 overflow-y-auto border border-gray-200">
-                          {europeanCountryCodes.map(country => (
-                            <div
-                              key={country.dialCode}
-                              className="flex items-center p-2 cursor-pointer hover:bg-gray-100 text-sm"
-                              onClick={() => {
-                                setSelectedCountryCode(country.dialCode);
-                                setIsDropdownOpen(false);
-                              }}
-                            >
-                              <Flag code={country.flag} className="w-5 h-auto mr-2" />
-                              <span className="mr-2">{country.country}</span> ({country.dialCode})
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
-                    <Input
-                      type="tel"
-                      id="phoneReg"
-                      value={phone}
-                      onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
-                      required
-                      placeholder="123456789"
-                      className="px-3 py-2 border rounded-r-md focus:ring-2 focus:ring-[#14ad9f] flex-1 h-10 text-sm"
-                      autoComplete="tel-national"
-                    />
                   </div>
-                </div>
 
-                {/* NEU: Newsletter-Checkbox */}
-                <div className="flex items-center pt-2">
-                  <input
-                    type="checkbox"
-                    id="newsletter"
-                    checked={agreesToNewsletter}
-                    onChange={e => setAgreesToNewsletter(e.target.checked)}
-                    className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded cursor-pointer"
-                  />
-                  <label htmlFor="newsletter" className="ml-2 text-gray-600 text-sm cursor-pointer">
-                    Ich möchte den Newsletter abonnieren und über Neuigkeiten informiert werden.
-                  </label>
-                </div>
-                {error && (
-                  <p className="text-red-500 text-xs text-center p-2 bg-red-50 rounded-md">
-                    {error}
-                  </p>
-                )}
+                  {/* Name Fields */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstnameReg" className="text-sm font-semibold text-gray-700">
+                        Vorname
+                      </Label>
+                      <Input
+                        type="text"
+                        id="firstnameReg"
+                        value={firstname}
+                        onChange={e => setFirstname(e.target.value)}
+                        required
+                        placeholder="Max"
+                        className="h-12 rounded-xl border-2 border-gray-200 focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-all"
+                        autoComplete="given-name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastnameReg" className="text-sm font-semibold text-gray-700">
+                        Nachname
+                      </Label>
+                      <Input
+                        type="text"
+                        id="lastnameReg"
+                        value={lastname}
+                        onChange={e => setLastname(e.target.value)}
+                        required
+                        placeholder="Mustermann"
+                        className="h-12 rounded-xl border-2 border-gray-200 focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-all"
+                        autoComplete="family-name"
+                      />
+                    </div>
+                  </div>
 
-                <Button
-                  type="submit"
-                  className="w-full bg-[#14ad9f] text-white hover:bg-teal-600 transition-colors duration-300 py-2.5 text-sm font-semibold"
-                  disabled={loading}
-                >
-                  {loading ? 'Konto wird erstellt...' : 'Konto erstellen'}
-                </Button>
+                  {/* Address Section */}
+                  <div className="pt-4 border-t border-gray-100">
+                    <div className="flex items-center gap-2 mb-4">
+                      <MapPin className="w-5 h-5 text-[#14ad9f]" />
+                      <span className="text-sm font-semibold text-gray-700">Adresse</span>
+                    </div>
 
-                <p className="text-center text-xs text-gray-600">
-                  Du hast bereits ein Konto?{' '}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setError(null);
-                      setIsLoginPopupOpen(true);
-                    }}
-                    className="text-[#14ad9f] hover:underline font-medium"
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="streetReg" className="text-sm font-medium text-gray-600">
+                          Strasse & Hausnummer
+                        </Label>
+                        <Input
+                          ref={streetInputRef}
+                          type="text"
+                          id="streetReg"
+                          value={street}
+                          onChange={e => setStreet(e.target.value)}
+                          required
+                          placeholder="Musterstrasse 123"
+                          className="h-12 rounded-xl border-2 border-gray-200 focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-all"
+                          autoComplete="street-address"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="postalCodeReg" className="text-sm font-medium text-gray-600">
+                            PLZ
+                          </Label>
+                          <Input
+                            type="text"
+                            id="postalCodeReg"
+                            value={postalCode}
+                            onChange={e => setPostalCode(e.target.value)}
+                            required
+                            placeholder="12345"
+                            className="h-12 rounded-xl border-2 border-gray-200 focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-all"
+                            autoComplete="postal-code"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="cityReg" className="text-sm font-medium text-gray-600">
+                            Stadt
+                          </Label>
+                          <Input
+                            type="text"
+                            id="cityReg"
+                            value={city}
+                            onChange={e => setCity(e.target.value)}
+                            required
+                            placeholder="Berlin"
+                            className="h-12 rounded-xl border-2 border-gray-200 focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-all"
+                            autoComplete="address-level2"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="countryReg" className="text-sm font-medium text-gray-600">
+                          Land
+                        </Label>
+                        <Input
+                          type="text"
+                          id="countryReg"
+                          value={country}
+                          onChange={e => setCountry(e.target.value)}
+                          required
+                          placeholder="DE"
+                          className="h-12 rounded-xl border-2 border-gray-200 focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 transition-all"
+                          autoComplete="country-name"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Phone */}
+                  <div className="space-y-2 pt-4 border-t border-gray-100">
+                    <Label htmlFor="phoneReg" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-[#14ad9f]" />
+                      Telefonnummer
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <button
+                          type="button"
+                          className="h-12 px-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#14ad9f]/20 flex items-center text-sm bg-gray-50 hover:bg-gray-100 transition-all"
+                          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                          aria-haspopup="true"
+                          aria-expanded={isDropdownOpen}
+                        >
+                          <Flag
+                            code={
+                              europeanCountryCodes.find(
+                                countryItem => countryItem.dialCode === selectedCountryCode
+                              )?.flag
+                            }
+                            className="w-5 h-auto mr-2"
+                          />
+                          {selectedCountryCode}
+                          <svg
+                            className={`w-4 h-4 ml-2 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {isDropdownOpen && (
+                          <div className="absolute z-30 mt-2 w-56 bg-white shadow-xl rounded-xl max-h-52 overflow-y-auto border border-gray-100">
+                            {europeanCountryCodes.map(countryItem => (
+                              <div
+                                key={countryItem.dialCode}
+                                className="flex items-center p-3 cursor-pointer hover:bg-gray-50 text-sm transition-colors"
+                                onClick={() => {
+                                  setSelectedCountryCode(countryItem.dialCode);
+                                  setIsDropdownOpen(false);
+                                }}
+                              >
+                                <Flag code={countryItem.flag} className="w-5 h-auto mr-3" />
+                                <span className="font-medium">{countryItem.country}</span>
+                                <span className="ml-auto text-gray-500">{countryItem.dialCode}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <Input
+                        type="tel"
+                        id="phoneReg"
+                        value={phone}
+                        onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
+                        required
+                        placeholder="123456789"
+                        className="h-12 rounded-xl border-2 border-gray-200 focus:border-[#14ad9f] focus:ring-2 focus:ring-[#14ad9f]/20 flex-1 transition-all"
+                        autoComplete="tel-national"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Newsletter Checkbox */}
+                  <div className="flex items-start gap-3 pt-4">
+                    <input
+                      type="checkbox"
+                      id="newsletter"
+                      checked={agreesToNewsletter}
+                      onChange={e => setAgreesToNewsletter(e.target.checked)}
+                      className="h-5 w-5 mt-0.5 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded cursor-pointer"
+                    />
+                    <label htmlFor="newsletter" className="text-sm text-gray-600 cursor-pointer leading-relaxed">
+                      Ich moechte den Newsletter abonnieren und ueber Neuigkeiten informiert werden.
+                    </label>
+                  </div>
+
+                  {/* Error Message */}
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 bg-red-50 border border-red-200 rounded-xl"
+                    >
+                      <p className="text-red-600 text-sm text-center">{error}</p>
+                    </motion.div>
+                  )}
+
+                  {/* Submit Button */}
+                  <Button
+                    type="submit"
+                    className="w-full h-14 bg-[#14ad9f] hover:bg-teal-600 text-white font-semibold text-lg rounded-xl shadow-lg shadow-teal-500/20 transition-all duration-300 hover:shadow-xl hover:shadow-teal-500/30"
+                    disabled={loading}
                   >
-                    Hier einloggen
-                  </button>
-                </p>
-              </form>
-            </CardContent>
-          )}
-        </Card>
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Konto wird erstellt...
+                      </span>
+                    ) : (
+                      'Konto erstellen'
+                    )}
+                  </Button>
+
+                  {/* Trust Indicators */}
+                  <div className="flex items-center justify-center gap-6 pt-4 text-xs text-gray-500">
+                    <div className="flex items-center gap-1.5">
+                      <Shield className="w-4 h-4 text-[#14ad9f]" />
+                      <span>SSL verschluesselt</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle className="w-4 h-4 text-[#14ad9f]" />
+                      <span>DSGVO-konform</span>
+                    </div>
+                  </div>
+                </form>
+              </>
+            )}
+          </motion.div>
+        </div>
       </main>
 
       <LoginPopup
@@ -573,14 +670,19 @@ function UserRegisterFormContent() {
 
 // Die Standard-Export-Komponente für die Seite
 export default function UserRegisterPage() {
-  // Diese Komponente ist verantwortlich für das Setzen der Suspense-Boundary.
-  // Sie kann eine Server-Komponente sein oder eine einfache Client-Komponente ohne problematische Hooks.
   return (
     <Suspense
       fallback={
-        <div className="flex justify-center items-center min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
-          <div className="absolute inset-0 bg-black/20"></div>
-          <div className="relative z-10 text-white font-semibold">Lade Registrierungsseite...</div>
+        <div className="min-h-screen bg-gray-50">
+          <div className="relative bg-linear-to-br from-[#14ad9f] via-teal-600 to-teal-700 py-20">
+            <div className="absolute inset-0 bg-black/10" />
+            <div className="relative z-10 text-center">
+              <div className="inline-flex items-center gap-3 text-white">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span className="font-semibold text-lg">Lade Registrierungsseite...</span>
+              </div>
+            </div>
+          </div>
         </div>
       }
     >

@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
-import { Loader2, AlertCircle, CreditCard } from 'lucide-react';
+import { Loader2, AlertCircle, CreditCard, Shield, CheckCircle, ArrowLeft, Clock, MapPin, Calendar, FileText, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRegistration } from '@/contexts/Registration-Context';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/firebase/clients';
 import SimpleStripeForm from '@/components/SimpleStripeForm';
 import BestaetigungsContent from './components/BestaetigungsContent';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 // Interface für temporären Job-Entwurf
 interface TemporaryJobDraftData {
@@ -513,9 +515,14 @@ export default function BestaetigungsPage() {
   // Loading State
   if (authLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="animate-spin text-4xl text-[#14ad9f] mr-3" />
-        <span>Seite wird vorbereitet...</span>
+      <div className="min-h-screen bg-gray-50">
+        <div className="relative bg-linear-to-br from-[#14ad9f] via-teal-600 to-teal-700 py-20">
+          <div className="absolute inset-0 bg-black/10" />
+          <div className="relative z-10 flex justify-center items-center">
+            <Loader2 className="animate-spin text-4xl text-white mr-3" />
+            <span className="text-white font-semibold text-lg">Seite wird vorbereitet...</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -523,17 +530,37 @@ export default function BestaetigungsPage() {
   // Error State
   if (error) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen p-4">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg max-w-md text-center">
-          <AlertCircle className="mx-auto mb-2" size={24} />
-          <h3 className="font-bold mb-2">Fehler</h3>
-          <p>{error}</p>
-          <button
-            onClick={() => router.push('/auftrag/get-started')}
-            className="mt-4 bg-[#14ad9f] hover:bg-taskilo-hover text-white px-4 py-2 rounded"
+      <div className="min-h-screen bg-gray-50">
+        <div className="relative bg-linear-to-br from-[#14ad9f] via-teal-600 to-teal-700 overflow-hidden">
+          <div className="absolute inset-0 bg-black/10" />
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Link 
+              href="/auftrag/get-started"
+              className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="font-medium">Zurueck</span>
+            </Link>
+          </div>
+        </div>
+        <div className="max-w-md mx-auto px-4 -mt-8 relative z-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl shadow-xl p-8 text-center"
           >
-            Auftrag neu starten
-          </button>
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Fehler</h3>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <button
+              onClick={() => router.push('/auftrag/get-started')}
+              className="w-full h-12 bg-[#14ad9f] hover:bg-teal-600 text-white font-semibold rounded-xl transition-colors"
+            >
+              Auftrag neu starten
+            </button>
+          </motion.div>
         </div>
       </div>
     );
@@ -553,17 +580,37 @@ export default function BestaetigungsPage() {
     !price
   ) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen p-4">
-        <div className="text-center">
-          <AlertCircle className="mx-auto mb-4 text-yellow-500" size={48} />
-          <h3 className="text-xl font-bold mb-2">Unvollständige Auftragsdaten</h3>
-          <p className="text-gray-600 mb-4">Bitte starten Sie den Auftrag erneut.</p>
-          <button
-            onClick={() => router.push('/auftrag/get-started')}
-            className="bg-[#14ad9f] hover:bg-taskilo-hover text-white px-6 py-3 rounded"
+      <div className="min-h-screen bg-gray-50">
+        <div className="relative bg-linear-to-br from-[#14ad9f] via-teal-600 to-teal-700 overflow-hidden">
+          <div className="absolute inset-0 bg-black/10" />
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Link 
+              href="/auftrag/get-started"
+              className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="font-medium">Zurueck</span>
+            </Link>
+          </div>
+        </div>
+        <div className="max-w-md mx-auto px-4 -mt-8 relative z-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl shadow-xl p-8 text-center"
           >
-            Neuen Auftrag starten
-          </button>
+            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-yellow-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Unvollstaendige Auftragsdaten</h3>
+            <p className="text-gray-600 mb-6">Bitte starten Sie den Auftrag erneut.</p>
+            <button
+              onClick={() => router.push('/auftrag/get-started')}
+              className="w-full h-12 bg-[#14ad9f] hover:bg-teal-600 text-white font-semibold rounded-xl transition-colors"
+            >
+              Neuen Auftrag starten
+            </button>
+          </motion.div>
         </div>
       </div>
     );
@@ -572,124 +619,248 @@ export default function BestaetigungsPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex justify-center items-center min-h-screen">
-          <Loader2 className="animate-spin text-4xl text-white mr-3" />
-          <span className="text-white">Seite wird aufgebaut...</span>
+        <div className="min-h-screen bg-gray-50">
+          <div className="relative bg-linear-to-br from-[#14ad9f] via-teal-600 to-teal-700 py-20">
+            <div className="absolute inset-0 bg-black/10" />
+            <div className="relative z-10 flex justify-center items-center">
+              <Loader2 className="animate-spin text-4xl text-white mr-3" />
+              <span className="text-white font-semibold text-lg">Seite wird aufgebaut...</span>
+            </div>
+          </div>
         </div>
       }
     >
-      <div className="max-w-7xl mx-auto px-4 py-10">
-        <h1 className="text-3xl font-semibold text-white mb-8 text-center">
-          Bestätigung und Zahlung
-        </h1>
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8 items-start">
-          {/* Auftragsdetails - Links */}
-          <div className="w-full order-last lg:order-first">
-            <BestaetigungsContent
-              anbieterId={urlParams.anbieterId}
-              unterkategorie={urlParams.unterkategorie}
-              postalCodeJob={urlParams.postalCode}
-              initialJobDateFrom={urlParams.dateFrom}
-              initialJobDateTo={urlParams.dateTo}
-              initialJobTime={urlParams.time}
-              initialJobDescription={urlParams.description}
-              initialJobDurationString={urlParams.duration.toString()}
-              onPriceCalculated={handlePriceCalculatedFromChild}
-              onDetailsChange={handleDetailsChangeFromChild}
-            />
+      <div className="min-h-screen bg-gray-50">
+        {/* Hero Section */}
+        <div className="relative bg-linear-to-br from-[#14ad9f] via-teal-600 to-teal-700 overflow-hidden">
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-10"
+            style={{ backgroundImage: 'url(/images/hero-pattern.svg)' }}
+          />
+          <div className="absolute inset-0 bg-black/10" />
+          
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Navigation */}
+            <div className="flex items-center justify-between mb-8">
+              <Link 
+                href="/auftrag/get-started"
+                className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span className="font-medium">Zurueck zur Suche</span>
+              </Link>
+              <Link href="/" className="text-2xl font-bold text-white">
+                Taskilo
+              </Link>
+            </div>
+            
+            {/* Hero Content */}
+            <div className="text-center pb-16">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
+                  <CheckCircle className="w-4 h-4 text-white" />
+                  <span className="text-white text-sm font-medium">Fast geschafft</span>
+                </div>
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+                  Bestaetigung & Zahlung
+                </h1>
+                <p className="text-lg text-white/90 max-w-2xl mx-auto">
+                  Pruefen Sie Ihre Buchungsdetails und schliessen Sie die Zahlung sicher ab
+                </p>
+              </motion.div>
+            </div>
           </div>
+        </div>
 
-          {/* Payment Section - Rechts */}
-          <div className="w-full bg-white/10 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-white/20">
-            <h2 className="text-2xl font-semibold text-white mb-6">Sichere Zahlung</h2>
-
-            {/* Payment Message */}
-            {error && (
-              <div className="my-4 p-3 rounded-md text-sm bg-red-100 text-red-700 flex items-center">
-                <AlertCircle className="mr-2 shrink-0" />
-                {error}
-              </div>
-            )}
-
-            {/* Billing Address Section */}
-            <div className="mb-6 p-4 border border-white/30 rounded-md bg-white/20 backdrop-blur-sm">
-              <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-                <CreditCard className="mr-2" /> Rechnungsadresse
-              </h3>
-              <p className="text-sm text-white/80 mb-3">
-                Diese Adresse wird für Ihre Rechnung verwendet.
-              </p>
-              <div className="text-white text-sm">
-                <p className="font-medium">{firebaseUser?.displayName || 'Kunde'}</p>
-                <p className="text-xs text-white/60">Adresse wird beim Bezahlen erfasst</p>
-              </div>
-            </div>
-
-            {/* Price Overview */}
-            <div className="mb-6 p-4 border border-white/30 rounded-md bg-white/20 backdrop-blur-sm">
-              <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-                <CreditCard className="mr-2" /> Preisübersicht
-              </h3>
-              <div className="border-t border-white/30 mt-2 pt-2 flex justify-between font-bold text-lg">
-                <span className="text-white">Gesamtbetrag:</span>
-                <span className="text-white">
-                  {jobPriceInCents ? (jobPriceInCents / 100).toFixed(2) : '0.00'} EUR
-                </span>
-              </div>
-              <p className="text-xs text-white/60 mt-2">
-                Der angezeigte Betrag ist der Endpreis. Die Servicegebühr wird vom Dienstleister
-                getragen.
-              </p>
-            </div>
-
-            {/* Payment Section - Always visible */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <CreditCard className="mr-2" /> Zahlungsmethode
-              </h3>
-              <p className="text-sm text-white/80 mb-4">
-                Geben Sie Ihre Zahlungsinformationen ein, um die Buchung abzuschließen.
-              </p>
-
-              {/* PREMIUM STRIPE PAYMENT FORM */}
-              <div className="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
-                {clientSecret ? (
-                  <SimpleStripeForm
-                    clientSecret={clientSecret}
-                    amount={urlParams.price}
-                    anbieterDetails={{
-                      id: urlParams.anbieterId,
-                      companyName: 'Dienstleister',
-                      category: urlParams.unterkategorie,
-                    }}
-                    jobDetails={{
-                      category: urlParams.unterkategorie || '',
-                      description: urlParams.description || '',
-                      dateFrom: urlParams.dateFrom || '',
-                      dateTo: urlParams.dateTo || '',
-                      duration: urlParams.duration ? parseInt(urlParams.duration) : 0,
-                    }}
+        {/* Main Content */}
+        <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 pb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Order Details */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="lg:col-span-2"
+            >
+              <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div className="bg-gray-50 border-b border-gray-100 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-[#14ad9f]" />
+                    Auftragsdetails
+                  </h2>
+                </div>
+                <div className="p-6">
+                  <BestaetigungsContent
+                    anbieterId={urlParams.anbieterId}
+                    unterkategorie={urlParams.unterkategorie}
+                    postalCodeJob={urlParams.postalCode}
+                    initialJobDateFrom={urlParams.dateFrom}
+                    initialJobDateTo={urlParams.dateTo}
+                    initialJobTime={urlParams.time}
+                    initialJobDescription={urlParams.description}
+                    initialJobDurationString={urlParams.duration.toString()}
+                    onPriceCalculated={handlePriceCalculatedFromChild}
+                    onDetailsChange={handleDetailsChangeFromChild}
                   />
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="relative">
-                      <div className="animate-pulse">
-                        <div className="bg-gray-200 h-4 w-48 mx-auto rounded mb-4"></div>
-                        <div className="bg-gray-200 h-12 w-full rounded mb-4"></div>
-                        <div className="bg-gray-200 h-12 w-full rounded"></div>
+                </div>
+              </div>
+
+              {/* Order Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <div className="bg-white rounded-xl shadow-lg p-4 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center">
+                    <Calendar className="w-6 h-6 text-[#14ad9f]" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Datum</p>
+                    <p className="text-sm font-semibold text-gray-900">{urlParams.dateFrom}</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl shadow-lg p-4 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center">
+                    <Clock className="w-6 h-6 text-[#14ad9f]" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Dauer</p>
+                    <p className="text-sm font-semibold text-gray-900">{urlParams.duration} Stunden</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl shadow-lg p-4 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center">
+                    <MapPin className="w-6 h-6 text-[#14ad9f]" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Ort</p>
+                    <p className="text-sm font-semibold text-gray-900">{urlParams.postalCode}</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right Column - Payment */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="lg:col-span-1"
+            >
+              <div className="bg-white rounded-2xl shadow-xl overflow-hidden sticky top-8">
+                {/* Payment Header */}
+                <div className="bg-gray-50 border-b border-gray-100 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-[#14ad9f]" />
+                    Sichere Zahlung
+                  </h2>
+                </div>
+
+                <div className="p-6 space-y-6">
+                  {/* Error Message */}
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3"
+                    >
+                      <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                      <p className="text-sm text-red-600">{error}</p>
+                    </motion.div>
+                  )}
+
+                  {/* Price Summary */}
+                  <div className="bg-gray-50 rounded-xl p-5">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-4">Preisuebersicht</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Dienstleistung</span>
+                        <span className="font-medium text-gray-900">
+                          {jobPriceInCents ? (jobPriceInCents / 100).toFixed(2) : '0.00'} EUR
+                        </span>
                       </div>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Loader2 className="animate-spin text-[#14ad9f]" size={32} />
+                      <div className="border-t border-gray-200 pt-3 flex justify-between">
+                        <span className="font-semibold text-gray-900">Gesamtbetrag</span>
+                        <span className="text-xl font-bold text-[#14ad9f]">
+                          {jobPriceInCents ? (jobPriceInCents / 100).toFixed(2) : '0.00'} EUR
+                        </span>
                       </div>
                     </div>
-                    <p className="text-gray-600 font-medium mt-4">
-                      Sichere Zahlung wird vorbereitet...
+                    <p className="text-xs text-gray-500 mt-3">
+                      Inkl. MwSt. Servicegebuehr wird vom Dienstleister getragen.
                     </p>
-                    <p className="text-xs text-gray-400">Powered by Stripe</p>
                   </div>
-                )}
+
+                  {/* Customer Info */}
+                  <div className="bg-gray-50 rounded-xl p-5">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Rechnungsadresse</h3>
+                    <div className="text-sm text-gray-600">
+                      <p className="font-medium text-gray-900">{firebaseUser?.displayName || 'Kunde'}</p>
+                      <p className="text-xs text-gray-500 mt-1">Adresse wird beim Bezahlen erfasst</p>
+                    </div>
+                  </div>
+
+                  {/* Stripe Payment Form */}
+                  <div className="border-t border-gray-100 pt-6">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-[#14ad9f]" />
+                      Zahlungsmethode
+                    </h3>
+                    
+                    {clientSecret ? (
+                      <SimpleStripeForm
+                        clientSecret={clientSecret}
+                        amount={urlParams.price}
+                        anbieterDetails={{
+                          id: urlParams.anbieterId,
+                          companyName: 'Dienstleister',
+                          category: urlParams.unterkategorie,
+                        }}
+                        jobDetails={{
+                          category: urlParams.unterkategorie || '',
+                          description: urlParams.description || '',
+                          dateFrom: urlParams.dateFrom || '',
+                          dateTo: urlParams.dateTo || '',
+                          duration: urlParams.duration ? parseInt(urlParams.duration) : 0,
+                        }}
+                      />
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="relative">
+                          <div className="animate-pulse space-y-3">
+                            <div className="bg-gray-200 h-12 w-full rounded-xl"></div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="bg-gray-200 h-12 rounded-xl"></div>
+                              <div className="bg-gray-200 h-12 rounded-xl"></div>
+                            </div>
+                            <div className="bg-gray-200 h-12 w-full rounded-xl"></div>
+                          </div>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2 flex items-center gap-2">
+                              <Loader2 className="animate-spin text-[#14ad9f]" size={20} />
+                              <span className="text-sm font-medium text-gray-700">Wird geladen...</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Trust Indicators */}
+                  <div className="flex items-center justify-center gap-6 pt-4 border-t border-gray-100 text-xs text-gray-500">
+                    <div className="flex items-center gap-1.5">
+                      <Shield className="w-4 h-4 text-[#14ad9f]" />
+                      <span>SSL verschluesselt</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle className="w-4 h-4 text-[#14ad9f]" />
+                      <span>Stripe gesichert</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>

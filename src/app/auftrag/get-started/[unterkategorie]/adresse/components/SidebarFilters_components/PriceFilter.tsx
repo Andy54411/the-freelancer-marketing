@@ -18,39 +18,45 @@ export interface PriceDistributionData {
 const renderPriceHistogram = (data: PriceDistributionData[], loading: boolean) => {
   if (loading) {
     return (
-      <div className="h-24 bg-gray-100 my-2 rounded flex items-center justify-center text-xs text-gray-400">
-        <FiLoader className="animate-spin mr-2" /> Preisverteilung wird geladen...
+      <div className="h-28 bg-gray-50 my-3 rounded-xl flex items-center justify-center text-sm text-gray-500">
+        <FiLoader className="animate-spin mr-2 w-4 h-4" /> Preisverteilung wird geladen...
       </div>
     );
   }
   if (!data || data.length === 0) {
     return (
-      <div className="h-24 bg-gray-100 my-2 rounded flex items-center justify-center text-xs text-gray-400">
-        Keine Preisdaten verfügbar.
+      <div className="h-28 bg-gray-50 my-3 rounded-xl flex items-center justify-center text-sm text-gray-500">
+        Keine Preisdaten verfuegbar.
       </div>
     );
   }
   return (
-    <div className="h-24 my-2">
+    <div className="h-28 my-3 bg-gray-50 rounded-xl p-2">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
           <XAxis
             dataKey="range"
             axisLine={false}
             tickLine={false}
-            tickFormatter={value => `${value}€`}
-            style={{ fontSize: '10px' }}
+            tickFormatter={value => `${value}`}
+            style={{ fontSize: '10px', fill: '#6b7280' }}
           />
           <YAxis axisLine={false} tickLine={false} hide />
           <Tooltip
-            cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
-            formatter={(value: number, name: string, props: { payload?: { range?: string } }) => [
+            cursor={{ fill: 'rgba(20, 173, 159, 0.1)' }}
+            contentStyle={{ 
+              backgroundColor: 'white', 
+              border: '1px solid #e5e7eb', 
+              borderRadius: '8px',
+              fontSize: '12px'
+            }}
+            formatter={(value: number, _name: string, props: { payload?: { range?: string } }) => [
               `${value} Anbieter`,
               props.payload?.range || '',
             ]}
           />
-          <Bar dataKey="count" fill="#14ad9f" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="count" fill="#14ad9f" radius={[6, 6, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -80,45 +86,59 @@ export default function PriceFilter({
   priceDistribution,
 }: PriceFilterProps) {
   return (
-    <div className="space-y-2 pt-2 border-t border-gray-200">
+    <div className="space-y-3">
       <div className="flex justify-between items-center">
-        <Label className="text-sm font-medium text-gray-700">Preis</Label>
+        <Label className="text-sm font-semibold text-gray-700">Preis</Label>
         <button
           onClick={resetPriceFilter}
-          className="text-xs text-[#14ad9f] hover:underline flex items-center"
+          className="text-xs text-[#14ad9f] hover:text-teal-700 flex items-center font-medium transition-colors"
           disabled={loadingSubcategoryData}
         >
           <FiRefreshCcw size={12} className="mr-1" /> Zurücksetzen
         </button>
       </div>
+      
       {/* Rendering des Histograms mit den übergebenen Daten */}
       {renderPriceHistogram(priceDistribution || [], loadingSubcategoryData)}
-      <input
-        type="range"
-        min={dynamicSliderMin}
-        max={dynamicSliderMax}
-        step={PRICE_STEP}
-        value={currentMaxPrice}
-        onChange={handlePriceSliderChange}
-        disabled={loadingSubcategoryData || dynamicSliderMin >= dynamicSliderMax}
-        className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#14ad9f] range-lg disabled:opacity-50 disabled:cursor-not-allowed"
-      />
-      <div className="flex justify-between text-xs text-gray-600 px-1">
-        <span>{dynamicSliderMin} €</span>
-        <span>{currentMaxPrice} €</span>
+      
+      {/* Slider */}
+      <div className="px-1">
+        <input
+          type="range"
+          min={dynamicSliderMin}
+          max={dynamicSliderMax}
+          step={PRICE_STEP}
+          value={currentMaxPrice}
+          onChange={handlePriceSliderChange}
+          disabled={loadingSubcategoryData || dynamicSliderMin >= dynamicSliderMax}
+          className="w-full h-2 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: `linear-gradient(to right, #14ad9f 0%, #14ad9f ${((currentMaxPrice - dynamicSliderMin) / (dynamicSliderMax - dynamicSliderMin)) * 100}%, #e5e7eb ${((currentMaxPrice - dynamicSliderMin) / (dynamicSliderMax - dynamicSliderMin)) * 100}%, #e5e7eb 100%)`
+          }}
+        />
       </div>
-      <p className="text-xs text-gray-500 mt-2">
-        Durchschnitt in Kategorie:
-        <strong className="ml-1">
-          {loadingSubcategoryData ? (
-            <FiLoader className="animate-spin inline-block" />
-          ) : averagePriceForSubcategory !== null ? (
-            `${averagePriceForSubcategory.toFixed(2)} €/Std.`
-          ) : (
-            'N/A'
-          )}
-        </strong>
-      </p>
+      
+      {/* Preis-Labels */}
+      <div className="flex justify-between text-sm text-gray-600 px-1">
+        <span className="font-medium">{dynamicSliderMin} EUR</span>
+        <span className="font-semibold text-[#14ad9f]">{currentMaxPrice} EUR</span>
+      </div>
+      
+      {/* Durchschnittspreis */}
+      <div className="bg-gray-50 rounded-xl p-3 mt-2">
+        <p className="text-sm text-gray-600">
+          Durchschnitt in Kategorie:
+          <span className="font-semibold text-gray-800 ml-1">
+            {loadingSubcategoryData ? (
+              <FiLoader className="animate-spin inline-block w-4 h-4" />
+            ) : averagePriceForSubcategory !== null ? (
+              `${averagePriceForSubcategory.toFixed(2)} EUR/Std.`
+            ) : (
+              'N/A'
+            )}
+          </span>
+        </p>
+      </div>
     </div>
   );
 }

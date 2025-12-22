@@ -685,6 +685,15 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                 <FiHelpCircle size={20} />
               </button>
 
+              {/* Mail Account Button - IMMER sichtbar */}
+              <Link
+                href="/webmail"
+                className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-white bg-[#14ad9f] hover:bg-[#0d8a7f] px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <FiMail className="w-4 h-4" />
+                <span className="hidden sm:inline">Mail Account</span>
+              </Link>
+
               {/* Benutzer-Bereich mit Loading-State */}
               {isAuthLoading ? (
                 // Loading Spinner während Auth-Check

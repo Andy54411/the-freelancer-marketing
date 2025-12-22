@@ -1,55 +1,40 @@
-// System Status API
+/**
+ * Admin System Status API Route
+ * 
+ * Firebase-basierter System-Status
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import { DynamoDBClient, DescribeTableCommand } from '@aws-sdk/client-dynamodb';
-import { SESClient, GetSendStatisticsCommand } from '@aws-sdk/client-ses';
-
-const dynamodb = new DynamoDBClient({
-  region: process.env.AWS_REGION || 'eu-central-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
-
-const sesClient = new SESClient({
-  region: process.env.AWS_REGION || 'eu-central-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
+import { FirebaseAdminStatsService } from '@/services/admin/FirebaseAdminStatsService';
 
 export async function GET(_request: NextRequest) {
   try {
-    const status = {
-      dynamodb: 'healthy' as 'healthy' | 'warning' | 'error',
-      ses: 'healthy' as 'healthy' | 'warning' | 'error',
-      cognito: 'healthy' as 'healthy' | 'warning' | 'error',
-      lastCheck: new Date().toLocaleString('de-DE'),
-    };
+    const status = await FirebaseAdminStatsService.getSystemStatus();
 
-    // Test DynamoDB
-    try {
-      const dbCommand = new DescribeTableCommand({
-        TableName: 'taskilo-admin-data',
-      });
-      await dynamodb!.send(dbCommand);
-    } catch (error) {
-      status.dynamodb = 'error';
-    }
-
-    // Test SES
-    try {
-      const sesCommand = new GetSendStatisticsCommand({});
-      await sesClient.send(sesCommand);
-    } catch (error) {
-      status.ses = 'error';
-    }
-
-    return NextResponse.json(status);
+    return NextResponse.json({
+      success: true,
+      status,
+      timestamp: new Date().toISOString(),
+      services: {
+        firebase: status.firebase,
+        storage: status.storage,
+        api: status.api,
+      },
+      overall: status.overall,
+    });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
-      { error: 'Fehler beim Überprüfen des System-Status' },
+      { 
+        error: 'Failed to fetch system status', 
+        details: errorMessage,
+        status: {
+          firebase: 'error',
+          storage: 'unknown',
+          api: 'healthy',
+          overall: 'error',
+        },
+      },
       { status: 500 }
     );
   }

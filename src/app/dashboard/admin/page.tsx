@@ -45,9 +45,25 @@ export default function AdminDashboardPage() {
       const response = await fetch('/api/admin/dashboard/stats');
       if (response.ok) {
         const data = await response.json();
-        setStats(data);
+        // Map API response to expected format
+        if (data.success && data.stats) {
+          setStats({
+            totalUsers: data.stats.users?.total || 0,
+            totalCompanies: data.stats.companies?.total || 0,
+            totalEmails: 0, // Not tracked in new API
+            systemHealth: data.stats.system?.status === 'healthy' ? 'healthy' : 'error',
+            recentActivity: [],
+          });
+        }
       }
     } catch (error) {
+      setStats({
+        totalUsers: 0,
+        totalCompanies: 0,
+        totalEmails: 0,
+        systemHealth: 'error',
+        recentActivity: [],
+      });
     } finally {
       setLoading(false);
     }

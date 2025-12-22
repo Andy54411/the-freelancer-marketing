@@ -1,9 +1,10 @@
-// /Users/andystaudinger/Taskilo/src/app/auftrag/get-started/[unterkategorie]/adresse/page.tsx
 'use client';
 
 import React, { useState, useEffect, Suspense, useMemo, useCallback } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { FiLoader, FiAlertCircle, FiArrowLeft } from 'react-icons/fi';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { Loader2, AlertCircle, ChevronRight, X, MapPin, Calendar, Users } from 'lucide-react';
 import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext';
 import CompanyProfileDetail from './components/CompanyProfileDetail';
 import {
@@ -16,9 +17,6 @@ import { format, isValid, parseISO, differenceInCalendarDays } from 'date-fns';
 import {
   GLOBAL_FALLBACK_MIN_PRICE,
   GLOBAL_FALLBACK_MAX_PRICE,
-  PAGE_ERROR,
-  PAGE_LOG,
-  PAGE_WARN,
   TRUST_AND_SUPPORT_FEE_EUR,
   DATA_FOR_SUBCATEGORY_API_URL,
   SEARCH_API_URL,
@@ -76,11 +74,9 @@ export default function AddressPage() {
       let foundStreet = '';
       let foundStreetNumber = '';
 
-      // Durchlaufe alle Adresskomponenten und extrahiere relevante Informationen
       place.address_components.forEach(component => {
         const types = component.types;
 
-        // Stadt/Ort
         if (types.includes('locality')) {
           foundCity = component.long_name;
         } else if (types.includes('postal_town') && !foundCity) {
@@ -91,28 +87,23 @@ export default function AddressPage() {
           foundCity = component.long_name;
         }
 
-        // Postleitzahl
         if (types.includes('postal_code')) {
           foundPostalCode = component.long_name;
         }
 
-        // Land
         if (types.includes('country')) {
           foundCountry = component.long_name;
         }
 
-        // Straße
         if (types.includes('route')) {
           foundStreet = component.long_name;
         }
 
-        // Hausnummer
         if (types.includes('street_number')) {
           foundStreetNumber = component.long_name;
         }
       });
 
-      // Aktualisiere die Zustände
       if (foundCity) {
         setCityState(foundCity);
       }
@@ -129,8 +120,6 @@ export default function AddressPage() {
         const fullStreet = foundStreetNumber ? `${foundStreet} ${foundStreetNumber}` : foundStreet;
         setStreetState(fullStreet);
       }
-
-      // Debug-Ausgabe für bessere Nachverfolgung
     }
   }, [autocomplete]);
 
@@ -173,8 +162,6 @@ export default function AddressPage() {
   const [editTime, setEditTime] = useState<string>('');
   const [editDuration, setEditDuration] = useState<string>('');
 
-  // Auth-check wird in handleDateTimeConfirm ausgeführt
-
   useEffect(() => {
     const paramSubcategory = pathParams?.unterkategorie;
     let initialSubcategory: string | null = null;
@@ -189,12 +176,8 @@ export default function AddressPage() {
       if (registration.selectedSubcategory !== initialSubcategory) {
         registration.setSelectedSubcategory(initialSubcategory);
       }
-    } else {
     }
 
-    // BESCHREIBUNG: Beschreibung aus URL-Parametern lesen und im Context speichern.
-    // Dies stellt sicher, dass die Beschreibung auch nach einem Reload oder bei direkter Navigation
-    // zur Adress-Seite vorhanden ist und nicht verloren geht.
     const descriptionFromUrl = searchParams?.get('description');
     if (
       descriptionFromUrl &&
@@ -203,8 +186,8 @@ export default function AddressPage() {
       try {
         const decodedDescription = decodeURIComponent(descriptionFromUrl);
         registration.setDescription(decodedDescription);
-      } catch (e) {
-        registration.setDescription(descriptionFromUrl); // Fallback auf nicht-dekodierten Wert
+      } catch {
+        registration.setDescription(descriptionFromUrl);
       }
     }
 
@@ -214,7 +197,7 @@ export default function AddressPage() {
     if (registration.jobCountry) setCountryState(registration.jobCountry);
   }, [pathParams, registration, searchParams]);
 
-  const selectedMainCategory = useMemo(() => {
+  const _selectedMainCategory = useMemo(() => {
     if (!selectedSubcategory) return null;
     for (const cat of categories) {
       if (cat.subcategories.includes(selectedSubcategory)) {
@@ -223,10 +206,6 @@ export default function AddressPage() {
     }
     return null;
   }, [selectedSubcategory]);
-
-  const shouldShowDateTimeFilters = useMemo(() => {
-    return selectedMainCategory === 'Handwerk' || selectedMainCategory === 'Haushalt & Reinigung';
-  }, [selectedMainCategory]);
 
   const currentBookingChars = useMemo(
     () => getBookingCharacteristics(selectedSubcategory),
@@ -249,8 +228,6 @@ export default function AddressPage() {
           `${DATA_FOR_SUBCATEGORY_API_URL}?subcategory=${encodeURIComponent(subcategory)}`
         );
         if (!res.ok) {
-          const errorText = await res.text();
-
           throw new Error(`API Error ${res.status}`);
         }
         const data = await res.json();
@@ -261,7 +238,7 @@ export default function AddressPage() {
         setAveragePriceForSubcategory(data.averagePrice || null);
         setDynamicSliderMax(newMax);
         setPriceDistribution(data.distribution || null);
-      } catch (err: unknown) {
+      } catch {
         setAveragePriceForSubcategory(null);
         setDynamicSliderMin(GLOBAL_FALLBACK_MIN_PRICE);
         setDynamicSliderMax(GLOBAL_FALLBACK_MAX_PRICE);
@@ -271,13 +248,7 @@ export default function AddressPage() {
         setLoadingSubcategoryData(false);
       }
     },
-    [
-      setAveragePriceForSubcategory,
-      setDynamicSliderMin,
-      setDynamicSliderMax,
-      setCurrentMaxPrice,
-      setPriceDistribution,
-    ]
+    []
   );
 
   const fetchCompanyProfiles = useCallback(async () => {
@@ -304,20 +275,15 @@ export default function AddressPage() {
       }
       const res = await fetch(apiUrl);
       if (!res.ok) {
-        const errorText = await res.text();
-
         throw new Error(`Anbieter konnten nicht geladen werden (Fehler ${res.status})`);
       }
       const data: Company[] = await res.json();
       setCompanyProfiles(data);
       const newRatingMap: RatingMap = {};
       for (const company of data) {
-        // TODO: Rating-Logik implementieren
-        // Hier könnte eine separate API-Anfrage für Ratings gemacht werden
-        // oder die Ratings könnten bereits in den Company-Daten enthalten sein
         newRatingMap[company.id] = {
-          avg: 0, // Standardwert bis Ratings geladen sind
-          count: 0, // Standardwert bis Ratings geladen sind
+          avg: 0,
+          count: 0,
         };
       }
       setRatingMap(newRatingMap);
@@ -338,9 +304,6 @@ export default function AddressPage() {
     dynamicSliderMin,
     finalSelectedDateRange,
     finalSelectedTime,
-    setCompanyProfiles,
-    setError,
-    setRatingMap,
   ]);
 
   useEffect(() => {
@@ -367,12 +330,12 @@ export default function AddressPage() {
       const newMax = Number(event.target.value);
       setCurrentMaxPrice(newMax >= dynamicSliderMin ? newMax : dynamicSliderMin);
     },
-    [dynamicSliderMin, setCurrentMaxPrice]
+    [dynamicSliderMin]
   );
 
   const resetPriceFilter = useCallback(() => {
     setCurrentMaxPrice(dynamicSliderMax);
-  }, [dynamicSliderMax, setCurrentMaxPrice]);
+  }, [dynamicSliderMax]);
 
   const handleOpenDatePicker = useCallback(
     (companyContext?: Company) => {
@@ -399,22 +362,12 @@ export default function AddressPage() {
       setEditDuration(initialDur);
       setIsDatePickerOpen(true);
     },
-    [
-      registration,
-      currentBookingChars,
-      finalSelectedTime,
-      finalSelectedDateRange,
-      setSelectedCompanyForPopup,
-      setEditSelection,
-      setEditTime,
-      setEditDuration,
-      setIsDatePickerOpen,
-    ]
+    [registration, currentBookingChars, finalSelectedTime, finalSelectedDateRange]
   );
 
   const handleCloseDatePicker = useCallback(() => {
     setIsDatePickerOpen(false);
-  }, [setIsDatePickerOpen]);
+  }, []);
 
   const handleDateTimeConfirm: DateTimeSelectionPopupProps['onConfirm'] = useCallback(
     async (selection?: Date | DateRange, time?: string, durationStringFromPopup?: string) => {
@@ -451,12 +404,12 @@ export default function AddressPage() {
               : 1;
           setFinalSelectedDateRange({ from: effectiveFrom, to: effectiveTo });
         } else {
-          setError('Ungültige Datumsauswahl.');
+          setError('Ungueltige Datumsauswahl.');
           setSelectedCompanyForPopup(null);
           return;
         }
       } else {
-        setError('Bitte wählen Sie ein Datum oder einen Zeitraum aus.');
+        setError('Bitte waehlen Sie ein Datum oder einen Zeitraum aus.');
         setSelectedCompanyForPopup(null);
         return;
       }
@@ -474,12 +427,12 @@ export default function AddressPage() {
         );
         const hoursPerDayOrTotalInput = parseDurationStringToHours(finalDurationStringInput);
         if (isNaN(anbieterStundensatzNum) || anbieterStundensatzNum <= 0) {
-          setError('Stundensatz des Anbieters ist ungültig.');
+          setError('Stundensatz des Anbieters ist ungueltig.');
           setSelectedCompanyForPopup(null);
           return;
         }
         if (!hoursPerDayOrTotalInput || hoursPerDayOrTotalInput <= 0) {
-          setError('Auftragsdauer ist ungültig.');
+          setError('Auftragsdauer ist ungueltig.');
           setSelectedCompanyForPopup(null);
           return;
         }
@@ -490,7 +443,7 @@ export default function AddressPage() {
           totalCalculatedHours = hoursPerDayOrTotalInput;
         }
         if (totalCalculatedHours <= 0) {
-          setError('Die berechnete Gesamtdauer ist ungültig.');
+          setError('Die berechnete Gesamtdauer ist ungueltig.');
           setSelectedCompanyForPopup(null);
           return;
         }
@@ -526,30 +479,16 @@ export default function AddressPage() {
           bestaetigungsPageParams.append('auftragsDauer', finalDurationStringInput);
         if (totalPriceInCents)
           bestaetigungsPageParams.append('price', (totalPriceInCents / 100).toFixed(2));
-        // AUFTRAGSBESCHREIBUNG: Die Auftragsbeschreibung aus dem Context muss hier an die URL übergeben werden.
         if (registration.description)
           bestaetigungsPageParams.append('description', registration.description);
 
         const bestaetigungsPagePath = `/auftrag/get-started/${encodedSubcategoryForPath}/BestaetigungsPage?${bestaetigungsPageParams.toString()}`;
 
-        // DEBUG: Ausführliches Logging für URL-Parameter-Debugging
-
-        // DEBUG: Teste URL-Parsing
-        try {
-          const testUrl = new URL(bestaetigungsPagePath, window.location.origin);
-        } catch (urlError) {}
-
-        // BENUTZER-AUTHENTIFIZIERUNG: Prüfung beim Klick auf Bestätigen von Datum/Uhrzeit
         const user = auth.currentUser;
         if (user) {
-          // Wenn der Benutzer bereits eingeloggt ist, leiten Sie ihn direkt zur Bestätigungsseite weiter.
-          // Die vorherige Logik, die hier zum Dashboard weiterleitete, verhinderte, dass bestehende Benutzer neue Aufträge erstellen konnten.
-
           router.push(bestaetigungsPagePath);
         } else {
-          // Nicht angemeldet, leite zur Registrierungsseite weiter
           const registrationRedirectUrl = `/register/user?redirectTo=${encodeURIComponent(bestaetigungsPagePath)}`;
-
           router.push(registrationRedirectUrl);
         }
       } else if (dateFromFormatted) {
@@ -559,107 +498,219 @@ export default function AddressPage() {
     },
     [
       selectedCompanyForPopup,
-      setFinalSelectedDateRange,
-      setFinalSelectedTimeState,
-      setIsDatePickerOpen,
-      setError,
       router,
       postalCode,
       selectedSubcategory,
-      finalSelectedTime,
-      finalSelectedDateRange,
       registration,
-      currentBookingChars,
       fetchCompanyProfiles,
       street,
       city,
       country,
     ]
-  ); // Entfernt: db aus den useCallback-Abhängigkeiten (nicht verwendet)
+  );
 
   const isLoadingOverall = loadingProfiles || loadingSubcategoryData;
 
   return (
     <Suspense
       fallback={
-        <div className="flex justify-center items-center min-h-screen">
-          <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" /> Seite wird aufgebaut...
+        <div className="flex justify-center items-center min-h-screen bg-linear-to-b from-gray-50 to-white">
+          <Loader2 className="animate-spin w-8 h-8 text-[#14ad9f] mr-3" /> 
+          <span className="text-gray-600">Seite wird aufgebaut...</span>
         </div>
       }
     >
-      <div className="min-h-screen px-4 py-20 flex flex-col items-center">
-        <div className="w-full max-w-3xl">
-          <button
-            onClick={() => router.back()}
-            className="text-white hover:text-white/80 flex items-center gap-2 mb-4 transition-colors"
-          >
-            <FiArrowLeft /> Zurück
-          </button>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-10">Wähle einen Taskter </h1>
-        {error && (
-          <div className="w-full max-w-3xl mb-4 p-3 bg-red-100 text-red-700 rounded-md flex items-center">
-            <FiAlertCircle className="mr-2 h-5 w-5" /> {error}
-          </div>
-        )}
-        <div className="flex flex-col lg:flex-row w-full max-w-7xl gap-6 lg:gap-10 px-4">
-          <SidebarFilters
-            city={city}
-            setCity={setCityState}
-            postalCode={postalCode}
-            setPostalCode={setPostalCodeState}
-            isLoaded={isLoaded}
-            onLoad={onLoad}
-            onPlaceChanged={onPlaceChanged}
-            finalSelectedDateRange={finalSelectedDateRange}
-            finalSelectedTime={finalSelectedTime}
-            onDateTimeConfirm={handleDateTimeConfirm}
-            onOpenDatePicker={handleOpenDatePicker}
-            currentMaxPrice={currentMaxPrice}
-            dynamicSliderMin={dynamicSliderMin}
-            dynamicSliderMax={dynamicSliderMax}
-            handlePriceSliderChange={handlePriceSliderChange}
-            resetPriceFilter={resetPriceFilter}
-            loadingSubcategoryData={loadingSubcategoryData}
-            averagePriceForSubcategory={averagePriceForSubcategory}
-            priceDistribution={priceDistribution}
-            selectedSubcategory={selectedSubcategory}
-            setFinalSelectedTime={setFinalSelectedTimeState}
+      <div className="min-h-screen flex flex-col">
+        {/* Hero Section */}
+        <div className="relative bg-linear-to-br from-[#14ad9f] via-teal-600 to-teal-800 text-white">
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-10"
+            style={{ backgroundImage: "url('/images/features/accounting-hero.png')" }}
           />
-          <div className="w-full lg:w-2/3">
-            {isLoadingOverall && (
-              <div className="flex justify-center items-center min-h-[300px] h-full">
-                <FiLoader className="animate-spin text-3xl text-[#14ad9f]" />
-                <span className="ml-3 text-gray-700">Anbieter werden geladen...</span>
-              </div>
-            )}
-            {!isLoadingOverall &&
-              companyProfiles.length === 0 &&
-              postalCode &&
-              selectedSubcategory && (
-                <div className="text-center p-6 bg-white rounded-lg shadow">
-                  <FiAlertCircle className="text-3xl text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600">
-                    Für Ihre Auswahl wurden leider keine passenden Anbieter gefunden.
-                  </p>
-                  <p className="text-sm text-gray-500">Versuchen Sie, Ihre Filter anzupassen.</p>
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+            {/* Navigation */}
+            <div className="flex justify-between items-center mb-6">
+              <button 
+                onClick={() => router.back()}
+                className="flex items-center text-white/80 hover:text-white transition-colors"
+              >
+                <ChevronRight className="w-5 h-5 mr-1 rotate-180" />
+                <span>Zurueck</span>
+              </button>
+              <Link 
+                href="/"
+                className="flex items-center text-white/80 hover:text-white transition-colors"
+              >
+                <span className="mr-2">Abbrechen</span>
+                <X className="w-5 h-5" />
+              </Link>
+            </div>
+
+            {/* Title */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center"
+            >
+              <h1 className="text-3xl sm:text-4xl font-bold mb-3">
+                Waehle einen Taskter
+              </h1>
+              <p className="text-lg text-white/80 max-w-xl mx-auto">
+                {selectedSubcategory ? `Kategorie: ${selectedSubcategory}` : 'Finden Sie den passenden Dienstleister in Ihrer Naehe'}
+              </p>
+              
+              {/* Location Badge */}
+              {(city || postalCode) && (
+                <div className="mt-4 inline-flex items-center bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+                  <MapPin className="w-4 h-4 mr-2" />
+                  <span className="text-sm">
+                    {[postalCode, city].filter(Boolean).join(' ')}
+                  </span>
                 </div>
               )}
-            {!isLoadingOverall && companyProfiles.length > 0 && (
-              <CompanyResultsList
-                loadingProfiles={false}
-                companyProfiles={companyProfiles}
-                ratingMap={ratingMap}
-                expandedDescriptions={expandedDescriptions}
-                onToggleDescriptionExpand={toggleDescriptionExpand}
-                onOpenDatePickerForCompany={company => handleOpenDatePicker(company)}
-                onSetPreviewCompany={setPreviewCompany}
-                selectedCompanyForPopup={selectedCompanyForPopup}
-                isDatePickerOpen={isDatePickerOpen}
-              />
-            )}
+            </motion.div>
           </div>
         </div>
+
+        {/* Main Content */}
+        <div className="flex-1 bg-linear-to-b from-gray-50 to-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Error Message */}
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center"
+              >
+                <AlertCircle className="w-5 h-5 mr-3 shrink-0" />
+                <span>{error}</span>
+              </motion.div>
+            )}
+
+            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+              {/* Sidebar Filters */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="w-full lg:w-1/3"
+              >
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm sticky top-4">
+                  <SidebarFilters
+                    city={city}
+                    setCity={setCityState}
+                    postalCode={postalCode}
+                    setPostalCode={setPostalCodeState}
+                    isLoaded={isLoaded}
+                    onLoad={onLoad}
+                    onPlaceChanged={onPlaceChanged}
+                    finalSelectedDateRange={finalSelectedDateRange}
+                    finalSelectedTime={finalSelectedTime}
+                    onDateTimeConfirm={handleDateTimeConfirm}
+                    onOpenDatePicker={handleOpenDatePicker}
+                    currentMaxPrice={currentMaxPrice}
+                    dynamicSliderMin={dynamicSliderMin}
+                    dynamicSliderMax={dynamicSliderMax}
+                    handlePriceSliderChange={handlePriceSliderChange}
+                    resetPriceFilter={resetPriceFilter}
+                    loadingSubcategoryData={loadingSubcategoryData}
+                    averagePriceForSubcategory={averagePriceForSubcategory}
+                    priceDistribution={priceDistribution}
+                    selectedSubcategory={selectedSubcategory}
+                    setFinalSelectedTime={setFinalSelectedTimeState}
+                  />
+                </div>
+              </motion.div>
+
+              {/* Results */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="w-full lg:w-2/3"
+              >
+                {isLoadingOverall && (
+                  <div className="flex justify-center items-center min-h-[300px] bg-white rounded-2xl border border-gray-200 shadow-sm">
+                    <Loader2 className="animate-spin w-8 h-8 text-[#14ad9f]" />
+                    <span className="ml-3 text-gray-600">Anbieter werden geladen...</span>
+                  </div>
+                )}
+
+                {!isLoadingOverall &&
+                  companyProfiles.length === 0 &&
+                  postalCode &&
+                  selectedSubcategory && (
+                    <div className="text-center p-8 bg-white rounded-2xl border border-gray-200 shadow-sm">
+                      <div className="p-4 bg-gray-100 rounded-xl w-fit mx-auto mb-4">
+                        <Users className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-2">Keine Anbieter gefunden</h3>
+                      <p className="text-gray-500 mb-4">
+                        Fuer Ihre Auswahl wurden leider keine passenden Anbieter gefunden.
+                      </p>
+                      <p className="text-sm text-gray-400">Versuchen Sie, Ihre Filter anzupassen.</p>
+                    </div>
+                  )}
+
+                {!isLoadingOverall && companyProfiles.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-gray-600">
+                        <span className="font-semibold text-[#14ad9f]">{companyProfiles.length}</span> Anbieter gefunden
+                      </p>
+                    </div>
+                    <CompanyResultsList
+                      loadingProfiles={false}
+                      companyProfiles={companyProfiles}
+                      ratingMap={ratingMap}
+                      expandedDescriptions={expandedDescriptions}
+                      onToggleDescriptionExpand={toggleDescriptionExpand}
+                      onOpenDatePickerForCompany={company => handleOpenDatePicker(company)}
+                      onSetPreviewCompany={setPreviewCompany}
+                      selectedCompanyForPopup={selectedCompanyForPopup}
+                      isDatePickerOpen={isDatePickerOpen}
+                    />
+                  </div>
+                )}
+              </motion.div>
+            </div>
+
+            {/* Stats Cards */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-12"
+            >
+              <div className="bg-white rounded-xl border border-gray-200 p-5 text-center hover:shadow-md transition-shadow">
+                <div className="p-3 bg-[#14ad9f]/10 rounded-xl w-fit mx-auto mb-3">
+                  <MapPin className="w-6 h-6 text-[#14ad9f]" />
+                </div>
+                <p className="font-bold text-gray-800">Lokale Experten</p>
+                <p className="text-sm text-gray-500">Dienstleister in Ihrer Naehe</p>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-5 text-center hover:shadow-md transition-shadow">
+                <div className="p-3 bg-[#14ad9f]/10 rounded-xl w-fit mx-auto mb-3">
+                  <Calendar className="w-6 h-6 text-[#14ad9f]" />
+                </div>
+                <p className="font-bold text-gray-800">Flexible Termine</p>
+                <p className="text-sm text-gray-500">Waehlen Sie Ihren Wunschtermin</p>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-5 text-center hover:shadow-md transition-shadow">
+                <div className="p-3 bg-[#14ad9f]/10 rounded-xl w-fit mx-auto mb-3">
+                  <Users className="w-6 h-6 text-[#14ad9f]" />
+                </div>
+                <p className="font-bold text-gray-800">Gepruefte Anbieter</p>
+                <p className="text-sm text-gray-500">Qualifizierte Fachkraefte</p>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Company Detail Modal */}
         {previewCompany && (
           <CompanyProfileDetail
             company={previewCompany}
@@ -668,6 +719,8 @@ export default function AddressPage() {
           />
         )}
       </div>
+
+      {/* Date Time Picker Modal */}
       {isDatePickerOpen && (
         <DateTimeSelectionPopup
           isOpen={isDatePickerOpen}

@@ -1,47 +1,61 @@
-// Admin Users API
-import { NextRequest, NextResponse } from 'next/server';
-import { DynamoDBClient, ScanCommand } from '@aws-sdk/client-dynamodb';
-import { unmarshall } from '@aws-sdk/util-dynamodb';
+/**
+ * Admin Users API Route
+ * 
+ * Firebase-basierte Benutzerverwaltung
+ */
 
-const dynamodb = new DynamoDBClient({
-  region: process.env.AWS_REGION || 'eu-central-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/firebase/server';
 
 export async function GET(_request: NextRequest) {
   try {
-    const command = new ScanCommand({
-      TableName: 'taskilo-admin-data',
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Datenbank nicht verfuegbar' },
+        { status: 500 }
+      );
+    }
+
+    // Get all users from Firebase
+    const usersSnapshot = await db.collection('users').limit(100).get();
+    
+    const users = usersSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        email: data.email,
+        name: data.displayName || data.name,
+        userType: data.user_type || data.userType || 'user',
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+        lastLogin: data.lastLogin?.toDate?.()?.toISOString() || data.lastLogin,
+        isActive: data.isActive !== false,
+        companyId: data.companyId,
+      };
     });
 
-    const result = await dynamodb!.send(command);
-    const items = result.Items?.map(item => unmarshall(item)) || [];
-
-    // Filtere und formatiere Benutzer
-    const users = items
-      .filter(item => ['user', 'company', 'admin'].includes(item.type))
-      .map(user => ({
-        id: user.id,
-        email: user.email,
-        name: user.name || user.email,
-        type: user.type,
-        role: user.role,
-        phone: user.phone,
-        company: user.companyName,
-        status: user.status || 'active',
-        createdAt: user.createdAt || new Date().toISOString(),
-        lastLogin: user.lastLogin,
-      }));
+    // Get companies count
+    const companiesSnapshot = await db.collection('companies').limit(100).get();
+    const companies = companiesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
 
     return NextResponse.json({
-      users: users.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ),
+      success: true,
+      users,
+      totalUsers: users.length,
+      totalCompanies: companies.length,
+      usersByType: {
+        user: users.filter(u => u.userType === 'user').length,
+        firma: users.filter(u => u.userType === 'firma').length,
+        admin: users.filter(u => u.userType === 'admin' || u.userType === 'master').length,
+      },
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Fehler beim Laden der Benutzer' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    return NextResponse.json(
+      { error: 'Failed to fetch users', details: errorMessage },
+      { status: 500 }
+    );
   }
 }
