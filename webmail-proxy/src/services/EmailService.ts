@@ -279,7 +279,7 @@ export class EmailService {
     const validated = SendEmailSchema.parse(input);
     const transport = this.createSmtpTransport();
 
-    const result = await transport.sendMail({
+    const mailOptions = {
       from: this.credentials.email,
       to: validated.to,
       cc: validated.cc,
@@ -290,12 +290,72 @@ export class EmailService {
       replyTo: validated.replyTo,
       inReplyTo: validated.inReplyTo,
       references: validated.references,
-    });
+    };
+
+    const result = await transport.sendMail(mailOptions);
+
+    // Copy sent email to Sent folder via IMAP APPEND
+    try {
+      await this.appendToSentFolder(mailOptions);
+    } catch (appendError) {
+      // Log but don't fail - email was sent successfully
+      console.error('Failed to append to Sent folder:', appendError);
+    }
 
     return {
       success: true,
       messageId: result.messageId,
     };
+  }
+
+  private async appendToSentFolder(mailOptions: {
+    from: string;
+    to: string | string[];
+    cc?: string[];
+    bcc?: string[];
+    subject: string;
+    text?: string;
+    html?: string;
+    replyTo?: string;
+    inReplyTo?: string;
+    references?: string;
+  }): Promise<void> {
+    const client = this.createImapClient();
+
+    try {
+      await client.connect();
+
+      // Build raw email message
+      const toAddresses = Array.isArray(mailOptions.to) ? mailOptions.to.join(', ') : mailOptions.to;
+      const ccLine = mailOptions.cc?.length ? `Cc: ${mailOptions.cc.join(', ')}\r\n` : '';
+      const date = new Date().toUTCString();
+      const messageId = `<${Date.now()}.${Math.random().toString(36).substring(2)}@taskilo.de>`;
+      
+      let rawMessage = `From: ${mailOptions.from}\r\n`;
+      rawMessage += `To: ${toAddresses}\r\n`;
+      rawMessage += ccLine;
+      rawMessage += `Subject: ${mailOptions.subject}\r\n`;
+      rawMessage += `Date: ${date}\r\n`;
+      rawMessage += `Message-ID: ${messageId}\r\n`;
+      rawMessage += `MIME-Version: 1.0\r\n`;
+      
+      if (mailOptions.html) {
+        rawMessage += `Content-Type: text/html; charset=utf-8\r\n`;
+        rawMessage += `\r\n`;
+        rawMessage += mailOptions.html;
+      } else {
+        rawMessage += `Content-Type: text/plain; charset=utf-8\r\n`;
+        rawMessage += `\r\n`;
+        rawMessage += mailOptions.text || '';
+      }
+
+      // Append to Sent folder with \Seen flag
+      await client.append('Sent', rawMessage, ['\\Seen']);
+      await client.logout();
+    } catch (error) {
+      await client.logout().catch(() => {});
+      throw error;
+    }
   }
 
   async markAsRead(mailboxPath: string, uid: number, read: boolean = true): Promise<void> {
