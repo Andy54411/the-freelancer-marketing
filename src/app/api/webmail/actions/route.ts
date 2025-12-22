@@ -7,14 +7,15 @@ const ActionSchema = z.object({
   password: z.string().min(1),
   mailbox: z.string().default('INBOX'),
   uid: z.number(),
-  action: z.enum(['markRead', 'markUnread', 'delete', 'move']),
+  action: z.enum(['markRead', 'markUnread', 'delete', 'move', 'flag']),
   targetMailbox: z.string().optional(),
+  flagged: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, mailbox, uid, action, targetMailbox } = ActionSchema.parse(body);
+    const { email, password, mailbox, uid, action, targetMailbox, flagged } = ActionSchema.parse(body);
 
     const emailService = createEmailService({ email, password });
 
@@ -24,6 +25,9 @@ export async function POST(request: NextRequest) {
         break;
       case 'markUnread':
         await emailService.markAsRead(mailbox, uid, false);
+        break;
+      case 'flag':
+        await emailService.markAsFlagged(mailbox, uid, flagged ?? true);
         break;
       case 'delete':
         await emailService.deleteMessage(mailbox, uid);

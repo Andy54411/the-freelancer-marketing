@@ -145,9 +145,10 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
   }, [email, password]);
 
   const performAction = useCallback(async (
-    action: 'markRead' | 'markUnread' | 'delete' | 'move',
+    action: 'markRead' | 'markUnread' | 'delete' | 'move' | 'flag',
     uid: number,
-    targetMailbox?: string
+    targetMailbox?: string,
+    flagged?: boolean
   ) => {
     try {
       const response = await fetch('/api/webmail/actions', {
@@ -160,6 +161,7 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
           uid,
           action,
           targetMailbox,
+          flagged,
         }),
       });
       const result = await response.json();

@@ -21,6 +21,12 @@ const MarkUnreadSchema = BaseSchema.extend({
   uid: z.number(),
 });
 
+const FlagSchema = BaseSchema.extend({
+  action: z.literal('flag'),
+  uid: z.number(),
+  flagged: z.boolean().default(true),
+});
+
 const DeleteSchema = BaseSchema.extend({
   action: z.literal('delete'),
   uid: z.number(),
@@ -57,6 +63,7 @@ const RenameMailboxSchema = z.object({
 const ActionSchema = z.discriminatedUnion('action', [
   MarkReadSchema,
   MarkUnreadSchema,
+  FlagSchema,
   DeleteSchema,
   MoveSchema,
   CreateMailboxSchema,
@@ -76,6 +83,10 @@ router.post('/', async (req, res) => {
         
       case 'markUnread':
         await emailService.markAsRead(data.mailbox, data.uid, false);
+        break;
+        
+      case 'flag':
+        await emailService.markAsFlagged(data.mailbox, data.uid, data.flagged);
         break;
         
       case 'delete':

@@ -18,6 +18,9 @@ import {
   AlertCircle,
   MoreHorizontal,
   ArrowLeft,
+  Pencil,
+  AlertTriangle,
+  FolderInput,
 } from 'lucide-react';
 import { useWebmail } from '@/hooks/useWebmail';
 import { EmailMessage } from '@/services/webmail/types';
@@ -102,13 +105,14 @@ const EmailItem = memo(({
       )}
       onClick={() => onClick(email)}
     >
-      <div className="flex items-start gap-1.5 w-full min-w-0">
+      <div className="flex items-start gap-1 md:gap-1.5 w-full min-w-0">
         <div className="relative">
-          <Checkbox
+          <input
+            type="checkbox"
             checked={isSelected}
-            onCheckedChange={() => onSelect(email.uid)}
+            onChange={() => onSelect(email.uid)}
             onClick={e => e.stopPropagation()}
-            className="mt-0.5 h-3.5 w-3.5 data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600 rounded-sm"
+            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
           />
           {isUnread && (
             <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-teal-500 rounded-full"></div>
@@ -226,13 +230,34 @@ interface EmailViewerProps {
   email: EmailMessage & { text?: string; html?: string; attachments?: Array<{ filename: string }> };
   onClose: () => void;
   onReply: () => void;
+  onMoveToSpam: (uid: number) => void;
+  onMoveToFolder: (uid: number, folder: string) => void;
+  mailboxes: Array<{ path: string; name: string }>;
+  currentMailbox: string;
   onForward: () => void;
   onDelete: (uid: number) => void;
   onStar: (uid: number) => void;
 }
 
-function EmailViewer({ email, onClose, onReply, onForward, onDelete, onStar }: EmailViewerProps) {
+function EmailViewer({ 
+  email, 
+  onClose, 
+  onReply, 
+  onForward, 
+  onDelete, 
+  onStar,
+  onMoveToSpam,
+  onMoveToFolder,
+  mailboxes,
+  currentMailbox,
+}: EmailViewerProps) {
   const isStarred = email.flags.includes('\\Flagged');
+  
+  // Get target folders for move (exclude current mailbox)
+  const moveTargets = mailboxes.filter(mb => 
+    mb.path !== currentMailbox && 
+    !mb.path.toLowerCase().includes('draft')
+  );
   
   // Process HTML to open links in new tab
   const processedHtml = email.html 
@@ -270,6 +295,35 @@ function EmailViewer({ email, onClose, onReply, onForward, onDelete, onStar }: E
           >
             <Star className={cn('h-4 w-4', isStarred && 'fill-current')} />
           </Button>
+          
+          {/* Move to Folder Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" title="Verschieben">
+                <FolderInput className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem 
+                onClick={() => onMoveToSpam(email.uid)}
+                className="text-orange-600"
+              >
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Als Spam markieren
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {moveTargets.map(mb => (
+                <DropdownMenuItem 
+                  key={mb.path}
+                  onClick={() => onMoveToFolder(email.uid, mb.path)}
+                >
+                  <FolderInput className="h-4 w-4 mr-2" />
+                  {mb.name || mb.path}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           <Button
             variant="ghost"
             size="sm"
@@ -479,6 +533,7 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [replyToEmail, setReplyToEmail] = useState<EmailMessage | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     fetchMailboxes();
@@ -538,6 +593,36 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
     fetchMessages(currentMailbox);
   }, [selectedEmails, performAction, fetchMessages, currentMailbox]);
 
+  // Move email to Spam/Junk folder
+  const handleMoveToSpam = useCallback(async (uid: number) => {
+    // Find Junk/Spam folder
+    const spamFolder = mailboxes.find(mb => 
+      mb.specialUse === '\\Junk' || 
+      mb.path.toLowerCase().includes('spam') || 
+      mb.path.toLowerCase().includes('junk')
+    );
+    
+    const targetFolder = spamFolder?.path || 'Junk';
+    await performAction('move', uid, targetFolder);
+    
+    if (selectedEmail?.uid === uid) {
+      setSelectedEmail(null);
+    }
+    setSelectedEmails(prev => prev.filter(id => id !== uid));
+    fetchMessages(currentMailbox);
+  }, [mailboxes, performAction, selectedEmail, fetchMessages, currentMailbox]);
+
+  // Move email to specific folder
+  const handleMoveToFolder = useCallback(async (uid: number, targetFolder: string) => {
+    await performAction('move', uid, targetFolder);
+    
+    if (selectedEmail?.uid === uid) {
+      setSelectedEmail(null);
+    }
+    setSelectedEmails(prev => prev.filter(id => id !== uid));
+    fetchMessages(currentMailbox);
+  }, [performAction, selectedEmail, fetchMessages, currentMailbox]);
+
   const handleSelectEmail = useCallback((uid: number) => {
     setSelectedEmails(prev => 
       prev.includes(uid) 
@@ -546,9 +631,14 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
     );
   }, []);
 
-  const handleStarEmail = useCallback(async (_uid: number) => {
-    // Flag action not yet implemented in API
-  }, []);
+  const handleStarEmail = useCallback(async (uid: number) => {
+    // Find the message to toggle its flag state
+    const message = messages.find(m => m.uid === uid);
+    const isCurrentlyFlagged = message?.flags.includes('\\Flagged') || false;
+    
+    await performAction('flag', uid, undefined, !isCurrentlyFlagged);
+    fetchMessages(currentMailbox);
+  }, [messages, performAction, fetchMessages, currentMailbox]);
 
   const handleMarkAsRead = useCallback(async (uid: number) => {
     await performAction('markRead', uid);
@@ -669,7 +759,14 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
       {/* Mail Header */}
       <MailHeader
         userEmail={email}
-        onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onMenuToggle={() => {
+          // On mobile, open the drawer; on desktop, collapse sidebar
+          if (window.innerWidth < 768) {
+            setIsMobileSidebarOpen(true);
+          } else {
+            setSidebarCollapsed(!sidebarCollapsed);
+          }
+        }}
         onSearch={(query) => {
           setSearchQuery(query);
           clearAdvancedFilters();
@@ -681,7 +778,7 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden min-w-0">
-        {/* Mail Sidebar */}
+        {/* Mail Sidebar - Desktop only, mobile uses drawer */}
         <MailSidebar
           mailboxes={mailboxes}
           currentMailbox={currentMailbox}
@@ -691,33 +788,38 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
           userPassword={password}
           onMailboxesChange={fetchMailboxes}
           collapsed={sidebarCollapsed}
+          isMobileOpen={isMobileSidebarOpen}
+          onMobileClose={() => setIsMobileSidebarOpen(false)}
         />
 
-        {/* Email List - Fixed Width when email selected */}
+        {/* Email List - Full width on mobile, Fixed Width when email selected on desktop */}
         <div
           className={cn(
-            'bg-white flex flex-col overflow-hidden border-r border-gray-200 relative min-w-0',
-            selectedEmail ? 'w-96 shrink-0' : 'flex-1'
+            'bg-white flex flex-col overflow-hidden relative min-w-0',
+            // Mobile: full width, hide when viewing email
+            'md:border-r md:border-gray-200',
+            selectedEmail ? 'hidden md:flex md:w-96 md:shrink-0' : 'flex-1'
           )}
         >
         {/* Toolbar */}
-        <div className="border-b bg-gray-50/50 px-3 py-2 flex items-center gap-3 shrink-0">
-          <Checkbox
+        <div className="border-b bg-gray-50/50 px-2 md:px-3 py-1.5 md:py-2 flex items-center gap-2 md:gap-3 shrink-0">
+          <input
+            type="checkbox"
             checked={allSelected}
-            onCheckedChange={handleSelectAll}
-            className="data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600"
+            onChange={() => handleSelectAll(!allSelected)}
+            className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
           />
 
           {selectedEmails.length > 0 && (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="bg-teal-100 text-teal-800 text-xs">
-                {selectedEmails.length} ausgewaehlt
+            <div className="flex items-center gap-1 md:gap-2">
+              <Badge variant="secondary" className="bg-teal-100 text-teal-800 text-[10px] md:text-xs px-1.5 md:px-2">
+                {selectedEmails.length}
               </Badge>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleBulkDelete}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 md:h-8 px-1 md:px-2"
                 title="Ausgewaehlte loeschen"
               >
                 <Trash2 className="h-4 w-4" />
@@ -725,25 +827,26 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
             </div>
           )}
 
-          {/* Active Filter Indicator */}
+          {/* Active Filter Indicator - compact on mobile */}
           {advancedFilters && (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="bg-teal-100 text-teal-800 text-xs">
-                Erweiterter Filter aktiv
+            <div className="flex items-center gap-1 md:gap-2">
+              <Badge variant="secondary" className="bg-teal-100 text-teal-800 text-[10px] md:text-xs hidden md:inline-flex">
+                Filter aktiv
               </Badge>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={clearAdvancedFilters}
                 className="h-6 w-6 p-0 hover:bg-gray-200"
-                title="Filter zurücksetzen"
+                title="Filter zuruecksetzen"
               >
                 <X className="h-3 w-3" />
               </Button>
             </div>
           )}
 
-          <div className="relative flex-1 max-w-md">
+          {/* Search - hidden on mobile (use header search) */}
+          <div className="relative flex-1 max-w-md hidden md:block">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="E-Mails durchsuchen..."
@@ -756,13 +859,16 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
             />
           </div>
 
+          {/* Spacer on mobile */}
+          <div className="flex-1 md:hidden" />
+
           <Button
             variant="ghost"
             size="sm"
             onClick={() => fetchMessages(currentMailbox)}
             disabled={loading}
             title="Aktualisieren"
-            className="h-8"
+            className="h-7 md:h-8 px-1.5 md:px-2"
           >
             <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
           </Button>
@@ -800,9 +906,9 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
         </div>
       </div>
 
-      {/* Email Viewer - Takes Remaining Space */}
+      {/* Email Viewer - Takes Remaining Space on desktop, full screen on mobile */}
       {selectedEmail && currentMessage && (
-        <div className="flex-1 bg-white overflow-hidden min-w-0">
+        <div className="fixed inset-0 md:relative md:inset-auto md:flex-1 bg-white overflow-hidden min-w-0 z-40 md:z-auto">
           <EmailViewer
             email={currentMessage}
             onClose={handleCloseEmail}
@@ -810,10 +916,23 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
             onForward={() => handleCompose(currentMessage)}
             onDelete={handleDelete}
             onStar={handleStarEmail}
+            onMoveToSpam={handleMoveToSpam}
+            onMoveToFolder={handleMoveToFolder}
+            mailboxes={mailboxes}
+            currentMailbox={currentMailbox}
           />
         </div>
       )}
       </div>
+
+      {/* Mobile FAB - Compose Button (Gmail-style) */}
+      <button
+        onClick={() => handleCompose()}
+        className="fixed bottom-6 right-6 md:hidden z-30 w-14 h-14 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center"
+        aria-label="E-Mail schreiben"
+      >
+        <Pencil className="h-6 w-6" />
+      </button>
 
       {/* Compose Modal */}
       <EmailCompose

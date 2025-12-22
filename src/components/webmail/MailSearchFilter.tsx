@@ -79,6 +79,15 @@ export function MailSearchFilter({
   // Close on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // Don't close if clicking on Select dropdown content (rendered in portal)
+      if (target.closest('[data-radix-select-content]') || 
+          target.closest('[data-radix-popper-content-wrapper]') ||
+          target.closest('[role="listbox"]')) {
+        return;
+      }
+      
       if (
         panelRef.current &&
         !panelRef.current.contains(event.target as Node) &&
@@ -142,12 +151,12 @@ export function MailSearchFilter({
   return (
     <div
       ref={panelRef}
-      className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 overflow-hidden"
+      className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 overflow-hidden max-h-[85vh] md:max-h-none overflow-y-auto"
       style={{ maxWidth: '720px' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
-        <span className="text-sm font-medium text-gray-700">Erweiterte Suche</span>
+      <div className="flex items-center justify-between px-3 md:px-4 py-2 md:py-3 border-b border-gray-200 bg-gray-50 sticky top-0 z-10">
+        <span className="text-xs md:text-sm font-medium text-gray-700">Erweiterte Suche</span>
         <button
           onClick={onClose}
           className="p-1 hover:bg-gray-200 rounded-full transition-colors"
@@ -157,11 +166,11 @@ export function MailSearchFilter({
         </button>
       </div>
 
-      {/* Filter Form */}
-      <div className="p-4 space-y-4">
+      {/* Filter Form - Mobile optimized with stacked layout */}
+      <div className="p-3 md:p-4 space-y-2.5 md:space-y-3">
         {/* Von */}
-        <div className="flex items-center gap-4">
-          <Label htmlFor="filter-from" className="w-40 text-right text-sm text-gray-600 shrink-0">
+        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
+          <Label htmlFor="filter-from" className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
             Von
           </Label>
           <Input
@@ -169,14 +178,14 @@ export function MailSearchFilter({
             type="text"
             value={filters.from}
             onChange={(e) => updateFilter('from', e.target.value)}
-            placeholder="Absender eingeben"
-            className="flex-1 h-9"
+            placeholder="Absender"
+            className="flex-1 h-8 text-xs"
           />
         </div>
 
         {/* An */}
-        <div className="flex items-center gap-4">
-          <Label htmlFor="filter-to" className="w-40 text-right text-sm text-gray-600 shrink-0">
+        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
+          <Label htmlFor="filter-to" className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
             An
           </Label>
           <Input
@@ -184,14 +193,14 @@ export function MailSearchFilter({
             type="text"
             value={filters.to}
             onChange={(e) => updateFilter('to', e.target.value)}
-            placeholder="Empfänger eingeben"
-            className="flex-1 h-9"
+            placeholder="Empfänger"
+            className="flex-1 h-8 text-xs"
           />
         </div>
 
         {/* Betreff */}
-        <div className="flex items-center gap-4">
-          <Label htmlFor="filter-subject" className="w-40 text-right text-sm text-gray-600 shrink-0">
+        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
+          <Label htmlFor="filter-subject" className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
             Betreff
           </Label>
           <Input
@@ -199,57 +208,57 @@ export function MailSearchFilter({
             type="text"
             value={filters.subject}
             onChange={(e) => updateFilter('subject', e.target.value)}
-            placeholder="Betreff eingeben"
-            className="flex-1 h-9"
+            placeholder="Betreff"
+            className="flex-1 h-8 text-xs"
           />
         </div>
 
         {/* Enthält die Wörter */}
-        <div className="flex items-center gap-4">
-          <Label htmlFor="filter-hasWords" className="w-40 text-right text-sm text-gray-600 shrink-0">
-            Enthält die Wörter
+        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
+          <Label htmlFor="filter-hasWords" className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
+            Enthält
           </Label>
           <Input
             id="filter-hasWords"
             type="text"
             value={filters.hasWords}
             onChange={(e) => updateFilter('hasWords', e.target.value)}
-            placeholder="Wörter eingeben"
-            className="flex-1 h-9"
+            placeholder="Wörter"
+            className="flex-1 h-8 text-xs"
           />
         </div>
 
         {/* Enthält nicht */}
-        <div className="flex items-center gap-4">
-          <Label htmlFor="filter-doesNotHave" className="w-40 text-right text-sm text-gray-600 shrink-0">
-            Enthält nicht
+        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
+          <Label htmlFor="filter-doesNotHave" className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
+            Ohne
           </Label>
           <Input
             id="filter-doesNotHave"
             type="text"
             value={filters.doesNotHave}
             onChange={(e) => updateFilter('doesNotHave', e.target.value)}
-            placeholder="Ausgeschlossene Wörter"
-            className="flex-1 h-9"
+            placeholder="Ausgeschlossen"
+            className="flex-1 h-8 text-xs"
           />
         </div>
 
         {/* Größe */}
-        <div className="flex items-center gap-4">
-          <Label className="w-40 text-right text-sm text-gray-600 shrink-0">
+        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
+          <Label className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
             Größe
           </Label>
-          <div className="flex items-center gap-2 flex-1">
+          <div className="grid grid-cols-3 gap-2 w-full">
             <Select
               value={filters.sizeOperator}
               onValueChange={(value: 'greater' | 'less') => updateFilter('sizeOperator', value)}
             >
-              <SelectTrigger className="w-32 h-9">
+              <SelectTrigger size="sm" className="w-full text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="greater">Größer als</SelectItem>
-                <SelectItem value="less">Kleiner als</SelectItem>
+                <SelectItem value="greater">Größer</SelectItem>
+                <SelectItem value="less">Kleiner</SelectItem>
               </SelectContent>
             </Select>
             <Input
@@ -257,35 +266,36 @@ export function MailSearchFilter({
               value={filters.sizeValue}
               onChange={(e) => updateFilter('sizeValue', e.target.value)}
               placeholder="0"
-              className="w-24 h-9"
+              style={{ height: '32px' }}
+              className="w-full text-xs"
             />
             <Select
               value={filters.sizeUnit}
               onValueChange={(value: 'MB' | 'KB' | 'Bytes') => updateFilter('sizeUnit', value)}
             >
-              <SelectTrigger className="w-24 h-9">
+              <SelectTrigger size="sm" className="w-full text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="MB">MB</SelectItem>
                 <SelectItem value="KB">KB</SelectItem>
-                <SelectItem value="Bytes">Bytes</SelectItem>
+                <SelectItem value="Bytes">B</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
         {/* Zeitraum */}
-        <div className="flex items-center gap-4">
-          <Label className="w-40 text-right text-sm text-gray-600 shrink-0">
+        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
+          <Label className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
             Zeitraum
           </Label>
-          <div className="flex items-center gap-2 flex-1">
+          <div className="flex items-center gap-2 w-full">
             <Select
               value={filters.dateWithin}
               onValueChange={(value: SearchFilters['dateWithin']) => updateFilter('dateWithin', value)}
             >
-              <SelectTrigger className="w-32 h-9">
+              <SelectTrigger className="w-[100px] h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -297,7 +307,7 @@ export function MailSearchFilter({
                 <SelectItem value="3months">3 Monate</SelectItem>
                 <SelectItem value="6months">6 Monate</SelectItem>
                 <SelectItem value="1year">1 Jahr</SelectItem>
-                <SelectItem value="custom">Benutzerdefiniert</SelectItem>
+                <SelectItem value="custom">Datum</SelectItem>
               </SelectContent>
             </Select>
 
@@ -306,12 +316,12 @@ export function MailSearchFilter({
                 <Button
                   variant="outline"
                   className={cn(
-                    'w-40 h-9 justify-start text-left font-normal',
+                    'w-[120px] h-8 justify-start text-left font-normal text-xs',
                     !filters.date && 'text-muted-foreground'
                   )}
                 >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {filters.date ? format(filters.date, 'dd.MM.yyyy', { locale: de }) : 'Datum wählen'}
+                  <Calendar className="mr-1.5 h-3.5 w-3.5" />
+                  {filters.date ? format(filters.date, 'dd.MM.yy', { locale: de }) : 'Datum'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -331,19 +341,19 @@ export function MailSearchFilter({
         </div>
 
         {/* Suchen in */}
-        <div className="flex items-center gap-4">
-          <Label className="w-40 text-right text-sm text-gray-600 shrink-0">
-            Suchen in
+        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
+          <Label className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
+            Ordner
           </Label>
           <Select
             value={filters.searchIn}
             onValueChange={(value: SearchFilters['searchIn']) => updateFilter('searchIn', value)}
           >
-            <SelectTrigger className="w-48 h-9">
+            <SelectTrigger className="w-full h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Alle Nachrichten</SelectItem>
+              <SelectItem value="all">Alle</SelectItem>
               <SelectItem value="inbox">Posteingang</SelectItem>
               <SelectItem value="sent">Gesendet</SelectItem>
               <SelectItem value="drafts">Entwürfe</SelectItem>
@@ -359,54 +369,54 @@ export function MailSearchFilter({
         </div>
 
         {/* Checkboxes */}
-        <div className="flex items-center gap-4">
-          <div className="w-40 shrink-0" />
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <Checkbox
+        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+          <div className="hidden md:block md:w-32 md:shrink-0" />
+          <div className="flex items-center gap-4 md:gap-6">
+            <label htmlFor="filter-attachment" className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
                 id="filter-attachment"
                 checked={filters.hasAttachment}
-                onCheckedChange={(checked) => updateFilter('hasAttachment', checked === true)}
+                onChange={(e) => updateFilter('hasAttachment', e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
               />
-              <Label htmlFor="filter-attachment" className="text-sm text-gray-600 cursor-pointer">
-                Mit Anhang
-              </Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
+              <span className="text-xs text-gray-600">Anhang</span>
+            </label>
+            <label htmlFor="filter-excludeChats" className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
                 id="filter-excludeChats"
                 checked={filters.excludeChats}
-                onCheckedChange={(checked) => updateFilter('excludeChats', checked === true)}
+                onChange={(e) => updateFilter('excludeChats', e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
               />
-              <Label htmlFor="filter-excludeChats" className="text-sm text-gray-600 cursor-pointer">
-                Chats ausklammern
-              </Label>
-            </div>
+              <span className="text-xs text-gray-600">Ohne Chats</span>
+            </label>
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
+      <div className="flex items-center justify-between px-3 md:px-4 py-2 md:py-3 border-t border-gray-200 bg-gray-50 sticky bottom-0">
         <button
           onClick={handleCreateFilter}
-          className="text-sm text-teal-600 hover:text-teal-700 hover:underline transition-colors"
+          className="text-xs text-teal-600 hover:text-teal-700 hover:underline transition-colors"
         >
           Filter erstellen
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleReset}
-            className="text-gray-600"
+            className="text-gray-600 text-xs h-8 px-3"
           >
             Zurücksetzen
           </Button>
           <Button
             size="sm"
             onClick={handleSearch}
-            className="bg-teal-600 hover:bg-teal-700 text-white px-6"
+            className="bg-teal-600 hover:bg-teal-700 text-white px-4 text-xs h-8"
           >
             Suchen
           </Button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Inbox, 
   Star, 
@@ -47,31 +47,59 @@ interface MailSidebarProps {
   userPassword: string;
   onMailboxesChange: () => void;
   collapsed?: boolean;
+  // Mobile drawer props
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 // Folder icon mapping
 const getMailIcon = (specialUse?: string, path?: string) => {
   const lowerPath = path?.toLowerCase() || '';
-  if (specialUse === '\\Inbox' || lowerPath === 'inbox') return Inbox;
-  if (specialUse === '\\Flagged' || lowerPath.includes('starred') || lowerPath.includes('flagged')) return Star;
-  if (lowerPath.includes('snoozed') || lowerPath.includes('zurueck')) return Clock;
-  if (specialUse === '\\Sent' || lowerPath.includes('sent') || lowerPath.includes('gesendet')) return Send;
-  if (specialUse === '\\Drafts' || lowerPath.includes('draft') || lowerPath.includes('entwu')) return FileText;
-  if (specialUse === '\\Junk' || lowerPath.includes('spam') || lowerPath.includes('junk')) return AlertTriangle;
-  if (specialUse === '\\Trash' || lowerPath.includes('trash') || lowerPath.includes('papierkorb')) return Trash2;
+  
+  // Check specialUse first
+  if (specialUse === '\\Inbox') return Inbox;
+  if (specialUse === '\\Sent') return Send;
+  if (specialUse === '\\Drafts') return FileText;
+  if (specialUse === '\\Trash') return Trash2;
+  if (specialUse === '\\Junk') return AlertTriangle;
+  if (specialUse === '\\Flagged') return Star;
+  if (specialUse === '\\Archive') return Archive;
+  
+  // Check path with German aliases
+  if (lowerPath === 'inbox' || lowerPath.includes('posteingang')) return Inbox;
+  if (lowerPath.includes('sent') || lowerPath.includes('gesendet')) return Send;
+  if (lowerPath.includes('draft') || lowerPath.includes('entwu')) return FileText;
+  if (lowerPath.includes('trash') || lowerPath.includes('papierkorb') || lowerPath.includes('geloescht') || lowerPath.includes('gelöscht')) return Trash2;
+  if (lowerPath.includes('spam') || lowerPath.includes('junk')) return AlertTriangle;
+  if (lowerPath.includes('starred') || lowerPath.includes('flagged') || lowerPath.includes('markiert')) return Star;
+  if (lowerPath.includes('snoozed') || lowerPath.includes('zurueck') || lowerPath.includes('zurück')) return Clock;
+  if (lowerPath.includes('archive') || lowerPath.includes('archiv')) return Archive;
+  
   return Tag;
 };
 
 // Folder name mapping (German)
 const getMailName = (mailbox: Mailbox) => {
   const lowerPath = mailbox.path.toLowerCase();
-  if (lowerPath === 'inbox') return 'Posteingang';
-  if (lowerPath.includes('sent')) return 'Gesendet';
-  if (lowerPath.includes('draft')) return 'Entwuerfe';
-  if (lowerPath.includes('trash')) return 'Papierkorb';
+  
+  // Check specialUse first
+  if (mailbox.specialUse === '\\Inbox') return 'Posteingang';
+  if (mailbox.specialUse === '\\Sent') return 'Gesendet';
+  if (mailbox.specialUse === '\\Drafts') return 'Entwürfe';
+  if (mailbox.specialUse === '\\Trash') return 'Papierkorb';
+  if (mailbox.specialUse === '\\Junk') return 'Spam';
+  if (mailbox.specialUse === '\\Flagged') return 'Markiert';
+  if (mailbox.specialUse === '\\Archive') return 'Archiv';
+  
+  // Check path
+  if (lowerPath === 'inbox' || lowerPath.includes('posteingang')) return 'Posteingang';
+  if (lowerPath.includes('sent') || lowerPath.includes('gesendet')) return 'Gesendet';
+  if (lowerPath.includes('draft') || lowerPath.includes('entwu')) return 'Entwürfe';
+  if (lowerPath.includes('trash') || lowerPath.includes('papierkorb') || lowerPath.includes('geloescht') || lowerPath.includes('gelöscht')) return 'Papierkorb';
   if (lowerPath.includes('spam') || lowerPath.includes('junk')) return 'Spam';
-  if (lowerPath.includes('starred') || lowerPath.includes('flagged')) return 'Markiert';
-  if (lowerPath.includes('archive')) return 'Archiv';
+  if (lowerPath.includes('starred') || lowerPath.includes('flagged') || lowerPath.includes('markiert')) return 'Markiert';
+  if (lowerPath.includes('archive') || lowerPath.includes('archiv')) return 'Archiv';
+  
   return mailbox.name;
 };
 
@@ -84,6 +112,8 @@ export function MailSidebar({
   userPassword,
   onMailboxesChange,
   collapsed = false,
+  isMobileOpen = false,
+  onMobileClose,
 }: MailSidebarProps) {
   const [showMore, setShowMore] = useState(false);
   const [isCreatingLabel, setIsCreatingLabel] = useState(false);
@@ -91,23 +121,91 @@ export function MailSidebar({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Close mobile drawer on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobileOpen && onMobileClose) {
+        onMobileClose();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isMobileOpen, onMobileClose]);
+
+  // Prevent body scroll when mobile drawer is open
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileOpen]);
+
+  // Handle mailbox selection on mobile (close drawer after selection)
+  const handleMobileSelectMailbox = (path: string) => {
+    onSelectMailbox(path);
+    if (onMobileClose) {
+      onMobileClose();
+    }
+  };
+
+  // Helper to check if mailbox matches a folder type
+  const matchesFolder = (mailbox: Mailbox, folderType: string): boolean => {
+    const lowerPath = mailbox.path.toLowerCase();
+    const lowerType = folderType.toLowerCase();
+    
+    // Check specialUse first (most reliable)
+    if (mailbox.specialUse) {
+      const specialMap: Record<string, string[]> = {
+        'inbox': ['\\Inbox'],
+        'sent': ['\\Sent'],
+        'drafts': ['\\Drafts'],
+        'trash': ['\\Trash'],
+        'junk': ['\\Junk'],
+        'spam': ['\\Junk'],
+        'archive': ['\\Archive'],
+        'starred': ['\\Flagged'],
+      };
+      if (specialMap[lowerType]?.includes(mailbox.specialUse)) return true;
+    }
+    
+    // Check path - include German names
+    const pathAliases: Record<string, string[]> = {
+      'sent': ['sent', 'gesendet', 'gesendete'],
+      'drafts': ['draft', 'entwurf', 'entwuerfe', 'entwürfe'],
+      'trash': ['trash', 'papierkorb', 'deleted', 'geloescht', 'gelöscht'],
+      'junk': ['junk', 'spam'],
+      'spam': ['spam', 'junk'],
+      'archive': ['archive', 'archiv'],
+      'inbox': ['inbox', 'posteingang'],
+      'starred': ['starred', 'flagged', 'markiert'],
+      'snoozed': ['snoozed', 'zurueck', 'zurück'],
+    };
+    
+    const aliases = pathAliases[lowerType] || [lowerType];
+    return aliases.some(alias => lowerPath.includes(alias));
+  };
+
   // Split mailboxes into primary (always shown) and labels (custom folders)
-  const systemFolders = ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk', 'Spam', 'Archive'];
-  const primaryFolders = ['INBOX', 'Starred', 'Snoozed', 'Sent', 'Drafts'];
+  const systemFolderTypes = ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk', 'Spam', 'Archive'];
+  const primaryFolderTypes = ['INBOX', 'Starred', 'Snoozed', 'Sent', 'Drafts'];
   
   const primaryMailboxes = mailboxes.filter(m => 
-    primaryFolders.some(f => m.path.toLowerCase().includes(f.toLowerCase()) || m.path === 'INBOX')
+    primaryFolderTypes.some(f => matchesFolder(m, f))
   );
   
   const secondaryMailboxes = mailboxes.filter(m => 
-    !primaryFolders.some(f => m.path.toLowerCase().includes(f.toLowerCase()) || m.path === 'INBOX') &&
-    systemFolders.some(f => m.path.toLowerCase().includes(f.toLowerCase()))
+    !primaryFolderTypes.some(f => matchesFolder(m, f)) &&
+    systemFolderTypes.some(f => matchesFolder(m, f))
   );
 
   // Labels are custom folders (not system folders)
   const labelMailboxes = mailboxes.filter(m => 
-    !systemFolders.some(f => m.path.toLowerCase().includes(f.toLowerCase())) &&
-    !primaryFolders.some(f => m.path.toLowerCase().includes(f.toLowerCase()))
+    !systemFolderTypes.some(f => matchesFolder(m, f)) &&
+    !primaryFolderTypes.some(f => matchesFolder(m, f))
   );
 
   const handleCreateLabel = async () => {
@@ -169,25 +267,43 @@ export function MailSidebar({
     }
   };
 
-  return (
+  // Sidebar content component (reused for both desktop and mobile)
+  const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className={cn(
       "h-full bg-[#f6f8fc] flex flex-col select-none transition-all duration-200",
-      collapsed ? "w-[72px]" : "w-[256px]"
+      isMobile ? "w-[280px]" : collapsed ? "w-[72px]" : "w-[256px]"
     )}>
+      {/* Mobile Header with close button */}
+      {isMobile && (
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <span className="text-sm font-medium text-gray-700 truncate">{userEmail}</span>
+          <button
+            onClick={onMobileClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Menue schliessen"
+          >
+            <X className="h-5 w-5 text-gray-500" />
+          </button>
+        </div>
+      )}
+
       {/* Compose Button - Taskilo Style */}
-      <div className={cn("p-4 pb-2", collapsed && "px-3")}>
+      <div className={cn("p-4 pb-2", !isMobile && collapsed && "px-3")}>
         <button
-          onClick={onCompose}
+          onClick={() => {
+            onCompose();
+            if (isMobile && onMobileClose) onMobileClose();
+          }}
           className={cn(
             "flex items-center bg-teal-600 hover:bg-teal-700 hover:shadow-md rounded-2xl shadow-sm transition-all duration-200 group",
-            collapsed 
+            !isMobile && collapsed 
               ? "w-12 h-12 justify-center p-0" 
               : "gap-3 px-6 py-3.5"
           )}
-          title={collapsed ? "Schreiben" : undefined}
+          title={!isMobile && collapsed ? "Schreiben" : undefined}
         >
-          <Pencil className={cn("text-white", collapsed ? "h-5 w-5" : "h-6 w-6")} />
-          {!collapsed && <span className="text-[15px] font-medium text-white">Schreiben</span>}
+          <Pencil className={cn("text-white", !isMobile && collapsed ? "h-5 w-5" : "h-6 w-6")} />
+          {(isMobile || !collapsed) && <span className="text-[15px] font-medium text-white">Schreiben</span>}
         </button>
       </div>
 
@@ -199,31 +315,32 @@ export function MailSidebar({
             const Icon = getMailIcon(mailbox.specialUse, mailbox.path);
             const isActive = mailbox.path === currentMailbox;
             const displayName = getMailName(mailbox);
+            const showCollapsed = !isMobile && collapsed;
             
             return (
               <button
                 key={mailbox.path}
-                onClick={() => onSelectMailbox(mailbox.path)}
-                title={collapsed ? displayName : undefined}
+                onClick={() => isMobile ? handleMobileSelectMailbox(mailbox.path) : onSelectMailbox(mailbox.path)}
+                title={showCollapsed ? displayName : undefined}
                 className={cn(
                   'w-full flex items-center transition-colors text-[14px]',
-                  collapsed 
+                  showCollapsed 
                     ? 'justify-center py-3 mx-auto rounded-full hover:bg-teal-50'
                     : 'pl-6 pr-4 py-1.5 rounded-r-full',
                   isActive 
-                    ? collapsed 
+                    ? showCollapsed 
                       ? 'bg-teal-100 text-teal-900' 
                       : 'bg-teal-100 text-teal-900 font-medium'
                     : 'hover:bg-teal-50 text-gray-700'
                 )}
-                style={{ marginRight: collapsed ? '0' : '8px', width: collapsed ? '48px' : '100%', marginLeft: collapsed ? '12px' : '0' }}
+                style={{ marginRight: showCollapsed ? '0' : '8px', width: showCollapsed ? '48px' : '100%', marginLeft: showCollapsed ? '12px' : '0' }}
               >
                 <Icon className={cn(
                   'h-5 w-5 shrink-0',
-                  !collapsed && 'mr-4',
+                  !showCollapsed && 'mr-4',
                   isActive ? 'text-teal-700' : 'text-gray-500'
                 )} />
-                {!collapsed && (
+                {!showCollapsed && (
                   <>
                     <span className="flex-1 text-left truncate">{displayName}</span>
                     {mailbox.unseen > 0 && (
@@ -242,7 +359,7 @@ export function MailSidebar({
         </div>
 
         {/* More/Less Toggle - hide when collapsed */}
-        {secondaryMailboxes.length > 0 && !collapsed && (
+        {secondaryMailboxes.length > 0 && (isMobile || !collapsed) && (
           <>
             <button
               onClick={() => setShowMore(!showMore)}
@@ -268,7 +385,7 @@ export function MailSidebar({
                   return (
                     <button
                       key={mailbox.path}
-                      onClick={() => onSelectMailbox(mailbox.path)}
+                      onClick={() => isMobile ? handleMobileSelectMailbox(mailbox.path) : onSelectMailbox(mailbox.path)}
                       className={cn(
                         'w-full flex items-center pl-6 pr-4 py-1.5 rounded-r-full transition-colors text-[14px]',
                         isActive 
@@ -299,7 +416,7 @@ export function MailSidebar({
         )}
 
         {/* Labels Section Header - hide when collapsed */}
-        {!collapsed && (
+        {(isMobile || !collapsed) && (
           <div className="flex items-center justify-between px-6 py-3 mt-4">
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Labels</span>
             <button 
@@ -313,7 +430,7 @@ export function MailSidebar({
         )}
 
         {/* Create Label Input - hide when collapsed */}
-        {isCreatingLabel && !collapsed && (
+        {isCreatingLabel && (isMobile || !collapsed) && (
           <div className="px-4 py-2">
             <div className="flex items-center gap-2">
               <Input
@@ -359,8 +476,9 @@ export function MailSidebar({
             </div>
           </div>
         )}
+
         {/* Custom Labels - hide when collapsed */}
-        {!collapsed && labelMailboxes.length > 0 ? (
+        {(isMobile || !collapsed) && labelMailboxes.length > 0 ? (
           <div className="space-y-0.5">
             {labelMailboxes.map((mailbox) => {
               const isActive = mailbox.path === currentMailbox;
@@ -377,7 +495,7 @@ export function MailSidebar({
                   style={{ marginRight: '8px' }}
                 >
                   <button
-                    onClick={() => onSelectMailbox(mailbox.path)}
+                    onClick={() => isMobile ? handleMobileSelectMailbox(mailbox.path) : onSelectMailbox(mailbox.path)}
                     className="flex-1 flex items-center min-w-0"
                   >
                     <Tag className={cn(
@@ -415,7 +533,7 @@ export function MailSidebar({
             })}
           </div>
         ) : (
-          !isCreatingLabel && !collapsed && (
+          !isCreatingLabel && (isMobile || !collapsed) && (
             <div className="px-6 py-2 text-xs text-gray-500">
               Keine benutzerdefinierten Labels
             </div>
@@ -423,8 +541,8 @@ export function MailSidebar({
         )}
       </nav>
 
-      {/* User Info Footer - hide when collapsed */}
-      {!collapsed && (
+      {/* User Info Footer - hide when collapsed (desktop only, mobile has header) */}
+      {!isMobile && !collapsed && (
         <div className="p-4 border-t border-teal-100">
           <div className="text-xs text-gray-600 truncate">
             {userEmail}
@@ -432,5 +550,30 @@ export function MailSidebar({
         </div>
       )}
     </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar - hidden on mobile */}
+      <div className="hidden md:block h-full">
+        <SidebarContent isMobile={false} />
+      </div>
+
+      {/* Mobile Drawer Overlay */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 transition-opacity"
+            onClick={onMobileClose}
+            aria-hidden="true"
+          />
+          {/* Drawer */}
+          <div className="absolute inset-y-0 left-0 max-w-[85vw] animate-in slide-in-from-left duration-300">
+            <SidebarContent isMobile={true} />
+          </div>
+        </div>
+      )}
+    </>
   );
 }

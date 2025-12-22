@@ -66,35 +66,35 @@ export function MailHeader({
   };
 
   return (
-    <header className="h-16 bg-[#f6f8fc] flex items-center px-4 shrink-0">
+    <header className="h-14 md:h-16 bg-[#f6f8fc] flex items-center px-2 md:px-4 shrink-0">
       {/* Left Section - Menu Button & Logo */}
-      <div className="flex items-center gap-4 min-w-[200px]">
+      <div className="flex items-center gap-2 md:gap-4 md:min-w-[200px]">
         {/* Hamburger Menu - No circle/ring like Gmail */}
         <button
           onClick={onMenuToggle}
           className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           aria-label="Hauptmenue"
         >
-          <Menu className="h-6 w-6 text-[#5f6368]" />
+          <Menu className="h-5 w-5 md:h-6 md:w-6 text-[#5f6368]" />
         </button>
 
-        {/* Logo - Taskilo Logo */}
+        {/* Logo - Taskilo Logo - smaller on mobile */}
         <a href="/webmail" className="flex items-center gap-2">
           <Image
             src="/images/taskilo-logo-transparent.png"
             alt="Taskilo"
             width={120}
             height={34}
-            className="h-8 w-auto"
+            className="h-6 md:h-8 w-auto"
           />
         </a>
       </div>
 
       {/* Center Section - Search Bar (Gmail Style) */}
-      <div className="flex-1 max-w-[720px] ml-8 relative" ref={searchContainerRef}>
+      <div className="flex-1 max-w-[720px] ml-2 md:ml-8 relative" ref={searchContainerRef}>
         <div
           className={cn(
-            'flex items-center h-12 rounded-full transition-all duration-200',
+            'flex items-center h-10 md:h-12 rounded-full transition-all duration-200',
             isSearchFocused || showAdvancedSearch
               ? 'bg-white shadow-lg' 
               : 'bg-[#eaf1fb] hover:shadow-md'
@@ -131,7 +131,7 @@ export function MailHeader({
             aria-label="Suchoptionen anzeigen"
             aria-expanded={showAdvancedSearch}
           >
-            <SlidersHorizontal className="h-5 w-5 text-[#5f6368]" />
+            <SlidersHorizontal className="h-4 w-4 md:h-5 md:w-5 text-[#5f6368]" />
           </button>
         </div>
 
@@ -147,12 +147,12 @@ export function MailHeader({
       </div>
 
       {/* Right Section - Actions & Profile - pushed to end */}
-      <div className="flex items-center gap-1 ml-auto pr-2">
-        {/* Help Button */}
+      <div className="flex items-center gap-0 md:gap-1 ml-auto pr-1 md:pr-2">
+        {/* Help Button - Hidden on mobile */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+              className="hidden md:flex p-3 hover:bg-gray-100 rounded-full transition-colors"
               aria-label="Support"
             >
               <HelpCircle className="h-6 w-6 text-[#5f6368]" />
@@ -160,17 +160,17 @@ export function MailHeader({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem>Hilfe</DropdownMenuItem>
-            <DropdownMenuItem>Tastenkürzel</DropdownMenuItem>
+            <DropdownMenuItem>Tastenkuerzel</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Feedback senden</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Settings Button */}
+        {/* Settings Button - Hidden on mobile */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="p-3 hover:bg-gray-200/60 rounded-full transition-colors"
+              className="hidden md:flex p-3 hover:bg-gray-200/60 rounded-full transition-colors"
               aria-label="Einstellungen"
             >
               <Settings className="h-6 w-6 text-[#5f6368]" />
@@ -184,26 +184,28 @@ export function MailHeader({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Gemini/AI Button */}
+        {/* Gemini/AI Button - Hidden on mobile */}
         <button
-          className="p-3 hover:bg-gray-200/60 rounded-full transition-colors"
+          className="hidden md:flex p-3 hover:bg-gray-200/60 rounded-full transition-colors"
           aria-label="AI Assistent"
         >
           <Sparkles className="h-6 w-6 text-[#5f6368]" />
         </button>
 
-        {/* Apps Grid Button - Google Style Modal */}
-        <AppLauncher />
+        {/* Apps Grid Button - Hidden on mobile */}
+        <div className="hidden md:block">
+          <AppLauncher />
+        </div>
 
         {/* User Profile - Gmail Style Ring */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="ml-2 p-0.5 rounded-full hover:bg-gray-200/60 transition-colors"
+              className="ml-1 md:ml-2 p-0.5 rounded-full hover:bg-gray-200/60 transition-colors"
               aria-label={`Konto: ${userEmail}`}
             >
-              <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center ring-2 ring-transparent hover:ring-teal-200 transition-all">
-                <span className="text-white font-medium text-sm">
+              <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-teal-600 flex items-center justify-center ring-2 ring-transparent hover:ring-teal-200 transition-all">
+                <span className="text-white font-medium text-xs md:text-sm">
                   {userInitial || userEmail.charAt(0).toUpperCase()}
                 </span>
               </div>

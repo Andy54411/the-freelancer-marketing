@@ -318,6 +318,26 @@ export class EmailService {
     }
   }
 
+  async markAsFlagged(mailboxPath: string, uid: number, flagged: boolean = true): Promise<void> {
+    const client = this.createImapClient();
+
+    try {
+      await client.connect();
+      await client.mailboxOpen(mailboxPath);
+
+      if (flagged) {
+        await client.messageFlagsAdd(uid.toString(), ['\\Flagged'], { uid: true });
+      } else {
+        await client.messageFlagsRemove(uid.toString(), ['\\Flagged'], { uid: true });
+      }
+
+      await client.logout();
+    } catch (error) {
+      await client.logout().catch(() => {});
+      throw error;
+    }
+  }
+
   async deleteMessage(mailboxPath: string, uid: number): Promise<void> {
     const client = this.createImapClient();
 

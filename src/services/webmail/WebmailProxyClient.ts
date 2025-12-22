@@ -137,6 +137,19 @@ export class WebmailProxyClient {
     );
   }
 
+  async markAsFlagged(mailbox: string, uid: number, flagged: boolean = true): Promise<void> {
+    await proxyRequest<{ success: boolean }>(
+      '/api/actions',
+      {
+        ...this.credentials,
+        mailbox,
+        action: 'flag',
+        uid,
+        flagged,
+      }
+    );
+  }
+
   async deleteMessage(mailbox: string, uid: number): Promise<void> {
     await proxyRequest<{ success: boolean }>(
       '/api/actions',
