@@ -91,9 +91,9 @@ export function CalendarHeader({
   };
 
   return (
-    <header className={`h-16 ${isDark ? 'bg-[#202124]' : 'bg-white border-b border-gray-200'} flex items-center px-4 gap-2`}>
+    <header className={`h-14 md:h-16 ${isDark ? 'bg-[#202124]' : 'bg-white border-b border-gray-200'} flex items-center px-2 md:px-4 gap-1 md:gap-2`}>
       {/* Left Section - Menu and Logo */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 md:gap-3 shrink-0">
         <button
           onClick={onMenuToggle}
           className={`p-2 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
@@ -102,24 +102,24 @@ export function CalendarHeader({
           <Menu className={`h-6 w-6 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
         </button>
         
-        <Link href="/webmail" className="flex items-center gap-3">
+        <Link href="/webmail" className="flex items-center gap-2 md:gap-3">
           <Image 
             src="/images/taskilo-logo-transparent.png" 
             alt="Taskilo" 
             width={120} 
             height={34} 
-            className="h-8 w-auto"
+            className="h-6 md:h-8 w-auto"
           />
-          <span className={`text-xl font-normal ${isDark ? 'text-white' : 'text-gray-800'}`}>Kalender</span>
+          <span className={`text-lg md:text-xl font-normal ${isDark ? 'text-white' : 'text-gray-800'} hidden sm:inline`}>Kalender</span>
         </Link>
       </div>
 
       {/* Navigation Section */}
-      <div className="flex items-center gap-2 ml-6">
+      <div className="flex items-center gap-1 md:gap-2 ml-2 md:ml-6">
         {/* Today Button */}
         <button
           onClick={onToday}
-          className={`px-4 py-1.5 border ${isDark ? 'border-gray-600 text-gray-200 hover:bg-white/10' : 'border-gray-300 text-gray-700 hover:bg-gray-100'} rounded-md text-sm font-medium transition-colors`}
+          className={`px-2 md:px-4 py-1 md:py-1.5 border ${isDark ? 'border-gray-600 text-gray-200 hover:bg-white/10' : 'border-gray-300 text-gray-700 hover:bg-gray-100'} rounded-md text-xs md:text-sm font-medium transition-colors`}
         >
           Heute
         </button>
@@ -128,79 +128,82 @@ export function CalendarHeader({
         <div className="flex items-center">
           <button
             onClick={onPrev}
-            className={`p-1.5 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
+            className={`p-1 md:p-1.5 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
             aria-label="Zurück"
           >
-            <ChevronLeft className={`h-5 w-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
+            <ChevronLeft className={`h-4 w-4 md:h-5 md:w-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
           </button>
           <button
             onClick={onNext}
-            className={`p-1.5 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
+            className={`p-1 md:p-1.5 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
             aria-label="Weiter"
           >
-            <ChevronRight className={`h-5 w-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
+            <ChevronRight className={`h-4 w-4 md:h-5 md:w-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
           </button>
         </div>
 
-        {/* Date Title */}
-        <h1 className={`text-xl font-normal ${isDark ? 'text-white' : 'text-gray-800'} ml-2`}>
-          {formatDateTitle()}
+        {/* Date Title - kürzere Version auf Mobile */}
+        <h1 className={`text-sm md:text-xl font-normal ${isDark ? 'text-white' : 'text-gray-800'} ml-1 md:ml-2 whitespace-nowrap`}>
+          <span className="hidden sm:inline">{formatDateTitle()}</span>
+          <span className="sm:hidden">{currentDate.toLocaleString('de-DE', { month: 'short' })} {currentDate.getFullYear()}</span>
         </h1>
       </div>
 
       {/* Spacer */}
-      <div className="flex-1" />
+      <div className="flex-1 min-w-0" />
 
       {/* Right Section */}
-      <div className="flex items-center gap-1">
-        {/* Theme Toggle */}
+      <div className="flex items-center gap-0 md:gap-1 shrink-0">
+        {/* Theme Toggle - auf Mobile sichtbar */}
         <button
           onClick={toggleTheme}
-          className={`p-2 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
+          className={`p-1.5 md:p-2 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
           aria-label={isDark ? 'Zum hellen Modus wechseln' : 'Zum dunklen Modus wechseln'}
           title={isDark ? 'Heller Modus' : 'Dunkler Modus'}
         >
           {isDark ? (
-            <Sun className="h-5 w-5 text-gray-300" />
+            <Sun className="h-4 w-4 md:h-5 md:w-5 text-gray-300" />
           ) : (
-            <Moon className="h-5 w-5 text-gray-600" />
+            <Moon className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
           )}
         </button>
 
-        {/* Search */}
+        {/* Search - versteckt auf Mobile */}
         <button
-          className={`p-2 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
+          className={`hidden md:flex p-2 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
           aria-label="Suchen"
         >
           <Search className={`h-5 w-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
         </button>
 
-        {/* Help */}
+        {/* Help - versteckt auf Mobile */}
+        {/* Help - versteckt auf Mobile */}
         <button
-          className={`p-2 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
+          className={`hidden md:flex p-2 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
           aria-label="Support"
         >
           <HelpCircle className={`h-5 w-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
         </button>
 
-        {/* Settings */}
+        {/* Settings - versteckt auf Mobile */}
         <button
-          className={`p-2 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
+          className={`hidden md:flex p-2 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
           aria-label="Einstellungen"
         >
           <Settings className={`h-5 w-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
         </button>
 
-        {/* View Dropdown */}
-        <div className="relative ml-2" ref={viewDropdownRef}>
+        {/* View Dropdown - kompakter auf Mobile */}
+        <div className="relative ml-1 md:ml-2" ref={viewDropdownRef}>
           <button 
             onClick={() => setViewDropdownOpen(!viewDropdownOpen)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${isDark ? 'bg-[#3c4043] text-white hover:bg-[#4a4d51]' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} rounded-md transition-colors`}
+            className={`flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium ${isDark ? 'bg-[#3c4043] text-white hover:bg-[#4a4d51]' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} rounded-md transition-colors`}
             aria-expanded={viewDropdownOpen}
             aria-haspopup="menu"
           >
-            <span>{getViewLabel()}</span>
-            <ChevronDown className={`h-4 w-4 transition-transform ${viewDropdownOpen ? 'rotate-180' : ''}`} />
+            <span className="hidden sm:inline">{getViewLabel()}</span>
+            <span className="sm:hidden">{getViewLabel().substring(0, 3)}</span>
+            <ChevronDown className={`h-3 w-3 md:h-4 md:w-4 transition-transform ${viewDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
           {viewDropdownOpen && (
             <div className={`absolute right-0 top-full mt-1 w-64 ${isDark ? 'bg-[#303134] border-[#5f6368]' : 'bg-white border-gray-200'} border rounded-lg shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-1 duration-150`}>
@@ -277,19 +280,19 @@ export function CalendarHeader({
             aria-label="Kalender"
             aria-current="page"
           >
-            <CalendarIcon className="h-5 w-5 text-white" />
+            <CalendarIcon className="h-4 w-4 md:h-5 md:w-5 text-white" />
           </button>
           <button
             onClick={() => router.push('/webmail/tasks')}
-            className={`p-2 ${isDark ? 'hover:bg-white/10 border-gray-600' : 'hover:bg-gray-100 border-gray-300'} transition-colors border-l`}
+            className={`p-1.5 md:p-2 ${isDark ? 'hover:bg-white/10 border-gray-600' : 'hover:bg-gray-100 border-gray-300'} transition-colors border-l`}
             aria-label="Aufgaben"
           >
-            <CheckSquare className={`h-5 w-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
+            <CheckSquare className={`h-4 w-4 md:h-5 md:w-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
           </button>
         </div>
 
         {/* App Launcher */}
-        <div className="ml-2">
+        <div className="ml-1 md:ml-2">
           <AppLauncher />
         </div>
 
@@ -297,7 +300,7 @@ export function CalendarHeader({
         <div className="relative ml-1" ref={profileDropdownRef}>
           <button
             onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-            className={`w-9 h-9 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-medium ${isDark ? 'hover:ring-2 hover:ring-gray-500' : 'hover:ring-2 hover:ring-gray-300'} transition-all`}
+            className={`w-7 h-7 md:w-9 md:h-9 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs md:text-sm font-medium ${isDark ? 'hover:ring-2 hover:ring-gray-500' : 'hover:ring-2 hover:ring-gray-300'} transition-all shrink-0`}
             aria-label="Konto"
           >
             {userEmail.charAt(0).toUpperCase()}

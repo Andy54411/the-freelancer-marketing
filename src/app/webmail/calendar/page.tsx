@@ -49,12 +49,14 @@ export default function WebmailCalendarPage() {
   
   // New state for Google-style calendar
   const [currentDate, setCurrentDate] = useState(new Date());
+  // Auf Mobile standardmäßig Tagesansicht, sonst Wochenansicht
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month' | 'year' | 'agenda' | '4days'>('week');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Auf Mobile geschlossen
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showWeekends, setShowWeekends] = useState(true);
   const [showDeclinedEvents, setShowDeclinedEvents] = useState(false);
   const [showCompletedTasks, setShowCompletedTasks] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const [calendars, setCalendars] = useState([
     { id: 'primary', name: 'Mein Kalender', color: '#0d9488', enabled: true },
     { id: 'birthdays', name: 'Geburtstage', color: '#8b5cf6', enabled: true },
@@ -95,6 +97,25 @@ export default function WebmailCalendarPage() {
     }
     loadEvents();
   }, [session, router, loadEvents]);
+
+  // Mobile-Erkennung und automatische Anpassung
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile && viewMode === 'week') {
+        setViewMode('day');
+      }
+      // Sidebar auf Desktop öffnen, auf Mobile geschlossen lassen
+      if (!mobile) {
+        setSidebarOpen(true);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [viewMode]);
 
   const saveEvents = (newEvents: CalendarEvent[]) => {
     if (!session?.email) return;
@@ -296,18 +317,34 @@ export default function WebmailCalendarPage() {
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
-        {sidebarOpen && (
-          <CalendarSidebar
-            isCollapsed={false}
-            currentDate={currentDate}
-            selectedDate={selectedDate}
-            onDateSelect={handleMiniCalendarSelect}
-            calendars={calendars}
-            onCalendarToggle={handleCalendarToggle}
-            onCreateEvent={() => handleDateClick(new Date(), false)}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Mobile Sidebar Overlay */}
+        {isMobile && sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
           />
+        )}
+        
+        {/* Sidebar - Overlay auf Mobile, normal auf Desktop */}
+        {sidebarOpen && (
+          <div className={`${isMobile ? 'fixed left-0 top-14 bottom-0 z-50 shadow-xl' : ''}`}>
+            <CalendarSidebar
+              isCollapsed={false}
+              currentDate={currentDate}
+              selectedDate={selectedDate}
+              onDateSelect={(date) => {
+                handleMiniCalendarSelect(date);
+                if (isMobile) setSidebarOpen(false);
+              }}
+              calendars={calendars}
+              onCalendarToggle={handleCalendarToggle}
+              onCreateEvent={() => {
+                handleDateClick(new Date(), false);
+                if (isMobile) setSidebarOpen(false);
+              }}
+            />
+          </div>
         )}
 
         {/* Calendar Grid */}
