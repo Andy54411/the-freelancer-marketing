@@ -1,17 +1,47 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { CreateEmailForm } from '@/components/email/CreateEmailForm';
-import { WebmailClient } from '@/components/webmail/WebmailClient';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
-import { HeroHeader } from '@/components/hero8-header';
+
+// Lazy load heavy components
+const WebmailClient = dynamic(
+  () => import('@/components/webmail/WebmailClient').then((mod) => ({ default: mod.WebmailClient })),
+  {
+    loading: () => (
+      <div className="h-screen w-screen flex items-center justify-center bg-[#f6f8fc]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+          <span className="text-gray-600">Webmail wird geladen...</span>
+        </div>
+      </div>
+    ),
+    ssr: false,
+  }
+);
+
+const CreateEmailForm = dynamic(
+  () => import('@/components/email/CreateEmailForm').then((mod) => ({ default: mod.CreateEmailForm })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
+      </div>
+    ),
+    ssr: false,
+  }
+);
+
+const HeroHeader = dynamic(
+  () => import('@/components/hero8-header').then((mod) => ({ default: mod.HeroHeader })),
+  { ssr: false }
+);
 
 // Cookie helper functions
 const COOKIE_NAME = 'webmail_session';
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
 
 function encodeCredentials(email: string, password: string): string {
-  // Base64 encode the credentials (in production, use proper encryption)
   return btoa(JSON.stringify({ email, password }));
 }
 
@@ -25,10 +55,8 @@ function decodeCredentials(encoded: string): { email: string; password: string }
 
 function setCookie(email: string, password: string, remember: boolean): void {
   const encoded = encodeCredentials(email, password);
-  const maxAge = remember ? COOKIE_MAX_AGE : 0; // Session cookie if not remember
-  const expires = remember 
-    ? `; max-age=${maxAge}` 
-    : ''; // Session cookie expires when browser closes
+  const maxAge = remember ? COOKIE_MAX_AGE : 0;
+  const expires = remember ? `; max-age=${maxAge}` : '';
   document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/webmail; SameSite=Strict; Secure`;
 }
 
@@ -47,7 +75,7 @@ function deleteCookie(): void {
   document.cookie = `${COOKIE_NAME}=; path=/webmail; max-age=0`;
 }
 
-export default function WebmailPage() {
+function WebmailPageContent() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
@@ -58,12 +86,10 @@ export default function WebmailPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
-  // Check for existing session on mount
   useEffect(() => {
     const checkSession = async () => {
       const savedCredentials = getCookie();
       if (savedCredentials) {
-        // Verify credentials are still valid
         try {
           const response = await fetch('/api/webmail/test', {
             method: 'POST',
@@ -83,11 +109,9 @@ export default function WebmailPage() {
             setPassword(savedCredentials.password);
             setIsConnected(true);
           } else {
-            // Invalid credentials, remove cookie
             deleteCookie();
           }
         } catch {
-          // Network error, but keep credentials for retry
           setEmail(savedCredentials.email);
           setPassword(savedCredentials.password);
         }
@@ -119,7 +143,6 @@ export default function WebmailPage() {
       const data = await response.json();
 
       if (data.success) {
-        // Save credentials to cookie
         setCookie(email, password, rememberMe);
         setIsConnected(true);
       } else {
@@ -143,7 +166,6 @@ export default function WebmailPage() {
     setShowCreateForm(false);
   };
 
-  // Show loading while checking session
   if (isCheckingSession) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#f6f8fc]">
@@ -448,5 +470,22 @@ export default function WebmailPage() {
         </main>
       </div>
     </>
+  );
+}
+
+export default function WebmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen w-screen flex items-center justify-center bg-[#f6f8fc]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+            <span className="text-gray-600">Wird geladen...</span>
+          </div>
+        </div>
+      }
+    >
+      <WebmailPageContent />
+    </Suspense>
   );
 }

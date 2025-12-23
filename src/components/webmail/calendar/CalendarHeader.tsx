@@ -151,6 +151,8 @@ export function CalendarHeader({
                 { key: 'week', label: 'Woche' },
                 { key: 'month', label: 'Monat' },
                 { key: '4days', label: '4 Tage' },
+                { key: 'year', label: 'Jahr' },
+                { key: 'agenda', label: 'Terminübersicht' },
               ].map((view) => (
                 <button
                   key={view.key}
