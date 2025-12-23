@@ -106,7 +106,7 @@ export function EmailProviderGrid({
         </CardContent>
       </Card>
 
-      {/* Custom Email Card */
+      {/* Custom Email Card */}
       <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105 border-2 hover:border-[#14ad9f] opacity-50">
         <CardContent className="p-8 text-center">
           <div className="relative w-full h-48 mb-6 bg-gray-100 rounded-lg flex items-center justify-center">
