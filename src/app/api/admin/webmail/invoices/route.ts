@@ -11,7 +11,7 @@ export async function GET() {
     if (!db) {
       return NextResponse.json({
         success: false,
-        error: 'Datenbank nicht verfuegbar',
+        error: 'Datenbank nicht verfügbar',
       }, { status: 500 });
     }
 

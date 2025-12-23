@@ -88,13 +88,13 @@ function OrderSuccessContent() {
 
             <p className="text-sm text-gray-500">
               {order.type === 'domain'
-                ? 'Ihre Domain wird in Kuerze registriert. Sie erhalten eine Bestaetigungs-E-Mail.'
+                ? 'Ihre Domain wird in Kürze registriert. Sie erhalten eine Bestätigungs-E-Mail.'
                 : 'Ihr E-Mail-Postfach wird eingerichtet. Sie erhalten die Zugangsdaten per E-Mail.'}
             </p>
           </div>
         ) : (
           <p className="text-gray-600 mt-4">
-            Vielen Dank fuer Ihre Bestellung!
+            Vielen Dank für Ihre Bestellung!
           </p>
         )}
 
@@ -102,7 +102,7 @@ function OrderSuccessContent() {
           href="/webmail"
           className="inline-block mt-8 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
         >
-          Zurueck zum Webmail
+          Zurück zum Webmail
         </Link>
       </div>
     </div>

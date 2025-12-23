@@ -9,9 +9,9 @@ import { FirebaseTicketService } from '@/services/admin/FirebaseTicketService';
 import { AdminAuthService } from '@/services/admin/AdminAuthService';
 import { cookies } from 'next/headers';
 
-// Admin-Authentifizierung pruefen
+// Admin-Authentifizierung prüfen
 async function verifyAdminAuth(): Promise<{ valid: boolean; error?: string }> {
-  // Bypass fuer Development
+  // Bypass für Development
   if (process.env.NODE_ENV === 'development' && process.env.BYPASS_ADMIN_AUTH === 'true') {
     return { valid: true };
   }
@@ -163,7 +163,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE - Ticket loeschen (soft delete)
+// DELETE - Ticket löschen (soft delete)
 export async function DELETE(request: NextRequest) {
   try {
     const authResult = await verifyAdminAuth();
@@ -187,7 +187,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
-      { error: 'Fehler beim Loeschen des Tickets', details: errorMessage },
+      { error: 'Fehler beim Löschen des Tickets', details: errorMessage },
       { status: 500 }
     );
   }

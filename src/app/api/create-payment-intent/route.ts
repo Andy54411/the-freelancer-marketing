@@ -53,54 +53,54 @@ export async function POST(request: NextRequest) {
 
     // Validierung der empfangenen Daten
     if (typeof amount !== 'number' || amount <= 0) {
-      console.error('[PaymentIntent] Ungueltiger amount:', amount);
+      console.error('[PaymentIntent] Ungültiger amount:', amount);
       return NextResponse.json(
-        { error: 'Ungueltiger Betrag (amount). Muss eine positive Zahl sein.' },
+        { error: 'Ungültiger Betrag (amount). Muss eine positive Zahl sein.' },
         { status: 400 }
       );
     }
     if (typeof jobPriceInCents !== 'number' || jobPriceInCents <= 0) {
-      console.error('[PaymentIntent] Ungueltiger jobPriceInCents:', jobPriceInCents);
+      console.error('[PaymentIntent] Ungültiger jobPriceInCents:', jobPriceInCents);
       return NextResponse.json(
-        { error: 'Ungueltiger Basispreis. Muss eine positive Zahl sein.' },
+        { error: 'Ungültiger Basispreis. Muss eine positive Zahl sein.' },
         { status: 400 }
       );
     }
     if (typeof currency !== 'string' || currency.length !== 3) {
-      console.error('[PaymentIntent] Ungueltige currency:', currency);
-      return NextResponse.json({ error: 'Ungueltige Waehrung.' }, { status: 400 });
+      console.error('[PaymentIntent] Ungültige currency:', currency);
+      return NextResponse.json({ error: 'Ungültige Währung.' }, { status: 400 });
     }
     if (
       !connectedAccountId ||
       typeof connectedAccountId !== 'string' ||
       !connectedAccountId.startsWith('acct_')
     ) {
-      console.error('[PaymentIntent] Ungueltige connectedAccountId:', connectedAccountId);
+      console.error('[PaymentIntent] Ungültige connectedAccountId:', connectedAccountId);
       return NextResponse.json(
-        { error: 'Ungueltige Connected Account ID. Muss mit "acct_" beginnen.' },
+        { error: 'Ungültige Connected Account ID. Muss mit "acct_" beginnen.' },
         { status: 400 }
       );
     }
     if (!taskId || typeof taskId !== 'string') {
-      console.error('[PaymentIntent] Ungueltige taskId:', taskId);
-      return NextResponse.json({ error: 'Ungueltige Task-ID (tempJobDraftId).' }, { status: 400 });
+      console.error('[PaymentIntent] Ungültige taskId:', taskId);
+      return NextResponse.json({ error: 'Ungültige Task-ID (tempJobDraftId).' }, { status: 400 });
     }
     if (!firebaseUserId || typeof firebaseUserId !== 'string') {
-      console.error('[PaymentIntent] Ungueltige firebaseUserId:', firebaseUserId);
-      return NextResponse.json({ error: 'Ungueltige Firebase User ID.' }, { status: 400 });
+      console.error('[PaymentIntent] Ungültige firebaseUserId:', firebaseUserId);
+      return NextResponse.json({ error: 'Ungültige Firebase User ID.' }, { status: 400 });
     }
     if (
       !stripeCustomerId ||
       typeof stripeCustomerId !== 'string' ||
       !stripeCustomerId.startsWith('cus_')
     ) {
-      console.error('[PaymentIntent] Ungueltige stripeCustomerId:', stripeCustomerId);
+      console.error('[PaymentIntent] Ungültige stripeCustomerId:', stripeCustomerId);
       return NextResponse.json(
-        { error: 'Ungueltige Stripe Customer ID. Muss mit "cus_" beginnen.' },
+        { error: 'Ungültige Stripe Customer ID. Muss mit "cus_" beginnen.' },
         { status: 400 }
       );
     }
-    // Validierung fuer billingDetails
+    // Validierung für billingDetails
     if (
       !billingDetails ||
       !billingDetails.address?.line1 ||
@@ -108,19 +108,19 @@ export async function POST(request: NextRequest) {
       !billingDetails.address?.city ||
       !billingDetails.address?.country
     ) {
-      console.error('[PaymentIntent] Ungueltige billingDetails:', JSON.stringify(billingDetails));
+      console.error('[PaymentIntent] Ungültige billingDetails:', JSON.stringify(billingDetails));
       return NextResponse.json(
-        { error: 'Vollstaendige Rechnungsadresse ist erforderlich.' },
+        { error: 'Vollständige Rechnungsadresse ist erforderlich.' },
         { status: 400 }
       );
     }
 
-    console.log('[PaymentIntent] Validierung erfolgreich, pruefe Connected Account:', connectedAccountId);
+    console.log('[PaymentIntent] Validierung erfolgreich, prüfe Connected Account:', connectedAccountId);
 
-    // --- WARTE-LOGIK FUER CONNECTED ACCOUNT READINESS ---
+    // --- WARTE-LOGIK FÜR CONNECTED ACCOUNT READINESS ---
     let currentConnectedAccount: Stripe.Account | null = null;
     let attempts = 0;
-    const maxAttempts = 5; // Reduziert von 15 auf 5 fuer schnellere Fehlerantwort
+    const maxAttempts = 5; // Reduziert von 15 auf 5 für schnellere Fehlerantwort
     const delayMs = 1000; // Reduziert von 2000 auf 1000ms
 
     while (attempts < maxAttempts) {
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
             retrieveError.code === 'account_invalid' ||
             retrieveError.statusCode === 403
           ) {
-            console.error('[PaymentIntent] Connected Account ungueltig - Zugriff widerrufen oder nicht existent');
+            console.error('[PaymentIntent] Connected Account ungültig - Zugriff widerrufen oder nicht existent');
             return NextResponse.json(
               { 
                 error: 'Der Anbieter hat sein Zahlungskonto nicht korrekt verbunden. Bitte kontaktieren Sie den Anbieter.',
@@ -182,18 +182,18 @@ export async function POST(request: NextRequest) {
       !currentConnectedAccount.charges_enabled ||
       !currentConnectedAccount.payouts_enabled
     ) {
-      let reason = 'ist nicht bereit fuer Zahlungen oder Auszahlungen.';
+      let reason = 'ist nicht bereit für Zahlungen oder Auszahlungen.';
       if (currentConnectedAccount) {
-        reason = `hat nicht die noetigen Berechtigungen (charges_enabled: ${currentConnectedAccount.charges_enabled}, payouts_enabled: ${currentConnectedAccount.payouts_enabled}).`;
+        reason = `hat nicht die nötigen Berechtigungen (charges_enabled: ${currentConnectedAccount.charges_enabled}, payouts_enabled: ${currentConnectedAccount.payouts_enabled}).`;
       } else if (currentConnectedAccount === null) {
-        reason = `Konto konnte nicht abgerufen werden (moeglicherweise nicht existent oder Zugriffsproblem).`;
+        reason = `Konto konnte nicht abgerufen werden (möglicherweise nicht existent oder Zugriffsproblem).`;
       }
       
       console.error('[PaymentIntent] Connected Account nicht bereit:', reason);
 
       return NextResponse.json(
         {
-          error: `Zahlung nicht moeglich. Das Anbieter-Konto (${connectedAccountId}) ${reason}`,
+          error: `Zahlung nicht möglich. Das Anbieter-Konto (${connectedAccountId}) ${reason}`,
           details: 'connected_account_not_ready',
           stripeErrorType: 'api_error',
         },
@@ -208,11 +208,11 @@ export async function POST(request: NextRequest) {
     const { db } = await import('@/firebase/server');
 
     if (!db) {
-      console.error('[PaymentIntent] Firebase DB nicht verfuegbar');
+      console.error('[PaymentIntent] Firebase DB nicht verfügbar');
       return NextResponse.json({ error: 'Server-Konfigurationsfehler' }, { status: 500 });
     }
 
-    // Lade Job Draft fuer B2B/B2C Logik
+    // Lade Job Draft für B2B/B2C Logik
     const jobDraftDoc = await db!.collection('temporaryJobDrafts').doc(taskId).get();
     if (!jobDraftDoc.exists) {
       console.error('[PaymentIntent] Job Draft nicht gefunden:', taskId);
@@ -229,22 +229,22 @@ export async function POST(request: NextRequest) {
     // B2B/B2C spezifische Gebuehrenlogik
     const SELLER_SERVICE_FEE_RATE = isB2B ? 0.035 : 0.045; // B2B: 3.5%, B2C: 4.5%
 
-    // Der Gesamtbetrag, den der Kaeufer zahlt, ist jetzt einfach der jobPriceInCents.
+    // Der Gesamtbetrag, den der Käufer zahlt, ist jetzt einfach der jobPriceInCents.
     const totalAmountToChargeBuyer = jobPriceInCents;
 
     // WICHTIGE VALIDIERUNG: Der vom Frontend gesendete Betrag MUSS dem Basispreis entsprechen.
     if (amount !== totalAmountToChargeBuyer) {
       console.error('[PaymentIntent] Betrags-Mismatch:', { amount, totalAmountToChargeBuyer });
       return NextResponse.json(
-        { error: 'Fehler bei der Betragsueberpruefung. Bitte versuchen Sie es erneut.' },
+        { error: 'Fehler bei der Betragsüberprüfung. Bitte versuchen Sie es erneut.' },
         { status: 400 }
       );
     }
 
-    // Die Plattformgebuehr ist die Gebuehr, die vom Verkaeufer abgezogen wird.
+    // Die Plattformgebühr ist die Gebühr, die vom Verkäufer abgezogen wird.
     const totalApplicationFee = Math.round(jobPriceInCents * SELLER_SERVICE_FEE_RATE);
 
-    // Fuer Stripe Connect verwenden wir destination charges
+    // Für Stripe Connect verwenden wir destination charges
     const amountForProvider = jobPriceInCents - totalApplicationFee;
 
     console.log('[PaymentIntent] Erstelle PaymentIntent:', {

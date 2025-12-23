@@ -404,12 +404,12 @@ export default function AddressPage() {
               : 1;
           setFinalSelectedDateRange({ from: effectiveFrom, to: effectiveTo });
         } else {
-          setError('Ungueltige Datumsauswahl.');
+          setError('Ungültige Datumsauswahl.');
           setSelectedCompanyForPopup(null);
           return;
         }
       } else {
-        setError('Bitte waehlen Sie ein Datum oder einen Zeitraum aus.');
+        setError('Bitte wählen Sie ein Datum oder einen Zeitraum aus.');
         setSelectedCompanyForPopup(null);
         return;
       }
@@ -427,12 +427,12 @@ export default function AddressPage() {
         );
         const hoursPerDayOrTotalInput = parseDurationStringToHours(finalDurationStringInput);
         if (isNaN(anbieterStundensatzNum) || anbieterStundensatzNum <= 0) {
-          setError('Stundensatz des Anbieters ist ungueltig.');
+          setError('Stundensatz des Anbieters ist ungültig.');
           setSelectedCompanyForPopup(null);
           return;
         }
         if (!hoursPerDayOrTotalInput || hoursPerDayOrTotalInput <= 0) {
-          setError('Auftragsdauer ist ungueltig.');
+          setError('Auftragsdauer ist ungültig.');
           setSelectedCompanyForPopup(null);
           return;
         }
@@ -443,7 +443,7 @@ export default function AddressPage() {
           totalCalculatedHours = hoursPerDayOrTotalInput;
         }
         if (totalCalculatedHours <= 0) {
-          setError('Die berechnete Gesamtdauer ist ungueltig.');
+          setError('Die berechnete Gesamtdauer ist ungültig.');
           setSelectedCompanyForPopup(null);
           return;
         }
@@ -647,7 +647,7 @@ export default function AddressPage() {
                       </div>
                       <h3 className="text-lg font-semibold text-gray-800 mb-2">Keine Anbieter gefunden</h3>
                       <p className="text-gray-500 mb-4">
-                        Fuer Ihre Auswahl wurden leider keine passenden Anbieter gefunden.
+                        Für Ihre Auswahl wurden leider keine passenden Anbieter gefunden.
                       </p>
                       <p className="text-sm text-gray-400">Versuchen Sie, Ihre Filter anzupassen.</p>
                     </div>
@@ -688,7 +688,7 @@ export default function AddressPage() {
                   <MapPin className="w-6 h-6 text-[#14ad9f]" />
                 </div>
                 <p className="font-bold text-gray-800">Lokale Experten</p>
-                <p className="text-sm text-gray-500">Dienstleister in Ihrer Naehe</p>
+                <p className="text-sm text-gray-500">Dienstleister in Ihrer Nähe</p>
               </div>
 
               <div className="bg-white rounded-xl border border-gray-200 p-5 text-center hover:shadow-md transition-shadow">
@@ -696,15 +696,15 @@ export default function AddressPage() {
                   <Calendar className="w-6 h-6 text-[#14ad9f]" />
                 </div>
                 <p className="font-bold text-gray-800">Flexible Termine</p>
-                <p className="text-sm text-gray-500">Waehlen Sie Ihren Wunschtermin</p>
+                <p className="text-sm text-gray-500">Wählen Sie Ihren Wunschtermin</p>
               </div>
 
               <div className="bg-white rounded-xl border border-gray-200 p-5 text-center hover:shadow-md transition-shadow">
                 <div className="p-3 bg-[#14ad9f]/10 rounded-xl w-fit mx-auto mb-3">
                   <Users className="w-6 h-6 text-[#14ad9f]" />
                 </div>
-                <p className="font-bold text-gray-800">Gepruefte Anbieter</p>
-                <p className="text-sm text-gray-500">Qualifizierte Fachkraefte</p>
+                <p className="font-bold text-gray-800">Geprüfte Anbieter</p>
+                <p className="text-sm text-gray-500">Qualifizierte Fachkräfte</p>
               </div>
             </motion.div>
           </div>

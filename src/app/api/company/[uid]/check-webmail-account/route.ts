@@ -3,7 +3,7 @@ import { db, isFirebaseAvailable } from '@/firebase/server';
 
 /**
  * GET /api/company/[uid]/check-webmail-account
- * Prueft ob der Benutzer/das Unternehmen ein Taskilo Webmail Konto hat
+ * Prüft ob der Benutzer/das Unternehmen ein Taskilo Webmail Konto hat
  */
 export async function GET(
   request: NextRequest,
@@ -14,7 +14,7 @@ export async function GET(
 
     if (!isFirebaseAvailable() || !db) {
       return NextResponse.json(
-        { error: 'Firebase nicht verfuegbar' },
+        { error: 'Firebase nicht verfügbar' },
         { status: 503 }
       );
     }
@@ -32,7 +32,7 @@ export async function GET(
     const companyData = companyDoc.data();
     const companyEmail = companyData?.email || companyData?.kontaktEmail;
 
-    // Pruefe ob bereits eine Webmail-Verbindung besteht
+    // Prüfe ob bereits eine Webmail-Verbindung besteht
     if (companyData?.webmailConfig?.status === 'connected') {
       return NextResponse.json({
         hasAccount: true,
@@ -41,7 +41,7 @@ export async function GET(
       });
     }
 
-    // Suche nach einer aktiven Webmail-Subscription fuer diese E-Mail
+    // Suche nach einer aktiven Webmail-Subscription für diese E-Mail
     if (companyEmail) {
       const subscriptionQuery = await db.collection('webmailSubscriptions')
         .where('customerEmail', '==', companyEmail)
@@ -60,7 +60,7 @@ export async function GET(
       }
     }
 
-    // Pruefe auch ueber die userId (Unternehmen koennte mit User-ID verknuepft sein)
+    // Prüfe auch über die userId (Unternehmen könnte mit User-ID verknüpft sein)
     const subscriptionByUserQuery = await db.collection('webmailSubscriptions')
       .where('userId', '==', companyId)
       .where('status', '==', 'active')
@@ -77,7 +77,7 @@ export async function GET(
       });
     }
 
-    // Pruefe auch ueber companyId-Feld in Subscription
+    // Prüfe auch über companyId-Feld in Subscription
     const subscriptionByCompanyQuery = await db.collection('webmailSubscriptions')
       .where('companyId', '==', companyId)
       .where('status', '==', 'active')
@@ -98,12 +98,12 @@ export async function GET(
     return NextResponse.json({
       hasAccount: false,
       email: null,
-      suggestedEmail: companyEmail // Vorgeschlagene E-Mail fuer Registrierung
+      suggestedEmail: companyEmail // Vorgeschlagene E-Mail für Registrierung
     });
 
   } catch {
     return NextResponse.json(
-      { error: 'Fehler beim Pruefen des Webmail-Kontos' },
+      { error: 'Fehler beim Prüfen des Webmail-Kontos' },
       { status: 500 }
     );
   }

@@ -26,7 +26,7 @@ function getRevolutConfig() {
     baseUrl: isProduction
       ? 'https://merchant.revolut.com/api'
       : 'https://sandbox-merchant.revolut.com/api',
-    // Legacy API 1.0 (fuer Customers und Orders)
+    // Legacy API 1.0 (für Customers und Orders)
     legacyBaseUrl: isProduction
       ? 'https://merchant.revolut.com/api/1.0'
       : 'https://sandbox-merchant.revolut.com/api/1.0',
@@ -74,7 +74,7 @@ async function revolutRequest<T>(
   }
 }
 
-// Revolut Legacy API Request Helper (1.0 - fuer Customers und Orders)
+// Revolut Legacy API Request Helper (1.0 - für Customers und Orders)
 async function revolutLegacyRequest<T>(
   endpoint: string,
   method: 'GET' | 'POST' = 'GET',
@@ -143,7 +143,7 @@ async function getOrCreateStoragePlanVariationId(
   const db = admin.firestore();
   const configRef = db.collection('revolut_config').doc('storage_plans');
   
-  // Pruefe ob Plan bereits existiert
+  // Prüfe ob Plan bereits existiert
   const configDoc = await configRef.get();
   const existingPlans = configDoc.exists ? configDoc.data() : null;
   
@@ -240,7 +240,7 @@ export async function POST(request: NextRequest) {
     const validation = StorageSubscriptionSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Ungueltige Anfrage', details: validation.error.issues },
+        { error: 'Ungültige Anfrage', details: validation.error.issues },
         { status: 400 }
       );
     }

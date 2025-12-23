@@ -1,7 +1,7 @@
 /**
  * Company Ticket Reply API Route
  * 
- * Firebase-basierte Ticket-Antworten fuer Kunden
+ * Firebase-basierte Ticket-Antworten für Kunden
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -18,14 +18,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ticket abrufen und pruefen
+    // Ticket abrufen und prüfen
     const ticket = await FirebaseTicketService.getTicket(ticketId);
 
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
     }
 
-    // Pruefen ob Kunde berechtigt ist
+    // Prüfen ob Kunde berechtigt ist
     if (authorEmail && ticket.customerEmail !== authorEmail) {
       return NextResponse.json(
         { error: 'Nicht berechtigt, auf dieses Ticket zu antworten' },

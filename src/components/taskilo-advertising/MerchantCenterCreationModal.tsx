@@ -472,7 +472,7 @@ export default function MerchantCenterCreationModal({
                   <a href="#" className="text-teal-600 hover:underline">
                     Merchant Center-Nutzungsbedingungen
                   </a>{' '}
-                  zu. Je nach Einrichtung werden Ihre App-Daten moeglicherweise in{' '}
+                  zu. Je nach Einrichtung werden Ihre App-Daten möglicherweise in{' '}
                   <a href="#" className="text-teal-600 hover:underline">
                     Unternehmensmanager
                   </a>{' '}
@@ -553,8 +553,8 @@ export default function MerchantCenterCreationModal({
                           <BarChart className="w-5 h-5 text-gray-400 shrink-0" />
                           <div>
                             <div className="text-sm font-medium text-gray-900">
-                              Messwerte, die sich auf Anzeigen beziehen, in denen fuer Produkte aus
-                              dem verknuepften Merchant Center-Konto geworben wird
+                              Messwerte, die sich auf Anzeigen beziehen, in denen für Produkte aus
+                              dem verknüpften Merchant Center-Konto geworben wird
                             </div>
                             <div className="text-sm text-gray-600 mt-1">
                               Beispielsweise kann die Anzahl der Klicks weitergegeben werden.

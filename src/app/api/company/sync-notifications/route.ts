@@ -1,7 +1,7 @@
 /**
  * Company Sync Notifications API Route
  * 
- * Firebase-basierte Benachrichtigungen fuer Kunden
+ * Firebase-basierte Benachrichtigungen für Kunden
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Offene Tickets fuer Kunde abrufen
+    // Offene Tickets für Kunde abrufen
     const tickets = await FirebaseTicketService.getTicketsByCustomer(customerEmail);
     
     // Nur offene/in-progress Tickets
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       t.status === 'open' || t.status === 'in-progress'
     );
 
-    // Ungelesene Antworten zaehlen
+    // Ungelesene Antworten zählen
     const unreadCount = activeTickets.reduce((count, ticket) => {
       // Zaehle Kommentare die nach dem letzten Kunden-Kommentar kamen
       const customerComments = ticket.comments.filter(c => c.authorType === 'customer');

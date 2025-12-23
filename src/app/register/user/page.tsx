@@ -320,7 +320,7 @@ function UserRegisterFormContent() {
                   Erstellen Sie Ihr Konto
                 </h1>
                 <p className="text-lg text-white/90 max-w-2xl mx-auto">
-                  Registrieren Sie sich kostenlos und beauftragen Sie Profis fuer Ihre Projekte
+                  Registrieren Sie sich kostenlos und beauftragen Sie Profis für Ihre Projekte
                 </p>
               </motion.div>
             </div>
@@ -609,7 +609,7 @@ function UserRegisterFormContent() {
                       className="h-5 w-5 mt-0.5 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded cursor-pointer"
                     />
                     <label htmlFor="newsletter" className="text-sm text-gray-600 cursor-pointer leading-relaxed">
-                      Ich moechte den Newsletter abonnieren und ueber Neuigkeiten informiert werden.
+                      Ich möchte den Newsletter abonnieren und über Neuigkeiten informiert werden.
                     </label>
                   </div>
 

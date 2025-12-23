@@ -303,8 +303,8 @@ export function DomainPurchaseModal({
                       paymentMethod === 'sepa' ? 'border-teal-500 bg-teal-50' : 'border-gray-200'
                     }`}
                   >
-                    <p className="font-medium">SEPA-Ueberweisung</p>
-                    <p className="text-xs text-gray-500">Manuell ueberweisen</p>
+                    <p className="font-medium">SEPA-Überweisung</p>
+                    <p className="text-xs text-gray-500">Manuell überweisen</p>
                   </button>
                 </div>
               </div>
@@ -320,9 +320,9 @@ export function DomainPurchaseModal({
                   <span className="text-sm text-gray-600">
                     Ich habe die{' '}
                     <a href="/datenschutz" target="_blank" className="text-teal-600 underline">
-                      Datenschutzerklaerung
-                    </a>{' '}
-                    gelesen und stimme der Verarbeitung meiner Daten gemaess DSGVO zu. *
+                    Datenschutzerklärung
+                  </a>{' '}
+                  gelesen und stimme der Verarbeitung meiner Daten gemäß DSGVO zu. *
                   </span>
                 </label>
                 {errors.privacyConsent && (
@@ -364,13 +364,13 @@ export function DomainPurchaseModal({
                 <Check className="w-12 h-12 mx-auto text-green-500 mb-4" />
                 <h3 className="text-xl font-bold text-gray-900">Bestellung erfolgreich!</h3>
                 <p className="text-gray-600 mt-2">
-                  Bitte ueberweisen Sie den Betrag auf folgendes Konto:
+                  Bitte überweisen Sie den Betrag auf folgendes Konto:
                 </p>
               </div>
 
               <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Empfaenger:</span>
+                  <span className="text-gray-600">Empfänger:</span>
                   <span className="font-medium">{sepaDetails.recipient}</span>
                 </div>
                 <div className="flex justify-between">

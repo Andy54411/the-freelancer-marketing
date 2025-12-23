@@ -1380,8 +1380,8 @@ class GoogleAdsClientService {
 
   /**
    * Reaktiviert einen bestehenden CustomerClientLink vom Manager aus
-   * Wird verwendet wenn eine Einladung CANCELED wurde und eine neue benoetigt wird
-   * Strategie: Link auf CANCELED setzen, dann loeschen, dann neu erstellen
+   * Wird verwendet wenn eine Einladung CANCELED wurde und eine neue benötigt wird
+   * Strategie: Link auf CANCELED setzen, dann löschen, dann neu erstellen
    */
   async reactivateManagerLink(
     customerId: string,
@@ -1391,7 +1391,7 @@ class GoogleAdsClientService {
       const MANAGER_ID = '5788229684';
       const clientIdClean = customerId.replace(/-/g, '');
 
-      // Customer-Objekt fuer den Manager erstellen
+      // Customer-Objekt für den Manager erstellen
       const customer = this.client.Customer({
         customer_id: MANAGER_ID,
         refresh_token: refreshToken,
@@ -1465,7 +1465,7 @@ class GoogleAdsClientService {
             },
           ]);
           
-          // Dann auf PENDING fuer neue Einladung
+          // Dann auf PENDING für neue Einladung
           const pendingResponse = await customer.customerClientLinks.update([
             {
               resource_name: resourceName,
@@ -1485,7 +1485,7 @@ class GoogleAdsClientService {
             success: false,
             error: {
               code: 'REACTIVATE_FAILED',
-              message: `Konnte Link nicht reaktivieren. Bitte entfernen Sie die Verknuepfung manuell in Google Ads unter Einstellungen > Kontozugriff.`,
+              message: `Konnte Link nicht reaktivieren. Bitte entfernen Sie die Verknüpfung manuell in Google Ads unter Einstellungen > Kontozugriff.`,
               details: { updateError: updateError.message, secondError: secondError.message },
             },
           };
@@ -1506,10 +1506,10 @@ class GoogleAdsClientService {
   /**
    * Manager sendet Einladung an Client-Account
    * Verwendet die google-ads-api Library (gRPC) direkt
-   * Die REST API unterstuetzt customerClientLinks:mutate NICHT (501 UNIMPLEMENTED)
+   * Die REST API unterstützt customerClientLinks:mutate NICHT (501 UNIMPLEMENTED)
    * 
    * WORKAROUND: Die Library hat einen Bug - sie sendet `operations` (plural),
-   * aber die API erwartet `operation` (singular) fuer CustomerClientLink.
+   * aber die API erwartet `operation` (singular) für CustomerClientLink.
    * Wir verwenden den onMutationStart Hook um den Request zu korrigieren.
    */
   async sendManagerInvitationFromManager(
@@ -1527,14 +1527,14 @@ class GoogleAdsClientService {
         success: false,
         error: {
           code: 'MISSING_REFRESH_TOKEN',
-          message: 'Kein Refresh Token verfuegbar',
+          message: 'Kein Refresh Token verfügbar',
           details: null,
         },
       };
     }
 
     try {
-      // Customer-Objekt fuer den Manager-Account erstellen mit Hook um Request zu fixen
+      // Customer-Objekt für den Manager-Account erstellen mit Hook um Request zu fixen
       // Der Hook transformiert `operations` (Array) zu `operation` (einzelnes Objekt)
       const customer = this.client.Customer(
         {
@@ -1545,7 +1545,7 @@ class GoogleAdsClientService {
         {
           onMutationStart: async ({ mutation, editOptions }) => {
             // Die Library sendet { operations: [...] }, aber die API erwartet { operation: {...} }
-            // Wir muessen den Request transformieren
+            // Wir müssen den Request transformieren
             if (mutation.operations && Array.isArray(mutation.operations)) {
               const firstOp = mutation.operations[0];
               editOptions({
@@ -1606,7 +1606,7 @@ class GoogleAdsClientService {
           success: false,
           error: {
             code: 'ACCOUNTS_NOT_COMPATIBLE',
-            message: 'Das ausgewaehlte Google Ads Konto kann nicht verknuepft werden. Manager-Konten koennen nicht unter andere Manager-Konten verknuepft werden. Bitte waehlen Sie ein normales Werbekonto aus.',
+            message: 'Das ausgewählte Google Ads Konto kann nicht verknüpft werden. Manager-Konten können nicht unter andere Manager-Konten verknüpft werden. Bitte wählen Sie ein normales Werbekonto aus.',
             details: error.errors || error,
             isManagerAccount: true,
           },
@@ -1618,7 +1618,7 @@ class GoogleAdsClientService {
           success: false,
           error: {
             code: 'INVALID_CUSTOMER_ID',
-            message: `Die Google Ads Customer-ID ${customerId} existiert nicht oder ist ungueltig.`,
+            message: `Die Google Ads Customer-ID ${customerId} existiert nicht oder ist ungültig.`,
             details: error.errors || error,
           },
         };
@@ -1629,7 +1629,7 @@ class GoogleAdsClientService {
           success: false,
           error: {
             code: 'TEST_TOKEN_PRODUCTION_ACCOUNT',
-            message: 'Der Developer Token ist nur fuer Test-Accounts freigegeben. Eine manuelle Verknuepfung ist erforderlich.',
+            message: 'Der Developer Token ist nur für Test-Accounts freigegeben. Eine manuelle Verknüpfung ist erforderlich.',
             details: error.errors || error,
             isProductionAccount: true,
           },
@@ -1665,13 +1665,13 @@ class GoogleAdsClientService {
           success: false,
           error: {
             code: 'MISSING_REFRESH_TOKEN',
-            message: 'Kein Refresh Token verfuegbar',
+            message: 'Kein Refresh Token verfügbar',
             details: null,
           },
         };
       }
 
-      // Customer-Objekt fuer den Client-Account erstellen
+      // Customer-Objekt für den Client-Account erstellen
       const customer = this.client.Customer({
         customer_id: clientIdClean,
         refresh_token: userRefreshToken,
@@ -1746,16 +1746,16 @@ class GoogleAdsClientService {
             ]);
             return {
               success: true,
-              data: { message: 'Verknuepfung wurde reaktiviert', response: activeResponse },
+              data: { message: 'Verknüpfung wurde reaktiviert', response: activeResponse },
             };
           } catch (pendingError: any) {
             // Auch das funktioniert nicht - der Link ist wirklich kaputt
-            // User muss im Google Ads UI den Link manuell loeschen oder Manager muss neuen Account einladen
+            // User muss im Google Ads UI den Link manuell löschen oder Manager muss neuen Account einladen
             return {
               success: false,
               error: {
                 code: 'LINK_CANCELED_PERMANENTLY',
-                message: 'Die Verknuepfung wurde dauerhaft storniert und kann nicht reaktiviert werden. Bitte entfernen Sie die Verknuepfung in Ihrem Google Ads Account unter Einstellungen > Kontozugriff und fordern Sie dann eine neue Einladung an.',
+                message: 'Die Verknüpfung wurde dauerhaft storniert und kann nicht reaktiviert werden. Bitte entfernen Sie die Verknüpfung in Ihrem Google Ads Account unter Einstellungen > Kontozugriff und fordern Sie dann eine neue Einladung an.',
                 details: { 
                   currentStatus, 
                   needsManualAction: true,
@@ -1774,7 +1774,7 @@ class GoogleAdsClientService {
           success: false,
           error: {
             code: 'INVALID_LINK_STATUS',
-            message: `Die Einladung hat einen ungueltigen Status (${currentStatus}). Bitte fordern Sie eine neue Einladung an.`,
+            message: `Die Einladung hat einen ungültigen Status (${currentStatus}). Bitte fordern Sie eine neue Einladung an.`,
             details: { currentStatus, needsNewInvitation: true },
             needsNewInvitation: true,
           },

@@ -140,10 +140,10 @@ export default function GoogleAdsInterface({ companyId }: GoogleAdsInterfaceProp
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto mb-6">
             Ihre Google Ads Integration wird gerade vom Taskilo-Team eingerichtet. 
-            Sie erhalten eine Benachrichtigung, sobald Sie Google Ads nutzen koennen.
+            Sie erhalten eine Benachrichtigung, sobald Sie Google Ads nutzen können.
           </p>
           <p className="text-sm text-gray-500">
-            Status: Warten auf Manager-Verknuepfung
+            Status: Warten auf Manager-Verknüpfung
           </p>
         </div>
       ) : (
@@ -183,10 +183,10 @@ export default function GoogleAdsInterface({ companyId }: GoogleAdsInterfaceProp
             {/* Welcome Message */}
             <div>
               <h3 className="text-xl font-medium text-gray-900 mb-3">
-                Willkommen bei Google Ads! Hier koennen Sie Kampagnenentwuerfe fertigstellen oder neue erstellen, um Anzeigen zu schalten
+                Willkommen bei Google Ads! Hier können Sie Kampagnenentwürfe fertigstellen oder neue erstellen, um Anzeigen zu schalten
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Mit einer auf Ihre Geschaeftsziele abgestimmten Kampagne koennen Sie im gesamten
+                Mit einer auf Ihre Geschäftsziele abgestimmten Kampagne können Sie im gesamten
                 Google-Werbenetzwerk neue Leads finden und potenzielle Kunden erreichen. Nutzen Sie
                 die Vorteile von Google AI, um Ihre Creative-Assets zu optimieren und Anzeigen in
                 der Google Suche, auf YouTube, im Displaynetzwerk und auf anderen Plattformen zu
@@ -205,7 +205,7 @@ export default function GoogleAdsInterface({ companyId }: GoogleAdsInterfaceProp
                   <div className="flex-1">
                     <h4 className="font-semibold text-gray-900 mb-2">Neue Kunden erreichen</h4>
                     <p className="text-sm text-gray-600 mb-4">
-                      Kanaluebergreifende Performance Max-Kampagne erstellen
+                      Kanalübergreifende Performance Max-Kampagne erstellen
                     </p>
                     <button
                       onClick={handleCreateCampaign}
@@ -239,8 +239,8 @@ export default function GoogleAdsInterface({ companyId }: GoogleAdsInterfaceProp
                       <h4 className="font-semibold text-gray-900 mb-2">Erstellung der Kampagne fertigstellen</h4>
                       <p className="text-sm text-gray-600 mb-4">
                         {drafts.length === 1 
-                          ? 'Sie haben 1 unvollstaendigen Kampagnenentwurf'
-                          : `Sie haben ${drafts.length} unvollstaendige Kampagnenentwuerfe`
+                          ? 'Sie haben 1 unvollständigen Kampagnenentwurf'
+                          : `Sie haben ${drafts.length} unvollständige Kampagnenentwürfe`
                         }
                       </p>
                       <button
@@ -259,7 +259,7 @@ export default function GoogleAdsInterface({ companyId }: GoogleAdsInterfaceProp
             {/* Drafts List - wenn mehrere vorhanden */}
             {drafts.length > 1 && (
               <div className="mt-6">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Alle Kampagnenentwuerfe</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Alle Kampagnenentwürfe</h4>
                 <div className="space-y-2">
                   {drafts.map((draft) => (
                     <div
@@ -296,7 +296,7 @@ export default function GoogleAdsInterface({ companyId }: GoogleAdsInterfaceProp
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
-                                Loeschen
+                                Löschen
                               </button>
                             </div>
                           )}

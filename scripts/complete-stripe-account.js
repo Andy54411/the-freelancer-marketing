@@ -41,10 +41,10 @@ async function completeStripeAccount() {
   const companyData = companyDoc.exists ? companyDoc.data() : {};
   const userData = userDoc.exists ? userDoc.data() : {};
   
-  // Merge data - company hat Prioritaet
+  // Merge data - company hat Priorität
   const data = { ...userData, ...companyData };
   
-  console.log('\n=== Verfuegbare Daten ===');
+  console.log('\n=== Verfügbare Daten ===');
   console.log('Firmenname:', data.companyName || data.name || 'FEHLT');
   console.log('Email:', data.email || 'FEHLT');
   console.log('Telefon:', data.phone || data.phoneNumber || 'FEHLT');
@@ -58,7 +58,7 @@ async function completeStripeAccount() {
   console.log('Steuernummer:', data.taxNumber || data.taxId || 'FEHLT');
   console.log('IBAN:', data.iban ? 'vorhanden' : 'FEHLT');
   
-  // Pruefe was wir haben
+  // Prüfe was wir haben
   const street = data.street || data.address?.street;
   const postalCode = data.postalCode || data.address?.postalCode;
   const city = data.city || data.address?.city;
@@ -69,14 +69,14 @@ async function completeStripeAccount() {
   
   if (!street || !postalCode || !city || !firstName || !lastName) {
     console.log('\n=== FEHLENDE PFLICHTDATEN ===');
-    console.log('Die Company hat nicht genug Daten fuer die Stripe-Verifizierung.');
+    console.log('Die Company hat nicht genug Daten für die Stripe-Verifizierung.');
     console.log('Fehlend:');
     if (!street) console.log('  - Strasse');
     if (!postalCode) console.log('  - PLZ');
     if (!city) console.log('  - Stadt');
     if (!firstName) console.log('  - Vorname');
     if (!lastName) console.log('  - Nachname');
-    console.log('\nDiese Daten muessen im Onboarding erfasst werden.');
+    console.log('\nDiese Daten müssen im Onboarding erfasst werden.');
     return;
   }
   
@@ -171,12 +171,12 @@ async function completeStripeAccount() {
         },
       });
       
-      console.log('Bankkonto hinzugefuegt');
+      console.log('Bankkonto hinzugefügt');
     } else {
-      console.log('WARNUNG: Keine IBAN vorhanden - Bankkonto muss manuell hinzugefuegt werden');
+      console.log('WARNUNG: Keine IBAN vorhanden - Bankkonto muss manuell hinzugefügt werden');
     }
     
-    // 4. Pruefe finalen Status
+    // 4. Prüfe finalen Status
     const updatedAccount = await stripe.accounts.retrieve(stripeAccountId);
     
     console.log('\n=== Finaler Status ===');

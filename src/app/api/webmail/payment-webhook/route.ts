@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const paymentService = getRevolutPaymentService();
     if (signature && !paymentService.verifyWebhook(body, signature)) {
       return NextResponse.json(
-        { success: false, error: 'Ungueltige Signatur' },
+        { success: false, error: 'Ungültige Signatur' },
         { status: 401 }
       );
     }

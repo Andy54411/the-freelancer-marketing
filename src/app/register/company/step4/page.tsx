@@ -474,10 +474,10 @@ export default function Step4() {
               </button>
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold mb-3">
-              Faehigkeiten auswaehlen
+              Fähigkeiten auswählen
             </h1>
             <p className="text-lg text-white/80 max-w-xl mx-auto">
-              Waehlen Sie eine Hauptkategorie und dann eine passende Unterkategorie.
+              Wählen Sie eine Hauptkategorie und dann eine passende Unterkategorie.
             </p>
           </motion.div>
         </div>
@@ -539,7 +539,7 @@ export default function Step4() {
             'Firmenprofil anlegen',
             'Adresse eingeben',
             'Kontaktdaten angeben',
-            'Faehigkeiten auswaehlen',
+            'Fähigkeiten auswählen',
             'Zusammenfassung & Abschluss',
           ]}
         />

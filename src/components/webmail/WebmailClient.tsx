@@ -79,6 +79,7 @@ interface EmailItemProps {
   onStar: (uid: number) => void;
   onDelete: (uid: number) => void;
   onMarkAsRead: (uid: number) => void;
+  onMoveToSpam: (uid: number) => void;
 }
 
 const EmailItem = memo(({
@@ -89,6 +90,7 @@ const EmailItem = memo(({
   onStar,
   onDelete,
   onMarkAsRead,
+  onMoveToSpam,
 }: EmailItemProps) => {
   const isUnread = !email.flags.includes('\\Seen');
   const isStarred = email.flags.includes('\\Flagged');
@@ -203,9 +205,12 @@ const EmailItem = memo(({
                   <DropdownMenuItem onClick={() => onStar(email.uid)}>
                     {isStarred ? 'Stern entfernen' : 'Mit Stern markieren'}
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onMoveToSpam(email.uid)} className="text-orange-600">
+                    Als Spam markieren
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => onDelete(email.uid)} className="text-red-600">
-                    Loeschen
+                    Löschen
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -820,7 +825,7 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
                 size="sm"
                 onClick={handleBulkDelete}
                 className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 md:h-8 px-1 md:px-2"
-                title="Ausgewaehlte loeschen"
+                title="Ausgewählte löschen"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -838,7 +843,7 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
                 size="sm"
                 onClick={clearAdvancedFilters}
                 className="h-6 w-6 p-0 hover:bg-gray-200"
-                title="Filter zuruecksetzen"
+                title="Filter zurücksetzen"
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -899,6 +904,7 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
                   onStar={handleStarEmail}
                   onDelete={handleDelete}
                   onMarkAsRead={handleMarkAsRead}
+                  onMoveToSpam={handleMoveToSpam}
                 />
               ))}
             </div>

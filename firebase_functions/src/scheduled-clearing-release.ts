@@ -1,11 +1,11 @@
 /**
  * Scheduled Cloud Function: Auto-Release nach Clearing-Periode
  * 
- * Diese Funktion laeuft taeglich und prueft alle Auftraege im Status
+ * Diese Funktion läuft täglich und prüft alle Aufträge im Status
  * 'zahlung_erhalten_clearing', deren Clearing-Periode abgelaufen ist.
  * 
  * Nach Ablauf wird der Status automatisch auf 'in_bearbeitung' gesetzt,
- * sodass der Anbieter die Zahlung erhaelt.
+ * sodass der Anbieter die Zahlung erhält.
  */
 
 import { onSchedule } from 'firebase-functions/v2/scheduler';
@@ -26,8 +26,8 @@ interface ClearingReleaseResult {
 }
 
 /**
- * Taeglich um 2:00 Uhr nachts ausfuehren
- * Prueft alle Auftraege mit abgelaufener Clearing-Periode
+ * Täglich um 2:00 Uhr nachts ausführen
+ * Prüft alle Aufträge mit abgelaufener Clearing-Periode
  */
 export const scheduledClearingRelease = onSchedule(
   {
@@ -68,14 +68,14 @@ export const scheduledClearingRelease = onSchedule(
         const orderData = orderDoc.data();
 
         try {
-          // Pruefe ob clearingPeriodEndsAt vorhanden und abgelaufen ist
+          // Prüfe ob clearingPeriodEndsAt vorhanden und abgelaufen ist
           const clearingEndsAt = orderData.clearingPeriodEndsAt;
 
           if (!clearingEndsAt) {
             // Fallback: Berechne Clearing-Ende basierend auf paidAt
             const paidAt = orderData.paidAt || orderData.acceptedAt || orderData.createdAt;
             if (!paidAt) {
-              logger.warn(`[ClearingRelease] Auftrag ${orderId}: Kein Zahlungsdatum gefunden, ueberspringe`);
+              logger.warn(`[ClearingRelease] Auftrag ${orderId}: Kein Zahlungsdatum gefunden, überspringe`);
               continue;
             }
 
@@ -154,7 +154,7 @@ async function sendReleaseNotification(orderId: string, orderData: FirebaseFires
   try {
     const providerId = orderData.providerId || orderData.selectedAnbieterId;
     if (!providerId) {
-      logger.warn(`[ClearingRelease] Keine Provider-ID fuer Auftrag ${orderId}`);
+      logger.warn(`[ClearingRelease] Keine Provider-ID für Auftrag ${orderId}`);
       return;
     }
 
@@ -163,7 +163,7 @@ async function sendReleaseNotification(orderId: string, orderData: FirebaseFires
       userId: providerId,
       type: 'payment_released',
       title: 'Zahlung freigegeben',
-      message: `Die Zahlung fuer Auftrag #${orderId.slice(-6).toUpperCase()} wurde nach Ablauf der Clearing-Periode freigegeben.`,
+      message: `Die Zahlung für Auftrag #${orderId.slice(-6).toUpperCase()} wurde nach Ablauf der Clearing-Periode freigegeben.`,
       data: {
         orderId,
         orderTitle: orderData.title || orderData.description || 'Auftrag',
@@ -177,12 +177,12 @@ async function sendReleaseNotification(orderId: string, orderData: FirebaseFires
 
   } catch (notifyError) {
     // Fehler bei Benachrichtigung sollte den Release nicht blockieren
-    logger.warn(`[ClearingRelease] Benachrichtigung fehlgeschlagen fuer ${orderId}:`, notifyError);
+    logger.warn(`[ClearingRelease] Benachrichtigung fehlgeschlagen für ${orderId}:`, notifyError);
   }
 }
 
 /**
- * HTTP Trigger zum manuellen Ausfuehren (fuer Admin/Testing)
+ * HTTP Trigger zum manuellen Ausführen (für Admin/Testing)
  */
 import { onRequest } from 'firebase-functions/v2/https';
 

@@ -177,7 +177,7 @@ export class FirebaseAdminChatService {
    */
   static async updateChatStatus(chatId: string, status: 'active' | 'archived' | 'closed'): Promise<void> {
     if (!db) {
-      throw new Error('Datenbank nicht verfuegbar');
+      throw new Error('Datenbank nicht verfügbar');
     }
 
     await db.collection(CHATS_COLLECTION).doc(chatId).update({
@@ -217,7 +217,7 @@ export class FirebaseAdminChatService {
     content: string
   ): Promise<AdminChatMessage> {
     if (!db) {
-      throw new Error('Datenbank nicht verfuegbar');
+      throw new Error('Datenbank nicht verfügbar');
     }
 
     const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

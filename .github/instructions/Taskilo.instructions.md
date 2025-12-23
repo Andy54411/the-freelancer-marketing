@@ -100,6 +100,8 @@ pnpm run type-check
 - Deletions - Soft deletes only
 - FALLBACKS - Keine `|| ''`, `|| 'default'`, `?? fallback` - Problem an der Wurzel lösen!
 - EMOJIS - Keine Emojis in Code, Kommentaren oder UI
+- DATEIEN LÖSCHEN: NIEMALS Dateien löschen ohne explizite Benutzeranfrage! Immer zuerst fragen!
+- UMLAUT-FEHLER: Deutsche Umlaute (ä, ö, ü, ß) IMMER korrekt schreiben! NIEMALS ae/oe/ue/ss in UI-Texten, Kommentaren oder Strings verwenden (außer in URLs/IDs)!
 
 ## ERFOLG
 Aufgabe abgeschlossen wenn:

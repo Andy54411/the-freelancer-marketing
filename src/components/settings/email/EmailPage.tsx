@@ -45,18 +45,18 @@ export function EmailPage({ companyId }: EmailPageProps) {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Die tatsaechliche User-ID fuer die E-Mail-Konfiguration
+  // Die tatsächliche User-ID für die E-Mail-Konfiguration
   // Mitarbeiter haben ihre eigene Config, Inhaber nutzen die Company-ID
   const effectiveUserId = user?.uid || companyId;
 
-  // URL Parameter fuer Fehlermeldungen
+  // URL Parameter für Fehlermeldungen
   const watchError = searchParams?.get('watchError');
 
   // Lade E-Mail-Konfiguration, Einstellungen und Vorlagen
   useEffect(() => {
     const loadData = async () => {
       try {
-        // E-Mail-Konfiguration laden - mit userId fuer benutzer-spezifische Config
+        // E-Mail-Konfiguration laden - mit userId für benutzer-spezifische Config
         const configResponse = await fetch(`/api/company/${companyId}/email-config?userId=${effectiveUserId}`);
         if (configResponse.ok) {
           const config = await configResponse.json();
@@ -97,7 +97,7 @@ export function EmailPage({ companyId }: EmailPageProps) {
     }
   }, [companyId, effectiveUserId]);
 
-  // Gmail verbinden - mit userId fuer benutzer-spezifische Verbindung
+  // Gmail verbinden - mit userId für benutzer-spezifische Verbindung
   const handleGmailConnect = () => {
     window.location.href = `/api/gmail/connect?uid=${companyId}&userId=${effectiveUserId}`;
   };

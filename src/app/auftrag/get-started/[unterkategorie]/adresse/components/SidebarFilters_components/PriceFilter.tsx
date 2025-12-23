@@ -26,7 +26,7 @@ const renderPriceHistogram = (data: PriceDistributionData[], loading: boolean) =
   if (!data || data.length === 0) {
     return (
       <div className="h-28 bg-gray-50 my-3 rounded-xl flex items-center justify-center text-sm text-gray-500">
-        Keine Preisdaten verfuegbar.
+        Keine Preisdaten verfügbar.
       </div>
     );
   }

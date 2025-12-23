@@ -35,7 +35,7 @@ function getLogoBase64(): string | null {
 
 export async function GET() {
   try {
-    // Mock-Daten fuer Vorschau-Rechnung
+    // Mock-Daten für Vorschau-Rechnung
     const mockInvoice = {
       invoiceNumber: 'TWEB-2025-0001',
       customerName: 'Max Mustermann GmbH',
@@ -91,7 +91,7 @@ export async function GET() {
     doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, 210, 50, 'F');
     
-    // Logo einfuegen (links)
+    // Logo einfügen (links)
     if (logoBase64) {
       try {
         doc.addImage(`data:image/jpeg;base64,${logoBase64}`, 'JPEG', 15, 8, 35, 35);
@@ -249,7 +249,7 @@ export async function GET() {
 
     y += 8;
 
-    // Hinweis fuer zypriotisches Unternehmen
+    // Hinweis für zypriotisches Unternehmen
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
     doc.text('Leistungserbringer ist ein in Zypern ansässiges Unternehmen. Reverse-Charge-Verfahren', 20, y);

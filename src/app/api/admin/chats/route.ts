@@ -1,7 +1,7 @@
 /**
  * Admin Chat Monitoring API Route
  * 
- * Firebase-basierte Chat-Ueberwachung
+ * Firebase-basierte Chat-Überwachung
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -9,7 +9,7 @@ import { FirebaseAdminChatService } from '@/services/admin/FirebaseAdminChatServ
 import { AdminAuthService } from '@/services/admin/AdminAuthService';
 import { cookies } from 'next/headers';
 
-// Admin-Authentifizierung pruefen
+// Admin-Authentifizierung prüfen
 async function verifyAdminAuth(): Promise<{ valid: boolean; error?: string; payload?: { sub: string; name: string } }> {
   if (process.env.NODE_ENV === 'development' && process.env.BYPASS_ADMIN_AUTH === 'true') {
     return { valid: true, payload: { sub: 'dev-admin', name: 'Dev Admin' } };

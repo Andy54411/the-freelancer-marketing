@@ -45,12 +45,12 @@ export async function POST(request: NextRequest) {
 
     // B2B-spezifische Validierung
     if (!projectId || typeof projectId !== 'string') {
-      return NextResponse.json({ error: 'Ungueltige Projekt-ID.' }, { status: 400 });
+      return NextResponse.json({ error: 'Ungültige Projekt-ID.' }, { status: 400 });
     }
 
     if (typeof amount !== 'number' || amount <= 0) {
       return NextResponse.json(
-        { error: 'Ungueltiger Betrag. Muss eine positive Zahl sein.' },
+        { error: 'Ungültiger Betrag. Muss eine positive Zahl sein.' },
         { status: 400 }
       );
     }
@@ -61,24 +61,24 @@ export async function POST(request: NextRequest) {
       !providerStripeAccountId.startsWith('acct_')
     ) {
       return NextResponse.json(
-        { error: 'Ungueltige Provider Stripe Account ID. Muss mit "acct_" beginnen.' },
+        { error: 'Ungültige Provider Stripe Account ID. Muss mit "acct_" beginnen.' },
         { status: 400 }
       );
     }
 
     if (!billingDetails?.companyName || !billingDetails?.address) {
       return NextResponse.json(
-        { error: 'Vollstaendige B2B Rechnungsdetails sind erforderlich.' },
+        { error: 'Vollständige B2B Rechnungsdetails sind erforderlich.' },
         { status: 400 }
       );
     }
 
-    // Pruefe Connected Account Status
+    // Prüfe Connected Account Status
     try {
       const connectedAccount = await stripe.accounts.retrieve(providerStripeAccountId);
       if (!connectedAccount.charges_enabled) {
         return NextResponse.json(
-          { error: 'Der Anbieter hat sein Zahlungskonto nicht vollstaendig eingerichtet.' },
+          { error: 'Der Anbieter hat sein Zahlungskonto nicht vollständig eingerichtet.' },
           { status: 400 }
         );
       }
@@ -97,8 +97,8 @@ export async function POST(request: NextRequest) {
       throw accountError;
     }
 
-    // B2B Platform Fee berechnen (3.5% fuer B2B - niedriger als B2C)
-    const SELLER_SERVICE_FEE_RATE = 0.035; // 3.5% fuer B2B
+    // B2B Platform Fee berechnen (3.5% für B2B - niedriger als B2C)
+    const SELLER_SERVICE_FEE_RATE = 0.035; // 3.5% für B2B
     const platformFeeAmount = Math.round(amount * SELLER_SERVICE_FEE_RATE);
     const amountForProvider = amount - platformFeeAmount;
 
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       currency: currency,
       // Customer auf Platform-Account (nicht auf Connected Account)
       ...(stripeCustomerId && { customer: stripeCustomerId }),
-      // DESTINATION CHARGES: Zahlung geht ueber Platform, dann Transfer an Provider
+      // DESTINATION CHARGES: Zahlung geht über Platform, dann Transfer an Provider
       transfer_data: {
         destination: providerStripeAccountId,
         amount: amountForProvider, // Betrag nach Abzug Platform Fee
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
         if (error.message.includes('account')) {
           return NextResponse.json(
             {
-              error: 'Provider Stripe Account nicht verfuegbar. Bitte versuchen Sie es spaeter erneut.',
+              error: 'Provider Stripe Account nicht verfügbar. Bitte versuchen Sie es später erneut.',
             },
             { status: 400 }
           );

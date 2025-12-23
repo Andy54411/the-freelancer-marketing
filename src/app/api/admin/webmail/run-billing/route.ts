@@ -20,11 +20,11 @@ export async function POST() {
     if (!db) {
       return NextResponse.json({
         success: false,
-        error: 'Datenbank nicht verfuegbar',
+        error: 'Datenbank nicht verfügbar',
       }, { status: 500 });
     }
 
-    // Hole alle faelligen Abonnements
+    // Hole alle fälligen Abonnements
     const now = new Date();
     const snapshot = await db.collection('webmailSubscriptions')
       .where('status', '==', 'active')

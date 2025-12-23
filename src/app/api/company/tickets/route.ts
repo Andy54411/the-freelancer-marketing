@@ -1,13 +1,13 @@
 /**
  * Company Tickets API Route
  * 
- * Firebase-basierte Ticket-Verwaltung fuer Kunden
+ * Firebase-basierte Ticket-Verwaltung für Kunden
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { FirebaseTicketService } from '@/services/admin/FirebaseTicketService';
 
-// GET - Tickets fuer Kunde abrufen
+// GET - Tickets für Kunde abrufen
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
       }
 
-      // Nur oeffentliche Kommentare zurueckgeben
+      // Nur öffentliche Kommentare zurückgeben
       const publicComments = ticket.comments.filter(c => !c.isInternal);
 
       return NextResponse.json({
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Alle Tickets fuer Kunde abrufen
+    // Alle Tickets für Kunde abrufen
     if (!customerEmail) {
       return NextResponse.json(
         { error: 'E-Mail-Adresse ist erforderlich' },

@@ -217,8 +217,8 @@ export default function GoogleAdsCampaignCreator({ companyId }: GoogleAdsCampaig
           <div>
             <h3 className="font-medium text-teal-900 mb-1">Information</h3>
             <p className="text-sm text-teal-800">
-              Diese Angaben werden verwendet, um Ihnen passende Kampagnenvorschlaege zu erstellen.
-              Sie koennen alle Einstellungen spaeter noch anpassen.
+              Diese Angaben werden verwendet, um Ihnen passende Kampagnenvorschläge zu erstellen.
+              Sie können alle Einstellungen später noch anpassen.
             </p>
           </div>
         </div>

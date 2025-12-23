@@ -1,8 +1,8 @@
 /**
  * Webmail Subscription Service
  * 
- * Verwaltet Abonnements fuer Domain und E-Mail-Dienste
- * - Monatliche/jaehrliche Abrechnung
+ * Verwaltet Abonnements für Domain und E-Mail-Dienste
+ * - Monatliche/jährliche Abrechnung
  * - Automatische Rechnungserstellung
  * - GoBD-konforme fortlaufende Nummern
  */
@@ -230,7 +230,7 @@ export class WebmailSubscriptionService {
   }
 
   /**
-   * Erstelle Rechnung fuer Abonnement
+   * Erstelle Rechnung für Abonnement
    */
   static async createInvoiceForSubscription(
     subscriptionId: string,
@@ -340,7 +340,7 @@ export class WebmailSubscriptionService {
     sequentialNumber: number;
   }> {
     try {
-      // Verwende den TaskiloAdmin-Nummernkreis fuer Webmail-Rechnungen
+      // Verwende den TaskiloAdmin-Nummernkreis für Webmail-Rechnungen
       const result = await NumberSequenceService.getNextNumberForType('taskilo-admin', 'WebmailRechnung');
       return {
         invoiceNumber: result.formattedNumber,
@@ -358,7 +358,7 @@ export class WebmailSubscriptionService {
   }
 
   /**
-   * Hole alle faelligen Abonnements fuer automatische Abrechnung
+   * Hole alle fälligen Abonnements für automatische Abrechnung
    */
   static async getDueSubscriptions(): Promise<WebmailSubscription[]> {
     const now = new Date();
@@ -384,7 +384,7 @@ export class WebmailSubscriptionService {
   }
 
   /**
-   * Verarbeite monatliche Abrechnung fuer ein Abo
+   * Verarbeite monatliche Abrechnung für ein Abo
    * Erstellt Revolut-Zahlungslink und sendet E-Mail
    */
   static async processBilling(subscriptionId: string): Promise<{
@@ -467,7 +467,7 @@ export class WebmailSubscriptionService {
   }
 
   /**
-   * Hole alle Rechnungen (fuer Admin Dashboard)
+   * Hole alle Rechnungen (für Admin Dashboard)
    */
   static async getAllInvoices(options?: {
     status?: string;
@@ -498,7 +498,7 @@ export class WebmailSubscriptionService {
   }
 
   /**
-   * Hole alle Abonnements (fuer Admin Dashboard)
+   * Hole alle Abonnements (für Admin Dashboard)
    */
   static async getAllSubscriptions(): Promise<WebmailSubscription[]> {
     const snapshot = await getDocs(collection(db, this.subscriptionsCollection));
@@ -605,7 +605,7 @@ export class WebmailSubscriptionService {
       baseUrl: isProduction
         ? 'https://merchant.revolut.com/api'
         : 'https://sandbox-merchant.revolut.com/api',
-      // Legacy API 1.0 (fuer Customers und Orders)
+      // Legacy API 1.0 (für Customers und Orders)
       legacyBaseUrl: isProduction
         ? 'https://merchant.revolut.com/api/1.0'
         : 'https://sandbox-merchant.revolut.com/api/1.0',
@@ -666,7 +666,7 @@ export class WebmailSubscriptionService {
   }
 
   /**
-   * Revolut Legacy API Request Helper (1.0 - fuer Customers und Orders)
+   * Revolut Legacy API Request Helper (1.0 - für Customers und Orders)
    */
   private static async revolutLegacyRequest<T>(
     endpoint: string,

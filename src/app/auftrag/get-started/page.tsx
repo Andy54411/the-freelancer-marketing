@@ -151,7 +151,7 @@ export default function GetStartedPage() {
               Um welchen Auftrag handelt es sich?
             </h1>
             <p className="text-lg text-white/80 max-w-xl mx-auto">
-              Finden Sie die Dienstleistung, die Sie benoetigen, um gepruefte Handwerker in Ihrer Naehe zu kontaktieren.
+              Finden Sie die Dienstleistung, die Sie benötigen, um geprüfte Handwerker in Ihrer Nähe zu kontaktieren.
             </p>
           </motion.div>
         </div>
@@ -169,7 +169,7 @@ export default function GetStartedPage() {
             {/* Customer Type Selection */}
             <div>
               <h2 className="text-lg font-semibold text-gray-800 mb-4 text-center">
-                Fuer wen ist der Auftrag?
+                Für wen ist der Auftrag?
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <motion.button
@@ -197,7 +197,7 @@ export default function GetStartedPage() {
                   }`}>
                     Privatperson
                   </h3>
-                  <p className="text-sm text-gray-500">Ich buche fuer meinen privaten Bedarf</p>
+                  <p className="text-sm text-gray-500">Ich buche für meinen privaten Bedarf</p>
                 </motion.button>
 
                 <motion.button
@@ -223,9 +223,9 @@ export default function GetStartedPage() {
                   <h3 className={`text-xl font-bold mb-1 ${
                     isClientMounted && customerType === 'business' ? 'text-[#14ad9f]' : 'text-gray-800'
                   }`}>
-                    Geschaeftskunde
+                    Geschäftskunde
                   </h3>
-                  <p className="text-sm text-gray-500">Ich buche fuer mein Unternehmen</p>
+                  <p className="text-sm text-gray-500">Ich buche für mein Unternehmen</p>
                 </motion.button>
               </div>
             </div>

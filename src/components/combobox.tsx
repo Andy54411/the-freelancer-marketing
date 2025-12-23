@@ -51,8 +51,8 @@ export function Combobox({
       </DialogTrigger>
       <DialogContent className="p-0 max-w-md max-h-[70vh] overflow-hidden">
         <VisuallyHidden>
-          <DialogTitle>Option auswaehlen</DialogTitle>
-          <DialogDescription>Waehlen Sie eine Option aus der Liste aus.</DialogDescription>
+          <DialogTitle>Option auswählen</DialogTitle>
+          <DialogDescription>Wählen Sie eine Option aus der Liste aus.</DialogDescription>
         </VisuallyHidden>
         <Command className="max-h-[60vh]">
           <CommandInput placeholder="Suchen..." />

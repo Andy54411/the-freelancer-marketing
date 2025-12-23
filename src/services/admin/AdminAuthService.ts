@@ -52,7 +52,7 @@ export class AdminAuthService {
   }> {
     try {
       if (!db) {
-        return { success: false, error: 'Datenbank nicht verfuegbar' };
+        return { success: false, error: 'Datenbank nicht verfügbar' };
       }
       
       // Admin-User in Firestore suchen (Admin SDK Syntax)
@@ -62,25 +62,25 @@ export class AdminAuthService {
         .get();
       
       if (snapshot.empty) {
-        return { success: false, error: 'Ungueltige Anmeldedaten' };
+        return { success: false, error: 'Ungültige Anmeldedaten' };
       }
       
       const userDoc = snapshot.docs[0];
       const userData = userDoc.data();
       
-      // Pruefen ob User aktiv ist
+      // Prüfen ob User aktiv ist
       if (!userData.isActive) {
         return { success: false, error: 'Konto ist deaktiviert' };
       }
       
-      // Passwort pruefen
+      // Passwort prüfen
       let passwordValid = false;
       
       if (userData.passwordHash) {
-        // Gehashtes Passwort pruefen
+        // Gehashtes Passwort prüfen
         passwordValid = await bcrypt.compare(password, userData.passwordHash);
       } else {
-        // Fallback fuer initiale Einrichtung (nur erste Anmeldung)
+        // Fallback für initiale Einrichtung (nur erste Anmeldung)
         // Master-Admin kann sich mit dem Initialpasswort anmelden
         const initialPasswords = ['taskilo2024', 'admin123'];
         passwordValid = initialPasswords.includes(password) && userData.role === 'master-admin';
@@ -96,7 +96,7 @@ export class AdminAuthService {
       }
       
       if (!passwordValid) {
-        return { success: false, error: 'Ungueltige Anmeldedaten' };
+        return { success: false, error: 'Ungültige Anmeldedaten' };
       }
       
       // Login-Statistik aktualisieren
@@ -118,7 +118,7 @@ export class AdminAuthService {
         .setExpirationTime(JWT_EXPIRATION)
         .sign(JWT_SECRET_BYTES);
       
-      // User ohne Passwort-Hash zurueckgeben
+      // User ohne Passwort-Hash zurückgeben
       const user: Omit<AdminUser, 'passwordHash'> = {
         id: userDoc.id,
         email: userData.email,
@@ -155,12 +155,12 @@ export class AdminAuthService {
   }> {
     try {
       if (!db) {
-        return { valid: false, error: 'Datenbank nicht verfuegbar' };
+        return { valid: false, error: 'Datenbank nicht verfügbar' };
       }
       
       const { payload } = await jwtVerify(token, JWT_SECRET_BYTES);
       
-      // User in Firestore pruefen (noch aktiv?)
+      // User in Firestore prüfen (noch aktiv?)
       const userDoc = await db.collection(COLLECTION_PATH).doc(payload.sub as string).get();
       
       if (!userDoc.exists) {
@@ -184,7 +184,7 @@ export class AdminAuthService {
         },
       };
     } catch {
-      return { valid: false, error: 'Ungueltiger oder abgelaufener Token' };
+      return { valid: false, error: 'Ungültiger oder abgelaufener Token' };
     }
   }
 
@@ -240,10 +240,10 @@ export class AdminAuthService {
   }): Promise<{ success: boolean; userId?: string; error?: string }> {
     try {
       if (!db) {
-        return { success: false, error: 'Datenbank nicht verfuegbar' };
+        return { success: false, error: 'Datenbank nicht verfügbar' };
       }
       
-      // Pruefen ob E-Mail bereits existiert
+      // Prüfen ob E-Mail bereits existiert
       const existing = await db.collection(COLLECTION_PATH)
         .where('email', '==', data.email.toLowerCase())
         .limit(1)
@@ -292,7 +292,7 @@ export class AdminAuthService {
   }
   
   /**
-   * Passwort aendern
+   * Passwort ändern
    */
   static async changePassword(
     userId: string, 
@@ -301,7 +301,7 @@ export class AdminAuthService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       if (!db) {
-        return { success: false, error: 'Datenbank nicht verfuegbar' };
+        return { success: false, error: 'Datenbank nicht verfügbar' };
       }
       
       const userDoc = await db.collection(COLLECTION_PATH).doc(userId).get();
@@ -316,7 +316,7 @@ export class AdminAuthService {
         return { success: false, error: 'Benutzer nicht gefunden' };
       }
       
-      // Aktuelles Passwort pruefen
+      // Aktuelles Passwort prüfen
       const passwordValid = await bcrypt.compare(currentPassword, userData.passwordHash);
       
       if (!passwordValid) {
@@ -334,7 +334,7 @@ export class AdminAuthService {
       return { success: true };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
-      return { success: false, error: `Passwort aendern fehlgeschlagen: ${errorMessage}` };
+      return { success: false, error: `Passwort ändern fehlgeschlagen: ${errorMessage}` };
     }
   }
   
@@ -374,7 +374,7 @@ export class AdminAuthService {
   static async toggleUserStatus(userId: string): Promise<{ success: boolean; isActive?: boolean; error?: string }> {
     try {
       if (!db) {
-        return { success: false, error: 'Datenbank nicht verfuegbar' };
+        return { success: false, error: 'Datenbank nicht verfügbar' };
       }
       
       const userDoc = await db.collection(COLLECTION_PATH).doc(userId).get();
@@ -405,7 +405,7 @@ export class AdminAuthService {
   static async initializeMasterAdmin(): Promise<{ success: boolean; created: boolean; error?: string }> {
     try {
       if (!db) {
-        return { success: false, created: false, error: 'Datenbank nicht verfuegbar' };
+        return { success: false, created: false, error: 'Datenbank nicht verfügbar' };
       }
       
       const snapshot = await db.collection(COLLECTION_PATH).limit(1).get();

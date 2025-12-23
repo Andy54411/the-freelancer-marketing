@@ -105,12 +105,12 @@ function SuccessContent() {
 
           {/* Title */}
           <h1 className={cn('text-2xl md:text-3xl font-bold mb-4', isDark ? 'text-white' : 'text-gray-900')}>
-            Vielen Dank fuer Ihre Bestellung!
+            Vielen Dank für Ihre Bestellung!
           </h1>
 
           {/* Description */}
           <p className={cn('mb-8', isDark ? 'text-gray-400' : 'text-gray-600')}>
-            Ihre Bestellung wurde erfolgreich abgeschlossen. Sie erhalten in Kuerze eine Bestaetigungs-E-Mail.
+            Ihre Bestellung wurde erfolgreich abgeschlossen. Sie erhalten in Kürze eine Bestätigungs-E-Mail.
           </p>
 
           {/* Order Details */}
@@ -146,10 +146,10 @@ function SuccessContent() {
           <div className={cn('rounded-xl p-4 mb-8 text-left', isDark ? 'bg-teal-500/10 border border-teal-500/30' : 'bg-teal-50 border border-teal-100')}>
             <h3 className={cn('font-semibold mb-2 flex items-center gap-2', 'text-teal-600')}>
               <Mail className="w-5 h-5" />
-              Naechste Schritte
+              Nächste Schritte
             </h3>
             <ol className={cn('list-decimal list-inside space-y-1 text-sm', isDark ? 'text-gray-300' : 'text-gray-600')}>
-              <li>Pruefen Sie Ihr E-Mail-Postfach fuer die Bestaetigung</li>
+              <li>Prüfen Sie Ihr E-Mail-Postfach für die Bestätigung</li>
               <li>Erstellen Sie Ihre @taskilo.de E-Mail-Adresse</li>
               <li>Melden Sie sich im Webmail an und nutzen Sie alle Funktionen</li>
             </ol>

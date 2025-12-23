@@ -666,10 +666,10 @@ export default function BestaetigungsPage() {
                   <span className="text-white text-sm font-medium">Fast geschafft</span>
                 </div>
                 <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-                  Bestaetigung & Zahlung
+                  Bestätigung & Zahlung
                 </h1>
                 <p className="text-lg text-white/90 max-w-2xl mx-auto">
-                  Pruefen Sie Ihre Buchungsdetails und schliessen Sie die Zahlung sicher ab
+                  Prüfen Sie Ihre Buchungsdetails und schließen Sie die Zahlung sicher ab
                 </p>
               </motion.div>
             </div>

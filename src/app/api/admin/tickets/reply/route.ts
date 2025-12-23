@@ -5,14 +5,14 @@ import { FirebaseTicketService } from '@/services/admin/FirebaseTicketService';
 import { AdminAuthService } from '@/services/admin/AdminAuthService';
 import { db } from '@/firebase/server';
 
-// JWT Secret fuer Admin-Tokens
+// JWT Secret für Admin-Tokens
 const JWT_SECRET = new TextEncoder().encode(
   process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024'
 );
 
-// Authentifizierung pruefen (Admin oder User)
+// Authentifizierung prüfen (Admin oder User)
 async function verifyAuth(request: NextRequest) {
-  // Pruefe Admin-Auth zuerst
+  // Prüfe Admin-Auth zuerst
   const admin = await AdminAuthService.verifyFromRequest(request);
   if (admin) {
     return {
@@ -23,7 +23,7 @@ async function verifyAuth(request: NextRequest) {
     };
   }
 
-  // Pruefe Bearer Token (fuer API-Aufrufe)
+  // Prüfe Bearer Token (für API-Aufrufe)
   const authHeader = request.headers.get('authorization');
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
@@ -37,7 +37,7 @@ async function verifyAuth(request: NextRequest) {
         userName: (decoded.name as string) || (decoded.firstName as string) || 'User',
       };
     } catch {
-      // Bearer-Token ungueltig
+      // Bearer-Token ungültig
     }
   }
 
@@ -47,7 +47,7 @@ async function verifyAuth(request: NextRequest) {
 // POST - Antwort auf Ticket senden
 export async function POST(request: NextRequest) {
   try {
-    // Authentifizierung pruefen
+    // Authentifizierung prüfen
     const authResult = await verifyAuth(request);
     if (!authResult.success) {
       return NextResponse.json({ error: authResult.error }, { status: 401 });
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     const authorType = authResult.user_type === 'admin' ? 'admin' : 'customer';
     const isInternalReply = isInternal && authResult.user_type === 'admin';
 
-    // Antwort hinzufuegen
+    // Antwort hinzufügen
     const updatedTicket = await FirebaseTicketService.addComment(ticketId, {
       author: authResult.userName || 'Unbekannt',
       authorType,
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Firebase Bell-Notification erstellen (nur fuer Admin -> Customer)
+    // Firebase Bell-Notification erstellen (nur für Admin -> Customer)
     if (!isInternalReply && authResult.user_type === 'admin' && updatedTicket.customerEmail && db) {
       try {
         // Finde User mit dieser E-Mail
@@ -140,10 +140,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET - Antworten fuer ein Ticket abrufen
+// GET - Antworten für ein Ticket abrufen
 export async function GET(request: NextRequest) {
   try {
-    // Authentifizierung pruefen
+    // Authentifizierung prüfen
     const authResult = await verifyAuth(request);
     if (!authResult.success) {
       return NextResponse.json({ error: authResult.error }, { status: 401 });
@@ -163,12 +163,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
     }
 
-    // Pruefe Berechtigung: Admin sieht alles, User nur eigene Tickets
+    // Prüfe Berechtigung: Admin sieht alles, User nur eigene Tickets
     if (authResult.user_type !== 'admin' && ticket.customerEmail !== authResult.userId) {
-      return NextResponse.json({ error: 'Keine Berechtigung fuer dieses Ticket' }, { status: 403 });
+      return NextResponse.json({ error: 'Keine Berechtigung für dieses Ticket' }, { status: 403 });
     }
 
-    // Filter interne Kommentare fuer normale User
+    // Filter interne Kommentare für normale User
     const visibleComments =
       authResult.user_type === 'admin'
         ? ticket.comments || []

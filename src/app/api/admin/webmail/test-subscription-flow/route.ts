@@ -228,7 +228,7 @@ export async function POST() {
     }
   } catch (error) {
     results.push({
-      step: '2. Firestore Plans pruefen',
+      step: '2. Firestore Plans prüfen',
       success: false,
       error: error instanceof Error ? error.message : 'Firestore Fehler',
       duration: Date.now() - step2Start,
@@ -244,7 +244,7 @@ export async function POST() {
 
   if (existingPlans) {
     results.push({
-      step: '2. Revolut Plans pruefen',
+      step: '2. Revolut Plans prüfen',
       success: true,
       data: { message: 'Plans bereits in Firestore vorhanden', plans: existingPlans },
       duration: Date.now() - step2Start,

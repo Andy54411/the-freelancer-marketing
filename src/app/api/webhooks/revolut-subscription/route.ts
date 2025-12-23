@@ -4,7 +4,7 @@
  * Verarbeitet Subscription Events:
  * - SUBSCRIPTION_ACTIVATED: Zahlung erfolgreich, Subscription aktivieren
  * - SUBSCRIPTION_PAYMENT_COMPLETED: Monatliche Zahlung erfolgreich
- * - SUBSCRIPTION_CANCELLED: Subscription gekuendigt
+ * - SUBSCRIPTION_CANCELLED: Subscription gekündigt
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
           const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
           const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
           
-          // Erstelle Rechnung fuer diese Periode
+          // Erstelle Rechnung für diese Periode
           await WebmailSubscriptionService.createInvoiceForSubscription(sub.id, periodStart, periodEnd);
           
           await updateDoc(sub.ref, {
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'SUBSCRIPTION_CANCELLED': {
-        // Subscription gekuendigt
+        // Subscription gekündigt
         if (!event.subscription_id) break;
         
         const sub = await findSubscriptionByRevolutId(event.subscription_id);

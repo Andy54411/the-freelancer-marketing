@@ -1,7 +1,7 @@
 /**
  * Revolut Merchant API Payment Service
  * 
- * Fuer Webmail und Domain-Zahlungen von Kunden
+ * Für Webmail und Domain-Zahlungen von Kunden
  * Verwendet Revolut Merchant API - Create Order
  * 
  * Dokumentation: https://developer.revolut.com/docs/merchant/create-order

@@ -1,8 +1,8 @@
 /**
  * Start Revolut Subscription Checkout
  * 
- * Startet den Checkout-Flow fuer ein Webmail-Abo
- * Gibt eine Checkout-URL zurueck zu der der Nutzer weitergeleitet wird
+ * Startet den Checkout-Flow für ein Webmail-Abo
+ * Gibt eine Checkout-URL zurück zu der der Nutzer weitergeleitet wird
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Ungueltige Anfrage',
+          error: 'Ungültige Anfrage',
           details: parseResult.error.issues,
         },
         { status: 400 }

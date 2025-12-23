@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AdminAuthService } from '@/services/admin/AdminAuthService';
 import { cookies } from 'next/headers';
 
-// Admin-Authentifizierung pruefen
+// Admin-Authentifizierung prüfen
 async function verifyAdminAuth(): Promise<{ valid: boolean; error?: string; payload?: { sub: string; role: string } }> {
   if (process.env.NODE_ENV === 'development' && process.env.BYPASS_ADMIN_AUTH === 'true') {
     return { valid: true, payload: { sub: 'dev-admin', role: 'master-admin' } };
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     // Nur Master-Admin kann neue Admins erstellen
     if (authResult.payload?.role !== 'master-admin') {
       return NextResponse.json(
-        { error: 'Nur Master-Admins koennen neue Admin-Benutzer erstellen' },
+        { error: 'Nur Master-Admins können neue Admin-Benutzer erstellen' },
         { status: 403 }
       );
     }

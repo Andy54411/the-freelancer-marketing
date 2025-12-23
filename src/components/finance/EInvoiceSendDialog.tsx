@@ -428,7 +428,7 @@ Mit freundlichen Grüßen`,
       );
 
       // PDF speichern
-      const fileName = `Uebertragungsprotokoll-${invoiceNumber}-${transmissionLogId}.pdf`;
+      const fileName = `Übertragungsprotokoll-${invoiceNumber}-${transmissionLogId}.pdf`;
       doc.save(fileName);
 
       return true;

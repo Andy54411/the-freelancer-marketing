@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { WebmailSubscriptionService } from '@/services/webmail/WebmailSubscriptionService';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 300; // 5 Minuten fuer viele Abonnements
+export const maxDuration = 300; // 5 Minuten für viele Abonnements
 
 export async function GET(request: NextRequest) {
   // Verify cron secret

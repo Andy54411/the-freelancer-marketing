@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 
 /**
- * GET - Liste alle Kampagnenentwuerfe fuer eine Company
+ * GET - Liste alle Kampagnenentwürfe für eine Company
  */
 export async function GET(
   request: NextRequest,
@@ -22,7 +22,7 @@ export async function GET(
       throw new Error('Firebase nicht initialisiert');
     }
 
-    // Lade Kampagnenentwuerfe aus der Subcollection
+    // Lade Kampagnenentwürfe aus der Subcollection
     const draftsSnapshot = await db
       .collection('companies')
       .doc(companyId)
@@ -42,7 +42,7 @@ export async function GET(
       count: drafts.length,
     });
   } catch (error) {
-    console.error('Fehler beim Laden der Kampagnenentwuerfe:', error);
+    console.error('Fehler beim Laden der Kampagnenentwürfe:', error);
     return NextResponse.json(
       {
         success: false,
@@ -95,7 +95,7 @@ export async function POST(
       objective: objective || '',
       budget: budget || null,
       step: step || 1,
-      stepName: stepName || 'Ziel auswaehlen',
+      stepName: stepName || 'Ziel auswählen',
       data: data || {},
       updatedAt: now,
     };

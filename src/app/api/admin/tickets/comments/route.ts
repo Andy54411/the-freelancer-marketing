@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { FirebaseTicketService } from '@/services/admin/FirebaseTicketService';
 import { AdminAuthService } from '@/services/admin/AdminAuthService';
 
-// Admin-Authentifizierung pruefen
+// Admin-Authentifizierung prüfen
 async function verifyAdminAuth(request: NextRequest) {
   const admin = await AdminAuthService.verifyFromRequest(request);
   if (!admin) {
@@ -12,7 +12,7 @@ async function verifyAdminAuth(request: NextRequest) {
   return admin;
 }
 
-// POST - Kommentar zu Ticket hinzufuegen
+// POST - Kommentar zu Ticket hinzufügen
 export async function POST(request: NextRequest) {
   try {
     const admin = await verifyAdminAuth(request);
@@ -37,14 +37,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       ticket: updatedTicket,
-      message: 'Kommentar erfolgreich hinzugefuegt',
+      message: 'Kommentar erfolgreich hinzugefügt',
       source: 'firebase',
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return NextResponse.json(
       {
-        error: 'Fehler beim Hinzufuegen des Kommentars',
+        error: 'Fehler beim Hinzufügen des Kommentars',
         details: errorMessage,
         source: 'firebase',
       },
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET - Kommentare fuer ein Ticket abrufen
+// GET - Kommentare für ein Ticket abrufen
 export async function GET(request: NextRequest) {
   try {
     await verifyAdminAuth(request);

@@ -57,7 +57,7 @@ export async function GET(
 }
 
 /**
- * DELETE - Kampagnenentwurf loeschen
+ * DELETE - Kampagnenentwurf löschen
  */
 export async function DELETE(
   request: NextRequest,
@@ -86,10 +86,10 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'Entwurf geloescht',
+      message: 'Entwurf gelöscht',
     });
   } catch (error) {
-    console.error('Fehler beim Loeschen des Kampagnenentwurfs:', error);
+    console.error('Fehler beim Löschen des Kampagnenentwurfs:', error);
     return NextResponse.json(
       {
         success: false,
@@ -127,7 +127,7 @@ export async function PATCH(
       updatedAt: new Date().toISOString(),
     };
 
-    // Nur uebergebene Felder aktualisieren
+    // Nur übergebene Felder aktualisieren
     if (body.name !== undefined) updateData.name = body.name;
     if (body.type !== undefined) updateData.type = body.type;
     if (body.objective !== undefined) updateData.objective = body.objective;

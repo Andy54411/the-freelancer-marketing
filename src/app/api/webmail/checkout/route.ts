@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Ungueltige Eingabedaten',
+          error: 'Ungültige Eingabedaten',
           details: error.errors,
         },
         { status: 400 }

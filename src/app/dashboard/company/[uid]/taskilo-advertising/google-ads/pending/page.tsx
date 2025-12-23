@@ -112,13 +112,13 @@ export default function GoogleAdsPendingPage() {
         // Refresh Status
         await checkStatus();
       } else {
-        // Spezifische Fehlermeldungen fuer bekannte Fehlertypen
+        // Spezifische Fehlermeldungen für bekannte Fehlertypen
         let errorText = data.error || 'Fehler beim Senden der Einladung';
         
         if (data.details?.isManagerAccount || data.details?.code === 'ACCOUNTS_NOT_COMPATIBLE') {
-          errorText = 'Ihr Google Ads Konto ist ein Manager-Konto und kann nicht automatisch verknuepft werden. Manager-Konten koennen andere Konten verwalten, aber nicht selbst verwaltet werden. Bitte waehlen Sie ein normales Werbekonto aus oder folgen Sie den manuellen Schritten unten.';
+          errorText = 'Ihr Google Ads Konto ist ein Manager-Konto und kann nicht automatisch verknüpft werden. Manager-Konten können andere Konten verwalten, aber nicht selbst verwaltet werden. Bitte wählen Sie ein normales Werbekonto aus oder folgen Sie den manuellen Schritten unten.';
         } else if (data.details?.code === 'TEST_TOKEN_PRODUCTION_ACCOUNT') {
-          errorText = 'Die automatische Verknuepfung ist derzeit nicht moeglich. Bitte folgen Sie den manuellen Schritten unten.';
+          errorText = 'Die automatische Verknüpfung ist derzeit nicht möglich. Bitte folgen Sie den manuellen Schritten unten.';
         }
         
         setRetryMessage({
@@ -499,7 +499,7 @@ export default function GoogleAdsPendingPage() {
                     <div>
                       <p className="font-medium text-gray-700">Alternative: Manuell in Google Ads akzeptieren</p>
                       <p className="text-sm text-gray-600 mt-1">
-                        Falls die Buttons oben nicht funktionieren, koennen Sie die Einladung auch direkt in Ihrem Google Ads Account akzeptieren.
+                        Falls die Buttons oben nicht funktionieren, können Sie die Einladung auch direkt in Ihrem Google Ads Account akzeptieren.
                       </p>
                     </div>
                   </div>

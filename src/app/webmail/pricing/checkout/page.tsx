@@ -178,7 +178,7 @@ export default function WebmailCheckoutPage() {
         setSubmitError(data.error || 'Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.');
       }
     } catch {
-      setSubmitError('Verbindungsfehler. Bitte pruefen Sie Ihre Internetverbindung.');
+      setSubmitError('Verbindungsfehler. Bitte prüfen Sie Ihre Internetverbindung.');
     } finally {
       setIsSubmitting(false);
     }
@@ -469,7 +469,7 @@ export default function WebmailCheckoutPage() {
                 <div className="flex items-center justify-center gap-2 text-sm">
                   <Lock className={cn('w-4 h-4', isDark ? 'text-gray-500' : 'text-gray-400')} />
                   <span className={cn(isDark ? 'text-gray-400' : 'text-gray-500')}>
-                    Sichere Zahlung ueber Stripe
+                    Sichere Zahlung über Stripe
                   </span>
                 </div>
               </form>

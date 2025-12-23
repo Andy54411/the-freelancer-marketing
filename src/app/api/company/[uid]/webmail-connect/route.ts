@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, isFirebaseAvailable } from '@/firebase/server';
 import { z } from 'zod';
 
-// Schema fuer Webmail-Verbindungsdaten
+// Schema für Webmail-Verbindungsdaten
 const ConnectWebmailSchema = z.object({
-  email: z.string().email('Ungueltige E-Mail-Adresse'),
+  email: z.string().email('Ungültige E-Mail-Adresse'),
   password: z.string().min(1, 'Passwort erforderlich'),
 });
 
 /**
  * GET /api/company/[uid]/webmail-connect
- * Gibt den aktuellen Webmail-Verbindungsstatus zurueck
+ * Gibt den aktuellen Webmail-Verbindungsstatus zurück
  */
 export async function GET(
   request: NextRequest,
@@ -21,7 +21,7 @@ export async function GET(
 
     if (!isFirebaseAvailable() || !db) {
       return NextResponse.json(
-        { error: 'Firebase nicht verfuegbar' },
+        { error: 'Firebase nicht verfügbar' },
         { status: 503 }
       );
     }
@@ -82,7 +82,7 @@ export async function POST(
 
     if (!isFirebaseAvailable() || !db) {
       return NextResponse.json(
-        { error: 'Firebase nicht verfuegbar' },
+        { error: 'Firebase nicht verfügbar' },
         { status: 503 }
       );
     }
@@ -98,7 +98,7 @@ export async function POST(
 
     const { email, password } = validationResult.data;
 
-    // Teste die Webmail-Verbindung ueber den Proxy
+    // Teste die Webmail-Verbindung über den Proxy
     const proxyUrl = process.env.WEBMAIL_PROXY_URL || 'https://mail.taskilo.de/webmail-api';
     const apiKey = process.env.WEBMAIL_API_KEY || '';
     
@@ -126,7 +126,7 @@ export async function POST(
         errorMessage = errorData.message || errorData.error || errorMessage;
       } catch {
         if (errorText.includes('<!DOCTYPE')) {
-          errorMessage = 'API-Key fehlt oder ist ungueltig. Bitte Administrator kontaktieren.';
+          errorMessage = 'API-Key fehlt oder ist ungültig. Bitte Administrator kontaktieren.';
         }
       }
       return NextResponse.json(
@@ -135,18 +135,18 @@ export async function POST(
       );
     }
 
-    // Pruefe das Ergebnis des Tests
+    // Prüfe das Ergebnis des Tests
     const testResult = await testResponse.json();
     
-    // Wenn IMAP/SMTP beide false sind, sind die Credentials ungueltig
+    // Wenn IMAP/SMTP beide false sind, sind die Credentials ungültig
     if (!testResult.imap && !testResult.smtp) {
       return NextResponse.json(
-        { error: 'E-Mail oder Passwort ungueltig. Bitte Zugangsdaten pruefen.' },
+        { error: 'E-Mail oder Passwort ungültig. Bitte Zugangsdaten prüfen.' },
         { status: 401 }
       );
     }
 
-    // Pruefe ob ein Webmail-Subscription existiert und hole Plan-Details
+    // Prüfe ob ein Webmail-Subscription existiert und hole Plan-Details
     let subscriptionPlan = 'free';
     let displayName = email;
 
@@ -171,11 +171,11 @@ export async function POST(
       connectedAt: new Date().toISOString(),
       subscriptionPlan,
       displayName,
-      // Speichere Credentials fuer automatischen Sync
-      // In Produktion sollte dies verschluesselt werden
+      // Speichere Credentials für automatischen Sync
+      // In Produktion sollte dies verschlüsselt werden
       credentials: {
         email,
-        password, // Wird fuer IMAP-Sync benoetigt
+        password, // Wird für IMAP-Sync benötigt
         imapHost: 'mail.taskilo.de',
         imapPort: 993,
         smtpHost: 'mail.taskilo.de',
@@ -226,7 +226,7 @@ export async function DELETE(
 
     if (!isFirebaseAvailable() || !db) {
       return NextResponse.json(
-        { error: 'Firebase nicht verfuegbar' },
+        { error: 'Firebase nicht verfügbar' },
         { status: 503 }
       );
     }
@@ -240,7 +240,7 @@ export async function DELETE(
       );
     }
 
-    // Loesche die Webmail-Konfiguration
+    // Lösche die Webmail-Konfiguration
     await db.collection('companies').doc(companyId).update({
       webmailConfig: null,
       'emailIntegration.provider': null,

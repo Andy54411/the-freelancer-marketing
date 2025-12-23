@@ -17,6 +17,7 @@ import {
   X,
   Loader2,
   MoreHorizontal,
+  Archive,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -242,7 +243,7 @@ export function MailSidebar({
   };
 
   const handleDeleteLabel = async (path: string) => {
-    if (!confirm(`Label "${path}" wirklich loeschen?`)) return;
+    if (!confirm(`Label "${path}" wirklich löschen?`)) return;
     
     try {
       const response = await fetch('/api/webmail/mailbox', {
@@ -263,7 +264,7 @@ export function MailSidebar({
 
       onMailboxesChange();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Fehler beim Loeschen');
+      setError(err instanceof Error ? err.message : 'Fehler beim Löschen');
     }
   };
 
@@ -524,7 +525,7 @@ export function MailSidebar({
                         className="text-red-600 focus:text-red-600"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
-                        Loeschen
+                        Löschen
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

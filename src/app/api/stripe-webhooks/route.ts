@@ -1268,7 +1268,7 @@ export async function POST(req: NextRequest) {
         console.log('[Webhook] Dispute erstellt:', dispute.id);
 
         try {
-          // Finde den zugehoerigen Auftrag ueber PaymentIntent
+          // Finde den zugehörigen Auftrag über PaymentIntent
           const paymentIntentId = typeof dispute.payment_intent === 'string' 
             ? dispute.payment_intent 
             : dispute.payment_intent?.id;
@@ -1286,7 +1286,7 @@ export async function POST(req: NextRequest) {
             .get();
 
           if (ordersSnapshot.empty) {
-            console.warn('[Webhook] Kein Auftrag fuer PaymentIntent gefunden:', paymentIntentId);
+            console.warn('[Webhook] Kein Auftrag für PaymentIntent gefunden:', paymentIntentId);
             break;
           }
 
@@ -1307,7 +1307,7 @@ export async function POST(req: NextRequest) {
             statusHistory: admin.firestore.FieldValue.arrayUnion({
               status: 'dispute_opened',
               timestamp: admin.firestore.Timestamp.now(),
-              reason: `Stripe Dispute eroeffnet: ${dispute.reason}`,
+              reason: `Stripe Dispute eröffnet: ${dispute.reason}`,
               disputeId: dispute.id,
             }),
           });
@@ -1317,7 +1317,7 @@ export async function POST(req: NextRequest) {
             type: 'dispute_created',
             severity: 'high',
             title: 'Neue Streitigkeit (Dispute)',
-            message: `Ein Kunde hat eine Streitigkeit fuer Auftrag #${orderDoc.id.slice(-6).toUpperCase()} eroeffnet. Grund: ${dispute.reason}`,
+            message: `Ein Kunde hat eine Streitigkeit für Auftrag #${orderDoc.id.slice(-6).toUpperCase()} eröffnet. Grund: ${dispute.reason}`,
             orderId: orderDoc.id,
             disputeId: dispute.id,
             amount: dispute.amount,
@@ -1334,8 +1334,8 @@ export async function POST(req: NextRequest) {
             await db!.collection('notifications').add({
               userId: providerId,
               type: 'dispute_opened',
-              title: 'Achtung: Streitigkeit eroeffnet',
-              message: `Ein Kunde hat eine Streitigkeit fuer einen Ihrer Auftraege eroeffnet. Bitte ueberpruefen Sie die Details im Dashboard.`,
+              title: 'Achtung: Streitigkeit eröffnet',
+              message: `Ein Kunde hat eine Streitigkeit für einen Ihrer Aufträge eröffnet. Bitte überprüfen Sie die Details im Dashboard.`,
               data: {
                 orderId: orderDoc.id,
                 disputeId: dispute.id,

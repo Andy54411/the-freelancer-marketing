@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, isFirebaseAvailable } from '@/firebase/server';
 import { z } from 'zod';
 
-// Schema fuer Sync-Request
+// Schema für Sync-Request
 const SyncRequestSchema = z.object({
   email: z.string().email().optional(),
   password: z.string().optional(),
@@ -39,7 +39,7 @@ export async function POST(
 
     if (!isFirebaseAvailable() || !db) {
       return NextResponse.json(
-        { error: 'Firebase nicht verfuegbar' },
+        { error: 'Firebase nicht verfügbar' },
         { status: 503 }
       );
     }
@@ -48,7 +48,7 @@ export async function POST(
     const validationResult = SyncRequestSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Ungueltige Anfrage' },
+        { error: 'Ungültige Anfrage' },
         { status: 400 }
       );
     }
@@ -211,7 +211,7 @@ export async function GET(
 
     if (!isFirebaseAvailable() || !db) {
       return NextResponse.json(
-        { error: 'Firebase nicht verfuegbar' },
+        { error: 'Firebase nicht verfügbar' },
         { status: 503 }
       );
     }

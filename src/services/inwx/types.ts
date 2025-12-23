@@ -21,11 +21,11 @@ export const DomainContactSchema = z.object({
   street: z.string().min(1, 'Strasse ist erforderlich'),
   city: z.string().min(1, 'Stadt ist erforderlich'),
   postalCode: z.string().min(1, 'PLZ ist erforderlich'),
-  countryCode: z.string().length(2, 'Laendercode muss 2 Zeichen haben').default('DE'),
+  countryCode: z.string().length(2, 'Ländercode muss 2 Zeichen haben').default('DE'),
   
   // Kontakt
   phone: z.string().min(1, 'Telefonnummer ist erforderlich'),
-  email: z.string().email('Gueltige E-Mail ist erforderlich'),
+  email: z.string().email('Gültige E-Mail ist erforderlich'),
   
   // DSGVO Einwilligung
   privacyConsent: z.boolean().refine(val => val === true, {
@@ -87,7 +87,7 @@ export const OrderSchema = z.object({
   
   // Preise (Netto)
   priceNet: z.number(),
-  vatRate: z.number(), // 0 fuer Kleinunternehmer, 19 sonst
+  vatRate: z.number(), // 0 für Kleinunternehmer, 19 sonst
   vatAmount: z.number(),
   priceGross: z.number(),
   

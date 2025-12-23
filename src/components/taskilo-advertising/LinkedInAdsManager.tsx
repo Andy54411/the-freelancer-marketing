@@ -82,7 +82,7 @@ export default function LinkedInAdsManager({ companyId }: LinkedInAdsManagerProp
               <div className="flex items-center">
                 <AlertTriangle className="w-5 h-5 text-teal-500 mr-2" />
                 <span className="text-teal-700">
-                  Verbinden Sie Ihr LinkedIn Ads Konto fuer B2B-Marketing.
+                  Verbinden Sie Ihr LinkedIn Ads Konto für B2B-Marketing.
                 </span>
               </div>
             </div>

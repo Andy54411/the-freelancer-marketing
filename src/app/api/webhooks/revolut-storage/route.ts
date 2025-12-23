@@ -1,12 +1,12 @@
 /**
  * Revolut Storage Subscription Webhook Handler
  * 
- * Verarbeitet Subscription-Events fuer Storage-Abonnements:
+ * Verarbeitet Subscription-Events für Storage-Abonnements:
  * - ORDER_COMPLETED: Setup-Zahlung erfolgreich, Storage aktivieren
  * - SUBSCRIPTION_PAYMENT_COMPLETED: Monatliche Zahlung erfolgreich
  * - SUBSCRIPTION_PAYMENT_FAILED: Zahlung fehlgeschlagen
- * - SUBSCRIPTION_CANCELLED: Abo gekuendigt
- * - SUBSCRIPTION_RENEWED: Abo automatisch verlaengert
+ * - SUBSCRIPTION_CANCELLED: Abo gekündigt
+ * - SUBSCRIPTION_RENEWED: Abo automatisch verlängert
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'SUBSCRIPTION_CANCELLED': {
-        // Abo gekuendigt
+        // Abo gekündigt
         const subscriptionDoc = await findSubscription(external_reference, subscription_id);
         
         if (subscriptionDoc) {
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
             cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
           });
 
-          // Storage auf Basis-Limit zuruecksetzen
+          // Storage auf Basis-Limit zurücksetzen
           await db.collection('companies').doc(companyId).update({
             storageLimit: 2 * 1024 * 1024 * 1024, // 2 GB Basis
             storagePlanId: 'free',
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'SUBSCRIPTION_RENEWED': {
-        // Abo automatisch verlaengert
+        // Abo automatisch verlängert
         const subscriptionDoc = await findSubscription(external_reference, subscription_id);
         
         if (subscriptionDoc) {

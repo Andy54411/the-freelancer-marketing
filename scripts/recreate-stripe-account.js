@@ -1,5 +1,5 @@
 /**
- * Script zum Neu-Erstellen eines Stripe Connect Accounts fuer eine Company
+ * Script zum Neu-Erstellen eines Stripe Connect Accounts für eine Company
  * 
  * Verwendung: node scripts/recreate-stripe-account.js
  */
@@ -90,7 +90,7 @@ async function recreateStripeAccount() {
     
     console.log('Firestore aktualisiert mit neuem stripeAccountId:', account.id);
     
-    // Pruefe ob auch users Collection aktualisiert werden muss
+    // Prüfe ob auch users Collection aktualisiert werden muss
     const userDoc = await db.collection('users').doc(companyId).get();
     if (userDoc.exists) {
       await db.collection('users').doc(companyId).update({
@@ -108,10 +108,10 @@ async function recreateStripeAccount() {
     console.log('  - transfers:', account.capabilities?.transfers || 'pending');
     
     if (!account.charges_enabled) {
-      console.log('\nDas Account ist noch nicht fuer Zahlungen aktiviert.');
-      console.log('Weitere Informationen koennen erforderlich sein.');
+      console.log('\nDas Account ist noch nicht für Zahlungen aktiviert.');
+      console.log('Weitere Informationen können erforderlich sein.');
       
-      // Pruefe was noch fehlt
+      // Prüfe was noch fehlt
       if (account.requirements) {
         console.log('\nFehlende Anforderungen:');
         if (account.requirements.currently_due?.length > 0) {

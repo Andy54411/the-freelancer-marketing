@@ -96,7 +96,7 @@ export default function AnbieterDetailsFetcher({
       formattedAnbieterData: AnbieterDetailsType | null;
     } => {
       if (!fetchedAnbieterData?.hourlyRate) {
-        const _errorMsg = 'Stundensatz des Anbieters nicht verfuegbar fuer Preisberechnung.';
+        const _errorMsg = 'Stundensatz des Anbieters nicht verfügbar für Preisberechnung.';
 
         return {
           displayDuration: 'Fehler',
@@ -232,7 +232,7 @@ export default function AnbieterDetailsFetcher({
 
     const fetchDataAndCalc = async () => {
       if (!anbieterId) {
-        setError('Keine Anbieter-ID vorhanden fuer Detailabruf.');
+        setError('Keine Anbieter-ID vorhanden für Detailabruf.');
         setIsLoading(false);
         return;
       }
@@ -241,7 +241,7 @@ export default function AnbieterDetailsFetcher({
       setIsLoading(true);
       setError(null);
       try {
-        // FIX: Benutze die zentrale Konstante fuer die API-Base-URL, damit immer die richtige Umgebung verwendet wird.
+        // FIX: Benutze die zentrale Konstante für die API-Base-URL, damit immer die richtige Umgebung verwendet wird.
         const apiBaseUrl = FIREBASE_FUNCTIONS_BASE_URL;
         const url = `${apiBaseUrl}/searchCompanyProfiles?id=${encodeURIComponent(anbieterId)}`;
 

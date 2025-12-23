@@ -46,7 +46,7 @@ export default function GoogleAdsPage() {
   useEffect(() => {
     const checkConnectionStatus = async () => {
       try {
-        // Pruefe direkt in Firebase Collection, ob Google Ads Token existieren
+        // Prüfe direkt in Firebase Collection, ob Google Ads Token existieren
         const response = await fetch(`/api/companies/${companyId}/integrations/google-ads`);
         const data = await response.json();
 
@@ -79,7 +79,7 @@ export default function GoogleAdsPage() {
           setIsConnected(false);
         }
       } catch (error) {
-        console.error('Fehler beim Pruefen der Verbindung:', error);
+        console.error('Fehler beim Prüfen der Verbindung:', error);
         setIsConnected(false);
       } finally {
         setIsLoading(false);

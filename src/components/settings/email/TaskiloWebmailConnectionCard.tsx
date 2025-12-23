@@ -58,7 +58,7 @@ export function TaskiloWebmailConnectionCard({
   const [hasWebmailAccount, setHasWebmailAccount] = useState<boolean | null>(null);
   const [checkingAccount, setCheckingAccount] = useState(false);
 
-  // Pruefe ob der Benutzer ein Taskilo Webmail Konto hat
+  // Prüfe ob der Benutzer ein Taskilo Webmail Konto hat
   const checkWebmailAccount = useCallback(async () => {
     try {
       setCheckingAccount(true);
@@ -128,7 +128,7 @@ export function TaskiloWebmailConnectionCard({
   if (webmailConfig) {
     return (
       <Card className="border-2 border-teal-500 bg-teal-50 relative overflow-hidden">
-        {/* Premium-Banner fuer Taskilo-Kunden */}
+        {/* Premium-Banner für Taskilo-Kunden */}
         <div className="absolute top-0 left-0 right-0 bg-linear-to-r from-teal-600 to-teal-500 text-white text-xs py-1 text-center font-medium">
           Taskilo Webmail - Bevorzugte Integration
         </div>
@@ -171,7 +171,7 @@ export function TaskiloWebmailConnectionCard({
     );
   }
 
-  // Pruefen ob Benutzer Webmail hat
+  // Prüfen ob Benutzer Webmail hat
   if (checkingAccount) {
     return (
       <Card className="border-2 border-dashed border-teal-300 bg-teal-50/50">
@@ -179,7 +179,7 @@ export function TaskiloWebmailConnectionCard({
           <div className="flex items-center justify-center h-48">
             <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
           </div>
-          <p className="text-gray-600">Pruefe Taskilo Webmail Konto...</p>
+          <p className="text-gray-600">Prüfe Taskilo Webmail Konto...</p>
         </CardContent>
       </Card>
     );
@@ -194,7 +194,7 @@ export function TaskiloWebmailConnectionCard({
       >
         {/* Premium-Banner */}
         <div className="absolute top-0 left-0 right-0 bg-linear-to-r from-teal-600 to-teal-500 text-white text-xs py-1 text-center font-medium">
-          Empfohlen fuer Taskilo Kunden
+          Empfohlen für Taskilo Kunden
         </div>
         
         <CardContent className="p-8 pt-10 text-center">
@@ -212,7 +212,7 @@ export function TaskiloWebmailConnectionCard({
             </p>
           ) : (
             <p className="text-gray-600 mb-4">
-              Nutzen Sie Taskilo Webmail fuer optimale Integration
+              Nutzen Sie Taskilo Webmail für optimale Integration
             </p>
           )}
           
@@ -297,7 +297,7 @@ export function TaskiloWebmailConnectionCard({
                 >
                   Hier Taskilo Webmail Konto erstellen
                 </a>
-                {' '}- Ab 0 EUR/Monat fuer FreeMail
+                {' '}- Ab 0 EUR/Monat für FreeMail
               </AlertDescription>
             </Alert>
           )}

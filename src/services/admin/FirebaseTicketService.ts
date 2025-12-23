@@ -53,7 +53,7 @@ export class FirebaseTicketService {
     ticketData: Omit<TicketData, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<TicketData> {
     if (!db) {
-      throw new Error('Datenbank nicht verfuegbar');
+      throw new Error('Datenbank nicht verfügbar');
     }
     
     const id = `ticket_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -79,7 +79,7 @@ export class FirebaseTicketService {
       id: `comment_${Date.now()}`,
       author: 'System',
       authorType: 'system',
-      content: `Ticket erstellt - Status: ${ticket.status}, Prioritaet: ${ticket.priority}`,
+      content: `Ticket erstellt - Status: ${ticket.status}, Priorität: ${ticket.priority}`,
       timestamp: now,
       isInternal: true,
     });
@@ -98,7 +98,7 @@ export class FirebaseTicketService {
    */
   static async getTicket(id: string): Promise<TicketData | null> {
     if (!db) {
-      throw new Error('Datenbank nicht verfuegbar');
+      throw new Error('Datenbank nicht verfügbar');
     }
     
     const doc = await db.collection(COLLECTION_PATH).doc(id).get();
@@ -115,7 +115,7 @@ export class FirebaseTicketService {
    */
   static async updateTicket(id: string, updates: Partial<TicketData>): Promise<TicketData> {
     if (!db) {
-      throw new Error('Datenbank nicht verfuegbar');
+      throw new Error('Datenbank nicht verfügbar');
     }
     
     const existing = await this.getTicket(id);
@@ -152,7 +152,7 @@ export class FirebaseTicketService {
     comment: Omit<TicketComment, 'id' | 'timestamp'>
   ): Promise<TicketData> {
     if (!db) {
-      throw new Error('Datenbank nicht verfuegbar');
+      throw new Error('Datenbank nicht verfügbar');
     }
     
     const ticket = await this.getTicket(ticketId);
@@ -230,7 +230,7 @@ export class FirebaseTicketService {
    */
   static async deleteTicket(id: string): Promise<void> {
     if (!db) {
-      throw new Error('Datenbank nicht verfuegbar');
+      throw new Error('Datenbank nicht verfügbar');
     }
     
     await db.collection(COLLECTION_PATH).doc(id).update({

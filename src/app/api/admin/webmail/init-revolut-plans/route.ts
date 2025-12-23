@@ -5,7 +5,7 @@
  * - ProMail: 2.99 EUR/Monat oder 29.90 EUR/Jahr
  * - BusinessMail: 4.99 EUR/Monat oder 49.90 EUR/Jahr
  * 
- * Die Plan IDs werden in Firestore gespeichert fuer spaetere Verwendung
+ * Die Plan IDs werden in Firestore gespeichert für spätere Verwendung
  */
 
 import { NextResponse } from 'next/server';

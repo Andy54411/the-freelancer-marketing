@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, withFirebase } from '@/firebase/server';
 
-// Hilfsfunktion: Pruefe ob Webmail verbunden ist
+// Hilfsfunktion: Prüfe ob Webmail verbunden ist
 async function checkWebmailConnection(companyId: string): Promise<{ connected: boolean; email?: string; password?: string }> {
   try {
     const companyDoc = await db?.collection('companies').doc(companyId).get();
@@ -133,13 +133,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       `📦 API: Loading emails for company ${uid}, user ${userId}, folder: ${folder}, limit: ${limit}, offset: ${offset}, force: ${forceRefresh}, sync: ${triggerSync}`
     );
 
-    // Pruefe zuerst ob Webmail verbunden ist
+    // Prüfe zuerst ob Webmail verbunden ist
     const webmailStatus = await checkWebmailConnection(uid);
     
     if (webmailStatus.connected && webmailStatus.email && webmailStatus.password) {
       console.log('📬 API: Webmail is connected, checking if sync needed...');
       
-      // Pruefe ob Emails im Cache existieren
+      // Prüfe ob Emails im Cache existieren
       const cacheCheck = await withFirebase(async () => {
         return await db!.collection('companies').doc(uid).collection('emailCache')
           .where('userId', '==', uid)

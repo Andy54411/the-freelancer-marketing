@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       <p style="font-size: 16px; color: #333;">Guten Tag ${data.customerName},</p>
       
       <p style="color: #666; line-height: 1.6;">
-        anbei erhalten Sie Ihre Rechnung fuer Ihre Taskilo Webmail-Dienste.
+        anbei erhalten Sie Ihre Rechnung für Ihre Taskilo Webmail-Dienste.
       </p>
       
       <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
           </tr>
           ` : ''}
           <tr>
-            <td style="padding: 8px 0; color: #666;">Faellig am:</td>
+            <td style="padding: 8px 0; color: #666;">Fällig am:</td>
             <td style="padding: 8px 0; text-align: right;">${formatDate(data.dueDate)}</td>
           </tr>
           <tr style="border-top: 2px solid #e9ecef;">
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       </div>
       
       <p style="color: #666; line-height: 1.6;">
-        Die Rechnung ist als PDF im Anhang beigefuegt. Bitte ueberweisen Sie den Betrag
+        Die Rechnung ist als PDF im Anhang beigefügt. Bitte überweisen Sie den Betrag
         bis zum ${formatDate(data.dueDate)} auf das in der Rechnung angegebene Konto.
       </p>
       
@@ -103,8 +103,8 @@ export async function POST(request: NextRequest) {
 </html>
     `;
     
-    // Sende E-Mail ueber SES oder internen Mail-Service
-    // TODO: PDF-Anhang generieren und anhaengen
+    // Sende E-Mail über SES oder internen Mail-Service
+    // TODO: PDF-Anhang generieren und anhängen
     
     const emailData = {
       to: data.customerEmail,
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       html: emailHtml,
     };
     
-    // Versuche ueber AWS SES zu senden
+    // Versuche über AWS SES zu senden
     const sesResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/send-email`, {
       method: 'POST',
       headers: {

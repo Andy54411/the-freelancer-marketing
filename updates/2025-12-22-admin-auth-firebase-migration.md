@@ -6,7 +6,7 @@
 
 ## Zusammenfassung
 
-Das Admin-Authentifizierungssystem wurde von AWS DynamoDB auf Firebase Firestore migriert. Dies vereinfacht die Infrastruktur und eliminiert die Abhaengigkeit von AWS.
+Das Admin-Authentifizierungssystem wurde von AWS DynamoDB auf Firebase Firestore migriert. Dies vereinfacht die Infrastruktur und eliminiert die Abhängigkeit von AWS.
 
 ## Aenderungen
 
@@ -19,14 +19,14 @@ Das Admin-Authentifizierungssystem wurde von AWS DynamoDB auf Firebase Firestore
 ### Nachher (Firebase Firestore)
 - Login/Verify nutzt Firebase Admin SDK
 - Admin-Users in `adminUsers` Firestore Collection
-- Keine zusaetzlichen Credentials erforderlich (Firebase ist bereits konfiguriert)
+- Keine zusätzlichen Credentials erforderlich (Firebase ist bereits konfiguriert)
 - Sichere Passwort-Hashing mit bcryptjs
 
 ## Neue Dateien
 
 - [AdminAuthService.ts](src/services/admin/AdminAuthService.ts) - Komplett neuer Service mit Firebase Admin SDK
 
-## Geaenderte Dateien
+## Geänderte Dateien
 
 - [login/route.ts](src/app/api/admin/auth/login/route.ts) - Nutzt jetzt AdminAuthService
 - [verify/route.ts](src/app/api/admin/auth/verify/route.ts) - Nutzt jetzt AdminAuthService
@@ -37,13 +37,13 @@ Das Admin-Authentifizierungssystem wurde von AWS DynamoDB auf Firebase Firestore
 - `login(email, password)` - Anmeldung mit Passwort-Validierung
 - `verifyToken(token)` - JWT Token Verifizierung
 - `createAdminUser(data)` - Neuen Admin erstellen
-- `changePassword(userId, current, new)` - Passwort aendern
+- `changePassword(userId, current, new)` - Passwort ändern
 - `getAllAdminUsers()` - Alle Admins abrufen
 - `toggleUserStatus(userId)` - Admin aktivieren/deaktivieren
 - `initializeMasterAdmin()` - Erstellt initialen Master-Admin
 
 ### Sicherheit
-- Paswoerter werden mit bcryptjs gehasht (Salt-Rounds: 12)
+- Passwörter werden mit bcryptjs gehasht (Salt-Rounds: 12)
 - JWT Tokens mit 24h Ablaufzeit
 - Automatische Erstellung des Master-Admins beim ersten Login
 
@@ -51,12 +51,12 @@ Das Admin-Authentifizierungssystem wurde von AWS DynamoDB auf Firebase Firestore
 
 Beim ersten Login wird automatisch ein Master-Admin erstellt:
 - E-Mail: `andy.staudinger@taskilo.de`
-- Passwort: `taskilo2024` (sollte nach erstem Login geaendert werden)
+- Passwort: `taskilo2024` (sollte nach erstem Login geändert werden)
 - Rolle: `master-admin`
 
-## Abhangigkeiten
+## Abhängigkeiten
 
-Neue Dependencies hinzugefuegt:
+Neue Dependencies hinzugefügt:
 - `bcryptjs` - Passwort-Hashing
 
 ## Testen
@@ -70,6 +70,6 @@ curl -X POST http://localhost:3000/api/admin/auth/login \
 
 ## Hinweise
 
-- AWS DynamoDB wird fuer Admin-Auth nicht mehr benoetigt
+- AWS DynamoDB wird für Admin-Auth nicht mehr benötigt
 - Bestehende Admin-Sessions werden invalidiert (Neuanmeldung erforderlich)
-- Master-Admin Passwort sollte nach Migration geaendert werden
+- Master-Admin Passwort sollte nach Migration geändert werden
