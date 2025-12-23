@@ -21,9 +21,11 @@ import {
   Pencil,
   AlertTriangle,
   FolderInput,
+  Tag,
+  Folder,
 } from 'lucide-react';
 import { useWebmail } from '@/hooks/useWebmail';
-import { EmailMessage } from '@/services/webmail/types';
+import { EmailMessage, Mailbox } from '@/services/webmail/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -35,6 +37,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -80,6 +85,9 @@ interface EmailItemProps {
   onDelete: (uid: number) => void;
   onMarkAsRead: (uid: number) => void;
   onMoveToSpam: (uid: number) => void;
+  onMoveToFolder: (uid: number, folder: string) => void;
+  mailboxes: Mailbox[];
+  currentMailbox: string;
 }
 
 const EmailItem = memo(({
@@ -91,6 +99,9 @@ const EmailItem = memo(({
   onDelete,
   onMarkAsRead,
   onMoveToSpam,
+  onMoveToFolder,
+  mailboxes,
+  currentMailbox,
 }: EmailItemProps) => {
   const isUnread = !email.flags.includes('\\Seen');
   const isStarred = email.flags.includes('\\Flagged');
@@ -205,6 +216,33 @@ const EmailItem = memo(({
                   <DropdownMenuItem onClick={() => onStar(email.uid)}>
                     {isStarred ? 'Stern entfernen' : 'Mit Stern markieren'}
                   </DropdownMenuItem>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <Folder className="h-4 w-4 mr-2" />
+                      Verschieben nach
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
+                      {mailboxes
+                        .filter(mb => mb.path !== currentMailbox && !mb.path.toLowerCase().includes('draft'))
+                        .map(mb => (
+                          <DropdownMenuItem
+                            key={mb.path}
+                            onClick={() => onMoveToFolder(email.uid, mb.path)}
+                          >
+                            {mb.path === 'INBOX' ? (
+                              <Inbox className="h-4 w-4 mr-2" />
+                            ) : mb.specialUse === '\\Trash' || mb.path.toLowerCase().includes('trash') ? (
+                              <Trash2 className="h-4 w-4 mr-2" />
+                            ) : mb.specialUse === '\\Archive' || mb.path.toLowerCase().includes('archive') ? (
+                              <Archive className="h-4 w-4 mr-2" />
+                            ) : (
+                              <Tag className="h-4 w-4 mr-2" />
+                            )}
+                            {mb.name}
+                          </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
                   <DropdownMenuItem onClick={() => onMoveToSpam(email.uid)} className="text-orange-600">
                     Als Spam markieren
                   </DropdownMenuItem>
@@ -905,6 +943,9 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
                   onDelete={handleDelete}
                   onMarkAsRead={handleMarkAsRead}
                   onMoveToSpam={handleMoveToSpam}
+                  onMoveToFolder={handleMoveToFolder}
+                  mailboxes={mailboxes}
+                  currentMailbox={currentMailbox}
                 />
               ))}
             </div>
