@@ -440,7 +440,7 @@ Mit freundlichen Grüßen`,
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="!max-w-[1400px] !w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[1400px]! w-[95vw]! max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-gray-900">
               E-Rechnung versenden (UStG §14 konform)
@@ -1000,7 +1000,7 @@ Mit freundlichen Grüßen`,
 
       {/* Übertragungsprotokoll Modal */}
       <Dialog open={showTransmissionLog} onOpenChange={setShowTransmissionLog}>
-        <DialogContent className="!max-w-[900px] !w-[95vw] max-h-[85vh] overflow-hidden">
+        <DialogContent className="max-w-[900px]! w-[95vw]! max-h-[85vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-[#14ad9f]" />
