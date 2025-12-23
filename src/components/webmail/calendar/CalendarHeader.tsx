@@ -182,7 +182,6 @@ export function CalendarHeader({
           >
             <MoreVertical className={`h-5 w-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
           </button>
-          </button>
           {mobileMenuOpen && (
             <div className={`absolute right-0 top-full mt-1 w-64 ${isDark ? 'bg-[#303134] border-[#5f6368]' : 'bg-white border-gray-200'} border rounded-lg shadow-xl z-50 py-2`}>
               {/* Heute */}
