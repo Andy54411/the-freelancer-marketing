@@ -76,12 +76,8 @@ export default function WebmailMeetPage() {
   const peersRef = useRef<Map<string, SimplePeer>>(new Map());
   const rtdb = getDatabase(app);
 
-  useEffect(() => {
-    if (!session?.isAuthenticated) {
-      router.push('/webmail');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.isAuthenticated, router]);
+  // Session wird bereits vom Layout geprüft
+  // Kein manueller Redirect erforderlich
 
   useEffect(() => {
     // Auto-join if room ID is in URL

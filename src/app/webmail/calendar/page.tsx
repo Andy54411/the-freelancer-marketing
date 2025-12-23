@@ -91,19 +91,13 @@ export default function WebmailCalendarPage() {
     }
   }, [session?.email]);
 
+  // Session wird bereits vom Layout geprüft - hier nur Events laden
   useEffect(() => {
-    // Warte kurz auf Session-Initialisierung bevor Redirect
-    const timer = setTimeout(() => {
-      if (!session?.isAuthenticated) {
-        router.push('/webmail');
-        return;
-      }
+    if (session?.isAuthenticated) {
       setIsLoading(false);
       loadEvents();
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, [session, router, loadEvents]);
+    }
+  }, [session?.isAuthenticated, loadEvents]);
 
   // Mobile-Erkennung und automatische Anpassung
   useEffect(() => {

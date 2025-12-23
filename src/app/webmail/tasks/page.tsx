@@ -84,13 +84,12 @@ export default function WebmailTasksPage() {
     }
   }, [session?.email]);
 
+  // Session wird bereits vom Layout geprüft - hier nur Tasks laden
   useEffect(() => {
-    if (!session?.isAuthenticated) {
-      router.push('/webmail');
-      return;
+    if (session?.isAuthenticated) {
+      loadTasks();
     }
-    loadTasks();
-  }, [session, router, loadTasks]);
+  }, [session?.isAuthenticated, loadTasks]);
 
   const saveTasks = (newTasks: Task[]) => {
     if (!session?.email) return;

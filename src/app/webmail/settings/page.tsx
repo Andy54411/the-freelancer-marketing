@@ -91,13 +91,12 @@ export default function WebmailSettingsPage() {
     setIsLoading(false);
   }, [session?.email]);
 
+  // Session wird bereits vom Layout geprüft - hier nur Settings laden
   useEffect(() => {
-    if (!session?.isAuthenticated) {
-      router.push('/webmail');
-      return;
+    if (session?.isAuthenticated) {
+      loadSettings();
     }
-    loadSettings();
-  }, [session, router, loadSettings]);
+  }, [session?.isAuthenticated, loadSettings]);
 
   const saveSettings = () => {
     if (!session?.email) return;

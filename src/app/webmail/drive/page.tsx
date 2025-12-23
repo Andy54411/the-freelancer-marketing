@@ -134,13 +134,12 @@ export default function WebmailDrivePage() {
     }
   }, [session?.email, currentPath]);
 
+  // Session wird bereits vom Layout geprüft - hier nur Dateien laden
   useEffect(() => {
-    if (!session?.isAuthenticated) {
-      router.push('/webmail');
-      return;
+    if (session?.isAuthenticated) {
+      loadFiles();
     }
-    loadFiles();
-  }, [session, router, currentPath, loadFiles]);
+  }, [session?.isAuthenticated, currentPath, loadFiles]);
 
   const saveFiles = (newFiles: DriveFile[]) => {
     if (!session?.email) return;
