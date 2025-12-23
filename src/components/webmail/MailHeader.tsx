@@ -147,7 +147,7 @@ export function MailHeader({
       </div>
 
       {/* Right Section - Actions & Profile - pushed to end */}
-      <div className="flex items-center gap-0 md:gap-1 ml-auto pr-1 md:pr-2">
+      <div className="flex items-center gap-1 md:gap-1 ml-auto pr-1 md:pr-2 shrink-0">
         {/* Help Button - Hidden on mobile */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -192,20 +192,18 @@ export function MailHeader({
           <Sparkles className="h-6 w-6 text-[#5f6368]" />
         </button>
 
-        {/* Apps Grid Button - Auch auf Mobile sichtbar */}
-        <div className="block">
-          <AppLauncher />
-        </div>
+        {/* Apps Grid Button - Auf Mobile und Desktop sichtbar */}
+        <AppLauncher />
 
-        {/* User Profile - Gmail Style Ring */}
+        {/* User Profile - Gmail Style Ring - IMMER sichtbar */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="ml-1 md:ml-2 p-0.5 rounded-full hover:bg-gray-200/60 transition-colors"
+              className="p-0.5 rounded-full hover:bg-gray-200/60 transition-colors shrink-0"
               aria-label={`Konto: ${userEmail}`}
             >
-              <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-teal-600 flex items-center justify-center ring-2 ring-transparent hover:ring-teal-200 transition-all">
-                <span className="text-white font-medium text-xs md:text-sm">
+              <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center ring-2 ring-transparent hover:ring-teal-200 transition-all">
+                <span className="text-white font-medium text-sm">
                   {userInitial || userEmail.charAt(0).toUpperCase()}
                 </span>
               </div>
