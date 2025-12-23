@@ -182,6 +182,7 @@ export function CalendarHeader({
           >
             <MoreVertical className={`h-5 w-5 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
           </button>
+          </button>
           {mobileMenuOpen && (
             <div className={`absolute right-0 top-full mt-1 w-64 ${isDark ? 'bg-[#303134] border-[#5f6368]' : 'bg-white border-gray-200'} border rounded-lg shadow-xl z-50 py-2`}>
               {/* Heute */}
@@ -250,6 +251,14 @@ export function CalendarHeader({
             </div>
           )}
         </div>
+
+        {/* Avatar */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className={`w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-medium shrink-0 ${isDark ? 'hover:ring-2 hover:ring-gray-500' : 'hover:ring-2 hover:ring-gray-300'} transition-all`}
+        >
+          {userEmail.charAt(0).toUpperCase()}
+        </button>
       </div>
     </header>
   );

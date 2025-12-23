@@ -57,6 +57,7 @@ export default function WebmailCalendarPage() {
   const [showDeclinedEvents, setShowDeclinedEvents] = useState(false);
   const [showCompletedTasks, setShowCompletedTasks] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [calendars, setCalendars] = useState([
     { id: 'primary', name: 'Mein Kalender', color: '#0d9488', enabled: true },
     { id: 'birthdays', name: 'Geburtstage', color: '#8b5cf6', enabled: true },
@@ -91,11 +92,17 @@ export default function WebmailCalendarPage() {
   }, [session?.email]);
 
   useEffect(() => {
-    if (!session?.isAuthenticated) {
-      router.push('/webmail');
-      return;
-    }
-    loadEvents();
+    // Warte kurz auf Session-Initialisierung bevor Redirect
+    const timer = setTimeout(() => {
+      if (!session?.isAuthenticated) {
+        router.push('/webmail');
+        return;
+      }
+      setIsLoading(false);
+      loadEvents();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [session, router, loadEvents]);
 
   // Mobile-Erkennung und automatische Anpassung
@@ -294,6 +301,15 @@ export default function WebmailCalendarPage() {
 
   // Filter events by enabled calendars (all events currently belong to primary calendar)
   const filteredEvents = events.filter(() => calendars.find(c => c.id === 'primary')?.enabled);
+
+  // Loading-State anzeigen während Session geprüft wird
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-white">
