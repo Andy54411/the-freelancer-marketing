@@ -18,6 +18,7 @@ import {
   Loader2,
   MoreHorizontal,
   Archive,
+  Circle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -52,6 +53,32 @@ interface MailSidebarProps {
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
 }
+
+// Farbpalette für Labels (Teal-basiert für Branding + ergänzende Farben)
+const LABEL_COLORS = [
+  { bg: 'bg-teal-100', text: 'text-teal-700', dot: 'bg-teal-500' },
+  { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
+  { bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
+  { bg: 'bg-pink-100', text: 'text-pink-700', dot: 'bg-pink-500' },
+  { bg: 'bg-orange-100', text: 'text-orange-700', dot: 'bg-orange-500' },
+  { bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
+  { bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-500' },
+  { bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500' },
+  { bg: 'bg-indigo-100', text: 'text-indigo-700', dot: 'bg-indigo-500' },
+  { bg: 'bg-cyan-100', text: 'text-cyan-700', dot: 'bg-cyan-500' },
+];
+
+// Generiert eine konsistente Farbe basierend auf dem Label-Namen
+const getLabelColor = (labelName: string) => {
+  let hash = 0;
+  for (let i = 0; i < labelName.length; i++) {
+    const char = labelName.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  const index = Math.abs(hash) % LABEL_COLORS.length;
+  return LABEL_COLORS[index];
+};
 
 // Folder icon mapping
 const getMailIcon = (specialUse?: string, path?: string) => {
@@ -490,6 +517,7 @@ export function MailSidebar({
           <div className="space-y-0.5">
             {labelMailboxes.map((mailbox) => {
               const isActive = mailbox.path === currentMailbox;
+              const labelColor = getLabelColor(mailbox.path);
               
               return (
                 <div
@@ -497,8 +525,8 @@ export function MailSidebar({
                   className={cn(
                     'group w-full flex items-center pl-6 pr-2 py-1.5 rounded-r-full transition-colors text-[14px]',
                     isActive 
-                      ? 'bg-teal-100 text-teal-900 font-medium' 
-                      : 'hover:bg-teal-50 text-gray-700'
+                      ? `${labelColor.bg} font-medium` 
+                      : 'hover:bg-gray-50 text-gray-700'
                   )}
                   style={{ marginRight: '8px' }}
                 >
@@ -506,15 +534,18 @@ export function MailSidebar({
                     onClick={() => isMobile ? handleMobileSelectMailbox(mailbox.path) : onSelectMailbox(mailbox.path)}
                     className="flex-1 flex items-center min-w-0"
                   >
-                    <Tag className={cn(
-                      'h-5 w-5 mr-4 shrink-0',
-                      isActive ? 'text-teal-700' : 'text-gray-500'
+                    <div className={cn(
+                      'h-3 w-3 rounded-full mr-4 shrink-0',
+                      labelColor.dot
                     )} />
-                    <span className="flex-1 text-left truncate">{mailbox.name}</span>
+                    <span className={cn(
+                      'flex-1 text-left truncate',
+                      isActive && labelColor.text
+                    )}>{mailbox.name}</span>
                     {mailbox.unseen > 0 && (
                       <span className={cn(
                         'text-xs font-medium ml-2',
-                        isActive ? 'text-teal-800' : 'text-gray-600'
+                        isActive ? labelColor.text : 'text-gray-600'
                       )}>
                         {mailbox.unseen}
                       </span>

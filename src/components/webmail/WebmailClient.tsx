@@ -48,6 +48,32 @@ import { MailSidebar } from './MailSidebar';
 import { MailHeader } from './MailHeader';
 import { SearchFilters, filterMessagesClientSide } from './MailSearchFilter';
 
+// Farbpalette für Labels (gleich wie in MailSidebar)
+const LABEL_COLORS = [
+  { bg: 'bg-teal-100', text: 'text-teal-700', dot: 'bg-teal-500' },
+  { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
+  { bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
+  { bg: 'bg-pink-100', text: 'text-pink-700', dot: 'bg-pink-500' },
+  { bg: 'bg-orange-100', text: 'text-orange-700', dot: 'bg-orange-500' },
+  { bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
+  { bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-500' },
+  { bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500' },
+  { bg: 'bg-indigo-100', text: 'text-indigo-700', dot: 'bg-indigo-500' },
+  { bg: 'bg-cyan-100', text: 'text-cyan-700', dot: 'bg-cyan-500' },
+];
+
+// Generiert eine konsistente Farbe basierend auf dem Label-Namen
+const getLabelColor = (labelName: string) => {
+  let hash = 0;
+  for (let i = 0; i < labelName.length; i++) {
+    const char = labelName.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  const index = Math.abs(hash) % LABEL_COLORS.length;
+  return LABEL_COLORS[index];
+};
+
 interface WebmailClientProps {
   email: string;
   password: string;
@@ -221,26 +247,71 @@ const EmailItem = memo(({
                       <Folder className="h-4 w-4 mr-2" />
                       Verschieben nach
                     </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
-                      {mailboxes
-                        .filter(mb => mb.path !== currentMailbox && !mb.path.toLowerCase().includes('draft'))
-                        .map(mb => (
-                          <DropdownMenuItem
-                            key={mb.path}
-                            onClick={() => onMoveToFolder(email.uid, mb.path)}
-                          >
-                            {mb.path === 'INBOX' ? (
-                              <Inbox className="h-4 w-4 mr-2" />
-                            ) : mb.specialUse === '\\Trash' || mb.path.toLowerCase().includes('trash') ? (
-                              <Trash2 className="h-4 w-4 mr-2" />
-                            ) : mb.specialUse === '\\Archive' || mb.path.toLowerCase().includes('archive') ? (
-                              <Archive className="h-4 w-4 mr-2" />
-                            ) : (
-                              <Tag className="h-4 w-4 mr-2" />
-                            )}
-                            {mb.name}
-                          </DropdownMenuItem>
-                        ))}
+                    <DropdownMenuSubContent className="max-h-64 overflow-y-auto min-w-48">
+                      {/* Standard-Ordner */}
+                      {mailboxes.find(mb => mb.path.toLowerCase() === 'inbox') && currentMailbox.toLowerCase() !== 'inbox' && (
+                        <DropdownMenuItem
+                          onClick={() => onMoveToFolder(email.uid, 'INBOX')}
+                        >
+                          <Inbox className="h-4 w-4 mr-2" />
+                          Posteingang
+                        </DropdownMenuItem>
+                      )}
+                      {mailboxes.find(mb => mb.path.toLowerCase().includes('archive')) && !currentMailbox.toLowerCase().includes('archive') && (
+                        <DropdownMenuItem
+                          onClick={() => onMoveToFolder(email.uid, mailboxes.find(mb => mb.path.toLowerCase().includes('archive'))?.path || 'Archive')}
+                        >
+                          <Archive className="h-4 w-4 mr-2" />
+                          Archivieren
+                        </DropdownMenuItem>
+                      )}
+                      {mailboxes.find(mb => mb.path.toLowerCase().includes('trash')) && !currentMailbox.toLowerCase().includes('trash') && (
+                        <DropdownMenuItem
+                          onClick={() => onMoveToFolder(email.uid, mailboxes.find(mb => mb.path.toLowerCase().includes('trash'))?.path || 'Trash')}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          In Papierkorb
+                        </DropdownMenuItem>
+                      )}
+                      
+                      {/* Benutzerdefinierte Labels - gefiltert */}
+                      {(() => {
+                        const hiddenFolders = ['dovecot', '.dovecot', 'virtual', '.virtual', 'dovecot.sieve', 'sieve', 'lda-dupes', 'locks'];
+                        const systemFolderPaths = ['inbox', 'sent', 'drafts', 'trash', 'junk', 'spam', 'archive', 'starred', 'flagged'];
+                        
+                        const customLabels = mailboxes.filter(mb => {
+                          const lowerPath = mb.path.toLowerCase();
+                          if (mb.path === currentMailbox) return false;
+                          if (lowerPath.includes('draft')) return false;
+                          if (hiddenFolders.some(h => lowerPath === h.toLowerCase() || lowerPath.startsWith(h.toLowerCase() + '/'))) return false;
+                          if (systemFolderPaths.some(s => lowerPath === s || lowerPath.includes(s))) return false;
+                          return true;
+                        });
+                        
+                        if (customLabels.length === 0) return null;
+                        
+                        return (
+                          <>
+                            <DropdownMenuSeparator />
+                            <div className="px-2 py-1.5 text-xs font-medium text-gray-500">
+                              Labels
+                            </div>
+                            {customLabels.map(mb => {
+                              const labelColor = getLabelColor(mb.path);
+                              return (
+                                <DropdownMenuItem
+                                  key={mb.path}
+                                  onClick={() => onMoveToFolder(email.uid, mb.path)}
+                                >
+                                  <div className={cn('h-3 w-3 rounded-full mr-2', labelColor.dot)} />
+                                  {mb.name}
+                                </DropdownMenuItem>
+                              );
+                            })}
+                          </>
+                        );
+                      })()}
                     </DropdownMenuSubContent>
                   </DropdownMenuSub>
                   <DropdownMenuItem onClick={() => onMoveToSpam(email.uid)} className="text-orange-600">
@@ -296,10 +367,43 @@ function EmailViewer({
 }: EmailViewerProps) {
   const isStarred = email.flags.includes('\\Flagged');
   
-  // Get target folders for move (exclude current mailbox)
-  const moveTargets = mailboxes.filter(mb => 
-    mb.path !== currentMailbox && 
-    !mb.path.toLowerCase().includes('draft')
+  // Interne Dovecot/Mailcow-Ordner die versteckt werden sollen
+  const hiddenFolders = ['dovecot', '.dovecot', 'virtual', '.virtual', 'dovecot.sieve', 'sieve', 'lda-dupes', 'locks'];
+  
+  // Standard-Systemordner (werden separat angezeigt, nicht als Labels)
+  const systemFolderPaths = ['inbox', 'sent', 'drafts', 'trash', 'junk', 'spam', 'archive', 'starred', 'flagged'];
+  
+  // Get target folders for move - nur benutzerdefinierte Labels anzeigen
+  const moveTargets = mailboxes.filter(mb => {
+    const lowerPath = mb.path.toLowerCase();
+    
+    // Aktuellen Ordner ausschließen
+    if (mb.path === currentMailbox) return false;
+    
+    // Entwürfe ausschließen
+    if (lowerPath.includes('draft')) return false;
+    
+    // Versteckte Dovecot-Ordner ausschließen
+    if (hiddenFolders.some(hidden => 
+      lowerPath === hidden.toLowerCase() || 
+      lowerPath.startsWith(hidden.toLowerCase() + '/')
+    )) return false;
+    
+    // System-Ordner ausschließen (werden über spezielle Buttons erreicht)
+    if (systemFolderPaths.some(sys => lowerPath === sys || lowerPath.includes(sys))) return false;
+    
+    return true;
+  });
+  
+  // Standard-Ordner für schnellen Zugriff (Archiv, Papierkorb)
+  const archiveFolder = mailboxes.find(mb => 
+    mb.path.toLowerCase().includes('archive') || mb.specialUse === '\\Archive'
+  );
+  const trashFolder = mailboxes.find(mb => 
+    mb.path.toLowerCase().includes('trash') || mb.specialUse === '\\Trash'
+  );
+  const inboxFolder = mailboxes.find(mb => 
+    mb.path.toLowerCase() === 'inbox' || mb.specialUse === '\\Inbox'
   );
   
   // Process HTML to open links in new tab
@@ -346,7 +450,8 @@ function EmailViewer({
                 <FolderInput className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="min-w-48">
+              {/* Standard-Aktionen */}
               <DropdownMenuItem 
                 onClick={() => onMoveToSpam(email.uid)}
                 className="text-orange-600"
@@ -354,16 +459,55 @@ function EmailViewer({
                 <AlertTriangle className="h-4 w-4 mr-2" />
                 Als Spam markieren
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {moveTargets.map(mb => (
+              
+              {/* Standard-Ordner */}
+              {inboxFolder && currentMailbox !== inboxFolder.path && (
                 <DropdownMenuItem 
-                  key={mb.path}
-                  onClick={() => onMoveToFolder(email.uid, mb.path)}
+                  onClick={() => onMoveToFolder(email.uid, inboxFolder.path)}
                 >
-                  <FolderInput className="h-4 w-4 mr-2" />
-                  {mb.name || mb.path}
+                  <Inbox className="h-4 w-4 mr-2" />
+                  Posteingang
                 </DropdownMenuItem>
-              ))}
+              )}
+              {archiveFolder && currentMailbox !== archiveFolder.path && (
+                <DropdownMenuItem 
+                  onClick={() => onMoveToFolder(email.uid, archiveFolder.path)}
+                >
+                  <Archive className="h-4 w-4 mr-2" />
+                  Archivieren
+                </DropdownMenuItem>
+              )}
+              {trashFolder && currentMailbox !== trashFolder.path && (
+                <DropdownMenuItem 
+                  onClick={() => onMoveToFolder(email.uid, trashFolder.path)}
+                  className="text-red-600"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  In Papierkorb
+                </DropdownMenuItem>
+              )}
+              
+              {/* Benutzerdefinierte Labels */}
+              {moveTargets.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5 text-xs font-medium text-gray-500">
+                    Labels
+                  </div>
+                  {moveTargets.map(mb => {
+                    const labelColor = getLabelColor(mb.path);
+                    return (
+                      <DropdownMenuItem 
+                        key={mb.path}
+                        onClick={() => onMoveToFolder(email.uid, mb.path)}
+                      >
+                        <div className={cn('h-3 w-3 rounded-full mr-2', labelColor.dot)} />
+                        {mb.name || mb.path}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           
