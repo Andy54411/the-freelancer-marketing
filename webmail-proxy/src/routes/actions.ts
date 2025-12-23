@@ -73,7 +73,9 @@ const ActionSchema = z.discriminatedUnion('action', [
 
 router.post('/', async (req, res) => {
   try {
+    console.log('[ACTIONS] Request body:', JSON.stringify(req.body, null, 2));
     const data = ActionSchema.parse(req.body);
+    console.log('[ACTIONS] Parsed action:', data.action);
     const emailService = new EmailService({ email: data.email, password: data.password });
     
     switch (data.action) {
@@ -98,20 +100,26 @@ router.post('/', async (req, res) => {
         break;
         
       case 'createMailbox':
+        console.log('[ACTIONS] Creating mailbox:', data.name);
         const createResult = await emailService.createMailbox(data.name);
+        console.log('[ACTIONS] Mailbox created:', createResult);
         return res.json({ success: true, path: createResult.path });
         
       case 'deleteMailbox':
+        console.log('[ACTIONS] Deleting mailbox:', data.path);
         await emailService.deleteMailbox(data.path);
+        console.log('[ACTIONS] Mailbox deleted');
         break;
         
       case 'renameMailbox':
+        console.log('[ACTIONS] Renaming mailbox:', data.oldPath, '->', data.newPath);
         const renameResult = await emailService.renameMailbox(data.oldPath, data.newPath);
         return res.json({ success: true, newPath: renameResult.newPath });
     }
     
     res.json({ success: true });
   } catch (error) {
+    console.error('[ACTIONS] Error:', error);
     const message = error instanceof Error ? error.message : 'Action failed';
     res.status(500).json({ success: false, error: message });
   }

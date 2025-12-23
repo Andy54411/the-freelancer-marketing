@@ -193,18 +193,25 @@ export function MailSidebar({
   // Split mailboxes into primary (always shown) and labels (custom folders)
   const systemFolderTypes = ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk', 'Spam', 'Archive'];
   const primaryFolderTypes = ['INBOX', 'Starred', 'Snoozed', 'Sent', 'Drafts'];
+  // Interne Dovecot/Mailcow-Ordner die versteckt werden sollen
+  const hiddenFolders = ['dovecot', '.dovecot', 'virtual', '.virtual', 'dovecot.sieve', 'sieve'];
   
-  const primaryMailboxes = mailboxes.filter(m => 
+  // Filtere versteckte Ordner aus allen Mailboxen
+  const visibleMailboxes = mailboxes.filter(m => 
+    !hiddenFolders.some(hidden => m.path.toLowerCase() === hidden.toLowerCase() || m.path.toLowerCase().startsWith(hidden.toLowerCase() + '/'))
+  );
+  
+  const primaryMailboxes = visibleMailboxes.filter(m => 
     primaryFolderTypes.some(f => matchesFolder(m, f))
   );
   
-  const secondaryMailboxes = mailboxes.filter(m => 
+  const secondaryMailboxes = visibleMailboxes.filter(m => 
     !primaryFolderTypes.some(f => matchesFolder(m, f)) &&
     systemFolderTypes.some(f => matchesFolder(m, f))
   );
 
   // Labels are custom folders (not system folders)
-  const labelMailboxes = mailboxes.filter(m => 
+  const labelMailboxes = visibleMailboxes.filter(m => 
     !systemFolderTypes.some(f => matchesFolder(m, f)) &&
     !primaryFolderTypes.some(f => matchesFolder(m, f))
   );
