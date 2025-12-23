@@ -354,6 +354,8 @@ export default function WebmailCalendarPage() {
           events={filteredEvents}
           onEventClick={handleEventClick}
           onTimeSlotClick={handleDateClick}
+          onSwipePrev={() => handleNavigate('prev')}
+          onSwipeNext={() => handleNavigate('next')}
         />
       </div>
 

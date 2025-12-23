@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 
 interface CalendarEvent {
@@ -23,6 +23,8 @@ interface CalendarGridProps {
   events: CalendarEvent[];
   onEventClick: (event: CalendarEvent) => void;
   onTimeSlotClick: (date: Date, allDay: boolean) => void;
+  onSwipePrev?: () => void;
+  onSwipeNext?: () => void;
 }
 
 export function CalendarGrid({
@@ -31,9 +33,40 @@ export function CalendarGrid({
   events,
   onEventClick,
   onTimeSlotClick,
+  onSwipePrev,
+  onSwipeNext,
 }: CalendarGridProps) {
   const { isDark } = useWebmailTheme();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  }, []);
+
+  const onTouchEnd = useCallback(() => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe && onSwipeNext) {
+      onSwipeNext();
+    }
+    if (isRightSwipe && onSwipePrev) {
+      onSwipePrev();
+    }
+  }, [touchStart, touchEnd, onSwipeNext, onSwipePrev]);
 
   // Scroll to current time on mount
   useEffect(() => {
@@ -275,12 +308,18 @@ export function CalendarGrid({
   );
 
   const renderDayView = () => (
-    <div className={`flex-1 flex flex-col overflow-hidden ${isDark ? 'bg-[#202124]' : 'bg-white'}`}>
+    <div 
+      className={`flex-1 flex flex-col overflow-hidden ${isDark ? 'bg-[#202124]' : 'bg-white'}`}
+      ref={gridContainerRef}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       {/* Header */}
       <div className={`flex border-b ${isDark ? 'border-[#5f6368] bg-[#202124]' : 'border-gray-200 bg-white'} sticky top-0 z-10`}>
-        <div className={`w-16 shrink-0 border-r ${isDark ? 'border-[#5f6368]' : 'border-gray-200'}`}>
+        <div className={`w-12 md:w-16 shrink-0 border-r ${isDark ? 'border-[#5f6368]' : 'border-gray-200'}`}>
           <div className="h-12 flex items-end justify-center pb-1">
-            <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>GMT+01</span>
+            <span className={`text-[10px] md:text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>GMT+01</span>
           </div>
         </div>
         <div className={`flex-1 ${isToday(currentDate) ? (isDark ? 'bg-teal-500/10' : 'bg-teal-50/30') : ''}`}>
@@ -301,7 +340,7 @@ export function CalendarGrid({
 
       {/* All-day events */}
       <div className={`flex border-b ${isDark ? 'border-[#5f6368]' : 'border-gray-200'} min-h-8`}>
-        <div className={`w-16 shrink-0 border-r ${isDark ? 'border-[#5f6368]' : 'border-gray-200'}`} />
+        <div className={`w-12 md:w-16 shrink-0 border-r ${isDark ? 'border-[#5f6368]' : 'border-gray-200'}`} />
         <div className={`flex-1 p-0.5 ${isToday(currentDate) ? (isDark ? 'bg-teal-500/10' : 'bg-teal-50/30') : ''}`}>
           {getAllDayEvents(currentDate).map((event) => (
             <button
@@ -319,11 +358,11 @@ export function CalendarGrid({
       {/* Time grid */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
         <div className="flex relative">
-          <div className={`w-16 shrink-0 border-r ${isDark ? 'border-[#5f6368]' : 'border-gray-200'}`}>
+          <div className={`w-12 md:w-16 shrink-0 border-r ${isDark ? 'border-[#5f6368]' : 'border-gray-200'}`}>
             {hours.map((hour) => (
               <div key={hour} className="h-12 relative">
-                <span className={`absolute -top-2 right-2 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                <span className={`absolute -top-2 right-1 md:right-2 text-[10px] md:text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {hour.toString().padStart(2, '0')}:00
                 </span>
               </div>
             ))}
