@@ -10,22 +10,64 @@
 7. **KEINE EMOJIS**: Professioneller Code und UI - KEINE Icons/Emojis in Code, Kommentaren oder UI
 8. **CHATBOT CRAWLER**: Bei neuen Seiten IMMER URLs in `/src/app/api/cron/refresh-knowledge-base/route.ts` hinzufügen!
 
-## DEPLOYMENT ARCHITEKTUR (KRITISCH!)
+---
 
-### Vercel (Hauptprojekt - taskilo.de)
-- **Was läuft hier**: Next.js App, API Routes, Firebase Client
-- **Deployment**: Automatisch via GitHub Push auf `main`
-- **Verzeichnis**: `/Users/andystaudinger/Tasko/` (alles außer webmail-proxy)
-- **Domains**: taskilo.de, www.taskilo.de
+## INFRASTRUKTUR-ÜBERSICHT (KRITISCH - NIEMALS VERGESSEN!)
 
-### Hetzner Server (mail.taskilo.de)
-- **Was läuft hier**: Webmail-Proxy, Mailcow (E-Mail Server), TURN Server
-- **KEIN GitHub-Deployment**: Manuelle Dateiübertragung per SCP!
-- **Verzeichnis auf Server**: `/opt/taskilo/webmail-proxy/`
-- **Deployment-Methode**: Docker Compose
-- **Container**: `taskilo-webmail-proxy`, `taskilo-redis`, `taskilo-coturn`
+### 1. VERCEL (taskilo.de) - Next.js Frontend + API
+| Was | Details |
+|-----|---------|
+| **Dienste** | Next.js App, API Routes, Firebase Client SDK |
+| **Deployment** | AUTOMATISCH via `git push` auf `main` |
+| **Verzeichnis** | `/Users/andystaudinger/Tasko/` (ALLES außer `webmail-proxy/`) |
+| **Domains** | taskilo.de, www.taskilo.de |
+| **Datenbank** | Firebase Firestore (Cloud) |
 
-### Webmail-Proxy Deployment (Hetzner)
+**Vercel-Dateien (Frontend):**
+- `src/components/webmail/*.tsx` - Webmail UI (MailSidebar, WebmailClient, etc.)
+- `src/app/api/webmail/*` - API Routes die zum Hetzner-Proxy weiterleiten
+- `src/hooks/useWebmail.ts` - React Hook für Webmail
+- `src/services/webmail/*` - Frontend Services
+
+### 2. HETZNER SERVER (mail.taskilo.de) - E-Mail Backend
+| Was | Details |
+|-----|---------|
+| **Dienste** | Webmail-Proxy, Mailcow (IMAP/SMTP), TURN Server, Redis |
+| **Deployment** | MANUELL per SCP + Docker! KEIN Git! |
+| **Verzeichnis lokal** | `/Users/andystaudinger/Tasko/webmail-proxy/` |
+| **Verzeichnis Server** | `/opt/taskilo/webmail-proxy/` |
+| **Container** | `taskilo-webmail-proxy`, `taskilo-redis`, `taskilo-coturn` |
+
+**Hetzner-Dateien (Backend - webmail-proxy):**
+- `webmail-proxy/src/routes/*.ts` - Express API Routes (actions, mailboxes, etc.)
+- `webmail-proxy/src/services/*.ts` - IMAP/SMTP Services (EmailService, etc.)
+- `webmail-proxy/src/index.ts` - Express Server Entry Point
+
+### 3. FIREBASE (Cloud) - Datenbank + Auth
+| Was | Details |
+|-----|---------|
+| **Dienste** | Firestore, Authentication, Storage, Cloud Functions |
+| **Konfiguration** | `firebase.json`, `firestore.rules` |
+| **Collections** | users, companies, customers, invoices, etc. |
+| **NICHT für Webmail** | Webmail nutzt Hetzner IMAP, NICHT Firebase! |
+
+---
+
+## DEPLOYMENT-ENTSCHEIDUNGSBAUM
+
+```
+Datei geändert in:
+│
+├── src/components/webmail/*.tsx ──────► Vercel (automatisch via git push)
+├── src/app/api/webmail/*.ts ──────────► Vercel (automatisch via git push)  
+├── src/hooks/useWebmail.ts ───────────► Vercel (automatisch via git push)
+│
+├── webmail-proxy/src/*.ts ────────────► HETZNER (manuell SCP + Docker!)
+│
+└── Alle anderen src/ Dateien ─────────► Vercel (automatisch via git push)
+```
+
+### Webmail-Proxy Deployment (NUR wenn webmail-proxy/ geändert wurde!)
 ```bash
 # 1. Dateien per SCP hochladen
 scp webmail-proxy/src/services/EmailService.ts root@mail.taskilo.de:/opt/taskilo/webmail-proxy/src/services/
@@ -40,6 +82,8 @@ ssh root@mail.taskilo.de "cd /opt/taskilo/webmail-proxy && docker compose up -d 
 - TypeScript wird IM Container kompiliert (nicht auf Host)
 - Keine npm/node auf dem Host installiert - NUR Docker!
 
+---
+
 ## CHATBOT KNOWLEDGE BASE
 Bei neuen Website-Seiten IMMER die URL in `WEBSITE_URLS` Array hinzufügen:
 - Datei: `/src/app/api/cron/refresh-knowledge-base/route.ts`
@@ -48,7 +92,7 @@ Bei neuen Website-Seiten IMMER die URL in `WEBSITE_URLS` Array hinzufügen:
 - Admin UI: `/dashboard/admin/chatbot-knowledge`
 
 ## STACK
-Next.js 15 + TypeScript + Firebase + Vercel
+Next.js 15 + TypeScript + Firebase + Vercel + Hetzner (Webmail)
 
 **Dashboards**: `/dashboard/user/[uid]`, `/dashboard/company/[uid]`, `/dashboard/admin`
 
@@ -57,7 +101,7 @@ Next.js 15 + TypeScript + Firebase + Vercel
 ## CODE-PATTERNS
 
 ```typescript
-// Firebase
+// Firebase (Vercel)
 import { db, auth } from '@/firebase/clients';
 
 // Service

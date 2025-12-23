@@ -192,8 +192,8 @@ export function MailHeader({
           <Sparkles className="h-6 w-6 text-[#5f6368]" />
         </button>
 
-        {/* Apps Grid Button - Hidden on mobile */}
-        <div className="hidden md:block">
+        {/* Apps Grid Button - Auch auf Mobile sichtbar */}
+        <div className="block">
           <AppLauncher />
         </div>
 

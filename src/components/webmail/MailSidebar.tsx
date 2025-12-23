@@ -28,7 +28,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
+import { Palette } from 'lucide-react';
 
 interface Mailbox {
   path: string;
@@ -56,25 +61,59 @@ interface MailSidebarProps {
 
 // Farbpalette für Labels (Teal-basiert für Branding + ergänzende Farben)
 const LABEL_COLORS = [
-  { bg: 'bg-teal-100', text: 'text-teal-700', dot: 'bg-teal-500' },
-  { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
-  { bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
-  { bg: 'bg-pink-100', text: 'text-pink-700', dot: 'bg-pink-500' },
-  { bg: 'bg-orange-100', text: 'text-orange-700', dot: 'bg-orange-500' },
-  { bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
-  { bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-500' },
-  { bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500' },
-  { bg: 'bg-indigo-100', text: 'text-indigo-700', dot: 'bg-indigo-500' },
-  { bg: 'bg-cyan-100', text: 'text-cyan-700', dot: 'bg-cyan-500' },
+  { id: 'teal', bg: 'bg-teal-100', text: 'text-teal-700', dot: 'bg-teal-500', name: 'Teal' },
+  { id: 'blue', bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500', name: 'Blau' },
+  { id: 'purple', bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500', name: 'Lila' },
+  { id: 'pink', bg: 'bg-pink-100', text: 'text-pink-700', dot: 'bg-pink-500', name: 'Pink' },
+  { id: 'orange', bg: 'bg-orange-100', text: 'text-orange-700', dot: 'bg-orange-500', name: 'Orange' },
+  { id: 'green', bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500', name: 'Grün' },
+  { id: 'yellow', bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-500', name: 'Gelb' },
+  { id: 'red', bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500', name: 'Rot' },
+  { id: 'indigo', bg: 'bg-indigo-100', text: 'text-indigo-700', dot: 'bg-indigo-500', name: 'Indigo' },
+  { id: 'cyan', bg: 'bg-cyan-100', text: 'text-cyan-700', dot: 'bg-cyan-500', name: 'Cyan' },
 ];
 
-// Generiert eine konsistente Farbe basierend auf dem Label-Namen
-const getLabelColor = (labelName: string) => {
+// localStorage Key für Label-Farben
+const LABEL_COLORS_STORAGE_KEY = 'taskilo-webmail-label-colors';
+
+// Lädt benutzerdefinierte Label-Farben aus localStorage
+const getStoredLabelColors = (): Record<string, string> => {
+  if (typeof window === 'undefined') return {};
+  try {
+    const stored = localStorage.getItem(LABEL_COLORS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+};
+
+// Speichert Label-Farbe in localStorage
+const storeLabelColor = (labelPath: string, colorId: string) => {
+  if (typeof window === 'undefined') return;
+  try {
+    const current = getStoredLabelColors();
+    current[labelPath] = colorId;
+    localStorage.setItem(LABEL_COLORS_STORAGE_KEY, JSON.stringify(current));
+  } catch {
+    // Ignore storage errors
+  }
+};
+
+// Generiert eine konsistente Farbe basierend auf dem Label-Namen oder gespeicherter Auswahl
+const getLabelColor = (labelPath: string) => {
+  // Prüfe zuerst benutzerdefinierte Farbe
+  const storedColors = getStoredLabelColors();
+  if (storedColors[labelPath]) {
+    const customColor = LABEL_COLORS.find(c => c.id === storedColors[labelPath]);
+    if (customColor) return customColor;
+  }
+  
+  // Fallback: Hash-basierte Farbe
   let hash = 0;
-  for (let i = 0; i < labelName.length; i++) {
-    const char = labelName.charCodeAt(i);
+  for (let i = 0; i < labelPath.length; i++) {
+    const char = labelPath.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
+    hash = hash & hash;
   }
   const index = Math.abs(hash) % LABEL_COLORS.length;
   return LABEL_COLORS[index];
@@ -146,8 +185,11 @@ export function MailSidebar({
   const [showMore, setShowMore] = useState(false);
   const [isCreatingLabel, setIsCreatingLabel] = useState(false);
   const [newLabelName, setNewLabelName] = useState('');
+  const [selectedColorId, setSelectedColorId] = useState<string>(LABEL_COLORS[0].id);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Force re-render when colors change
+  const [, setColorVersion] = useState(0);
 
   // Close mobile drawer on escape key
   useEffect(() => {
@@ -266,7 +308,11 @@ export function MailSidebar({
         throw new Error(data.error);
       }
 
+      // Speichere die gewählte Farbe für das neue Label
+      storeLabelColor(newLabelName.trim(), selectedColorId);
+      
       setNewLabelName('');
+      setSelectedColorId(LABEL_COLORS[0].id);
       setIsCreatingLabel(false);
       onMailboxesChange();
     } catch (err) {
@@ -466,49 +512,95 @@ export function MailSidebar({
 
         {/* Create Label Input - hide when collapsed */}
         {isCreatingLabel && (isMobile || !collapsed) && (
-          <div className="px-4 py-2">
-            <div className="flex items-center gap-2">
+          <div className="px-4 py-3">
+            {/* Kompakte Eingabezeile mit Farbauswahl */}
+            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-2 py-1.5 shadow-sm">
+              {/* Aktuelle Farbe als Indikator */}
+              <div 
+                className={cn(
+                  'h-4 w-4 rounded-full shrink-0',
+                  LABEL_COLORS.find(c => c.id === selectedColorId)?.dot
+                )} 
+              />
+              
+              {/* Input */}
               <Input
                 value={newLabelName}
                 onChange={(e) => setNewLabelName(e.target.value)}
-                placeholder="Label-Name..."
-                className="h-8 text-sm"
+                placeholder="Neues Label..."
+                className="h-7 text-sm border-0 shadow-none focus-visible:ring-0 px-0 flex-1"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleCreateLabel();
                   if (e.key === 'Escape') {
                     setIsCreatingLabel(false);
                     setNewLabelName('');
+                    setSelectedColorId(LABEL_COLORS[0].id);
                   }
                 }}
                 autoFocus
                 disabled={isLoading}
               />
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setIsCreatingLabel(false);
-                  setNewLabelName('');
-                  setError(null);
-                }}
-                className="h-8 w-8 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            {error && (
-              <p className="text-xs text-red-500 mt-1 px-1">{error}</p>
-            )}
-            <div className="flex gap-2 mt-2">
+              
+              {/* Farb-Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button 
+                    type="button"
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title="Farbe wählen"
+                  >
+                    <Palette className="h-4 w-4 text-gray-400" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="p-2 min-w-0">
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {LABEL_COLORS.map((color) => (
+                      <button
+                        key={color.id}
+                        onClick={() => setSelectedColorId(color.id)}
+                        className={cn(
+                          'h-6 w-6 rounded-full transition-all',
+                          color.dot,
+                          selectedColorId === color.id 
+                            ? 'ring-2 ring-offset-1 ring-gray-400' 
+                            : 'hover:scale-110'
+                        )}
+                        title={color.name}
+                        type="button"
+                      />
+                    ))}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {/* Erstellen Button */}
               <Button
                 size="sm"
                 onClick={handleCreateLabel}
                 disabled={isLoading || !newLabelName.trim()}
-                className="h-7 text-xs bg-teal-600 hover:bg-teal-700"
+                className="h-7 px-3 text-xs bg-teal-600 hover:bg-teal-700"
               >
-                {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Erstellen'}
+                {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'OK'}
               </Button>
+              
+              {/* Abbrechen */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCreatingLabel(false);
+                  setNewLabelName('');
+                  setSelectedColorId(LABEL_COLORS[0].id);
+                  setError(null);
+                }}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+              >
+                <X className="h-4 w-4 text-gray-400" />
+              </button>
             </div>
+            
+            {error && (
+              <p className="text-xs text-red-500 mt-1.5 px-1">{error}</p>
+            )}
           </div>
         )}
 
@@ -557,7 +649,35 @@ export function MailSidebar({
                         <MoreHorizontal className="h-4 w-4 text-gray-500" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-32">
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                          <Palette className="h-4 w-4 mr-2" />
+                          Farbe ändern
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent className="p-2">
+                          <div className="grid grid-cols-5 gap-1.5">
+                            {LABEL_COLORS.map((color) => (
+                              <button
+                                key={color.id}
+                                onClick={() => {
+                                  storeLabelColor(mailbox.path, color.id);
+                                  setColorVersion(v => v + 1);
+                                }}
+                                className={cn(
+                                  'h-6 w-6 rounded-full transition-all',
+                                  color.dot,
+                                  labelColor.id === color.id 
+                                    ? 'ring-2 ring-offset-1 ring-gray-400' 
+                                    : 'hover:scale-110'
+                                )}
+                                title={color.name}
+                              />
+                            ))}
+                          </div>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => handleDeleteLabel(mailbox.path)}
                         className="text-red-600 focus:text-red-600"

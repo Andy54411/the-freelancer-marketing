@@ -50,23 +50,45 @@ import { SearchFilters, filterMessagesClientSide } from './MailSearchFilter';
 
 // Farbpalette für Labels (gleich wie in MailSidebar)
 const LABEL_COLORS = [
-  { bg: 'bg-teal-100', text: 'text-teal-700', dot: 'bg-teal-500' },
-  { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
-  { bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
-  { bg: 'bg-pink-100', text: 'text-pink-700', dot: 'bg-pink-500' },
-  { bg: 'bg-orange-100', text: 'text-orange-700', dot: 'bg-orange-500' },
-  { bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
-  { bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-500' },
-  { bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500' },
-  { bg: 'bg-indigo-100', text: 'text-indigo-700', dot: 'bg-indigo-500' },
-  { bg: 'bg-cyan-100', text: 'text-cyan-700', dot: 'bg-cyan-500' },
+  { id: 'teal', bg: 'bg-teal-100', text: 'text-teal-700', dot: 'bg-teal-500' },
+  { id: 'blue', bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
+  { id: 'purple', bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
+  { id: 'pink', bg: 'bg-pink-100', text: 'text-pink-700', dot: 'bg-pink-500' },
+  { id: 'orange', bg: 'bg-orange-100', text: 'text-orange-700', dot: 'bg-orange-500' },
+  { id: 'green', bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
+  { id: 'yellow', bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-500' },
+  { id: 'red', bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500' },
+  { id: 'indigo', bg: 'bg-indigo-100', text: 'text-indigo-700', dot: 'bg-indigo-500' },
+  { id: 'cyan', bg: 'bg-cyan-100', text: 'text-cyan-700', dot: 'bg-cyan-500' },
 ];
 
-// Generiert eine konsistente Farbe basierend auf dem Label-Namen
-const getLabelColor = (labelName: string) => {
+// localStorage Key für Label-Farben (gleich wie in MailSidebar)
+const LABEL_COLORS_STORAGE_KEY = 'taskilo-webmail-label-colors';
+
+// Lädt benutzerdefinierte Label-Farben aus localStorage
+const getStoredLabelColors = (): Record<string, string> => {
+  if (typeof window === 'undefined') return {};
+  try {
+    const stored = localStorage.getItem(LABEL_COLORS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+};
+
+// Generiert eine konsistente Farbe basierend auf dem Label-Namen oder gespeicherter Auswahl
+const getLabelColor = (labelPath: string) => {
+  // Prüfe zuerst benutzerdefinierte Farbe
+  const storedColors = getStoredLabelColors();
+  if (storedColors[labelPath]) {
+    const customColor = LABEL_COLORS.find(c => c.id === storedColors[labelPath]);
+    if (customColor) return customColor;
+  }
+  
+  // Fallback: Hash-basierte Farbe
   let hash = 0;
-  for (let i = 0; i < labelName.length; i++) {
-    const char = labelName.charCodeAt(i);
+  for (let i = 0; i < labelPath.length; i++) {
+    const char = labelPath.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
   }
