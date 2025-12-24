@@ -92,10 +92,6 @@ export default function FooterSection() {
           href: '/features#features',
         },
         {
-          title: 'Demnächst',
-          href: '/coming-soon',
-        },
-        {
           title: 'Kategorien',
           href: '/services',
         },

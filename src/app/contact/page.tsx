@@ -232,7 +232,6 @@ export default function ContactPage() {
                         {[
                           { href: '/help', icon: BookOpen, text: 'Hilfe-Center besuchen' },
                           { href: '/faq', icon: HelpCircle, text: 'Häufig gestellte Fragen' },
-                          { href: '/coming-soon', icon: Rocket, text: 'Neue Features' },
                         ].map((link, index) => (
                           <motion.div
                             key={index}
