@@ -70,12 +70,12 @@ function FeatureCard({
       >
         <Link href={feature.href} className="block group">
           <div className="relative mx-auto max-w-6xl">
-            {/* Card Container with both halves absolutely positioned for independent movement */}
-            <div className="relative h-72 lg:h-[420px]">
+            {/* Card Container - Stack on mobile, side-by-side on desktop */}
+            <div className="flex flex-col lg:flex-row lg:h-[420px] overflow-hidden rounded-3xl shadow-xl lg:shadow-2xl bg-white">
               
               {/* Image Half */}
               <motion.div 
-                className={`absolute top-0 ${isImageLeft ? 'left-0' : 'right-0'} w-full lg:w-1/2 h-full rounded-t-3xl ${isImageLeft ? 'lg:rounded-l-3xl lg:rounded-tr-none' : 'lg:rounded-r-3xl lg:rounded-tl-none'} overflow-hidden shadow-2xl`}
+                className={`relative w-full lg:w-1/2 h-48 sm:h-56 lg:h-full ${isImageLeft ? 'lg:order-1' : 'lg:order-2'} overflow-hidden`}
                 style={{
                   x: isImageLeft ? imageX : textX,
                   rotate: isImageLeft ? imageRotate : textRotate,
@@ -107,7 +107,7 @@ function FeatureCard({
               
               {/* Text Half */}
               <motion.div 
-                className={`absolute top-0 ${isImageLeft ? 'right-0' : 'left-0'} w-full lg:w-1/2 h-full p-8 lg:p-12 flex flex-col justify-center bg-white rounded-b-3xl ${isImageLeft ? 'lg:rounded-r-3xl lg:rounded-bl-none' : 'lg:rounded-l-3xl lg:rounded-br-none'} shadow-2xl`}
+                className={`w-full lg:w-1/2 p-6 sm:p-8 lg:p-12 flex flex-col justify-center bg-white ${isImageLeft ? 'lg:order-2' : 'lg:order-1'}`}
                 style={{
                   x: isImageLeft ? textX : imageX,
                   rotate: isImageLeft ? textRotate : imageRotate,
