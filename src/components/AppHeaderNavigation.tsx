@@ -213,7 +213,7 @@ const AppHeaderNavigation: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-center py-3">
             {/* Beliebte Kategorien mit Mega-Menü */}
-            <div className="flex items-center gap-1 text-sm relative">
+            <div className="flex items-center gap-0.5 lg:gap-1 xl:gap-1 text-xs lg:text-sm relative">
               {/* Handwerk */}
               <div
                 onMouseEnter={() => handleCategoryEnter('Handwerk')}
@@ -221,7 +221,7 @@ const AppHeaderNavigation: React.FC = () => {
               >
                 <Link
                   href={getServiceUrl('Handwerk')}
-                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f]"
+                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-2 lg:px-3 xl:px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f] whitespace-nowrap"
                 >
                   Handwerk
                 </Link>
@@ -234,7 +234,7 @@ const AppHeaderNavigation: React.FC = () => {
               >
                 <Link
                   href={getServiceUrl('Haushalt')}
-                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f]"
+                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-2 lg:px-3 xl:px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f] whitespace-nowrap"
                 >
                   Haushalt
                 </Link>
@@ -247,9 +247,10 @@ const AppHeaderNavigation: React.FC = () => {
               >
                 <Link
                   href={getServiceUrl('IT & Digital')}
-                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f]"
+                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-2 lg:px-3 xl:px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f] whitespace-nowrap"
                 >
-                  IT & Digital
+                  <span className="hidden xl:inline">IT & Digital</span>
+                  <span className="xl:hidden">IT</span>
                 </Link>
               </div>
 
@@ -260,7 +261,7 @@ const AppHeaderNavigation: React.FC = () => {
               >
                 <Link
                   href={getServiceUrl('Transport')}
-                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f]"
+                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-2 lg:px-3 xl:px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f] whitespace-nowrap"
                 >
                   Transport
                 </Link>
@@ -273,7 +274,7 @@ const AppHeaderNavigation: React.FC = () => {
               >
                 <Link
                   href={getServiceUrl('Garten')}
-                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f]"
+                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-2 lg:px-3 xl:px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f] whitespace-nowrap"
                 >
                   Garten
                 </Link>
@@ -286,7 +287,7 @@ const AppHeaderNavigation: React.FC = () => {
               >
                 <Link
                   href={getServiceUrl('Wellness')}
-                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f]"
+                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-2 lg:px-3 xl:px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f] whitespace-nowrap"
                 >
                   Wellness
                 </Link>
@@ -299,7 +300,7 @@ const AppHeaderNavigation: React.FC = () => {
               >
                 <Link
                   href={getServiceUrl('Marketing & Vertrieb')}
-                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f]"
+                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-2 lg:px-3 xl:px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f] whitespace-nowrap"
                 >
                   Marketing
                 </Link>
@@ -312,7 +313,7 @@ const AppHeaderNavigation: React.FC = () => {
               >
                 <Link
                   href={getServiceUrl('Finanzen & Recht')}
-                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f]"
+                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-2 lg:px-3 xl:px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f] whitespace-nowrap"
                 >
                   Finanzen
                 </Link>
@@ -325,7 +326,7 @@ const AppHeaderNavigation: React.FC = () => {
               >
                 <Link
                   href={getServiceUrl('Bildung & Unterstützung')}
-                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f]"
+                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-2 lg:px-3 xl:px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f] whitespace-nowrap"
                 >
                   Bildung
                 </Link>
@@ -338,16 +339,17 @@ const AppHeaderNavigation: React.FC = () => {
               >
                 <Link
                   href={getServiceUrl('Hotel & Gastronomie')}
-                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f]"
+                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-2 lg:px-3 xl:px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f] whitespace-nowrap"
                 >
-                  Hotel & Gastronomie
+                  <span className="hidden xl:inline">Hotel & Gastro</span>
+                  <span className="xl:hidden">Gastro</span>
                 </Link>
               </div>
 
               {/* Alle Services Button - Direkter Link zu Services-Seite */}
               <Link
                 href="/services"
-                className="flex items-center text-white bg-[#14ad9f] hover:bg-taskilo-hover px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg border border-[#14ad9f]"
+                className="flex items-center text-white bg-[#14ad9f] hover:bg-taskilo-hover px-2 lg:px-3 xl:px-4 py-2 rounded-lg transition-all duration-200 font-medium text-xs lg:text-sm shadow-md hover:shadow-lg border border-[#14ad9f] whitespace-nowrap"
               >
                 Alle Services
               </Link>
