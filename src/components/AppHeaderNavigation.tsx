@@ -249,8 +249,7 @@ const AppHeaderNavigation: React.FC = () => {
                   href={getServiceUrl('IT & Digital')}
                   className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-2 lg:px-3 xl:px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f] whitespace-nowrap"
                 >
-                  <span className="hidden xl:inline">IT & Digital</span>
-                  <span className="xl:hidden">IT</span>
+                  IT & Digital
                 </Link>
               </div>
 
@@ -280,14 +279,15 @@ const AppHeaderNavigation: React.FC = () => {
                 </Link>
               </div>
 
-              {/* Wellness */}
+              {/* Wellness - nur auf xl+ sichtbar */}
               <div
+                className="hidden xl:block"
                 onMouseEnter={() => handleCategoryEnter('Wellness')}
                 onMouseLeave={handleCategoryLeave}
               >
                 <Link
                   href={getServiceUrl('Wellness')}
-                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-2 lg:px-3 xl:px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f] whitespace-nowrap"
+                  className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f] whitespace-nowrap"
                 >
                   Wellness
                 </Link>
@@ -341,8 +341,7 @@ const AppHeaderNavigation: React.FC = () => {
                   href={getServiceUrl('Hotel & Gastronomie')}
                   className="text-gray-700 hover:text-white hover:bg-[#14ad9f] px-2 lg:px-3 xl:px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-transparent hover:border-[#14ad9f] whitespace-nowrap"
                 >
-                  <span className="hidden xl:inline">Hotel & Gastro</span>
-                  <span className="xl:hidden">Gastro</span>
+                  Hotel & Gastro
                 </Link>
               </div>
 
