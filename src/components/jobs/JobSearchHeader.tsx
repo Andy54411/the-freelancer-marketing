@@ -317,9 +317,9 @@ export function JobSearchHeader() {
       <div className="mx-auto flex w-full max-w-6xl justify-center px-4">
         <form
           onSubmit={handleSubmit}
-          className="flex w-full flex-wrap items-center justify-center gap-4 lg:flex-nowrap"
+          className="flex w-full flex-wrap items-center justify-center gap-3 lg:gap-4 lg:flex-nowrap"
         >
-          <div className="flex-1 min-w-60 relative" ref={wrapperRef}>
+          <div className="flex-1 min-w-[200px] lg:min-w-60 relative" ref={wrapperRef}>
             <input
               type="text"
               value={what}
@@ -370,7 +370,7 @@ export function JobSearchHeader() {
             )}
           </div>
 
-          <div className="flex-1 min-w-60 relative" ref={locationWrapperRef}>
+          <div className="flex-1 min-w-[200px] lg:min-w-60 relative" ref={locationWrapperRef}>
             <input
               type="text"
               value={where}
@@ -402,7 +402,7 @@ export function JobSearchHeader() {
             )}
           </div>
 
-          <div className="w-[130px]">
+          <div className="w-[100px] lg:w-[130px]">
             <div className="relative">
               <select
                 value={radius}
@@ -432,7 +432,7 @@ export function JobSearchHeader() {
 
           <button
             type="submit"
-            className={`h-12 rounded-full px-8 text-sm font-bold uppercase tracking-wider shadow-lg transition-all hover:shadow-xl min-w-40 ${
+            className={`h-12 rounded-full px-5 lg:px-8 text-xs lg:text-sm font-bold uppercase tracking-wider shadow-lg transition-all hover:shadow-xl min-w-[120px] lg:min-w-40 shrink-0 ${
               isScrolled
                 ? 'bg-white text-teal-600 hover:bg-gray-100'
                 : 'bg-teal-600 text-white hover:bg-teal-700'
