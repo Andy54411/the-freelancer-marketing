@@ -202,13 +202,13 @@ export const HeroHeader = () => {
               >
                 <Menu
                   className={cn(
-                    'size-6 transition-all duration-200',
+                    'size-6 text-white transition-all duration-200',
                     menuState && 'rotate-180 scale-0 opacity-0'
                   )}
                 />
                 <X
                   className={cn(
-                    'size-6 absolute inset-0 m-auto rotate-180 scale-0 opacity-0 transition-all duration-200',
+                    'size-6 text-white absolute inset-0 m-auto rotate-180 scale-0 opacity-0 transition-all duration-200',
                     menuState && 'rotate-0 scale-100 opacity-100'
                   )}
                 />
