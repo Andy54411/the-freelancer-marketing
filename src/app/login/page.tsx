@@ -12,9 +12,6 @@ import { auth } from '@/firebase/clients';
 import { LoginForm } from '@/components/login-form';
 import { Logo } from '@/components/logo';
 
-const POPUP_LOG = 'LoginPage:';
-const POPUP_ERROR = 'LoginPage ERROR:';
-
 function LoginPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,7 +32,7 @@ function LoginPageContent() {
     setLoading('email');
     setError(null);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
       // Explizite Weiterleitung nach erfolgreichem Login
       router.replace(redirectTo);
     } catch (err: unknown) {
@@ -67,7 +64,7 @@ function LoginPageContent() {
     setError(null);
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      await signInWithPopup(auth, provider);
       // Explizite Weiterleitung nach erfolgreichem Login
       router.replace(redirectTo);
     } catch (err: unknown) {
@@ -75,6 +72,7 @@ function LoginPageContent() {
         const firebaseError = err as { code: string; message: string };
 
         if (firebaseError.code === 'auth/popup-closed-by-user') {
+          // User closed popup, no error to show
         } else if (firebaseError.code === 'auth/account-exists-with-different-credential') {
           setError(
             'Ein Konto mit dieser E-Mail-Adresse existiert bereits mit einer anderen Anmeldemethode.'
@@ -97,7 +95,7 @@ function LoginPageContent() {
       const provider = new OAuthProvider('apple.com');
       provider.addScope('email');
       provider.addScope('name');
-      const result = await signInWithPopup(auth, provider);
+      await signInWithPopup(auth, provider);
       // Explizite Weiterleitung nach erfolgreichem Login
       router.replace(redirectTo);
     } catch (err: unknown) {
@@ -105,6 +103,7 @@ function LoginPageContent() {
         const firebaseError = err as { code: string; message: string };
 
         if (firebaseError.code === 'auth/popup-closed-by-user') {
+          // User closed popup, no error to show
         } else if (firebaseError.code === 'auth/account-exists-with-different-credential') {
           setError(
             'Ein Konto mit dieser E-Mail-Adresse existiert bereits mit einer anderen Anmeldemethode.'
@@ -121,10 +120,10 @@ function LoginPageContent() {
   };
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
-      <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+    <main className="min-h-screen bg-linear-to-br from-teal-500 via-teal-600 to-teal-700 relative flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+      <div className="absolute inset-0 bg-grid-white/[0.05] bg-size-[20px_20px]"></div>
       <div className="relative z-10 w-full max-w-md space-y-6">
-        <div className="text-center">
+        <div className="text-center mb-8">
           <Logo />
         </div>
         <LoginForm
@@ -139,7 +138,7 @@ function LoginPageContent() {
           disabled={loading !== null}
         />
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-md text-sm text-center mt-3">
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm text-center shadow-sm">
             {error}
           </div>
         )}
@@ -152,13 +151,13 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+        <main className="min-h-screen bg-linear-to-br from-teal-500 via-teal-600 to-teal-700 flex items-center justify-center px-4">
           <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md">
             <div className="text-center">
               <Logo />
               <h1 className="text-2xl font-bold text-gray-900 mt-2">Anmeldung</h1>
               <div className="flex justify-center items-center mt-6">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
               </div>
               <p className="text-gray-600 mt-2">Wird geladen...</p>
             </div>

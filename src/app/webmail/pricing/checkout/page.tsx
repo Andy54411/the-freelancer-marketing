@@ -108,9 +108,11 @@ export default function WebmailCheckoutPage() {
   
   const planId = searchParams.get('plan') as keyof typeof PLANS;
   const domainFromUrl = searchParams.get('domain');
+  const trialFromUrl = searchParams.get('trial') === 'true';
   const plan = PLANS[planId];
 
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
+  const [isTrial, setIsTrial] = useState(trialFromUrl && planId === 'business');
   const [includeEmail, setIncludeEmail] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -166,6 +168,7 @@ export default function WebmailCheckoutPage() {
         body: JSON.stringify({
           planId: plan.id,
           billingCycle,
+          isTrial: isTrial && plan.id === 'business',
           ...formData,
         }),
       });
@@ -457,6 +460,11 @@ export default function WebmailCheckoutPage() {
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                       Wird verarbeitet...
                     </>
+                  ) : isTrial && plan.id === 'business' ? (
+                    <>
+                      <Check className="w-5 h-5 mr-2" />
+                      7 Tage kostenlos starten
+                    </>
                   ) : (
                     <>
                       <CreditCard className="w-5 h-5 mr-2" />
@@ -538,7 +546,7 @@ export default function WebmailCheckoutPage() {
               </ul>
 
               {/* Savings */}
-              {savings && billingCycle === 'yearly' && (
+              {savings && billingCycle === 'yearly' && !isTrial && (
                 <div
                   className={cn(
                     'p-3 rounded-lg text-center',
@@ -551,17 +559,41 @@ export default function WebmailCheckoutPage() {
                 </div>
               )}
 
-              {/* Trial Notice */}
-              <div
-                className={cn(
-                  'mt-4 p-3 rounded-lg text-sm',
-                  isDark ? 'bg-[#303134]' : 'bg-gray-50'
-                )}
-              >
-                <p className={cn(isDark ? 'text-gray-300' : 'text-gray-600')}>
-                  30 Tage Geld-zurueck-Garantie. Keine Fragen.
-                </p>
-              </div>
+              {/* Trial Notice for Business */}
+              {isTrial && plan.id === 'business' && (
+                <div
+                  className={cn(
+                    'p-4 rounded-lg border-2 border-teal-500 bg-teal-500/10'
+                  )}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Check className="w-5 h-5 text-teal-500" />
+                    <span className={cn('font-semibold', isDark ? 'text-white' : 'text-gray-900')}>
+                      7 Tage kostenlos testen
+                    </span>
+                  </div>
+                  <p className={cn('text-sm', isDark ? 'text-gray-300' : 'text-gray-600')}>
+                    Sie zahlen heute nichts. Erst nach 7 Tagen wird Ihr Abo aktiviert und {currentPrice.toFixed(2)} EUR {billingCycle === 'monthly' ? 'monatlich' : 'jaehrlich'} berechnet.
+                  </p>
+                  <p className={cn('text-sm mt-2', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                    Jederzeit vor Ablauf der Testphase kuendbar.
+                  </p>
+                </div>
+              )}
+
+              {/* Default Trial Notice */}
+              {!isTrial && (
+                <div
+                  className={cn(
+                    'mt-4 p-3 rounded-lg text-sm',
+                    isDark ? 'bg-[#303134]' : 'bg-gray-50'
+                  )}
+                >
+                  <p className={cn(isDark ? 'text-gray-300' : 'text-gray-600')}>
+                    30 Tage Geld-zurueck-Garantie. Keine Fragen.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

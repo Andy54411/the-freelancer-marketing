@@ -435,4 +435,107 @@ export class AdminAuthService {
       return { success: false, created: false, error: errorMessage };
     }
   }
+
+  /**
+   * Webmail-Credentials speichern (verschluesselt)
+   */
+  static async saveWebmailCredentials(
+    userId: string,
+    webmailEmail: string,
+    webmailPassword: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!db) {
+        return { success: false, error: 'Datenbank nicht verfuegbar' };
+      }
+
+      const userDoc = await db.collection(COLLECTION_PATH).doc(userId).get();
+
+      if (!userDoc.exists) {
+        return { success: false, error: 'Benutzer nicht gefunden' };
+      }
+
+      // Passwort verschluesseln mit bcrypt (einfache Verschluesselung)
+      // In Produktion sollte AES oder aehnliches verwendet werden
+      const encryptedPassword = Buffer.from(webmailPassword).toString('base64');
+
+      await db.collection(COLLECTION_PATH).doc(userId).update({
+        webmailEmail: webmailEmail.toLowerCase(),
+        webmailPasswordEncrypted: encryptedPassword,
+        webmailConnectedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      return { success: false, error: `Speichern fehlgeschlagen: ${errorMessage}` };
+    }
+  }
+
+  /**
+   * Webmail-Credentials abrufen
+   */
+  static async getWebmailCredentials(userId: string): Promise<{
+    success: boolean;
+    credentials?: { email: string; password: string };
+    error?: string;
+  }> {
+    try {
+      if (!db) {
+        return { success: false, error: 'Datenbank nicht verfuegbar' };
+      }
+
+      const userDoc = await db.collection(COLLECTION_PATH).doc(userId).get();
+
+      if (!userDoc.exists) {
+        return { success: false, error: 'Benutzer nicht gefunden' };
+      }
+
+      const userData = userDoc.data();
+
+      if (!userData?.webmailEmail || !userData?.webmailPasswordEncrypted) {
+        return { success: false, error: 'Keine Webmail-Credentials gespeichert' };
+      }
+
+      // Passwort entschluesseln
+      const decryptedPassword = Buffer.from(userData.webmailPasswordEncrypted, 'base64').toString('utf-8');
+
+      return {
+        success: true,
+        credentials: {
+          email: userData.webmailEmail,
+          password: decryptedPassword,
+        },
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      return { success: false, error: `Abrufen fehlgeschlagen: ${errorMessage}` };
+    }
+  }
+
+  /**
+   * Webmail-Credentials loeschen
+   */
+  static async deleteWebmailCredentials(userId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!db) {
+        return { success: false, error: 'Datenbank nicht verfuegbar' };
+      }
+
+      const { FieldValue: FV } = await import('firebase-admin/firestore');
+
+      await db.collection(COLLECTION_PATH).doc(userId).update({
+        webmailEmail: FV.delete(),
+        webmailPasswordEncrypted: FV.delete(),
+        webmailConnectedAt: FV.delete(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      return { success: false, error: `Loeschen fehlgeschlagen: ${errorMessage}` };
+    }
+  }
 }

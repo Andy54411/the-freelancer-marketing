@@ -41,9 +41,9 @@ export function LoginForm({
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl">Anmelden</CardTitle>
-          <CardDescription>Willkommen zurück bei Taskilo</CardDescription>
+        <CardHeader className="space-y-2 text-center pb-6">
+          <CardTitle className="text-3xl font-bold">Anmelden</CardTitle>
+          <CardDescription className="text-base">Willkommen zurück bei Taskilo</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmitEmailPassword}>
@@ -133,24 +133,24 @@ export function LoginForm({
                 </div>
                 <Button
                   type="submit"
-                  className="w-full bg-[#14ad9f] hover:bg-teal-700"
+                  className="w-full bg-teal-600 hover:bg-teal-700 font-medium"
                   disabled={disabled}
                 >
                   Anmelden
                 </Button>
               </div>
               <div className="text-center text-sm">
-                <p className="mb-3">Noch kein Konto?</p>
+                <p className="mb-3 text-gray-600">Noch kein Konto?</p>
                 <div className="grid grid-cols-2 gap-3">
                   <a
                     href="/register/user"
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium transition-colors text-sm text-center"
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 py-2.5 px-4 rounded-lg font-medium transition-all hover:scale-105 text-sm text-center"
                   >
                     Privat
                   </a>
                   <a
                     href="/register/company"
-                    className="bg-[#14ad9f] hover:bg-taskilo-hover text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm text-center"
+                    className="bg-teal-600 hover:bg-teal-700 text-white py-2.5 px-4 rounded-lg font-medium transition-all hover:scale-105 text-sm text-center"
                   >
                     Firma
                   </a>

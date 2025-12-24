@@ -4,6 +4,8 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TicketManagement from '@/components/admin/TicketManagement';
+import { DemoRequestsCard } from '@/components/admin/demo-requests-card';
+import { AdminCalendarCard } from '@/components/admin/admin-calendar-card';
 import {
   Users,
   Building2,
@@ -151,6 +153,15 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Activity & Quick Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Demo Requests Card */}
+          <DemoRequestsCard />
+
+          {/* Calendar Overview Card */}
+          <AdminCalendarCard />
+        </div>
+
+        {/* Activity & Quick Actions - Second Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Check, Users, Shield, Zap, ArrowRight, Search, Loader2 } from 'lucide-react';
+import { Check, Users, Shield, Zap, ArrowRight, Search, Loader2, ChevronDown } from 'lucide-react';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -103,7 +103,7 @@ const WEBMAIL_PLANS: Plan[] = [
   {
     id: 'business',
     name: 'Taskilo Business',
-    badge: 'Komplettlösung',
+    badge: '7 Tage kostenlos',
     price: 29.99,
     priceUnit: '/Monat',
     features: [
@@ -121,14 +121,21 @@ const WEBMAIL_PLANS: Plan[] = [
       { text: 'DATEV Export', description: 'Nahtlose Steuerberater-Anbindung' },
       { text: 'Premium Support', description: 'Telefonischer Support' },
     ],
-    ctaText: 'Kostenlos testen',
-    ctaHref: '/webmail/pricing/checkout?plan=business',
+    ctaText: '7 Tage kostenlos testen',
+    ctaHref: '/webmail/pricing/checkout?plan=business&trial=true',
   },
 ];
 
 function PlanCard({ plan, isDark }: { plan: Plan; isDark: boolean }) {
+  const [expandedFeatures, setExpandedFeatures] = useState<number[]>([]);
   const priceWhole = Math.floor(plan.price);
   const priceCents = Math.round((plan.price - priceWhole) * 100);
+
+  const toggleFeature = (idx: number) => {
+    setExpandedFeatures(prev => 
+      prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
+    );
+  };
 
   return (
     <div
@@ -190,20 +197,46 @@ function PlanCard({ plan, isDark }: { plan: Plan; isDark: boolean }) {
       </div>
 
       {/* Features */}
-      <ul className="space-y-3 mb-6">
+      <ul className="space-y-2 mb-6">
         {plan.features.map((feature, idx) => (
-          <li key={idx} className="flex items-start gap-3">
-            <Check className="w-5 h-5 text-teal-500 shrink-0 mt-0.5" />
-            <div>
-              <span className={cn('font-medium', isDark ? 'text-white' : 'text-gray-900')}>
-                {feature.text}
-              </span>
-              {feature.description && (
-                <p className={cn('text-sm', isDark ? 'text-gray-400' : 'text-gray-500')}>
-                  {feature.description}
-                </p>
-              )}
-            </div>
+          <li key={idx}>
+            {feature.description ? (
+              <button
+                type="button"
+                onClick={() => toggleFeature(idx)}
+                className="w-full text-left"
+              >
+                <div className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-teal-500 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className={cn('font-medium', isDark ? 'text-white' : 'text-gray-900')}>
+                        {feature.text}
+                      </span>
+                      <ChevronDown 
+                        className={cn(
+                          'w-4 h-4 transition-transform shrink-0 ml-2',
+                          isDark ? 'text-gray-400' : 'text-gray-500',
+                          expandedFeatures.includes(idx) && 'rotate-180'
+                        )} 
+                      />
+                    </div>
+                    {expandedFeatures.includes(idx) && (
+                      <p className={cn('text-sm mt-1', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                        {feature.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </button>
+            ) : (
+              <div className="flex items-start gap-3">
+                <Check className="w-5 h-5 text-teal-500 shrink-0 mt-0.5" />
+                <span className={cn('font-medium', isDark ? 'text-white' : 'text-gray-900')}>
+                  {feature.text}
+                </span>
+              </div>
+            )}
           </li>
         ))}
       </ul>
@@ -212,7 +245,7 @@ function PlanCard({ plan, isDark }: { plan: Plan; isDark: boolean }) {
       <Link
         href={plan.ctaHref}
         className={cn(
-          'block w-full py-3 px-6 rounded-full text-center font-semibold transition-all',
+          'flex items-center justify-center gap-2 w-full py-3 px-6 rounded-full text-center font-semibold transition-all whitespace-nowrap',
           plan.popular
             ? 'bg-linear-to-r from-teal-500 to-teal-600 text-white hover:from-teal-600 hover:to-teal-700 shadow-lg hover:shadow-xl'
             : isDark
@@ -220,8 +253,8 @@ function PlanCard({ plan, isDark }: { plan: Plan; isDark: boolean }) {
               : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
         )}
       >
-        {plan.ctaText}
-        <ArrowRight className="w-4 h-4 inline-block ml-2" />
+        <span>{plan.ctaText}</span>
+        <ArrowRight className="w-4 h-4 shrink-0" />
       </Link>
     </div>
   );

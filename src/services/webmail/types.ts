@@ -72,6 +72,7 @@ export interface EmailAttachment {
   contentType: string;
   size: number;
   contentId?: string;
+  partId?: string; // Part-ID für Download
   data?: string; // Base64 encoded for download
 }
 

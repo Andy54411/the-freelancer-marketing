@@ -65,6 +65,7 @@ export interface EmailAttachment {
   contentType: string;
   size: number;
   contentId?: string;
+  partId?: string;
 }
 
 export interface Mailbox {
@@ -571,6 +572,7 @@ export class EmailService {
             contentType: partTypeStr,
             size: (part.size as number) || 0,
             contentId: part.id as string | undefined,
+            partId: partNum,
           });
           continue;
         }

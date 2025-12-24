@@ -126,6 +126,7 @@ interface JobFilterSidebarProps {
   activeFilters?: Record<string, string[]>;
   onFilterChange?: (category: string, value: string | number | number[]) => void;
   salaryRange?: { min: number; max: number };
+  isMobile?: boolean;
 }
 
 export function JobFilterSidebar({
@@ -134,6 +135,7 @@ export function JobFilterSidebar({
   activeFilters = {},
   onFilterChange,
   salaryRange,
+  isMobile = false,
 }: JobFilterSidebarProps) {
   const facets = React.useMemo(() => {
     const categories: Record<string, number> = {};
@@ -288,16 +290,30 @@ export function JobFilterSidebar({
   }, [jobs]);
 
   return (
-    <div className="bg-white border border-gray-200 p-4 rounded-sm">
-      {/* Active Filters Header */}
-      <div className="mb-6 pb-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-bold text-gray-900">Filter</h3>
-          <button onClick={onClearFilters} className="text-xs text-teal-600 hover:underline">
-            Alle entfernen
+    <div className={isMobile ? "bg-white" : "bg-white border border-gray-200 p-4 rounded-sm"}>
+      {/* Active Filters Header - only on desktop */}
+      {!isMobile && (
+        <div className="mb-6 pb-4 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-bold text-gray-900">Filter</h3>
+            <button onClick={onClearFilters} className="text-xs text-teal-600 hover:underline">
+              Alle entfernen
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile: Clear filters button */}
+      {isMobile && Object.keys(activeFilters).length > 0 && (
+        <div className="mb-4 pb-4 border-b border-gray-200">
+          <button 
+            onClick={onClearFilters} 
+            className="w-full py-2 text-sm text-teal-600 hover:text-teal-700 font-medium"
+          >
+            Alle Filter entfernen
           </button>
         </div>
-      </div>
+      )}
 
       {salaryRange && (
         <SalaryFilter
@@ -307,7 +323,6 @@ export function JobFilterSidebar({
           currentMax={activeFilters.salaryMax ? Number(activeFilters.salaryMax[0]) : undefined}
           onChange={(min, max) => {
             if (onFilterChange) {
-              // We pass these as separate filter updates
               onFilterChange('salaryMin', min);
               onFilterChange('salaryMax', max);
             }
@@ -320,6 +335,7 @@ export function JobFilterSidebar({
         items={facets.categories}
         selectedValues={activeFilters.category}
         onSelect={val => onFilterChange && onFilterChange('category', val)}
+        isOpen={!isMobile}
       />
 
       <FilterGroup
@@ -327,6 +343,7 @@ export function JobFilterSidebar({
         items={facets.regions}
         selectedValues={activeFilters.region}
         onSelect={val => onFilterChange && onFilterChange('region', val)}
+        isOpen={!isMobile}
       />
 
       <FilterGroup
@@ -334,6 +351,7 @@ export function JobFilterSidebar({
         items={facets.languages}
         selectedValues={activeFilters.languages}
         onSelect={val => onFilterChange && onFilterChange('languages', val)}
+        isOpen={false}
       />
 
       <FilterGroup
@@ -341,6 +359,7 @@ export function JobFilterSidebar({
         items={facets.industries}
         selectedValues={activeFilters.industry}
         onSelect={val => onFilterChange && onFilterChange('industry', val)}
+        isOpen={false}
       />
 
       <FilterGroup
@@ -348,6 +367,7 @@ export function JobFilterSidebar({
         items={facets.careerLevels}
         selectedValues={activeFilters.careerLevel}
         onSelect={val => onFilterChange && onFilterChange('careerLevel', val)}
+        isOpen={false}
       />
 
       <FilterGroup
@@ -355,6 +375,7 @@ export function JobFilterSidebar({
         items={facets.types}
         selectedValues={activeFilters.type}
         onSelect={val => onFilterChange && onFilterChange('type', val)}
+        isOpen={!isMobile}
       />
 
       <FilterGroup
@@ -362,6 +383,7 @@ export function JobFilterSidebar({
         items={facets.dates}
         selectedValues={activeFilters.date}
         onSelect={val => onFilterChange && onFilterChange('date', val)}
+        isOpen={false}
       />
     </div>
   );

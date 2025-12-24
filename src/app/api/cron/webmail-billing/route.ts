@@ -1,8 +1,10 @@
 /**
  * Webmail Billing Cron API
  * 
- * Wird taeglich aufgerufen um faellige Abonnements abzurechnen
- * und Rechnungen zu versenden
+ * Wird täglich aufgerufen um:
+ * 1. Revolut Subscriptions mit Firestore zu synchronisieren
+ * 2. Fällige Abonnements abzurechnen
+ * 3. Rechnungen zu versenden
  * 
  * Aufruf: GET /api/cron/webmail-billing
  * Header: Authorization: Bearer {CRON_SECRET}
@@ -14,6 +16,28 @@ import { WebmailSubscriptionService } from '@/services/webmail/WebmailSubscripti
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 Minuten für viele Abonnements
 
+/**
+ * Synchronisiert alle Revolut Subscriptions mit Firestore
+ */
+async function syncRevolutSubscriptions(): Promise<{ synced: number; error?: string }> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/admin/webmail/sync-revolut-subscriptions`, {
+      method: 'POST',
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      return { synced: 0, error: error.error || 'Sync fehlgeschlagen' };
+    }
+    
+    const data = await response.json();
+    return { synced: data.synced || 0 };
+  } catch (error) {
+    return { synced: 0, error: error instanceof Error ? error.message : 'Unbekannter Fehler' };
+  }
+}
+
 export async function GET(request: NextRequest) {
   // Verify cron secret
   const authHeader = request.headers.get('authorization');
@@ -24,6 +48,10 @@ export async function GET(request: NextRequest) {
   }
 
   const results = {
+    // Sync-Ergebnisse
+    syncedFromRevolut: 0,
+    syncError: null as string | null,
+    // Billing-Ergebnisse
     processed: 0,
     success: 0,
     failed: 0,
@@ -32,7 +60,14 @@ export async function GET(request: NextRequest) {
   };
 
   try {
-    // Hole alle faelligen Abonnements
+    // SCHRITT 1: Synchronisiere Revolut Subscriptions
+    const syncResult = await syncRevolutSubscriptions();
+    results.syncedFromRevolut = syncResult.synced;
+    if (syncResult.error) {
+      results.syncError = syncResult.error;
+    }
+
+    // SCHRITT 2: Hole alle fälligen Abonnements
     const dueSubscriptions = await WebmailSubscriptionService.getDueSubscriptions();
     results.processed = dueSubscriptions.length;
 
@@ -78,7 +113,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Abrechnung abgeschlossen: ${results.success}/${results.processed} erfolgreich`,
+      message: `Sync: ${results.syncedFromRevolut} | Abrechnung: ${results.success}/${results.processed} erfolgreich`,
       results,
       timestamp: new Date().toISOString(),
     });

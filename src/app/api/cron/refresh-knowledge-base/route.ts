@@ -80,6 +80,11 @@ const WEBSITE_URLS = [
   'https://taskilo.de/blog/kundenkommunikation',
   'https://taskilo.de/blog/perfektes-angebot',
   'https://taskilo.de/blog/digitalisierung-kleinunternehmen',
+  // Hilfe - Terminplan
+  'https://taskilo.de/hilfe/terminplan/erstellen',
+  'https://taskilo.de/hilfe/terminplan/verfuegbarkeit',
+  'https://taskilo.de/hilfe/terminplan/teilen',
+  'https://taskilo.de/hilfe/terminplan/bearbeiten',
 ];
 
 /**
@@ -90,6 +95,7 @@ function getSectionFromUrl(url: string): string {
   if (url.includes('/services/')) return 'Services';
   if (url.includes('/features/')) return 'Features';
   if (url.includes('/webmail')) return 'Webmail';
+  if (url.includes('/hilfe/')) return 'Hilfe';
   if (url.includes('/impressum') || url.includes('/datenschutz') || url.includes('/agb')) return 'Rechtliches';
   return 'Allgemein';
 }

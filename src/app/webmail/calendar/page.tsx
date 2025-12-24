@@ -4,15 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useWebmailSession } from '../layout';
 import { useRouter } from 'next/navigation';
 import { 
-  MapPin, 
-  Users,
-  Video,
   Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -21,9 +15,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { CalendarHeader, CalendarSidebar, CalendarGrid } from '@/components/webmail/calendar';
+import { CalendarHeader, CalendarSidebar, CalendarGrid, CreateEventModal, EventFormData } from '@/components/webmail/calendar';
 
 interface CalendarEvent {
   id: string;
@@ -58,24 +51,13 @@ export default function WebmailCalendarPage() {
   const [showCompletedTasks, setShowCompletedTasks] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [clickedDate, setClickedDate] = useState<Date | null>(null);
+  const [clickedAllDay, setClickedAllDay] = useState(false);
   const [calendars, setCalendars] = useState([
     { id: 'primary', name: 'Mein Kalender', color: '#0d9488', enabled: true },
     { id: 'birthdays', name: 'Geburtstage', color: '#8b5cf6', enabled: true },
     { id: 'tasks', name: 'Aufgaben', color: '#3b82f6', enabled: true },
   ]);
-
-  // Form state
-  const [eventForm, setEventForm] = useState({
-    title: '',
-    description: '',
-    start: '',
-    end: '',
-    location: '',
-    attendees: '',
-    isVideoMeeting: false,
-    allDay: false,
-    color: '#0d9488', // Teal
-  });
 
   const loadEvents = useCallback(() => {
     if (!session?.email) return;
@@ -125,64 +107,44 @@ export default function WebmailCalendarPage() {
     setEvents(newEvents);
   };
 
-  const handleDateClick = (clickedDate: Date, allDay: boolean) => {
-    const startDate = new Date(clickedDate);
-    const endDate = new Date(startDate);
-    endDate.setHours(endDate.getHours() + 1);
-
-    setEventForm({
-      title: '',
-      description: '',
-      start: allDay ? startDate.toISOString().split('T')[0] : startDate.toISOString().slice(0, 16),
-      end: allDay ? endDate.toISOString().split('T')[0] : endDate.toISOString().slice(0, 16),
-      location: '',
-      attendees: '',
-      isVideoMeeting: false,
-      allDay: allDay,
-      color: '#0d9488',
-    });
+  const handleDateClick = (date: Date, allDay: boolean) => {
+    setClickedDate(date);
+    setClickedAllDay(allDay);
     setSelectedEvent(null);
     setShowEventModal(true);
   };
 
   const handleEventClick = (event: CalendarEvent) => {
     setSelectedEvent(event);
-    setEventForm({
-      title: event.title,
-      description: event.description || '',
-      start: event.start.slice(0, 16),
-      end: event.end.slice(0, 16),
-      location: event.location || '',
-      attendees: event.attendees?.join(', ') || '',
-      isVideoMeeting: event.isVideoMeeting || false,
-      allDay: event.allDay || false,
-      color: event.color || '#0d9488',
-    });
+    setClickedDate(new Date(event.start));
+    setClickedAllDay(event.allDay || false);
     setShowEventModal(true);
   };
 
-  const handleSaveEvent = async () => {
-    if (!eventForm.title.trim()) {
-      toast.error('Bitte gib einen Titel ein');
-      return;
-    }
-
+  const handleSaveEvent = async (formData: EventFormData) => {
     setIsCreating(true);
     try {
+      const startDateTime = formData.allDay 
+        ? formData.startDate 
+        : `${formData.startDate}T${formData.startTime}`;
+      const endDateTime = formData.allDay 
+        ? formData.endDate 
+        : `${formData.endDate}T${formData.endTime}`;
+
       const eventData: CalendarEvent = {
         id: selectedEvent?.id || `event-${Date.now()}`,
-        title: eventForm.title,
-        description: eventForm.description,
-        start: eventForm.start,
-        end: eventForm.end,
-        location: eventForm.location,
-        attendees: eventForm.attendees.split(',').map(a => a.trim()).filter(Boolean),
-        isVideoMeeting: eventForm.isVideoMeeting,
-        videoMeetingUrl: eventForm.isVideoMeeting 
+        title: formData.title,
+        description: formData.description,
+        start: startDateTime,
+        end: endDateTime,
+        location: formData.location,
+        attendees: formData.attendees,
+        isVideoMeeting: formData.isVideoMeeting,
+        videoMeetingUrl: formData.isVideoMeeting 
           ? `https://mail.taskilo.de/webmail/meet/${Date.now()}`
           : undefined,
-        allDay: eventForm.allDay,
-        color: eventForm.color,
+        allDay: formData.allDay,
+        color: formData.color,
       };
 
       let newEvents: CalendarEvent[];
@@ -369,145 +331,63 @@ export default function WebmailCalendarPage() {
         />
       </div>
 
-      {/* Event Modal */}
-      <Dialog open={showEventModal} onOpenChange={setShowEventModal}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedEvent ? 'Termin bearbeiten' : 'Neuer Termin'}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedEvent ? 'Bearbeite die Details des Termins' : 'Erstelle einen neuen Kalendertermin'}
-            </DialogDescription>
-          </DialogHeader>
+      {/* Event Modal - Google Style */}
+      <CreateEventModal
+        isOpen={showEventModal}
+        onClose={() => {
+          setShowEventModal(false);
+          setSelectedEvent(null);
+        }}
+        onSave={handleSaveEvent}
+        initialDate={clickedDate || new Date()}
+        initialAllDay={clickedAllDay}
+        editEvent={selectedEvent ? {
+          id: selectedEvent.id,
+          title: selectedEvent.title,
+          eventType: 'event',
+          startDate: selectedEvent.start.split('T')[0],
+          startTime: selectedEvent.start.includes('T') ? selectedEvent.start.split('T')[1]?.slice(0, 5) || '' : '',
+          endDate: selectedEvent.end.split('T')[0],
+          endTime: selectedEvent.end.includes('T') ? selectedEvent.end.split('T')[1]?.slice(0, 5) || '' : '',
+          timezone: 'Europe/Berlin',
+          isRecurring: false,
+          attendees: selectedEvent.attendees || [],
+          isVideoMeeting: selectedEvent.isVideoMeeting || false,
+          videoMeetingUrl: selectedEvent.videoMeetingUrl,
+          location: selectedEvent.location || '',
+          description: selectedEvent.description || '',
+          calendarId: 'primary',
+          visibility: 'default',
+          reminder: 30,
+          color: selectedEvent.color || '#0d9488',
+          allDay: selectedEvent.allDay || false,
+        } : null}
+        userEmail={session?.email || ''}
+        isLoading={isCreating}
+      />
 
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="title">Titel</Label>
-              <Input
-                id="title"
-                value={eventForm.title}
-                onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
-                placeholder="Titel des Termins"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="start">Start</Label>
-                <Input
-                  id="start"
-                  type={eventForm.allDay ? 'date' : 'datetime-local'}
-                  value={eventForm.start}
-                  onChange={(e) => setEventForm({ ...eventForm, start: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="end">Ende</Label>
-                <Input
-                  id="end"
-                  type={eventForm.allDay ? 'date' : 'datetime-local'}
-                  value={eventForm.end}
-                  onChange={(e) => setEventForm({ ...eventForm, end: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Switch
-                id="allDay"
-                checked={eventForm.allDay}
-                onCheckedChange={(checked) => setEventForm({ ...eventForm, allDay: checked })}
-              />
-              <Label htmlFor="allDay">Ganztägig</Label>
-            </div>
-
-            <div>
-              <Label htmlFor="location">Ort</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="location"
-                  className="pl-9"
-                  value={eventForm.location}
-                  onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
-                  placeholder="Ort hinzufügen"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="attendees">Teilnehmer</Label>
-              <div className="relative">
-                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="attendees"
-                  className="pl-9"
-                  value={eventForm.attendees}
-                  onChange={(e) => setEventForm({ ...eventForm, attendees: e.target.value })}
-                  placeholder="E-Mail-Adressen (kommagetrennt)"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Switch
-                id="videoMeeting"
-                checked={eventForm.isVideoMeeting}
-                onCheckedChange={(checked) => setEventForm({ ...eventForm, isVideoMeeting: checked })}
-              />
-              <Label htmlFor="videoMeeting" className="flex items-center gap-2">
-                <Video className="h-4 w-4 text-teal-600" />
-                Video-Meeting hinzufügen
-              </Label>
-            </div>
-
-            <div>
-              <Label htmlFor="description">Beschreibung</Label>
-              <Textarea
-                id="description"
-                value={eventForm.description}
-                onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
-                placeholder="Beschreibung hinzufügen"
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label>Farbe</Label>
-              <div className="flex gap-2 mt-2">
-                {['#0d9488', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#22c55e'].map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    className={`w-8 h-8 rounded-full transition-transform ${
-                      eventForm.color === color ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''
-                    }`}
-                    style={{ backgroundColor: color }}
-                    onClick={() => setEventForm({ ...eventForm, color })}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="flex gap-2">
-            {selectedEvent && (
+      {/* Delete Confirmation Dialog */}
+      {selectedEvent && (
+        <Dialog open={false}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Termin löschen?</DialogTitle>
+              <DialogDescription>
+                Möchtest du den Termin "{selectedEvent.title}" wirklich löschen?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedEvent(null)}>
+                Abbrechen
+              </Button>
               <Button variant="destructive" onClick={handleDeleteEvent}>
                 <Trash2 className="h-4 w-4 mr-2" />
                 Löschen
               </Button>
-            )}
-            <div className="flex-1" />
-            <Button variant="outline" onClick={() => setShowEventModal(false)}>
-              Abbrechen
-            </Button>
-            <Button onClick={handleSaveEvent} disabled={isCreating}>
-              {isCreating ? 'Speichern...' : 'Speichern'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

@@ -5,8 +5,9 @@ import { JobFilterSidebar } from './JobFilterSidebar';
 import { JobSearchHeader } from './JobSearchHeader';
 import { JobCard } from './JobCard';
 import { JobPosting } from '@/types/career';
-import { Mail, Loader2 } from 'lucide-react';
+import { Mail, Loader2, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/clients';
 import { findCategoryBySubcategory } from '@/lib/categoriesData';
@@ -443,15 +444,48 @@ export function JobBoard() {
     <>
       <JobSearchHeader />
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Mobile: Filter Button */}
+        <div className="lg:hidden mb-4">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                <SlidersHorizontal className="w-4 h-4" />
+                Filter
+                {Object.keys(sidebarFilters).length > 0 && (
+                  <span className="bg-teal-600 text-white text-xs px-2 py-0.5 rounded-full">
+                    {Object.keys(sidebarFilters).length}
+                  </span>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
+              <SheetHeader className="pb-4 border-b">
+                <SheetTitle>Filter</SheetTitle>
+              </SheetHeader>
+              <div className="pt-4">
+                <JobFilterSidebar
+                  jobs={baseJobs}
+                  activeFilters={sidebarFilters}
+                  onFilterChange={handleSidebarFilterChange}
+                  onClearFilters={handleClearFilters}
+                  salaryRange={salaryRange}
+                  isMobile={true}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Column: Filters */}
-          <div className="w-full lg:w-1/4">
+          {/* Left Column: Filters - Hidden on Mobile */}
+          <div className="hidden lg:block lg:w-1/4">
             <JobFilterSidebar
-              jobs={baseJobs} // Pass baseJobs so counts reflect all possibilities within user prefs
+              jobs={baseJobs}
               activeFilters={sidebarFilters}
               onFilterChange={handleSidebarFilterChange}
               onClearFilters={handleClearFilters}
               salaryRange={salaryRange}
+              isMobile={false}
             />
           </div>
 

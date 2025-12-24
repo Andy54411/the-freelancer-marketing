@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import GoogleAdsIntegrationRequest from '@/components/admin/GoogleAdsIntegrationRequest';
+import { CompanySubscriptionCard } from '@/components/admin/CompanySubscriptionCard';
+import { PromoCodeCard } from '@/components/admin/PromoCodeCard';
 import {
   ArrowLeft,
   Building2,
@@ -503,6 +505,12 @@ export default function AdminCompanyDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Grundinformationen */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Tarif & Abonnement - jetzt im Hauptbereich links */}
+          <CompanySubscriptionCard companyId={companyId} />
+
+          {/* Testphase & Promo-Codes */}
+          <PromoCodeCard companyId={companyId} />
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">

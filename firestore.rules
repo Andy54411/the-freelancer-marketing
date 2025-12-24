@@ -2989,6 +2989,22 @@ service cloud.firestore {
     }
 
 
+    // ==========================================
+    // Demo-Anfragen (öffentlich erstellen, Admin lesen/updaten)
+    // ==========================================
+    match /demoRequests/{requestId} {
+      // Öffentlich: Jeder kann Demo-Anfragen erstellen
+      allow create: if request.resource.data.keys().hasAll(['name', 'email', 'company']) &&
+                       request.resource.data.name is string &&
+                       request.resource.data.email is string &&
+                       request.resource.data.company is string;
+      
+      // Nur Admins können lesen und aktualisieren
+      allow read, update: if request.auth != null && 
+                             (request.auth.token.role == 'admin' ||
+                              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.user_type == 'admin'));
+    }
 
   }
 }

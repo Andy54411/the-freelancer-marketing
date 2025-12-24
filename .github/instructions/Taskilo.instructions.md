@@ -1,5 +1,11 @@
 # TASKILO AI - KOMPAKT
 
+## ZUGANGSDATEN & ACCOUNTS
+- **Haupt-Admin-Account**: andy.staudinger@taskilo.de
+- **Admin Dashboard**: `/dashboard/admin` (Login via `/admin/login`)
+- **Webmail**: `/webmail` oder mail.taskilo.de
+- **Passwort-Hinweis**: Alle Taskilo-Dienste nutzen das gleiche Passwort (in .env.local oder beim Benutzer erfragen)
+
 ## NICHT VERHANDELBAR
 1. **GoBD + §19 UStG**: Steuerkonform, fortlaufende Nummern, nur Stornierungen
 2. **KEINE Mock-Daten**: Wurzelprobleme lösen

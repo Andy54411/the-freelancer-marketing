@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Grid3X3 } from 'lucide-react';
+import { Grid3X3, LayoutDashboard, Calendar, Users, Ticket, Building2, Settings, FileText, CreditCard, BarChart3, MessageSquare, XCircle, Bell, Shield, Mail, Briefcase, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 
@@ -10,6 +10,12 @@ interface AppItem {
   name: string;
   href: string;
   icon: React.ReactNode;
+}
+
+interface AdminAppItem {
+  name: string;
+  href: string;
+  icon: LucideIcon;
 }
 
 // Taskilo Brand Colors
@@ -20,6 +26,80 @@ const TEAL_500 = '#14b8a6';
 const TEAL_600 = '#0d9488';
 const TEAL_700 = '#0f766e';
 const TEAL_800 = '#115e59';
+
+// Admin Apps - alle Apps aus der Admin-Sidebar
+const adminApps: AdminAppItem[] = [
+  {
+    name: 'Übersicht',
+    href: '/dashboard/admin',
+    icon: LayoutDashboard,
+  },
+  {
+    name: 'Kalender',
+    href: '/admin-calendar',
+    icon: Calendar,
+  },
+  {
+    name: 'Workspace',
+    href: '/dashboard/admin/workspace',
+    icon: Briefcase,
+  },
+  {
+    name: 'Tickets',
+    href: '/dashboard/admin/tickets',
+    icon: Ticket,
+  },
+  {
+    name: 'Chat-Monitoring',
+    href: '/dashboard/admin/chat-monitoring',
+    icon: MessageSquare,
+  },
+  {
+    name: 'Storno',
+    href: '/dashboard/admin/storno-management',
+    icon: XCircle,
+  },
+  {
+    name: 'Analytics',
+    href: '/dashboard/admin/analytics',
+    icon: BarChart3,
+  },
+  {
+    name: 'Updates',
+    href: '/dashboard/admin/updates',
+    icon: Bell,
+  },
+  {
+    name: 'Unternehmen',
+    href: '/dashboard/admin/companies',
+    icon: Building2,
+  },
+  {
+    name: 'Benutzer',
+    href: '/dashboard/admin/users',
+    icon: Users,
+  },
+  {
+    name: 'Admins',
+    href: '/dashboard/admin/admin-users',
+    icon: Shield,
+  },
+  {
+    name: 'E-Mail',
+    href: '/dashboard/admin/email',
+    icon: Mail,
+  },
+  {
+    name: 'Abrechnung',
+    href: '/dashboard/admin/webmail-billing',
+    icon: CreditCard,
+  },
+  {
+    name: 'Einstellungen',
+    href: '/dashboard/admin/settings',
+    icon: Settings,
+  },
+];
 
 const apps: AppItem[] = [
   {
@@ -179,9 +259,28 @@ interface AppLauncherProps {
 
 export function AppLauncher({ className }: AppLauncherProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const { isDark } = useWebmailTheme();
+
+  // Check admin permissions on mount
+  useEffect(() => {
+    async function checkAdminPermissions() {
+      try {
+        const response = await fetch('/api/admin/auth/verify');
+        if (response.ok) {
+          const data = await response.json();
+          // API gibt success: true zurück wenn Admin eingeloggt
+          setIsAdmin(data.success === true || data.valid === true);
+        }
+      } catch {
+        // Not an admin or error checking permissions
+        setIsAdmin(false);
+      }
+    }
+    checkAdminPermissions();
+  }, []);
 
   // Close on click outside
   useEffect(() => {
@@ -247,7 +346,7 @@ export function AppLauncher({ className }: AppLauncherProps) {
             ref={modalRef}
             className={cn(
               'absolute right-0 top-full mt-2 z-50',
-              'w-[300px] max-h-[400px] overflow-y-auto',
+              'w-[300px] max-h-[500px] overflow-y-auto',
               isDark ? 'bg-[#303134] border-[#5f6368]' : 'bg-white border-gray-200',
               'rounded-2xl shadow-xl border',
               'animate-in fade-in-0 zoom-in-95 duration-150'
@@ -260,7 +359,7 @@ export function AppLauncher({ className }: AppLauncherProps) {
               <h3 className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Taskilo Apps</h3>
             </div>
 
-            {/* App Grid */}
+            {/* Webmail Apps */}
             <div className="p-3 grid grid-cols-3 gap-1">
               {apps.map((app) => (
                 <Link
@@ -285,6 +384,44 @@ export function AppLauncher({ className }: AppLauncherProps) {
                 </Link>
               ))}
             </div>
+
+            {/* Admin Apps - Only shown if user has admin rights */}
+            {isAdmin && (
+              <>
+                <div className={`px-4 py-2 border-t ${isDark ? 'border-[#5f6368]' : 'border-gray-100'}`}>
+                  <h4 className={`text-xs font-medium uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Admin
+                  </h4>
+                </div>
+                <div className="p-3 grid grid-cols-3 gap-1">
+                  {adminApps.map((app) => {
+                    const IconComponent = app.icon;
+                    return (
+                      <Link
+                        key={app.name}
+                        href={app.href}
+                        onClick={() => setIsOpen(false)}
+                        className={cn(
+                          'flex flex-col items-center justify-center',
+                          'p-3 rounded-lg',
+                          isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100',
+                          'transition-colors',
+                          'focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2'
+                        )}
+                        role="menuitem"
+                      >
+                        <div className="mb-1 w-12 h-12 flex items-center justify-center bg-teal-500/10 rounded-xl">
+                          <IconComponent className="w-6 h-6 text-teal-600" />
+                        </div>
+                        <span className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'} text-center leading-tight`}>
+                          {app.name}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </>
+            )}
 
             {/* Footer */}
             <div className={`px-4 py-3 border-t ${isDark ? 'border-[#5f6368]' : 'border-gray-100'} text-center`}>

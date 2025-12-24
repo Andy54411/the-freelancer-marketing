@@ -67,6 +67,48 @@ export const HeroHeader = () => {
       description: 'Personalverwaltung digitalisieren',
       icon: FileUser
     },
+    { 
+      name: 'Kalender & Termine', 
+      href: '/features/calendar', 
+      description: 'Termine und Verfügbarkeiten verwalten',
+      icon: Clock
+    },
+    { 
+      name: 'E-Mail & Kommunikation', 
+      href: '/features/webmail', 
+      description: 'Professionelle E-Mail-Lösung für Ihr Team',
+      icon: Mail
+    },
+    { 
+      name: 'Buchhaltung & Rechnungen', 
+      href: '/features/accounting', 
+      description: 'Automatisierte Rechnungsstellung und Buchhaltung',
+      icon: FileUser
+    },
+    { 
+      name: 'WhatsApp Business', 
+      href: '/features/whatsapp', 
+      description: 'Kundenkommunikation über WhatsApp',
+      icon: Star
+    },
+    { 
+      name: 'Banking & Zahlungen', 
+      href: '/features/banking', 
+      description: 'Revolut Business Integration',
+      icon: Star
+    },
+    { 
+      name: 'Lagerbestand', 
+      href: '/features/inventory', 
+      description: 'Artikel und Lagerbestände verwalten',
+      icon: Star
+    },
+    { 
+      name: 'Taskilo Advertising', 
+      href: '/features/advertising', 
+      description: 'Multi-Plattform Werbe-Management',
+      icon: Star
+    },
   ];
 
   useEffect(() => {

@@ -23,6 +23,10 @@ import {
   FolderInput,
   Tag,
   Folder,
+  Download,
+  FileText,
+  Image,
+  File,
 } from 'lucide-react';
 import { useWebmail } from '@/hooks/useWebmail';
 import { EmailMessage, Mailbox } from '@/services/webmail/types';
@@ -362,8 +366,15 @@ const EmailItem = memo(({
 EmailItem.displayName = 'EmailItem';
 
 // ===== EMAIL VIEWER COMPONENT =====
+interface AttachmentInfo {
+  filename: string;
+  contentType?: string;
+  size?: number;
+  partId?: string;
+}
+
 interface EmailViewerProps {
-  email: EmailMessage & { text?: string; html?: string; attachments?: Array<{ filename: string }> };
+  email: EmailMessage & { text?: string; html?: string; attachments?: AttachmentInfo[] };
   onClose: () => void;
   onReply: () => void;
   onMoveToSpam: (uid: number) => void;
@@ -373,6 +384,7 @@ interface EmailViewerProps {
   onForward: () => void;
   onDelete: (uid: number) => void;
   onStar: (uid: number) => void;
+  credentials: { email: string; password: string };
 }
 
 function EmailViewer({ 
@@ -386,8 +398,72 @@ function EmailViewer({
   onMoveToFolder,
   mailboxes,
   currentMailbox,
+  credentials,
 }: EmailViewerProps) {
   const isStarred = email.flags.includes('\\Flagged');
+  const [downloadingAttachment, setDownloadingAttachment] = useState<string | null>(null);
+
+  // Attachment herunterladen
+  const handleDownloadAttachment = async (attachment: AttachmentInfo) => {
+    if (!attachment.partId) {
+      console.error('Attachment hat keine partId');
+      return;
+    }
+
+    setDownloadingAttachment(attachment.filename);
+
+    try {
+      const response = await fetch('/api/webmail/attachment/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password,
+          mailbox: currentMailbox,
+          uid: email.uid,
+          partId: attachment.partId,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Download fehlgeschlagen');
+      }
+
+      // Blob erstellen und herunterladen
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = attachment.filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Attachment download failed:', error);
+    } finally {
+      setDownloadingAttachment(null);
+    }
+  };
+
+  // Icon basierend auf Content-Type
+  const getAttachmentIcon = (contentType?: string) => {
+    if (!contentType) return <File className="h-4 w-4 text-gray-400" />;
+    if (contentType.startsWith('image/')) return <Image className="h-4 w-4 text-blue-500" />;
+    if (contentType === 'application/pdf') return <FileText className="h-4 w-4 text-red-500" />;
+    if (contentType.includes('word') || contentType.includes('document')) return <FileText className="h-4 w-4 text-blue-600" />;
+    if (contentType.includes('excel') || contentType.includes('spreadsheet')) return <FileText className="h-4 w-4 text-green-600" />;
+    return <File className="h-4 w-4 text-gray-400" />;
+  };
+
+  // Formatiere Dateigroesse
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
   
   // Interne Dovecot/Mailcow-Ordner die versteckt werden sollen
   const hiddenFolders = ['dovecot', '.dovecot', 'virtual', '.virtual', 'dovecot.sieve', 'sieve', 'lda-dupes', 'locks'];
@@ -585,10 +661,23 @@ function EmailViewer({
             </div>
             <div className="flex flex-wrap gap-2">
               {email.attachments.map((att, i) => (
-                <div key={i} className="px-3 py-2 bg-white rounded-lg border text-sm flex items-center gap-2 hover:bg-gray-50 cursor-pointer transition-colors">
-                  <Paperclip className="h-4 w-4 text-gray-400" />
-                  {att.filename}
-                </div>
+                <button
+                  key={i}
+                  onClick={() => handleDownloadAttachment(att)}
+                  disabled={downloadingAttachment === att.filename}
+                  className="px-3 py-2 bg-white rounded-lg border text-sm flex items-center gap-2 hover:bg-teal-50 hover:border-teal-300 cursor-pointer transition-colors disabled:opacity-50"
+                >
+                  {downloadingAttachment === att.filename ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
+                  ) : (
+                    getAttachmentIcon(att.contentType)
+                  )}
+                  <span className="max-w-[200px] truncate">{att.filename}</span>
+                  {att.size && (
+                    <span className="text-xs text-gray-400">({formatFileSize(att.size)})</span>
+                  )}
+                  <Download className="h-3 w-3 text-gray-400" />
+                </button>
               ))}
             </div>
           </div>
@@ -1133,6 +1222,7 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
             onMoveToFolder={handleMoveToFolder}
             mailboxes={mailboxes}
             currentMailbox={currentMailbox}
+            credentials={{ email, password }}
           />
         </div>
       )}

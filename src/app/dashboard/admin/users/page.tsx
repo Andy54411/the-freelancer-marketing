@@ -39,15 +39,18 @@ export default function AdminUsersPage() {
         setUsers(data.users || []);
       }
     } catch (error) {
+      console.error('Fehler beim Laden der Benutzer:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const filteredUsers = users.filter(user => {
+    const userName = user.name || '';
+    const userEmail = user.email || '';
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userEmail.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === 'all' || user.type === filterType;
     return matchesSearch && matchesType;
   });

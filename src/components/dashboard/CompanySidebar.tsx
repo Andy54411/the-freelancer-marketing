@@ -36,6 +36,7 @@ import {
   PanelLeftOpen as FiPanelLeftOpen,
 } from 'lucide-react';
 import { StorageCardSidebar } from './StorageCardSidebar';
+import { CurrentPlanCard } from './CurrentPlanCard';
 
 interface NavigationItem {
   label: string;
@@ -1423,8 +1424,9 @@ export default function CompanySidebar({
 
                   {/* Storage Card direkt nach Einstellungen Button */}
                   {item.value === 'settings' && !isCollapsed && (
-                    <div className="mt-2 px-2">
+                    <div className="mt-2 px-2 space-y-2">
                       <StorageCardSidebar companyId={uid} />
+                      <CurrentPlanCard companyId={uid} />
                     </div>
                   )}
                 </div>
