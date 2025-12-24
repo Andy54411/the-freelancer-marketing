@@ -99,20 +99,21 @@ function SalaryFilter({ min, max, currentMin, currentMax, onChange }: SalaryFilt
 
       {open && (
         <div className="px-2 py-2">
-          <div className="flex justify-between text-sm text-gray-600 mb-4">
-            <span>{localValue[0].toLocaleString()} €</span>
-            <span>{localValue[1].toLocaleString()} €</span>
+          <div className="flex justify-between text-sm text-gray-600 mb-2">
+            <span className="font-medium">{localValue[0].toLocaleString('de-DE')} €</span>
+            <span className="font-medium">{localValue[1].toLocaleString('de-DE')} €</span>
           </div>
-          <Slider
-            defaultValue={[min, max]}
-            value={localValue}
-            min={min}
-            max={max}
-            step={1000}
-            onValueChange={setLocalValue}
-            onValueCommit={val => onChange(val[0], val[1])}
-            className="my-4"
-          />
+          <div className="px-3 py-4">
+            <Slider
+              defaultValue={[min, max]}
+              value={localValue}
+              min={min}
+              max={max}
+              step={1000}
+              onValueChange={setLocalValue}
+              onValueCommit={val => onChange(val[0], val[1])}
+            />
+          </div>
         </div>
       )}
     </div>
