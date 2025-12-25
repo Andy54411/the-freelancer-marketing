@@ -106,6 +106,7 @@ interface WebmailClientProps {
   email: string;
   password: string;
   onLogout?: () => void;
+  initialComposeTo?: string;
 }
 
 // Helper function to format dates like EmailClient
@@ -730,7 +731,7 @@ const convertWebmailToEmailClientMessage = (msg: EmailMessage): EmailClientMessa
 };
 
 // ===== MAIN WEBMAIL CLIENT - LIKE EMAILCLIENT =====
-export function WebmailClient({ email, password, onLogout }: WebmailClientProps) {
+export function WebmailClient({ email, password, onLogout, initialComposeTo }: WebmailClientProps) {
   const {
     mailboxes,
     messages,
@@ -756,6 +757,7 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
   const [selectedEmail, setSelectedEmail] = useState<EmailMessage | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [replyToEmail, setReplyToEmail] = useState<EmailMessage | null>(null);
+  const [composeToEmail, setComposeToEmail] = useState<string | undefined>(undefined);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
@@ -763,6 +765,16 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
     fetchMailboxes();
     fetchMessages('INBOX');
   }, [fetchMailboxes, fetchMessages]);
+
+  // Öffne Compose-Dialog wenn initialComposeTo übergeben wurde
+  useEffect(() => {
+    if (initialComposeTo) {
+      setComposeToEmail(initialComposeTo);
+      setIsComposeOpen(true);
+      // URL-Parameter entfernen nach Verwendung
+      window.history.replaceState({}, '', '/webmail');
+    }
+  }, [initialComposeTo]);
 
   // Clear selection when changing mailbox
   useEffect(() => {
@@ -1215,10 +1227,12 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
         onClose={() => {
           setIsComposeOpen(false);
           setReplyToEmail(null);
+          setComposeToEmail(undefined);
         }}
         onSend={handleSendEmail}
         onSaveDraft={handleSaveDraft}
         replyTo={replyToEmail ? convertWebmailToEmailClientMessage(replyToEmail) : undefined}
+        initialTo={composeToEmail}
       />
     </div>
   );

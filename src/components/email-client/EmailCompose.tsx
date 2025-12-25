@@ -70,6 +70,7 @@ interface EmailComposeProps {
   onSaveDraft: (email: EmailComposeType) => Promise<void>;
   replyTo?: EmailMessage;
   forwardEmail?: EmailMessage;
+  initialTo?: string;
   className?: string;
   companyId?: string;
 }
@@ -206,6 +207,7 @@ export function EmailCompose({
   onSaveDraft,
   replyTo,
   forwardEmail,
+  initialTo,
   className,
   companyId,
 }: EmailComposeProps) {
@@ -243,10 +245,10 @@ export function EmailCompose({
       let replyToEmail = '';
       
       if (typeof replyTo.from === 'object' && replyTo.from?.email) {
-        // ✅ Neues Format: { email: string, name?: string }
+        // Neues Format: { email: string, name?: string }
         replyToEmail = replyTo.from.email;
       } else if (typeof replyTo.from === 'string') {
-        // 🔧 Altes Format: "Name <email@example.com>" oder "email@example.com"
+        // Altes Format: "Name <email@example.com>" oder "email@example.com"
         const match = replyTo.from.match(/^.*?<(.+?)>$/);
         if (match) {
           replyToEmail = match[1].trim();
@@ -280,6 +282,16 @@ export function EmailCompose({
         body: forwardEmail.body || '',
         priority: 'normal',
       });
+    } else if (isOpen && initialTo) {
+      // Neue E-Mail mit vorausgefülltem Empfänger
+      setEmail({
+        to: initialTo,
+        cc: '',
+        bcc: '',
+        subject: '',
+        body: '',
+        priority: 'normal',
+      });
     } else if (isOpen && !replyTo && !forwardEmail) {
       // New email
       setEmail({
@@ -291,7 +303,7 @@ export function EmailCompose({
         priority: 'normal',
       });
     }
-  }, [isOpen, replyTo, forwardEmail]);
+  }, [isOpen, replyTo, forwardEmail, initialTo]);
 
   if (!isOpen) return null;
 

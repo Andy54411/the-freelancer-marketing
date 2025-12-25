@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 
@@ -85,6 +86,10 @@ function deleteCookie(): void {
 }
 
 function WebmailPageContent() {
+  const searchParams = useSearchParams();
+  const composeParam = searchParams.get('compose');
+  const toParam = searchParams.get('to');
+  
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
@@ -227,6 +232,7 @@ function WebmailPageContent() {
         email={email} 
         password={password} 
         onLogout={handleLogout}
+        initialComposeTo={composeParam === 'true' && toParam ? toParam : undefined}
       />
     );
   }
