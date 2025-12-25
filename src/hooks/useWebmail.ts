@@ -17,6 +17,8 @@ interface WebmailState {
   page: number;
   loading: boolean;
   error: string | null;
+  messageError: string | null;
+  messageLoading: boolean;
 }
 
 export function useWebmail({ email, password }: UseWebmailOptions) {
@@ -29,10 +31,14 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
     page: 1,
     loading: false,
     error: null,
+    messageError: null,
+    messageLoading: false,
   });
 
   const setLoading = (loading: boolean) => setState(prev => ({ ...prev, loading }));
   const setError = (error: string | null) => setState(prev => ({ ...prev, error }));
+  const setMessageLoading = (messageLoading: boolean) => setState(prev => ({ ...prev, messageLoading }));
+  const setMessageError = (messageError: string | null) => setState(prev => ({ ...prev, messageError }));
 
   const fetchMailboxes = useCallback(async () => {
     setLoading(true);
@@ -86,8 +92,8 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
   }, [email, password]);
 
   const fetchMessage = useCallback(async (uid: number, mailbox?: string) => {
-    setLoading(true);
-    setError(null);
+    setMessageLoading(true);
+    setMessageError(null);
     try {
       const response = await fetch('/api/webmail/message', {
         method: 'POST',
@@ -101,14 +107,14 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
       });
       const data = await response.json();
       if (data.success) {
-        setState(prev => ({ ...prev, currentMessage: data.message, loading: false }));
+        setState(prev => ({ ...prev, currentMessage: data.message, messageLoading: false, messageError: null }));
       } else {
-        setError(data.error);
-        setLoading(false);
+        setMessageError(data.error || 'Nachricht konnte nicht geladen werden');
+        setMessageLoading(false);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch message');
-      setLoading(false);
+      setMessageError(err instanceof Error ? err.message : 'Verbindungsfehler beim Laden der Nachricht');
+      setMessageLoading(false);
     }
   }, [email, password, state.currentMailbox]);
 
@@ -177,7 +183,11 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
   }, [email, password, state.currentMailbox, state.page, fetchMessages]);
 
   const clearCurrentMessage = useCallback(() => {
-    setState(prev => ({ ...prev, currentMessage: null }));
+    setState(prev => ({ ...prev, currentMessage: null, messageError: null }));
+  }, []);
+
+  const clearMessageError = useCallback(() => {
+    setState(prev => ({ ...prev, messageError: null }));
   }, []);
 
   return {
@@ -188,5 +198,6 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
     sendEmail,
     performAction,
     clearCurrentMessage,
+    clearMessageError,
   };
 }

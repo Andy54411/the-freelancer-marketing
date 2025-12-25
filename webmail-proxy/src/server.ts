@@ -30,6 +30,9 @@ const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 3100;
 
+// Trust proxy - wichtig für Rate-Limiter hinter Nginx/Reverse-Proxy
+app.set('trust proxy', 1);
+
 // API Key für Authentifizierung
 const API_KEY = process.env.WEBMAIL_API_KEY || 'taskilo-webmail-secret-key-change-in-production';
 

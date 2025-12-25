@@ -816,12 +816,15 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
     total: _total,
     loading,
     error,
+    messageError,
+    messageLoading,
     fetchMailboxes,
     fetchMessages,
     fetchMessage,
     sendEmail,
     performAction,
     clearCurrentMessage,
+    clearMessageError,
   } = useWebmail({ email, password });
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -859,7 +862,8 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
   const handleCloseEmail = useCallback(() => {
     setSelectedEmail(null);
     clearCurrentMessage();
-  }, [clearCurrentMessage]);
+    clearMessageError();
+  }, [clearCurrentMessage, clearMessageError]);
 
   const handleCompose = useCallback((replyTo?: EmailMessage) => {
     setReplyToEmail(replyTo || null);
@@ -1209,21 +1213,49 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
       </div>
 
       {/* Email Viewer - Takes Remaining Space on desktop, full screen on mobile */}
-      {selectedEmail && currentMessage && (
+      {selectedEmail && (messageLoading || messageError || currentMessage) && (
         <div className="fixed inset-0 md:relative md:inset-auto md:flex-1 bg-white overflow-hidden min-w-0 z-40 md:z-auto">
-          <EmailViewer
-            email={currentMessage}
-            onClose={handleCloseEmail}
-            onReply={() => handleCompose(currentMessage)}
-            onForward={() => handleCompose(currentMessage)}
-            onDelete={handleDelete}
-            onStar={handleStarEmail}
-            onMoveToSpam={handleMoveToSpam}
-            onMoveToFolder={handleMoveToFolder}
-            mailboxes={mailboxes}
-            currentMailbox={currentMailbox}
-            credentials={{ email, password }}
-          />
+          {messageLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="inline-block w-12 h-12 border-4 border-gray-200 border-t-teal-600 rounded-full animate-spin"></div>
+                <p className="mt-4 text-gray-600">Nachricht wird geladen...</p>
+              </div>
+            </div>
+          ) : messageError ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center max-w-md px-6">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-red-100 flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <h3 className="text-base font-semibold text-gray-900 mb-2">Fehler beim Laden</h3>
+                <p className="text-gray-600 text-sm mb-4">{messageError}</p>
+                <div className="flex gap-2 justify-center">
+                  <Button variant="outline" onClick={handleCloseEmail}>
+                    Zurück
+                  </Button>
+                  <Button onClick={() => fetchMessage(selectedEmail.uid)} className="bg-teal-600 hover:bg-teal-700">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Erneut versuchen
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : currentMessage ? (
+            <EmailViewer
+              email={currentMessage}
+              onClose={handleCloseEmail}
+              onReply={() => handleCompose(currentMessage)}
+              onForward={() => handleCompose(currentMessage)}
+              onDelete={handleDelete}
+              onStar={handleStarEmail}
+              onMoveToSpam={handleMoveToSpam}
+              onMoveToFolder={handleMoveToFolder}
+              mailboxes={mailboxes}
+              currentMailbox={currentMailbox}
+              credentials={{ email, password }}
+            />
+          ) : null}
         </div>
       )}
       </div>
