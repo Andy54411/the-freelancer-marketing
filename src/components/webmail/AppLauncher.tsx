@@ -171,7 +171,7 @@ const apps: AppItem[] = [
   },
   {
     name: 'Kontakte',
-    href: '/webmail/contacts',
+    href: '/contacts',
     icon: (
       <svg viewBox="0 0 48 48" className="w-12 h-12">
         {/* Card background */}

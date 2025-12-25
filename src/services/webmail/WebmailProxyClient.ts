@@ -211,6 +211,38 @@ export class WebmailProxyClient {
     );
     return { success: true, newPath: result.newPath };
   }
+
+  async getContacts(limit: number = 500): Promise<{ 
+    contacts: Array<{
+      id: string;
+      email: string;
+      name: string;
+      lastContacted: string;
+      contactCount: number;
+      source: 'sent' | 'received' | 'both';
+    }>;
+    total: number;
+  }> {
+    const result = await proxyRequest<{ 
+      success: boolean; 
+      contacts: Array<{
+        id: string;
+        email: string;
+        name: string;
+        lastContacted: string;
+        contactCount: number;
+        source: 'sent' | 'received' | 'both';
+      }>;
+      total: number;
+    }>(
+      '/api/contacts',
+      {
+        ...this.credentials,
+        limit,
+      }
+    );
+    return { contacts: result.contacts, total: result.total };
+  }
 }
 
 /**
