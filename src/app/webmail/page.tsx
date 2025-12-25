@@ -42,12 +42,20 @@ const COOKIE_NAME = 'webmail_session';
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
 
 function encodeCredentials(email: string, password: string): string {
-  return btoa(JSON.stringify({ email, password }));
+  // Unicode-sichere Base64-Kodierung
+  const jsonStr = JSON.stringify({ email, password });
+  const bytes = new TextEncoder().encode(jsonStr);
+  const binString = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('');
+  return btoa(binString);
 }
 
 function decodeCredentials(encoded: string): { email: string; password: string } | null {
   try {
-    return JSON.parse(atob(encoded));
+    // Unicode-sichere Base64-Dekodierung
+    const binString = atob(encoded);
+    const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0) as number);
+    const jsonStr = new TextDecoder().decode(bytes);
+    return JSON.parse(jsonStr);
   } catch {
     return null;
   }
@@ -89,7 +97,7 @@ function WebmailPageContent() {
   useEffect(() => {
     const checkSession = async () => {
       const savedCredentials = getCookie();
-      if (savedCredentials) {
+      if (savedCredentials && savedCredentials.email && savedCredentials.password) {
         try {
           const response = await fetch('/api/webmail/test', {
             method: 'POST',
@@ -107,13 +115,35 @@ function WebmailPageContent() {
           if (data.success) {
             setEmail(savedCredentials.email);
             setPassword(savedCredentials.password);
+            
+            // Versuche Admin-Passwort zu synchronisieren (falls User ein Admin ist)
+            try {
+              await fetch('/api/admin/auth/sync-webmail', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  email: savedCredentials.email, 
+                  password: savedCredentials.password 
+                }),
+              });
+            } catch {
+              // Kein Admin oder Fehler - ignorieren
+            }
+            
             setIsConnected(true);
           } else {
+            // Ungültige Credentials im Cookie - löschen
             deleteCookie();
           }
         } catch {
-          setEmail(savedCredentials.email);
-          setPassword(savedCredentials.password);
+          // Netzwerkfehler - trotzdem versuchen mit gespeicherten Credentials
+          // aber nur wenn sie valide aussehen
+          if (savedCredentials.email.includes('@') && savedCredentials.password.length > 0) {
+            setEmail(savedCredentials.email);
+            setPassword(savedCredentials.password);
+          } else {
+            deleteCookie();
+          }
         }
       }
       setIsCheckingSession(false);
@@ -144,6 +174,19 @@ function WebmailPageContent() {
 
       if (data.success) {
         setCookie(email, password, rememberMe);
+        
+        // Versuche Admin-Passwort zu synchronisieren (falls User ein Admin ist)
+        try {
+          await fetch('/api/admin/auth/sync-webmail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+          // Ignoriere Ergebnis - wenn es klappt, wird der Cookie gesetzt
+        } catch {
+          // Kein Admin oder Fehler - ignorieren
+        }
+        
         setIsConnected(true);
       } else {
         setConnectionError(data.error || 'Verbindung fehlgeschlagen');

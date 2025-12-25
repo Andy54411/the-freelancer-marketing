@@ -855,9 +855,9 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
   };
 
   const handleEmailClick = useCallback((msg: EmailMessage) => {
-    fetchMessage(msg.uid);
+    fetchMessage(msg.uid, currentMailbox);
     setSelectedEmail(msg);
-  }, [fetchMessage]);
+  }, [fetchMessage, currentMailbox]);
 
   const handleCloseEmail = useCallback(() => {
     setSelectedEmail(null);

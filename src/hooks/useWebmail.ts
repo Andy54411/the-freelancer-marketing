@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { EmailMessage, EmailContent, Mailbox } from '@/services/webmail/types';
 
 interface UseWebmailOptions {
@@ -19,6 +19,14 @@ interface WebmailState {
   error: string | null;
   messageError: string | null;
   messageLoading: boolean;
+}
+
+// Helper: Absolute URL erstellen um <base href> Probleme in E-Mail-HTML zu vermeiden
+function getAbsoluteApiUrl(path: string): string {
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}${path}`;
+  }
+  return path;
 }
 
 export function useWebmail({ email, password }: UseWebmailOptions) {
@@ -44,7 +52,7 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/webmail/mailboxes', {
+      const response = await fetch(getAbsoluteApiUrl('/api/webmail/mailboxes'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -66,7 +74,7 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/webmail/messages', {
+      const response = await fetch(getAbsoluteApiUrl('/api/webmail/messages'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, mailbox, page, limit: 50 }),
@@ -92,42 +100,86 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
   }, [email, password]);
 
   const fetchMessage = useCallback(async (uid: number, mailbox?: string) => {
+    if (!email || !password) {
+      setMessageError('Keine Anmeldedaten vorhanden');
+      return;
+    }
+    
     setMessageLoading(true);
     setMessageError(null);
     
-    const targetMailbox = mailbox || state.currentMailbox;
-    console.log('[fetchMessage] Starting fetch:', { uid, mailbox: targetMailbox, email: email ? 'set' : 'empty' });
+    const targetMailbox = mailbox || state.currentMailbox || 'INBOX';
     
-    try {
-      const requestBody = {
-        email,
-        password,
-        mailbox: targetMailbox,
-        uid,
-      };
-      console.log('[fetchMessage] Request body:', { ...requestBody, password: '***' });
-      
-      const response = await fetch('/api/webmail/message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
-      
-      console.log('[fetchMessage] Response status:', response.status);
-      const data = await response.json();
-      console.log('[fetchMessage] Response data:', { success: data.success, hasMessage: !!data.message });
-      
-      if (data.success) {
-        setState(prev => ({ ...prev, currentMessage: data.message, messageLoading: false, messageError: null }));
-      } else {
-        setMessageError(data.error || 'Nachricht konnte nicht geladen werden');
-        setMessageLoading(false);
+    const requestBody = {
+      email,
+      password,
+      mailbox: targetMailbox,
+      uid,
+    };
+    
+    // Retry-Logik: Bis zu 3 Versuche
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
+        // WICHTIG: Absolute URL verwenden, da E-Mail-HTML <base href> Tags enthalten kann
+        const response = await fetch(getAbsoluteApiUrl('/api/webmail/message'), {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+          cache: 'no-store',
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+          
+          if (response.status >= 500) {
+            lastError = new Error(errorData.error || `Serverfehler: ${response.status}`);
+            continue;
+          }
+          
+          setMessageError(errorData.error || `Serverfehler: ${response.status}`);
+          setMessageLoading(false);
+          return;
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          setState(prev => ({ ...prev, currentMessage: data.message, messageLoading: false, messageError: null }));
+          return;
+        } else {
+          setMessageError(data.error || 'Nachricht konnte nicht geladen werden');
+          setMessageLoading(false);
+          return;
+        }
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        
+        if (err instanceof Error && err.name === 'AbortError') {
+          setMessageError('Zeitüberschreitung beim Laden der Nachricht');
+          setMessageLoading(false);
+          return;
+        }
+        
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, attempt * 500));
+        }
       }
-    } catch (err) {
-      console.error('[fetchMessage] Error:', err);
-      setMessageError(err instanceof Error ? err.message : 'Verbindungsfehler beim Laden der Nachricht');
-      setMessageLoading(false);
     }
+    
+    setMessageError(lastError?.message || 'Verbindungsfehler beim Laden der Nachricht');
+    setMessageLoading(false);
   }, [email, password, state.currentMailbox]);
 
   const sendEmail = useCallback(async (data: {
@@ -144,7 +196,7 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/webmail/send', {
+      const response = await fetch(getAbsoluteApiUrl('/api/webmail/send'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, ...data }),
@@ -169,7 +221,7 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
     flagged?: boolean
   ) => {
     try {
-      const response = await fetch('/api/webmail/actions', {
+      const response = await fetch(getAbsoluteApiUrl('/api/webmail/actions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

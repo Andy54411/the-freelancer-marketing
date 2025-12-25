@@ -538,4 +538,78 @@ export class AdminAuthService {
       return { success: false, error: `Loeschen fehlgeschlagen: ${errorMessage}` };
     }
   }
+
+  /**
+   * Synchronisiere Admin-Passwort mit Webmail-Passwort
+   * Wird aufgerufen, wenn Webmail-Login erfolgreich war
+   */
+  static async syncPasswordFromWebmail(
+    email: string, 
+    webmailPassword: string
+  ): Promise<{ success: boolean; token?: string; user?: Omit<AdminUser, 'passwordHash'>; error?: string }> {
+    try {
+      if (!db) {
+        return { success: false, error: 'Datenbank nicht verfuegbar' };
+      }
+
+      // Admin-User suchen
+      const snapshot = await db.collection(COLLECTION_PATH)
+        .where('email', '==', email.toLowerCase())
+        .limit(1)
+        .get();
+
+      if (snapshot.empty) {
+        // Kein Admin-User mit dieser E-Mail - kein Fehler, einfach ignorieren
+        return { success: false, error: 'Kein Admin-Benutzer' };
+      }
+
+      const userDoc = snapshot.docs[0];
+      const userData = userDoc.data();
+
+      if (!userData.isActive) {
+        return { success: false, error: 'Konto ist deaktiviert' };
+      }
+
+      // Passwort neu hashen und speichern
+      const newPasswordHash = await bcrypt.hash(webmailPassword, 12);
+      
+      await db.collection(COLLECTION_PATH).doc(userDoc.id).update({
+        passwordHash: newPasswordHash,
+        lastLogin: FieldValue.serverTimestamp(),
+        loginCount: (userData.loginCount || 0) + 1,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      // JWT Token erstellen
+      const token = await new SignJWT({
+        sub: userDoc.id,
+        email: userData.email,
+        name: userData.name,
+        role: userData.role,
+        permissions: userData.permissions || [],
+      })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setIssuedAt()
+        .setExpirationTime(JWT_EXPIRATION)
+        .sign(JWT_SECRET_BYTES);
+
+      const user: Omit<AdminUser, 'passwordHash'> = {
+        id: userDoc.id,
+        email: userData.email,
+        name: userData.name,
+        role: userData.role,
+        departments: userData.departments || [],
+        isActive: userData.isActive,
+        permissions: userData.permissions || [],
+        loginCount: (userData.loginCount || 0) + 1,
+        phone: userData.phone,
+        notes: userData.notes,
+      };
+
+      return { success: true, token, user };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      return { success: false, error: `Sync fehlgeschlagen: ${errorMessage}` };
+    }
+  }
 }
