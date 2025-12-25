@@ -30,6 +30,8 @@ interface MailHeaderProps {
   onAdvancedSearch?: (filters: SearchFilters) => void;
   onLogout?: () => void;
   mailboxes?: Array<{ path: string; name: string }>;
+  searchPlaceholder?: string;
+  showAdvancedSearchButton?: boolean;
 }
 
 export function MailHeader({
@@ -40,6 +42,8 @@ export function MailHeader({
   onAdvancedSearch,
   onLogout,
   mailboxes = [],
+  searchPlaceholder = 'In E-Mails suchen',
+  showAdvancedSearchButton = true,
 }: MailHeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -91,7 +95,7 @@ export function MailHeader({
       </div>
 
       {/* Center Section - Search Bar (Gmail Style) */}
-      <div className="flex-1 max-w-[720px] ml-2 md:ml-8 relative" ref={searchContainerRef}>
+      <div className="flex-1 max-w-[720px] mx-auto relative" ref={searchContainerRef}>
         <div
           className={cn(
             'flex items-center h-10 md:h-12 rounded-full transition-all duration-200',
@@ -104,7 +108,7 @@ export function MailHeader({
           <button
             onClick={handleSearch}
             className="pl-4 pr-3 h-full flex items-center"
-            aria-label="In E-Mails suchen"
+            aria-label={searchPlaceholder}
           >
             <Search className="h-5 w-5 text-[#5f6368]" />
           </button>
@@ -112,7 +116,7 @@ export function MailHeader({
           {/* Search Input */}
           <input
             type="text"
-            placeholder="In E-Mails suchen"
+            placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
@@ -121,29 +125,33 @@ export function MailHeader({
             className="flex-1 h-full bg-transparent border-0 outline-none text-[16px] text-[#202124] placeholder:text-[#5f6368]"
           />
 
-          {/* Advanced Search Button */}
-          <button
-            onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-            className={cn(
-              'px-3 h-full flex items-center hover:bg-gray-200/40 rounded-r-full transition-colors',
-              showAdvancedSearch && 'bg-gray-200/60'
-            )}
-            aria-label="Suchoptionen anzeigen"
-            aria-expanded={showAdvancedSearch}
-          >
-            <SlidersHorizontal className="h-4 w-4 md:h-5 md:w-5 text-[#5f6368]" />
-          </button>
+          {/* Advanced Search Button - nur wenn aktiviert */}
+          {showAdvancedSearchButton && (
+            <button
+              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+              className={cn(
+                'px-3 h-full flex items-center hover:bg-gray-200/40 rounded-r-full transition-colors',
+                showAdvancedSearch && 'bg-gray-200/60'
+              )}
+              aria-label="Suchoptionen anzeigen"
+              aria-expanded={showAdvancedSearch}
+            >
+              <SlidersHorizontal className="h-4 w-4 md:h-5 md:w-5 text-[#5f6368]" />
+            </button>
+          )}
         </div>
 
         {/* Advanced Search Filter Panel */}
-        <MailSearchFilter
-          isOpen={showAdvancedSearch}
-          onClose={() => setShowAdvancedSearch(false)}
-          onSearch={handleAdvancedSearch}
-          onCreateFilter={handleCreateFilter}
-          mailboxes={mailboxes}
-          anchorRef={searchContainerRef}
-        />
+        {showAdvancedSearchButton && (
+          <MailSearchFilter
+            isOpen={showAdvancedSearch}
+            onClose={() => setShowAdvancedSearch(false)}
+            onSearch={handleAdvancedSearch}
+            onCreateFilter={handleCreateFilter}
+            mailboxes={mailboxes}
+            anchorRef={searchContainerRef}
+          />
+        )}
       </div>
 
       {/* Right Section - Actions & Profile - pushed to end */}

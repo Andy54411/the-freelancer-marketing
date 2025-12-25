@@ -13,6 +13,7 @@ import { attachmentsRouter } from './routes/attachments';
 import { calendarRouter } from './routes/calendar';
 import { turnRouter } from './routes/turn';
 import { recordingRouter } from './routes/recording';
+import contactsRouter from './routes/contacts';
 import { 
   apiRateLimiter, 
   authRateLimiter,
@@ -144,6 +145,7 @@ app.use('/api/attachments', attachmentsRouter);
 app.use('/api/calendar', calendarRouter);
 app.use('/api/turn', turnRouter);
 app.use('/api/recording', recordingRouter);
+app.use('/api/contacts', contactsRouter);
 
 // Error Handler (ohne Stack Trace in Production)
 app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {

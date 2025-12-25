@@ -9,14 +9,14 @@ import {
   Plus,
   Trash2,
   Upload,
-  Mail,
   MoreVertical,
   Printer,
   Download,
-  X,
   Loader2,
   Info,
   Merge,
+  UserPlus,
+  UsersRound,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -27,9 +27,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { MailHeader } from '@/components/webmail/MailHeader';
+import { ViewContactPanel, ContactData } from '@/components/webmail/ViewContactPanel';
+import { CreateContactPanel, ContactFormData } from '@/components/webmail/CreateContactPanel';
+import { CreateMultipleContactsModal } from '@/components/webmail/CreateMultipleContactsModal';
 
 // Webmail Cookie
 const COOKIE_NAME = 'webmail_session';
@@ -105,6 +114,9 @@ function ContactsPageContent() {
   const [currentView, setCurrentView] = useState<ViewType>('contacts');
   const [selectedContact, setSelectedContact] = useState<EmailContact | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showCreatePanel, setShowCreatePanel] = useState(false);
+  const [showMultipleContactsModal, setShowMultipleContactsModal] = useState(false);
+  const [editingContact, setEditingContact] = useState<EmailContact | null>(null);
 
   useEffect(() => {
     const savedCredentials = getCookie();
@@ -132,7 +144,36 @@ function ContactsPageContent() {
       const data = await response.json();
       
       if (data.success && data.contacts) {
-        setContacts(data.contacts.map((c: EmailContact) => ({ ...c, starred: false })));
+        // Map new API format to EmailContact interface
+        const mappedContacts: EmailContact[] = data.contacts.map((c: {
+          uid: string;
+          displayName?: string;
+          firstName?: string;
+          lastName?: string;
+          emails?: { value: string; label: string }[];
+          email?: string;
+          name?: string;
+          lastContacted?: string;
+          contactCount?: number;
+          source?: string;
+        }) => {
+          // Get primary email from emails array or fallback to email string
+          const primaryEmail = c.emails?.[0]?.value || c.email || '';
+          const displayName = c.displayName || c.name || 
+            (c.firstName && c.lastName ? `${c.firstName} ${c.lastName}`.trim() : '') ||
+            c.firstName || c.lastName || primaryEmail.split('@')[0] || 'Unbekannt';
+          
+          return {
+            id: c.uid || primaryEmail,
+            email: primaryEmail,
+            name: displayName,
+            lastContacted: c.lastContacted || new Date().toISOString(),
+            contactCount: c.contactCount || 0,
+            source: (c.source === 'carddav' ? 'both' : c.source) as 'sent' | 'received' | 'both',
+            starred: false,
+          };
+        });
+        setContacts(mappedContacts);
       } else {
         toast.error(data.error || 'Fehler beim Laden der Kontakte');
       }
@@ -232,22 +273,44 @@ function ContactsPageContent() {
           onMenuToggle={() => setShowMobileMenu(!showMobileMenu)}
           onSearch={handleSearch}
           onLogout={handleLogout}
+          searchPlaceholder="Kontakte suchen"
+          showAdvancedSearchButton={false}
         />
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Sidebar - Google Style */}
+          {/* Sidebar */}
           <aside className={cn(
-            'w-[280px] border-r border-gray-200 flex flex-col bg-white',
+            'w-[280px] border-r border-gray-200 flex flex-col bg-white shrink-0',
             showMobileMenu ? 'fixed inset-y-16 left-0 z-50' : 'hidden md:flex'
           )}>
             {/* Create Contact Button */}
             <div className="p-4">
-              <Button
-                className="w-full justify-start gap-3 h-14 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:shadow-md shadow-sm rounded-2xl font-medium text-[14px]"
-              >
-                <Plus className="h-6 w-6 text-teal-600" />
-                Kontakt erstellen
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    className="w-full justify-start gap-3 h-14 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:shadow-md shadow-sm rounded-2xl font-medium text-[14px]"
+                  >
+                    <Plus className="h-6 w-6 text-teal-600" />
+                    Kontakt erstellen
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-[260px] ml-4">
+                  <DropdownMenuItem 
+                    className="py-4 px-4 cursor-pointer"
+                    onClick={() => setShowCreatePanel(true)}
+                  >
+                    <UserPlus className="h-6 w-6 mr-4 text-gray-600" />
+                    <span className="text-base">Kontakt erstellen</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="py-4 px-4 cursor-pointer"
+                    onClick={() => setShowMultipleContactsModal(true)}
+                  >
+                    <UsersRound className="h-6 w-6 mr-4 text-gray-600" />
+                    <span className="text-base">Mehrere Kontakte erstellen</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* Navigation */}
@@ -327,157 +390,155 @@ function ContactsPageContent() {
             </ScrollArea>
           </aside>
 
-          {/* Main Content */}
-          <main className="flex-1 flex flex-col min-w-0">
-            {/* Toolbar */}
-            <div className="h-14 flex items-center px-6 border-b border-gray-100">
-              <div className="flex items-center gap-4">
-                <h1 className="text-[22px] font-normal text-gray-900">
-                  Kontakte
-                  <span className="text-gray-500 ml-2">({filteredContacts.length})</span>
-                </h1>
-              </div>
-
-              <div className="ml-auto flex items-center gap-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
-                      <Printer className="h-5 w-5 text-gray-600" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Drucken</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
-                      <Download className="h-5 w-5 text-gray-600" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Exportieren</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
-                      <MoreVertical className="h-5 w-5 text-gray-600" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Weitere Aktionen</TooltipContent>
-                </Tooltip>
-              </div>
-            </div>
-
-            {/* Table Header */}
-            <div className="h-10 flex items-center px-6 border-b border-gray-100 text-sm text-gray-600">
-              <div className="w-[45%]">Name</div>
-              <div className="flex-1">E-Mail</div>
-            </div>
-
-            {/* Contact List */}
-            <ScrollArea className="flex-1">
-              {loading ? (
-                <div className="flex items-center justify-center py-20">
-                  <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-                </div>
-              ) : filteredContacts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20">
-                  <Users className="h-20 w-20 text-gray-200 mb-4" />
-                  <p className="text-gray-500 text-lg">Keine Kontakte gefunden</p>
-                  <p className="text-gray-400 text-sm mt-1">
-                    Kontakte werden aus Ihren E-Mails extrahiert.
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  {/* Group Header */}
-                  <div className="h-8 flex items-center px-6 bg-gray-50 text-xs font-medium text-gray-600 sticky top-0">
-                    Kontakte
-                  </div>
-                  
-                  {/* Contact Rows */}
-                  {filteredContacts.map(contact => (
-                    <ContactRow
-                      key={contact.id}
-                      contact={contact}
-                      isSelected={selectedContact?.id === contact.id}
-                      onSelect={() => setSelectedContact(contact)}
-                      onStar={() => toggleStar(contact.id)}
-                    />
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </main>
-
-          {/* Detail Panel */}
-          {selectedContact && (
-            <aside className="w-[360px] border-l border-gray-200 bg-white hidden lg:flex flex-col">
-              <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100">
-                <span className="font-medium text-gray-900">Kontaktdetails</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 rounded-full"
-                  onClick={() => setSelectedContact(null)}
-                >
-                  <X className="h-5 w-5 text-gray-500" />
-                </Button>
-              </div>
-              
-              <ScrollArea className="flex-1">
-                <div className="p-6">
-                  <div className="flex flex-col items-center mb-6">
-                    <Avatar className={cn('h-24 w-24 mb-4', getAvatarColor(selectedContact.name || selectedContact.email))}>
-                      <AvatarFallback className="text-white text-3xl font-normal">
-                        {(selectedContact.name || selectedContact.email).charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <h2 className="text-xl font-normal text-gray-900">
-                      {selectedContact.name || selectedContact.email.split('@')[0]}
-                    </h2>
+          {/* Main Content oder Create Panel */}
+          {showCreatePanel || editingContact ? (
+            <CreateContactPanel
+              isOpen={showCreatePanel || !!editingContact}
+              onClose={() => {
+                setShowCreatePanel(false);
+                setEditingContact(null);
+              }}
+              editMode={!!editingContact}
+              contactUid={editingContact?.id}
+              initialData={editingContact ? {
+                firstName: editingContact.name?.split(' ')[0] || '',
+                lastName: editingContact.name?.split(' ').slice(1).join(' ') || '',
+                emails: [{ type: 'work', value: editingContact.email }],
+                phones: [],
+                company: '',
+                jobTitle: '',
+                notes: '',
+                labels: [],
+                uid: editingContact.id,
+              } : undefined}
+              onSave={(formData: ContactFormData) => {
+                if (editingContact) {
+                  // Update existing contact in list
+                  setContacts(prev => prev.map(c => 
+                    c.id === editingContact.id 
+                      ? {
+                          ...c,
+                          email: formData.emails[0]?.value || c.email,
+                          name: `${formData.firstName} ${formData.lastName || ''}`.trim(),
+                        }
+                      : c
+                  ));
+                  toast.success('Kontakt aktualisiert');
+                  setEditingContact(null);
+                  setSelectedContact(null);
+                } else {
+                  const newContact: EmailContact = {
+                    id: `new-${Date.now()}`,
+                    email: formData.emails[0]?.value || '',
+                    name: `${formData.firstName} ${formData.lastName || ''}`.trim(),
+                    lastContacted: new Date().toISOString(),
+                    contactCount: 0,
+                    source: 'sent',
+                    starred: false,
+                  };
+                  setContacts(prev => [newContact, ...prev]);
+                  toast.success('Kontakt erstellt');
+                  setShowCreatePanel(false);
+                }
+              }}
+            />
+          ) : (
+            <>
+              <main className="flex-1 flex flex-col min-w-0">
+                {/* Toolbar */}
+                <div className="h-14 flex items-center px-6 border-b border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <h1 className="text-[22px] font-normal text-gray-900">
+                      Kontakte
+                      <span className="text-gray-500 ml-2">({filteredContacts.length})</span>
+                    </h1>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <Mail className="h-5 w-5 text-gray-400 mt-0.5" />
-                      <div>
-                        <div className="text-sm text-gray-500">E-Mail</div>
-                        <a href={`mailto:${selectedContact.email}`} className="text-teal-600 hover:underline">
-                          {selectedContact.email}
-                        </a>
-                      </div>
+                  <div className="ml-auto flex items-center gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
+                          <Printer className="h-5 w-5 text-gray-600" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Drucken</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
+                          <Download className="h-5 w-5 text-gray-600" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Exportieren</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
+                          <MoreVertical className="h-5 w-5 text-gray-600" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Weitere Aktionen</TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+
+                {/* Table Header */}
+                <div className="h-10 flex items-center px-6 border-b border-gray-100 text-sm text-gray-600">
+                  <div className="w-[45%]">Name</div>
+                  <div className="flex-1">E-Mail</div>
+                </div>
+
+                {/* Contact List */}
+                <ScrollArea className="flex-1">
+                  {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                      <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
                     </div>
-
-                    <div className="flex items-start gap-3">
-                      <Clock className="h-5 w-5 text-gray-400 mt-0.5" />
-                      <div>
-                        <div className="text-sm text-gray-500">Letzter Kontakt</div>
-                        <div className="text-gray-900">
-                          {new Date(selectedContact.lastContacted).toLocaleDateString('de-DE')}
-                        </div>
-                      </div>
+                  ) : filteredContacts.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20">
+                      <Users className="h-20 w-20 text-gray-200 mb-4" />
+                      <p className="text-gray-500 text-lg">Keine Kontakte gefunden</p>
+                      <p className="text-gray-400 text-sm mt-1">
+                        Kontakte werden aus Ihren E-Mails extrahiert.
+                      </p>
                     </div>
-
-                    <div className="flex items-start gap-3">
-                      <Mail className="h-5 w-5 text-gray-400 mt-0.5" />
-                      <div>
-                        <div className="text-sm text-gray-500">Anzahl E-Mails</div>
-                        <div className="text-gray-900">{selectedContact.contactCount}</div>
+                  ) : (
+                    <div>
+                      {/* Group Header */}
+                      <div className="h-8 flex items-center px-6 bg-gray-50 text-xs font-medium text-gray-600 sticky top-0">
+                        Kontakte
                       </div>
+                      
+                      {/* Contact Rows */}
+                      {filteredContacts.map(contact => (
+                        <ContactRow
+                          key={contact.id}
+                          contact={contact}
+                          isSelected={selectedContact?.id === contact.id}
+                          onSelect={() => setSelectedContact(contact)}
+                          onStar={() => toggleStar(contact.id)}
+                        />
+                      ))}
                     </div>
-                  </div>
+                  )}
+                </ScrollArea>
+              </main>
 
-                  <div className="mt-8">
-                    <Button
-                      className="w-full bg-teal-600 hover:bg-teal-700 text-white"
-                      onClick={() => window.location.href = `/webmail?compose=true&to=${selectedContact.email}`}
-                    >
-                      <Mail className="h-4 w-4 mr-2" />
-                      E-Mail schreiben
-                    </Button>
-                  </div>
-                </div>
-              </ScrollArea>
-            </aside>
+              {/* Detail Panel */}
+              <ViewContactPanel
+                isOpen={selectedContact !== null}
+                contact={selectedContact as ContactData | null}
+                onClose={() => setSelectedContact(null)}
+                onEdit={(contact) => {
+                  // Convert EmailContact to ContactFormData format
+                  setEditingContact(contact as unknown as EmailContact);
+                  setSelectedContact(null);
+                  setShowCreatePanel(true);
+                }}
+                onDelete={(contact) => toast.info('Löschen: ' + contact.name)}
+                onStar={(contact) => toggleStar(contact.id)}
+              />
+            </>
           )}
         </div>
 
@@ -488,6 +549,16 @@ function ContactsPageContent() {
             onClick={() => setShowMobileMenu(false)}
           />
         )}
+
+        {/* Multiple Contacts Modal */}
+        <CreateMultipleContactsModal
+          isOpen={showMultipleContactsModal}
+          onClose={() => setShowMultipleContactsModal(false)}
+          onContactsCreated={() => {
+            loadContacts();
+            toast.success('Kontakte erstellt');
+          }}
+        />
       </div>
     </TooltipProvider>
   );

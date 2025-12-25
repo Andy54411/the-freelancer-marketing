@@ -65,7 +65,8 @@ function setCookie(email: string, password: string, remember: boolean): void {
   const encoded = encodeCredentials(email, password);
   const maxAge = remember ? COOKIE_MAX_AGE : 0;
   const expires = remember ? `; max-age=${maxAge}` : '';
-  document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/webmail; SameSite=Strict; Secure`;
+  // Cookie gilt fuer alle Webmail-Apps (webmail, contacts, etc.)
+  document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/; SameSite=Strict; Secure`;
 }
 
 function getCookie(): { email: string; password: string } | null {

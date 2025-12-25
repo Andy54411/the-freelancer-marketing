@@ -22,8 +22,27 @@ function logMiddleware(message: string, request: NextRequest, additionalData?: a
 export default async function middleware(request: NextRequest) {
   logMiddleware('Middleware ausgeführt', request);
 
-  // Skip middleware for SEO machine-readable endpoints
+  // Subdomain Routing
+  const hostname = request.headers.get('host') || '';
   const pathname = request.nextUrl.pathname;
+
+  // contact.taskilo.de -> /contacts
+  if (hostname.startsWith('contact.') || hostname.startsWith('contacts.')) {
+    logMiddleware('Contacts Subdomain erkannt', request, { hostname });
+    
+    // Rewrite to /contacts path if not already there
+    if (!pathname.startsWith('/contacts') && !pathname.startsWith('/api/') && !pathname.startsWith('/_next/')) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/contacts${pathname === '/' ? '' : pathname}`;
+      logMiddleware('Contacts Rewrite', request, { from: pathname, to: url.pathname });
+      return NextResponse.rewrite(url);
+    }
+    
+    // Skip internationalization for contacts subdomain
+    return NextResponse.next();
+  }
+
+  // Skip middleware for SEO machine-readable endpoints
   if (
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
@@ -80,7 +99,8 @@ export default async function middleware(request: NextRequest) {
   // Skip internationalization for admin routes and API routes
   if (
     request.nextUrl.pathname.startsWith('/dashboard/admin') ||
-    request.nextUrl.pathname.startsWith('/api/')
+    request.nextUrl.pathname.startsWith('/api/') ||
+    request.nextUrl.pathname.startsWith('/contacts')
   ) {
     return;
   }
