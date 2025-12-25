@@ -94,18 +94,29 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
   const fetchMessage = useCallback(async (uid: number, mailbox?: string) => {
     setMessageLoading(true);
     setMessageError(null);
+    
+    const targetMailbox = mailbox || state.currentMailbox;
+    console.log('[fetchMessage] Starting fetch:', { uid, mailbox: targetMailbox, email: email ? 'set' : 'empty' });
+    
     try {
+      const requestBody = {
+        email,
+        password,
+        mailbox: targetMailbox,
+        uid,
+      };
+      console.log('[fetchMessage] Request body:', { ...requestBody, password: '***' });
+      
       const response = await fetch('/api/webmail/message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          password,
-          mailbox: mailbox || state.currentMailbox,
-          uid,
-        }),
+        body: JSON.stringify(requestBody),
       });
+      
+      console.log('[fetchMessage] Response status:', response.status);
       const data = await response.json();
+      console.log('[fetchMessage] Response data:', { success: data.success, hasMessage: !!data.message });
+      
       if (data.success) {
         setState(prev => ({ ...prev, currentMessage: data.message, messageLoading: false, messageError: null }));
       } else {
@@ -113,6 +124,7 @@ export function useWebmail({ email, password }: UseWebmailOptions) {
         setMessageLoading(false);
       }
     } catch (err) {
+      console.error('[fetchMessage] Error:', err);
       setMessageError(err instanceof Error ? err.message : 'Verbindungsfehler beim Laden der Nachricht');
       setMessageLoading(false);
     }
