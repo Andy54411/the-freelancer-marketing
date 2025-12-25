@@ -12,11 +12,10 @@ import {
   Paperclip,
   Reply,
   Forward,
-  Search,
-  X,
   Loader2,
   AlertCircle,
   MoreHorizontal,
+  MoreVertical,
   ArrowLeft,
   Pencil,
   AlertTriangle,
@@ -25,16 +24,17 @@ import {
   Folder,
   Download,
   FileText,
-  Image,
+  Image as ImageIcon,
   File,
+  ChevronLeft,
+  ChevronRight,
+  Users,
+  Bell,
 } from 'lucide-react';
 import { useWebmail } from '@/hooks/useWebmail';
 import { EmailMessage, Mailbox } from '@/services/webmail/types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +50,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { MailSidebar } from './MailSidebar';
 import { MailHeader } from './MailHeader';
+import { QuickSettings, loadSettings, getThemeById, WebmailSettings } from './QuickSettings';
 import { SearchFilters, filterMessagesClientSide } from './MailSearchFilter';
 import { EmailCompose as EmailComposeComponent } from '@/components/email-client/EmailCompose';
 import type { EmailCompose as EmailComposeType, EmailMessage as EmailClientMessage } from '@/components/email-client/types';
@@ -70,6 +71,132 @@ const LABEL_COLORS = [
 
 // localStorage Key für Label-Farben (gleich wie in MailSidebar)
 const LABEL_COLORS_STORAGE_KEY = 'taskilo-webmail-label-colors';
+
+// E-Mail Kategorien für Gmail-Style Tabs
+type EmailCategory = 'primary' | 'promotions' | 'social' | 'updates';
+
+// Intelligente E-Mail-Kategorisierung
+const categorizeEmail = (email: EmailMessage): EmailCategory => {
+  const fromAddress = email.from[0]?.address?.toLowerCase() || '';
+  const fromName = email.from[0]?.name?.toLowerCase() || '';
+  const subject = email.subject?.toLowerCase() || '';
+  const fromDomain = fromAddress.split('@')[1] || '';
+
+  // Soziale Netzwerke - bekannte Domains und Absender
+  const socialDomains = [
+    'facebook.com', 'facebookmail.com', 'fb.com',
+    'twitter.com', 'x.com',
+    'linkedin.com', 'linkedinmail.com',
+    'instagram.com',
+    'xing.com', 'xing.de',
+    'tiktok.com',
+    'youtube.com',
+    'pinterest.com',
+    'snapchat.com',
+    'reddit.com',
+    'tumblr.com',
+    'whatsapp.com',
+    'telegram.org',
+    'discord.com',
+    'slack.com',
+    'teams.microsoft.com',
+  ];
+  
+  const socialKeywords = [
+    'friend request', 'freundschaftsanfrage',
+    'followed you', 'folgt dir',
+    'liked your', 'gefaellt',
+    'commented on', 'kommentiert',
+    'mentioned you', 'erwaehnt',
+    'tagged you', 'markiert',
+    'connection request', 'vernetzungsanfrage',
+    'new message from', 'neue nachricht von',
+    'invitation to connect', 'einladung',
+  ];
+
+  if (socialDomains.some(d => fromDomain.includes(d)) ||
+      socialKeywords.some(k => subject.includes(k) || fromName.includes(k))) {
+    return 'social';
+  }
+
+  // Werbung / Promotions - Newsletter, Marketing, Angebote
+  const promoDomains = [
+    'newsletter', 'marketing', 'promo', 'deals', 'offers',
+    'mailchimp.com', 'sendgrid.net', 'amazonses.com',
+    'mailgun.org', 'constantcontact.com', 'hubspot.com',
+    'klaviyo.com', 'brevo.com', 'sendinblue.com',
+  ];
+
+  const promoKeywords = [
+    'newsletter', 'unsubscribe', 'abmelden', 'abbestellen',
+    'angebot', 'offer', 'sale', 'rabatt', 'discount',
+    'gutschein', 'coupon', 'voucher', 'code:',
+    'limited time', 'nur heute', 'nur jetzt',
+    'free shipping', 'kostenloser versand',
+    'deal', 'promotion', 'aktion',
+    'black friday', 'cyber monday',
+    'exklusiv', 'exclusive',
+    'jetzt kaufen', 'buy now', 'shop now',
+    'neue kollektion', 'new collection',
+    'sonderangebot', 'special offer',
+  ];
+
+  const promoSenders = [
+    'noreply', 'no-reply', 'newsletter', 'marketing',
+    'promo', 'deals', 'offers', 'news@', 'info@',
+    'shop@', 'store@', 'sales@',
+  ];
+
+  if (promoDomains.some(d => fromDomain.includes(d) || fromAddress.includes(d)) ||
+      promoKeywords.some(k => subject.includes(k)) ||
+      promoSenders.some(s => fromAddress.includes(s))) {
+    return 'promotions';
+  }
+
+  // Benachrichtigungen / Updates - Transaktional, Bestaetigungen, Alerts
+  const updateDomains = [
+    'paypal.com', 'paypal.de',
+    'amazon.com', 'amazon.de',
+    'ebay.com', 'ebay.de',
+    'dhl.com', 'dhl.de',
+    'dpd.de', 'hermes.de', 'ups.com',
+    'bank', 'sparkasse', 'volksbank', 'commerzbank', 'deutsche-bank',
+    'stripe.com', 'revolut.com',
+  ];
+
+  const updateKeywords = [
+    'bestaetigung', 'confirmation', 'confirmed',
+    'rechnung', 'invoice', 'receipt', 'quittung',
+    'versand', 'shipping', 'delivery', 'lieferung', 'zustellung',
+    'bestellung', 'order', 'ihre bestellung',
+    'passwort', 'password', 'reset', 'zuruecksetzen',
+    'verifizierung', 'verification', 'verify', 'bestaetigen',
+    'sicherheit', 'security', 'alert', 'warnung',
+    'login', 'anmeldung', 'sign in',
+    'zahlung', 'payment', 'transaktion', 'transaction',
+    'konto', 'account', 'ihr konto',
+    'termin', 'appointment', 'reminder', 'erinnerung',
+    'update', 'aktualisierung',
+    'benachrichtigung', 'notification',
+    'ticket', 'support', 'anfrage',
+  ];
+
+  const updateSenders = [
+    'support@', 'service@', 'help@', 'billing@',
+    'notifications@', 'alerts@', 'security@',
+    'noreply@', 'no-reply@', 'donotreply@',
+    'system@', 'automated@', 'mailer-daemon',
+  ];
+
+  if (updateDomains.some(d => fromDomain.includes(d)) ||
+      updateKeywords.some(k => subject.includes(k)) ||
+      updateSenders.some(s => fromAddress.includes(s))) {
+    return 'updates';
+  }
+
+  // Alles andere ist "Allgemein" / Primary
+  return 'primary';
+};
 
 // Lädt benutzerdefinierte Label-Farben aus localStorage
 const getStoredLabelColors = (): Record<string, string> => {
@@ -453,7 +580,7 @@ function EmailViewer({
   // Icon basierend auf Content-Type
   const getAttachmentIcon = (contentType?: string) => {
     if (!contentType) return <File className="h-4 w-4 text-gray-400" />;
-    if (contentType.startsWith('image/')) return <Image className="h-4 w-4 text-blue-500" />;
+    if (contentType.startsWith('image/')) return <ImageIcon className="h-4 w-4 text-blue-500" />;
     if (contentType === 'application/pdf') return <FileText className="h-4 w-4 text-red-500" />;
     if (contentType.includes('word') || contentType.includes('document')) return <FileText className="h-4 w-4 text-blue-600" />;
     if (contentType.includes('excel') || contentType.includes('spreadsheet')) return <FileText className="h-4 w-4 text-green-600" />;
@@ -498,13 +625,13 @@ function EmailViewer({
   
   // Standard-Ordner für schnellen Zugriff (Archiv, Papierkorb)
   const archiveFolder = mailboxes.find(mb => 
-    mb.path.toLowerCase().includes('archive') || mb.specialUse === '\\Archive'
+    mb.path.toLowerCase().includes('archive')
   );
   const trashFolder = mailboxes.find(mb => 
-    mb.path.toLowerCase().includes('trash') || mb.specialUse === '\\Trash'
+    mb.path.toLowerCase().includes('trash') || mb.path.toLowerCase().includes('papierkorb')
   );
   const inboxFolder = mailboxes.find(mb => 
-    mb.path.toLowerCase() === 'inbox' || mb.specialUse === '\\Inbox'
+    mb.path.toLowerCase() === 'inbox'
   );
   
   // Process HTML to open links in new tab
@@ -760,6 +887,31 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
   const [composeToEmail, setComposeToEmail] = useState<string | undefined>(undefined);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [showQuickSettings, setShowQuickSettings] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<string>('basicwhite');
+  const [activeCategory, setActiveCategory] = useState<EmailCategory>('primary');
+
+  // Lade Theme aus Einstellungen
+  useEffect(() => {
+    const savedSettings = loadSettings();
+    setCurrentTheme(savedSettings.theme);
+  }, []);
+
+  // Handler für Einstellungsänderungen
+  const handleSettingsChange = (settings: WebmailSettings) => {
+    setCurrentTheme(settings.theme);
+  };
+
+  // Theme-Hintergrundbild berechnen
+  const themeData = getThemeById(currentTheme);
+  const backgroundStyle = themeData?.backgroundUrl 
+    ? { 
+        backgroundImage: `url(${themeData.backgroundUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      } 
+    : {};
 
   useEffect(() => {
     fetchMailboxes();
@@ -792,7 +944,16 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
   const handleEmailClick = useCallback((msg: EmailMessage) => {
     fetchMessage(msg.uid, currentMailbox);
     setSelectedEmail(msg);
-  }, [fetchMessage, currentMailbox]);
+    
+    // Automatisch als gelesen markieren, wenn ungelesen
+    const isUnread = !msg.flags.includes('\\Seen');
+    if (isUnread) {
+      performAction('markRead', msg.uid).then(() => {
+        // Aktualisiere die Nachrichten-Liste um das UI zu aktualisieren
+        fetchMessages(currentMailbox);
+      });
+    }
+  }, [fetchMessage, currentMailbox, performAction, fetchMessages]);
 
   const handleCloseEmail = useCallback(() => {
     setSelectedEmail(null);
@@ -910,6 +1071,11 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
   const filteredMessages = (() => {
     let filtered = messages;
     
+    // Apply category filter (nur im Posteingang)
+    if (currentMailbox.toLowerCase() === 'inbox') {
+      filtered = filtered.filter(msg => categorizeEmail(msg) === activeCategory);
+    }
+    
     // Apply simple text search
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -940,6 +1106,45 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
     }
     
     return filtered;
+  })();
+
+  // Zaehle E-Mails pro Kategorie und hole neueste ungelesene fuer Vorschau
+  const categoryData = (() => {
+    if (currentMailbox.toLowerCase() !== 'inbox') {
+      return { 
+        primary: { count: 0, preview: null },
+        promotions: { count: 0, preview: null },
+        social: { count: 0, preview: null },
+        updates: { count: 0, preview: null }
+      };
+    }
+    
+    const data: Record<EmailCategory, { count: number; preview: EmailMessage | null }> = {
+      primary: { count: 0, preview: null },
+      promotions: { count: 0, preview: null },
+      social: { count: 0, preview: null },
+      updates: { count: 0, preview: null }
+    };
+    
+    // Sortiere nach Datum (neueste zuerst)
+    const sortedMessages = [...messages].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    sortedMessages.forEach(msg => {
+      const category = categorizeEmail(msg);
+      const isUnread = !msg.flags.includes('\\Seen');
+      
+      if (isUnread) {
+        data[category].count++;
+        // Speichere nur die erste (neueste) ungelesene E-Mail als Vorschau
+        if (!data[category].preview) {
+          data[category].preview = msg;
+        }
+      }
+    });
+    
+    return data;
   })();
 
   const handleAdvancedSearch = useCallback((filters: SearchFilters) => {
@@ -1009,29 +1214,33 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-white">
-      {/* Mail Header */}
-      <MailHeader
-        userEmail={email}
-        onMenuToggle={() => {
-          // On mobile, open the drawer; on desktop, collapse sidebar
-          if (window.innerWidth < 768) {
-            setIsMobileSidebarOpen(true);
-          } else {
-            setSidebarCollapsed(!sidebarCollapsed);
-          }
-        }}
-        onSearch={(query) => {
-          setSearchQuery(query);
-          clearAdvancedFilters();
-        }}
-        onAdvancedSearch={handleAdvancedSearch}
-        onLogout={onLogout}
-        mailboxes={mailboxes.map(m => ({ path: m.path, name: m.name }))}
-      />
+    <div className="fixed inset-0 flex flex-col bg-[#f6f8fc]" style={backgroundStyle}>
+      {/* Mail Header - muss über dem Hintergrundbild liegen */}
+      <div className="relative z-10">
+        <MailHeader
+          userEmail={email}
+          onMenuToggle={() => {
+            // On mobile, open the drawer; on desktop, collapse sidebar
+            if (window.innerWidth < 768) {
+              setIsMobileSidebarOpen(true);
+            } else {
+              setSidebarCollapsed(!sidebarCollapsed);
+            }
+          }}
+          onSearch={(query) => {
+            setSearchQuery(query);
+            clearAdvancedFilters();
+          }}
+          onAdvancedSearch={handleAdvancedSearch}
+          onLogout={onLogout}
+          onSettingsClick={() => setShowQuickSettings(true)}
+          mailboxes={mailboxes.map(m => ({ path: m.path, name: m.name }))}
+          hasTheme={!!themeData?.backgroundUrl}
+        />
+      </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden min-w-0">
+      <div className="flex-1 flex overflow-hidden min-w-0 relative z-10 p-4 gap-4">
         {/* Mail Sidebar - Desktop only, mobile uses drawer */}
         <MailSidebar
           mailboxes={mailboxes}
@@ -1044,89 +1253,201 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
           collapsed={sidebarCollapsed}
           isMobileOpen={isMobileSidebarOpen}
           onMobileClose={() => setIsMobileSidebarOpen(false)}
+          hasTheme={!!themeData?.backgroundUrl}
         />
 
         {/* Email List - Full width on mobile, Fixed Width when email selected on desktop */}
         <div
           className={cn(
-            'bg-white flex flex-col overflow-hidden relative min-w-0',
+            'flex flex-col overflow-hidden relative min-w-0',
+            // Transparenter Hintergrund wenn Theme aktiv, sonst weiß + abgerundete Ecken
+            themeData?.backgroundUrl ? 'bg-white/90 rounded-2xl shadow-lg' : 'bg-white',
             // Mobile: full width, hide when viewing email
-            'md:border-r md:border-gray-200',
             selectedEmail ? 'hidden md:flex md:w-96 md:shrink-0' : 'flex-1'
           )}
         >
-        {/* Toolbar */}
-        <div className="border-b bg-gray-50/50 px-2 md:px-3 py-1.5 md:py-2 flex items-center gap-2 md:gap-3 shrink-0">
-          <input
-            type="checkbox"
-            checked={allSelected}
-            onChange={() => handleSelectAll(!allSelected)}
-            className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
-          />
-
-          {selectedEmails.length > 0 && (
-            <div className="flex items-center gap-1 md:gap-2">
-              <Badge variant="secondary" className="bg-teal-100 text-teal-800 text-[10px] md:text-xs px-1.5 md:px-2">
-                {selectedEmails.length}
-              </Badge>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBulkDelete}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 md:h-8 px-1 md:px-2"
-                title="Ausgewählte löschen"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-
-          {/* Active Filter Indicator - compact on mobile */}
-          {advancedFilters && (
-            <div className="flex items-center gap-1 md:gap-2">
-              <Badge variant="secondary" className="bg-teal-100 text-teal-800 text-[10px] md:text-xs hidden md:inline-flex">
-                Filter aktiv
-              </Badge>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearAdvancedFilters}
-                className="h-6 w-6 p-0 hover:bg-gray-200"
-                title="Filter zurücksetzen"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
-
-          {/* Search - hidden on mobile (use header search) */}
-          <div className="relative flex-1 max-w-md hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="E-Mails durchsuchen..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                if (e.target.value) clearAdvancedFilters();
-              }}
-              className="pl-10 h-8 text-sm"
+        {/* Gmail-Style Toolbar */}
+        <div className="border-b border-gray-200/50 px-2 md:px-3 py-1 flex items-center gap-2 shrink-0">
+          {/* Checkbox mit Dropdown */}
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={() => handleSelectAll()}
+              className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
             />
           </div>
 
-          {/* Spacer on mobile */}
-          <div className="flex-1 md:hidden" />
-
+          {/* Refresh Button */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => fetchMessages(currentMailbox)}
             disabled={loading}
             title="Aktualisieren"
-            className="h-7 md:h-8 px-1.5 md:px-2"
+            className="h-8 w-8 p-0"
           >
-            <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
+            <RefreshCw className={cn('h-4 w-4 text-gray-600', loading && 'animate-spin')} />
           </Button>
+
+          {/* Drei-Punkte-Menu */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            title="Weitere Aktionen"
+          >
+            <MoreVertical className="h-4 w-4 text-gray-600" />
+          </Button>
+
+          {selectedEmails.length > 0 && (
+            <div className="flex items-center gap-1 border-l border-gray-300 pl-2 ml-1">
+              <Badge variant="secondary" className="bg-teal-100 text-teal-800 text-xs px-2">
+                {selectedEmails.length}
+              </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBulkDelete}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                title="Ausgewaehlte loeschen"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Pagination */}
+          <div className="hidden md:flex items-center gap-1 text-sm text-gray-600">
+            <span>1-{Math.min(filteredMessages.length, 50)} von {filteredMessages.length}</span>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
+
+        {/* Gmail-Style Category Tabs - nur im Posteingang anzeigen */}
+        {currentMailbox.toLowerCase() === 'inbox' && (
+          <div className="flex items-stretch border-b border-gray-200/50 overflow-x-auto scrollbar-hide">
+            {/* Allgemein Tab */}
+            <button 
+              onClick={() => setActiveCategory('primary')}
+              className={cn(
+                'flex items-center gap-3 px-4 py-3 text-sm transition-colors shrink-0',
+                activeCategory === 'primary'
+                  ? 'font-medium text-blue-600 border-b-[3px] border-blue-600'
+                  : 'text-gray-700 hover:bg-gray-50/50 border-b-[3px] border-transparent'
+              )}
+            >
+              <Inbox className="h-5 w-5 shrink-0" />
+              <div className="flex flex-col items-start text-left min-w-0">
+                <div className="flex items-center gap-2">
+                  <span>Allgemein</span>
+                  {categoryData.primary.count > 0 && (
+                    <span className="px-1.5 py-0.5 text-xs font-medium bg-blue-500 text-white rounded">
+                      {categoryData.primary.count} neu
+                    </span>
+                  )}
+                </div>
+                {categoryData.primary.preview && activeCategory !== 'primary' && (
+                  <span className="text-xs text-gray-500 truncate max-w-[180px]">
+                    {categoryData.primary.preview.from[0]?.name || categoryData.primary.preview.from[0]?.address?.split('@')[0]} – {categoryData.primary.preview.subject?.substring(0, 20)}...
+                  </span>
+                )}
+              </div>
+            </button>
+
+            {/* Werbung Tab */}
+            <button 
+              onClick={() => setActiveCategory('promotions')}
+              className={cn(
+                'flex items-center gap-3 px-4 py-3 text-sm transition-colors shrink-0',
+                activeCategory === 'promotions'
+                  ? 'font-medium text-green-600 border-b-[3px] border-green-600'
+                  : 'text-gray-700 hover:bg-gray-50/50 border-b-[3px] border-transparent'
+              )}
+            >
+              <Tag className="h-5 w-5 shrink-0" />
+              <div className="flex flex-col items-start text-left min-w-0">
+                <div className="flex items-center gap-2">
+                  <span>Werbung</span>
+                  {categoryData.promotions.count > 0 && (
+                    <span className="px-1.5 py-0.5 text-xs font-medium bg-green-500 text-white rounded">
+                      {categoryData.promotions.count} neu
+                    </span>
+                  )}
+                </div>
+                {categoryData.promotions.preview && activeCategory !== 'promotions' && (
+                  <span className="text-xs text-gray-500 truncate max-w-[180px]">
+                    {categoryData.promotions.preview.from[0]?.name || categoryData.promotions.preview.from[0]?.address?.split('@')[0]} – {categoryData.promotions.preview.subject?.substring(0, 20)}...
+                  </span>
+                )}
+              </div>
+            </button>
+
+            {/* Soziale Netzwerke Tab */}
+            <button 
+              onClick={() => setActiveCategory('social')}
+              className={cn(
+                'flex items-center gap-3 px-4 py-3 text-sm transition-colors shrink-0',
+                activeCategory === 'social'
+                  ? 'font-medium text-red-600 border-b-[3px] border-red-600'
+                  : 'text-gray-700 hover:bg-gray-50/50 border-b-[3px] border-transparent'
+              )}
+            >
+              <Users className="h-5 w-5 shrink-0" />
+              <div className="flex flex-col items-start text-left min-w-0">
+                <div className="flex items-center gap-2">
+                  <span>Soziale Netzwerke</span>
+                  {categoryData.social.count > 0 && (
+                    <span className="px-1.5 py-0.5 text-xs font-medium bg-red-500 text-white rounded">
+                      {categoryData.social.count} neu
+                    </span>
+                  )}
+                </div>
+                {categoryData.social.preview && activeCategory !== 'social' && (
+                  <span className="text-xs text-gray-500 truncate max-w-[180px]">
+                    {categoryData.social.preview.from[0]?.name || categoryData.social.preview.from[0]?.address?.split('@')[0]} – {categoryData.social.preview.subject?.substring(0, 20)}...
+                  </span>
+                )}
+              </div>
+            </button>
+
+            {/* Benachrichtigungen Tab */}
+            <button 
+              onClick={() => setActiveCategory('updates')}
+              className={cn(
+                'flex items-center gap-3 px-4 py-3 text-sm transition-colors shrink-0',
+                activeCategory === 'updates'
+                  ? 'font-medium text-yellow-600 border-b-[3px] border-yellow-600'
+                  : 'text-gray-700 hover:bg-gray-50/50 border-b-[3px] border-transparent'
+              )}
+            >
+              <Bell className="h-5 w-5 shrink-0" />
+              <div className="flex flex-col items-start text-left min-w-0">
+                <div className="flex items-center gap-2">
+                  <span>Benachrichtigungen</span>
+                  {categoryData.updates.count > 0 && (
+                    <span className="px-1.5 py-0.5 text-xs font-medium bg-yellow-500 text-white rounded">
+                      {categoryData.updates.count} neu
+                    </span>
+                  )}
+                </div>
+                {categoryData.updates.preview && activeCategory !== 'updates' && (
+                  <span className="text-xs text-gray-500 truncate max-w-[180px]">
+                    {categoryData.updates.preview.from[0]?.name || categoryData.updates.preview.from[0]?.address?.split('@')[0]} – {categoryData.updates.preview.subject?.substring(0, 20)}...
+                  </span>
+                )}
+              </div>
+            </button>
+          </div>
+        )}
 
         {/* Email List */}
         <div className="flex-1 overflow-y-auto">
@@ -1166,7 +1487,10 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
 
       {/* Email Viewer - Takes Remaining Space on desktop, full screen on mobile */}
       {selectedEmail && (messageLoading || messageError || currentMessage) && (
-        <div className="fixed inset-0 md:relative md:inset-auto md:flex-1 bg-white overflow-hidden min-w-0 z-40 md:z-auto">
+        <div className={cn(
+          "fixed inset-0 md:relative md:inset-auto md:flex-1 overflow-hidden min-w-0 z-40 md:z-auto",
+          themeData?.backgroundUrl ? 'bg-white/90 md:rounded-2xl md:shadow-lg' : 'bg-white'
+        )}>
           {messageLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
@@ -1233,6 +1557,13 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
         onSaveDraft={handleSaveDraft}
         replyTo={replyToEmail ? convertWebmailToEmailClientMessage(replyToEmail) : undefined}
         initialTo={composeToEmail}
+      />
+
+      {/* Quick Settings Panel */}
+      <QuickSettings
+        isOpen={showQuickSettings}
+        onClose={() => setShowQuickSettings(false)}
+        onSettingsChange={handleSettingsChange}
       />
     </div>
   );

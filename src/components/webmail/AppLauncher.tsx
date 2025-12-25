@@ -255,14 +255,18 @@ const apps: AppItem[] = [
 
 interface AppLauncherProps {
   className?: string;
+  hasTheme?: boolean;
 }
 
-export function AppLauncher({ className }: AppLauncherProps) {
+export function AppLauncher({ className, hasTheme = false }: AppLauncherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const { isDark } = useWebmailTheme();
+  
+  // Wenn ein Hintergrundbild-Theme aktiv ist, verwende helle Farben
+  const useWhiteIcons = hasTheme;
 
   // Check admin permissions on mount
   useEffect(() => {
@@ -323,13 +327,15 @@ export function AppLauncher({ className }: AppLauncherProps) {
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           'p-3 rounded-full transition-colors',
-          isOpen ? (isDark ? 'bg-white/10' : 'bg-gray-200') : (isDark ? 'hover:bg-white/10' : 'hover:bg-gray-200/60')
+          isOpen 
+            ? (useWhiteIcons ? 'bg-white/20' : isDark ? 'bg-white/10' : 'bg-gray-200') 
+            : (useWhiteIcons ? 'hover:bg-white/20' : isDark ? 'hover:bg-white/10' : 'hover:bg-gray-200/60')
         )}
         aria-label="Taskilo-Apps"
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <Grid3X3 className={`h-6 w-6 ${isDark ? 'text-gray-300' : 'text-[#5f6368]'}`} />
+        <Grid3X3 className={cn('h-6 w-6', useWhiteIcons ? 'text-white' : isDark ? 'text-gray-300' : 'text-[#5f6368]')} />
       </button>
 
       {/* Modal */}

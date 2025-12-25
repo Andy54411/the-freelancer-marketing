@@ -29,9 +29,11 @@ interface MailHeaderProps {
   onSearch?: (query: string) => void;
   onAdvancedSearch?: (filters: SearchFilters) => void;
   onLogout?: () => void;
+  onSettingsClick?: () => void;
   mailboxes?: Array<{ path: string; name: string }>;
   searchPlaceholder?: string;
   showAdvancedSearchButton?: boolean;
+  hasTheme?: boolean;
 }
 
 export function MailHeader({
@@ -41,9 +43,11 @@ export function MailHeader({
   onSearch,
   onAdvancedSearch,
   onLogout,
+  onSettingsClick,
   mailboxes = [],
   searchPlaceholder = 'In E-Mails suchen',
   showAdvancedSearchButton = true,
+  hasTheme = false,
 }: MailHeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -70,16 +74,22 @@ export function MailHeader({
   };
 
   return (
-    <header className="h-14 md:h-16 bg-[#f6f8fc] flex items-center px-2 md:px-4 shrink-0">
+    <header className={cn(
+      "h-14 md:h-16 flex items-center px-2 md:px-4 shrink-0",
+      hasTheme ? "" : "bg-[#f6f8fc]"
+    )}>
       {/* Left Section - Menu Button & Logo */}
       <div className="flex items-center gap-2 md:gap-4 md:min-w-[200px]">
         {/* Hamburger Menu - No circle/ring like Gmail */}
         <button
           onClick={onMenuToggle}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          className={cn(
+            "p-2 rounded-full transition-colors",
+            hasTheme ? "hover:bg-white/20" : "hover:bg-gray-100"
+          )}
           aria-label="Hauptmenue"
         >
-          <Menu className="h-5 w-5 md:h-6 md:w-6 text-[#5f6368]" />
+          <Menu className={cn("h-5 w-5 md:h-6 md:w-6", hasTheme ? "text-white" : "text-[#5f6368]")} />
         </button>
 
         {/* Logo - Taskilo Logo - smaller on mobile */}
@@ -160,10 +170,13 @@ export function MailHeader({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="hidden md:flex p-3 hover:bg-gray-100 rounded-full transition-colors"
+              className={cn(
+                "hidden md:flex p-3 rounded-full transition-colors",
+                hasTheme ? "hover:bg-white/20" : "hover:bg-gray-100"
+              )}
               aria-label="Support"
             >
-              <HelpCircle className="h-6 w-6 text-[#5f6368]" />
+              <HelpCircle className={cn("h-6 w-6", hasTheme ? "text-white" : "text-[#5f6368]")} />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
@@ -175,33 +188,30 @@ export function MailHeader({
         </DropdownMenu>
 
         {/* Settings Button - Hidden on mobile */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className="hidden md:flex p-3 hover:bg-gray-200/60 rounded-full transition-colors"
-              aria-label="Einstellungen"
-            >
-              <Settings className="h-6 w-6 text-[#5f6368]" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem>Alle Einstellungen aufrufen</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Designs</DropdownMenuItem>
-            <DropdownMenuItem>Dichte</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <button
+          onClick={onSettingsClick}
+          className={cn(
+            "hidden md:flex p-3 rounded-full transition-colors",
+            hasTheme ? "hover:bg-white/20" : "hover:bg-gray-200/60"
+          )}
+          aria-label="Einstellungen"
+        >
+          <Settings className={cn("h-6 w-6", hasTheme ? "text-white" : "text-[#5f6368]")} />
+        </button>
 
         {/* Gemini/AI Button - Hidden on mobile */}
         <button
-          className="hidden md:flex p-3 hover:bg-gray-200/60 rounded-full transition-colors"
+          className={cn(
+            "hidden md:flex p-3 rounded-full transition-colors",
+            hasTheme ? "hover:bg-white/20" : "hover:bg-gray-200/60"
+          )}
           aria-label="AI Assistent"
         >
-          <Sparkles className="h-6 w-6 text-[#5f6368]" />
+          <Sparkles className={cn("h-6 w-6", hasTheme ? "text-white" : "text-[#5f6368]")} />
         </button>
 
         {/* Apps Grid Button - Auf Mobile und Desktop sichtbar */}
-        <AppLauncher />
+        <AppLauncher hasTheme={hasTheme} />
 
         {/* User Profile - Gmail Style Ring - IMMER sichtbar */}
         <DropdownMenu>

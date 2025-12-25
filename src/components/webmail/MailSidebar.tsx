@@ -57,6 +57,8 @@ interface MailSidebarProps {
   // Mobile drawer props
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
+  // Theme support
+  hasTheme?: boolean;
 }
 
 // Farbpalette für Labels (Teal-basiert für Branding + ergänzende Farben)
@@ -181,6 +183,7 @@ export function MailSidebar({
   collapsed = false,
   isMobileOpen = false,
   onMobileClose,
+  hasTheme = false,
 }: MailSidebarProps) {
   const [showMore, setShowMore] = useState(false);
   const [isCreatingLabel, setIsCreatingLabel] = useState(false);
@@ -351,19 +354,23 @@ export function MailSidebar({
   // Sidebar content component (reused for both desktop and mobile)
   const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className={cn(
-      "h-full bg-[#f6f8fc] flex flex-col select-none transition-all duration-200",
+      "h-full flex flex-col select-none transition-all duration-200",
+      hasTheme ? "" : "bg-[#f6f8fc]",
       isMobile ? "w-[280px]" : collapsed ? "w-[72px]" : "w-[256px]"
     )}>
       {/* Mobile Header with close button */}
       {isMobile && (
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-          <span className="text-sm font-medium text-gray-700 truncate">{userEmail}</span>
+        <div className={cn(
+          'flex items-center justify-between px-4 py-3 border-b',
+          hasTheme ? 'border-white/20' : 'border-gray-200'
+        )}>
+          <span className={cn('text-sm font-medium truncate', hasTheme ? 'text-white' : 'text-gray-700')}>{userEmail}</span>
           <button
             onClick={onMobileClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className={cn('p-2 rounded-full transition-colors', hasTheme ? 'hover:bg-white/20' : 'hover:bg-gray-100')}
             aria-label="Menue schliessen"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className={cn('h-5 w-5', hasTheme ? 'text-white' : 'text-gray-500')} />
           </button>
         </div>
       )}
@@ -406,20 +413,22 @@ export function MailSidebar({
                 className={cn(
                   'w-full flex items-center transition-colors text-[14px]',
                   showCollapsed 
-                    ? 'justify-center py-3 mx-auto rounded-full hover:bg-teal-50'
+                    ? 'justify-center py-3 mx-auto rounded-full'
                     : 'pl-6 pr-4 py-1.5 rounded-r-full',
                   isActive 
-                    ? showCollapsed 
-                      ? 'bg-teal-100 text-teal-900' 
+                    ? hasTheme 
+                      ? 'bg-white/30 text-white font-medium' 
                       : 'bg-teal-100 text-teal-900 font-medium'
-                    : 'hover:bg-teal-50 text-gray-700'
+                    : hasTheme
+                      ? 'hover:bg-white/20 text-white'
+                      : 'hover:bg-teal-50 text-gray-700'
                 )}
                 style={{ marginRight: showCollapsed ? '0' : '8px', width: showCollapsed ? '48px' : '100%', marginLeft: showCollapsed ? '12px' : '0' }}
               >
                 <Icon className={cn(
                   'h-5 w-5 shrink-0',
                   !showCollapsed && 'mr-4',
-                  isActive ? 'text-teal-700' : 'text-gray-500'
+                  hasTheme ? 'text-white' : isActive ? 'text-teal-700' : 'text-gray-500'
                 )} />
                 {!showCollapsed && (
                   <>
@@ -427,7 +436,7 @@ export function MailSidebar({
                     {mailbox.unseen > 0 && (
                       <span className={cn(
                         'text-xs font-medium ml-2',
-                        isActive ? 'text-teal-800' : 'text-gray-600'
+                        hasTheme ? 'text-white' : isActive ? 'text-teal-800' : 'text-gray-600'
                       )}>
                         {mailbox.unseen}
                       </span>
@@ -444,13 +453,16 @@ export function MailSidebar({
           <>
             <button
               onClick={() => setShowMore(!showMore)}
-              className="w-full flex items-center pl-6 pr-4 py-1.5 mt-1 rounded-r-full hover:bg-teal-50 text-gray-700 text-[14px] transition-colors"
+              className={cn(
+                'w-full flex items-center pl-6 pr-4 py-1.5 mt-1 rounded-r-full text-[14px] transition-colors',
+                hasTheme ? 'hover:bg-white/20 text-white' : 'hover:bg-teal-50 text-gray-700'
+              )}
               style={{ marginRight: '8px' }}
             >
               {showMore ? (
-                <ChevronUp className="h-5 w-5 mr-4 text-gray-500" />
+                <ChevronUp className={cn('h-5 w-5 mr-4', hasTheme ? 'text-white' : 'text-gray-500')} />
               ) : (
-                <ChevronDown className="h-5 w-5 mr-4 text-gray-500" />
+                <ChevronDown className={cn('h-5 w-5 mr-4', hasTheme ? 'text-white' : 'text-gray-500')} />
               )}
               <span className="flex-1 text-left">{showMore ? 'Weniger' : 'Mehr'}</span>
             </button>
@@ -470,20 +482,20 @@ export function MailSidebar({
                       className={cn(
                         'w-full flex items-center pl-6 pr-4 py-1.5 rounded-r-full transition-colors text-[14px]',
                         isActive 
-                          ? 'bg-teal-100 text-teal-900 font-medium' 
-                          : 'hover:bg-teal-50 text-gray-700'
+                          ? hasTheme ? 'bg-white/30 text-white font-medium' : 'bg-teal-100 text-teal-900 font-medium'
+                          : hasTheme ? 'hover:bg-white/20 text-white' : 'hover:bg-teal-50 text-gray-700'
                       )}
                       style={{ marginRight: '8px' }}
                     >
                       <Icon className={cn(
                         'h-5 w-5 mr-4 shrink-0',
-                        isActive ? 'text-teal-700' : 'text-gray-500'
+                        hasTheme ? 'text-white' : isActive ? 'text-teal-700' : 'text-gray-500'
                       )} />
                       <span className="flex-1 text-left truncate">{displayName}</span>
                       {mailbox.unseen > 0 && (
                         <span className={cn(
                           'text-xs font-medium ml-2',
-                          isActive ? 'text-teal-800' : 'text-gray-600'
+                          hasTheme ? 'text-white' : isActive ? 'text-teal-800' : 'text-gray-600'
                         )}>
                           {mailbox.unseen}
                         </span>
@@ -499,13 +511,13 @@ export function MailSidebar({
         {/* Labels Section Header - hide when collapsed */}
         {(isMobile || !collapsed) && (
           <div className="flex items-center justify-between px-6 py-3 mt-4">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Labels</span>
+            <span className={cn('text-xs font-medium uppercase tracking-wide', hasTheme ? 'text-white' : 'text-gray-500')}>Labels</span>
             <button 
               onClick={() => setIsCreatingLabel(true)}
-              className="p-1 hover:bg-teal-50 rounded-full transition-colors"
+              className={cn('p-1 rounded-full transition-colors', hasTheme ? 'hover:bg-white/20' : 'hover:bg-teal-50')}
               title="Neues Label erstellen"
             >
-              <Plus className="h-4 w-4 text-gray-500 hover:text-teal-600" />
+              <Plus className={cn('h-4 w-4', hasTheme ? 'text-white' : 'text-gray-500 hover:text-teal-600')} />
             </button>
           </div>
         )}
@@ -617,8 +629,8 @@ export function MailSidebar({
                   className={cn(
                     'group w-full flex items-center pl-6 pr-2 py-1.5 rounded-r-full transition-colors text-[14px]',
                     isActive 
-                      ? `${labelColor.bg} font-medium` 
-                      : 'hover:bg-gray-50 text-gray-700'
+                      ? hasTheme ? 'bg-white/30 font-medium' : `${labelColor.bg} font-medium`
+                      : hasTheme ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-50 text-gray-700'
                   )}
                   style={{ marginRight: '8px' }}
                 >
@@ -632,12 +644,12 @@ export function MailSidebar({
                     )} />
                     <span className={cn(
                       'flex-1 text-left truncate',
-                      isActive && labelColor.text
+                      hasTheme ? 'text-white' : isActive && labelColor.text
                     )}>{mailbox.name}</span>
                     {mailbox.unseen > 0 && (
                       <span className={cn(
                         'text-xs font-medium ml-2',
-                        isActive ? labelColor.text : 'text-gray-600'
+                        hasTheme ? 'text-white' : isActive ? labelColor.text : 'text-gray-600'
                       )}>
                         {mailbox.unseen}
                       </span>
@@ -645,8 +657,11 @@ export function MailSidebar({
                   </button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-opacity">
-                        <MoreHorizontal className="h-4 w-4 text-gray-500" />
+                      <button className={cn(
+                        'opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity',
+                        hasTheme ? 'hover:bg-white/20' : 'hover:bg-gray-200'
+                      )}>
+                        <MoreHorizontal className={cn('h-4 w-4', hasTheme ? 'text-white' : 'text-gray-500')} />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-40">
