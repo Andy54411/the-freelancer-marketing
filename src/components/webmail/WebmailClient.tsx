@@ -51,6 +51,8 @@ import { de } from 'date-fns/locale';
 import { MailSidebar } from './MailSidebar';
 import { MailHeader } from './MailHeader';
 import { SearchFilters, filterMessagesClientSide } from './MailSearchFilter';
+import { EmailCompose as EmailComposeComponent } from '@/components/email-client/EmailCompose';
+import type { EmailCompose as EmailComposeType, EmailMessage as EmailClientMessage } from '@/components/email-client/types';
 
 // Farbpalette für Labels (gleich wie in MailSidebar)
 const LABEL_COLORS = [
@@ -701,110 +703,31 @@ function EmailViewer({
   );
 }
 
-// ===== EMAIL COMPOSE COMPONENT =====
-interface EmailComposeProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSend: (data: { to: string; subject: string; text: string }) => Promise<void>;
-  replyTo?: EmailMessage;
-  loading?: boolean;
-}
-
-function EmailCompose({ isOpen, onClose, onSend, replyTo, loading }: EmailComposeProps) {
-  const [to, setTo] = useState('');
-  const [subject, setSubject] = useState('');
-  const [body, setBody] = useState('');
-
-  useEffect(() => {
-    if (replyTo) {
-      setTo(replyTo.from[0]?.address || '');
-      setSubject(`Re: ${replyTo.subject}`);
-      setBody(`\n\n---\nAm ${new Date(replyTo.date).toLocaleString('de-DE')} schrieb ${replyTo.from[0]?.address}:\n\n`);
-    } else {
-      setTo('');
-      setSubject('');
-      setBody('');
-    }
-  }, [replyTo, isOpen]);
-
-  const handleSend = async () => {
-    await onSend({ to, subject, text: body });
-    setTo('');
-    setSubject('');
-    setBody('');
+// ===== WEBMAIL TO EMAIL-CLIENT TYPE CONVERTER =====
+const convertWebmailToEmailClientMessage = (msg: EmailMessage): EmailClientMessage => {
+  return {
+    id: String(msg.uid),
+    from: {
+      email: msg.from[0]?.address || '',
+      name: msg.from[0]?.name || undefined,
+    },
+    to: msg.to.map(t => ({ email: t.address || '', name: t.name })),
+    cc: msg.cc?.map(c => ({ email: c.address || '', name: c.name })),
+    subject: msg.subject,
+    body: msg.preview || '',
+    timestamp: msg.date instanceof Date ? msg.date.toISOString() : String(msg.date),
+    read: msg.flags.includes('\\Seen'),
+    starred: msg.flags.includes('\\Flagged'),
+    folder: {
+      id: 'inbox',
+      name: 'Posteingang',
+      type: 'inbox' as const,
+      count: 0,
+      unreadCount: 0,
+    },
+    priority: 'normal' as const,
   };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-2xl bg-white shadow-xl">
-        {/* Header */}
-        <div className="border-b px-4 py-3 flex items-center justify-between bg-gray-50 rounded-t-lg">
-          <span className="font-semibold text-gray-900">Neue Nachricht</span>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Form */}
-        <div className="p-4 space-y-4">
-          <div>
-            <Input
-              type="email"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              placeholder="An: empfaenger@example.com"
-              className="border-0 border-b rounded-none px-0 focus-visible:ring-0"
-            />
-          </div>
-          <div>
-            <Input
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Betreff"
-              className="border-0 border-b rounded-none px-0 focus-visible:ring-0"
-            />
-          </div>
-          <div>
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              className="w-full h-64 px-0 py-2 resize-none focus:outline-none text-gray-800"
-              placeholder="Nachricht verfassen..."
-            />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="border-t px-4 py-3 flex items-center justify-between bg-gray-50 rounded-b-lg">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm">
-              <Paperclip className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              Verwerfen
-            </Button>
-            <Button
-              onClick={handleSend}
-              disabled={loading || !to || !subject}
-              className="bg-teal-600 hover:bg-teal-700"
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4 mr-2" />
-              )}
-              Senden
-            </Button>
-          </div>
-        </div>
-      </Card>
-    </div>
-  );
-}
+};
 
 // ===== MAIN WEBMAIL CLIENT - LIKE EMAILCLIENT =====
 export function WebmailClient({ email, password, onLogout }: WebmailClientProps) {
@@ -870,14 +793,31 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
     setIsComposeOpen(true);
   }, []);
 
-  const handleSendEmail = useCallback(async (data: { to: string; subject: string; text: string }) => {
-    const result = await sendEmail(data);
+  const handleSendEmail = useCallback(async (composeData: EmailComposeType) => {
+    // Convert EmailComposeType to webmail API format
+    const apiData = {
+      to: composeData.to,
+      subject: composeData.subject,
+      text: composeData.body,
+      html: composeData.body, // TODO: Implement rich text
+      cc: composeData.cc ? composeData.cc.split(',').map(e => e.trim()).filter(Boolean) : undefined,
+      bcc: composeData.bcc ? composeData.bcc.split(',').map(e => e.trim()).filter(Boolean) : undefined,
+    };
+    
+    const result = await sendEmail(apiData);
     if (result.success) {
       setIsComposeOpen(false);
       setReplyToEmail(null);
       fetchMessages(currentMailbox);
     }
   }, [sendEmail, fetchMessages, currentMailbox]);
+
+  // Placeholder for save draft functionality (not yet implemented in webmail)
+  const handleSaveDraft = useCallback(async (_composeData: EmailComposeType) => {
+    // TODO: Implement draft saving for webmail
+    setIsComposeOpen(false);
+    setReplyToEmail(null);
+  }, []);
 
   const handleDelete = useCallback(async (uid: number) => {
     await performAction('delete', uid);
@@ -1270,15 +1210,15 @@ export function WebmailClient({ email, password, onLogout }: WebmailClientProps)
       </button>
 
       {/* Compose Modal */}
-      <EmailCompose
+      <EmailComposeComponent
         isOpen={isComposeOpen}
         onClose={() => {
           setIsComposeOpen(false);
           setReplyToEmail(null);
         }}
         onSend={handleSendEmail}
-        replyTo={replyToEmail || undefined}
-        loading={loading}
+        onSaveDraft={handleSaveDraft}
+        replyTo={replyToEmail ? convertWebmailToEmailClientMessage(replyToEmail) : undefined}
       />
     </div>
   );
