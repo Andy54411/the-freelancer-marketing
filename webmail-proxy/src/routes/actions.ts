@@ -60,6 +60,27 @@ const RenameMailboxSchema = z.object({
   newPath: z.string(),
 });
 
+const SaveDraftSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+  action: z.literal('saveDraft'),
+  draft: z.object({
+    to: z.union([z.string(), z.array(z.string())]).optional(),
+    cc: z.array(z.string()).optional(),
+    bcc: z.array(z.string()).optional(),
+    subject: z.string().default(''),
+    text: z.string().optional(),
+    html: z.string().optional(),
+  }),
+});
+
+const DeleteDraftSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+  action: z.literal('deleteDraft'),
+  uid: z.number(),
+});
+
 const ActionSchema = z.discriminatedUnion('action', [
   MarkReadSchema,
   MarkUnreadSchema,
@@ -69,6 +90,8 @@ const ActionSchema = z.discriminatedUnion('action', [
   CreateMailboxSchema,
   DeleteMailboxSchema,
   RenameMailboxSchema,
+  SaveDraftSchema,
+  DeleteDraftSchema,
 ]);
 
 router.post('/', async (req, res) => {
@@ -115,6 +138,16 @@ router.post('/', async (req, res) => {
         console.log('[ACTIONS] Renaming mailbox:', data.oldPath, '->', data.newPath);
         const renameResult = await emailService.renameMailbox(data.oldPath, data.newPath);
         return res.json({ success: true, newPath: renameResult.newPath });
+
+      case 'saveDraft':
+        console.log('[ACTIONS] Saving draft');
+        const draftResult = await emailService.saveDraft(data.draft);
+        return res.json({ success: true, uid: draftResult.uid });
+
+      case 'deleteDraft':
+        console.log('[ACTIONS] Deleting draft:', data.uid);
+        await emailService.deleteDraft(data.uid);
+        break;
     }
     
     res.json({ success: true });

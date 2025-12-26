@@ -604,4 +604,79 @@ export class EmailService {
 
     return { text, html, attachments };
   }
+
+  // Save email to Drafts folder
+  async saveDraft(draft: {
+    to?: string | string[];
+    cc?: string[];
+    bcc?: string[];
+    subject: string;
+    text?: string;
+    html?: string;
+  }): Promise<{ success: boolean; uid?: number }> {
+    const client = this.createImapClient();
+
+    try {
+      await client.connect();
+
+      // Build raw email message
+      const fromAddress = this.credentials.email;
+      const toAddresses = draft.to 
+        ? (Array.isArray(draft.to) ? draft.to.join(', ') : draft.to) 
+        : '';
+      const ccLine = draft.cc?.length ? `Cc: ${draft.cc.join(', ')}\r\n` : '';
+      const bccLine = draft.bcc?.length ? `Bcc: ${draft.bcc.join(', ')}\r\n` : '';
+      const date = new Date().toUTCString();
+      const messageId = `<draft.${Date.now()}.${Math.random().toString(36).substring(2)}@taskilo.de>`;
+      
+      let rawMessage = `From: ${fromAddress}\r\n`;
+      if (toAddresses) {
+        rawMessage += `To: ${toAddresses}\r\n`;
+      }
+      rawMessage += ccLine;
+      rawMessage += bccLine;
+      rawMessage += `Subject: ${draft.subject || '(kein Betreff)'}\r\n`;
+      rawMessage += `Date: ${date}\r\n`;
+      rawMessage += `Message-ID: ${messageId}\r\n`;
+      rawMessage += `MIME-Version: 1.0\r\n`;
+      rawMessage += `X-Mailer: Taskilo Webmail\r\n`;
+      
+      if (draft.html) {
+        rawMessage += `Content-Type: text/html; charset=utf-8\r\n`;
+        rawMessage += `\r\n`;
+        rawMessage += draft.html;
+      } else {
+        rawMessage += `Content-Type: text/plain; charset=utf-8\r\n`;
+        rawMessage += `\r\n`;
+        rawMessage += draft.text || '';
+      }
+
+      // Append to Drafts folder with \Draft flag (not \Seen - so it shows as "unread")
+      const appendResult = await client.append('Drafts', rawMessage, ['\\Draft']);
+      await client.logout();
+
+      return { 
+        success: true, 
+        uid: appendResult && typeof appendResult === 'object' ? appendResult.uid : undefined 
+      };
+    } catch (error) {
+      await client.logout().catch(() => {});
+      throw error;
+    }
+  }
+
+  // Delete a specific draft by UID
+  async deleteDraft(uid: number): Promise<void> {
+    const client = this.createImapClient();
+
+    try {
+      await client.connect();
+      await client.mailboxOpen('Drafts');
+      await client.messageDelete(uid.toString(), { uid: true });
+      await client.logout();
+    } catch (error) {
+      await client.logout().catch(() => {});
+      throw error;
+    }
+  }
 }

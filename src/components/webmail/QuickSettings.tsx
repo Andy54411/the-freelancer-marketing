@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { X, Mail, ChevronRight, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Theme-Daten
 export interface ThemeData {
@@ -440,7 +439,7 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
         </div>
 
         {/* Scrollbarer Inhalt */}
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           <div className="px-6 pb-6">
             
             {/* Apps in Gmail / Chat und Meet */}
@@ -562,7 +561,10 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
             <section className="py-4 border-t border-gray-200">
               <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-4">Art des Posteingangs</h3>
               <div className="space-y-4">
-                <label className="flex items-center justify-between cursor-pointer">
+                <div 
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => updateSetting('inboxType', 'default')}
+                >
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
@@ -574,20 +576,16 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                     </div>
                     <div>
                       <span className="text-sm text-gray-800">Standard</span>
-                      <button className="block text-sm text-teal-600 hover:text-teal-700">Anpassen</button>
+                      <span className="block text-sm text-teal-600">Anpassen</span>
                     </div>
                   </div>
-                  <input
-                    type="radio"
-                    name="inboxType"
-                    checked={settings.inboxType === 'default'}
-                    onChange={() => updateSetting('inboxType', 'default')}
-                    className="sr-only"
-                  />
                   <InboxPreviewDefault selected={settings.inboxType === 'default'} />
-                </label>
+                </div>
 
-                <label className="flex items-center justify-between cursor-pointer">
+                <div 
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => updateSetting('inboxType', 'important-first')}
+                >
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
@@ -599,17 +597,13 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                     </div>
                     <span className="text-sm text-gray-800">Wichtige zuerst</span>
                   </div>
-                  <input
-                    type="radio"
-                    name="inboxType"
-                    checked={settings.inboxType === 'important-first'}
-                    onChange={() => updateSetting('inboxType', 'important-first')}
-                    className="sr-only"
-                  />
                   <InboxPreviewImportant selected={settings.inboxType === 'important-first'} />
-                </label>
+                </div>
 
-                <label className="flex items-center justify-between cursor-pointer">
+                <div 
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => updateSetting('inboxType', 'unread-first')}
+                >
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
@@ -621,17 +615,13 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                     </div>
                     <span className="text-sm text-gray-800">Ungelesene zuerst</span>
                   </div>
-                  <input
-                    type="radio"
-                    name="inboxType"
-                    checked={settings.inboxType === 'unread-first'}
-                    onChange={() => updateSetting('inboxType', 'unread-first')}
-                    className="sr-only"
-                  />
                   <InboxPreviewUnread selected={settings.inboxType === 'unread-first'} />
-                </label>
+                </div>
 
-                <label className="flex items-center justify-between cursor-pointer">
+                <div 
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => updateSetting('inboxType', 'starred-first')}
+                >
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
@@ -643,17 +633,13 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                     </div>
                     <span className="text-sm text-gray-800">Markierte zuerst</span>
                   </div>
-                  <input
-                    type="radio"
-                    name="inboxType"
-                    checked={settings.inboxType === 'starred-first'}
-                    onChange={() => updateSetting('inboxType', 'starred-first')}
-                    className="sr-only"
-                  />
                   <InboxPreviewStarred selected={settings.inboxType === 'starred-first'} />
-                </label>
+                </div>
 
-                <label className="flex items-center justify-between cursor-pointer">
+                <div 
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => updateSetting('inboxType', 'priority')}
+                >
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
@@ -665,20 +651,16 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                     </div>
                     <div>
                       <span className="text-sm text-gray-800">Sortierter Eingang</span>
-                      <button className="block text-sm text-teal-600 hover:text-teal-700">Anpassen</button>
+                      <span className="block text-sm text-teal-600">Anpassen</span>
                     </div>
                   </div>
-                  <input
-                    type="radio"
-                    name="inboxType"
-                    checked={settings.inboxType === 'priority'}
-                    onChange={() => updateSetting('inboxType', 'priority')}
-                    className="sr-only"
-                  />
                   <InboxPreviewPriority selected={settings.inboxType === 'priority'} />
-                </label>
+                </div>
 
-                <label className="flex items-center justify-between cursor-pointer">
+                <div 
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => updateSetting('inboxType', 'multiple')}
+                >
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
@@ -690,18 +672,11 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                     </div>
                     <div>
                       <span className="text-sm text-gray-800">Mehrere Posteingänge</span>
-                      <button className="block text-sm text-teal-600 hover:text-teal-700">Anpassen</button>
+                      <span className="block text-sm text-teal-600">Anpassen</span>
                     </div>
                   </div>
-                  <input
-                    type="radio"
-                    name="inboxType"
-                    checked={settings.inboxType === 'multiple'}
-                    onChange={() => updateSetting('inboxType', 'multiple')}
-                    className="sr-only"
-                  />
                   <InboxPreviewMultiple selected={settings.inboxType === 'multiple'} />
-                </label>
+                </div>
               </div>
             </section>
 
@@ -810,7 +785,7 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
             </section>
 
           </div>
-        </ScrollArea>
+        </div>
       </div>
     </>
   );

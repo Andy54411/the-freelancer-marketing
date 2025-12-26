@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, memo, useCallback } from 'react';
+import { useState, useEffect, memo, useCallback, useMemo } from 'react';
 import { 
   Inbox, 
   Send, 
@@ -28,6 +28,7 @@ import {
   File,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Users,
   Bell,
 } from 'lucide-react';
@@ -46,6 +47,7 @@ import {
   DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { MailSidebar } from './MailSidebar';
@@ -261,6 +263,7 @@ const formatEmailDate = (date: Date): { relative: string; absolute: string } => 
 interface EmailItemProps {
   email: EmailMessage;
   isSelected: boolean;
+  density: 'default' | 'comfortable' | 'compact';
   onSelect: (uid: number) => void;
   onClick: (email: EmailMessage) => void;
   onStar: (uid: number) => void;
@@ -275,6 +278,7 @@ interface EmailItemProps {
 const EmailItem = memo(({
   email,
   isSelected,
+  density,
   onSelect,
   onClick,
   onStar,
@@ -290,10 +294,18 @@ const EmailItem = memo(({
   const fromName = email.from[0]?.name || email.from[0]?.address || 'Unbekannt';
   const { relative, absolute } = formatEmailDate(email.date);
 
+  // Padding basierend auf Kompaktheitsgrad
+  const densityClasses = {
+    default: 'px-2 py-2.5',
+    comfortable: 'px-2 py-3.5',
+    compact: 'px-2 py-1',
+  };
+
   return (
     <div
       className={cn(
-        'group px-2 py-1.5 hover:bg-gray-50/80 cursor-pointer transition-all duration-150 w-full min-w-0 border-l-2 border-l-transparent',
+        'group hover:bg-gray-50/80 cursor-pointer transition-all duration-150 w-full min-w-0 border-l-2 border-l-transparent',
+        densityClasses[density],
         isUnread && 'bg-blue-50/40 border-l-teal-500 hover:bg-blue-50/60',
         isSelected && 'bg-teal-50 border-l-teal-600',
         !isUnread && 'hover:bg-gray-50'
@@ -489,7 +501,8 @@ const EmailItem = memo(({
   return (
     prevProps.email.uid === nextProps.email.uid &&
     prevProps.email.flags.join(',') === nextProps.email.flags.join(',') &&
-    prevProps.isSelected === nextProps.isSelected
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.density === nextProps.density
   );
 });
 
@@ -882,25 +895,92 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
   const [advancedFilters, setAdvancedFilters] = useState<SearchFilters | null>(null);
   const [selectedEmails, setSelectedEmails] = useState<number[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<EmailMessage | null>(null);
-  const [isComposeOpen, setIsComposeOpen] = useState(false);
-  const [replyToEmail, setReplyToEmail] = useState<EmailMessage | null>(null);
-  const [composeToEmail, setComposeToEmail] = useState<string | undefined>(undefined);
+  
+  // Mehrere Compose-Fenster Support (Gmail-style)
+  interface ComposeWindow {
+    id: string;
+    isMinimized: boolean;
+    replyTo?: EmailMessage | null;
+    initialTo?: string;
+  }
+  const [composeWindows, setComposeWindows] = useState<ComposeWindow[]>([]);
+  
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showQuickSettings, setShowQuickSettings] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<string>('basicwhite');
+  const [currentDensity, setCurrentDensity] = useState<'default' | 'comfortable' | 'compact'>('default');
+  const [currentInboxType, setCurrentInboxType] = useState<'default' | 'important-first' | 'unread-first' | 'starred-first' | 'priority' | 'multiple'>('default');
   const [activeCategory, setActiveCategory] = useState<EmailCategory>('primary');
+  
+  // States für Mehrere Posteingänge
+  const [draftsMessages, setDraftsMessages] = useState<EmailMessage[]>([]);
+  const [draftsLoading, setDraftsLoading] = useState(false);
+  const [sentMessages, setSentMessages] = useState<EmailMessage[]>([]);
+  const [sentLoading, setSentLoading] = useState(false);
+  const [trashMessages, setTrashMessages] = useState<EmailMessage[]>([]);
+  const [trashLoading, setTrashLoading] = useState(false);
+  const [spamMessages, setSpamMessages] = useState<EmailMessage[]>([]);
+  const [spamLoading, setSpamLoading] = useState(false);
+  const [archiveMessages, setArchiveMessages] = useState<EmailMessage[]>([]);
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 
-  // Lade Theme aus Einstellungen
+  // Lade Theme, Dichte und Posteingang-Typ aus Einstellungen
   useEffect(() => {
     const savedSettings = loadSettings();
     setCurrentTheme(savedSettings.theme);
+    setCurrentDensity(savedSettings.density);
+    setCurrentInboxType(savedSettings.inboxType);
   }, []);
 
   // Handler für Einstellungsänderungen
   const handleSettingsChange = (settings: WebmailSettings) => {
     setCurrentTheme(settings.theme);
+    setCurrentDensity(settings.density);
+    setCurrentInboxType(settings.inboxType);
   };
+
+  // Alle Mailboxen laden für Mehrere Posteingänge
+  useEffect(() => {
+    if (currentInboxType === 'multiple' && email && password) {
+      // Helper Funktion zum Laden einer Mailbox
+      const loadMailbox = async (
+        mailboxName: string, 
+        setMessages: React.Dispatch<React.SetStateAction<EmailMessage[]>>,
+        setLoading: React.Dispatch<React.SetStateAction<boolean>>
+      ) => {
+        setLoading(true);
+        try {
+          const res = await fetch('/api/webmail/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, mailbox: mailboxName }),
+          });
+          const data = await res.json();
+          if (data.success && data.messages) {
+            setMessages(data.messages.map((m: { date: string | number | Date }) => ({
+              ...m,
+              date: new Date(m.date),
+            })));
+          } else {
+            setMessages([]);
+          }
+        } catch {
+          setMessages([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      // Alle Mailboxen parallel laden
+      loadMailbox('Drafts', setDraftsMessages, setDraftsLoading);
+      loadMailbox('Sent', setSentMessages, setSentLoading);
+      loadMailbox('Trash', setTrashMessages, setTrashLoading);
+      loadMailbox('Junk', setSpamMessages, setSpamLoading);
+      loadMailbox('Archive', setArchiveMessages, setArchiveLoading);
+    }
+  }, [currentInboxType, email, password]);
 
   // Theme-Hintergrundbild berechnen
   const themeData = getThemeById(currentTheme);
@@ -921,8 +1001,9 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
   // Öffne Compose-Dialog wenn initialComposeTo übergeben wurde
   useEffect(() => {
     if (initialComposeTo) {
-      setComposeToEmail(initialComposeTo);
-      setIsComposeOpen(true);
+      // Neues Compose-Fenster öffnen
+      const newId = `compose-${Date.now()}`;
+      setComposeWindows(prev => [...prev, { id: newId, isMinimized: false, initialTo: initialComposeTo }]);
       // URL-Parameter entfernen nach Verwendung
       window.history.replaceState({}, '', '/webmail');
     }
@@ -961,12 +1042,25 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
     clearMessageError();
   }, [clearCurrentMessage, clearMessageError]);
 
+  // Neues Compose-Fenster öffnen (Gmail-style: mehrere möglich)
   const handleCompose = useCallback((replyTo?: EmailMessage) => {
-    setReplyToEmail(replyTo || null);
-    setIsComposeOpen(true);
+    const newId = `compose-${Date.now()}`;
+    setComposeWindows(prev => [...prev, { id: newId, isMinimized: false, replyTo: replyTo || null }]);
   }, []);
 
-  const handleSendEmail = useCallback(async (composeData: EmailComposeType) => {
+  // Compose-Fenster schließen
+  const handleCloseCompose = useCallback((windowId: string) => {
+    setComposeWindows(prev => prev.filter(w => w.id !== windowId));
+  }, []);
+
+  // Compose-Fenster minimieren/maximieren
+  const handleToggleMinimize = useCallback((windowId: string) => {
+    setComposeWindows(prev => prev.map(w => 
+      w.id === windowId ? { ...w, isMinimized: !w.isMinimized } : w
+    ));
+  }, []);
+
+  const handleSendEmail = useCallback(async (composeData: EmailComposeType, windowId?: string) => {
     // Convert EmailComposeType to webmail API format
     const apiData = {
       to: composeData.to,
@@ -979,18 +1073,80 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
     
     const result = await sendEmail(apiData);
     if (result.success) {
-      setIsComposeOpen(false);
-      setReplyToEmail(null);
+      // Compose-Fenster schließen
+      if (windowId) {
+        setComposeWindows(prev => prev.filter(w => w.id !== windowId));
+      }
       fetchMessages(currentMailbox);
     }
   }, [sendEmail, fetchMessages, currentMailbox]);
 
-  // Placeholder for save draft functionality (not yet implemented in webmail)
-  const handleSaveDraft = useCallback(async (_composeData: EmailComposeType) => {
-    // TODO: Implement draft saving for webmail
-    setIsComposeOpen(false);
-    setReplyToEmail(null);
-  }, []);
+  // Save draft functionality
+  const handleSaveDraft = useCallback(async (composeData: EmailComposeType, windowId?: string) => {
+    if (!email || !password) return;
+
+    // Check if there's any content worth saving
+    const hasContent = composeData.to || composeData.subject || composeData.body;
+    if (!hasContent) {
+      // Compose-Fenster schließen
+      if (windowId) {
+        setComposeWindows(prev => prev.filter(w => w.id !== windowId));
+      }
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/webmail/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          action: 'saveDraft',
+          draft: {
+            to: composeData.to || undefined,
+            cc: composeData.cc ? composeData.cc.split(',').map(e => e.trim()).filter(Boolean) : undefined,
+            bcc: composeData.bcc ? composeData.bcc.split(',').map(e => e.trim()).filter(Boolean) : undefined,
+            subject: composeData.subject || '',
+            html: composeData.body || '',
+          },
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Entwurf gespeichert');
+        // Reload drafts if in multiple inbox view
+        if (currentInboxType === 'multiple') {
+          setDraftsLoading(true);
+          fetch('/api/webmail/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, mailbox: 'Drafts' }),
+          })
+            .then(res => res.json())
+            .then(result => {
+              if (result.success && result.messages) {
+                setDraftsMessages(result.messages.map((m: { date: string | number | Date }) => ({
+                  ...m,
+                  date: new Date(m.date),
+                })));
+              }
+            })
+            .finally(() => setDraftsLoading(false));
+        }
+      } else {
+        toast.error('Entwurf konnte nicht gespeichert werden');
+      }
+    } catch {
+      toast.error('Fehler beim Speichern des Entwurfs');
+    }
+
+    // Compose-Fenster schließen
+    if (windowId) {
+      setComposeWindows(prev => prev.filter(w => w.id !== windowId));
+    }
+  }, [email, password, currentInboxType]);
 
   const handleDelete = useCallback(async (uid: number) => {
     await performAction('delete', uid);
@@ -1068,7 +1224,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
   };
 
   // Filter messages based on simple search query or advanced filters
-  const filteredMessages = (() => {
+  const filteredMessages = useMemo(() => {
     let filtered = messages;
     
     // Apply category filter (nur im Posteingang)
@@ -1105,8 +1261,49 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
       }).filter(Boolean);
     }
     
+    // Sortierung basierend auf Posteingang-Typ anwenden
+    if (currentInboxType !== 'default') {
+      filtered = [...filtered].sort((a, b) => {
+        const aUnread = !a.flags.includes('\\Seen');
+        const bUnread = !b.flags.includes('\\Seen');
+        const aStarred = a.flags.includes('\\Flagged');
+        const bStarred = b.flags.includes('\\Flagged');
+        const aDate = new Date(a.date).getTime();
+        const bDate = new Date(b.date).getTime();
+        
+        switch (currentInboxType) {
+          case 'unread-first':
+            // Ungelesene zuerst, dann nach Datum
+            if (aUnread !== bUnread) return aUnread ? -1 : 1;
+            return bDate - aDate;
+            
+          case 'starred-first':
+            // Markierte zuerst, dann nach Datum
+            if (aStarred !== bStarred) return aStarred ? -1 : 1;
+            return bDate - aDate;
+            
+          case 'important-first':
+            // Wichtige (markiert + ungelesen) zuerst
+            const aImportant = aStarred || aUnread;
+            const bImportant = bStarred || bUnread;
+            if (aImportant !== bImportant) return aImportant ? -1 : 1;
+            return bDate - aDate;
+            
+          case 'priority':
+            // Priorität: Markiert > Ungelesen > Rest
+            const aPriority = aStarred ? 2 : aUnread ? 1 : 0;
+            const bPriority = bStarred ? 2 : bUnread ? 1 : 0;
+            if (aPriority !== bPriority) return bPriority - aPriority;
+            return bDate - aDate;
+            
+          default:
+            return bDate - aDate;
+        }
+      });
+    }
+    
     return filtered;
-  })();
+  }, [messages, currentMailbox, activeCategory, searchQuery, advancedFilters, currentInboxType]);
 
   // Zaehle E-Mails pro Kategorie und hole neueste ungelesene fuer Vorschau
   const categoryData = (() => {
@@ -1332,8 +1529,8 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
           </div>
         </div>
 
-        {/* Gmail-Style Category Tabs - nur im Posteingang anzeigen */}
-        {currentMailbox.toLowerCase() === 'inbox' && (
+        {/* Gmail-Style Category Tabs - nur im Posteingang und NICHT bei Mehrere Posteingänge anzeigen */}
+        {currentMailbox.toLowerCase() === 'inbox' && currentInboxType !== 'multiple' && (
           <div className="flex items-stretch border-b border-gray-200/50 overflow-x-auto scrollbar-hide">
             {/* Allgemein Tab */}
             <button 
@@ -1457,10 +1654,354 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
             </div>
           )}
 
-          {filteredMessages.length === 0 ? (
+          {filteredMessages.length === 0 && currentInboxType !== 'multiple' ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
               <Mail className="h-12 w-12 mb-4" />
               <p>Keine E-Mails in diesem Ordner</p>
+            </div>
+          ) : currentInboxType === 'multiple' ? (
+            /* Mehrere Posteingänge Layout - alle Mailboxen untereinander wie Gmail */
+            <div>
+              {/* Markierte E-Mails Sektion */}
+              {(() => {
+                const starredMessages = messages.filter(m => m.flags.includes('\\Flagged'));
+                const isCollapsed = collapsedSections['starred'];
+                return (
+                  <div className="border-b border-gray-300">
+                    <div 
+                      className="flex items-center justify-between px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
+                      onClick={() => setCollapsedSections(prev => ({ ...prev, starred: !prev.starred }))}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", isCollapsed && "-rotate-90")} />
+                        <span className="text-sm text-gray-700">is:starred</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <span>{starredMessages.length > 0 ? `1-${starredMessages.length} von ${starredMessages.length}` : '0'}</span>
+                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronRight className="h-4 w-4" />
+                      </div>
+                    </div>
+                    {!isCollapsed && starredMessages.length > 0 && (
+                      <div className="divide-y divide-gray-100">
+                        {starredMessages.map((msg) => (
+                          <EmailItem
+                            key={`starred-${msg.uid}`}
+                            email={msg}
+                            isSelected={selectedEmails.includes(msg.uid)}
+                            density={currentDensity}
+                            onSelect={handleSelectEmail}
+                            onClick={handleEmailClick}
+                            onStar={handleStarEmail}
+                            onDelete={handleDelete}
+                            onMarkAsRead={handleMarkAsRead}
+                            onMoveToSpam={handleMoveToSpam}
+                            onMoveToFolder={handleMoveToFolder}
+                            mailboxes={mailboxes}
+                            currentMailbox={currentMailbox}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Entwürfe Sektion */}
+              {(() => {
+                const isCollapsed = collapsedSections['drafts'];
+                return (
+                  <div className="border-b border-gray-300">
+                    <div 
+                      className="flex items-center justify-between px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
+                      onClick={() => setCollapsedSections(prev => ({ ...prev, drafts: !prev.drafts }))}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", isCollapsed && "-rotate-90")} />
+                        <span className="text-sm text-gray-700">is:drafts</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        {draftsLoading ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <span>{draftsMessages.length > 0 ? `1-${draftsMessages.length} von ${draftsMessages.length}` : '0'}</span>
+                        )}
+                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronRight className="h-4 w-4" />
+                      </div>
+                    </div>
+                    {!isCollapsed && !draftsLoading && draftsMessages.length > 0 && (
+                      <div className="divide-y divide-gray-100">
+                        {draftsMessages.map((msg) => (
+                          <div
+                            key={`draft-${msg.uid}`}
+                            className="group flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50/80 cursor-pointer transition-all duration-150 w-full"
+                            onClick={() => {
+                              fetchMessage(msg.uid, 'Drafts');
+                              setSelectedEmail(msg);
+                            }}
+                          >
+                            <input type="checkbox" className="h-4 w-4 rounded border-gray-300" onClick={e => e.stopPropagation()} />
+                            <Star className="h-4 w-4 text-gray-300" />
+                            <span className="text-red-500 font-medium text-sm shrink-0">Entwurf</span>
+                            <span className="text-gray-800 text-sm truncate flex-1">{msg.subject || '(kein Betreff)'}</span>
+                            <span className="text-xs text-gray-500 shrink-0">{formatEmailDate(msg.date).relative}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Posteingang Sektion */}
+              {(() => {
+                const inboxMessages = messages.filter(m => !m.flags.includes('\\Flagged'));
+                const isCollapsed = collapsedSections['inbox'];
+                return (
+                  <div className="border-b border-gray-300">
+                    <div 
+                      className="flex items-center justify-between px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
+                      onClick={() => setCollapsedSections(prev => ({ ...prev, inbox: !prev.inbox }))}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", isCollapsed && "-rotate-90")} />
+                        <span className="text-sm text-gray-700">Posteingang</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <span>{inboxMessages.length > 0 ? `1-${Math.min(inboxMessages.length, 50)} von ${inboxMessages.length}` : '0'}</span>
+                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronRight className="h-4 w-4" />
+                      </div>
+                    </div>
+                    {!isCollapsed && inboxMessages.length > 0 && (
+                      <div className="divide-y divide-gray-100">
+                        {inboxMessages.slice(0, 50).map((msg) => (
+                          <EmailItem
+                            key={`inbox-${msg.uid}`}
+                            email={msg}
+                            isSelected={selectedEmails.includes(msg.uid)}
+                            density={currentDensity}
+                            onSelect={handleSelectEmail}
+                            onClick={handleEmailClick}
+                            onStar={handleStarEmail}
+                            onDelete={handleDelete}
+                            onMarkAsRead={handleMarkAsRead}
+                            onMoveToSpam={handleMoveToSpam}
+                            onMoveToFolder={handleMoveToFolder}
+                            mailboxes={mailboxes}
+                            currentMailbox={currentMailbox}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Gesendet Sektion */}
+              {(() => {
+                const isCollapsed = collapsedSections['sent'];
+                return (
+                  <div className="border-b border-gray-300">
+                    <div 
+                      className="flex items-center justify-between px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
+                      onClick={() => setCollapsedSections(prev => ({ ...prev, sent: !prev.sent }))}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", isCollapsed && "-rotate-90")} />
+                        <span className="text-sm text-gray-700">Gesendet</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        {sentLoading ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <span>{sentMessages.length > 0 ? `1-${Math.min(sentMessages.length, 25)} von ${sentMessages.length}` : '0'}</span>
+                        )}
+                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronRight className="h-4 w-4" />
+                      </div>
+                    </div>
+                    {!isCollapsed && !sentLoading && sentMessages.length > 0 && (
+                      <div className="divide-y divide-gray-100">
+                        {sentMessages.slice(0, 25).map((msg) => (
+                          <EmailItem
+                            key={`sent-${msg.uid}`}
+                            email={msg}
+                            isSelected={selectedEmails.includes(msg.uid)}
+                            density={currentDensity}
+                            onSelect={handleSelectEmail}
+                            onClick={(email) => {
+                              fetchMessage(email.uid, 'Sent');
+                              setSelectedEmail(email);
+                            }}
+                            onStar={handleStarEmail}
+                            onDelete={handleDelete}
+                            onMarkAsRead={handleMarkAsRead}
+                            onMoveToSpam={handleMoveToSpam}
+                            onMoveToFolder={handleMoveToFolder}
+                            mailboxes={mailboxes}
+                            currentMailbox="Sent"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Archiv Sektion */}
+              {(() => {
+                const isCollapsed = collapsedSections['archive'];
+                return (
+                  <div className="border-b border-gray-300">
+                    <div 
+                      className="flex items-center justify-between px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
+                      onClick={() => setCollapsedSections(prev => ({ ...prev, archive: !prev.archive }))}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", isCollapsed && "-rotate-90")} />
+                        <span className="text-sm text-gray-700">Archiv</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        {archiveLoading ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <span>{archiveMessages.length > 0 ? `1-${Math.min(archiveMessages.length, 25)} von ${archiveMessages.length}` : '0'}</span>
+                        )}
+                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronRight className="h-4 w-4" />
+                      </div>
+                    </div>
+                    {!isCollapsed && !archiveLoading && archiveMessages.length > 0 && (
+                      <div className="divide-y divide-gray-100">
+                        {archiveMessages.slice(0, 25).map((msg) => (
+                          <EmailItem
+                            key={`archive-${msg.uid}`}
+                            email={msg}
+                            isSelected={selectedEmails.includes(msg.uid)}
+                            density={currentDensity}
+                            onSelect={handleSelectEmail}
+                            onClick={(email) => {
+                              fetchMessage(email.uid, 'Archive');
+                              setSelectedEmail(email);
+                            }}
+                            onStar={handleStarEmail}
+                            onDelete={handleDelete}
+                            onMarkAsRead={handleMarkAsRead}
+                            onMoveToSpam={handleMoveToSpam}
+                            onMoveToFolder={handleMoveToFolder}
+                            mailboxes={mailboxes}
+                            currentMailbox="Archive"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Spam Sektion */}
+              {(() => {
+                const isCollapsed = collapsedSections['spam'];
+                return (
+                  <div className="border-b border-gray-300">
+                    <div 
+                      className="flex items-center justify-between px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
+                      onClick={() => setCollapsedSections(prev => ({ ...prev, spam: !prev.spam }))}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", isCollapsed && "-rotate-90")} />
+                        <span className="text-sm text-gray-700">Spam</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        {spamLoading ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <span>{spamMessages.length > 0 ? `1-${Math.min(spamMessages.length, 25)} von ${spamMessages.length}` : '0'}</span>
+                        )}
+                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronRight className="h-4 w-4" />
+                      </div>
+                    </div>
+                    {!isCollapsed && !spamLoading && spamMessages.length > 0 && (
+                      <div className="divide-y divide-gray-100">
+                        {spamMessages.slice(0, 25).map((msg) => (
+                          <EmailItem
+                            key={`spam-${msg.uid}`}
+                            email={msg}
+                            isSelected={selectedEmails.includes(msg.uid)}
+                            density={currentDensity}
+                            onSelect={handleSelectEmail}
+                            onClick={(email) => {
+                              fetchMessage(email.uid, 'Junk');
+                              setSelectedEmail(email);
+                            }}
+                            onStar={handleStarEmail}
+                            onDelete={handleDelete}
+                            onMarkAsRead={handleMarkAsRead}
+                            onMoveToSpam={handleMoveToSpam}
+                            onMoveToFolder={handleMoveToFolder}
+                            mailboxes={mailboxes}
+                            currentMailbox="Junk"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Papierkorb Sektion */}
+              {(() => {
+                const isCollapsed = collapsedSections['trash'];
+                return (
+                  <div className="border-b border-gray-300">
+                    <div 
+                      className="flex items-center justify-between px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
+                      onClick={() => setCollapsedSections(prev => ({ ...prev, trash: !prev.trash }))}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", isCollapsed && "-rotate-90")} />
+                        <span className="text-sm text-gray-700">Papierkorb</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        {trashLoading ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <span>{trashMessages.length > 0 ? `1-${Math.min(trashMessages.length, 25)} von ${trashMessages.length}` : '0'}</span>
+                        )}
+                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronRight className="h-4 w-4" />
+                      </div>
+                    </div>
+                    {!isCollapsed && !trashLoading && trashMessages.length > 0 && (
+                      <div className="divide-y divide-gray-100">
+                        {trashMessages.slice(0, 25).map((msg) => (
+                          <EmailItem
+                            key={`trash-${msg.uid}`}
+                            email={msg}
+                            isSelected={selectedEmails.includes(msg.uid)}
+                            density={currentDensity}
+                            onSelect={handleSelectEmail}
+                            onClick={(email) => {
+                              fetchMessage(email.uid, 'Trash');
+                              setSelectedEmail(email);
+                            }}
+                            onStar={handleStarEmail}
+                            onDelete={handleDelete}
+                            onMarkAsRead={handleMarkAsRead}
+                            onMoveToSpam={handleMoveToSpam}
+                            onMoveToFolder={handleMoveToFolder}
+                            mailboxes={mailboxes}
+                            currentMailbox="Trash"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
@@ -1469,6 +2010,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
                   key={msg.uid}
                   email={msg}
                   isSelected={selectedEmails.includes(msg.uid)}
+                  density={currentDensity}
                   onSelect={handleSelectEmail}
                   onClick={handleEmailClick}
                   onStar={handleStarEmail}
@@ -1545,19 +2087,46 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
         <Pencil className="h-6 w-6" />
       </button>
 
-      {/* Compose Modal */}
-      <EmailComposeComponent
-        isOpen={isComposeOpen}
-        onClose={() => {
-          setIsComposeOpen(false);
-          setReplyToEmail(null);
-          setComposeToEmail(undefined);
-        }}
-        onSend={handleSendEmail}
-        onSaveDraft={handleSaveDraft}
-        replyTo={replyToEmail ? convertWebmailToEmailClientMessage(replyToEmail) : undefined}
-        initialTo={composeToEmail}
-      />
+      {/* Compose Windows - Gmail style multiple windows at bottom */}
+      {composeWindows.map((window, index) => (
+        <EmailComposeComponent
+          key={window.id}
+          _windowId={window.id}
+          windowIndex={index}
+          isOpen={true}
+          isMinimizedExternal={window.isMinimized}
+          onToggleMinimize={() => handleToggleMinimize(window.id)}
+          onClose={() => handleCloseCompose(window.id)}
+          onSend={(emailData) => handleSendEmail(emailData, window.id)}
+          onSaveDraft={(emailData) => handleSaveDraft(emailData, window.id)}
+          replyTo={window.replyTo ? convertWebmailToEmailClientMessage(window.replyTo) : undefined}
+          initialTo={window.initialTo}
+        />
+      ))}
+
+      {/* Gmail-style Chat Widget - bottom right */}
+      <div className="fixed bottom-0 right-4 z-40 hidden md:flex items-end gap-2">
+        {/* Chat Button */}
+        <div className="bg-white rounded-t-lg shadow-lg border border-gray-200 border-b-0">
+          <button 
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
+            onClick={() => {/* TODO: Implement chat */}}
+          >
+            <Users className="h-4 w-4" />
+            <span>Chat</span>
+          </button>
+        </div>
+        {/* Meet Button */}
+        <div className="bg-white rounded-t-lg shadow-lg border border-gray-200 border-b-0">
+          <button 
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
+            onClick={() => {/* TODO: Implement meet */}}
+          >
+            <Mail className="h-4 w-4" />
+            <span>Meet</span>
+          </button>
+        </div>
+      </div>
 
       {/* Quick Settings Panel */}
       <QuickSettings

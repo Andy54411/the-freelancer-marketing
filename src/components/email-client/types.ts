@@ -1,6 +1,6 @@
 export interface EmailMessage {
   id: string;
-  from: {
+  from: string | {
     email: string;
     name?: string;
   };

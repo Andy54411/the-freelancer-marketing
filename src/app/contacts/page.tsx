@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Users,
   Star,
@@ -99,6 +99,8 @@ type ViewType = 'contacts' | 'frequent' | 'other' | 'trash' | 'label';
 
 function ContactsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const emailParam = searchParams.get('email');
   
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -117,6 +119,7 @@ function ContactsPageContent() {
   const [showCreatePanel, setShowCreatePanel] = useState(false);
   const [showMultipleContactsModal, setShowMultipleContactsModal] = useState(false);
   const [editingContact, setEditingContact] = useState<EmailContact | null>(null);
+  const [initialEmailHandled, setInitialEmailHandled] = useState(false);
 
   useEffect(() => {
     const savedCredentials = getCookie();
@@ -190,6 +193,17 @@ function ContactsPageContent() {
       loadContacts();
     }
   }, [credentials, loadContacts]);
+
+  // Kontakt aus URL-Parameter automatisch öffnen
+  useEffect(() => {
+    if (!loading && contacts.length > 0 && emailParam && !initialEmailHandled) {
+      const contactToOpen = contacts.find(c => c.email.toLowerCase() === emailParam.toLowerCase());
+      if (contactToOpen) {
+        setSelectedContact(contactToOpen);
+        setInitialEmailHandled(true);
+      }
+    }
+  }, [loading, contacts, emailParam, initialEmailHandled]);
 
   const filteredContacts = useMemo(() => {
     let filtered = [...contacts];
