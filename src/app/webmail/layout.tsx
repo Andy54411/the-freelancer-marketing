@@ -28,9 +28,14 @@ function getCookie(): { email: string; password: string } | null {
 }
 
 function deleteCookie(): void {
-  // Cookie auf allen Subdomains loeschen
-  const domain = window.location.hostname.includes('taskilo.de') ? '; domain=.taskilo.de' : '';
-  document.cookie = `${COOKIE_NAME}=; path=/${domain}; max-age=0`;
+  // Cookie auf ALLEN moeglichen Domains loeschen (alte + neue Varianten)
+  document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
+  document.cookie = `${COOKIE_NAME}=; path=/; domain=.taskilo.de; max-age=0`;
+  document.cookie = `${COOKIE_NAME}=; path=/; domain=taskilo.de; max-age=0`;
+  // Auch auf aktueller Subdomain
+  if (typeof window !== 'undefined') {
+    document.cookie = `${COOKIE_NAME}=; path=/; domain=${window.location.hostname}; max-age=0`;
+  }
 }
 
 // Webmail Session Context
