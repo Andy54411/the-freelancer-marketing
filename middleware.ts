@@ -34,11 +34,13 @@ export default async function middleware(request: NextRequest) {
 
   // Helper function to add no-cache headers for subdomain rewrites
   const createSubdomainRewrite = (targetPath: string) => {
+    console.log('[Middleware] Creating rewrite to:', targetPath);
     const url = request.nextUrl.clone();
     url.pathname = targetPath;
     const response = NextResponse.rewrite(url);
     // Prevent Vercel Edge from caching subdomain rewrites
     response.headers.set('x-middleware-cache', 'no-cache');
+    response.headers.set('x-subdomain-rewrite', targetPath);
     response.headers.set('Cache-Control', 'no-store, must-revalidate');
     return response;
   };
