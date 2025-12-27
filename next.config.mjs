@@ -112,64 +112,66 @@ const nextConfig = {
     ];
   },
 
-  // Subdomain Rewrites - BEFORE cache/static files
+  // Subdomain Rewrites - NUR für Seiten, NICHT für statische Dateien
+  // Die Middleware handhabt das Routing, diese Rewrites sind Fallback
   async rewrites() {
     return {
-      beforeFiles: [
-        // kalender.taskilo.de -> /webmail/calendar
+      // afterFiles: Läuft NACH statischen Dateien, also nur für dynamische Routen
+      afterFiles: [
+        // kalender.taskilo.de -> /webmail/calendar (nur Hauptseite)
         {
-          source: '/:path*',
-          destination: '/webmail/calendar/:path*',
+          source: '/',
+          destination: '/webmail/calendar',
           has: [{ type: 'host', value: 'kalender.taskilo.de' }],
         },
         {
-          source: '/:path*',
-          destination: '/webmail/calendar/:path*',
+          source: '/',
+          destination: '/webmail/calendar',
           has: [{ type: 'host', value: 'calendar.taskilo.de' }],
         },
         // drive.taskilo.de -> /webmail/drive
         {
-          source: '/:path*',
-          destination: '/webmail/drive/:path*',
+          source: '/',
+          destination: '/webmail/drive',
           has: [{ type: 'host', value: 'drive.taskilo.de' }],
         },
         // tasks.taskilo.de -> /webmail/tasks
         {
-          source: '/:path*',
-          destination: '/webmail/tasks/:path*',
+          source: '/',
+          destination: '/webmail/tasks',
           has: [{ type: 'host', value: 'tasks.taskilo.de' }],
         },
         {
-          source: '/:path*',
-          destination: '/webmail/tasks/:path*',
+          source: '/',
+          destination: '/webmail/tasks',
           has: [{ type: 'host', value: 'task.taskilo.de' }],
         },
         // kontakt.taskilo.de -> /webmail/contacts
         {
-          source: '/:path*',
-          destination: '/webmail/contacts/:path*',
+          source: '/',
+          destination: '/webmail/contacts',
           has: [{ type: 'host', value: 'kontakt.taskilo.de' }],
         },
         {
-          source: '/:path*',
-          destination: '/webmail/contacts/:path*',
+          source: '/',
+          destination: '/webmail/contacts',
           has: [{ type: 'host', value: 'contact.taskilo.de' }],
         },
         // meet.taskilo.de -> /webmail/meet
         {
-          source: '/:path*',
-          destination: '/webmail/meet/:path*',
+          source: '/',
+          destination: '/webmail/meet',
           has: [{ type: 'host', value: 'meet.taskilo.de' }],
         },
         // email/mail.taskilo.de -> /webmail
         {
-          source: '/:path*',
-          destination: '/webmail/:path*',
+          source: '/',
+          destination: '/webmail',
           has: [{ type: 'host', value: 'email.taskilo.de' }],
         },
         {
-          source: '/:path*',
-          destination: '/webmail/:path*',
+          source: '/',
+          destination: '/webmail',
           has: [{ type: 'host', value: 'mail.taskilo.de' }],
         },
       ],
