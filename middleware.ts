@@ -23,14 +23,68 @@ function logMiddleware(message: string, request: NextRequest, additionalData?: a
 }
 
 export default async function middleware(request: NextRequest) {
-  logMiddleware('Middleware ausgeführt', request);
-
-  // Subdomain Routing
   const hostname = request.headers.get('host') || '';
   const pathname = request.nextUrl.pathname;
+  
+  // IMMEDIATE subdomain check BEFORE any other logic
+  console.log('[Middleware] HOST:', hostname, 'PATH:', pathname);
+  
+  // Skip static files completely
+  if (pathname.startsWith('/_next/') || pathname.startsWith('/images/') || pathname === '/favicon.ico') {
+    return NextResponse.next();
+  }
+  
+  // SUBDOMAIN ROUTING - Check this FIRST
+  if (hostname.includes('kalender.') || hostname.includes('calendar.')) {
+    console.log('[Middleware] KALENDER SUBDOMAIN DETECTED');
+    const url = request.nextUrl.clone();
+    url.pathname = '/webmail/calendar' + (pathname === '/' ? '' : pathname);
+    const response = NextResponse.rewrite(url);
+    response.headers.set('x-subdomain-rewrite', '/webmail/calendar');
+    return response;
+  }
+  
+  if (hostname.includes('email.') || hostname.includes('mail.')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/webmail' + (pathname === '/' ? '' : pathname);
+    const response = NextResponse.rewrite(url);
+    response.headers.set('x-subdomain-rewrite', '/webmail');
+    return response;
+  }
+  
+  if (hostname.includes('drive.')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/webmail/drive' + (pathname === '/' ? '' : pathname);
+    const response = NextResponse.rewrite(url);
+    response.headers.set('x-subdomain-rewrite', '/webmail/drive');
+    return response;
+  }
+  
+  if (hostname.includes('task.') || hostname.includes('tasks.')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/webmail/tasks' + (pathname === '/' ? '' : pathname);
+    const response = NextResponse.rewrite(url);
+    response.headers.set('x-subdomain-rewrite', '/webmail/tasks');
+    return response;
+  }
+  
+  if (hostname.includes('kontakt.') || hostname.includes('contact.')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/webmail/contacts' + (pathname === '/' ? '' : pathname);
+    const response = NextResponse.rewrite(url);
+    response.headers.set('x-subdomain-rewrite', '/webmail/contacts');
+    return response;
+  }
+  
+  if (hostname.includes('meet.')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/webmail/meet' + (pathname === '/' ? '' : pathname);
+    const response = NextResponse.rewrite(url);
+    response.headers.set('x-subdomain-rewrite', '/webmail/meet');
+    return response;
+  }
 
-  // Skip API and static paths for all subdomains
-  const isApiOrStatic = pathname.startsWith('/api/') || pathname.startsWith('/_next/') || pathname.startsWith('/images/');
+  logMiddleware('Middleware ausgeführt', request);
 
   // Helper function to add no-cache headers for subdomain rewrites
   const createSubdomainRewrite = (targetPath: string) => {
@@ -249,6 +303,9 @@ async function checkCompanyOnboardingStatus(request: NextRequest) {
 }
 
 export const config = {
-  // Apply to all routes except static files
-  matcher: ['/((?!_next|favicon.ico|images|icon|robots\.txt|sitemap\.xml).*)'],
+  // Match ALL routes for subdomain handling, except static files
+  matcher: [
+    '/',
+    '/((?!_next/static|_next/image|favicon.ico|images|icon|robots\\.txt|sitemap\\.xml).*)',
+  ],
 };
