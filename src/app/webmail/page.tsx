@@ -64,11 +64,11 @@ function decodeCredentials(encoded: string): { email: string; password: string }
 
 function setCookie(email: string, password: string, remember: boolean): void {
   const encoded = encodeCredentials(email, password);
-  const maxAge = remember ? COOKIE_MAX_AGE : 0;
-  const expires = remember ? `; max-age=${maxAge}` : '';
+  // Session-Cookie (kein max-age) oder 30 Tage
+  const expires = remember ? `; max-age=${COOKIE_MAX_AGE}` : '';
   // Cookie gilt fuer alle Subdomains (email.taskilo.de, drive.taskilo.de, etc.)
   const domain = window.location.hostname.includes('taskilo.de') ? '; domain=.taskilo.de' : '';
-  document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/${domain}; SameSite=Lax; Secure`;
+  document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/${domain}; SameSite=None; Secure`;
 }
 
 function getCookie(): { email: string; password: string } | null {
