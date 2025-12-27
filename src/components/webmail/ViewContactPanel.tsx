@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 
 // Avatar colors like Google
 const AVATAR_COLORS = [
@@ -67,6 +68,8 @@ export function ViewContactPanel({
   onDelete, 
   onStar 
 }: ViewContactPanelProps) {
+  const { isDark } = useWebmailTheme();
+  
   if (!isOpen || !contact) return null;
 
   const displayName = contact.name || contact.email.split('@')[0];
@@ -86,18 +89,18 @@ export function ViewContactPanel({
   const phones = contact.phones || (contact.phone ? [{ value: contact.phone, label: 'Mobil' }] : []);
 
   return (
-    <div className="flex-1 bg-white flex flex-col h-full">
+    <div className={cn("flex-1 flex flex-col h-full", isDark ? "bg-[#202124]" : "bg-white")}>
       {/* Header - wie Google */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+      <div className={cn("flex items-center justify-between px-4 py-3 border-b", isDark ? "border-[#5f6368]" : "border-gray-100")}>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-10 w-10 p-0 rounded-full hover:bg-gray-100"
+              className={cn("h-10 w-10 p-0 rounded-full", isDark ? "hover:bg-white/10" : "hover:bg-gray-100")}
               onClick={onClose}
             >
-              <ArrowLeft className="h-5 w-5 text-gray-600" />
+              <ArrowLeft className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Zurück</TooltipContent>
@@ -109,14 +112,14 @@ export function ViewContactPanel({
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-10 w-10 p-0 rounded-full hover:bg-gray-100"
+                className={cn("h-10 w-10 p-0 rounded-full", isDark ? "hover:bg-white/10" : "hover:bg-gray-100")}
                 onClick={() => onStar(contact)}
               >
                 <Star className={cn(
                   'h-5 w-5',
                   contact.starred 
                     ? 'fill-yellow-400 text-yellow-400' 
-                    : 'text-gray-400'
+                    : 'text-white'
                 )} />
               </Button>
             </TooltipTrigger>
@@ -137,10 +140,10 @@ export function ViewContactPanel({
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-10 w-10 p-0 rounded-full hover:bg-gray-100"
+                className={cn("h-10 w-10 p-0 rounded-full", isDark ? "hover:bg-white/10" : "hover:bg-gray-100")}
                 onClick={() => onDelete(contact)}
               >
-                <Trash2 className="h-5 w-5 text-gray-600" />
+                <Trash2 className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Löschen</TooltipContent>
@@ -148,20 +151,20 @@ export function ViewContactPanel({
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full hover:bg-gray-100">
-                <MoreVertical className="h-5 w-5 text-gray-600" />
+              <Button variant="ghost" size="sm" className={cn("h-10 w-10 p-0 rounded-full", isDark ? "hover:bg-white/10" : "hover:bg-gray-100")}>
+                <MoreVertical className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => window.print()}>
+            <DropdownMenuContent align="end" className={cn(isDark && "bg-[#2d2e30] border-[#5f6368]")}>
+              <DropdownMenuItem onClick={() => window.print()} className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>
                 <Printer className="h-4 w-4 mr-2" />
                 Drucken
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => copyToClipboard(JSON.stringify(contact, null, 2), 'Kontaktdaten')}>
+              <DropdownMenuItem onClick={() => copyToClipboard(JSON.stringify(contact, null, 2), 'Kontaktdaten')} className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>
                 <Copy className="h-4 w-4 mr-2" />
                 Exportieren
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className={cn(isDark && "bg-[#5f6368]")} />
               <DropdownMenuItem 
                 onClick={() => onDelete(contact)}
                 className="text-red-600 focus:text-red-600"
@@ -196,74 +199,74 @@ export function ViewContactPanel({
             
             {/* Name */}
             <div className="pt-8">
-              <h1 className="text-2xl font-normal text-gray-900">
+              <h1 className={cn("text-2xl font-normal", isDark ? "text-white" : "text-gray-900")}>
                 {displayName}
               </h1>
             </div>
           </div>
 
           {/* Action Buttons - wie Google */}
-          <div className="flex items-center gap-6 mb-6 pb-6 border-b border-gray-200">
+          <div className={cn("flex items-center gap-6 mb-6 pb-6 border-b", isDark ? "border-[#5f6368]" : "border-gray-200")}>
             <button 
               className="flex flex-col items-center gap-2 group"
               onClick={() => window.location.href = `/webmail?compose=true&to=${contact.email}`}
             >
-              <div className="h-12 w-12 rounded-full border border-gray-300 flex items-center justify-center group-hover:bg-gray-50">
-                <Mail className="h-5 w-5 text-gray-600" />
+              <div className={cn("h-12 w-12 rounded-full border flex items-center justify-center", isDark ? "border-[#5f6368] group-hover:bg-white/10" : "border-gray-300 group-hover:bg-gray-50")}>
+                <Mail className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
               </div>
-              <span className="text-xs text-gray-600">E-Mail verfassen</span>
+              <span className={cn("text-xs", isDark ? "text-white" : "text-gray-600")}>E-Mail verfassen</span>
             </button>
             
             <button className="flex flex-col items-center gap-2 group">
-              <div className="h-12 w-12 rounded-full border border-gray-300 flex items-center justify-center group-hover:bg-gray-50">
-                <Calendar className="h-5 w-5 text-gray-600" />
+              <div className={cn("h-12 w-12 rounded-full border flex items-center justify-center", isDark ? "border-[#5f6368] group-hover:bg-white/10" : "border-gray-300 group-hover:bg-gray-50")}>
+                <Calendar className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
               </div>
-              <span className="text-xs text-gray-600">Termin</span>
+              <span className={cn("text-xs", isDark ? "text-white" : "text-gray-600")}>Termin</span>
             </button>
             
             <button className="flex flex-col items-center gap-2 group">
-              <div className="h-12 w-12 rounded-full border border-gray-300 flex items-center justify-center group-hover:bg-gray-50">
-                <MessageSquare className="h-5 w-5 text-gray-600" />
+              <div className={cn("h-12 w-12 rounded-full border flex items-center justify-center", isDark ? "border-[#5f6368] group-hover:bg-white/10" : "border-gray-300 group-hover:bg-gray-50")}>
+                <MessageSquare className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
               </div>
-              <span className="text-xs text-gray-600">Chat</span>
+              <span className={cn("text-xs", isDark ? "text-white" : "text-gray-600")}>Chat</span>
             </button>
             
             <button className="flex flex-col items-center gap-2 group">
-              <div className="h-12 w-12 rounded-full border border-gray-300 flex items-center justify-center group-hover:bg-gray-50 opacity-50">
-                <Video className="h-5 w-5 text-gray-400" />
+              <div className={cn("h-12 w-12 rounded-full border flex items-center justify-center opacity-50", isDark ? "border-[#5f6368] group-hover:bg-white/10" : "border-gray-300 group-hover:bg-gray-50")}>
+                <Video className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
               </div>
-              <span className="text-xs text-gray-400">Video</span>
+              <span className={cn("text-xs", isDark ? "text-white" : "text-gray-600")}>Video</span>
             </button>
           </div>
 
           {/* Label Button */}
           <div className="mb-6">
-            <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+            <button className={cn("flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm", isDark ? "border-[#5f6368] text-white hover:bg-white/10" : "border-gray-300 text-gray-700 hover:bg-gray-50")}>
               <Plus className="h-4 w-4" />
               Label
             </button>
           </div>
 
           {/* Kontaktdaten Section */}
-          <div className="bg-[#f8fafc] rounded-xl p-4">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">
+          <div className={cn("rounded-xl p-4", isDark ? "bg-[#2d2e30]" : "bg-[#f8fafc]")}>
+            <h3 className={cn("text-sm font-medium mb-4", isDark ? "text-white" : "text-gray-900")}>
               Kontaktdaten
             </h3>
             
             {/* E-Mail */}
             {contact.email ? (
               <div 
-                className="flex items-center gap-4 py-2 cursor-pointer hover:bg-gray-100 rounded -mx-2 px-2"
+                className={cn("flex items-center gap-4 py-2 cursor-pointer rounded -mx-2 px-2", isDark ? "hover:bg-white/10" : "hover:bg-gray-100")}
                 onClick={() => window.location.href = `mailto:${contact.email}`}
               >
-                <Mail className="h-5 w-5 text-gray-400 shrink-0" />
-                <span className="text-sm text-teal-600">{contact.email}</span>
+                <Mail className="h-5 w-5 text-white shrink-0" />
+                <span className={cn("text-sm", isDark ? "text-teal-400" : "text-teal-600")}>{contact.email}</span>
               </div>
             ) : (
               <div className="flex items-center gap-4 py-2">
-                <Mail className="h-5 w-5 text-gray-400 shrink-0" />
-                <span className="text-sm text-teal-600 cursor-pointer hover:underline">
-                  E-Mail-Adresse hinzufügen
+                <Mail className="h-5 w-5 text-white shrink-0" />
+                <span className={cn("text-sm cursor-pointer hover:underline", isDark ? "text-teal-400" : "text-teal-600")}>
+                  E-Mail-Adresse hinzufuegen
                 </span>
               </div>
             )}
@@ -273,13 +276,13 @@ export function ViewContactPanel({
               phones.map((phone, index) => (
                 <div 
                   key={index}
-                  className="flex items-center gap-4 py-2 cursor-pointer hover:bg-gray-100 rounded -mx-2 px-2"
+                  className={cn("flex items-center gap-4 py-2 cursor-pointer rounded -mx-2 px-2", isDark ? "hover:bg-white/10" : "hover:bg-gray-100")}
                   onClick={() => window.location.href = `tel:${phone.value}`}
                 >
-                  <Phone className="h-5 w-5 text-gray-400 shrink-0" />
+                  <Phone className="h-5 w-5 text-white shrink-0" />
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-teal-600">{phone.value}</span>
-                    <span className="text-sm text-gray-500">
+                    <span className={cn("text-sm", isDark ? "text-teal-400" : "text-teal-600")}>{phone.value}</span>
+                    <span className={cn("text-sm", isDark ? "text-white" : "text-gray-500")}>
                       {phone.label}
                     </span>
                   </div>
@@ -290,36 +293,36 @@ export function ViewContactPanel({
             {/* Adresse */}
             {contact.address && (
               <div 
-                className="flex items-center gap-4 py-2 cursor-pointer hover:bg-gray-100 rounded -mx-2 px-2"
+                className={cn("flex items-center gap-4 py-2 cursor-pointer rounded -mx-2 px-2", isDark ? "hover:bg-white/10" : "hover:bg-gray-100")}
                 onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(contact.address!)}`, '_blank')}
               >
-                <MapPin className="h-5 w-5 text-gray-400 shrink-0" />
-                <span className="text-sm text-teal-600">{contact.address}</span>
+                <MapPin className="h-5 w-5 text-white shrink-0" />
+                <span className={cn("text-sm", isDark ? "text-teal-400" : "text-teal-600")}>{contact.address}</span>
               </div>
             )}
 
             {/* Website */}
             {contact.website && (
               <div 
-                className="flex items-center gap-4 py-2 cursor-pointer hover:bg-gray-100 rounded -mx-2 px-2"
+                className={cn("flex items-center gap-4 py-2 cursor-pointer rounded -mx-2 px-2", isDark ? "hover:bg-white/10" : "hover:bg-gray-100")}
                 onClick={() => window.open(contact.website!.startsWith('http') ? contact.website : `https://${contact.website}`, '_blank')}
               >
-                <Link className="h-5 w-5 text-gray-400 shrink-0" />
-                <span className="text-sm text-teal-600">{contact.website}</span>
+                <Link className="h-5 w-5 text-white shrink-0" />
+                <span className={cn("text-sm", isDark ? "text-teal-400" : "text-teal-600")}>{contact.website}</span>
               </div>
             )}
 
             {/* Geburtstag */}
             {contact.birthday ? (
               <div className="flex items-center gap-4 py-2">
-                <Cake className="h-5 w-5 text-gray-400 shrink-0" />
-                <span className="text-sm text-gray-900">{contact.birthday}</span>
+                <Cake className="h-5 w-5 text-white shrink-0" />
+                <span className={cn("text-sm", isDark ? "text-white" : "text-gray-900")}>{contact.birthday}</span>
               </div>
             ) : (
               <div className="flex items-center gap-4 py-2">
-                <Cake className="h-5 w-5 text-gray-400 shrink-0" />
-                <span className="text-sm text-teal-600 cursor-pointer hover:underline">
-                  Geburtsdatum hinzufügen
+                <Cake className="h-5 w-5 text-white shrink-0" />
+                <span className={cn("text-sm cursor-pointer hover:underline", isDark ? "text-teal-400" : "text-teal-600")}>
+                  Geburtsdatum hinzufuegen
                 </span>
               </div>
             )}
@@ -332,7 +335,7 @@ export function ViewContactPanel({
                 {contact.labels.map((label, index) => (
                   <span 
                     key={index}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 text-sm text-gray-700"
+                    className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm", isDark ? "bg-[#3c4043] text-white" : "bg-gray-100 text-gray-700")}
                   >
                     <Tag className="h-3.5 w-3.5" />
                     {label}

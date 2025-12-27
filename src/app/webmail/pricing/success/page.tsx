@@ -109,7 +109,7 @@ function SuccessContent() {
           </h1>
 
           {/* Description */}
-          <p className={cn('mb-8', isDark ? 'text-gray-400' : 'text-gray-600')}>
+          <p className={cn('mb-8', isDark ? 'text-white' : 'text-gray-600')}>
             Ihre Bestellung wurde erfolgreich abgeschlossen. Sie erhalten in Kürze eine Bestätigungs-E-Mail.
           </p>
 
@@ -121,19 +121,19 @@ function SuccessContent() {
               </h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className={cn(isDark ? 'text-gray-400' : 'text-gray-500')}>Tarif:</span>
+                  <span className={cn(isDark ? 'text-white' : 'text-gray-500')}>Tarif:</span>
                   <span className={cn('font-medium', isDark ? 'text-white' : 'text-gray-900')}>
                     {sessionData.planName}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={cn(isDark ? 'text-gray-400' : 'text-gray-500')}>E-Mail:</span>
+                  <span className={cn(isDark ? 'text-white' : 'text-gray-500')}>E-Mail:</span>
                   <span className={cn('font-medium', isDark ? 'text-white' : 'text-gray-900')}>
                     {sessionData.customerEmail}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={cn(isDark ? 'text-gray-400' : 'text-gray-500')}>Betrag:</span>
+                  <span className={cn(isDark ? 'text-white' : 'text-gray-500')}>Betrag:</span>
                   <span className={cn('font-medium', isDark ? 'text-white' : 'text-gray-900')}>
                     {(sessionData.amount / 100).toFixed(2)} EUR/{sessionData.interval === 'month' ? 'Monat' : 'Jahr'}
                   </span>
@@ -148,7 +148,7 @@ function SuccessContent() {
               <Mail className="w-5 h-5" />
               Nächste Schritte
             </h3>
-            <ol className={cn('list-decimal list-inside space-y-1 text-sm', isDark ? 'text-gray-300' : 'text-gray-600')}>
+            <ol className={cn('list-decimal list-inside space-y-1 text-sm', isDark ? 'text-white' : 'text-gray-600')}>
               <li>Prüfen Sie Ihr E-Mail-Postfach für die Bestätigung</li>
               <li>Erstellen Sie Ihre @taskilo.de E-Mail-Adresse</li>
               <li>Melden Sie sich im Webmail an und nutzen Sie alle Funktionen</li>
@@ -164,7 +164,7 @@ function SuccessContent() {
               </Button>
             </Link>
             <Link href="/webmail" className="flex-1">
-              <Button variant="outline" className={cn('w-full', isDark && 'border-[#5f6368] text-gray-300 hover:bg-[#303134]')}>
+              <Button variant="outline" className={cn('w-full', isDark && 'border-[#5f6368] text-white hover:bg-[#303134]')}>
                 Zum Webmail
               </Button>
             </Link>

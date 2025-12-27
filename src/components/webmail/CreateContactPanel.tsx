@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useWebmailAuth } from '@/hooks/useWebmailAuth';
+import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 
 interface CreateContactPanelProps {
   isOpen: boolean;
@@ -67,6 +68,7 @@ function FloatingInput({
   onRemove?: () => void;
   inputClassName?: string;
 }) {
+  const { isDark } = useWebmailTheme();
   const [focused, setFocused] = useState(false);
   const hasValue = value.length > 0;
   const isActive = focused || hasValue;
@@ -82,9 +84,12 @@ function FloatingInput({
           onBlur={() => setFocused(false)}
           autoFocus={autoFocus}
           className={cn(
-            'w-full h-[52px] px-3 pt-5 pb-1 text-sm text-gray-900 bg-transparent',
-            'border border-gray-300 rounded outline-none transition-all',
+            'w-full h-[52px] px-3 pt-5 pb-1 text-sm bg-transparent',
+            'border rounded outline-none transition-all',
             'peer',
+            isDark 
+              ? 'text-white border-[#5f6368]' 
+              : 'text-gray-900 border-gray-300',
             focused && 'border-2 border-teal-600',
             inputClassName
           )}
@@ -95,7 +100,7 @@ function FloatingInput({
             isActive
               ? 'top-1.5 text-[11px]'
               : 'top-1/2 -translate-y-1/2 text-sm',
-            focused ? 'text-teal-600' : 'text-gray-500'
+            focused ? 'text-teal-600' : isDark ? 'text-white' : 'text-gray-500'
           )}
         >
           {label}
@@ -105,7 +110,7 @@ function FloatingInput({
         <button
           type="button"
           onClick={onRemove}
-          className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center shrink-0"
+          className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", isDark ? "hover:bg-white/10" : "hover:bg-gray-100")}
         >
           <X className="h-4 w-4 text-gray-500" />
         </button>
@@ -128,6 +133,7 @@ function PhoneInput({
   onCountryChange: (code: string) => void;
   onRemove?: () => void;
 }) {
+  const { isDark } = useWebmailTheme();
   const [focused, setFocused] = useState(false);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const hasValue = value.length > 0;
@@ -161,15 +167,16 @@ function PhoneInput({
           type="button"
           onClick={() => setShowCountryDropdown(!showCountryDropdown)}
           className={cn(
-            'flex items-center gap-1.5 px-3 h-[52px] border border-gray-300 rounded hover:bg-gray-50 min-w-20',
+            'flex items-center gap-1.5 px-3 h-[52px] border rounded min-w-20',
+            isDark ? 'border-[#5f6368] hover:bg-white/10' : 'border-gray-300 hover:bg-gray-50',
             showCountryDropdown && 'border-2 border-teal-600'
           )}
         >
           <span className="text-xl">{getFlag(countryCode)}</span>
-          <ChevronDown className="h-3 w-3 text-gray-500" />
+          <ChevronDown className={cn("h-3 w-3", isDark ? "text-white" : "text-gray-500")} />
         </button>
         {showCountryDropdown && (
-          <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+          <div className={cn("absolute top-full left-0 mt-1 w-64 border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto", isDark ? "bg-[#2d2e30] border-[#5f6368]" : "bg-white border-gray-200")}>
             {countries.map((country) => (
               <button
                 key={country.code}
@@ -179,12 +186,13 @@ function PhoneInput({
                   setShowCountryDropdown(false);
                 }}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-left',
-                  countryCode === country.code && 'bg-teal-50'
+                  'w-full flex items-center gap-3 px-4 py-3 text-left',
+                  isDark ? 'hover:bg-white/10' : 'hover:bg-gray-50',
+                  countryCode === country.code && (isDark ? 'bg-teal-900/30' : 'bg-teal-50')
                 )}
               >
                 <span className="text-xl">{getFlag(country.code)}</span>
-                <span className="text-sm text-gray-900">{country.name} ({country.code})</span>
+                <span className={cn("text-sm", isDark ? "text-white" : "text-gray-900")}>{country.name} ({country.code})</span>
               </button>
             ))}
           </div>
@@ -200,8 +208,9 @@ function PhoneInput({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           className={cn(
-            'w-full h-[52px] px-3 pt-5 pb-1 text-sm text-gray-900 bg-transparent',
-            'border border-gray-300 rounded outline-none transition-all',
+            'w-full h-[52px] px-3 pt-5 pb-1 text-sm bg-transparent',
+            'border rounded outline-none transition-all',
+            isDark ? 'text-white border-[#5f6368]' : 'text-gray-900 border-gray-300',
             focused && 'border-2 border-teal-600'
           )}
         />
@@ -211,7 +220,7 @@ function PhoneInput({
             isActive
               ? 'top-1.5 text-[11px]'
               : 'top-1/2 -translate-y-1/2 text-sm',
-            focused ? 'text-teal-600' : 'text-gray-500'
+            focused ? 'text-teal-600' : isDark ? 'text-white' : 'text-gray-500'
           )}
         >
           Telefon
@@ -223,7 +232,7 @@ function PhoneInput({
         <button
           type="button"
           onClick={onRemove}
-          className="h-[52px] w-8 rounded-full hover:bg-gray-100 flex items-center justify-center shrink-0"
+          className={cn("h-[52px] w-8 rounded-full flex items-center justify-center shrink-0", isDark ? "hover:bg-white/10" : "hover:bg-gray-100")}
         >
           <X className="h-4 w-4 text-gray-500" />
         </button>
@@ -242,11 +251,12 @@ function AddFieldButton({
   label: string;
   onClick: () => void;
 }) {
+  const { isDark } = useWebmailTheme();
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center justify-center gap-2 w-full h-[52px] text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-full transition-colors"
+      className={cn("flex items-center justify-center gap-2 w-full h-[52px] rounded-full transition-colors", isDark ? "text-teal-400 bg-teal-900/30 hover:bg-teal-900/50" : "text-teal-600 bg-teal-50 hover:bg-teal-100")}
     >
       <Icon className="h-5 w-5" />
       <span className="text-sm">{label}</span>
@@ -266,6 +276,7 @@ function TransformingAddField({
   inputLabel: string;
   onAdd: (value: string) => void;
 }) {
+  const { isDark } = useWebmailTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [focused, setFocused] = useState(false);
   const [value, setValue] = useState('');
@@ -312,7 +323,7 @@ function TransformingAddField({
       <button
         type="button"
         onClick={handleButtonClick}
-        className="flex items-center justify-center gap-2 w-full h-[52px] text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-full transition-all duration-200"
+        className={cn("flex items-center justify-center gap-2 w-full h-[52px] rounded-full transition-all duration-200", isDark ? "text-teal-400 bg-teal-900/30 hover:bg-teal-900/50" : "text-teal-600 bg-teal-50 hover:bg-teal-100")}
       >
         <Icon className="h-5 w-5" />
         <span className="text-sm">{label}</span>
@@ -331,8 +342,9 @@ function TransformingAddField({
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         className={cn(
-          'w-full h-[52px] px-3 pt-5 pb-1 text-sm text-gray-900 bg-white',
-          'border border-gray-300 rounded outline-none transition-all',
+          'w-full h-[52px] px-3 pt-5 pb-1 text-sm',
+          'border rounded outline-none transition-all',
+          isDark ? 'text-white bg-[#2d2e30] border-[#5f6368]' : 'text-gray-900 bg-white border-gray-300',
           focused && 'border-2 border-teal-600'
         )}
       />
@@ -342,7 +354,7 @@ function TransformingAddField({
           isActive
             ? 'top-1.5 text-[11px]'
             : 'top-1/2 -translate-y-1/2 text-sm',
-          focused ? 'text-teal-600' : 'text-gray-500'
+          focused ? 'text-teal-600' : isDark ? 'text-white' : 'text-gray-500'
         )}
       >
         {inputLabel}
@@ -367,6 +379,7 @@ function TransformingPhoneField({
   const [countryCode, setCountryCode] = useState('+49');
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { isDark } = useWebmailTheme();
   const hasValue = value.length > 0;
   const isActive = focused || hasValue;
 
@@ -426,7 +439,7 @@ function TransformingPhoneField({
       <button
         type="button"
         onClick={handleButtonClick}
-        className="flex items-center justify-center gap-2 w-full h-[52px] text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-full transition-all duration-200"
+        className={cn("flex items-center justify-center gap-2 w-full h-[52px] rounded-full transition-all duration-200", isDark ? "text-teal-400 bg-teal-900/30 hover:bg-teal-900/50" : "text-teal-600 bg-teal-50 hover:bg-teal-100")}
       >
         <Icon className="h-5 w-5" />
         <span className="text-sm">{label}</span>
@@ -442,15 +455,16 @@ function TransformingPhoneField({
           type="button"
           onClick={() => setShowCountryDropdown(!showCountryDropdown)}
           className={cn(
-            'flex items-center gap-1.5 px-3 h-[52px] border border-gray-300 rounded hover:bg-gray-50 min-w-20',
+            'flex items-center gap-1.5 px-3 h-[52px] border rounded min-w-20',
+            isDark ? 'border-[#5f6368] hover:bg-white/10' : 'border-gray-300 hover:bg-gray-50',
             showCountryDropdown && 'border-2 border-teal-600'
           )}
         >
           <span className="text-xl">{getFlag(countryCode)}</span>
-          <ChevronDown className="h-3 w-3 text-gray-500" />
+          <ChevronDown className={cn("h-3 w-3", isDark ? "text-white" : "text-gray-500")} />
         </button>
         {showCountryDropdown && (
-          <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+          <div className={cn("absolute top-full left-0 mt-1 w-64 border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto", isDark ? "bg-[#2d2e30] border-[#5f6368]" : "bg-white border-gray-200")}>
             {countries.map((country) => (
               <button
                 key={country.code}
@@ -460,12 +474,13 @@ function TransformingPhoneField({
                   setShowCountryDropdown(false);
                 }}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-left',
-                  countryCode === country.code && 'bg-teal-50'
+                  'w-full flex items-center gap-3 px-4 py-3 text-left',
+                  isDark ? 'hover:bg-white/10' : 'hover:bg-gray-50',
+                  countryCode === country.code && (isDark ? 'bg-teal-900/30' : 'bg-teal-50')
                 )}
               >
                 <span className="text-xl">{getFlag(country.code)}</span>
-                <span className="text-sm text-gray-900">{country.name} ({country.code})</span>
+                <span className={cn("text-sm", isDark ? "text-white" : "text-gray-900")}>{country.name} ({country.code})</span>
               </button>
             ))}
           </div>
@@ -483,8 +498,9 @@ function TransformingPhoneField({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           className={cn(
-            'w-full h-[52px] px-3 pt-5 pb-1 text-sm text-gray-900 bg-white',
-            'border border-gray-300 rounded outline-none transition-all',
+            'w-full h-[52px] px-3 pt-5 pb-1 text-sm',
+            'border rounded outline-none transition-all',
+            isDark ? 'text-white bg-[#2d2e30] border-[#5f6368]' : 'text-gray-900 bg-white border-gray-300',
             focused && 'border-2 border-teal-600'
           )}
         />
@@ -494,7 +510,7 @@ function TransformingPhoneField({
             isActive
               ? 'top-1.5 text-[11px]'
               : 'top-1/2 -translate-y-1/2 text-sm',
-            focused ? 'text-teal-600' : 'text-gray-500'
+            focused ? 'text-teal-600' : isDark ? 'text-white' : 'text-gray-500'
           )}
         >
           Telefon
@@ -518,6 +534,7 @@ function TransformingTextareaField({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const { isDark } = useWebmailTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [focused, setFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -539,7 +556,7 @@ function TransformingTextareaField({
       <button
         type="button"
         onClick={handleButtonClick}
-        className="flex items-center justify-center gap-2 w-full h-[52px] text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-full transition-all duration-200"
+        className={cn("flex items-center justify-center gap-2 w-full h-[52px] rounded-full transition-all duration-200", isDark ? "text-teal-400 bg-teal-900/30 hover:bg-teal-900/50" : "text-teal-600 bg-teal-50 hover:bg-teal-100")}
       >
         <Icon className="h-5 w-5" />
         <span className="text-sm">{label}</span>
@@ -557,15 +574,16 @@ function TransformingTextareaField({
         onBlur={() => setFocused(false)}
         rows={3}
         className={cn(
-          'w-full px-3 pt-6 pb-2 text-sm text-gray-900 bg-white resize-none',
-          'border border-gray-300 rounded outline-none transition-all',
+          'w-full px-3 pt-6 pb-2 text-sm resize-none',
+          'border rounded outline-none transition-all',
+          isDark ? 'text-white bg-[#2d2e30] border-[#5f6368]' : 'text-gray-900 bg-white border-gray-300',
           focused && 'border-2 border-teal-600'
         )}
       />
       <label
         className={cn(
           'absolute left-3 top-2 text-[11px] transition-all pointer-events-none',
-          focused ? 'text-teal-600' : 'text-gray-500'
+          focused ? 'text-teal-600' : isDark ? 'text-white' : 'text-gray-500'
         )}
       >
         {inputLabel}
@@ -592,6 +610,7 @@ function TransformingAddressField({
   onPostalCodeChange: (v: string) => void;
   onCountryChange: (v: string) => void;
 }) {
+  const { isDark } = useWebmailTheme();
   const [isEditing, setIsEditing] = useState(false);
   const hasValue = address.street.length > 0 || address.city.length > 0 || address.postalCode.length > 0;
 
@@ -605,7 +624,7 @@ function TransformingAddressField({
       <button
         type="button"
         onClick={handleButtonClick}
-        className="flex items-center justify-center gap-2 w-full h-[52px] text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-full transition-all duration-200"
+        className={cn("flex items-center justify-center gap-2 w-full h-[52px] rounded-full transition-all duration-200", isDark ? "text-teal-400 bg-teal-900/30 hover:bg-teal-900/50" : "text-teal-600 bg-teal-50 hover:bg-teal-100")}
       >
         <Icon className="h-5 w-5" />
         <span className="text-sm">{label}</span>
@@ -664,6 +683,7 @@ function TransformingBirthdayField({
   onMonthChange: (v: string) => void;
   onYearChange: (v: string) => void;
 }) {
+  const { isDark } = useWebmailTheme();
   const [isEditing, setIsEditing] = useState(false);
   const hasValue = day.length > 0 || month.length > 0 || year.length > 0;
 
@@ -677,7 +697,7 @@ function TransformingBirthdayField({
       <button
         type="button"
         onClick={handleButtonClick}
-        className="flex items-center justify-center gap-2 w-full h-[52px] text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-full transition-all duration-200"
+        className={cn("flex items-center justify-center gap-2 w-full h-[52px] rounded-full transition-all duration-200", isDark ? "text-teal-400 bg-teal-900/30 hover:bg-teal-900/50" : "text-teal-600 bg-teal-50 hover:bg-teal-100")}
       >
         <Icon className="h-5 w-5" />
         <span className="text-sm">{label}</span>
@@ -717,6 +737,7 @@ function BirthdayInput({
   onYearChange: (v: string) => void;
   onRemove?: () => void;
 }) {
+  const { isDark } = useWebmailTheme();
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const months = [
     'Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni',
@@ -740,17 +761,18 @@ function BirthdayInput({
           type="button"
           onClick={() => setShowMonthDropdown(!showMonthDropdown)}
           className={cn(
-            'w-full h-[52px] px-3 text-left text-sm border border-gray-300 rounded hover:bg-gray-50 flex items-center justify-between',
+            'w-full h-[52px] px-3 text-left text-sm border rounded flex items-center justify-between',
+            isDark ? 'border-[#5f6368] hover:bg-white/10' : 'border-gray-300 hover:bg-gray-50',
             showMonthDropdown && 'border-2 border-teal-600'
           )}
         >
-          <span className={month ? 'text-gray-900' : 'text-gray-500'}>
+          <span className={cn(month ? (isDark ? 'text-white' : 'text-gray-900') : (isDark ? 'text-white' : 'text-gray-500'))}>
             {month ? months[parseInt(month) - 1] : 'Monat'}
           </span>
-          <ChevronDown className="h-3 w-3 text-gray-500" />
+          <ChevronDown className={cn("h-3 w-3", isDark ? "text-white" : "text-gray-500")} />
         </button>
         {showMonthDropdown && (
-          <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+          <div className={cn("absolute top-full left-0 mt-1 w-full border rounded shadow-lg z-50 max-h-48 overflow-y-auto", isDark ? "bg-[#2d2e30] border-[#5f6368]" : "bg-white border-gray-200")}>
             {months.map((m, i) => (
               <button
                 key={i}
@@ -760,8 +782,9 @@ function BirthdayInput({
                   setShowMonthDropdown(false);
                 }}
                 className={cn(
-                  'w-full px-3 py-2 text-left text-sm hover:bg-gray-50',
-                  month === String(i + 1) && 'bg-teal-50'
+                  'w-full px-3 py-2 text-left text-sm',
+                  isDark ? 'text-white hover:bg-white/10' : 'hover:bg-gray-50',
+                  month === String(i + 1) && (isDark ? 'bg-teal-900/30' : 'bg-teal-50')
                 )}
               >
                 {m}
@@ -785,7 +808,7 @@ function BirthdayInput({
         <button
           type="button"
           onClick={onRemove}
-          className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center shrink-0"
+          className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", isDark ? "hover:bg-white/10" : "hover:bg-gray-100")}
         >
           <X className="h-4 w-4 text-gray-500" />
         </button>
@@ -1097,6 +1120,8 @@ export function CreateContactPanel({ isOpen, onClose, onSave, editMode = false, 
     }));
   };
 
+  const { isDark } = useWebmailTheme();
+
   const getInitial = () => {
     if (formData.firstName) return formData.firstName.charAt(0).toUpperCase();
     if (formData.lastName) return formData.lastName.charAt(0).toUpperCase();
@@ -1106,9 +1131,9 @@ export function CreateContactPanel({ isOpen, onClose, onSave, editMode = false, 
   const canSave = formData.firstName.trim() !== '' || (formData.lastName?.trim() ?? '') !== '' || formData.emails.some(e => e.value.trim() !== '');
 
   if (!isOpen) return null;
-
+  
   return (
-    <div className="flex-1 flex flex-col bg-white min-w-0">
+    <div className={cn("flex-1 flex flex-col min-w-0", isDark ? "bg-[#202124]" : "bg-white")}>
       <ScrollArea className="flex-1">
         <div className="max-w-[540px] px-4 py-4">
           {/* Header - wie Google Contacts: Pfeil links, Stern + Speichern rechts, ÜBER dem Avatar */}
@@ -1117,9 +1142,9 @@ export function CreateContactPanel({ isOpen, onClose, onSave, editMode = false, 
               variant="ghost"
               size="icon"
               onClick={() => { resetForm(); onClose(); }}
-              className="h-10 w-10 rounded-full hover:bg-gray-100"
+              className={cn("h-10 w-10 rounded-full", isDark ? "hover:bg-white/10" : "hover:bg-gray-100")}
             >
-              <ArrowLeft className="h-5 w-5 text-gray-600" />
+              <ArrowLeft className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
             </Button>
             
             <div className="flex items-center gap-1">
@@ -1127,11 +1152,11 @@ export function CreateContactPanel({ isOpen, onClose, onSave, editMode = false, 
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsFavorite(!isFavorite)}
-                className="h-10 w-10 rounded-full hover:bg-gray-100"
+                className={cn("h-10 w-10 rounded-full", isDark ? "hover:bg-white/10" : "hover:bg-gray-100")}
               >
                 <Star className={cn(
                   "h-5 w-5",
-                  isFavorite ? "fill-yellow-400 text-yellow-400" : "text-gray-400"
+                  isFavorite ? "fill-yellow-400 text-yellow-400" : "text-white"
                 )} />
               </Button>
               <Button
@@ -1141,7 +1166,7 @@ export function CreateContactPanel({ isOpen, onClose, onSave, editMode = false, 
                   "h-9 px-6 rounded text-sm font-medium",
                   canSave && !isSaving
                     ? "bg-teal-600 hover:bg-teal-700 text-white" 
-                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : isDark ? "bg-[#3c4043] text-gray-500 cursor-not-allowed" : "bg-gray-100 text-white cursor-not-allowed"
                 )}
               >
                 {isSaving ? 'Speichert...' : 'Speichern'}
@@ -1157,7 +1182,7 @@ export function CreateContactPanel({ isOpen, onClose, onSave, editMode = false, 
                   <Image src={formData.photo} alt="Kontaktfoto" width={128} height={128} className="h-full w-full object-cover rounded-full" />
                 ) : (
                   <AvatarFallback className="text-5xl text-gray-500 bg-[#dfe1e5]">
-                    {getInitial() || <User className="h-12 w-12 text-gray-400" />}
+                    {getInitial() || <User className="h-12 w-12 text-white" />}
                   </AvatarFallback>
                 )}
               </Avatar>
@@ -1250,7 +1275,7 @@ export function CreateContactPanel({ isOpen, onClose, onSave, editMode = false, 
                         )}
                       >
                         <div className="flex items-center gap-3">
-                          <Tag className="h-5 w-5 text-gray-400" />
+                          <Tag className="h-5 w-5 text-white" />
                           <span className="text-sm text-gray-900">{label}</span>
                         </div>
                         {isSelected && (

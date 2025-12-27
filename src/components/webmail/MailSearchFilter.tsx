@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -22,6 +21,7 @@ import {
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 
 export interface SearchFilters {
   from: string;
@@ -75,6 +75,7 @@ export function MailSearchFilter({
   const [filters, setFilters] = useState<SearchFilters>(defaultFilters);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const { isDark } = useWebmailTheme();
 
   // Close on outside click
   useEffect(() => {
@@ -151,18 +152,27 @@ export function MailSearchFilter({
   return (
     <div
       ref={panelRef}
-      className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 overflow-hidden max-h-[85vh] md:max-h-none overflow-y-auto"
+      className={cn(
+        "absolute top-full left-0 right-0 mt-1 rounded-lg shadow-2xl border z-50 overflow-hidden max-h-[85vh] md:max-h-none overflow-y-auto",
+        isDark ? "bg-[#2d2e30] border-[#5f6368]" : "bg-white border-gray-200"
+      )}
       style={{ maxWidth: '720px' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 md:px-4 py-2 md:py-3 border-b border-gray-200 bg-gray-50 sticky top-0 z-10">
-        <span className="text-xs md:text-sm font-medium text-gray-700">Erweiterte Suche</span>
+      <div className={cn(
+        "flex items-center justify-between px-3 md:px-4 py-2 md:py-3 border-b sticky top-0 z-10",
+        isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-gray-50"
+      )}>
+        <span className={cn("text-xs md:text-sm font-medium", isDark ? "text-white" : "text-gray-700")}>Erweiterte Suche</span>
         <button
           onClick={onClose}
-          className="p-1 hover:bg-gray-200 rounded-full transition-colors"
-          aria-label="Schließen"
+          className={cn(
+            "p-1 rounded-full transition-colors",
+            isDark ? "hover:bg-white/10" : "hover:bg-gray-200"
+          )}
+          aria-label="Schliessen"
         >
-          <X className="h-4 w-4 text-gray-500" />
+          <X className={cn("h-4 w-4", isDark ? "text-white" : "text-gray-500")} />
         </button>
       </div>
 
@@ -170,7 +180,7 @@ export function MailSearchFilter({
       <div className="p-3 md:p-4 space-y-2.5 md:space-y-3">
         {/* Von */}
         <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
-          <Label htmlFor="filter-from" className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
+          <Label htmlFor="filter-from" className={cn("md:w-32 text-xs md:text-right md:shrink-0", isDark ? "text-white" : "text-gray-600")}>
             Von
           </Label>
           <Input
@@ -179,13 +189,13 @@ export function MailSearchFilter({
             value={filters.from}
             onChange={(e) => updateFilter('from', e.target.value)}
             placeholder="Absender"
-            className="flex-1 h-8 text-xs"
+            className={cn("flex-1 h-8 text-xs", isDark ? "bg-[#3c4043] border-[#5f6368] text-white placeholder:text-white" : "")}
           />
         </div>
 
         {/* An */}
         <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
-          <Label htmlFor="filter-to" className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
+          <Label htmlFor="filter-to" className={cn("md:w-32 text-xs md:text-right md:shrink-0", isDark ? "text-white" : "text-gray-600")}>
             An
           </Label>
           <Input
@@ -194,13 +204,13 @@ export function MailSearchFilter({
             value={filters.to}
             onChange={(e) => updateFilter('to', e.target.value)}
             placeholder="Empfänger"
-            className="flex-1 h-8 text-xs"
+            className={cn("flex-1 h-8 text-xs", isDark ? "bg-[#3c4043] border-[#5f6368] text-white placeholder:text-white" : "")}
           />
         </div>
 
         {/* Betreff */}
         <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
-          <Label htmlFor="filter-subject" className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
+          <Label htmlFor="filter-subject" className={cn("md:w-32 text-xs md:text-right md:shrink-0", isDark ? "text-white" : "text-gray-600")}>
             Betreff
           </Label>
           <Input
@@ -209,13 +219,13 @@ export function MailSearchFilter({
             value={filters.subject}
             onChange={(e) => updateFilter('subject', e.target.value)}
             placeholder="Betreff"
-            className="flex-1 h-8 text-xs"
+            className={cn("flex-1 h-8 text-xs", isDark ? "bg-[#3c4043] border-[#5f6368] text-white placeholder:text-white" : "")}
           />
         </div>
 
         {/* Enthält die Wörter */}
         <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
-          <Label htmlFor="filter-hasWords" className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
+          <Label htmlFor="filter-hasWords" className={cn("md:w-32 text-xs md:text-right md:shrink-0", isDark ? "text-white" : "text-gray-600")}>
             Enthält
           </Label>
           <Input
@@ -224,13 +234,13 @@ export function MailSearchFilter({
             value={filters.hasWords}
             onChange={(e) => updateFilter('hasWords', e.target.value)}
             placeholder="Wörter"
-            className="flex-1 h-8 text-xs"
+            className={cn("flex-1 h-8 text-xs", isDark ? "bg-[#3c4043] border-[#5f6368] text-white placeholder:text-white" : "")}
           />
         </div>
 
         {/* Enthält nicht */}
         <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
-          <Label htmlFor="filter-doesNotHave" className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
+          <Label htmlFor="filter-doesNotHave" className={cn("md:w-32 text-xs md:text-right md:shrink-0", isDark ? "text-white" : "text-gray-600")}>
             Ohne
           </Label>
           <Input
@@ -239,13 +249,13 @@ export function MailSearchFilter({
             value={filters.doesNotHave}
             onChange={(e) => updateFilter('doesNotHave', e.target.value)}
             placeholder="Ausgeschlossen"
-            className="flex-1 h-8 text-xs"
+            className={cn("flex-1 h-8 text-xs", isDark ? "bg-[#3c4043] border-[#5f6368] text-white placeholder:text-white" : "")}
           />
         </div>
 
         {/* Größe */}
         <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
-          <Label className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
+          <Label className={cn("md:w-32 text-xs md:text-right md:shrink-0", isDark ? "text-white" : "text-gray-600")}>
             Größe
           </Label>
           <div className="grid grid-cols-3 gap-2 w-full">
@@ -253,12 +263,12 @@ export function MailSearchFilter({
               value={filters.sizeOperator}
               onValueChange={(value: 'greater' | 'less') => updateFilter('sizeOperator', value)}
             >
-              <SelectTrigger size="sm" className="w-full text-xs">
+              <SelectTrigger size="sm" className={cn("w-full text-xs", isDark ? "bg-[#3c4043] border-[#5f6368] text-white" : "")}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="greater">Größer</SelectItem>
-                <SelectItem value="less">Kleiner</SelectItem>
+              <SelectContent className={cn(isDark && "bg-[#2d2e30] border-[#5f6368]")}>
+                <SelectItem value="greater" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>Größer</SelectItem>
+                <SelectItem value="less" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>Kleiner</SelectItem>
               </SelectContent>
             </Select>
             <Input
@@ -267,19 +277,19 @@ export function MailSearchFilter({
               onChange={(e) => updateFilter('sizeValue', e.target.value)}
               placeholder="0"
               style={{ height: '32px' }}
-              className="w-full text-xs"
+              className={cn("w-full text-xs", isDark ? "bg-[#3c4043] border-[#5f6368] text-white placeholder:text-white" : "")}
             />
             <Select
               value={filters.sizeUnit}
               onValueChange={(value: 'MB' | 'KB' | 'Bytes') => updateFilter('sizeUnit', value)}
             >
-              <SelectTrigger size="sm" className="w-full text-xs">
+              <SelectTrigger size="sm" className={cn("w-full text-xs", isDark ? "bg-[#3c4043] border-[#5f6368] text-white" : "")}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MB">MB</SelectItem>
-                <SelectItem value="KB">KB</SelectItem>
-                <SelectItem value="Bytes">B</SelectItem>
+              <SelectContent className={cn(isDark && "bg-[#2d2e30] border-[#5f6368]")}>
+                <SelectItem value="MB" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>MB</SelectItem>
+                <SelectItem value="KB" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>KB</SelectItem>
+                <SelectItem value="Bytes" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>B</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -287,7 +297,7 @@ export function MailSearchFilter({
 
         {/* Zeitraum */}
         <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
-          <Label className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
+          <Label className={cn("md:w-32 text-xs md:text-right md:shrink-0", isDark ? "text-white" : "text-gray-600")}>
             Zeitraum
           </Label>
           <div className="flex items-center gap-2 w-full">
@@ -295,19 +305,19 @@ export function MailSearchFilter({
               value={filters.dateWithin}
               onValueChange={(value: SearchFilters['dateWithin']) => updateFilter('dateWithin', value)}
             >
-              <SelectTrigger className="w-[100px] h-8 text-xs">
+              <SelectTrigger className={cn("w-[100px] h-8 text-xs", isDark ? "bg-[#3c4043] border-[#5f6368] text-white" : "")}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1day">1 Tag</SelectItem>
-                <SelectItem value="3days">3 Tage</SelectItem>
-                <SelectItem value="1week">1 Woche</SelectItem>
-                <SelectItem value="2weeks">2 Wochen</SelectItem>
-                <SelectItem value="1month">1 Monat</SelectItem>
-                <SelectItem value="3months">3 Monate</SelectItem>
-                <SelectItem value="6months">6 Monate</SelectItem>
-                <SelectItem value="1year">1 Jahr</SelectItem>
-                <SelectItem value="custom">Datum</SelectItem>
+              <SelectContent className={cn(isDark && "bg-[#2d2e30] border-[#5f6368]")}>
+                <SelectItem value="1day" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>1 Tag</SelectItem>
+                <SelectItem value="3days" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>3 Tage</SelectItem>
+                <SelectItem value="1week" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>1 Woche</SelectItem>
+                <SelectItem value="2weeks" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>2 Wochen</SelectItem>
+                <SelectItem value="1month" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>1 Monat</SelectItem>
+                <SelectItem value="3months" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>3 Monate</SelectItem>
+                <SelectItem value="6months" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>6 Monate</SelectItem>
+                <SelectItem value="1year" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>1 Jahr</SelectItem>
+                <SelectItem value="custom" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>Datum</SelectItem>
               </SelectContent>
             </Select>
 
@@ -317,7 +327,8 @@ export function MailSearchFilter({
                   variant="outline"
                   className={cn(
                     'w-[120px] h-8 justify-start text-left font-normal text-xs',
-                    !filters.date && 'text-muted-foreground'
+                    !filters.date && 'text-muted-foreground',
+                    isDark ? 'bg-[#3c4043] border-[#5f6368] text-white hover:bg-[#4c4f53]' : ''
                   )}
                 >
                   <Calendar className="mr-1.5 h-3.5 w-3.5" />
@@ -342,25 +353,25 @@ export function MailSearchFilter({
 
         {/* Suchen in */}
         <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
-          <Label className="md:w-32 text-xs text-gray-600 md:text-right md:shrink-0">
+          <Label className={cn("md:w-32 text-xs md:text-right md:shrink-0", isDark ? "text-white" : "text-gray-600")}>
             Ordner
           </Label>
           <Select
             value={filters.searchIn}
             onValueChange={(value: SearchFilters['searchIn']) => updateFilter('searchIn', value)}
           >
-            <SelectTrigger className="w-full h-8 text-xs">
+            <SelectTrigger className={cn("w-full h-8 text-xs", isDark ? "bg-[#3c4043] border-[#5f6368] text-white" : "")}>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alle</SelectItem>
-              <SelectItem value="inbox">Posteingang</SelectItem>
-              <SelectItem value="sent">Gesendet</SelectItem>
-              <SelectItem value="drafts">Entwürfe</SelectItem>
-              <SelectItem value="trash">Papierkorb</SelectItem>
-              <SelectItem value="spam">Spam</SelectItem>
+            <SelectContent className={cn(isDark && "bg-[#2d2e30] border-[#5f6368]")}>
+              <SelectItem value="all" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>Alle</SelectItem>
+              <SelectItem value="inbox" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>Posteingang</SelectItem>
+              <SelectItem value="sent" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>Gesendet</SelectItem>
+              <SelectItem value="drafts" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>Entwürfe</SelectItem>
+              <SelectItem value="trash" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>Papierkorb</SelectItem>
+              <SelectItem value="spam" className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>Spam</SelectItem>
               {mailboxes.map((mailbox) => (
-                <SelectItem key={mailbox.path} value={mailbox.path}>
+                <SelectItem key={mailbox.path} value={mailbox.path} className={cn(isDark && "text-white hover:bg-[#3c4043] focus:bg-[#3c4043]")}>
                   {mailbox.name}
                 </SelectItem>
               ))}
@@ -378,9 +389,12 @@ export function MailSearchFilter({
                 id="filter-attachment"
                 checked={filters.hasAttachment}
                 onChange={(e) => updateFilter('hasAttachment', e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                className={cn(
+                  "h-4 w-4 rounded text-teal-600 focus:ring-teal-500",
+                  isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-300"
+                )}
               />
-              <span className="text-xs text-gray-600">Anhang</span>
+              <span className={cn("text-xs", isDark ? "text-white" : "text-gray-600")}>Anhang</span>
             </label>
             <label htmlFor="filter-excludeChats" className="flex items-center gap-2 cursor-pointer">
               <input
@@ -388,19 +402,28 @@ export function MailSearchFilter({
                 id="filter-excludeChats"
                 checked={filters.excludeChats}
                 onChange={(e) => updateFilter('excludeChats', e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                className={cn(
+                  "h-4 w-4 rounded text-teal-600 focus:ring-teal-500",
+                  isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-300"
+                )}
               />
-              <span className="text-xs text-gray-600">Ohne Chats</span>
+              <span className={cn("text-xs", isDark ? "text-white" : "text-gray-600")}>Ohne Chats</span>
             </label>
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-3 md:px-4 py-2 md:py-3 border-t border-gray-200 bg-gray-50 sticky bottom-0">
+      <div className={cn(
+        "flex items-center justify-between px-3 md:px-4 py-2 md:py-3 border-t sticky bottom-0",
+        isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-gray-50"
+      )}>
         <button
           onClick={handleCreateFilter}
-          className="text-xs text-teal-600 hover:text-teal-700 hover:underline transition-colors"
+          className={cn(
+            "text-xs hover:underline transition-colors",
+            isDark ? "text-teal-400 hover:text-teal-300" : "text-teal-600 hover:text-teal-700"
+          )}
         >
           Filter erstellen
         </button>
@@ -409,7 +432,7 @@ export function MailSearchFilter({
             variant="ghost"
             size="sm"
             onClick={handleReset}
-            className="text-gray-600 text-xs h-8 px-3"
+            className={cn("text-xs h-8 px-3", isDark ? "text-white hover:bg-white/10" : "text-gray-600")}
           >
             Zurücksetzen
           </Button>

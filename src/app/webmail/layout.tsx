@@ -28,7 +28,9 @@ function getCookie(): { email: string; password: string } | null {
 }
 
 function deleteCookie(): void {
-  document.cookie = `${COOKIE_NAME}=; path=/webmail; max-age=0`;
+  // Cookie auf allen Subdomains loeschen
+  const domain = window.location.hostname.includes('taskilo.de') ? '; domain=.taskilo.de' : '';
+  document.cookie = `${COOKIE_NAME}=; path=/${domain}; max-age=0`;
 }
 
 // Webmail Session Context

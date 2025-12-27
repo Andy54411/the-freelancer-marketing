@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useWebmailSession } from '../layout';
-import { useRouter } from 'next/navigation';
 import { Calendar, Star, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +16,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { TasksHeader, TasksSidebar, TasksList } from '@/components/webmail/tasks';
+import { getAppUrl } from '@/lib/webmail-urls';
+import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
+import { MailHeader } from '@/components/webmail/MailHeader';
+import { TasksToolbar } from '@/components/webmail/tasks/TasksToolbar';
+import { CalendarTasksSwitch } from '@/components/webmail/CalendarTasksSwitch';
+import { TasksSidebar, TasksList } from '@/components/webmail/tasks';
 
 interface Task {
   id: string;
@@ -38,7 +42,6 @@ interface TaskList {
 
 export default function WebmailTasksPage() {
   const { session } = useWebmailSession();
-  const router = useRouter();
   
   const [tasks, setTasks] = useState<Task[]>([]);
   const [taskLists, setTaskLists] = useState<TaskList[]>([
@@ -296,15 +299,25 @@ export default function WebmailTasksPage() {
 
   const currentListName = selectedView === 'starred' ? 'Markiert' : 'Meine Aufgaben';
 
+  const { isDark } = useWebmailTheme();
+
   return (
-    <div className="h-screen flex flex-col bg-[#202124]">
-      {/* Header */}
-      <TasksHeader
-        onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+    <div className={`h-screen flex flex-col ${isDark ? 'bg-[#202124]' : 'bg-white'}`}>
+      {/* Einheitlicher MailHeader mit Tasks-Toolbar */}
+      <MailHeader
         userEmail={session?.email || ''}
-        onLogout={() => router.push('/webmail')}
-        sortOrder={sortOrder}
-        onSortOrderChange={setSortOrder}
+        onLogout={() => window.location.href = getAppUrl('/webmail')}
+        onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+        appName="Aufgaben"
+        appHomeUrl="/webmail/tasks"
+        hideSearch={true}
+        rightContent={<CalendarTasksSwitch activeView="tasks" />}
+        toolbarContent={
+          <TasksToolbar
+            sortOrder={sortOrder}
+            onSortOrderChange={setSortOrder}
+          />
+        }
       />
 
       {/* Main Content */}
@@ -374,7 +387,7 @@ export default function WebmailTasksPage() {
             <div>
               <Label htmlFor="dueDate">Fälligkeitsdatum</Label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white" />
                 <Input
                   id="dueDate"
                   type="date"
@@ -393,7 +406,7 @@ export default function WebmailTasksPage() {
               >
                 <Star
                   className={`h-5 w-5 ${
-                    taskForm.starred ? 'text-yellow-400 fill-yellow-400' : 'text-gray-400'
+                    taskForm.starred ? 'text-yellow-400 fill-yellow-400' : 'text-white'
                   }`}
                 />
               </button>

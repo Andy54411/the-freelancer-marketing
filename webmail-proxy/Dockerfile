@@ -2,20 +2,31 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm
+# Install build dependencies for native modules (better-sqlite3, bcrypt, canvas) and ffmpeg for video thumbnails
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    gcc \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    giflib-dev \
+    librsvg-dev \
+    pixman-dev \
+    ffmpeg
 
 # Copy package files
 COPY package.json ./
 
-# Install dependencies
-RUN pnpm install
+# Install dependencies with npm (better native module support)
+RUN npm install
 
 # Copy source files
 COPY . .
 
 # Build TypeScript (always rebuild)
-RUN pnpm build
+RUN npm run build
 
 # Expose port
 EXPOSE 3100

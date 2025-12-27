@@ -115,7 +115,7 @@ export function CalendarSidebar({
           className={`flex items-center gap-3 px-6 py-3 ${isDark ? 'bg-[#303134] border-[#5f6368] hover:bg-[#3c4043]' : 'bg-white border-gray-300 hover:bg-gray-50'} border rounded-2xl shadow-md hover:shadow-lg transition-all`}
         >
           <Plus className="h-6 w-6 text-teal-500" />
-          <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Eintragen</span>
+          <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-700'}`}>Eintragen</span>
         </button>
       </div>
 
@@ -123,7 +123,7 @@ export function CalendarSidebar({
       <div className="px-4 pb-4">
         {/* Month Navigation */}
         <div className="flex items-center justify-between mb-2">
-          <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+          <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-700'}`}>
             {miniCalendarDate.toLocaleString('de-DE', { month: 'long', year: 'numeric' })}
           </span>
           <div className="flex items-center gap-1">
@@ -132,14 +132,14 @@ export function CalendarSidebar({
               className={`p-1 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
               aria-label="Vorheriger Monat"
             >
-              <ChevronLeft className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+              <ChevronLeft className={`h-4 w-4 ${isDark ? 'text-white' : 'text-gray-600'}`} />
             </button>
             <button
               onClick={nextMonth}
               className={`p-1 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors`}
               aria-label="Nächster Monat"
             >
-              <ChevronRight className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+              <ChevronRight className={`h-4 w-4 ${isDark ? 'text-white' : 'text-gray-600'}`} />
             </button>
           </div>
         </div>
@@ -149,7 +149,7 @@ export function CalendarSidebar({
           {weekDays.map((day, index) => (
             <div
               key={index}
-              className={`h-7 flex items-center justify-center text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+              className={`h-7 flex items-center justify-center text-xs ${isDark ? 'text-white' : 'text-gray-500'}`}
               title={weekDaysFull[index]}
             >
               {day}
@@ -175,8 +175,8 @@ export function CalendarSidebar({
                   transition-colors mx-auto
                   ${today ? 'bg-teal-600 text-white' : ''}
                   ${selected && !today ? (isDark ? 'bg-teal-500/20 text-teal-400' : 'bg-teal-100 text-teal-700') : ''}
-                  ${!today && !selected && currentMonth ? (isDark ? 'text-gray-200 hover:bg-white/10' : 'text-gray-700 hover:bg-gray-100') : ''}
-                  ${!today && !selected && !currentMonth ? (isDark ? 'text-gray-500 hover:bg-white/10' : 'text-gray-400 hover:bg-gray-100') : ''}
+                  ${!today && !selected && currentMonth ? (isDark ? 'text-white hover:bg-white/10' : 'text-gray-700 hover:bg-gray-100') : ''}
+                  ${!today && !selected && !currentMonth ? (isDark ? 'text-gray-500 hover:bg-white/10' : 'text-white hover:bg-gray-100') : ''}
                 `}
               >
                 {date.getDate()}
@@ -194,11 +194,11 @@ export function CalendarSidebar({
             onClick={() => setMyCalendarsExpanded(!myCalendarsExpanded)}
             className={`w-full px-4 py-2 flex items-center justify-between ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'} transition-colors`}
           >
-            <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Meine Kalender</span>
+            <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-700'}`}>Meine Kalender</span>
             {myCalendarsExpanded ? (
-              <ChevronUp className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+              <ChevronUp className={`h-4 w-4 ${isDark ? 'text-white' : 'text-gray-500'}`} />
             ) : (
-              <ChevronDown className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+              <ChevronDown className={`h-4 w-4 ${isDark ? 'text-white' : 'text-gray-500'}`} />
             )}
           </button>
           
@@ -216,9 +216,9 @@ export function CalendarSidebar({
                     className={`w-4 h-4 rounded ${isDark ? 'border-gray-500' : 'border-gray-300'} text-teal-600 focus:ring-teal-500`}
                     style={{ accentColor: calendar.color }}
                   />
-                  <span className={`flex-1 text-sm ${isDark ? 'text-gray-200' : 'text-gray-700'} truncate`}>{calendar.name}</span>
+                  <span className={`flex-1 text-sm ${isDark ? 'text-white' : 'text-gray-700'} truncate`}>{calendar.name}</span>
                   <button className={`opacity-0 group-hover:opacity-100 p-1 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-200'} transition-all`}>
-                    <MoreVertical className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                    <MoreVertical className={`h-4 w-4 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                   </button>
                 </div>
               ))}
@@ -234,15 +234,15 @@ export function CalendarSidebar({
                 onClick={() => setOtherCalendarsExpanded(!otherCalendarsExpanded)}
                 className={`flex-1 px-4 py-2 flex items-center justify-between ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'} transition-colors`}
               >
-                <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Weitere Kalender</span>
+                <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-700'}`}>Weitere Kalender</span>
                 {otherCalendarsExpanded ? (
-                  <ChevronUp className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <ChevronUp className={`h-4 w-4 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                 ) : (
-                  <ChevronDown className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <ChevronDown className={`h-4 w-4 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                 )}
               </button>
               <button className={`p-2 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors mr-2`}>
-                <Plus className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                <Plus className={`h-4 w-4 ${isDark ? 'text-white' : 'text-gray-500'}`} />
               </button>
             </div>
             
@@ -260,9 +260,9 @@ export function CalendarSidebar({
                       className={`w-4 h-4 rounded ${isDark ? 'border-gray-500' : 'border-gray-300'}`}
                       style={{ accentColor: calendar.color }}
                     />
-                    <span className={`flex-1 text-sm ${isDark ? 'text-gray-200' : 'text-gray-700'} truncate`}>{calendar.name}</span>
+                    <span className={`flex-1 text-sm ${isDark ? 'text-white' : 'text-gray-700'} truncate`}>{calendar.name}</span>
                     <button className={`opacity-0 group-hover:opacity-100 p-1 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-200'} transition-all`}>
-                      <MoreVertical className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                      <MoreVertical className={`h-4 w-4 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                     </button>
                   </div>
                 ))}
@@ -273,7 +273,7 @@ export function CalendarSidebar({
       </div>
 
       {/* Footer Links */}
-      <div className={`p-4 text-xs ${isDark ? 'text-gray-400 border-[#5f6368]' : 'text-gray-500 border-gray-200'} border-t`}>
+      <div className={`p-4 text-xs ${isDark ? 'text-white border-[#5f6368]' : 'text-gray-500 border-gray-200'} border-t`}>
         <a href="#" className="hover:underline">Nutzungsbedingungen</a>
         {' - '}
         <a href="#" className="hover:underline">Datenschutz</a>

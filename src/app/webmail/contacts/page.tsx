@@ -36,6 +36,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { MailHeader } from '@/components/webmail/MailHeader';
+import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 import { ViewContactPanel, ContactData } from '@/components/webmail/ViewContactPanel';
 import { CreateContactPanel, ContactFormData } from '@/components/webmail/CreateContactPanel';
 import { CreateMultipleContactsModal } from '@/components/webmail/CreateMultipleContactsModal';
@@ -98,9 +99,10 @@ interface Label {
 type ViewType = 'contacts' | 'frequent' | 'other' | 'trash' | 'label';
 
 function ContactsPageContent() {
-  const router = useRouter();
+  const _router = useRouter();
   const searchParams = useSearchParams();
   const emailParam = searchParams.get('email');
+  const { isDark } = useWebmailTheme();
   
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -241,8 +243,11 @@ function ContactsPageContent() {
   };
 
   const handleLogout = () => {
-    document.cookie = `${COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-    router.push('/webmail');
+    // Cookie auf allen Subdomains loeschen
+    const domain = window.location.hostname.includes('taskilo.de') ? '; domain=.taskilo.de' : '';
+    document.cookie = `${COOKIE_NAME}=; path=/${domain}; max-age=0`;
+    const emailUrl = window.location.hostname.includes('taskilo.de') ? 'https://email.taskilo.de' : '/webmail';
+    window.location.href = emailUrl;
   };
 
   const handleSearch = (query: string) => {
@@ -251,7 +256,7 @@ function ContactsPageContent() {
 
   if (authChecking) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6f8fc]">
+      <div className={cn("min-h-screen flex items-center justify-center", isDark ? "bg-[#202124]" : "bg-[#f6f8fc]")}>
         <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
       </div>
     );
@@ -259,15 +264,18 @@ function ContactsPageContent() {
 
   if (!credentials) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6f8fc]">
+      <div className={cn("min-h-screen flex items-center justify-center", isDark ? "bg-[#202124]" : "bg-[#f6f8fc]")}>
         <div className="text-center">
-          <Users className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-          <h2 className="text-xl font-normal text-gray-900 mb-2">Anmeldung erforderlich</h2>
-          <p className="text-gray-600 mb-4">
+          <Users className={cn("w-16 h-16 mx-auto mb-4", isDark ? "text-gray-600" : "text-white")} />
+          <h2 className={cn("text-xl font-normal mb-2", isDark ? "text-gray-100" : "text-gray-900")}>Anmeldung erforderlich</h2>
+          <p className={cn("mb-4", isDark ? "text-white" : "text-gray-600")}>
             Bitte melden Sie sich zuerst im Webmail an.
           </p>
           <Button
-            onClick={() => router.push('/webmail')}
+            onClick={() => {
+              const emailUrl = window.location.hostname.includes('taskilo.de') ? 'https://email.taskilo.de' : '/webmail';
+              window.location.href = emailUrl;
+            }}
             className="bg-teal-600 hover:bg-teal-700 text-white"
           >
             Zum Webmail
@@ -279,7 +287,7 @@ function ContactsPageContent() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-[#f6f8fc] flex flex-col">
+      <div className={`min-h-screen flex flex-col ${isDark ? 'bg-[#202124]' : 'bg-[#f6f8fc]'}`}>
         {/* Header - Taskilo Webmail Style */}
         <MailHeader
           userEmail={credentials.email}
@@ -294,7 +302,7 @@ function ContactsPageContent() {
         <div className="flex-1 flex overflow-hidden">
           {/* Sidebar */}
           <aside className={cn(
-            'w-[280px] border-r border-gray-200 flex flex-col bg-white shrink-0',
+            `w-[280px] border-r flex flex-col shrink-0 ${isDark ? 'border-[#5f6368] bg-[#202124]' : 'border-gray-200 bg-white'}`,
             showMobileMenu ? 'fixed inset-y-16 left-0 z-50' : 'hidden md:flex'
           )}>
             {/* Create Contact Button */}
@@ -302,25 +310,25 @@ function ContactsPageContent() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    className="w-full justify-start gap-3 h-14 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:shadow-md shadow-sm rounded-2xl font-medium text-[14px]"
+                    className={`w-full justify-start gap-3 h-14 border shadow-sm rounded-2xl font-medium text-[14px] ${isDark ? 'bg-[#2d2e30] border-[#5f6368] text-white hover:bg-[#3c4043]' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:shadow-md'}`}
                   >
                     <Plus className="h-6 w-6 text-teal-600" />
                     Kontakt erstellen
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-[260px] ml-4">
+                <DropdownMenuContent align="start" className={cn("w-[260px] ml-4", isDark && "bg-[#2d2e30] border-[#5f6368]")}>
                   <DropdownMenuItem 
-                    className="py-4 px-4 cursor-pointer"
+                    className={cn("py-4 px-4 cursor-pointer", isDark && "text-white focus:bg-[#3c4043] focus:text-white")}
                     onClick={() => setShowCreatePanel(true)}
                   >
-                    <UserPlus className="h-6 w-6 mr-4 text-gray-600" />
+                    <UserPlus className={cn("h-6 w-6 mr-4", isDark ? "text-white" : "text-gray-600")} />
                     <span className="text-base">Kontakt erstellen</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    className="py-4 px-4 cursor-pointer"
+                    className={cn("py-4 px-4 cursor-pointer", isDark && "text-white focus:bg-[#3c4043] focus:text-white")}
                     onClick={() => setShowMultipleContactsModal(true)}
                   >
-                    <UsersRound className="h-6 w-6 mr-4 text-gray-600" />
+                    <UsersRound className={cn("h-6 w-6 mr-4", isDark ? "text-white" : "text-gray-600")} />
                     <span className="text-base">Mehrere Kontakte erstellen</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -356,7 +364,7 @@ function ContactsPageContent() {
 
                 {/* Korrigieren und verwalten */}
                 <div className="mt-6 mb-2 px-3">
-                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <span className={cn("text-xs font-medium uppercase tracking-wide", isDark ? "text-white" : "text-gray-500")}>
                     Korrigieren und verwalten
                   </span>
                 </div>
@@ -382,11 +390,11 @@ function ContactsPageContent() {
 
                 {/* Labels */}
                 <div className="mt-6 mb-2 px-3 flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <span className={cn("text-xs font-medium uppercase tracking-wide", isDark ? "text-white" : "text-gray-500")}>
                     Labels
                   </span>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                    <Plus className="h-4 w-4 text-gray-500" />
+                  <Button variant="ghost" size="sm" className={cn("h-6 w-6 p-0", isDark && "hover:bg-white/10")}>
+                    <Plus className={cn("h-4 w-4", isDark ? "text-white" : "text-gray-500")} />
                   </Button>
                 </div>
                 <div className="space-y-0.5">
@@ -417,7 +425,7 @@ function ContactsPageContent() {
               initialData={editingContact ? {
                 firstName: editingContact.name?.split(' ')[0] || '',
                 lastName: editingContact.name?.split(' ').slice(1).join(' ') || '',
-                emails: [{ type: 'work', value: editingContact.email }],
+                emails: [{ label: 'work', value: editingContact.email }],
                 phones: [],
                 company: '',
                 jobTitle: '',
@@ -458,37 +466,37 @@ function ContactsPageContent() {
             />
           ) : (
             <>
-              <main className="flex-1 flex flex-col min-w-0">
+              <main className={cn("flex-1 flex flex-col min-w-0", isDark ? "bg-[#202124]" : "bg-white")}>
                 {/* Toolbar */}
-                <div className="h-14 flex items-center px-6 border-b border-gray-100">
+                <div className={cn("h-14 flex items-center px-6 border-b", isDark ? "border-[#5f6368]" : "border-gray-100")}>
                   <div className="flex items-center gap-4">
-                    <h1 className="text-[22px] font-normal text-gray-900">
+                    <h1 className={cn("text-[22px] font-normal", isDark ? "text-white" : "text-gray-900")}>
                       Kontakte
-                      <span className="text-gray-500 ml-2">({filteredContacts.length})</span>
+                      <span className={cn("ml-2", isDark ? "text-white" : "text-gray-500")}>({filteredContacts.length})</span>
                     </h1>
                   </div>
 
                   <div className="ml-auto flex items-center gap-1">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
-                          <Printer className="h-5 w-5 text-gray-600" />
+                        <Button variant="ghost" size="sm" className={cn("h-10 w-10 p-0 rounded-full", isDark && "hover:bg-white/10")}>
+                          <Printer className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Drucken</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
-                          <Download className="h-5 w-5 text-gray-600" />
+                        <Button variant="ghost" size="sm" className={cn("h-10 w-10 p-0 rounded-full", isDark && "hover:bg-white/10")}>
+                          <Download className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Exportieren</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
-                          <MoreVertical className="h-5 w-5 text-gray-600" />
+                        <Button variant="ghost" size="sm" className={cn("h-10 w-10 p-0 rounded-full", isDark && "hover:bg-white/10")}>
+                          <MoreVertical className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Weitere Aktionen</TooltipContent>
@@ -497,7 +505,7 @@ function ContactsPageContent() {
                 </div>
 
                 {/* Table Header */}
-                <div className="h-10 flex items-center px-6 border-b border-gray-100 text-sm text-gray-600">
+                <div className={cn("h-10 flex items-center px-6 border-b text-sm", isDark ? "border-[#5f6368] text-white" : "border-gray-100 text-gray-600")}>
                   <div className="w-[45%]">Name</div>
                   <div className="flex-1">E-Mail</div>
                 </div>
@@ -510,16 +518,19 @@ function ContactsPageContent() {
                     </div>
                   ) : filteredContacts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20">
-                      <Users className="h-20 w-20 text-gray-200 mb-4" />
-                      <p className="text-gray-500 text-lg">Keine Kontakte gefunden</p>
-                      <p className="text-gray-400 text-sm mt-1">
+                      <Users className={cn("h-20 w-20 mb-4", isDark ? "text-gray-600" : "text-white")} />
+                      <p className={cn("text-lg", isDark ? "text-white" : "text-gray-500")}>Keine Kontakte gefunden</p>
+                      <p className={cn("text-sm mt-1", isDark ? "text-white" : "text-white")}>
                         Kontakte werden aus Ihren E-Mails extrahiert.
                       </p>
                     </div>
                   ) : (
                     <div>
                       {/* Group Header */}
-                      <div className="h-8 flex items-center px-6 bg-gray-50 text-xs font-medium text-gray-600 sticky top-0">
+                      <div className={cn(
+                        "h-8 flex items-center px-6 text-xs font-medium sticky top-0",
+                        isDark ? "bg-[#3c4043] text-white" : "bg-gray-50 text-gray-600"
+                      )}>
                         Kontakte
                       </div>
                       
@@ -594,23 +605,25 @@ function NavItem({
   hasInfo?: boolean;
   onClick: () => void;
 }) {
+  const { isDark } = useWebmailTheme();
+  
   return (
     <button
       onClick={onClick}
       className={cn(
         'w-full flex items-center gap-4 px-3 py-2.5 rounded-full text-[14px] transition-colors',
         active
-          ? 'bg-teal-100 text-teal-700 font-medium'
-          : 'text-gray-700 hover:bg-gray-100'
+          ? isDark ? 'bg-teal-900/30 text-teal-400 font-medium' : 'bg-teal-100 text-teal-700 font-medium'
+          : isDark ? 'text-white hover:bg-white/10' : 'text-gray-700 hover:bg-gray-100'
       )}
     >
       <Icon className="h-5 w-5 shrink-0" />
       <span className="flex-1 text-left">{label}</span>
-      {hasInfo && <Info className="h-4 w-4 text-gray-400" />}
+      {hasInfo && <Info className={cn("h-4 w-4", isDark ? "text-white" : "text-white")} />}
       {count !== undefined && (
         <span className={cn(
           'text-sm',
-          active ? 'text-teal-700' : 'text-gray-500'
+          active ? (isDark ? 'text-teal-400' : 'text-teal-700') : (isDark ? 'text-white' : 'text-gray-500')
         )}>
           {count}
         </span>
@@ -631,14 +644,18 @@ function ContactRow({
   onSelect: () => void;
   onStar: () => void;
 }) {
+  const { isDark } = useWebmailTheme();
   const displayName = contact.name || contact.email.split('@')[0];
 
   return (
     <div
       onClick={onSelect}
       className={cn(
-        'h-12 flex items-center px-6 cursor-pointer border-b border-gray-50 group',
-        isSelected ? 'bg-teal-50' : 'hover:bg-gray-50'
+        'h-12 flex items-center px-6 cursor-pointer border-b group',
+        isDark ? 'border-[#3c4043]' : 'border-gray-50',
+        isSelected 
+          ? (isDark ? 'bg-teal-900/20' : 'bg-teal-50') 
+          : (isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50')
       )}
     >
       {/* Avatar */}
@@ -649,12 +666,12 @@ function ContactRow({
       </Avatar>
 
       {/* Name */}
-      <div className="w-[calc(45%-48px)] truncate text-[14px] text-gray-900">
+      <div className={cn("w-[calc(45%-48px)] truncate text-[14px]", isDark ? "text-white" : "text-gray-900")}>
         {displayName}
       </div>
 
       {/* Email */}
-      <div className="flex-1 truncate text-[14px] text-gray-600">
+      <div className={cn("flex-1 truncate text-[14px]", isDark ? "text-white" : "text-gray-600")}>
         {contact.email}
       </div>
 
@@ -666,7 +683,7 @@ function ContactRow({
         }}
         className={cn(
           'p-1 rounded-full transition-opacity',
-          contact.starred ? 'text-yellow-500' : 'text-gray-300 opacity-0 group-hover:opacity-100'
+          contact.starred ? 'text-yellow-500' : (isDark ? 'text-white opacity-0 group-hover:opacity-100' : 'text-white opacity-0 group-hover:opacity-100')
         )}
       >
         <Star className={cn('h-5 w-5', contact.starred && 'fill-current')} />

@@ -93,7 +93,7 @@ export function MonthView({
       {/* Day headers */}
       <div className={`grid grid-cols-7 border-b ${isDark ? 'border-[#5f6368]' : 'border-gray-200'}`}>
         {['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'].map((day) => (
-          <div key={day} className={`p-1 md:p-2 text-center text-[10px] md:text-xs font-medium ${isDark ? 'text-gray-400 border-[#5f6368]' : 'text-gray-500 border-gray-200'} border-r last:border-r-0`}>
+          <div key={day} className={`p-1 md:p-2 text-center text-[10px] md:text-xs font-medium ${isDark ? 'text-white border-[#5f6368]' : 'text-gray-500 border-gray-200'} border-r last:border-r-0`}>
             {day}
           </div>
         ))}
@@ -120,8 +120,8 @@ export function MonthView({
                     today
                       ? 'bg-teal-600 text-white font-medium'
                       : currentMonth
-                      ? (isDark ? 'text-gray-200' : 'text-gray-700')
-                      : (isDark ? 'text-gray-500' : 'text-gray-400')
+                      ? (isDark ? 'text-white' : 'text-gray-700')
+                      : (isDark ? 'text-gray-500' : 'text-white')
                   }`}
                 >
                   {day.getDate()}
@@ -142,7 +142,7 @@ export function MonthView({
                   </button>
                 ))}
                 {dayEvents.length > 2 && (
-                  <div className={`text-[8px] md:text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'} px-0.5 md:px-1`}>
+                  <div className={`text-[8px] md:text-[10px] ${isDark ? 'text-white' : 'text-gray-500'} px-0.5 md:px-1`}>
                     +{dayEvents.length - 2}
                   </div>
                 )}

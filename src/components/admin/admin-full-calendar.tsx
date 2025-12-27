@@ -12,7 +12,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { CalendarHeader, CalendarGrid, CreateEventModal, EventFormData } from '@/components/webmail/calendar';
+import { MailHeader } from '@/components/webmail/MailHeader';
+import { CalendarToolbar } from '@/components/webmail/calendar/CalendarToolbar';
+import { CalendarGrid, CreateEventModal, EventFormData } from '@/components/webmail/calendar';
 
 interface CalendarEvent {
   id: string;

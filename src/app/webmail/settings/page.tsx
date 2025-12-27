@@ -25,6 +25,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
+import { cn } from '@/lib/utils';
 
 interface UserSettings {
   displayName: string;
@@ -68,7 +70,8 @@ const defaultSettings: UserSettings = {
 
 export default function WebmailSettingsPage() {
   const { session, logout } = useWebmailSession();
-  const router = useRouter();
+  const _router = useRouter();
+  const { isDark } = useWebmailTheme();
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -127,23 +130,27 @@ export default function WebmailSettingsPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex">
+    <div className={cn("h-[calc(100vh-4rem)] flex", isDark ? "bg-[#202124]" : "bg-white")}>
       {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 p-4">
+      <div className={cn(
+        "w-64 border-r p-4",
+        isDark ? "bg-[#202124] border-[#5f6368]" : "bg-white border-gray-200"
+      )}>
         <div className="flex items-center gap-2 mb-6">
-          <Settings className="h-5 w-5 text-gray-600" />
-          <h1 className="text-lg font-semibold">Einstellungen</h1>
+          <Settings className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
+          <h1 className={cn("text-lg font-semibold", isDark ? "text-white" : "text-gray-900")}>Einstellungen</h1>
         </div>
         <nav className="space-y-1">
           {sections.map((section) => (
             <button
               key={section.id}
               onClick={() => setActiveSection(section.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={cn(
+                'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                 activeSection === section.id
-                  ? 'bg-teal-50 text-teal-700'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                  ? isDark ? 'bg-teal-900/30 text-teal-400' : 'bg-teal-50 text-teal-700'
+                  : isDark ? 'text-white hover:bg-white/10' : 'text-gray-600 hover:bg-gray-100'
+              )}
             >
               <section.icon className="h-4 w-4" />
               {section.name}
@@ -159,86 +166,97 @@ export default function WebmailSettingsPage() {
           {activeSection === 'account' && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Konto</h2>
-                <p className="text-sm text-gray-500 mt-1">
+                <h2 className={cn("text-xl font-semibold", isDark ? "text-white" : "text-gray-900")}>Konto</h2>
+                <p className={cn("text-sm mt-1", isDark ? "text-white" : "text-gray-500")}>
                   Verwalte deine Kontoinformationen
                 </p>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+              <div className={cn(
+                "rounded-xl border p-6 space-y-6",
+                isDark ? "bg-[#2d2e30] border-[#5f6368]" : "bg-white border-gray-200"
+              )}>
                 <div>
-                  <Label htmlFor="email">E-Mail-Adresse</Label>
+                  <Label htmlFor="email" className={cn(isDark && "text-white")}>E-Mail-Adresse</Label>
                   <Input
                     id="email"
                     value={session?.email || ''}
                     disabled
-                    className="mt-1 bg-gray-50"
+                    className={cn("mt-1", isDark ? "bg-[#3c4043] border-[#5f6368] text-white" : "bg-gray-50")}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="displayName">Anzeigename</Label>
+                  <Label htmlFor="displayName" className={cn(isDark && "text-white")}>Anzeigename</Label>
                   <Input
                     id="displayName"
                     value={settings.displayName}
                     onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
-                    className="mt-1"
+                    className={cn("mt-1", isDark && "bg-[#3c4043] border-[#5f6368] text-white")}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="signature">E-Mail-Signatur</Label>
+                  <Label htmlFor="signature" className={cn(isDark && "text-white")}>E-Mail-Signatur</Label>
                   <textarea
                     id="signature"
                     value={settings.signature}
                     onChange={(e) => setSettings({ ...settings, signature: e.target.value })}
-                    className="mt-1 w-full min-h-[100px] px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className={cn(
+                      "mt-1 w-full min-h-[100px] px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500",
+                      isDark 
+                        ? "bg-[#3c4043] border-[#5f6368] text-white placeholder:text-gray-500" 
+                        : "border-gray-300"
+                    )}
                     placeholder="Deine E-Mail-Signatur..."
                   />
                 </div>
 
-                <Separator />
+                <Separator className={cn(isDark && "bg-[#5f6368]")} />
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Sprache</Label>
+                    <Label className={cn(isDark && "text-white")}>Sprache</Label>
                     <Select
                       value={settings.language}
                       onValueChange={(value) => setSettings({ ...settings, language: value })}
                     >
-                      <SelectTrigger className="mt-1">
+                      <SelectTrigger className={cn("mt-1", isDark && "bg-[#3c4043] border-[#5f6368] text-white")}>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="de">Deutsch</SelectItem>
-                        <SelectItem value="en">English</SelectItem>
+                      <SelectContent className={cn(isDark && "bg-[#2d2e30] border-[#5f6368]")}>
+                        <SelectItem value="de" className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>Deutsch</SelectItem>
+                        <SelectItem value="en" className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>English</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
-                    <Label>Zeitzone</Label>
+                    <Label className={cn(isDark && "text-white")}>Zeitzone</Label>
                     <Select
                       value={settings.timezone}
                       onValueChange={(value) => setSettings({ ...settings, timezone: value })}
                     >
-                      <SelectTrigger className="mt-1">
+                      <SelectTrigger className={cn("mt-1", isDark && "bg-[#3c4043] border-[#5f6368] text-white")}>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Europe/Berlin">Berlin (MEZ)</SelectItem>
-                        <SelectItem value="Europe/Vienna">Wien (MEZ)</SelectItem>
-                        <SelectItem value="Europe/Zurich">Zürich (MEZ)</SelectItem>
-                        <SelectItem value="UTC">UTC</SelectItem>
+                      <SelectContent className={cn(isDark && "bg-[#2d2e30] border-[#5f6368]")}>
+                        <SelectItem value="Europe/Berlin" className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>Berlin (MEZ)</SelectItem>
+                        <SelectItem value="Europe/Vienna" className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>Wien (MEZ)</SelectItem>
+                        <SelectItem value="Europe/Zurich" className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>Zürich (MEZ)</SelectItem>
+                        <SelectItem value="UTC" className={cn(isDark && "text-white focus:bg-[#3c4043] focus:text-white")}>UTC</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-red-50 rounded-xl border border-red-200 p-6">
-                <h3 className="text-lg font-medium text-red-900">Gefahrenzone</h3>
-                <p className="text-sm text-red-700 mt-1">
+              <div className={cn(
+                "rounded-xl border p-6",
+                isDark ? "bg-red-900/20 border-red-900/50" : "bg-red-50 border-red-200"
+              )}>
+                <h3 className={cn("text-lg font-medium", isDark ? "text-red-400" : "text-red-900")}>Gefahrenzone</h3>
+                <p className={cn("text-sm mt-1", isDark ? "text-red-300" : "text-red-700")}>
                   Diese Aktionen können nicht rückgängig gemacht werden
                 </p>
                 <div className="mt-4">
@@ -255,17 +273,20 @@ export default function WebmailSettingsPage() {
           {activeSection === 'notifications' && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Benachrichtigungen</h2>
-                <p className="text-sm text-gray-500 mt-1">
+                <h2 className={cn("text-xl font-semibold", isDark ? "text-white" : "text-gray-900")}>Benachrichtigungen</h2>
+                <p className={cn("text-sm mt-1", isDark ? "text-white" : "text-gray-500")}>
                   Konfiguriere wie du benachrichtigt werden möchtest
                 </p>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+              <div className={cn(
+                "rounded-xl border p-6 space-y-6",
+                isDark ? "bg-[#2d2e30] border-[#5f6368]" : "bg-white border-gray-200"
+              )}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>E-Mail-Benachrichtigungen</Label>
-                    <p className="text-sm text-gray-500">
+                    <Label className={cn(isDark && "text-white")}>E-Mail-Benachrichtigungen</Label>
+                    <p className={cn("text-sm", isDark ? "text-white" : "text-gray-500")}>
                       Erhalte E-Mails über wichtige Updates
                     </p>
                   </div>
@@ -278,12 +299,12 @@ export default function WebmailSettingsPage() {
                   />
                 </div>
 
-                <Separator />
+                <Separator className={cn(isDark && "bg-[#5f6368]")} />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Desktop-Benachrichtigungen</Label>
-                    <p className="text-sm text-gray-500">
+                    <Label className={cn(isDark && "text-white")}>Desktop-Benachrichtigungen</Label>
+                    <p className={cn("text-sm", isDark ? "text-white" : "text-gray-500")}>
                       Zeige Benachrichtigungen im Browser
                     </p>
                   </div>
@@ -296,12 +317,12 @@ export default function WebmailSettingsPage() {
                   />
                 </div>
 
-                <Separator />
+                <Separator className={cn(isDark && "bg-[#5f6368]")} />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Ton bei neuen E-Mails</Label>
-                    <p className="text-sm text-gray-500">
+                    <Label className={cn(isDark && "text-white")}>Ton bei neuen E-Mails</Label>
+                    <p className={cn("text-sm", isDark ? "text-white" : "text-gray-500")}>
                       Spiele einen Ton ab wenn neue E-Mails eintreffen
                     </p>
                   </div>
@@ -321,15 +342,18 @@ export default function WebmailSettingsPage() {
           {activeSection === 'appearance' && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Darstellung</h2>
-                <p className="text-sm text-gray-500 mt-1">
+                <h2 className={cn("text-xl font-semibold", isDark ? "text-white" : "text-gray-900")}>Darstellung</h2>
+                <p className={cn("text-sm mt-1", isDark ? "text-white" : "text-gray-500")}>
                   Passe das Aussehen an deine Vorlieben an
                 </p>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+              <div className={cn(
+                "rounded-xl border p-6 space-y-6",
+                isDark ? "bg-[#2d2e30] border-[#5f6368]" : "bg-white border-gray-200"
+              )}>
                 <div>
-                  <Label>Theme</Label>
+                  <Label className={cn(isDark && "text-white")}>Theme</Label>
                   <div className="mt-3 grid grid-cols-3 gap-3">
                     {(['light', 'dark', 'system'] as const).map((theme) => (
                       <button
@@ -338,13 +362,17 @@ export default function WebmailSettingsPage() {
                           ...settings,
                           appearance: { ...settings.appearance, theme }
                         })}
-                        className={`p-4 rounded-lg border-2 text-center transition-colors ${
+                        className={cn(
+                          'p-4 rounded-lg border-2 text-center transition-colors',
                           settings.appearance.theme === theme
-                            ? 'border-teal-500 bg-teal-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                            ? (isDark ? 'border-teal-500 bg-teal-900/30' : 'border-teal-500 bg-teal-50')
+                            : (isDark ? 'border-[#5f6368] hover:border-gray-500' : 'border-gray-200 hover:border-gray-300')
+                        )}
                       >
-                        <span className="text-sm font-medium capitalize">
+                        <span className={cn(
+                          "text-sm font-medium capitalize",
+                          isDark ? "text-white" : "text-gray-700"
+                        )}>
                           {theme === 'light' ? 'Hell' : theme === 'dark' ? 'Dunkel' : 'System'}
                         </span>
                       </button>
@@ -352,12 +380,12 @@ export default function WebmailSettingsPage() {
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className={cn(isDark && "bg-[#5f6368]")} />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Kompaktmodus</Label>
-                    <p className="text-sm text-gray-500">
+                    <Label className={cn(isDark && "text-white")}>Kompaktmodus</Label>
+                    <p className={cn("text-sm", isDark ? "text-white" : "text-gray-500")}>
                       Zeige mehr Inhalte auf kleinerem Raum
                     </p>
                   </div>
@@ -377,17 +405,20 @@ export default function WebmailSettingsPage() {
           {activeSection === 'privacy' && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Datenschutz</h2>
-                <p className="text-sm text-gray-500 mt-1">
+                <h2 className={cn("text-xl font-semibold", isDark ? "text-white" : "text-gray-900")}>Datenschutz</h2>
+                <p className={cn("text-sm mt-1", isDark ? "text-white" : "text-gray-500")}>
                   Kontrolliere deine Datenschutzeinstellungen
                 </p>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+              <div className={cn(
+                "rounded-xl border p-6 space-y-6",
+                isDark ? "bg-[#2d2e30] border-[#5f6368]" : "bg-white border-gray-200"
+              )}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Lesebestätigungen</Label>
-                    <p className="text-sm text-gray-500">
+                    <Label className={cn(isDark && "text-white")}>Lesebestätigungen</Label>
+                    <p className={cn("text-sm", isDark ? "text-white" : "text-gray-500")}>
                       Sende Lesebestätigungen an Absender
                     </p>
                   </div>
@@ -400,12 +431,12 @@ export default function WebmailSettingsPage() {
                   />
                 </div>
 
-                <Separator />
+                <Separator className={cn(isDark && "bg-[#5f6368]")} />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Online-Status anzeigen</Label>
-                    <p className="text-sm text-gray-500">
+                    <Label className={cn(isDark && "text-white")}>Online-Status anzeigen</Label>
+                    <p className={cn("text-sm", isDark ? "text-white" : "text-gray-500")}>
                       Andere können sehen wenn du online bist
                     </p>
                   </div>

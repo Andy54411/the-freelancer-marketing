@@ -267,10 +267,19 @@ export function EmailCompose({
   const [showSizeDropdown, setShowSizeDropdown] = useState(false);
   const [showColorDropdown, setShowColorDropdown] = useState(false);
   const [showAlignDropdown, setShowAlignDropdown] = useState(false);
+  const [showFormattingToolbar, setShowFormattingToolbar] = useState(true);
   const [selectedFont, setSelectedFont] = useState('Sans Serif');
   const [selectedSize, setSelectedSize] = useState('Normal');
   const [selectedTextColor, setSelectedTextColor] = useState('#000000');
   const [_colorTab, _setColorTab] = useState<'bg' | 'text'>('text');
+  
+  // Link-Modal State
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkText, setLinkText] = useState('');
+  
+  // Emoji-Picker State
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   
   // Kontakte für Autovervollständigung
   const [contacts, setContacts] = useState<Array<{ id: string; name: string; email: string }>>([]);
@@ -285,6 +294,8 @@ export function EmailCompose({
   const sizeDropdownRef = useRef<HTMLDivElement>(null);
   const colorDropdownRef = useRef<HTMLDivElement>(null);
   const alignDropdownRef = useRef<HTMLDivElement>(null);
+  const linkPopoverRef = useRef<HTMLDivElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
   const savedSelectionRef = useRef<Range | null>(null);
   const pdfCacheRef = useRef<Map<string, File>>(new Map()); // Session Cache für generierte PDFs
 
@@ -395,12 +406,18 @@ export function EmailCompose({
       if (alignDropdownRef.current && !alignDropdownRef.current.contains(event.target as Node)) {
         setShowAlignDropdown(false);
       }
+      if (linkPopoverRef.current && !linkPopoverRef.current.contains(event.target as Node)) {
+        setShowLinkModal(false);
+      }
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+      }
     };
-    if (showFontDropdown || showSizeDropdown || showColorDropdown || showAlignDropdown) {
+    if (showFontDropdown || showSizeDropdown || showColorDropdown || showAlignDropdown || showLinkModal || showEmojiPicker) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showFontDropdown, showSizeDropdown, showColorDropdown, showAlignDropdown]);
+  }, [showFontDropdown, showSizeDropdown, showColorDropdown, showAlignDropdown, showLinkModal, showEmojiPicker]);
 
   // Update email state when replyTo or forwardEmail changes
   useEffect(() => {
@@ -1493,16 +1510,17 @@ export function EmailCompose({
             </Dialog>
 
             {/* Formatierungsleiste - Gmail style exakt */}
-            <div className="px-2 py-1 border-t border-gray-200 flex items-center bg-white">
+            {showFormattingToolbar && (
+            <div className="mx-3 my-1 px-2 py-1 border border-teal-200 rounded-lg flex items-center justify-center bg-teal-50">
               {/* Rückgängig */}
-              <button onClick={() => applyFormat('undo')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500" title="Rückgängig machen (Cmd+Z)">
+              <button onClick={() => applyFormat('undo')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-teal-100 text-teal-600" title="Rückgängig machen (Cmd+Z)">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
               </button>
               {/* Wiederholen */}
-              <button onClick={() => applyFormat('redo')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500" title="Wiederholen (Cmd+Y)">
+              <button onClick={() => applyFormat('redo')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-teal-100 text-teal-600" title="Wiederholen (Cmd+Y)">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
               </button>
-              <div className="w-px h-4 bg-gray-300 mx-1.5" />
+              <div className="w-px h-4 bg-teal-300 mx-1.5" />
               {/* Schriftart - mit Dropdown */}
               <div className="relative" ref={fontDropdownRef}>
                 <button 
@@ -1511,11 +1529,11 @@ export function EmailCompose({
                     saveSelection();
                     setShowFontDropdown(!showFontDropdown);
                   }}
-                  className="h-6 px-1.5 flex items-center gap-0.5 rounded hover:bg-gray-100 text-gray-700 text-[11px]"
+                  className="h-6 px-1.5 flex items-center gap-0.5 rounded hover:bg-teal-100 text-teal-700 text-[11px]"
                   title="Schriftart"
                 >
                   <span>{selectedFont}</span>
-                  <svg className="h-3 w-3 text-gray-500" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                  <svg className="h-3 w-3 text-teal-500" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
                 </button>
                 {showFontDropdown && (
                   <div className="absolute bottom-full left-0 mb-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px] z-50">
@@ -1541,7 +1559,7 @@ export function EmailCompose({
                   </div>
                 )}
               </div>
-              <div className="w-px h-4 bg-gray-300 mx-1.5" />
+              <div className="w-px h-4 bg-teal-300 mx-1.5" />
               {/* Schriftgröße - mit Dropdown */}
               <div className="relative" ref={sizeDropdownRef}>
                 <button 
@@ -1550,11 +1568,11 @@ export function EmailCompose({
                     saveSelection();
                     setShowSizeDropdown(!showSizeDropdown);
                   }}
-                  className="h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600"
+                  className="h-6 flex items-center justify-center rounded hover:bg-teal-100 text-teal-600"
                   title="Schriftgröße"
                 >
                   <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z"/></svg>
-                  <svg className="h-2.5 w-2.5 text-gray-500" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                  <svg className="h-2.5 w-2.5 text-teal-500" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
                 </button>
                 {showSizeDropdown && (
                   <div className="absolute bottom-full left-0 mb-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[120px] z-50">
@@ -1586,17 +1604,17 @@ export function EmailCompose({
                   </div>
                 )}
               </div>
-              <div className="w-px h-4 bg-gray-300 mx-1.5" />
+              <div className="w-px h-4 bg-teal-300 mx-1.5" />
               {/* Fett */}
-              <button onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => applyFormat('bold')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600" title="Fett (Cmd+B)">
+              <button onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => applyFormat('bold')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-teal-100 text-teal-600" title="Fett (Cmd+B)">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/></svg>
               </button>
               {/* Kursiv */}
-              <button onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => applyFormat('italic')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600" title="Kursiv (Cmd+I)">
+              <button onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => applyFormat('italic')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-teal-100 text-teal-600" title="Kursiv (Cmd+I)">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/></svg>
               </button>
               {/* Unterstrichen */}
-              <button onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => applyFormat('underline')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600" title="Unterstrichen (Cmd+U)">
+              <button onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => applyFormat('underline')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-teal-100 text-teal-600" title="Unterstrichen (Cmd+U)">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/></svg>
               </button>
               {/* Schriftfarbe - mit Dropdown */}
@@ -1607,14 +1625,14 @@ export function EmailCompose({
                     saveSelection();
                     setShowColorDropdown(!showColorDropdown);
                   }}
-                  className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600"
+                  className="h-6 w-6 flex items-center justify-center rounded hover:bg-teal-100 text-teal-600"
                   title="Schriftfarbe"
                 >
                   <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M11 2L5.5 16h2.25l1.12-3h6.25l1.12 3h2.25L13 2h-2zm-1.38 9L12 4.67 14.38 11H9.62z"/>
                     <path fill={selectedTextColor} d="M5 20h14v3H5z"/>
                   </svg>
-                  <svg className="h-2.5 w-2.5 text-gray-500 -ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                  <svg className="h-2.5 w-2.5 text-teal-500 -ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
                 </button>
               </div>
               {/* Color Picker Dropdown - außerhalb des relativen Containers für bessere Positionierung */}
@@ -1703,7 +1721,7 @@ export function EmailCompose({
                   </div>
                 </div>
               )}
-              <div className="w-px h-4 bg-gray-300 mx-1.5" />
+              <div className="w-px h-4 bg-teal-300 mx-1.5" />
               {/* Ausrichtung - mit Dropdown */}
               <div className="relative" ref={alignDropdownRef}>
                 <button 
@@ -1712,11 +1730,11 @@ export function EmailCompose({
                     saveSelection();
                     setShowAlignDropdown(!showAlignDropdown);
                   }}
-                  className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500"
+                  className="h-6 w-6 flex items-center justify-center rounded hover:bg-teal-100 text-teal-600"
                   title="Ausrichtung"
                 >
                   <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M15 15H3v2h12v-2zm0-8H3v2h12V7zM3 13h18v-2H3v2zm0 8h18v-2H3v2zM3 3v2h18V3H3z"/></svg>
-                  <svg className="h-2.5 w-2.5 text-gray-500 -ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                  <svg className="h-2.5 w-2.5 text-teal-500 -ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
                 </button>
                 {showAlignDropdown && (
                   <div className="absolute bottom-full left-0 mb-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[9999]">
@@ -1778,22 +1796,22 @@ export function EmailCompose({
                 )}
               </div>
               {/* Nummerierte Liste */}
-              <button onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => applyFormat('insertOrderedList')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500" title="Nummerierte Liste (Cmd+Shift+7)">
+              <button onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => applyFormat('insertOrderedList')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-teal-100 text-teal-600" title="Nummerierte Liste (Cmd+Shift+7)">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zm5-6v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/></svg>
               </button>
               {/* Aufzählung */}
-              <button onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => applyFormat('insertUnorderedList')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500" title="Liste mit Aufzählungszeichen (Cmd+Shift+8)">
+              <button onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => applyFormat('insertUnorderedList')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-teal-100 text-teal-600" title="Liste mit Aufzählungszeichen (Cmd+Shift+8)">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/></svg>
               </button>
               {/* Einzug verringern */}
-              <button onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => applyFormat('outdent')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500" title="Einzug verringern (Cmd+[)">
+              <button onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => applyFormat('outdent')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-teal-100 text-teal-600" title="Einzug verringern (Cmd+[)">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M11 17h10v-2H11v2zm-8-5l4 4V8l-4 4zm0 9h18v-2H3v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/></svg>
               </button>
               {/* Einzug vergrößern */}
-              <button onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => applyFormat('indent')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500" title="Einzug vergrößern (Cmd+])">
+              <button onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => applyFormat('indent')} className="h-6 w-6 flex items-center justify-center rounded hover:bg-teal-100 text-teal-600" title="Einzug vergrößern (Cmd+])">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/></svg>
               </button>
-              <div className="w-px h-4 bg-gray-300 mx-1.5" />
+              <div className="w-px h-4 bg-teal-300 mx-1.5" />
               {/* Weitere Formatierungsoptionen - Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -1802,7 +1820,7 @@ export function EmailCompose({
                       e.preventDefault();
                       saveSelection();
                     }}
-                    className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500" 
+                    className="h-6 w-6 flex items-center justify-center rounded hover:bg-teal-100 text-teal-600" 
                     title="Weitere Formatierungsoptionen"
                   >
                     <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
@@ -1829,10 +1847,10 @@ export function EmailCompose({
                         saveSelection();
                       }, 10);
                     }}
-                    className="h-8 w-8 flex items-center justify-center cursor-pointer rounded hover:bg-gray-100"
+                    className="h-8 w-8 flex items-center justify-center cursor-pointer rounded hover:bg-teal-100"
                     title="Durchgestrichen"
                   >
-                    <svg className="h-5 w-5 text-gray-600" viewBox="0 0 24 24" fill="currentColor">
+                    <svg className="h-5 w-5 text-teal-600" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M10 19h4v-3h-4v3zM5 4v3h5v3h4V7h5V4H5zM3 14h18v-2H3v2z"/>
                     </svg>
                   </button>
@@ -1853,7 +1871,7 @@ export function EmailCompose({
                         if (editorRef.current) {
                           const blockquotes = editorRef.current.querySelectorAll('blockquote');
                           blockquotes.forEach((bq) => {
-                            (bq as HTMLElement).style.borderLeft = '3px solid #ccc';
+                            (bq as HTMLElement).style.borderLeft = '3px solid #0d9488';
                             (bq as HTMLElement).style.paddingLeft = '12px';
                             (bq as HTMLElement).style.marginLeft = '0';
                             (bq as HTMLElement).style.color = '#666';
@@ -1863,10 +1881,10 @@ export function EmailCompose({
                         saveSelection();
                       }, 10);
                     }}
-                    className="h-8 w-8 flex items-center justify-center cursor-pointer rounded hover:bg-gray-100"
+                    className="h-8 w-8 flex items-center justify-center cursor-pointer rounded hover:bg-teal-100"
                     title="Zitieren"
                   >
-                    <svg className="h-5 w-5 text-gray-600" viewBox="0 0 24 24" fill="currentColor">
+                    <svg className="h-5 w-5 text-teal-600" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>
                     </svg>
                   </button>
@@ -1890,16 +1908,17 @@ export function EmailCompose({
                         saveSelection();
                       }, 10);
                     }}
-                    className="h-8 w-8 flex items-center justify-center cursor-pointer rounded hover:bg-gray-100"
+                    className="h-8 w-8 flex items-center justify-center cursor-pointer rounded hover:bg-teal-100"
                     title="Formatierung entfernen"
                   >
-                    <svg className="h-5 w-5 text-gray-600" viewBox="0 0 24 24" fill="currentColor">
+                    <svg className="h-5 w-5 text-teal-600" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M3.27 5L2 6.27l6.97 6.97L6.5 19h3l1.57-3.66L16.73 21 18 19.73 3.55 5.27 3.27 5zM6 5v.18L8.82 8h2.4l-.72 1.68 2.1 2.1L14.21 8H20V5H6z"/>
                     </svg>
                   </button>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            )}
 
             {/* Senden-Leiste - Gmail style ganz unten */}
             <div className="px-3 py-2 border-t border-gray-200 flex items-center gap-1">
@@ -1922,7 +1941,16 @@ export function EmailCompose({
               </div>
 
               {/* Formatierungs-Toggle */}
-              <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 ml-1" title="Formatierungsoptionen">
+              <button 
+                onClick={() => setShowFormattingToolbar(!showFormattingToolbar)}
+                className={cn(
+                  "h-8 w-8 flex items-center justify-center rounded-full ml-1",
+                  showFormattingToolbar 
+                    ? "bg-teal-100 text-teal-700" 
+                    : "hover:bg-gray-100 text-gray-600"
+                )}
+                title="Formatierungsoptionen ein-/ausblenden"
+              >
                 <span className="text-[14px] font-serif">Aa</span>
               </button>
 
@@ -1930,12 +1958,170 @@ export function EmailCompose({
               <button onClick={handleFileSelect} className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" title="Dateien anhängen">
                 <Paperclip className="h-[18px] w-[18px]" />
               </button>
-              <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" title="Link einfügen">
+              <button 
+                onClick={() => {
+                  saveSelection();
+                  // Prüfe ob Text selektiert ist
+                  const selection = window.getSelection();
+                  if (selection && selection.toString()) {
+                    setLinkText(selection.toString());
+                  } else {
+                    setLinkText('');
+                  }
+                  setLinkUrl('');
+                  setShowLinkModal(true);
+                }}
+                className={cn(
+                  "h-8 w-8 flex items-center justify-center rounded-full text-gray-600",
+                  showLinkModal ? "bg-teal-100 text-teal-700" : "hover:bg-gray-100"
+                )}
+                title="Link einfügen"
+              >
                 <Link className="h-[18px] w-[18px]" />
               </button>
-              <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" title="Emoji einfügen">
+              
+              {/* Link-Popover - Gmail Style */}
+              {showLinkModal && (
+                <div ref={linkPopoverRef} className="absolute bottom-10 left-16 bg-white rounded shadow-md p-2 z-50 border border-gray-200">
+                  {/* Text-Eingabe */}
+                  <div className="flex items-center border border-teal-500 rounded px-2 py-1 mb-1.5" style={{ width: '190px' }}>
+                    <span className="text-gray-400 mr-1.5 text-xs">=</span>
+                    <input
+                      type="text"
+                      value={linkText}
+                      onChange={(e) => setLinkText(e.target.value)}
+                      placeholder="Text"
+                      className="flex-1 outline-none text-xs bg-transparent text-gray-700 placeholder-gray-400"
+                      autoFocus
+                    />
+                  </div>
+                  {/* URL-Eingabe mit Anwenden-Button */}
+                  <div className="flex items-center">
+                    <div className="flex items-center border border-gray-300 rounded px-2 py-1" style={{ width: '190px' }}>
+                      <svg className="h-3 w-3 text-gray-400 mr-1.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                      </svg>
+                      <input
+                        type="text"
+                        value={linkUrl}
+                        onChange={(e) => setLinkUrl(e.target.value)}
+                        placeholder="Link eingeben oder einfügen"
+                        className="flex-1 outline-none text-xs bg-transparent text-gray-700 placeholder-gray-400 min-w-0"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (linkUrl) {
+                              restoreSelection();
+                              editorRef.current?.focus();
+                              if (linkText && !savedSelectionRef.current?.toString()) {
+                                document.execCommand('insertHTML', false, `<a href="${linkUrl}" target="_blank" style="color: #0d9488; text-decoration: underline;">${linkText}</a>`);
+                              } else {
+                                document.execCommand('createLink', false, linkUrl);
+                                const selection = window.getSelection();
+                                if (selection && selection.anchorNode) {
+                                  const link = selection.anchorNode.parentElement;
+                                  if (link?.tagName === 'A') {
+                                    (link as HTMLAnchorElement).target = '_blank';
+                                    (link as HTMLAnchorElement).style.color = '#0d9488';
+                                    (link as HTMLAnchorElement).style.textDecoration = 'underline';
+                                  }
+                                }
+                              }
+                              if (editorRef.current) {
+                                setEmail(prev => ({ ...prev, body: editorRef.current?.innerHTML || '' }));
+                              }
+                              setShowLinkModal(false);
+                              setLinkUrl('');
+                              setLinkText('');
+                            }
+                          } else if (e.key === 'Escape') {
+                            setShowLinkModal(false);
+                          }
+                        }}
+                      />
+                    </div>
+                    <span
+                      onClick={() => {
+                        if (linkUrl) {
+                          restoreSelection();
+                          editorRef.current?.focus();
+                          if (linkText && !savedSelectionRef.current?.toString()) {
+                            document.execCommand('insertHTML', false, `<a href="${linkUrl}" target="_blank" style="color: #0d9488; text-decoration: underline;">${linkText}</a>`);
+                          } else {
+                            document.execCommand('createLink', false, linkUrl);
+                            const selection = window.getSelection();
+                            if (selection && selection.anchorNode) {
+                              const link = selection.anchorNode.parentElement;
+                              if (link?.tagName === 'A') {
+                                (link as HTMLAnchorElement).target = '_blank';
+                                (link as HTMLAnchorElement).style.color = '#0d9488';
+                                (link as HTMLAnchorElement).style.textDecoration = 'underline';
+                              }
+                            }
+                          }
+                          if (editorRef.current) {
+                            setEmail(prev => ({ ...prev, body: editorRef.current?.innerHTML || '' }));
+                          }
+                          setShowLinkModal(false);
+                          setLinkUrl('');
+                          setLinkText('');
+                        }
+                      }}
+                      className="ml-2 text-xs cursor-pointer whitespace-nowrap text-teal-600 hover:text-teal-700"
+                    >
+                      Anwenden
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              <button 
+                onClick={() => {
+                  saveSelection();
+                  setShowEmojiPicker(!showEmojiPicker);
+                }}
+                className={cn(
+                  "h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100",
+                  showEmojiPicker ? "bg-teal-100 text-teal-600" : "text-gray-600"
+                )}
+                title="Emoji einfügen"
+              >
                 <Smile className="h-[18px] w-[18px]" />
               </button>
+              
+              {/* Emoji-Picker Popover */}
+              {showEmojiPicker && (
+                <div ref={emojiPickerRef} className="absolute bottom-10 left-24 bg-white rounded-lg shadow-lg p-2 z-50 border border-gray-200" style={{ width: '280px' }}>
+                  <div className="grid grid-cols-8 gap-1">
+                    {['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊',
+                      '😇', '🙂', '😉', '😍', '🥰', '😘', '😋', '😎',
+                      '🤔', '🤗', '🤩', '🥳', '😏', '😌', '😔', '😢',
+                      '😭', '😤', '😠', '🤯', '😱', '🙄', '😴', '🤮',
+                      '👍', '👎', '👏', '🙌', '🤝', '✌️', '🤞', '👋',
+                      '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '💔',
+                      '✅', '❌', '⭐', '🔥', '💯', '🎉', '🎊', '🎁',
+                      '📧', '📞', '💼', '📅', '⏰', '📌', '✏️', '📎'
+                    ].map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => {
+                          restoreSelection();
+                          editorRef.current?.focus();
+                          document.execCommand('insertText', false, emoji);
+                          if (editorRef.current) {
+                            setEmail(prev => ({ ...prev, body: editorRef.current?.innerHTML || '' }));
+                          }
+                          setShowEmojiPicker(false);
+                        }}
+                        className="h-7 w-7 flex items-center justify-center text-lg hover:bg-gray-100 rounded cursor-pointer"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" title="Dateien aus Drive">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M7.71 3.5L1.15 15l4.29 7.5h6.57L5.43 11 8.86 5.25 7.71 3.5zm1.14 2l6.57 11.5H8.86l-3.43 6h6.57l6.86-12L12 3.5H7.71l1.14 2z"/></svg>
               </button>

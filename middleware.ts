@@ -26,19 +26,72 @@ export default async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const pathname = request.nextUrl.pathname;
 
-  // contact.taskilo.de -> /contacts
-  if (hostname.startsWith('contact.') || hostname.startsWith('contacts.')) {
-    logMiddleware('Contacts Subdomain erkannt', request, { hostname });
-    
-    // Rewrite to /contacts path if not already there
-    if (!pathname.startsWith('/contacts') && !pathname.startsWith('/api/') && !pathname.startsWith('/_next/')) {
+  // Skip API and static paths for all subdomains
+  const isApiOrStatic = pathname.startsWith('/api/') || pathname.startsWith('/_next/') || pathname.startsWith('/images/');
+
+  // email.taskilo.de -> /webmail
+  if (hostname.startsWith('email.') || hostname.startsWith('mail.')) {
+    logMiddleware('Email Subdomain erkannt', request, { hostname });
+    if (!pathname.startsWith('/webmail') && !isApiOrStatic) {
       const url = request.nextUrl.clone();
-      url.pathname = `/contacts${pathname === '/' ? '' : pathname}`;
-      logMiddleware('Contacts Rewrite', request, { from: pathname, to: url.pathname });
+      url.pathname = `/webmail${pathname === '/' ? '' : pathname}`;
       return NextResponse.rewrite(url);
     }
-    
-    // Skip internationalization for contacts subdomain
+    return NextResponse.next();
+  }
+
+  // drive.taskilo.de -> /webmail/drive
+  if (hostname.startsWith('drive.')) {
+    logMiddleware('Drive Subdomain erkannt', request, { hostname });
+    if (!pathname.startsWith('/webmail/drive') && !isApiOrStatic) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/webmail/drive${pathname === '/' ? '' : pathname}`;
+      return NextResponse.rewrite(url);
+    }
+    return NextResponse.next();
+  }
+
+  // kalender.taskilo.de / calendar.taskilo.de -> /webmail/calendar
+  if (hostname.startsWith('kalender.') || hostname.startsWith('calendar.')) {
+    logMiddleware('Kalender Subdomain erkannt', request, { hostname });
+    if (!pathname.startsWith('/webmail/calendar') && !isApiOrStatic) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/webmail/calendar${pathname === '/' ? '' : pathname}`;
+      return NextResponse.rewrite(url);
+    }
+    return NextResponse.next();
+  }
+
+  // meet.taskilo.de -> /webmail/meet
+  if (hostname.startsWith('meet.')) {
+    logMiddleware('Meet Subdomain erkannt', request, { hostname });
+    if (!pathname.startsWith('/webmail/meet') && !isApiOrStatic) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/webmail/meet${pathname === '/' ? '' : pathname}`;
+      return NextResponse.rewrite(url);
+    }
+    return NextResponse.next();
+  }
+
+  // task.taskilo.de / tasks.taskilo.de -> /webmail/tasks
+  if (hostname.startsWith('task.') || hostname.startsWith('tasks.')) {
+    logMiddleware('Tasks Subdomain erkannt', request, { hostname });
+    if (!pathname.startsWith('/webmail/tasks') && !isApiOrStatic) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/webmail/tasks${pathname === '/' ? '' : pathname}`;
+      return NextResponse.rewrite(url);
+    }
+    return NextResponse.next();
+  }
+
+  // kontakt.taskilo.de / contact.taskilo.de -> /webmail/contacts
+  if (hostname.startsWith('kontakt.') || hostname.startsWith('contact.') || hostname.startsWith('contacts.')) {
+    logMiddleware('Contacts Subdomain erkannt', request, { hostname });
+    if (!pathname.startsWith('/webmail/contacts') && !isApiOrStatic) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/webmail/contacts${pathname === '/' ? '' : pathname}`;
+      return NextResponse.rewrite(url);
+    }
     return NextResponse.next();
   }
 

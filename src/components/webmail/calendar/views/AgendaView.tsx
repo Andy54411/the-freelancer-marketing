@@ -16,11 +16,11 @@ export function AgendaView({
 
   return (
     <div className={`flex-1 overflow-y-auto ${isDark ? 'bg-[#202124]' : 'bg-white'} p-4 md:p-6`}>
-      <h2 className={`text-base md:text-lg font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-4`}>
+      <h2 className={`text-base md:text-lg font-medium ${isDark ? 'text-white' : 'text-gray-700'} mb-4`}>
         Kommende Termine
       </h2>
       {futureEvents.length === 0 ? (
-        <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>Keine kommenden Termine</p>
+        <p className={isDark ? 'text-white' : 'text-gray-500'}>Keine kommenden Termine</p>
       ) : (
         <div className="space-y-2">
           {futureEvents.map((event) => (
@@ -38,7 +38,7 @@ export function AgendaView({
                   <div className={`font-medium text-sm md:text-base ${isDark ? 'text-gray-100' : 'text-gray-900'} truncate`}>
                     {event.title}
                   </div>
-                  <div className={`text-xs md:text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className={`text-xs md:text-sm ${isDark ? 'text-white' : 'text-gray-500'}`}>
                     {new Date(event.start).toLocaleDateString('de-DE', {
                       weekday: 'short',
                       day: 'numeric',
@@ -60,7 +60,7 @@ export function AgendaView({
                     )}
                   </div>
                   {event.location && (
-                    <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'} truncate`}>
+                    <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-white'} truncate`}>
                       {event.location}
                     </div>
                   )}

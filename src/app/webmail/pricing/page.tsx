@@ -158,7 +158,7 @@ function PlanCard({ plan, isDark }: { plan: Plan; isDark: boolean }) {
             plan.popular
               ? 'bg-teal-500 text-white'
               : isDark
-                ? 'bg-[#5f6368] text-gray-200'
+                ? 'bg-[#5f6368] text-white'
                 : 'bg-gray-100 text-gray-600'
           )}
         >
@@ -178,7 +178,7 @@ function PlanCard({ plan, isDark }: { plan: Plan; isDark: boolean }) {
 
       {/* Price */}
       <div className="text-center my-6">
-        <span className={cn('text-sm', isDark ? 'text-gray-400' : 'text-gray-500')}>
+        <span className={cn('text-sm', isDark ? 'text-white' : 'text-gray-500')}>
           nur
         </span>
         <div className="flex items-start justify-center gap-1">
@@ -189,7 +189,7 @@ function PlanCard({ plan, isDark }: { plan: Plan; isDark: boolean }) {
             <span className={cn('text-2xl font-bold', 'text-teal-500')}>
               {priceCents.toString().padStart(2, '0')}
             </span>
-            <span className={cn('text-xs', isDark ? 'text-gray-400' : 'text-gray-500')}>
+            <span className={cn('text-xs', isDark ? 'text-white' : 'text-gray-500')}>
               EUR{plan.priceUnit}
             </span>
           </div>
@@ -216,13 +216,13 @@ function PlanCard({ plan, isDark }: { plan: Plan; isDark: boolean }) {
                       <ChevronDown 
                         className={cn(
                           'w-4 h-4 transition-transform shrink-0 ml-2',
-                          isDark ? 'text-gray-400' : 'text-gray-500',
+                          isDark ? 'text-white' : 'text-gray-500',
                           expandedFeatures.includes(idx) && 'rotate-180'
                         )} 
                       />
                     </div>
                     {expandedFeatures.includes(idx) && (
-                      <p className={cn('text-sm mt-1', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                      <p className={cn('text-sm mt-1', isDark ? 'text-white' : 'text-gray-500')}>
                         {feature.description}
                       </p>
                     )}
@@ -313,7 +313,7 @@ function DomainSearchSection({ isDark }: { isDark: boolean }) {
           <h2 className={cn('text-3xl font-bold mb-4', isDark ? 'text-white' : 'text-gray-900')}>
             Finden Sie Ihre Wunsch-Domain
           </h2>
-          <p className={cn('text-lg', isDark ? 'text-gray-400' : 'text-gray-600')}>
+          <p className={cn('text-lg', isDark ? 'text-white' : 'text-gray-600')}>
             Über 20 Domain-Endungen verfügbar: .de, .com, .eu, .io, .net und viele mehr
           </p>
         </div>
@@ -327,7 +327,7 @@ function DomainSearchSection({ isDark }: { isDark: boolean }) {
             <div className="flex-1 relative">
               <Search className={cn(
                 'absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5',
-                isDark ? 'text-gray-500' : 'text-gray-400'
+                isDark ? 'text-gray-500' : 'text-white'
               )} />
               <Input
                 type="text"
@@ -367,7 +367,7 @@ function DomainSearchSection({ isDark }: { isDark: boolean }) {
                 key={tld.tld}
                 className={cn(
                   'px-3 py-1 rounded-full text-sm font-medium',
-                  isDark ? 'bg-[#303134] text-gray-300' : 'bg-gray-100 text-gray-600'
+                  isDark ? 'bg-[#303134] text-white' : 'bg-gray-100 text-gray-600'
                 )}
               >
                 {tld.tld} ab {tld.price.toFixed(2)}€/Mon.
@@ -397,7 +397,7 @@ function DomainSearchSection({ isDark }: { isDark: boolean }) {
                   <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
                 </div>
               ) : results.length === 0 ? (
-                <p className={cn('text-center py-8', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                <p className={cn('text-center py-8', isDark ? 'text-white' : 'text-gray-500')}>
                   Keine Ergebnisse gefunden. Bitte versuchen Sie einen anderen Namen.
                 </p>
               ) : (
@@ -420,7 +420,7 @@ function DomainSearchSection({ isDark }: { isDark: boolean }) {
                         {result.available ? (
                           <Check className="w-5 h-5 text-teal-500" />
                         ) : (
-                          <span className={cn('text-sm', isDark ? 'text-gray-500' : 'text-gray-400')}>
+                          <span className={cn('text-sm', isDark ? 'text-gray-500' : 'text-white')}>
                             Vergeben
                           </span>
                         )}
@@ -428,7 +428,7 @@ function DomainSearchSection({ isDark }: { isDark: boolean }) {
                           'font-medium',
                           result.available
                             ? isDark ? 'text-white' : 'text-gray-900'
-                            : isDark ? 'text-gray-500' : 'text-gray-400'
+                            : isDark ? 'text-gray-500' : 'text-white'
                         )}>
                           {result.domain}
                         </span>
@@ -437,13 +437,13 @@ function DomainSearchSection({ isDark }: { isDark: boolean }) {
                         <div className="text-right">
                           <span className={cn(
                             'font-semibold block',
-                            result.available ? 'text-teal-500' : isDark ? 'text-gray-500' : 'text-gray-400'
+                            result.available ? 'text-teal-500' : isDark ? 'text-gray-500' : 'text-white'
                           )}>
                             {result.priceMonthly.toFixed(2)}€/Mon.
                           </span>
                           <span className={cn(
                             'text-xs',
-                            isDark ? 'text-gray-500' : 'text-gray-400'
+                            isDark ? 'text-gray-500' : 'text-white'
                           )}>
                             ({result.priceYearly.toFixed(2)}€/Jahr)
                           </span>
@@ -466,7 +466,7 @@ function DomainSearchSection({ isDark }: { isDark: boolean }) {
               <details className="mt-6">
                 <summary className={cn(
                   'cursor-pointer font-medium hover:text-teal-500 transition-colors',
-                  isDark ? 'text-gray-300' : 'text-gray-600'
+                  isDark ? 'text-white' : 'text-gray-600'
                 )}>
                   Alle {AVAILABLE_TLDS.length} Domain-Endungen anzeigen
                 </summary>
@@ -482,7 +482,7 @@ function DomainSearchSection({ isDark }: { isDark: boolean }) {
                       <span className={cn('font-semibold', isDark ? 'text-white' : 'text-gray-900')}>
                         {tld.tld}
                       </span>
-                      <span className={cn('block text-sm', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                      <span className={cn('block text-sm', isDark ? 'text-white' : 'text-gray-500')}>
                         ab {tld.price.toFixed(2)}€/Mon.
                       </span>
                     </div>
@@ -525,7 +525,7 @@ export default function WebmailPricingPage() {
           <p
             className={cn(
               'text-lg max-w-2xl mx-auto',
-              isDark ? 'text-gray-400' : 'text-gray-600'
+              isDark ? 'text-white' : 'text-gray-600'
             )}
           >
             Von kostenlosem E-Mail-Postfach bis zur kompletten Business-Lösung mit 
@@ -558,7 +558,7 @@ export default function WebmailPricingPage() {
             <span className={isDark ? 'text-white' : 'text-gray-800'}>Alle Tarife </span>
             <span className="text-teal-500">im Vergleich</span>
           </h2>
-          <p className={cn('text-center mb-12', isDark ? 'text-gray-400' : 'text-gray-500')}>
+          <p className={cn('text-center mb-12', isDark ? 'text-white' : 'text-gray-500')}>
             Finden Sie den passenden Tarif für Ihre Anforderungen
           </p>
 
@@ -592,7 +592,7 @@ export default function WebmailPricingPage() {
                           <span>{plan.name}</span>
                           <span className={cn(
                             'text-xs font-normal',
-                            isDark ? 'text-gray-400' : 'text-white/80'
+                            isDark ? 'text-white' : 'text-white/80'
                           )}>
                             {plan.price === 0 ? 'Kostenlos' : `${plan.price.toFixed(2)}€/Mon.`}
                           </span>
@@ -638,7 +638,7 @@ export default function WebmailPricingPage() {
                   >
                     <td className={cn(
                       'px-6 py-4', 
-                      isDark ? 'text-gray-300' : 'text-gray-700',
+                      isDark ? 'text-white' : 'text-gray-700',
                       (row as { highlight?: boolean }).highlight && (isDark ? 'text-teal-400 font-medium' : 'text-teal-700 font-medium')
                     )}>
                       {row.feature}
@@ -662,7 +662,7 @@ export default function WebmailPricingPage() {
                               </div>
                             </div>
                           ) : (
-                            <span className={cn('text-lg', isDark ? 'text-gray-600' : 'text-gray-300')}>
+                            <span className={cn('text-lg', isDark ? 'text-gray-600' : 'text-white')}>
                               —
                             </span>
                           )
@@ -719,7 +719,7 @@ export default function WebmailPricingPage() {
               <h3 className={cn('font-semibold mb-2', isDark ? 'text-white' : 'text-gray-800')}>
                 DSGVO-konform
               </h3>
-              <p className={cn('text-sm', isDark ? 'text-gray-400' : 'text-gray-600')}>
+              <p className={cn('text-sm', isDark ? 'text-white' : 'text-gray-600')}>
                 Ihre Daten werden in Deutschland gespeichert und sind DSGVO-konform geschützt.
               </p>
             </div>
@@ -739,7 +739,7 @@ export default function WebmailPricingPage() {
               <h3 className={cn('font-semibold mb-2', isDark ? 'text-white' : 'text-gray-800')}>
                 Schnell & Zuverlässig
               </h3>
-              <p className={cn('text-sm', isDark ? 'text-gray-400' : 'text-gray-600')}>
+              <p className={cn('text-sm', isDark ? 'text-white' : 'text-gray-600')}>
                 99,9% Verfügbarkeit und blitzschneller Zugang zu Ihren E-Mails.
               </p>
             </div>
@@ -759,7 +759,7 @@ export default function WebmailPricingPage() {
               <h3 className={cn('font-semibold mb-2', isDark ? 'text-white' : 'text-gray-800')}>
                 Deutscher Support
               </h3>
-              <p className={cn('text-sm', isDark ? 'text-gray-400' : 'text-gray-600')}>
+              <p className={cn('text-sm', isDark ? 'text-white' : 'text-gray-600')}>
                 Unser Support-Team ist für Sie da - in deutscher Sprache.
               </p>
             </div>
@@ -780,7 +780,7 @@ export default function WebmailPricingPage() {
               href="/impressum"
               className={cn(
                 'transition-colors',
-                isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                isDark ? 'text-white hover:text-white' : 'text-gray-600 hover:text-gray-900'
               )}
             >
               Impressum
@@ -789,7 +789,7 @@ export default function WebmailPricingPage() {
               href="/agb"
               className={cn(
                 'transition-colors',
-                isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                isDark ? 'text-white hover:text-white' : 'text-gray-600 hover:text-gray-900'
               )}
             >
               AGB
@@ -798,7 +798,7 @@ export default function WebmailPricingPage() {
               href="/datenschutz"
               className={cn(
                 'transition-colors',
-                isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                isDark ? 'text-white hover:text-white' : 'text-gray-600 hover:text-gray-900'
               )}
             >
               Datenschutz
@@ -807,7 +807,7 @@ export default function WebmailPricingPage() {
               href="/barrierefreiheit"
               className={cn(
                 'transition-colors',
-                isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                isDark ? 'text-white hover:text-white' : 'text-gray-600 hover:text-gray-900'
               )}
             >
               Barrierefreiheit
@@ -816,7 +816,7 @@ export default function WebmailPricingPage() {
           <p
             className={cn(
               'text-center text-sm mt-4',
-              isDark ? 'text-gray-500' : 'text-gray-400'
+              isDark ? 'text-gray-500' : 'text-white'
             )}
           >
             2024 Taskilo GmbH. Alle Rechte vorbehalten.

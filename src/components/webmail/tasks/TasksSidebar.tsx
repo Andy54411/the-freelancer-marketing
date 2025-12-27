@@ -44,7 +44,7 @@ export function TasksSidebar({
           onClick={onCreateTask}
           className={`flex items-center gap-3 w-full px-4 py-3 ${isDark ? 'bg-[#303134] border-[#5f6368] hover:bg-[#3c4043] text-white' : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-800'} border rounded-2xl transition-colors font-medium`}
         >
-          <Plus className={`h-6 w-6 ${isDark ? 'text-gray-300' : 'text-gray-500'}`} />
+          <Plus className={`h-6 w-6 ${isDark ? 'text-white' : 'text-gray-500'}`} />
           <span>Eintragen</span>
         </button>
       </div>
@@ -59,10 +59,10 @@ export function TasksSidebar({
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full transition-colors ${
                 selectedView === 'all'
                   ? 'bg-teal-500/20 text-teal-500'
-                  : (isDark ? 'hover:bg-white/5 text-gray-300' : 'hover:bg-gray-100 text-gray-700')
+                  : (isDark ? 'hover:bg-white/5 text-white' : 'hover:bg-gray-100 text-gray-700')
               }`}
             >
-              <CheckCircle2 className={`h-5 w-5 ${selectedView === 'all' ? 'text-teal-500' : (isDark ? 'text-gray-500' : 'text-gray-400')}`} />
+              <CheckCircle2 className={`h-5 w-5 ${selectedView === 'all' ? 'text-teal-500' : (isDark ? 'text-gray-500' : 'text-white')}`} />
               <span className="font-medium">Alle Aufgaben</span>
             </button>
           </li>
@@ -72,10 +72,10 @@ export function TasksSidebar({
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full transition-colors ${
                 selectedView === 'starred'
                   ? 'bg-teal-500/20 text-teal-500'
-                  : (isDark ? 'hover:bg-white/5 text-gray-300' : 'hover:bg-gray-100 text-gray-700')
+                  : (isDark ? 'hover:bg-white/5 text-white' : 'hover:bg-gray-100 text-gray-700')
               }`}
             >
-              <Star className={`h-5 w-5 ${selectedView === 'starred' ? 'text-teal-500' : (isDark ? 'text-gray-500' : 'text-gray-400')}`} />
+              <Star className={`h-5 w-5 ${selectedView === 'starred' ? 'text-teal-500' : (isDark ? 'text-gray-500' : 'text-white')}`} />
               <span className="font-medium">Markiert</span>
             </button>
           </li>
@@ -85,7 +85,7 @@ export function TasksSidebar({
         <div className="mt-6">
           <button
             onClick={() => setListsExpanded(!listsExpanded)}
-            className={`w-full flex items-center justify-between px-4 py-2 text-sm font-medium ${isDark ? 'text-gray-400 hover:bg-white/5' : 'text-gray-500 hover:bg-gray-100'} rounded-lg transition-colors`}
+            className={`w-full flex items-center justify-between px-4 py-2 text-sm font-medium ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-500 hover:bg-gray-100'} rounded-lg transition-colors`}
           >
             <span>Listen</span>
             {listsExpanded ? (
@@ -106,7 +106,7 @@ export function TasksSidebar({
                       onChange={() => onTaskListToggle(list.id)}
                       className={`w-4 h-4 rounded ${isDark ? 'border-gray-600 bg-[#303134]' : 'border-gray-300 bg-white'} text-teal-500 focus:ring-teal-500 focus:ring-offset-0`}
                     />
-                    <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{list.name}</span>
+                    <span className={`text-sm ${isDark ? 'text-white' : 'text-gray-700'}`}>{list.name}</span>
                   </label>
                 </li>
               ))}
@@ -115,7 +115,7 @@ export function TasksSidebar({
               <li>
                 <button
                   onClick={onCreateList}
-                  className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg ${isDark ? 'hover:bg-white/5 text-gray-400' : 'hover:bg-gray-100 text-gray-500'} transition-colors`}
+                  className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg ${isDark ? 'hover:bg-white/5 text-white' : 'hover:bg-gray-100 text-gray-500'} transition-colors`}
                 >
                   <Plus className="h-4 w-4" />
                   <span className="text-sm">Neue Liste erstellen</span>

@@ -196,13 +196,13 @@ export function CreateEventModal({
         <div className={`flex items-center justify-between px-4 py-3 ${isDark ? 'bg-[#303134]' : 'bg-gray-50'}`}>
           <button
             onClick={onClose}
-            className={`p-2 rounded-full ${isDark ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-200 text-gray-600'}`}
+            className={`p-2 rounded-full ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-200 text-gray-600'}`}
           >
             <Menu className="h-5 w-5" />
           </button>
           <button
             onClick={onClose}
-            className={`p-2 rounded-full ${isDark ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-200 text-gray-600'}`}
+            className={`p-2 rounded-full ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-200 text-gray-600'}`}
           >
             <X className="h-5 w-5" />
           </button>
@@ -239,7 +239,7 @@ export function CreateEventModal({
                     formData.eventType === type.key
                       ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300'
                       : isDark
-                        ? 'text-gray-300 hover:bg-white/10'
+                        ? 'text-white hover:bg-white/10'
                         : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >
@@ -249,8 +249,8 @@ export function CreateEventModal({
             </div>
 
             {/* Date & Time Row */}
-            <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-              <Clock className={`h-5 w-5 mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+            <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+              <Clock className={`h-5 w-5 mt-1 ${isDark ? 'text-white' : 'text-gray-500'}`} />
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <input
@@ -275,7 +275,7 @@ export function CreateEventModal({
                             : 'bg-gray-100 text-gray-800 border-none'
                         }`}
                       />
-                      <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>-</span>
+                      <span className={isDark ? 'text-white' : 'text-gray-500'}>-</span>
                       <input
                         type="time"
                         value={formData.endTime}
@@ -289,7 +289,7 @@ export function CreateEventModal({
                     </>
                   )}
                 </div>
-                <div className={`flex items-center gap-3 mt-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <div className={`flex items-center gap-3 mt-2 text-sm ${isDark ? 'text-white' : 'text-gray-500'}`}>
                   {formData.eventType === 'event' && (
                     <>
                       <button className="flex items-center gap-1 hover:underline">
@@ -313,9 +313,9 @@ export function CreateEventModal({
             {formData.eventType === 'schedule' && (
               <div className={`mx-0 my-4 p-4 rounded-xl ${isDark ? 'bg-[#3c4043]' : 'bg-gray-100'}`}>
                 <div className="flex items-start gap-3">
-                  <Info className={`h-5 w-5 mt-0.5 shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <Info className={`h-5 w-5 mt-0.5 shrink-0 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                   <div>
-                    <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <p className={`text-sm ${isDark ? 'text-white' : 'text-gray-600'}`}>
                       Erstellen Sie eine Reservierungsseite, die Sie für andere Personen freigeben können, damit diese einen Termin bei Ihnen buchen können
                     </p>
                     <div className="flex gap-6 mt-3">
@@ -343,9 +343,9 @@ export function CreateEventModal({
 
             {/* Task: Frist hinzufügen */}
             {formData.eventType === 'task' && (
-              <div className={`flex items-center gap-4 py-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                <CheckCircle2 className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
-                <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              <div className={`flex items-center gap-4 py-3 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                <CheckCircle2 className={`h-5 w-5 ${isDark ? 'text-white' : 'text-gray-500'}`} />
+                <span className={`text-sm ${isDark ? 'text-white' : 'text-gray-600'}`}>
                   Frist hinzufügen
                 </span>
               </div>
@@ -353,15 +353,15 @@ export function CreateEventModal({
 
             {/* Event only: Attendees Row */}
             {formData.eventType === 'event' && (
-              <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                <Users className={`h-5 w-5 mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+              <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                <Users className={`h-5 w-5 mt-1 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                 <div className="flex-1">
                   <div className="flex flex-wrap gap-2 mb-2">
                     {formData.attendees.map((email) => (
                       <span
                         key={email}
                         className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm ${
-                          isDark ? 'bg-[#3c4043] text-gray-200' : 'bg-gray-100 text-gray-700'
+                          isDark ? 'bg-[#3c4043] text-white' : 'bg-gray-100 text-gray-700'
                         }`}
                       >
                         {email}
@@ -395,9 +395,9 @@ export function CreateEventModal({
             {formData.eventType === 'event' && (
               <button
                 onClick={() => setFormData({ ...formData, isVideoMeeting: !formData.isVideoMeeting })}
-                className={`flex items-center gap-4 py-3 w-full text-left ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
+                className={`flex items-center gap-4 py-3 w-full text-left ${isDark ? 'text-white' : 'text-gray-700'}`}
               >
-                <Video className={`h-5 w-5 ${formData.isVideoMeeting ? 'text-teal-500' : isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                <Video className={`h-5 w-5 ${formData.isVideoMeeting ? 'text-teal-500' : isDark ? 'text-white' : 'text-gray-500'}`} />
                 <span className={formData.isVideoMeeting ? 'text-teal-500' : ''}>
                   {formData.isVideoMeeting ? 'Taskilo Meet-Videokonferenz hinzugefügt' : 'Taskilo Meet-Videokonferenz hinzufügen'}
                 </span>
@@ -406,8 +406,8 @@ export function CreateEventModal({
 
             {/* Event only: Location Row */}
             {formData.eventType === 'event' && (
-              <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                <MapPin className={`h-5 w-5 mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+              <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                <MapPin className={`h-5 w-5 mt-1 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                 <input
                   type="text"
                   value={formData.location}
@@ -424,8 +424,8 @@ export function CreateEventModal({
 
             {/* Description Row - only for event and task, not schedule */}
             {formData.eventType !== 'schedule' && (
-              <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                <AlignLeft className={`h-5 w-5 mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+              <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                <AlignLeft className={`h-5 w-5 mt-1 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -446,8 +446,8 @@ export function CreateEventModal({
 
             {/* Task: Meine Aufgaben Dropdown */}
             {formData.eventType === 'task' && (
-              <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                <List className={`h-5 w-5 mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+              <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                <List className={`h-5 w-5 mt-1 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                 <button
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${
                     isDark 
@@ -463,8 +463,8 @@ export function CreateEventModal({
 
             {/* Calendar Selection Row - different for events vs tasks vs schedule */}
             {formData.eventType === 'event' && (
-              <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                <CalendarIcon className={`h-5 w-5 mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+              <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                <CalendarIcon className={`h-5 w-5 mt-1 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm">{userEmail.split('@')[0]}</span>
@@ -473,7 +473,7 @@ export function CreateEventModal({
                       style={{ backgroundColor: formData.color }}
                     />
                   </div>
-                  <div className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className={`text-sm mt-1 ${isDark ? 'text-white' : 'text-gray-500'}`}>
                     Beschäftigt - Standardsichtbarkeit - {formData.reminder} Minuten vorher benachr...
                   </div>
                 </div>
@@ -482,8 +482,8 @@ export function CreateEventModal({
 
             {/* Task Footer Info */}
             {formData.eventType === 'task' && (
-              <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                <CalendarIcon className={`h-5 w-5 mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+              <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                <CalendarIcon className={`h-5 w-5 mt-1 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm">{userEmail.split('@')[0]}</span>
@@ -492,7 +492,7 @@ export function CreateEventModal({
                       style={{ backgroundColor: formData.color }}
                     />
                   </div>
-                  <div className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className={`text-sm mt-1 ${isDark ? 'text-white' : 'text-gray-500'}`}>
                     Verfügbar - Vertraulich
                   </div>
                 </div>
@@ -501,16 +501,16 @@ export function CreateEventModal({
 
             {/* Schedule: Calendar Footer */}
             {formData.eventType === 'schedule' && (
-              <div className={`flex items-center gap-4 py-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                <CalendarIcon className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+              <div className={`flex items-center gap-4 py-3 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                <CalendarIcon className={`h-5 w-5 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                 <span className="text-sm">{userEmail.split('@')[0]}</span>
               </div>
             )}
 
             {/* Color Selection */}
             {showMoreOptions && (
-              <div className={`flex items-center gap-4 py-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                <div className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+              <div className={`flex items-center gap-4 py-3 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                <div className={`h-5 w-5 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                 <div className="flex gap-2">
                   {COLORS.map((color) => (
                     <button
@@ -529,8 +529,8 @@ export function CreateEventModal({
 
             {/* Reminder */}
             {showMoreOptions && (
-              <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                <Bell className={`h-5 w-5 mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+              <div className={`flex items-start gap-4 py-3 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                <Bell className={`h-5 w-5 mt-1 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                 <select
                   value={formData.reminder}
                   onChange={(e) => setFormData({ ...formData, reminder: parseInt(e.target.value) })}

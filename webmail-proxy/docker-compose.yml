@@ -17,6 +17,7 @@ services:
       - RECORDING_PATH=/data/recordings
     volumes:
       - recordings:/data/recordings
+      - drive-data:/opt/taskilo/webmail-proxy/data
     depends_on:
       - redis
     healthcheck:
@@ -79,6 +80,8 @@ volumes:
   recordings:
     driver: local
   redis-data:
+    driver: local
+  drive-data:
     driver: local
 
 networks:

@@ -118,7 +118,7 @@ export function FourDaysView({
         {/* Timezone column */}
         <div className={`w-10 md:w-16 shrink-0 border-r ${isDark ? 'border-[#5f6368]' : 'border-gray-200'}`}>
           <div className="h-12 flex items-end justify-center pb-1">
-            <span className={`text-[8px] md:text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>GMT+01</span>
+            <span className={`text-[8px] md:text-xs ${isDark ? 'text-white' : 'text-gray-500'}`}>GMT+01</span>
           </div>
         </div>
 
@@ -131,7 +131,7 @@ export function FourDaysView({
             }`}
           >
             <div className="h-12 flex flex-col items-center justify-center">
-              <span className={`text-[10px] md:text-xs font-medium ${isToday(day) ? 'text-teal-500' : (isDark ? 'text-gray-400' : 'text-gray-500')}`}>
+              <span className={`text-[10px] md:text-xs font-medium ${isToday(day) ? 'text-teal-500' : (isDark ? 'text-white' : 'text-gray-500')}`}>
                 {formatDayName(day)}
               </span>
               <button
@@ -139,7 +139,7 @@ export function FourDaysView({
                 className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-sm md:text-lg font-medium transition-colors ${
                   isToday(day)
                     ? 'bg-teal-600 text-white'
-                    : (isDark ? 'text-gray-200 hover:bg-white/10' : 'text-gray-700 hover:bg-gray-100')
+                    : (isDark ? 'text-white hover:bg-white/10' : 'text-gray-700 hover:bg-gray-100')
                 }`}
               >
                 {day.getDate()}
@@ -187,7 +187,7 @@ export function FourDaysView({
           <div className={`w-10 md:w-16 shrink-0 border-r ${isDark ? 'border-[#5f6368]' : 'border-gray-200'}`}>
             {hours.map((hour) => (
               <div key={hour} className="h-12 relative">
-                <span className={`absolute -top-2 right-0.5 md:right-2 text-[8px] md:text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <span className={`absolute -top-2 right-0.5 md:right-2 text-[8px] md:text-xs ${isDark ? 'text-white' : 'text-gray-500'}`}>
                   {hour.toString().padStart(2, '0')}
                 </span>
               </div>

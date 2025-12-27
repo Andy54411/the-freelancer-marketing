@@ -27,10 +27,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { getAppUrl } from '@/lib/webmail-urls';
+import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 import SimplePeer from 'simple-peer';
 import { getDatabase, ref, onValue, push, set, remove, onChildAdded } from 'firebase/database';
 import { app } from '@/firebase/clients';
-import { SubPageHeader } from '@/components/webmail/SubPageHeader';
+import { MailHeader } from '@/components/webmail/MailHeader';
 
 interface Participant {
   id: string;
@@ -426,14 +428,14 @@ export default function WebmailMeetPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-400 hover:text-white"
+              className="text-white hover:text-white"
               onClick={copyMeetingLink}
             >
               <Copy className="h-4 w-4 mr-1" />
               Link kopieren
             </Button>
           </div>
-          <div className="flex items-center gap-2 text-gray-400 text-sm">
+          <div className="flex items-center gap-2 text-white text-sm">
             <Users className="h-4 w-4" />
             {participants.length + 1} Teilnehmer
           </div>
@@ -536,15 +538,18 @@ export default function WebmailMeetPage() {
     );
   }
 
+  const { isDark } = useWebmailTheme();
+
   // Lobby View
   return (
-    <div className="h-screen flex flex-col">
-      {/* Header */}
-      <SubPageHeader
+    <div className={`h-screen flex flex-col ${isDark ? 'bg-[#202124]' : 'bg-white'}`}>
+      {/* Header - Einheitlicher MailHeader */}
+      <MailHeader
         userEmail={session?.email || ''}
-        onLogout={() => router.push('/webmail')}
-        title="Meet"
-        icon={<Video className="h-6 w-6" />}
+        onLogout={() => window.location.href = getAppUrl('/webmail')}
+        appName="Meet"
+        appHomeUrl="/webmail/meet"
+        hideSearch={true}
       />
 
       {/* Content */}

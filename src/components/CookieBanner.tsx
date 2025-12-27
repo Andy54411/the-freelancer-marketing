@@ -132,7 +132,7 @@ export default function CookieBanner() {
                     aria-labelledby="analytics-label"
                     aria-describedby="analytics-description"
                   />
-                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#14ad9f]/25 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#14ad9f]"></div>
+                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#14ad9f]/25 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#14ad9f]"></div>
                   <span className="sr-only">Analytics Cookies aktivieren/deaktivieren</span>
                 </label>
               </div>
@@ -159,7 +159,7 @@ export default function CookieBanner() {
                     aria-labelledby="functional-label"
                     aria-describedby="functional-description"
                   />
-                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#14ad9f]/25 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#14ad9f]"></div>
+                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#14ad9f]/25 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#14ad9f]"></div>
                   <span className="sr-only">Funktionale Cookies aktivieren/deaktivieren</span>
                 </label>
               </div>
@@ -186,7 +186,7 @@ export default function CookieBanner() {
                     aria-labelledby="marketing-label"
                     aria-describedby="marketing-description"
                   />
-                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#14ad9f]/25 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#14ad9f]"></div>
+                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#14ad9f]/25 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#14ad9f]"></div>
                   <span className="sr-only">Marketing Cookies aktivieren/deaktivieren</span>
                 </label>
               </div>
@@ -213,7 +213,7 @@ export default function CookieBanner() {
                     aria-labelledby="personalization-label"
                     aria-describedby="personalization-description"
                   />
-                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#14ad9f]/25 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#14ad9f]"></div>
+                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#14ad9f]/25 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#14ad9f]"></div>
                   <span className="sr-only">Personalisierung aktivieren/deaktivieren</span>
                 </label>
               </div>
@@ -308,7 +308,7 @@ export default function CookieBanner() {
             {/* Toggle Details Button */}
             <button
               onClick={() => setShowDetails(!showDetails)}
-              className="text-[#14ad9f] hover:text-[#0f8b7f] text-sm font-medium transition-colors min-h-[44px] flex items-center justify-center"
+              className="text-[#14ad9f] hover:text-[#0f8b7f] text-sm font-medium transition-colors min-h-11 flex items-center justify-center"
               aria-expanded={showDetails}
               aria-controls="cookie-details"
             >
@@ -320,21 +320,21 @@ export default function CookieBanner() {
           <div className="flex flex-col sm:flex-row gap-3 mt-6 pt-4 border-t">
             <button
               onClick={handleRejectAll}
-              className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-600/25 transition-colors min-h-[48px] font-medium"
+              className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-600/25 transition-colors min-h-12 font-medium"
               aria-label="Alle Cookies ablehnen"
             >
               Alle ablehnen
             </button>
             <button
               onClick={handleCustomConsent}
-              className="flex-1 px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-700/25 transition-colors min-h-[48px] font-medium"
+              className="flex-1 px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-700/25 transition-colors min-h-12 font-medium"
               aria-label="Ausgewählte Cookie-Einstellungen speichern"
             >
               Auswahl speichern
             </button>
             <button
               onClick={handleAcceptAll}
-              className="flex-1 px-6 py-3 bg-[#14ad9f] text-white rounded-lg hover:bg-[#0f8b7f] focus:outline-none focus:ring-4 focus:ring-[#14ad9f]/25 transition-colors min-h-[48px] font-medium"
+              className="flex-1 px-6 py-3 bg-[#14ad9f] text-white rounded-lg hover:bg-[#0f8b7f] focus:outline-none focus:ring-4 focus:ring-[#14ad9f]/25 transition-colors min-h-12 font-medium"
               aria-label="Alle Cookies akzeptieren"
             >
               Alle akzeptieren

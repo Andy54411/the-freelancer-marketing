@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Mail, ChevronRight, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 
 // Theme-Daten
 export interface ThemeData {
@@ -169,160 +170,193 @@ interface QuickSettingsProps {
 
 // Preview Image Components
 function DensityPreviewDefault({ selected }: { selected?: boolean }) {
+  const { isDark } = useWebmailTheme();
   return (
     <div className={cn(
       "w-[72px] h-[52px] rounded border flex flex-col p-2 gap-1",
-      selected ? "border-teal-500 bg-teal-50" : "border-gray-200 bg-white"
+      selected 
+        ? isDark ? "border-teal-500 bg-teal-900/30" : "border-teal-500 bg-teal-50" 
+        : isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-white"
     )}>
       <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded-sm bg-gray-200" />
-        <div className="flex-1 h-2 bg-gray-200 rounded" />
+        <div className={cn("w-3 h-3 rounded-sm", isDark ? "bg-gray-600" : "bg-gray-200")} />
+        <div className={cn("flex-1 h-2 rounded", isDark ? "bg-gray-600" : "bg-gray-200")} />
       </div>
       <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded-sm bg-gray-200" />
-        <div className="flex-1 h-2 bg-gray-200 rounded" />
+        <div className={cn("w-3 h-3 rounded-sm", isDark ? "bg-gray-600" : "bg-gray-200")} />
+        <div className={cn("flex-1 h-2 rounded", isDark ? "bg-gray-600" : "bg-gray-200")} />
       </div>
       <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded-sm bg-gray-200" />
-        <div className="flex-1 h-2 bg-gray-200 rounded" />
+        <div className={cn("w-3 h-3 rounded-sm", isDark ? "bg-gray-600" : "bg-gray-200")} />
+        <div className={cn("flex-1 h-2 rounded", isDark ? "bg-gray-600" : "bg-gray-200")} />
       </div>
     </div>
   );
 }
 
 function DensityPreviewComfortable({ selected }: { selected?: boolean }) {
+  const { isDark } = useWebmailTheme();
   return (
     <div className={cn(
       "w-[72px] h-[52px] rounded border flex flex-col p-2 gap-2",
-      selected ? "border-teal-500 bg-teal-50" : "border-gray-200 bg-white"
+      selected 
+        ? isDark ? "border-teal-500 bg-teal-900/30" : "border-teal-500 bg-teal-50" 
+        : isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-white"
     )}>
       <div className="flex items-center gap-1">
-        <div className="w-2 h-2 rounded-full bg-gray-300" />
-        <div className="flex-1 h-2 bg-gray-200 rounded" />
+        <div className={cn("w-2 h-2 rounded-full", isDark ? "bg-gray-500" : "bg-gray-300")} />
+        <div className={cn("flex-1 h-2 rounded", isDark ? "bg-gray-600" : "bg-gray-200")} />
       </div>
       <div className="flex items-center gap-1">
-        <div className="w-2 h-2 rounded-full bg-gray-300" />
-        <div className="flex-1 h-2 bg-gray-200 rounded" />
+        <div className={cn("w-2 h-2 rounded-full", isDark ? "bg-gray-500" : "bg-gray-300")} />
+        <div className={cn("flex-1 h-2 rounded", isDark ? "bg-gray-600" : "bg-gray-200")} />
       </div>
     </div>
   );
 }
 
 function DensityPreviewCompact({ selected }: { selected?: boolean }) {
+  const { isDark } = useWebmailTheme();
   return (
     <div className={cn(
       "w-[72px] h-[52px] rounded border flex flex-col p-1.5 gap-0.5",
-      selected ? "border-teal-500 bg-teal-50" : "border-gray-200 bg-white"
+      selected 
+        ? isDark ? "border-teal-500 bg-teal-900/30" : "border-teal-500 bg-teal-50" 
+        : isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-white"
     )}>
       {[...Array(5)].map((_, i) => (
-        <div key={i} className="flex-1 bg-gray-200 rounded-sm" />
+        <div key={i} className={cn("flex-1 rounded-sm", isDark ? "bg-gray-600" : "bg-gray-200")} />
       ))}
     </div>
   );
 }
 
 function InboxPreviewDefault({ selected }: { selected?: boolean }) {
+  const { isDark } = useWebmailTheme();
   return (
     <div className={cn(
       "w-[72px] h-11 rounded border flex flex-col p-1.5 gap-0.5",
-      selected ? "border-teal-500 bg-teal-50" : "border-gray-200 bg-white"
+      selected 
+        ? isDark ? "border-teal-500 bg-teal-900/30" : "border-teal-500 bg-teal-50" 
+        : isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-white"
     )}>
-      <div className="h-1.5 bg-gray-200 rounded w-full" />
-      <div className="h-1.5 bg-gray-200 rounded w-full" />
-      <div className="h-1.5 bg-gray-200 rounded w-full" />
+      <div className={cn("h-1.5 rounded w-full", isDark ? "bg-gray-600" : "bg-gray-200")} />
+      <div className={cn("h-1.5 rounded w-full", isDark ? "bg-gray-600" : "bg-gray-200")} />
+      <div className={cn("h-1.5 rounded w-full", isDark ? "bg-gray-600" : "bg-gray-200")} />
     </div>
   );
 }
 
 function InboxPreviewImportant({ selected }: { selected?: boolean }) {
+  const { isDark } = useWebmailTheme();
   return (
     <div className={cn(
       "w-[72px] h-11 rounded border flex flex-col p-1.5 gap-0.5 relative",
-      selected ? "border-teal-500 bg-teal-50" : "border-gray-200 bg-white"
+      selected 
+        ? isDark ? "border-teal-500 bg-teal-900/30" : "border-teal-500 bg-teal-50" 
+        : isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-white"
     )}>
-      <div className="h-1.5 bg-gray-200 rounded w-full" />
-      <div className="h-1.5 bg-gray-200 rounded w-full" />
+      <div className={cn("h-1.5 rounded w-full", isDark ? "bg-gray-600" : "bg-gray-200")} />
+      <div className={cn("h-1.5 rounded w-full", isDark ? "bg-gray-600" : "bg-gray-200")} />
       <ChevronRight className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 text-yellow-500" />
     </div>
   );
 }
 
 function InboxPreviewUnread({ selected }: { selected?: boolean }) {
+  const { isDark } = useWebmailTheme();
   return (
     <div className={cn(
       "w-[72px] h-11 rounded border flex flex-col p-1.5 gap-0.5 relative",
-      selected ? "border-teal-500 bg-teal-50" : "border-gray-200 bg-white"
+      selected 
+        ? isDark ? "border-teal-500 bg-teal-900/30" : "border-teal-500 bg-teal-50" 
+        : isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-white"
     )}>
-      <div className="h-1.5 bg-gray-200 rounded w-full" />
-      <div className="h-1.5 bg-gray-200 rounded w-full" />
-      <Mail className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
+      <div className={cn("h-1.5 rounded w-full", isDark ? "bg-gray-600" : "bg-gray-200")} />
+      <div className={cn("h-1.5 rounded w-full", isDark ? "bg-gray-600" : "bg-gray-200")} />
+      <Mail className={cn("absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3", isDark ? "text-gray-500" : "text-white")} />
     </div>
   );
 }
 
 function InboxPreviewStarred({ selected }: { selected?: boolean }) {
+  const { isDark } = useWebmailTheme();
   return (
     <div className={cn(
       "w-[72px] h-11 rounded border flex flex-col p-1.5 gap-0.5 relative",
-      selected ? "border-teal-500 bg-teal-50" : "border-gray-200 bg-white"
+      selected 
+        ? isDark ? "border-teal-500 bg-teal-900/30" : "border-teal-500 bg-teal-50" 
+        : isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-white"
     )}>
-      <div className="h-1.5 bg-gray-200 rounded w-full" />
-      <div className="h-1.5 bg-gray-200 rounded w-full" />
+      <div className={cn("h-1.5 rounded w-full", isDark ? "bg-gray-600" : "bg-gray-200")} />
+      <div className={cn("h-1.5 rounded w-full", isDark ? "bg-gray-600" : "bg-gray-200")} />
       <Star className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 text-yellow-400 fill-yellow-400" />
     </div>
   );
 }
 
 function InboxPreviewPriority({ selected }: { selected?: boolean }) {
+  const { isDark } = useWebmailTheme();
   return (
     <div className={cn(
       "w-[72px] h-11 rounded border flex flex-col p-1.5 gap-1",
-      selected ? "border-teal-500 bg-teal-50" : "border-gray-200 bg-white"
+      selected 
+        ? isDark ? "border-teal-500 bg-teal-900/30" : "border-teal-500 bg-teal-50" 
+        : isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-white"
     )}>
       <div className="h-0.5 bg-teal-400 rounded w-full" />
-      <div className="h-1 bg-gray-200 rounded w-full" />
+      <div className={cn("h-1 rounded w-full", isDark ? "bg-gray-600" : "bg-gray-200")} />
       <div className="h-0.5 bg-teal-400 rounded w-full" />
-      <div className="h-1 bg-gray-200 rounded w-full" />
+      <div className={cn("h-1 rounded w-full", isDark ? "bg-gray-600" : "bg-gray-200")} />
     </div>
   );
 }
 
 function InboxPreviewMultiple({ selected }: { selected?: boolean }) {
+  const { isDark } = useWebmailTheme();
   return (
     <div className={cn(
       "w-[72px] h-11 rounded border flex gap-0.5 p-1",
-      selected ? "border-teal-500 bg-teal-50" : "border-gray-200 bg-white"
+      selected 
+        ? isDark ? "border-teal-500 bg-teal-900/30" : "border-teal-500 bg-teal-50" 
+        : isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-white"
     )}>
-      <div className="flex-1 bg-gray-200 rounded" />
-      <div className="flex-1 bg-gray-200 rounded" />
-      <div className="flex-1 bg-gray-200 rounded" />
+      <div className={cn("flex-1 rounded", isDark ? "bg-gray-600" : "bg-gray-200")} />
+      <div className={cn("flex-1 rounded", isDark ? "bg-gray-600" : "bg-gray-200")} />
+      <div className={cn("flex-1 rounded", isDark ? "bg-gray-600" : "bg-gray-200")} />
     </div>
   );
 }
 
 function ReadingPaneNone({ selected }: { selected?: boolean }) {
+  const { isDark } = useWebmailTheme();
   return (
     <div className={cn(
       "w-[72px] h-11 rounded border flex items-center justify-center p-1.5",
-      selected ? "border-teal-500 bg-teal-50" : "border-gray-200 bg-white"
+      selected 
+        ? isDark ? "border-teal-500 bg-teal-900/30" : "border-teal-500 bg-teal-50" 
+        : isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-white"
     )}>
-      <div className="w-full h-full bg-gray-100 rounded" />
+      <div className={cn("w-full h-full rounded", isDark ? "bg-gray-600" : "bg-gray-100")} />
     </div>
   );
 }
 
 function ReadingPaneRight({ selected }: { selected?: boolean }) {
+  const { isDark } = useWebmailTheme();
   return (
     <div className={cn(
       "w-[72px] h-11 rounded border flex gap-1 p-1.5",
-      selected ? "border-teal-500 bg-teal-50" : "border-gray-200 bg-white"
+      selected 
+        ? isDark ? "border-teal-500 bg-teal-900/30" : "border-teal-500 bg-teal-50" 
+        : isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-white"
     )}>
-      <div className="w-1/3 bg-gray-200 rounded flex flex-col gap-0.5 p-0.5">
+      <div className={cn("w-1/3 rounded flex flex-col gap-0.5 p-0.5", isDark ? "bg-gray-600" : "bg-gray-200")}>
         <div className="h-1 bg-red-400 rounded-full w-1" />
         <div className="h-1 bg-green-400 rounded-full w-1" />
         <div className="h-1 bg-teal-400 rounded-full w-1" />
       </div>
-      <div className="flex-1 bg-gray-100 rounded flex flex-col gap-0.5 p-0.5">
+      <div className={cn("flex-1 rounded flex flex-col gap-0.5 p-0.5", isDark ? "bg-gray-700" : "bg-gray-100")}>
         <div className="h-1 bg-teal-400 rounded-full w-1" />
         <div className="h-1 bg-green-400 rounded-full w-1" />
         <div className="h-1 bg-red-400 rounded-full w-1" />
@@ -332,43 +366,51 @@ function ReadingPaneRight({ selected }: { selected?: boolean }) {
 }
 
 function ReadingPaneBottom({ selected }: { selected?: boolean }) {
+  const { isDark } = useWebmailTheme();
   return (
     <div className={cn(
       "w-[72px] h-11 rounded border flex flex-col gap-1 p-1.5",
-      selected ? "border-teal-500 bg-teal-50" : "border-gray-200 bg-white"
+      selected 
+        ? isDark ? "border-teal-500 bg-teal-900/30" : "border-teal-500 bg-teal-50" 
+        : isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-white"
     )}>
-      <div className="flex-1 bg-gray-200 rounded flex items-center gap-0.5 px-1">
+      <div className={cn("flex-1 rounded flex items-center gap-0.5 px-1", isDark ? "bg-gray-600" : "bg-gray-200")}>
         <div className="h-1 bg-red-400 rounded-full w-1" />
-        <div className="flex-1 h-1 bg-gray-300 rounded" />
+        <div className={cn("flex-1 h-1 rounded", isDark ? "bg-gray-500" : "bg-gray-300")} />
       </div>
-      <div className="flex-1 bg-gray-100 rounded flex items-center gap-0.5 px-1">
+      <div className={cn("flex-1 rounded flex items-center gap-0.5 px-1", isDark ? "bg-gray-700" : "bg-gray-100")}>
         <div className="h-1 bg-red-400 rounded-full w-1" />
-        <div className="flex-1 h-1 bg-gray-300 rounded" />
+        <div className={cn("flex-1 h-1 rounded", isDark ? "bg-gray-500" : "bg-gray-300")} />
       </div>
     </div>
   );
 }
 
 function ChatMeetPreview() {
+  const { isDark } = useWebmailTheme();
   return (
-    <div className="w-[72px] h-[52px] rounded border border-gray-200 bg-white flex flex-col p-1.5 gap-1">
+    <div className={cn(
+      "w-[72px] h-[52px] rounded border flex flex-col p-1.5 gap-1",
+      isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-white"
+    )}>
       <div className="flex items-center gap-1">
         <div className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-        <div className="flex-1 h-1.5 bg-gray-200 rounded" />
+        <div className={cn("flex-1 h-1.5 rounded", isDark ? "bg-gray-600" : "bg-gray-200")} />
       </div>
       <div className="flex items-center gap-1">
         <div className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-        <div className="flex-1 h-1.5 bg-gray-200 rounded" />
+        <div className={cn("flex-1 h-1.5 rounded", isDark ? "bg-gray-600" : "bg-gray-200")} />
       </div>
       <div className="flex items-center gap-1">
         <div className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-        <div className="flex-1 h-1.5 bg-gray-200 rounded" />
+        <div className={cn("flex-1 h-1.5 rounded", isDark ? "bg-gray-600" : "bg-gray-200")} />
       </div>
     </div>
   );
 }
 
 export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettingsProps) {
+  const { isDark } = useWebmailTheme();
   const [settings, setSettings] = useState<WebmailSettings>(defaultSettings);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -407,7 +449,8 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
       {/* Panel von rechts */}
       <div 
         className={cn(
-          "fixed top-0 right-0 h-full w-[360px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out",
+          "fixed top-0 right-0 h-full w-[360px] shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out",
+          isDark ? "bg-[#2d2e30]" : "bg-white",
           isAnimating ? "translate-x-0" : "translate-x-full"
         )}
         role="menu"
@@ -415,20 +458,28 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4">
-          <h2 className="text-[22px] font-normal text-gray-800">Schnelleinstellungen</h2>
+          <h2 className={cn("text-[22px] font-normal", isDark ? "text-white" : "text-gray-800")}>Schnelleinstellungen</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors -mr-2"
-            aria-label="Schließen"
+            className={cn(
+              "p-2 rounded-full transition-colors -mr-2",
+              isDark ? "hover:bg-white/10" : "hover:bg-gray-100"
+            )}
+            aria-label="Schliessen"
           >
-            <X className="h-5 w-5 text-gray-600" />
+            <X className={cn("h-5 w-5", isDark ? "text-white" : "text-gray-600")} />
           </button>
         </div>
 
         {/* Alle Einstellungen Button */}
         <div className="px-6 pb-4">
           <button 
-            className="w-full py-2 px-4 border border-gray-300 rounded-full text-teal-600 hover:bg-teal-50 text-sm font-medium transition-colors"
+            className={cn(
+              "w-full py-2 px-4 border rounded-full text-sm font-medium transition-colors",
+              isDark 
+                ? "border-[#5f6368] text-teal-400 hover:bg-white/10" 
+                : "border-gray-300 text-teal-600 hover:bg-teal-50"
+            )}
             onClick={() => {
               // TODO: Navigation zu vollen Einstellungen
               onClose();
@@ -443,32 +494,32 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
           <div className="px-6 pb-6">
             
             {/* Apps in Gmail / Chat und Meet */}
-            <section className="py-4 border-t border-gray-200">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Apps in Taskilo</h3>
+            <section className={cn("py-4 border-t", isDark ? "border-[#5f6368]" : "border-gray-200")}>
+              <h3 className={cn("text-xs font-medium uppercase tracking-wide mb-3", isDark ? "text-white" : "text-gray-500")}>Apps in Taskilo</h3>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm text-gray-800">Chat und Meet</div>
-                  <button className="text-sm text-teal-600 hover:text-teal-700">Anpassen</button>
+                  <div className={cn("text-sm", isDark ? "text-white" : "text-gray-800")}>Chat und Meet</div>
+                  <button className={cn("text-sm", isDark ? "text-teal-400 hover:text-teal-300" : "text-teal-600 hover:text-teal-700")}>Anpassen</button>
                 </div>
                 <ChatMeetPreview />
               </div>
             </section>
 
             {/* Kompaktheitsgrad */}
-            <section className="py-4 border-t border-gray-200">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-4">Kompaktheitsgrad</h3>
+            <section className={cn("py-4 border-t", isDark ? "border-[#5f6368]" : "border-gray-200")}>
+              <h3 className={cn("text-xs font-medium uppercase tracking-wide mb-4", isDark ? "text-white" : "text-gray-500")}>Kompaktheitsgrad</h3>
               <div className="space-y-3">
                 <label className="flex items-center justify-between cursor-pointer group">
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      settings.density === 'default' ? "border-teal-600" : "border-gray-300"
+                      settings.density === 'default' ? "border-teal-600" : isDark ? "border-[#5f6368]" : "border-gray-300"
                     )}>
                       {settings.density === 'default' && (
                         <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />
                       )}
                     </div>
-                    <span className="text-sm text-gray-800">Standard</span>
+                    <span className={cn("text-sm", isDark ? "text-white" : "text-gray-800")}>Standard</span>
                   </div>
                   <input
                     type="radio"
@@ -484,13 +535,13 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      settings.density === 'comfortable' ? "border-teal-600" : "border-gray-300"
+                      settings.density === 'comfortable' ? "border-teal-600" : isDark ? "border-[#5f6368]" : "border-gray-300"
                     )}>
                       {settings.density === 'comfortable' && (
                         <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />
                       )}
                     </div>
-                    <span className="text-sm text-gray-800">Übersichtlich</span>
+                    <span className={cn("text-sm", isDark ? "text-white" : "text-gray-800")}>Übersichtlich</span>
                   </div>
                   <input
                     type="radio"
@@ -506,13 +557,13 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      settings.density === 'compact' ? "border-teal-600" : "border-gray-300"
+                      settings.density === 'compact' ? "border-teal-600" : isDark ? "border-[#5f6368]" : "border-gray-300"
                     )}>
                       {settings.density === 'compact' && (
                         <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />
                       )}
                     </div>
-                    <span className="text-sm text-gray-800">Kompakt</span>
+                    <span className={cn("text-sm", isDark ? "text-white" : "text-gray-800")}>Kompakt</span>
                   </div>
                   <input
                     type="radio"
@@ -527,10 +578,10 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
             </section>
 
             {/* Design */}
-            <section className="py-4 border-t border-gray-200">
+            <section className={cn("py-4 border-t", isDark ? "border-[#5f6368]" : "border-gray-200")}>
               <div className="flex items-center justify-between mb-3">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Design</div>
-                <button className="text-sm text-teal-600 hover:text-teal-700">Alle anzeigen</button>
+                <div className={cn("text-xs font-medium uppercase tracking-wide", isDark ? "text-white" : "text-gray-500")}>Design</div>
+                <button className={cn("text-sm", isDark ? "text-teal-400 hover:text-teal-300" : "text-teal-600 hover:text-teal-700")}>Alle anzeigen</button>
               </div>
               {/* eslint-disable @next/next/no-img-element */}
               <div className="grid grid-cols-4 gap-1.5">
@@ -542,7 +593,7 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                       "relative rounded overflow-hidden focus:outline-none focus:ring-2 focus:ring-teal-500",
                       settings.theme === theme.id 
                         ? "border-2 border-teal-500" 
-                        : "border border-gray-200 hover:border-gray-400"
+                        : isDark ? "border border-[#5f6368] hover:border-gray-400" : "border border-gray-200 hover:border-gray-400"
                     )}
                     aria-label={`Design: ${theme.name}`}
                   >
@@ -558,8 +609,8 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
             </section>
 
             {/* Art des Posteingangs */}
-            <section className="py-4 border-t border-gray-200">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-4">Art des Posteingangs</h3>
+            <section className={cn("py-4 border-t", isDark ? "border-[#5f6368]" : "border-gray-200")}>
+              <h3 className={cn("text-xs font-medium uppercase tracking-wide mb-4", isDark ? "text-white" : "text-gray-500")}>Art des Posteingangs</h3>
               <div className="space-y-4">
                 <div 
                   className="flex items-center justify-between cursor-pointer"
@@ -568,15 +619,15 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      settings.inboxType === 'default' ? "border-teal-600" : "border-gray-300"
+                      settings.inboxType === 'default' ? "border-teal-600" : isDark ? "border-[#5f6368]" : "border-gray-300"
                     )}>
                       {settings.inboxType === 'default' && (
                         <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />
                       )}
                     </div>
                     <div>
-                      <span className="text-sm text-gray-800">Standard</span>
-                      <span className="block text-sm text-teal-600">Anpassen</span>
+                      <span className={cn("text-sm", isDark ? "text-white" : "text-gray-800")}>Standard</span>
+                      <span className={cn("block text-sm", isDark ? "text-teal-400" : "text-teal-600")}>Anpassen</span>
                     </div>
                   </div>
                   <InboxPreviewDefault selected={settings.inboxType === 'default'} />
@@ -589,13 +640,13 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      settings.inboxType === 'important-first' ? "border-teal-600" : "border-gray-300"
+                      settings.inboxType === 'important-first' ? "border-teal-600" : isDark ? "border-[#5f6368]" : "border-gray-300"
                     )}>
                       {settings.inboxType === 'important-first' && (
                         <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />
                       )}
                     </div>
-                    <span className="text-sm text-gray-800">Wichtige zuerst</span>
+                    <span className={cn("text-sm", isDark ? "text-white" : "text-gray-800")}>Wichtige zuerst</span>
                   </div>
                   <InboxPreviewImportant selected={settings.inboxType === 'important-first'} />
                 </div>
@@ -607,13 +658,13 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      settings.inboxType === 'unread-first' ? "border-teal-600" : "border-gray-300"
+                      settings.inboxType === 'unread-first' ? "border-teal-600" : isDark ? "border-[#5f6368]" : "border-gray-300"
                     )}>
                       {settings.inboxType === 'unread-first' && (
                         <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />
                       )}
                     </div>
-                    <span className="text-sm text-gray-800">Ungelesene zuerst</span>
+                    <span className={cn("text-sm", isDark ? "text-white" : "text-gray-800")}>Ungelesene zuerst</span>
                   </div>
                   <InboxPreviewUnread selected={settings.inboxType === 'unread-first'} />
                 </div>
@@ -625,13 +676,13 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      settings.inboxType === 'starred-first' ? "border-teal-600" : "border-gray-300"
+                      settings.inboxType === 'starred-first' ? "border-teal-600" : isDark ? "border-[#5f6368]" : "border-gray-300"
                     )}>
                       {settings.inboxType === 'starred-first' && (
                         <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />
                       )}
                     </div>
-                    <span className="text-sm text-gray-800">Markierte zuerst</span>
+                    <span className={cn("text-sm", isDark ? "text-white" : "text-gray-800")}>Markierte zuerst</span>
                   </div>
                   <InboxPreviewStarred selected={settings.inboxType === 'starred-first'} />
                 </div>
@@ -643,15 +694,15 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      settings.inboxType === 'priority' ? "border-teal-600" : "border-gray-300"
+                      settings.inboxType === 'priority' ? "border-teal-600" : isDark ? "border-[#5f6368]" : "border-gray-300"
                     )}>
                       {settings.inboxType === 'priority' && (
                         <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />
                       )}
                     </div>
                     <div>
-                      <span className="text-sm text-gray-800">Sortierter Eingang</span>
-                      <span className="block text-sm text-teal-600">Anpassen</span>
+                      <span className={cn("text-sm", isDark ? "text-white" : "text-gray-800")}>Sortierter Eingang</span>
+                      <span className={cn("block text-sm", isDark ? "text-teal-400" : "text-teal-600")}>Anpassen</span>
                     </div>
                   </div>
                   <InboxPreviewPriority selected={settings.inboxType === 'priority'} />
@@ -664,15 +715,15 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      settings.inboxType === 'multiple' ? "border-teal-600" : "border-gray-300"
+                      settings.inboxType === 'multiple' ? "border-teal-600" : isDark ? "border-[#5f6368]" : "border-gray-300"
                     )}>
                       {settings.inboxType === 'multiple' && (
                         <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />
                       )}
                     </div>
                     <div>
-                      <span className="text-sm text-gray-800">Mehrere Posteingänge</span>
-                      <span className="block text-sm text-teal-600">Anpassen</span>
+                      <span className={cn("text-sm", isDark ? "text-white" : "text-gray-800")}>Mehrere Posteingänge</span>
+                      <span className={cn("block text-sm", isDark ? "text-teal-400" : "text-teal-600")}>Anpassen</span>
                     </div>
                   </div>
                   <InboxPreviewMultiple selected={settings.inboxType === 'multiple'} />
@@ -681,20 +732,20 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
             </section>
 
             {/* Lesebereich */}
-            <section className="py-4 border-t border-gray-200">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-4">Lesebereich</h3>
+            <section className={cn("py-4 border-t", isDark ? "border-[#5f6368]" : "border-gray-200")}>
+              <h3 className={cn("text-xs font-medium uppercase tracking-wide mb-4", isDark ? "text-white" : "text-gray-500")}>Lesebereich</h3>
               <div className="space-y-4">
                 <label className="flex items-center justify-between cursor-pointer">
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      settings.readingPane === 'none' ? "border-teal-600" : "border-gray-300"
+                      settings.readingPane === 'none' ? "border-teal-600" : isDark ? "border-[#5f6368]" : "border-gray-300"
                     )}>
                       {settings.readingPane === 'none' && (
                         <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />
                       )}
                     </div>
-                    <span className="text-sm text-gray-800">Nicht geteilt</span>
+                    <span className={cn("text-sm", isDark ? "text-white" : "text-gray-800")}>Nicht geteilt</span>
                   </div>
                   <input
                     type="radio"
@@ -710,13 +761,13 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      settings.readingPane === 'right' ? "border-teal-600" : "border-gray-300"
+                      settings.readingPane === 'right' ? "border-teal-600" : isDark ? "border-[#5f6368]" : "border-gray-300"
                     )}>
                       {settings.readingPane === 'right' && (
                         <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />
                       )}
                     </div>
-                    <span className="text-sm text-gray-800">Rechts neben dem Posteingang</span>
+                    <span className={cn("text-sm", isDark ? "text-white" : "text-gray-800")}>Rechts neben dem Posteingang</span>
                   </div>
                   <input
                     type="radio"
@@ -732,13 +783,13 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      settings.readingPane === 'bottom' ? "border-teal-600" : "border-gray-300"
+                      settings.readingPane === 'bottom' ? "border-teal-600" : isDark ? "border-[#5f6368]" : "border-gray-300"
                     )}>
                       {settings.readingPane === 'bottom' && (
                         <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />
                       )}
                     </div>
-                    <span className="text-sm text-gray-800">Unter dem Posteingang</span>
+                    <span className={cn("text-sm", isDark ? "text-white" : "text-gray-800")}>Unter dem Posteingang</span>
                   </div>
                   <input
                     type="radio"
@@ -753,12 +804,12 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
             </section>
 
             {/* E-Mail-Threads */}
-            <section className="py-4 border-t border-gray-200">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-4">E-Mail-Threads</h3>
+            <section className={cn("py-4 border-t", isDark ? "border-[#5f6368]" : "border-gray-200")}>
+              <h3 className={cn("text-xs font-medium uppercase tracking-wide mb-4", isDark ? "text-white" : "text-gray-500")}>E-Mail-Threads</h3>
               <label className="flex items-center gap-3 cursor-pointer">
                 <div className={cn(
                   "w-5 h-5 rounded border-2 flex items-center justify-center",
-                  settings.conversationView ? "border-teal-600 bg-teal-600" : "border-gray-300"
+                  settings.conversationView ? "border-teal-600 bg-teal-600" : isDark ? "border-[#5f6368]" : "border-gray-300"
                 )}>
                   {settings.conversationView && (
                     <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -772,9 +823,9 @@ export function QuickSettings({ isOpen, onClose, onSettingsChange }: QuickSettin
                   onChange={(e) => updateSetting('conversationView', e.target.checked)}
                   className="sr-only"
                 />
-                <span className="text-sm text-gray-800">Konversationsansicht</span>
+                <span className={cn("text-sm", isDark ? "text-white" : "text-gray-800")}>Konversationsansicht</span>
                 <div 
-                  className="ml-auto text-gray-400 cursor-help"
+                  className={cn("ml-auto cursor-help", isDark ? "text-gray-500" : "text-white")}
                   title="E-Mails mit demselben Thema werden gruppiert"
                 >
                   <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">

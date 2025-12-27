@@ -214,7 +214,7 @@ export default function WebmailCheckoutPage() {
           href="/webmail/pricing"
           className={cn(
             'inline-flex items-center gap-2 mb-6 transition-colors',
-            isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+            isDark ? 'text-white hover:text-white' : 'text-gray-600 hover:text-gray-900'
           )}
         >
           <ArrowLeft className="w-5 h-5" />
@@ -242,7 +242,7 @@ export default function WebmailCheckoutPage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Billing Cycle Toggle */}
                 <div>
-                  <Label className={cn('mb-3 block', isDark ? 'text-gray-300' : 'text-gray-700')}>
+                  <Label className={cn('mb-3 block', isDark ? 'text-white' : 'text-gray-700')}>
                     Abrechnungszeitraum
                   </Label>
                   <div className="flex gap-4">
@@ -261,7 +261,7 @@ export default function WebmailCheckoutPage() {
                       <div className={cn('font-semibold', isDark ? 'text-white' : 'text-gray-900')}>
                         Monatlich
                       </div>
-                      <div className={cn('text-sm', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                      <div className={cn('text-sm', isDark ? 'text-white' : 'text-gray-500')}>
                         {plan.price.toFixed(2)} EUR/Monat
                       </div>
                     </button>
@@ -283,7 +283,7 @@ export default function WebmailCheckoutPage() {
                       <div className={cn('font-semibold', isDark ? 'text-white' : 'text-gray-900')}>
                         Jaehrlich
                       </div>
-                      <div className={cn('text-sm', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                      <div className={cn('text-sm', isDark ? 'text-white' : 'text-gray-500')}>
                         {plan.priceYearly.toFixed(2)} EUR/Jahr
                       </div>
                     </button>
@@ -293,7 +293,7 @@ export default function WebmailCheckoutPage() {
                 {/* Email Add-on Option (only for business plan) */}
                 {plan.hasEmailAddon && (
                   <div>
-                    <Label className={cn('mb-3 block', isDark ? 'text-gray-300' : 'text-gray-700')}>
+                    <Label className={cn('mb-3 block', isDark ? 'text-white' : 'text-gray-700')}>
                       E-Mail & Domain hinzufügen
                     </Label>
                     <button
@@ -320,7 +320,7 @@ export default function WebmailCheckoutPage() {
                         <div className={cn('font-semibold', isDark ? 'text-white' : 'text-gray-900')}>
                           ProMail-Postfach hinzufügen
                         </div>
-                        <div className={cn('text-sm', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                        <div className={cn('text-sm', isDark ? 'text-white' : 'text-gray-500')}>
                           10 GB E-Mail, 25 GB Cloud, eigene Domain, werbefreies Postfach
                         </div>
                       </div>
@@ -328,7 +328,7 @@ export default function WebmailCheckoutPage() {
                         <div className="text-teal-500 font-semibold">
                           +{billingCycle === 'monthly' ? plan.emailAddonPrice?.toFixed(2) : plan.emailAddonPriceYearly?.toFixed(2)} EUR
                         </div>
-                        <div className={cn('text-xs', isDark ? 'text-gray-500' : 'text-gray-400')}>
+                        <div className={cn('text-xs', isDark ? 'text-gray-500' : 'text-white')}>
                           /{billingCycle === 'monthly' ? 'Monat' : 'Jahr'}
                         </div>
                       </div>
@@ -339,11 +339,11 @@ export default function WebmailCheckoutPage() {
                 {/* Personal Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="firstName" className={cn('mb-2 block', isDark ? 'text-gray-300' : 'text-gray-700')}>
+                    <Label htmlFor="firstName" className={cn('mb-2 block', isDark ? 'text-white' : 'text-gray-700')}>
                       Vorname
                     </Label>
                     <div className="relative">
-                      <User className={cn('absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5', isDark ? 'text-gray-500' : 'text-gray-400')} />
+                      <User className={cn('absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5', isDark ? 'text-gray-500' : 'text-white')} />
                       <Input
                         id="firstName"
                         value={formData.firstName}
@@ -361,11 +361,11 @@ export default function WebmailCheckoutPage() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="lastName" className={cn('mb-2 block', isDark ? 'text-gray-300' : 'text-gray-700')}>
+                    <Label htmlFor="lastName" className={cn('mb-2 block', isDark ? 'text-white' : 'text-gray-700')}>
                       Nachname
                     </Label>
                     <div className="relative">
-                      <User className={cn('absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5', isDark ? 'text-gray-500' : 'text-gray-400')} />
+                      <User className={cn('absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5', isDark ? 'text-gray-500' : 'text-white')} />
                       <Input
                         id="lastName"
                         value={formData.lastName}
@@ -386,11 +386,11 @@ export default function WebmailCheckoutPage() {
 
                 {/* Email */}
                 <div>
-                  <Label htmlFor="email" className={cn('mb-2 block', isDark ? 'text-gray-300' : 'text-gray-700')}>
+                  <Label htmlFor="email" className={cn('mb-2 block', isDark ? 'text-white' : 'text-gray-700')}>
                     E-Mail-Adresse (für Rechnung)
                   </Label>
                   <div className="relative">
-                    <Mail className={cn('absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5', isDark ? 'text-gray-500' : 'text-gray-400')} />
+                    <Mail className={cn('absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5', isDark ? 'text-gray-500' : 'text-white')} />
                     <Input
                       id="email"
                       type="email"
@@ -412,11 +412,11 @@ export default function WebmailCheckoutPage() {
                 {/* Domain (for Domain and Business plans) */}
                 {plan.hasDomain && (
                   <div>
-                    <Label htmlFor="domain" className={cn('mb-2 block', isDark ? 'text-gray-300' : 'text-gray-700')}>
+                    <Label htmlFor="domain" className={cn('mb-2 block', isDark ? 'text-white' : 'text-gray-700')}>
                       Ihre Wunsch-Domain {domainFromUrl ? '' : '(optional)'}
                     </Label>
                     <div className="relative">
-                      <Globe className={cn('absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5', isDark ? 'text-gray-500' : 'text-gray-400')} />
+                      <Globe className={cn('absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5', isDark ? 'text-gray-500' : 'text-white')} />
                       <Input
                         id="domain"
                         value={formData.domain}
@@ -434,7 +434,7 @@ export default function WebmailCheckoutPage() {
                         Ihre ausgewählte Domain: {domainFromUrl}
                       </p>
                     ) : (
-                      <p className={cn('text-sm mt-1', isDark ? 'text-gray-500' : 'text-gray-400')}>
+                      <p className={cn('text-sm mt-1', isDark ? 'text-gray-500' : 'text-white')}>
                         Sie können Ihre Domain auch später wählen. Verfügbar: .de, .com, .eu, .io, .net und mehr
                       </p>
                     )}
@@ -475,8 +475,8 @@ export default function WebmailCheckoutPage() {
 
                 {/* Security Note */}
                 <div className="flex items-center justify-center gap-2 text-sm">
-                  <Lock className={cn('w-4 h-4', isDark ? 'text-gray-500' : 'text-gray-400')} />
-                  <span className={cn(isDark ? 'text-gray-400' : 'text-gray-500')}>
+                  <Lock className={cn('w-4 h-4', isDark ? 'text-gray-500' : 'text-white')} />
+                  <span className={cn(isDark ? 'text-white' : 'text-gray-500')}>
                     Sichere Zahlung über Stripe
                   </span>
                 </div>
@@ -512,10 +512,10 @@ export default function WebmailCheckoutPage() {
                 </div>
                 {plan.hasEmailAddon && includeEmail && (
                   <div className="flex justify-between items-center mb-2">
-                    <span className={cn('text-sm', isDark ? 'text-gray-300' : 'text-gray-600')}>
+                    <span className={cn('text-sm', isDark ? 'text-white' : 'text-gray-600')}>
                       + ProMail-Postfach
                     </span>
-                    <span className={cn('text-sm font-medium', isDark ? 'text-gray-300' : 'text-gray-600')}>
+                    <span className={cn('text-sm font-medium', isDark ? 'text-white' : 'text-gray-600')}>
                       {(billingCycle === 'monthly' ? plan.emailAddonPrice : plan.emailAddonPriceYearly)?.toFixed(2)} EUR
                     </span>
                   </div>
@@ -528,7 +528,7 @@ export default function WebmailCheckoutPage() {
                     {currentPrice.toFixed(2)} EUR
                   </span>
                 </div>
-                <span className={cn('text-sm', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                <span className={cn('text-sm', isDark ? 'text-white' : 'text-gray-500')}>
                   {billingCycle === 'monthly' ? 'pro Monat' : 'pro Jahr'}
                 </span>
               </div>
@@ -538,7 +538,7 @@ export default function WebmailCheckoutPage() {
                 {plan.features.map((feature, idx) => (
                   <li key={idx} className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-teal-500 shrink-0" />
-                    <span className={cn('text-sm', isDark ? 'text-gray-300' : 'text-gray-600')}>
+                    <span className={cn('text-sm', isDark ? 'text-white' : 'text-gray-600')}>
                       {feature}
                     </span>
                   </li>
@@ -572,10 +572,10 @@ export default function WebmailCheckoutPage() {
                       7 Tage kostenlos testen
                     </span>
                   </div>
-                  <p className={cn('text-sm', isDark ? 'text-gray-300' : 'text-gray-600')}>
+                  <p className={cn('text-sm', isDark ? 'text-white' : 'text-gray-600')}>
                     Sie zahlen heute nichts. Erst nach 7 Tagen wird Ihr Abo aktiviert und {currentPrice.toFixed(2)} EUR {billingCycle === 'monthly' ? 'monatlich' : 'jaehrlich'} berechnet.
                   </p>
-                  <p className={cn('text-sm mt-2', isDark ? 'text-gray-400' : 'text-gray-500')}>
+                  <p className={cn('text-sm mt-2', isDark ? 'text-white' : 'text-gray-500')}>
                     Jederzeit vor Ablauf der Testphase kuendbar.
                   </p>
                 </div>
@@ -589,7 +589,7 @@ export default function WebmailCheckoutPage() {
                     isDark ? 'bg-[#303134]' : 'bg-gray-50'
                   )}
                 >
-                  <p className={cn(isDark ? 'text-gray-300' : 'text-gray-600')}>
+                  <p className={cn(isDark ? 'text-white' : 'text-gray-600')}>
                     30 Tage Geld-zurueck-Garantie. Keine Fragen.
                   </p>
                 </div>

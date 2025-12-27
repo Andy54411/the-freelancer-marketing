@@ -12,7 +12,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { CalendarGrid, CreateEventModal, EventFormData, CalendarHeader, CalendarSidebar } from '@/components/webmail/calendar';
+import { MailHeader } from '@/components/webmail/MailHeader';
+import { CalendarToolbar } from '@/components/webmail/calendar/CalendarToolbar';
+import { CalendarTasksSwitch } from '@/components/webmail/CalendarTasksSwitch';
+import { CalendarGrid, CreateEventModal, EventFormData, CalendarSidebar } from '@/components/webmail/calendar';
 
 interface CalendarEvent {
   id: string;
@@ -44,6 +47,8 @@ export default function AdminCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month' | 'year' | 'agenda' | '4days'>('week');
   const [showWeekends, setShowWeekends] = useState(true);
+  const [showDeclinedEvents, setShowDeclinedEvents] = useState(false);
+  const [showCompletedTasks, setShowCompletedTasks] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isMobile, setIsMobile] = useState(false);
@@ -225,19 +230,31 @@ export default function AdminCalendarPage() {
 
   return (
     <div className="h-full flex flex-col bg-white">
-      {/* Webmail-Style Header mit AppLauncher */}
-      <CalendarHeader
-        currentDate={currentDate}
-        viewMode={viewMode}
-        onViewChange={setViewMode}
-        onPrev={() => handleNavigate('prev')}
-        onNext={() => handleNavigate('next')}
-        onToday={() => handleNavigate('today')}
-        onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
-        showWeekends={showWeekends}
-        onShowWeekendsChange={setShowWeekends}
+      {/* Einheitlicher MailHeader mit Kalender-Toolbar */}
+      <MailHeader
         userEmail={adminEmail}
         onLogout={() => {}}
+        onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+        appName="Kalender"
+        appHomeUrl="/admin-calendar"
+        hideSearch={true}
+        rightContent={<CalendarTasksSwitch activeView="calendar" />}
+        toolbarContent={
+          <CalendarToolbar
+            currentDate={currentDate}
+            viewMode={viewMode}
+            onPrev={() => handleNavigate('prev')}
+            onNext={() => handleNavigate('next')}
+            onToday={() => handleNavigate('today')}
+            onViewChange={setViewMode}
+            showWeekends={showWeekends}
+            onShowWeekendsChange={setShowWeekends}
+            showDeclinedEvents={showDeclinedEvents}
+            onShowDeclinedEventsChange={setShowDeclinedEvents}
+            showCompletedTasks={showCompletedTasks}
+            onShowCompletedTasksChange={setShowCompletedTasks}
+          />
+        }
       />
 
       <div className="flex flex-1 overflow-hidden bg-white">

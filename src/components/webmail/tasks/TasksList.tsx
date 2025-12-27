@@ -393,7 +393,7 @@ export function TasksList({
                 onClick={() => setShowListMenu(!showListMenu)}
                 className={`p-2 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'} transition-colors ${showListMenu ? (isDark ? 'bg-white/10' : 'bg-gray-100') : ''}`}
               >
-                <MoreVertical className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                <MoreVertical className={`h-5 w-5 ${isDark ? 'text-white' : 'text-gray-500'}`} />
               </button>
 
               {/* List Menu Dropdown */}
@@ -403,44 +403,44 @@ export function TasksList({
                   className={`absolute right-0 top-10 z-100 w-64 ${isDark ? 'bg-[#303134] border-[#5f6368]' : 'bg-white border-gray-200'} rounded-lg shadow-lg border py-2`}
                 >
                   {/* Sort Section */}
-                  <div className={`px-4 py-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Sortieren nach</div>
+                  <div className={`px-4 py-2 text-sm ${isDark ? 'text-white' : 'text-gray-500'}`}>Sortieren nach</div>
                   <button
                     onClick={() => { setSortBy('custom'); setShowListMenu(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-2 text-sm ${isDark ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+                    className={`w-full flex items-center gap-3 px-4 py-2 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
                   >
-                    {sortBy === 'custom' && <Check className={`h-4 w-4 ${isDark ? 'text-gray-300' : 'text-teal-500'}`} />}
+                    {sortBy === 'custom' && <Check className={`h-4 w-4 ${isDark ? 'text-white' : 'text-teal-500'}`} />}
                     {sortBy !== 'custom' && <div className="w-4" />}
                     <span>Meine Reihenfolge</span>
                   </button>
                   <button
                     onClick={() => { setSortBy('date'); setShowListMenu(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-2 text-sm ${isDark ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+                    className={`w-full flex items-center gap-3 px-4 py-2 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
                   >
-                    {sortBy === 'date' && <Check className={`h-4 w-4 ${isDark ? 'text-gray-300' : 'text-teal-500'}`} />}
+                    {sortBy === 'date' && <Check className={`h-4 w-4 ${isDark ? 'text-white' : 'text-teal-500'}`} />}
                     {sortBy !== 'date' && <div className="w-4" />}
                     <span>Datum</span>
                   </button>
                   <button
                     onClick={() => { setSortBy('dueDate'); setShowListMenu(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-2 text-sm ${isDark ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+                    className={`w-full flex items-center gap-3 px-4 py-2 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
                   >
-                    {sortBy === 'dueDate' && <Check className={`h-4 w-4 ${isDark ? 'text-gray-300' : 'text-teal-500'}`} />}
+                    {sortBy === 'dueDate' && <Check className={`h-4 w-4 ${isDark ? 'text-white' : 'text-teal-500'}`} />}
                     {sortBy !== 'dueDate' && <div className="w-4" />}
                     <span>Frist</span>
                   </button>
                   <button
                     onClick={() => { setSortBy('starred'); setShowListMenu(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-2 text-sm ${isDark ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+                    className={`w-full flex items-center gap-3 px-4 py-2 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
                   >
-                    {sortBy === 'starred' && <Check className={`h-4 w-4 ${isDark ? 'text-gray-300' : 'text-teal-500'}`} />}
+                    {sortBy === 'starred' && <Check className={`h-4 w-4 ${isDark ? 'text-white' : 'text-teal-500'}`} />}
                     {sortBy !== 'starred' && <div className="w-4" />}
                     <span>Vor Kurzem markiert</span>
                   </button>
                   <button
                     onClick={() => { setSortBy('title'); setShowListMenu(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-2 text-sm ${isDark ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+                    className={`w-full flex items-center gap-3 px-4 py-2 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
                   >
-                    {sortBy === 'title' && <Check className={`h-4 w-4 ${isDark ? 'text-gray-300' : 'text-teal-500'}`} />}
+                    {sortBy === 'title' && <Check className={`h-4 w-4 ${isDark ? 'text-white' : 'text-teal-500'}`} />}
                     {sortBy !== 'title' && <div className="w-4" />}
                     <span>Titel</span>
                   </button>
@@ -450,32 +450,32 @@ export function TasksList({
                   {/* List Actions */}
                   <button
                     onClick={() => { setShowListMenu(false); /* TODO: Rename list */ }}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
                   >
                     <span>Liste umbenennen</span>
                   </button>
                   <div className="px-4 py-2.5">
-                    <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Liste löschen</span>
-                    <p className={`text-xs ${isDark ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>Die Standardliste kann nicht gelöscht werden</p>
+                    <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-white'}`}>Liste löschen</span>
+                    <p className={`text-xs ${isDark ? 'text-gray-600' : 'text-white'} mt-0.5`}>Die Standardliste kann nicht gelöscht werden</p>
                   </div>
 
                   <div className={`border-t ${isDark ? 'border-[#5f6368]' : 'border-gray-200'} my-2`} />
 
                   <button
                     onClick={handlePrintList}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
                   >
                     <span>Liste drucken</span>
                   </button>
                   <button
                     onClick={() => { setShowListMenu(false); /* TODO: Delete completed */ }}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
                   >
                     <span>Alle erledigten Aufgaben löschen</span>
                   </button>
                   <button
                     onClick={() => { setShowListMenu(false); /* TODO: Manage old tasks */ }}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
                   >
                     <span>Alte Aufgaben verwalten</span>
                   </button>
@@ -532,7 +532,7 @@ export function TasksList({
                 onClick={handleSaveTask}
                 title="Erledigt"
               >
-                <Circle className={`h-5 w-5 ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'} transition-colors`} />
+                <Circle className={`h-5 w-5 ${isDark ? 'text-gray-500 hover:text-white' : 'text-white hover:text-gray-600'} transition-colors`} />
               </button>
 
               {/* Title Input */}
@@ -552,13 +552,13 @@ export function TasksList({
 
             {/* Details Row */}
             <div className="flex items-center gap-3 mt-3 ml-8">
-              <AlignLeft className={`h-4 w-4 ${isDark ? 'text-gray-500' : 'text-gray-400'} shrink-0`} />
+              <AlignLeft className={`h-4 w-4 ${isDark ? 'text-gray-500' : 'text-white'} shrink-0`} />
               <input
                 type="text"
                 value={newTaskForm.description}
                 onChange={(e) => setNewTaskForm({ ...newTaskForm, description: e.target.value })}
                 placeholder="Details"
-                className={`flex-1 text-sm ${isDark ? 'text-gray-300 placeholder-gray-500' : 'text-gray-600 placeholder-gray-400'} bg-transparent border-none outline-none focus:ring-0 p-0`}
+                className={`flex-1 text-sm ${isDark ? 'text-white placeholder-gray-500' : 'text-gray-600 placeholder-gray-400'} bg-transparent border-none outline-none focus:ring-0 p-0`}
               />
             </div>
 
@@ -572,7 +572,7 @@ export function TasksList({
                   className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                     isToday
                       ? 'bg-teal-500/20 text-teal-400 border-teal-500'
-                      : isDark ? 'text-gray-300 border-[#5f6368] hover:bg-white/5' : 'text-gray-600 border-gray-300 hover:bg-gray-100'
+                      : isDark ? 'text-white border-[#5f6368] hover:bg-white/5' : 'text-gray-600 border-gray-300 hover:bg-gray-100'
                   }`}
                 >
                   Heute
@@ -583,7 +583,7 @@ export function TasksList({
                   className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                     isTomorrow
                       ? 'bg-teal-500/20 text-teal-400 border-teal-500'
-                      : isDark ? 'text-gray-300 border-[#5f6368] hover:bg-white/5' : 'text-gray-600 border-gray-300 hover:bg-gray-100'
+                      : isDark ? 'text-white border-[#5f6368] hover:bg-white/5' : 'text-gray-600 border-gray-300 hover:bg-gray-100'
                   }`}
                 >
                   Morgen
@@ -596,7 +596,7 @@ export function TasksList({
                   className={`p-2 rounded-full border transition-colors ${
                     isCustomDate
                       ? 'text-teal-400 border-teal-500'
-                      : isDark ? 'text-gray-400 border-[#5f6368] hover:bg-white/5' : 'text-gray-500 border-gray-300 hover:bg-gray-100'
+                      : isDark ? 'text-white border-[#5f6368] hover:bg-white/5' : 'text-gray-500 border-gray-300 hover:bg-gray-100'
                   }`}
                   title="Datum/Uhrzeit"
                 >
@@ -611,7 +611,7 @@ export function TasksList({
                 className={`p-2 rounded-full transition-colors ${
                   newTaskForm.repeat 
                     ? 'text-teal-400 hover:bg-teal-500/10' 
-                    : isDark ? 'text-gray-400 hover:bg-white/5' : 'text-gray-500 hover:bg-gray-100'
+                    : isDark ? 'text-white hover:bg-white/5' : 'text-gray-500 hover:bg-gray-100'
                 }`}
                 title="Wiederholen"
               >
@@ -697,7 +697,7 @@ export function TasksList({
               </svg>
             </div>
             <p className={`text-lg font-medium ${isDark ? 'text-white' : 'text-gray-800'} mb-2`}>Noch keine Aufgaben</p>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} max-w-xs`}>
+            <p className={`text-sm ${isDark ? 'text-white' : 'text-gray-500'} max-w-xs`}>
               Hier können Sie Ihre To-dos hinzufügen und in allen Google Workspace-Produkten im Auge behalten
             </p>
           </div>
@@ -722,7 +722,7 @@ export function TasksList({
                         }}
                         className="mt-1 shrink-0"
                       >
-                        <Circle className={`h-5 w-5 ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'} transition-colors`} />
+                        <Circle className={`h-5 w-5 ${isDark ? 'text-gray-500 hover:text-white' : 'text-white hover:text-gray-600'} transition-colors`} />
                       </button>
                       <textarea
                         ref={editTitleInputRef}
@@ -738,14 +738,14 @@ export function TasksList({
 
                     {/* Description Row */}
                     <div className="flex items-center gap-3 mt-3 ml-8">
-                      <AlignLeft className={`h-4 w-4 ${isDark ? 'text-gray-500' : 'text-gray-400'} shrink-0`} />
+                      <AlignLeft className={`h-4 w-4 ${isDark ? 'text-gray-500' : 'text-white'} shrink-0`} />
                       <input
                         type="text"
                         value={editForm.description}
                         onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                         onKeyDown={handleEditKeyDown}
                         placeholder="Details"
-                        className={`flex-1 text-sm ${isDark ? 'text-gray-300 placeholder-gray-500' : 'text-gray-600 placeholder-gray-400'} bg-transparent border-none outline-none focus:ring-0 p-0`}
+                        className={`flex-1 text-sm ${isDark ? 'text-white placeholder-gray-500' : 'text-gray-600 placeholder-gray-400'} bg-transparent border-none outline-none focus:ring-0 p-0`}
                       />
                     </div>
 
@@ -758,7 +758,7 @@ export function TasksList({
                           className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                             editForm.dueDate === todayStr
                               ? 'bg-teal-500/20 text-teal-400 border-teal-500'
-                              : isDark ? 'text-gray-300 border-[#5f6368] hover:bg-white/5' : 'text-gray-600 border-gray-300 hover:bg-gray-100'
+                              : isDark ? 'text-white border-[#5f6368] hover:bg-white/5' : 'text-gray-600 border-gray-300 hover:bg-gray-100'
                           }`}
                         >
                           Heute
@@ -769,7 +769,7 @@ export function TasksList({
                           className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                             editForm.dueDate === tomorrowStr
                               ? 'bg-teal-500/20 text-teal-400 border-teal-500'
-                              : isDark ? 'text-gray-300 border-[#5f6368] hover:bg-white/5' : 'text-gray-600 border-gray-300 hover:bg-gray-100'
+                              : isDark ? 'text-white border-[#5f6368] hover:bg-white/5' : 'text-gray-600 border-gray-300 hover:bg-gray-100'
                           }`}
                         >
                           Morgen
@@ -780,7 +780,7 @@ export function TasksList({
                           className={`p-2 rounded-full border transition-colors ${
                             editForm.dueDate && editForm.dueDate !== todayStr && editForm.dueDate !== tomorrowStr
                               ? 'text-teal-400 border-teal-500'
-                              : isDark ? 'text-gray-400 border-[#5f6368] hover:bg-white/5' : 'text-gray-500 border-gray-300 hover:bg-gray-100'
+                              : isDark ? 'text-white border-[#5f6368] hover:bg-white/5' : 'text-gray-500 border-gray-300 hover:bg-gray-100'
                           }`}
                           title="Datum/Uhrzeit"
                         >
@@ -793,7 +793,7 @@ export function TasksList({
                         className={`p-2 rounded-full transition-colors ${
                           editForm.repeat 
                             ? 'text-teal-400 hover:bg-teal-500/10' 
-                            : isDark ? 'text-gray-400 hover:bg-white/5' : 'text-gray-500 hover:bg-gray-100'
+                            : isDark ? 'text-white hover:bg-white/5' : 'text-gray-500 hover:bg-gray-100'
                         }`}
                         title="Wiederholen"
                       >
@@ -873,7 +873,7 @@ export function TasksList({
                     }}
                     className="mt-0.5 shrink-0"
                   >
-                    <Circle className={`h-5 w-5 ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'} transition-colors`} />
+                    <Circle className={`h-5 w-5 ${isDark ? 'text-gray-500 hover:text-white' : 'text-white hover:text-gray-600'} transition-colors`} />
                   </button>
 
                   {/* Task Content */}
@@ -881,12 +881,12 @@ export function TasksList({
                     <p className={`text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{task.title}</p>
                     {task.description && (
                       <div className="flex items-center gap-1.5 mt-1">
-                        <AlignLeft className={`h-3.5 w-3.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
-                        <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} line-clamp-1`}>{task.description}</p>
+                        <AlignLeft className={`h-3.5 w-3.5 ${isDark ? 'text-gray-500' : 'text-white'}`} />
+                        <p className={`text-xs ${isDark ? 'text-white' : 'text-gray-500'} line-clamp-1`}>{task.description}</p>
                       </div>
                     )}
                     {task.dueDate && (
-                      <div className={`inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 border ${isDark ? 'border-[#5f6368] text-gray-300' : 'border-gray-300 text-gray-600'} rounded-full text-xs`}>
+                      <div className={`inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 border ${isDark ? 'border-[#5f6368] text-white' : 'border-gray-300 text-gray-600'} rounded-full text-xs`}>
                         <Calendar className="h-3 w-3" />
                         <span>{formatDueDateDisplay(task.dueDate)}</span>
                       </div>
@@ -896,7 +896,7 @@ export function TasksList({
                   {/* Repeat Icon */}
                   {task.repeat && (
                     <div className="mt-0.5 shrink-0">
-                      <Repeat className={`h-4 w-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                      <Repeat className={`h-4 w-4 ${isDark ? 'text-gray-500' : 'text-white'}`} />
                     </div>
                   )}
 
@@ -914,7 +914,7 @@ export function TasksList({
                       className={`h-4 w-4 transition-colors ${
                         task.starred
                           ? 'text-yellow-400 fill-yellow-400'
-                          : 'text-gray-400 hover:text-gray-300'
+                          : 'text-white hover:text-white'
                       }`}
                     />
                   </button>
@@ -937,7 +937,7 @@ export function TasksList({
                         hoveredTaskId === task.id || menuOpenTaskId === task.id ? 'opacity-100' : 'opacity-0'
                       }`}
                     >
-                      <MoreVertical className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                      <MoreVertical className={`h-4 w-4 ${isDark ? 'text-white' : 'text-gray-500'}`} />
                     </button>
                   </div>
                 </div>
@@ -949,7 +949,7 @@ export function TasksList({
               <div className={`border-t ${isDark ? 'border-[#3c4043]' : 'border-gray-200'}`}>
                 <button
                   onClick={onToggleShowCompleted}
-                  className={`w-full flex items-center gap-2 px-6 py-3 text-sm ${isDark ? 'text-gray-400 hover:bg-white/5' : 'text-gray-500 hover:bg-gray-100'} transition-colors`}
+                  className={`w-full flex items-center gap-2 px-6 py-3 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-500 hover:bg-gray-100'} transition-colors`}
                 >
                   {showCompleted ? (
                     <ChevronDown className="h-4 w-4" />
@@ -978,12 +978,12 @@ export function TasksList({
                           }}
                           className="mt-0.5 shrink-0"
                         >
-                          <CheckCircle2 className={`h-5 w-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                          <CheckCircle2 className={`h-5 w-5 ${isDark ? 'text-gray-500' : 'text-white'}`} />
                         </button>
 
                         {/* Task Content */}
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'} line-through`}>{task.title}</p>
+                          <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-white'} line-through`}>{task.title}</p>
                         </div>
 
                         {/* Star */}
@@ -998,7 +998,7 @@ export function TasksList({
                             className={`h-5 w-5 transition-colors ${
                               task.starred
                                 ? 'text-yellow-400 fill-yellow-400'
-                                : 'text-gray-600 hover:text-gray-400'
+                                : 'text-gray-600 hover:text-white'
                             }`}
                           />
                         </button>
@@ -1032,9 +1032,9 @@ export function TasksList({
                 setTimeout(() => setShowEditDatePicker(true), 100);
               }
             }}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
           >
-            <Clock className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+            <Clock className={`h-5 w-5 ${isDark ? 'text-white' : 'text-gray-500'}`} />
             <span>Frist hinzufügen</span>
           </button>
           <button
@@ -1043,9 +1043,9 @@ export function TasksList({
               setMenuOpenTaskId(null);
               setMenuPosition(null);
             }}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
           >
-            <CornerDownRight className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+            <CornerDownRight className={`h-5 w-5 ${isDark ? 'text-white' : 'text-gray-500'}`} />
             <span>Unteraufgabe eingeben</span>
           </button>
           <button
@@ -1056,9 +1056,9 @@ export function TasksList({
               setMenuPosition(null);
               onTaskDelete?.(taskId);
             }}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
           >
-            <Trash2 className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+            <Trash2 className={`h-5 w-5 ${isDark ? 'text-white' : 'text-gray-500'}`} />
             <span>Löschen</span>
           </button>
           
@@ -1070,9 +1070,9 @@ export function TasksList({
               setMenuOpenTaskId(null);
               setMenuPosition(null);
             }}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
           >
-            <Check className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+            <Check className={`h-5 w-5 ${isDark ? 'text-white' : 'text-gray-500'}`} />
             <span>Meine Aufgaben</span>
           </button>
           <button
@@ -1081,9 +1081,9 @@ export function TasksList({
               setMenuOpenTaskId(null);
               setMenuPosition(null);
             }}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${isDark ? 'text-white hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
           >
-            <ListPlus className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+            <ListPlus className={`h-5 w-5 ${isDark ? 'text-white' : 'text-gray-500'}`} />
             <span>Neue Liste</span>
           </button>
         </div>

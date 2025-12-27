@@ -105,17 +105,17 @@ export function DayView({
       <div className={`flex border-b ${isDark ? 'border-[#5f6368] bg-[#202124]' : 'border-gray-200 bg-white'} sticky top-0 z-10`}>
         <div className={`w-12 md:w-16 shrink-0 border-r ${isDark ? 'border-[#5f6368]' : 'border-gray-200'}`}>
           <div className="h-12 flex items-end justify-center pb-1">
-            <span className={`text-[10px] md:text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>GMT+01</span>
+            <span className={`text-[10px] md:text-xs ${isDark ? 'text-white' : 'text-gray-500'}`}>GMT+01</span>
           </div>
         </div>
         <div className={`flex-1 ${isToday(currentDate) ? (isDark ? 'bg-teal-500/10' : 'bg-teal-50/30') : ''}`}>
           <div className="h-12 flex flex-col items-center justify-center">
-            <span className={`text-xs font-medium ${isToday(currentDate) ? 'text-teal-500' : (isDark ? 'text-gray-400' : 'text-gray-500')}`}>
+            <span className={`text-xs font-medium ${isToday(currentDate) ? 'text-teal-500' : (isDark ? 'text-white' : 'text-gray-500')}`}>
               {formatDayName(currentDate)}
             </span>
             <span
               className={`w-8 h-8 rounded-full flex items-center justify-center text-lg font-medium ${
-                isToday(currentDate) ? 'bg-teal-600 text-white' : (isDark ? 'text-gray-200' : 'text-gray-700')
+                isToday(currentDate) ? 'bg-teal-600 text-white' : (isDark ? 'text-white' : 'text-gray-700')
               }`}
             >
               {currentDate.getDate()}
@@ -147,7 +147,7 @@ export function DayView({
           <div className={`w-12 md:w-16 shrink-0 border-r ${isDark ? 'border-[#5f6368]' : 'border-gray-200'}`}>
             {hours.map((hour) => (
               <div key={hour} className="h-12 relative">
-                <span className={`absolute -top-2 right-1 md:right-2 text-[10px] md:text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <span className={`absolute -top-2 right-1 md:right-2 text-[10px] md:text-xs ${isDark ? 'text-white' : 'text-gray-500'}`}>
                   {hour.toString().padStart(2, '0')}:00
                 </span>
               </div>

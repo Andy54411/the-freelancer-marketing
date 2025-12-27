@@ -2,9 +2,31 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Grid3X3, LayoutDashboard, Calendar, Users, Ticket, Building2, Settings, FileText, CreditCard, BarChart3, MessageSquare, XCircle, Bell, Shield, Mail, Briefcase, type LucideIcon } from 'lucide-react';
+import { Grid3X3, LayoutDashboard, Calendar, Users, Ticket, Building2, Settings, FileText, CreditCard, BarChart3, MessageSquare, XCircle, Bell, Shield, Mail, Briefcase, HardDrive, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
+
+// Subdomain URLs fuer Produktion
+function getAppUrl(path: string): string {
+  if (typeof window === 'undefined') return path;
+  
+  const hostname = window.location.hostname;
+  const isProduction = hostname.includes('taskilo.de');
+  
+  if (!isProduction) return path;
+  
+  // Mapping: Pfad -> Subdomain
+  const subdomainMap: Record<string, string> = {
+    '/webmail': 'https://email.taskilo.de',
+    '/webmail/calendar': 'https://kalender.taskilo.de',
+    '/webmail/meet': 'https://meet.taskilo.de',
+    '/webmail/drive': 'https://drive.taskilo.de',
+    '/webmail/tasks': 'https://task.taskilo.de',
+    '/webmail/contacts': 'https://kontakt.taskilo.de',
+  };
+  
+  return subdomainMap[path] ?? path;
+}
 
 interface AppItem {
   name: string;
@@ -95,6 +117,11 @@ const adminApps: AdminAppItem[] = [
     icon: CreditCard,
   },
   {
+    name: 'Drive',
+    href: '/dashboard/admin/drive',
+    icon: HardDrive,
+  },
+  {
     name: 'Einstellungen',
     href: '/dashboard/admin/settings',
     icon: Settings,
@@ -171,7 +198,7 @@ const apps: AppItem[] = [
   },
   {
     name: 'Kontakte',
-    href: '/contacts',
+    href: '/webmail/contacts',
     icon: (
       <svg viewBox="0 0 48 48" className="w-12 h-12">
         {/* Card background */}
@@ -335,7 +362,7 @@ export function AppLauncher({ className, hasTheme = false }: AppLauncherProps) {
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <Grid3X3 className={cn('h-6 w-6', useWhiteIcons ? 'text-white' : isDark ? 'text-gray-300' : 'text-[#5f6368]')} />
+        <Grid3X3 className={cn('h-6 w-6', useWhiteIcons ? 'text-white' : isDark ? 'text-white' : 'text-[#5f6368]')} />
       </button>
 
       {/* Modal */}
@@ -351,7 +378,7 @@ export function AppLauncher({ className, hasTheme = false }: AppLauncherProps) {
           <div
             ref={modalRef}
             className={cn(
-              'absolute right-0 top-full mt-2 z-50',
+              'fixed right-4 top-16 z-9999',
               'w-[300px] max-h-[500px] overflow-y-auto',
               isDark ? 'bg-[#303134] border-[#5f6368]' : 'bg-white border-gray-200',
               'rounded-2xl shadow-xl border',
@@ -362,40 +389,61 @@ export function AppLauncher({ className, hasTheme = false }: AppLauncherProps) {
           >
             {/* Header */}
             <div className={`px-4 py-3 border-b ${isDark ? 'border-[#5f6368]' : 'border-gray-100'}`}>
-              <h3 className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Taskilo Apps</h3>
+              <h3 className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-700'}`}>Taskilo Apps</h3>
             </div>
 
             {/* Webmail Apps */}
             <div className="p-3 grid grid-cols-3 gap-1">
-              {apps.map((app) => (
-                <Link
-                  key={app.name}
-                  href={app.href}
-                  onClick={() => setIsOpen(false)}
-                  className={cn(
+              {apps.map((app) => {
+                const url = getAppUrl(app.href);
+                const isExternal = url.startsWith('http');
+                const linkProps = {
+                  onClick: () => setIsOpen(false),
+                  className: cn(
                     'flex flex-col items-center justify-center',
                     'p-3 rounded-lg',
                     isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100',
                     'transition-colors',
                     'focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2'
-                  )}
-                  role="menuitem"
-                >
-                  <div className="mb-1">
-                    {app.icon}
-                  </div>
-                  <span className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'} text-center leading-tight`}>
-                    {app.name}
-                  </span>
-                </Link>
-              ))}
+                  ),
+                  role: 'menuitem' as const,
+                };
+                
+                return isExternal ? (
+                  <a
+                    key={app.name}
+                    href={url}
+                    {...linkProps}
+                  >
+                    <div className="mb-1">
+                      {app.icon}
+                    </div>
+                    <span className={`text-xs ${isDark ? 'text-white' : 'text-gray-700'} text-center leading-tight`}>
+                      {app.name}
+                    </span>
+                  </a>
+                ) : (
+                  <Link
+                    key={app.name}
+                    href={url}
+                    {...linkProps}
+                  >
+                    <div className="mb-1">
+                      {app.icon}
+                    </div>
+                    <span className={`text-xs ${isDark ? 'text-white' : 'text-gray-700'} text-center leading-tight`}>
+                      {app.name}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
 
             {/* Admin Apps - Only shown if user has admin rights */}
             {isAdmin && (
               <>
                 <div className={`px-4 py-2 border-t ${isDark ? 'border-[#5f6368]' : 'border-gray-100'}`}>
-                  <h4 className={`text-xs font-medium uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <h4 className={`text-xs font-medium uppercase tracking-wide ${isDark ? 'text-white' : 'text-gray-500'}`}>
                     Admin
                   </h4>
                 </div>
@@ -419,7 +467,7 @@ export function AppLauncher({ className, hasTheme = false }: AppLauncherProps) {
                         <div className="mb-1 w-12 h-12 flex items-center justify-center bg-teal-500/10 rounded-xl">
                           <IconComponent className="w-6 h-6 text-teal-600" />
                         </div>
-                        <span className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'} text-center leading-tight`}>
+                        <span className={`text-xs ${isDark ? 'text-white' : 'text-gray-700'} text-center leading-tight`}>
                           {app.name}
                         </span>
                       </Link>

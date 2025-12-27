@@ -66,8 +66,9 @@ function setCookie(email: string, password: string, remember: boolean): void {
   const encoded = encodeCredentials(email, password);
   const maxAge = remember ? COOKIE_MAX_AGE : 0;
   const expires = remember ? `; max-age=${maxAge}` : '';
-  // Cookie gilt fuer alle Webmail-Apps (webmail, contacts, etc.)
-  document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/; SameSite=Strict; Secure`;
+  // Cookie gilt fuer alle Subdomains (email.taskilo.de, drive.taskilo.de, etc.)
+  const domain = window.location.hostname.includes('taskilo.de') ? '; domain=.taskilo.de' : '';
+  document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/${domain}; SameSite=Lax; Secure`;
 }
 
 function getCookie(): { email: string; password: string } | null {
@@ -82,7 +83,9 @@ function getCookie(): { email: string; password: string } | null {
 }
 
 function deleteCookie(): void {
-  document.cookie = `${COOKIE_NAME}=; path=/webmail; max-age=0`;
+  // Cookie auf allen Subdomains loeschen
+  const domain = window.location.hostname.includes('taskilo.de') ? '; domain=.taskilo.de' : '';
+  document.cookie = `${COOKIE_NAME}=; path=/${domain}; max-age=0`;
 }
 
 function WebmailPageContent() {

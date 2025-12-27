@@ -52,6 +52,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { MailSidebar } from './MailSidebar';
 import { MailHeader } from './MailHeader';
+import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 import { QuickSettings, loadSettings, getThemeById, WebmailSettings } from './QuickSettings';
 import { SearchFilters, filterMessagesClientSide } from './MailSearchFilter';
 import { EmailCompose as EmailComposeComponent } from '@/components/email-client/EmailCompose';
@@ -289,6 +290,8 @@ const EmailItem = memo(({
   mailboxes,
   currentMailbox,
 }: EmailItemProps) => {
+  // Read isDark directly from context - this ensures it always has the correct value
+  const { isDark } = useWebmailTheme();
   const isUnread = !email.flags.includes('\\Seen');
   const isStarred = email.flags.includes('\\Flagged');
   const fromName = email.from[0]?.name || email.from[0]?.address || 'Unbekannt';
@@ -301,14 +304,41 @@ const EmailItem = memo(({
     compact: 'px-2 py-1',
   };
 
+  // Berechne Hintergrund- und Hover-Klassen basierend auf Status
+  const getRowClasses = () => {
+    if (isSelected) {
+      return isDark 
+        ? 'bg-teal-900/40 border-l-teal-500 hover:bg-teal-900/50' 
+        : 'bg-teal-100 border-l-teal-600 hover:bg-teal-200';
+    }
+    if (isUnread) {
+      return isDark 
+        ? 'bg-[#3c4043] border-l-teal-500 hover:bg-[#4a4d50]' 
+        : 'bg-blue-50 border-l-teal-500 hover:bg-blue-100';
+    }
+    return isDark 
+      ? 'hover:bg-[#3c4043]' 
+      : 'hover:bg-gray-100';
+  };
+
+  // Berechne Textfarben basierend auf Status
+  const getTextClasses = (isMainText: boolean) => {
+    if (isUnread) {
+      return isDark 
+        ? 'font-semibold text-white' 
+        : 'font-semibold text-gray-900';
+    }
+    return isDark 
+      ? (isMainText ? 'font-medium text-white' : 'text-white')
+      : (isMainText ? 'font-medium text-gray-700' : 'text-gray-500');
+  };
+
   return (
     <div
       className={cn(
-        'group hover:bg-gray-50/80 cursor-pointer transition-all duration-150 w-full min-w-0 border-l-2 border-l-transparent',
+        'group cursor-pointer transition-all duration-150 w-full min-w-0 border-l-2 border-l-transparent',
         densityClasses[density],
-        isUnread && 'bg-blue-50/40 border-l-teal-500 hover:bg-blue-50/60',
-        isSelected && 'bg-teal-50 border-l-teal-600',
-        !isUnread && 'hover:bg-gray-50'
+        getRowClasses()
       )}
       onClick={() => onClick(email)}
     >
@@ -333,7 +363,7 @@ const EmailItem = memo(({
             'p-0 h-auto mt-0.5 hover:bg-transparent',
             isStarred
               ? 'text-yellow-500 hover:text-yellow-600'
-              : 'text-gray-400 hover:text-gray-500'
+              : isDark ? 'text-gray-500 hover:text-white' : 'text-white hover:text-gray-500'
           )}
           onClick={e => {
             e.stopPropagation();
@@ -347,49 +377,29 @@ const EmailItem = memo(({
           <div className="flex items-start justify-between w-full min-w-0">
             <div className="flex-1 min-w-0 pr-1">
               <div className="flex items-center gap-1">
-                <span
-                  className={cn(
-                    'text-[11px] truncate block leading-tight',
-                    isUnread ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'
-                  )}
-                >
+                <span className={cn('text-[11px] truncate block leading-tight', getTextClasses(true))}>
                   {fromName}
                 </span>
                 {email.hasAttachments && (
-                  <Paperclip className="h-2.5 w-2.5 text-gray-400 shrink-0" />
+                  <Paperclip className={cn("h-2.5 w-2.5 shrink-0", isDark ? "text-gray-500" : "text-white")} />
                 )}
               </div>
 
               <div className="line-clamp-1">
-                <span
-                  className={cn(
-                    'text-[11px] leading-tight',
-                    isUnread ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'
-                  )}
-                >
+                <span className={cn('text-[11px] leading-tight', getTextClasses(true))}>
                   {email.subject || '(Kein Betreff)'}
                 </span>
-                <span
-                  className={cn(
-                    'text-[10px] leading-tight ml-1',
-                    isUnread ? 'text-gray-600' : 'text-gray-500'
-                  )}
-                >
+                <span className={cn('text-[10px] leading-tight ml-1', getTextClasses(false))}>
                   {email.preview}
                 </span>
               </div>
             </div>
 
             <div className="flex flex-col items-end shrink-0 ml-2">
-              <span
-                className={cn(
-                  'text-[10px] whitespace-nowrap leading-tight',
-                  isUnread ? 'text-gray-700 font-medium' : 'text-gray-500'
-                )}
-              >
+              <span className={cn('text-[10px] whitespace-nowrap leading-tight', getTextClasses(true))}>
                 {relative}
               </span>
-              <span className="text-[9px] text-gray-400 whitespace-nowrap leading-tight">
+              <span className={cn("text-[9px] whitespace-nowrap leading-tight", isDark ? "text-gray-500" : "text-white")}>
                 {absolute}
               </span>
               <DropdownMenu>
@@ -397,10 +407,13 @@ const EmailItem = memo(({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-opacity"
+                    className={cn(
+                      "h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity",
+                      isDark ? "hover:bg-[#5f6368]" : "hover:bg-gray-200"
+                    )}
                     onClick={e => e.stopPropagation()}
                   >
-                    <MoreHorizontal className="h-3.5 w-3.5 text-gray-500" />
+                    <MoreHorizontal className={cn("h-3.5 w-3.5", isDark ? "text-white" : "text-gray-500")} />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
@@ -543,6 +556,7 @@ function EmailViewer({
   currentMailbox,
   credentials,
 }: EmailViewerProps) {
+  const { isDark } = useWebmailTheme();
   const isStarred = email.flags.includes('\\Flagged');
   const [downloadingAttachment, setDownloadingAttachment] = useState<string | null>(null);
 
@@ -592,12 +606,12 @@ function EmailViewer({
 
   // Icon basierend auf Content-Type
   const getAttachmentIcon = (contentType?: string) => {
-    if (!contentType) return <File className="h-4 w-4 text-gray-400" />;
+    if (!contentType) return <File className="h-4 w-4 text-white" />;
     if (contentType.startsWith('image/')) return <ImageIcon className="h-4 w-4 text-blue-500" />;
     if (contentType === 'application/pdf') return <FileText className="h-4 w-4 text-red-500" />;
     if (contentType.includes('word') || contentType.includes('document')) return <FileText className="h-4 w-4 text-blue-600" />;
     if (contentType.includes('excel') || contentType.includes('spreadsheet')) return <FileText className="h-4 w-4 text-green-600" />;
-    return <File className="h-4 w-4 text-gray-400" />;
+    return <File className="h-4 w-4 text-white" />;
   };
 
   // Formatiere Dateigroesse
@@ -657,14 +671,14 @@ function EmailViewer({
     : '';
   
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className={cn("h-full flex flex-col", isDark ? "bg-[#2d2e30]" : "bg-white")}>
       {/* Header */}
-      <div className="border-b px-6 py-4 flex items-center justify-between shrink-0">
+      <div className={cn("border-b px-6 py-4 flex items-center justify-between shrink-0", isDark ? "border-[#5f6368]" : "")}>
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={onClose}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-lg font-semibold truncate max-w-xl">{email.subject}</h1>
+          <h1 className={cn("text-lg font-semibold truncate max-w-xl", isDark ? "text-white" : "")}>{email.subject}</h1>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={onReply}>
@@ -773,16 +787,16 @@ function EmailViewer({
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-gray-900">
+            <div className={cn("font-semibold", isDark ? "text-white" : "text-gray-900")}>
               {email.from[0]?.name || email.from[0]?.address}
             </div>
-            <div className="text-sm text-gray-500">
+            <div className={cn("text-sm", isDark ? "text-white" : "text-gray-500")}>
               {email.from[0]?.address}
             </div>
-            <div className="text-sm text-gray-500 mt-1">
+            <div className={cn("text-sm mt-1", isDark ? "text-white" : "text-gray-500")}>
               An: {email.to.map(t => t.address).join(', ')}
             </div>
-            <div className="text-sm text-gray-400 mt-1">
+            <div className={cn("text-sm mt-1", isDark ? "text-gray-500" : "text-white")}>
               {new Date(email.date).toLocaleString('de-DE', {
                 weekday: 'long',
                 year: 'numeric',
@@ -797,8 +811,8 @@ function EmailViewer({
 
         {/* Attachments */}
         {email.attachments && email.attachments.length > 0 && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <div className="text-sm font-medium mb-3 flex items-center gap-2 text-gray-700">
+          <div className={cn("mb-6 p-4 rounded-lg", isDark ? "bg-[#3c4043]" : "bg-gray-50")}>
+            <div className={cn("text-sm font-medium mb-3 flex items-center gap-2", isDark ? "text-white" : "text-gray-700")}>
               <Paperclip className="h-4 w-4" />
               {email.attachments.length} {email.attachments.length === 1 ? 'Anhang' : 'Anhaenge'}
             </div>
@@ -808,7 +822,12 @@ function EmailViewer({
                   key={i}
                   onClick={() => handleDownloadAttachment(att)}
                   disabled={downloadingAttachment === att.filename}
-                  className="px-3 py-2 bg-white rounded-lg border text-sm flex items-center gap-2 hover:bg-teal-50 hover:border-teal-300 cursor-pointer transition-colors disabled:opacity-50"
+                  className={cn(
+                    "px-3 py-2 rounded-lg border text-sm flex items-center gap-2 cursor-pointer transition-colors disabled:opacity-50",
+                    isDark 
+                      ? "bg-[#2d2e30] border-[#5f6368] hover:bg-[#4a4d50] hover:border-teal-500" 
+                      : "bg-white border-gray-200 hover:bg-teal-50 hover:border-teal-300"
+                  )}
                 >
                   {downloadingAttachment === att.filename ? (
                     <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
@@ -817,24 +836,27 @@ function EmailViewer({
                   )}
                   <span className="max-w-[200px] truncate">{att.filename}</span>
                   {att.size && (
-                    <span className="text-xs text-gray-400">({formatFileSize(att.size)})</span>
+                    <span className="text-xs text-white">({formatFileSize(att.size)})</span>
                   )}
-                  <Download className="h-3 w-3 text-gray-400" />
+                  <Download className="h-3 w-3 text-white" />
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* Email Body */}
-        <div className="prose prose-sm max-w-none">
+        {/* Email Body - Always light background for readability */}
+        <div className={cn(
+          "prose prose-sm max-w-none rounded-lg",
+          isDark && "bg-white p-4"
+        )}>
           {email.html ? (
             <div 
               dangerouslySetInnerHTML={{ __html: processedHtml }}
               className="email-content"
             />
           ) : (
-            <pre className="whitespace-pre-wrap font-sans text-gray-800 leading-relaxed">
+            <pre className="whitespace-pre-wrap font-sans leading-relaxed text-gray-800">
               {email.text}
             </pre>
           )}
@@ -984,6 +1006,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
 
   // Theme-Hintergrundbild berechnen
   const themeData = getThemeById(currentTheme);
+  const { isDark } = useWebmailTheme();
   const backgroundStyle = themeData?.backgroundUrl 
     ? { 
         backgroundImage: `url(${themeData.backgroundUrl})`,
@@ -1381,13 +1404,13 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
   // Error State
   if (error) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white">
+      <div className={`fixed inset-0 flex items-center justify-center ${isDark ? 'bg-[#202124]' : 'bg-white'}`}>
         <div className="text-center max-w-md px-6">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
             <AlertCircle className="w-8 h-8 text-red-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Verbindungsfehler</h3>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Verbindungsfehler</h3>
+          <p className={`mb-6 ${isDark ? 'text-white' : 'text-gray-600'}`}>{error}</p>
           <Button onClick={() => fetchMessages(currentMailbox)} className="bg-teal-600 hover:bg-teal-700">
             <RefreshCw className="h-4 w-4 mr-2" />
             Erneut versuchen
@@ -1400,20 +1423,20 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
   // Loading State
   if (loading && messages.length === 0) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white">
+      <div className={`fixed inset-0 flex items-center justify-center ${isDark ? 'bg-[#202124]' : 'bg-white'}`}>
         <div className="text-center">
-          <div className="inline-block w-16 h-16 border-4 border-gray-200 border-t-teal-600 rounded-full animate-spin"></div>
-          <p className="mt-6 text-gray-600 text-lg font-medium">E-Mails werden geladen...</p>
-          <p className="mt-2 text-gray-400 text-sm">Verbindung zu {email}</p>
+          <div className={`inline-block w-16 h-16 border-4 border-t-teal-600 rounded-full animate-spin ${isDark ? 'border-gray-700' : 'border-gray-200'}`}></div>
+          <p className={`mt-6 text-lg font-medium ${isDark ? 'text-white' : 'text-gray-600'}`}>E-Mails werden geladen...</p>
+          <p className={`mt-2 text-sm ${isDark ? 'text-gray-500' : 'text-white'}`}>Verbindung zu {email}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#f6f8fc]" style={backgroundStyle}>
-      {/* Mail Header - muss über dem Hintergrundbild liegen */}
-      <div className="relative z-10">
+    <div className={`fixed inset-0 flex flex-col ${isDark ? 'bg-[#202124]' : 'bg-[#f6f8fc]'}`} style={backgroundStyle}>
+      {/* Mail Header - muss über allem liegen */}
+      <div className="relative z-50">
         <MailHeader
           userEmail={email}
           onMenuToggle={() => {
@@ -1432,7 +1455,6 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
           onLogout={onLogout}
           onSettingsClick={() => setShowQuickSettings(true)}
           mailboxes={mailboxes.map(m => ({ path: m.path, name: m.name }))}
-          hasTheme={!!themeData?.backgroundUrl}
         />
       </div>
 
@@ -1450,21 +1472,27 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
           collapsed={sidebarCollapsed}
           isMobileOpen={isMobileSidebarOpen}
           onMobileClose={() => setIsMobileSidebarOpen(false)}
-          hasTheme={!!themeData?.backgroundUrl}
         />
 
         {/* Email List - Full width on mobile, Fixed Width when email selected on desktop */}
         <div
           className={cn(
-            'flex flex-col overflow-hidden relative min-w-0',
-            // Transparenter Hintergrund wenn Theme aktiv, sonst weiß + abgerundete Ecken
-            themeData?.backgroundUrl ? 'bg-white/90 rounded-2xl shadow-lg' : 'bg-white',
+            'flex flex-col overflow-hidden relative min-w-0 rounded-2xl',
+            // Transparenter Hintergrund wenn Theme aktiv
+            themeData?.backgroundUrl 
+              ? 'bg-white/90 shadow-lg' 
+              : isDark 
+                ? 'bg-[#2d2e30]' 
+                : 'bg-white',
             // Mobile: full width, hide when viewing email
             selectedEmail ? 'hidden md:flex md:w-96 md:shrink-0' : 'flex-1'
           )}
         >
         {/* Gmail-Style Toolbar */}
-        <div className="border-b border-gray-200/50 px-2 md:px-3 py-1 flex items-center gap-2 shrink-0">
+        <div className={cn(
+          "border-b px-2 md:px-3 py-1 flex items-center gap-2 shrink-0",
+          isDark ? "border-[#5f6368]" : "border-gray-200/50"
+        )}>
           {/* Checkbox mit Dropdown */}
           <div className="flex items-center">
             <input
@@ -1484,7 +1512,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
             title="Aktualisieren"
             className="h-8 w-8 p-0"
           >
-            <RefreshCw className={cn('h-4 w-4 text-gray-600', loading && 'animate-spin')} />
+            <RefreshCw className={cn('h-4 w-4', isDark ? 'text-white' : 'text-gray-600', loading && 'animate-spin')} />
           </Button>
 
           {/* Drei-Punkte-Menu */}
@@ -1494,11 +1522,11 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
             className="h-8 w-8 p-0"
             title="Weitere Aktionen"
           >
-            <MoreVertical className="h-4 w-4 text-gray-600" />
+            <MoreVertical className={cn("h-4 w-4", isDark ? "text-white" : "text-gray-600")} />
           </Button>
 
           {selectedEmails.length > 0 && (
-            <div className="flex items-center gap-1 border-l border-gray-300 pl-2 ml-1">
+            <div className={cn("flex items-center gap-1 border-l pl-2 ml-1", isDark ? "border-[#5f6368]" : "border-gray-300")}>
               <Badge variant="secondary" className="bg-teal-100 text-teal-800 text-xs px-2">
                 {selectedEmails.length}
               </Badge>
@@ -1518,7 +1546,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
           <div className="flex-1" />
 
           {/* Pagination */}
-          <div className="hidden md:flex items-center gap-1 text-sm text-gray-600">
+          <div className={cn("hidden md:flex items-center gap-1 text-sm", isDark ? "text-white" : "text-gray-600")}>
             <span>1-{Math.min(filteredMessages.length, 50)} von {filteredMessages.length}</span>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled>
               <ChevronLeft className="h-4 w-4" />
@@ -1539,7 +1567,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
                 'flex items-center gap-3 px-4 py-3 text-sm transition-colors shrink-0',
                 activeCategory === 'primary'
                   ? 'font-medium text-blue-600 border-b-[3px] border-blue-600'
-                  : 'text-gray-700 hover:bg-gray-50/50 border-b-[3px] border-transparent'
+                  : isDark ? 'text-white hover:bg-white/10 border-b-[3px] border-transparent' : 'text-gray-700 hover:bg-gray-50/50 border-b-[3px] border-transparent'
               )}
             >
               <Inbox className="h-5 w-5 shrink-0" />
@@ -1567,7 +1595,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
                 'flex items-center gap-3 px-4 py-3 text-sm transition-colors shrink-0',
                 activeCategory === 'promotions'
                   ? 'font-medium text-green-600 border-b-[3px] border-green-600'
-                  : 'text-gray-700 hover:bg-gray-50/50 border-b-[3px] border-transparent'
+                  : isDark ? 'text-white hover:bg-white/10 border-b-[3px] border-transparent' : 'text-gray-700 hover:bg-gray-50/50 border-b-[3px] border-transparent'
               )}
             >
               <Tag className="h-5 w-5 shrink-0" />
@@ -1595,7 +1623,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
                 'flex items-center gap-3 px-4 py-3 text-sm transition-colors shrink-0',
                 activeCategory === 'social'
                   ? 'font-medium text-red-600 border-b-[3px] border-red-600'
-                  : 'text-gray-700 hover:bg-gray-50/50 border-b-[3px] border-transparent'
+                  : isDark ? 'text-white hover:bg-white/10 border-b-[3px] border-transparent' : 'text-gray-700 hover:bg-gray-50/50 border-b-[3px] border-transparent'
               )}
             >
               <Users className="h-5 w-5 shrink-0" />
@@ -1623,7 +1651,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
                 'flex items-center gap-3 px-4 py-3 text-sm transition-colors shrink-0',
                 activeCategory === 'updates'
                   ? 'font-medium text-yellow-600 border-b-[3px] border-yellow-600'
-                  : 'text-gray-700 hover:bg-gray-50/50 border-b-[3px] border-transparent'
+                  : isDark ? 'text-white hover:bg-white/10 border-b-[3px] border-transparent' : 'text-gray-700 hover:bg-gray-50/50 border-b-[3px] border-transparent'
               )}
             >
               <Bell className="h-5 w-5 shrink-0" />
@@ -1667,23 +1695,23 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
                 const starredMessages = messages.filter(m => m.flags.includes('\\Flagged'));
                 const isCollapsed = collapsedSections['starred'];
                 return (
-                  <div className="border-b border-gray-300">
+                  <div className={cn("border-b", isDark ? "border-[#5f6368]" : "border-gray-300")}>
                     <div 
-                      className="flex items-center justify-between px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
+                      className={cn("flex items-center justify-between px-3 py-1.5 cursor-pointer select-none", isDark ? "bg-[#2d2e30] hover:bg-[#3c4043]" : "bg-white hover:bg-gray-50")}
                       onClick={() => setCollapsedSections(prev => ({ ...prev, starred: !prev.starred }))}
                     >
                       <div className="flex items-center gap-2">
-                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", isCollapsed && "-rotate-90")} />
-                        <span className="text-sm text-gray-700">is:starred</span>
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", isDark ? "text-white" : "text-gray-500", isCollapsed && "-rotate-90")} />
+                        <span className={cn("text-sm", isDark ? "text-white" : "text-gray-700")}>is:starred</span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className={cn("flex items-center gap-2 text-xs", isDark ? "text-white" : "text-gray-500")}>
                         <span>{starredMessages.length > 0 ? `1-${starredMessages.length} von ${starredMessages.length}` : '0'}</span>
                         <ChevronLeft className="h-4 w-4" />
                         <ChevronRight className="h-4 w-4" />
                       </div>
                     </div>
                     {!isCollapsed && starredMessages.length > 0 && (
-                      <div className="divide-y divide-gray-100">
+                      <div className={cn("divide-y", isDark ? "divide-[#5f6368]" : "divide-gray-100")}>
                         {starredMessages.map((msg) => (
                           <EmailItem
                             key={`starred-${msg.uid}`}
@@ -1711,16 +1739,16 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
               {(() => {
                 const isCollapsed = collapsedSections['drafts'];
                 return (
-                  <div className="border-b border-gray-300">
+                  <div className={cn("border-b", isDark ? "border-[#5f6368]" : "border-gray-300")}>
                     <div 
-                      className="flex items-center justify-between px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
+                      className={cn("flex items-center justify-between px-3 py-1.5 cursor-pointer select-none", isDark ? "bg-[#2d2e30] hover:bg-[#3c4043]" : "bg-white hover:bg-gray-50")}
                       onClick={() => setCollapsedSections(prev => ({ ...prev, drafts: !prev.drafts }))}
                     >
                       <div className="flex items-center gap-2">
-                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", isCollapsed && "-rotate-90")} />
-                        <span className="text-sm text-gray-700">is:drafts</span>
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", isDark ? "text-white" : "text-gray-500", isCollapsed && "-rotate-90")} />
+                        <span className={cn("text-sm", isDark ? "text-white" : "text-gray-700")}>is:drafts</span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className={cn("flex items-center gap-2 text-xs", isDark ? "text-white" : "text-gray-500")}>
                         {draftsLoading ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
@@ -1731,7 +1759,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
                       </div>
                     </div>
                     {!isCollapsed && !draftsLoading && draftsMessages.length > 0 && (
-                      <div className="divide-y divide-gray-100">
+                      <div className={cn("divide-y", isDark ? "divide-[#5f6368]" : "divide-gray-100")}>
                         {draftsMessages.map((msg) => (
                           <div
                             key={`draft-${msg.uid}`}
@@ -1742,7 +1770,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
                             }}
                           >
                             <input type="checkbox" className="h-4 w-4 rounded border-gray-300" onClick={e => e.stopPropagation()} />
-                            <Star className="h-4 w-4 text-gray-300" />
+                            <Star className="h-4 w-4 text-white" />
                             <span className="text-red-500 font-medium text-sm shrink-0">Entwurf</span>
                             <span className="text-gray-800 text-sm truncate flex-1">{msg.subject || '(kein Betreff)'}</span>
                             <span className="text-xs text-gray-500 shrink-0">{formatEmailDate(msg.date).relative}</span>
@@ -1759,23 +1787,23 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
                 const inboxMessages = messages.filter(m => !m.flags.includes('\\Flagged'));
                 const isCollapsed = collapsedSections['inbox'];
                 return (
-                  <div className="border-b border-gray-300">
+                  <div className={cn("border-b", isDark ? "border-[#5f6368]" : "border-gray-300")}>
                     <div 
-                      className="flex items-center justify-between px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
+                      className={cn("flex items-center justify-between px-3 py-1.5 cursor-pointer select-none", isDark ? "bg-[#2d2e30] hover:bg-[#3c4043]" : "bg-white hover:bg-gray-50")}
                       onClick={() => setCollapsedSections(prev => ({ ...prev, inbox: !prev.inbox }))}
                     >
                       <div className="flex items-center gap-2">
-                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", isCollapsed && "-rotate-90")} />
-                        <span className="text-sm text-gray-700">Posteingang</span>
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", isDark ? "text-white" : "text-gray-500", isCollapsed && "-rotate-90")} />
+                        <span className={cn("text-sm", isDark ? "text-white" : "text-gray-700")}>Posteingang</span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className={cn("flex items-center gap-2 text-xs", isDark ? "text-white" : "text-gray-500")}>
                         <span>{inboxMessages.length > 0 ? `1-${Math.min(inboxMessages.length, 50)} von ${inboxMessages.length}` : '0'}</span>
                         <ChevronLeft className="h-4 w-4" />
                         <ChevronRight className="h-4 w-4" />
                       </div>
                     </div>
                     {!isCollapsed && inboxMessages.length > 0 && (
-                      <div className="divide-y divide-gray-100">
+                      <div className={cn("divide-y", isDark ? "divide-[#5f6368]" : "divide-gray-100")}>
                         {inboxMessages.slice(0, 50).map((msg) => (
                           <EmailItem
                             key={`inbox-${msg.uid}`}
@@ -1803,16 +1831,16 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
               {(() => {
                 const isCollapsed = collapsedSections['sent'];
                 return (
-                  <div className="border-b border-gray-300">
+                  <div className={cn("border-b", isDark ? "border-[#5f6368]" : "border-gray-300")}>
                     <div 
-                      className="flex items-center justify-between px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
+                      className={cn("flex items-center justify-between px-3 py-1.5 cursor-pointer select-none", isDark ? "bg-[#2d2e30] hover:bg-[#3c4043]" : "bg-white hover:bg-gray-50")}
                       onClick={() => setCollapsedSections(prev => ({ ...prev, sent: !prev.sent }))}
                     >
                       <div className="flex items-center gap-2">
-                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", isCollapsed && "-rotate-90")} />
-                        <span className="text-sm text-gray-700">Gesendet</span>
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", isDark ? "text-white" : "text-gray-500", isCollapsed && "-rotate-90")} />
+                        <span className={cn("text-sm", isDark ? "text-white" : "text-gray-700")}>Gesendet</span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className={cn("flex items-center gap-2 text-xs", isDark ? "text-white" : "text-gray-500")}>
                         {sentLoading ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
@@ -1823,7 +1851,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
                       </div>
                     </div>
                     {!isCollapsed && !sentLoading && sentMessages.length > 0 && (
-                      <div className="divide-y divide-gray-100">
+                      <div className={cn("divide-y", isDark ? "divide-[#5f6368]" : "divide-gray-100")}>
                         {sentMessages.slice(0, 25).map((msg) => (
                           <EmailItem
                             key={`sent-${msg.uid}`}
@@ -1854,16 +1882,16 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
               {(() => {
                 const isCollapsed = collapsedSections['archive'];
                 return (
-                  <div className="border-b border-gray-300">
+                  <div className={cn("border-b", isDark ? "border-[#5f6368]" : "border-gray-300")}>
                     <div 
-                      className="flex items-center justify-between px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
+                      className={cn("flex items-center justify-between px-3 py-1.5 cursor-pointer select-none", isDark ? "bg-[#2d2e30] hover:bg-[#3c4043]" : "bg-white hover:bg-gray-50")}
                       onClick={() => setCollapsedSections(prev => ({ ...prev, archive: !prev.archive }))}
                     >
                       <div className="flex items-center gap-2">
-                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", isCollapsed && "-rotate-90")} />
-                        <span className="text-sm text-gray-700">Archiv</span>
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", isDark ? "text-white" : "text-gray-500", isCollapsed && "-rotate-90")} />
+                        <span className={cn("text-sm", isDark ? "text-white" : "text-gray-700")}>Archiv</span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className={cn("flex items-center gap-2 text-xs", isDark ? "text-white" : "text-gray-500")}>
                         {archiveLoading ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
@@ -1874,7 +1902,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
                       </div>
                     </div>
                     {!isCollapsed && !archiveLoading && archiveMessages.length > 0 && (
-                      <div className="divide-y divide-gray-100">
+                      <div className={cn("divide-y", isDark ? "divide-[#5f6368]" : "divide-gray-100")}>
                         {archiveMessages.slice(0, 25).map((msg) => (
                           <EmailItem
                             key={`archive-${msg.uid}`}
@@ -1905,16 +1933,16 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
               {(() => {
                 const isCollapsed = collapsedSections['spam'];
                 return (
-                  <div className="border-b border-gray-300">
+                  <div className={cn("border-b", isDark ? "border-[#5f6368]" : "border-gray-300")}>
                     <div 
-                      className="flex items-center justify-between px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
+                      className={cn("flex items-center justify-between px-3 py-1.5 cursor-pointer select-none", isDark ? "bg-[#2d2e30] hover:bg-[#3c4043]" : "bg-white hover:bg-gray-50")}
                       onClick={() => setCollapsedSections(prev => ({ ...prev, spam: !prev.spam }))}
                     >
                       <div className="flex items-center gap-2">
-                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", isCollapsed && "-rotate-90")} />
-                        <span className="text-sm text-gray-700">Spam</span>
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", isDark ? "text-white" : "text-gray-500", isCollapsed && "-rotate-90")} />
+                        <span className={cn("text-sm", isDark ? "text-white" : "text-gray-700")}>Spam</span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className={cn("flex items-center gap-2 text-xs", isDark ? "text-white" : "text-gray-500")}>
                         {spamLoading ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
@@ -1925,7 +1953,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
                       </div>
                     </div>
                     {!isCollapsed && !spamLoading && spamMessages.length > 0 && (
-                      <div className="divide-y divide-gray-100">
+                      <div className={cn("divide-y", isDark ? "divide-[#5f6368]" : "divide-gray-100")}>
                         {spamMessages.slice(0, 25).map((msg) => (
                           <EmailItem
                             key={`spam-${msg.uid}`}
@@ -1956,16 +1984,16 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
               {(() => {
                 const isCollapsed = collapsedSections['trash'];
                 return (
-                  <div className="border-b border-gray-300">
+                  <div className={cn("border-b", isDark ? "border-[#5f6368]" : "border-gray-300")}>
                     <div 
-                      className="flex items-center justify-between px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
+                      className={cn("flex items-center justify-between px-3 py-1.5 cursor-pointer select-none", isDark ? "bg-[#2d2e30] hover:bg-[#3c4043]" : "bg-white hover:bg-gray-50")}
                       onClick={() => setCollapsedSections(prev => ({ ...prev, trash: !prev.trash }))}
                     >
                       <div className="flex items-center gap-2">
-                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", isCollapsed && "-rotate-90")} />
-                        <span className="text-sm text-gray-700">Papierkorb</span>
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", isDark ? "text-white" : "text-gray-500", isCollapsed && "-rotate-90")} />
+                        <span className={cn("text-sm", isDark ? "text-white" : "text-gray-700")}>Papierkorb</span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className={cn("flex items-center gap-2 text-xs", isDark ? "text-white" : "text-gray-500")}>
                         {trashLoading ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
@@ -1976,7 +2004,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
                       </div>
                     </div>
                     {!isCollapsed && !trashLoading && trashMessages.length > 0 && (
-                      <div className="divide-y divide-gray-100">
+                      <div className={cn("divide-y", isDark ? "divide-[#5f6368]" : "divide-gray-100")}>
                         {trashMessages.slice(0, 25).map((msg) => (
                           <EmailItem
                             key={`trash-${msg.uid}`}
@@ -2004,7 +2032,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
               })()}
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className={cn("divide-y", isDark ? "divide-[#5f6368]" : "divide-gray-100")}>
               {filteredMessages.map((msg) => (
                 <EmailItem
                   key={msg.uid}
@@ -2030,14 +2058,18 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
       {/* Email Viewer - Takes Remaining Space on desktop, full screen on mobile */}
       {selectedEmail && (messageLoading || messageError || currentMessage) && (
         <div className={cn(
-          "fixed inset-0 md:relative md:inset-auto md:flex-1 overflow-hidden min-w-0 z-40 md:z-auto",
-          themeData?.backgroundUrl ? 'bg-white/90 md:rounded-2xl md:shadow-lg' : 'bg-white'
+          "fixed inset-0 md:relative md:inset-auto md:flex-1 overflow-hidden min-w-0 z-40 md:z-auto md:rounded-2xl",
+          themeData?.backgroundUrl 
+            ? 'bg-white/90 md:shadow-lg' 
+            : isDark 
+              ? 'bg-[#2d2e30]' 
+              : 'bg-white'
         )}>
           {messageLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <div className="inline-block w-12 h-12 border-4 border-gray-200 border-t-teal-600 rounded-full animate-spin"></div>
-                <p className="mt-4 text-gray-600">Nachricht wird geladen...</p>
+                <div className={cn("inline-block w-12 h-12 border-4 border-t-teal-600 rounded-full animate-spin", isDark ? "border-gray-700" : "border-gray-200")}></div>
+                <p className={cn("mt-4", isDark ? "text-white" : "text-gray-600")}>Nachricht wird geladen...</p>
               </div>
             </div>
           ) : messageError ? (
@@ -2046,8 +2078,8 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
                 <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-red-100 flex items-center justify-center">
                   <AlertCircle className="w-6 h-6 text-red-600" />
                 </div>
-                <h3 className="text-base font-semibold text-gray-900 mb-2">Fehler beim Laden</h3>
-                <p className="text-gray-600 text-sm mb-4">{messageError}</p>
+                <h3 className={cn("text-base font-semibold mb-2", isDark ? "text-white" : "text-gray-900")}>Fehler beim Laden</h3>
+                <p className={cn("text-sm mb-4", isDark ? "text-white" : "text-gray-600")}>{messageError}</p>
                 <div className="flex gap-2 justify-center">
                   <Button variant="outline" onClick={handleCloseEmail}>
                     Zurück

@@ -14,6 +14,7 @@ import { calendarRouter } from './routes/calendar';
 import { turnRouter } from './routes/turn';
 import { recordingRouter } from './routes/recording';
 import contactsRouter from './routes/contacts';
+import { driveRouter } from './routes/drive';
 import { 
   apiRateLimiter, 
   authRateLimiter,
@@ -146,6 +147,7 @@ app.use('/api/calendar', calendarRouter);
 app.use('/api/turn', turnRouter);
 app.use('/api/recording', recordingRouter);
 app.use('/api/contacts', contactsRouter);
+app.use('/api/drive', driveRouter);
 
 // Error Handler (ohne Stack Trace in Production)
 app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -197,6 +199,7 @@ httpServer.listen(PORT, () => {
 |   - POST /api/calendar     CalDAV-Kalender                |
 |   - POST /api/turn         TURN-Credentials               |
 |   - POST /api/recording    Meeting-Aufnahmen              |
+|   - *    /api/drive        Cloud-Speicher                 |
 |                                                           |
 |   WebSocket: /ws                                          |
 |                                                           |

@@ -110,7 +110,7 @@ export function YearView({
               }`}
             >
               {/* Month header */}
-              <div className={`text-xs md:text-sm font-medium mb-2 ${isCurrentMonth ? 'text-teal-500' : (isDark ? 'text-gray-200' : 'text-gray-700')}`}>
+              <div className={`text-xs md:text-sm font-medium mb-2 ${isCurrentMonth ? 'text-teal-500' : (isDark ? 'text-white' : 'text-gray-700')}`}>
                 <span className="hidden md:inline">{monthNames[month]}</span>
                 <span className="md:hidden">{shortMonthNames[month]}</span>
               </div>
@@ -118,7 +118,7 @@ export function YearView({
               {/* Day names - nur auf Desktop */}
               <div className="hidden md:grid grid-cols-7 gap-0.5 mb-1">
                 {dayNames.map((day) => (
-                  <div key={day} className={`text-[8px] text-center ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  <div key={day} className={`text-[8px] text-center ${isDark ? 'text-gray-500' : 'text-white'}`}>
                     {day}
                   </div>
                 ))}
@@ -142,7 +142,7 @@ export function YearView({
                         today
                           ? 'bg-teal-600 text-white font-medium'
                           : isDark
-                          ? 'text-gray-300 hover:bg-white/10'
+                          ? 'text-white hover:bg-white/10'
                           : 'text-gray-700 hover:bg-gray-100'
                       } ${hasEvents && !today ? 'font-bold' : ''}`}
                     >

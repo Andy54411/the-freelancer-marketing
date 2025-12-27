@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useWebmailSession } from '../layout';
-import { useRouter } from 'next/navigation';
 import { 
   Trash2
 } from 'lucide-react';
@@ -16,7 +15,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { CalendarHeader, CalendarSidebar, CalendarGrid, CreateEventModal, EventFormData } from '@/components/webmail/calendar';
+import { getAppUrl } from '@/lib/webmail-urls';
+import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
+import { MailHeader } from '@/components/webmail/MailHeader';
+import { CalendarToolbar } from '@/components/webmail/calendar/CalendarToolbar';
+import { CalendarTasksSwitch } from '@/components/webmail/CalendarTasksSwitch';
+import { CalendarSidebar, CalendarGrid, CreateEventModal, EventFormData } from '@/components/webmail/calendar';
 
 interface CalendarEvent {
   id: string;
@@ -34,7 +38,6 @@ interface CalendarEvent {
 
 export default function WebmailCalendarPage() {
   const { session } = useWebmailSession();
-  const router = useRouter();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -258,34 +261,44 @@ export default function WebmailCalendarPage() {
   // Filter events by enabled calendars (all events currently belong to primary calendar)
   const filteredEvents = events.filter(() => calendars.find(c => c.id === 'primary')?.enabled);
 
+  const { isDark } = useWebmailTheme();
+
   // Loading-State anzeigen während Session geprüft wird
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-white">
+      <div className={`h-screen flex items-center justify-center ${isDark ? 'bg-[#202124]' : 'bg-white'}`}>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col bg-white">
-      {/* Google-style Header */}
-      <CalendarHeader
-        currentDate={currentDate}
-        viewMode={viewMode}
-        onViewChange={setViewMode}
-        onPrev={() => handleNavigate('prev')}
-        onNext={() => handleNavigate('next')}
-        onToday={() => handleNavigate('today')}
-        onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+    <div className={`h-screen flex flex-col ${isDark ? 'bg-[#202124]' : 'bg-white'}`}>
+      {/* Einheitlicher MailHeader mit Kalender-Toolbar */}
+      <MailHeader
         userEmail={session?.email || ''}
-        onLogout={() => router.push('/webmail')}
-        showWeekends={showWeekends}
-        onShowWeekendsChange={setShowWeekends}
-        showDeclinedEvents={showDeclinedEvents}
-        onShowDeclinedEventsChange={setShowDeclinedEvents}
-        showCompletedTasks={showCompletedTasks}
-        onShowCompletedTasksChange={setShowCompletedTasks}
+        onLogout={() => window.location.href = getAppUrl('/webmail')}
+        onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+        appName="Kalender"
+        appHomeUrl="/webmail/calendar"
+        hideSearch={true}
+        rightContent={<CalendarTasksSwitch activeView="calendar" />}
+        toolbarContent={
+          <CalendarToolbar
+            currentDate={currentDate}
+            viewMode={viewMode}
+            onPrev={() => handleNavigate('prev')}
+            onNext={() => handleNavigate('next')}
+            onToday={() => handleNavigate('today')}
+            onViewChange={setViewMode}
+            showWeekends={showWeekends}
+            onShowWeekendsChange={setShowWeekends}
+            showDeclinedEvents={showDeclinedEvents}
+            onShowDeclinedEventsChange={setShowDeclinedEvents}
+            showCompletedTasks={showCompletedTasks}
+            onShowCompletedTasksChange={setShowCompletedTasks}
+          />
+        }
       />
 
       {/* Main Content */}
@@ -373,7 +386,7 @@ export default function WebmailCalendarPage() {
             <DialogHeader>
               <DialogTitle>Termin löschen?</DialogTitle>
               <DialogDescription>
-                Möchtest du den Termin "{selectedEvent.title}" wirklich löschen?
+                Möchtest du den Termin &ldquo;{selectedEvent.title}&rdquo; wirklich löschen?
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
