@@ -82,6 +82,56 @@
     {
       "source": "/api/:path*",
       "destination": "/api/:path*"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "kalender.taskilo.de" }],
+      "destination": "/webmail/calendar"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "calendar.taskilo.de" }],
+      "destination": "/webmail/calendar"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "email.taskilo.de" }],
+      "destination": "/webmail"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "mail.taskilo.de" }],
+      "destination": "/webmail"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "drive.taskilo.de" }],
+      "destination": "/webmail/drive"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "tasks.taskilo.de" }],
+      "destination": "/webmail/tasks"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "task.taskilo.de" }],
+      "destination": "/webmail/tasks"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "kontakt.taskilo.de" }],
+      "destination": "/webmail/contacts"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "contact.taskilo.de" }],
+      "destination": "/webmail/contacts"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "meet.taskilo.de" }],
+      "destination": "/webmail/meet"
     }
   ]
 }
