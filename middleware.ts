@@ -4,6 +4,9 @@ import { NextRequest, NextResponse } from 'next/server';
 // Add edge runtime for middleware
 export const runtime = 'edge';
 
+// Cache-Buster: Force redeploy v2
+const CACHE_VERSION = '2025-12-28-v2';
+
 // Middleware-Logs
 function logMiddleware(message: string, request: NextRequest, additionalData?: any) {
   const timestamp = new Date().toISOString();
