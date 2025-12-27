@@ -72,13 +72,26 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
   // Public pages that don't require authentication
   const publicPaths = ['/webmail', '/webmail/pricing', '/webmail/pricing/checkout', '/webmail/pricing/success'];
   const isPublicPage = publicPaths.some(path => pathname === path || pathname?.startsWith('/webmail/pricing'));
+  
+  // Subdomain-Erkennung: Bei Subdomain-Zugriff ist Login-Seite unter /webmail
+  const isSubdomain = typeof window !== 'undefined' && 
+    window.location.hostname !== 'taskilo.de' && 
+    window.location.hostname.endsWith('.taskilo.de');
+  
+  // Login-URL basierend auf Kontext
+  const loginUrl = isSubdomain ? 'https://email.taskilo.de' : '/webmail';
 
   // Redirect to login if not authenticated and not on public page
   useEffect(() => {
     if (!isLoading && !session?.isAuthenticated && !isPublicPage) {
-      router.push('/webmail');
+      if (isSubdomain) {
+        // Bei Subdomain zur Email-Login-Seite weiterleiten
+        window.location.href = loginUrl;
+      } else {
+        router.push('/webmail');
+      }
     }
-  }, [isLoading, session?.isAuthenticated, pathname, router, isPublicPage]);
+  }, [isLoading, session?.isAuthenticated, pathname, router, isPublicPage, isSubdomain, loginUrl]);
 
   const handleLogout = () => {
     deleteCookie();
@@ -107,9 +120,26 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // Show nothing while redirecting
+  // Zeige Login-Aufforderung statt leere Seite bei fehlender Session
   if (!session?.isAuthenticated && !isPublicPage) {
-    return null;
+    return (
+      <WebmailThemeProvider>
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+          <div className="text-center max-w-md">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Anmeldung erforderlich</h1>
+            <p className="text-gray-600 mb-6">
+              Bitte melde dich an, um auf diese App zuzugreifen.
+            </p>
+            <a 
+              href="https://mail.taskilo.de" 
+              className="inline-flex items-center justify-center px-6 py-3 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              Zur Anmeldung
+            </a>
+          </div>
+        </div>
+      </WebmailThemeProvider>
+    );
   }
 
   return (
