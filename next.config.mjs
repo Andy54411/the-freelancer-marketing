@@ -99,6 +99,15 @@ const nextConfig = {
         source: '/robots.txt',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=0, s-maxage=3600' }],
       },
+      // Webmail Apps - KEIN CACHING (Session-basiert)
+      {
+        source: '/webmail/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'private, no-cache, no-store, must-revalidate' },
+          { key: 'Pragma', value: 'no-cache' },
+          { key: 'Expires', value: '0' },
+        ],
+      },
       // CSP KOMPLETT DEAKTIVIERT FÜR E-MAIL BILDER!!!
     ];
   },

@@ -16,14 +16,22 @@ function decodeCredentials(encoded: string): { email: string; password: string }
 }
 
 function getCookie(): { email: string; password: string } | null {
-  if (typeof document === 'undefined') return null;
+  if (typeof document === 'undefined') {
+    console.log('[getCookie] SSR - no document');
+    return null;
+  }
+  console.log('[getCookie] All cookies:', document.cookie);
   const cookies = document.cookie.split(';');
   for (const cookie of cookies) {
     const [name, value] = cookie.trim().split('=');
+    console.log('[getCookie] Checking:', name, '=', value ? value.substring(0, 20) + '...' : 'empty');
     if (name === COOKIE_NAME && value) {
-      return decodeCredentials(value);
+      const decoded = decodeCredentials(value);
+      console.log('[getCookie] Found webmail_session, decoded:', decoded ? 'SUCCESS' : 'FAILED');
+      return decoded;
     }
   }
+  console.log('[getCookie] webmail_session NOT found');
   return null;
 }
 
@@ -61,10 +69,17 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<WebmailSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // DEBUG: Log beim Mount
+  console.log('[WebmailLayout] Mount - pathname:', pathname, 'hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR');
+
   // Load session from cookie
   useEffect(() => {
+    console.log('[WebmailLayout] useEffect - checking cookie...');
+    console.log('[WebmailLayout] document.cookie:', document.cookie);
     const credentials = getCookie();
+    console.log('[WebmailLayout] credentials:', credentials ? 'FOUND' : 'NOT FOUND');
     if (credentials) {
+      console.log('[WebmailLayout] Setting session for:', credentials.email);
       setSession({
         email: credentials.email,
         password: credentials.password,
@@ -108,7 +123,17 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
   // Don't show layout for login page when not authenticated
   const isLoginPage = pathname === '/webmail' && !session?.isAuthenticated;
 
+  console.log('[WebmailLayout] Render decision:', {
+    isLoading,
+    isAuthenticated: session?.isAuthenticated,
+    isPublicPage,
+    isLoginPage,
+    isSubdomain,
+    pathname,
+  });
+
   if (isLoading) {
+    console.log('[WebmailLayout] Returning: LOADING SPINNER');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" />
@@ -118,6 +143,7 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
 
   // Show children directly for login page and public pages
   if (isLoginPage || (isPublicPage && !session?.isAuthenticated)) {
+    console.log('[WebmailLayout] Returning: PUBLIC PAGE / LOGIN');
     return (
       <WebmailThemeProvider>
         {children}
@@ -127,6 +153,7 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
 
   // Zeige Login-Aufforderung statt leere Seite bei fehlender Session
   if (!session?.isAuthenticated && !isPublicPage) {
+    console.log('[WebmailLayout] Returning: LOGIN REQUIRED PAGE');
     return (
       <WebmailThemeProvider>
         <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -147,6 +174,7 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  console.log('[WebmailLayout] Returning: AUTHENTICATED LAYOUT with children');
   return (
     <WebmailContext.Provider value={{ session, logout: handleLogout }}>
       <WebmailThemeProvider>
