@@ -102,6 +102,70 @@ const nextConfig = {
       // CSP KOMPLETT DEAKTIVIERT FÜR E-MAIL BILDER!!!
     ];
   },
+
+  // Subdomain Rewrites - BEFORE cache/static files
+  async rewrites() {
+    return {
+      beforeFiles: [
+        // kalender.taskilo.de -> /webmail/calendar
+        {
+          source: '/:path*',
+          destination: '/webmail/calendar/:path*',
+          has: [{ type: 'host', value: 'kalender.taskilo.de' }],
+        },
+        {
+          source: '/:path*',
+          destination: '/webmail/calendar/:path*',
+          has: [{ type: 'host', value: 'calendar.taskilo.de' }],
+        },
+        // drive.taskilo.de -> /webmail/drive
+        {
+          source: '/:path*',
+          destination: '/webmail/drive/:path*',
+          has: [{ type: 'host', value: 'drive.taskilo.de' }],
+        },
+        // tasks.taskilo.de -> /webmail/tasks
+        {
+          source: '/:path*',
+          destination: '/webmail/tasks/:path*',
+          has: [{ type: 'host', value: 'tasks.taskilo.de' }],
+        },
+        {
+          source: '/:path*',
+          destination: '/webmail/tasks/:path*',
+          has: [{ type: 'host', value: 'task.taskilo.de' }],
+        },
+        // kontakt.taskilo.de -> /webmail/contacts
+        {
+          source: '/:path*',
+          destination: '/webmail/contacts/:path*',
+          has: [{ type: 'host', value: 'kontakt.taskilo.de' }],
+        },
+        {
+          source: '/:path*',
+          destination: '/webmail/contacts/:path*',
+          has: [{ type: 'host', value: 'contact.taskilo.de' }],
+        },
+        // meet.taskilo.de -> /webmail/meet
+        {
+          source: '/:path*',
+          destination: '/webmail/meet/:path*',
+          has: [{ type: 'host', value: 'meet.taskilo.de' }],
+        },
+        // email/mail.taskilo.de -> /webmail
+        {
+          source: '/:path*',
+          destination: '/webmail/:path*',
+          has: [{ type: 'host', value: 'email.taskilo.de' }],
+        },
+        {
+          source: '/:path*',
+          destination: '/webmail/:path*',
+          has: [{ type: 'host', value: 'mail.taskilo.de' }],
+        },
+      ],
+    };
+  },
 };
 
 export default nextConfig;
