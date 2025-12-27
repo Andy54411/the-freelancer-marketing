@@ -29,13 +29,22 @@ export default async function middleware(request: NextRequest) {
   // Skip API and static paths for all subdomains
   const isApiOrStatic = pathname.startsWith('/api/') || pathname.startsWith('/_next/') || pathname.startsWith('/images/');
 
+  // Helper function to add no-cache headers for subdomain rewrites
+  const createSubdomainRewrite = (targetPath: string) => {
+    const url = request.nextUrl.clone();
+    url.pathname = targetPath;
+    const response = NextResponse.rewrite(url);
+    // Prevent Vercel Edge from caching subdomain rewrites
+    response.headers.set('x-middleware-cache', 'no-cache');
+    response.headers.set('Cache-Control', 'no-store, must-revalidate');
+    return response;
+  };
+
   // email.taskilo.de -> /webmail
   if (hostname.startsWith('email.') || hostname.startsWith('mail.')) {
     logMiddleware('Email Subdomain erkannt', request, { hostname });
     if (!pathname.startsWith('/webmail') && !isApiOrStatic) {
-      const url = request.nextUrl.clone();
-      url.pathname = `/webmail${pathname === '/' ? '' : pathname}`;
-      return NextResponse.rewrite(url);
+      return createSubdomainRewrite(`/webmail${pathname === '/' ? '' : pathname}`);
     }
     return NextResponse.next();
   }
@@ -44,9 +53,7 @@ export default async function middleware(request: NextRequest) {
   if (hostname.startsWith('drive.')) {
     logMiddleware('Drive Subdomain erkannt', request, { hostname });
     if (!pathname.startsWith('/webmail/drive') && !isApiOrStatic) {
-      const url = request.nextUrl.clone();
-      url.pathname = `/webmail/drive${pathname === '/' ? '' : pathname}`;
-      return NextResponse.rewrite(url);
+      return createSubdomainRewrite(`/webmail/drive${pathname === '/' ? '' : pathname}`);
     }
     return NextResponse.next();
   }
@@ -55,9 +62,7 @@ export default async function middleware(request: NextRequest) {
   if (hostname.startsWith('kalender.') || hostname.startsWith('calendar.')) {
     logMiddleware('Kalender Subdomain erkannt', request, { hostname });
     if (!pathname.startsWith('/webmail/calendar') && !isApiOrStatic) {
-      const url = request.nextUrl.clone();
-      url.pathname = `/webmail/calendar${pathname === '/' ? '' : pathname}`;
-      return NextResponse.rewrite(url);
+      return createSubdomainRewrite(`/webmail/calendar${pathname === '/' ? '' : pathname}`);
     }
     return NextResponse.next();
   }
@@ -66,9 +71,7 @@ export default async function middleware(request: NextRequest) {
   if (hostname.startsWith('meet.')) {
     logMiddleware('Meet Subdomain erkannt', request, { hostname });
     if (!pathname.startsWith('/webmail/meet') && !isApiOrStatic) {
-      const url = request.nextUrl.clone();
-      url.pathname = `/webmail/meet${pathname === '/' ? '' : pathname}`;
-      return NextResponse.rewrite(url);
+      return createSubdomainRewrite(`/webmail/meet${pathname === '/' ? '' : pathname}`);
     }
     return NextResponse.next();
   }
@@ -77,9 +80,7 @@ export default async function middleware(request: NextRequest) {
   if (hostname.startsWith('task.') || hostname.startsWith('tasks.')) {
     logMiddleware('Tasks Subdomain erkannt', request, { hostname });
     if (!pathname.startsWith('/webmail/tasks') && !isApiOrStatic) {
-      const url = request.nextUrl.clone();
-      url.pathname = `/webmail/tasks${pathname === '/' ? '' : pathname}`;
-      return NextResponse.rewrite(url);
+      return createSubdomainRewrite(`/webmail/tasks${pathname === '/' ? '' : pathname}`);
     }
     return NextResponse.next();
   }
@@ -88,9 +89,7 @@ export default async function middleware(request: NextRequest) {
   if (hostname.startsWith('kontakt.') || hostname.startsWith('contact.') || hostname.startsWith('contacts.')) {
     logMiddleware('Contacts Subdomain erkannt', request, { hostname });
     if (!pathname.startsWith('/webmail/contacts') && !isApiOrStatic) {
-      const url = request.nextUrl.clone();
-      url.pathname = `/webmail/contacts${pathname === '/' ? '' : pathname}`;
-      return NextResponse.rewrite(url);
+      return createSubdomainRewrite(`/webmail/contacts${pathname === '/' ? '' : pathname}`);
     }
     return NextResponse.next();
   }
