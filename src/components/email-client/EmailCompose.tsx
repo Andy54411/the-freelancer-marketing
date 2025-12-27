@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DrivePickerModal } from '@/components/webmail/drive/DrivePickerModal';
 
 import {
   DropdownMenu,
@@ -280,6 +281,9 @@ export function EmailCompose({
   
   // Emoji-Picker State
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  
+  // Drive Picker State
+  const [showDrivePicker, setShowDrivePicker] = useState(false);
   
   // Kontakte für Autovervollständigung
   const [contacts, setContacts] = useState<Array<{ id: string; name: string; email: string }>>([]);
@@ -2122,7 +2126,11 @@ export function EmailCompose({
                   </div>
                 </div>
               )}
-              <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" title="Dateien aus Drive">
+              <button 
+                onClick={() => setShowDrivePicker(true)}
+                className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" 
+                title="Dateien aus Drive"
+              >
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M7.71 3.5L1.15 15l4.29 7.5h6.57L5.43 11 8.86 5.25 7.71 3.5zm1.14 2l6.57 11.5H8.86l-3.43 6h6.57l6.86-12L12 3.5H7.71l1.14 2z"/></svg>
               </button>
               <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" title="Foto einfügen">
@@ -2179,6 +2187,42 @@ export function EmailCompose({
           </div>
         )}
       </div>
+
+      {/* Drive Picker Modal */}
+      <DrivePickerModal
+        isOpen={showDrivePicker}
+        onClose={() => setShowDrivePicker(false)}
+        onSelect={async (driveFiles) => {
+          // Lade die Dateien vom Drive herunter und füge sie als Attachments hinzu
+          const credentials = getWebmailCookie();
+          if (!credentials) {
+            toast.error('Nicht angemeldet');
+            return;
+          }
+          
+          for (const driveFile of driveFiles) {
+            try {
+              const response = await fetch(`/api/webmail/drive/files/${driveFile.id}`, {
+                headers: { 'x-user-id': credentials.email },
+              });
+              
+              if (response.ok) {
+                const blob = await response.blob();
+                const file = new File([blob], driveFile.name, { type: driveFile.mimeType || 'application/octet-stream' });
+                setAttachments(prev => [...prev, file]);
+                toast.success(`${driveFile.name} hinzugefügt`);
+              } else {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Download fehlgeschlagen');
+              }
+            } catch (err) {
+              toast.error(`Fehler beim Laden von ${driveFile.name}`);
+            }
+          }
+        }}
+        userId={getWebmailCookie()?.email}
+        multiple={true}
+      />
     </div>
   );
 }
