@@ -1,14 +1,7 @@
-import createMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Add edge runtime for middleware
-export const runtime = 'edge';
-
-// Cache-Buster: Force redeploy v2
-const CACHE_VERSION = '2025-12-28-v2';
-
 // Middleware-Logs
-function logMiddleware(message: string, request: NextRequest, additionalData?: any) {
+function logMiddleware(message: string, request: NextRequest, additionalData?: Record<string, unknown>) {
   const timestamp = new Date().toISOString();
   const url = request.nextUrl.pathname;
   const method = request.method;
@@ -25,9 +18,6 @@ function logMiddleware(message: string, request: NextRequest, additionalData?: a
 export default async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const pathname = request.nextUrl.pathname;
-  
-  // IMMEDIATE subdomain check BEFORE any other logic
-  console.log('[Middleware] HOST:', hostname, 'PATH:', pathname);
   
   // Skip static files completely
   if (pathname.startsWith('/_next/') || pathname.startsWith('/images/') || pathname === '/favicon.ico') {
@@ -303,9 +293,6 @@ async function checkCompanyOnboardingStatus(request: NextRequest) {
 }
 
 export const config = {
-  // Match ALL routes for subdomain handling, except static files
-  matcher: [
-    '/',
-    '/((?!_next/static|_next/image|favicon.ico|images|icon|robots\\.txt|sitemap\\.xml).*)',
-  ],
+  // Match ALL routes - let middleware decide what to skip
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
