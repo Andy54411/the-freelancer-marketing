@@ -15,6 +15,7 @@ import { turnRouter } from './routes/turn';
 import { recordingRouter } from './routes/recording';
 import contactsRouter from './routes/contacts';
 import { driveRouter } from './routes/drive';
+import { paymentRouter } from './routes/payment';
 import { 
   apiRateLimiter, 
   authRateLimiter,
@@ -149,6 +150,9 @@ app.use('/api/recording', recordingRouter);
 app.use('/api/contacts', contactsRouter);
 app.use('/api/drive', driveRouter);
 
+// API Routes - Payment (Revolut Escrow System)
+app.use('/api/payment', paymentRouter);
+
 // Error Handler (ohne Stack Trace in Production)
 app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   const requestId = req.headers['x-request-id'] as string;
@@ -200,6 +204,14 @@ httpServer.listen(PORT, () => {
 |   - POST /api/turn         TURN-Credentials               |
 |   - POST /api/recording    Meeting-Aufnahmen              |
 |   - *    /api/drive        Cloud-Speicher                 |
+|                                                           |
+|   Payment Endpoints (Revolut):                            |
+|   - POST /api/payment/escrow/create  Escrow erstellen     |
+|   - POST /api/payment/escrow/release Escrow freigeben     |
+|   - POST /api/payment/payout/batch   Batch-Auszahlungen   |
+|   - GET  /api/payment/accounts       Revolut-Konten       |
+|   - GET  /api/payment/balance        Kontostand           |
+|   - POST /api/payment/webhook/*      Webhooks             |
 |                                                           |
 |   WebSocket: /ws                                          |
 |                                                           |

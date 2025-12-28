@@ -7,7 +7,8 @@ import {
   DateTimeSelectionPopup,
   DateTimeSelectionPopupProps,
 } from '@/app/auftrag/get-started/[unterkategorie]/adresse/components/DateTimeSelectionPopup';
-import B2BPaymentComponent from '@/components/B2BPaymentComponent';
+// STRIPE DEAKTIVIERT - Verwende EscrowPaymentComponent
+import { EscrowPaymentComponent } from '@/components/EscrowPaymentComponent';
 
 interface Provider {
   id: string;
@@ -21,7 +22,8 @@ interface Provider {
   selectedSubcategory?: string;
   bio?: string;
   description?: string;
-  stripeAccountId?: string; // Für B2B Payment
+  // STRIPE DEAKTIVIERT - stripeAccountId nicht mehr benötigt
+  // stripeAccountId?: string;
 }
 
 interface ProviderBookingModalProps {
@@ -58,12 +60,11 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
   const [b2bProjectData, setB2bProjectData] = useState<{
     projectId: string;
     projectTitle: string;
-    projectDescription: string;
+    projectDescription?: string;
     amount: number;
     currency: string;
-    paymentType: 'milestone' | 'project_deposit' | 'final_payment';
+    paymentType: 'milestone' | 'project_deposit' | 'final_payment' | 'order_payment';
     providerId: string;
-    providerStripeAccountId: string;
   } | null>(null);
 
   const handleDescriptionNext = () => {
@@ -92,50 +93,6 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
 
     setIsProcessingPayment(true);
     try {
-      // DEBUG: Provider Stripe Account prüfen
-
-      // FALLBACK: Falls stripeAccountId undefined ist, versuche direkten DB-Zugriff
-      if (!provider.stripeAccountId) {
-        try {
-          // Direkter Firestore-Zugriff um stripeAccountId zu holen
-          const { doc, getDoc } = await import('firebase/firestore');
-          const { db } = await import('@/firebase/clients');
-
-          // KRITISCHE KORREKTUR: Erst companies, dann users Collection prüfen
-          let userData: any = null;
-
-          // 1. Prüfe companies Collection
-          const companyDoc = await getDoc(doc(db, 'companies', provider.id));
-          if (companyDoc.exists()) {
-            userData = companyDoc.data();
-          } else {
-            // 2. Fallback: users Collection
-            const userDoc = await getDoc(doc(db, 'users', provider.id));
-            if (userDoc.exists()) {
-              userData = userDoc.data();
-            }
-          }
-
-          if (userData) {
-            // Verwende die direkt geladene stripeAccountId
-            if (userData.stripeAccountId?.startsWith('acct_')) {
-              // Überschreibe die provider stripeAccountId für diese Session
-              provider.stripeAccountId = userData.stripeAccountId;
-            }
-          }
-        } catch (fallbackError) {}
-      } else {
-      }
-
-      // Prüfe ob Provider Stripe Account vorhanden und gültig ist
-      if (!provider.stripeAccountId || !provider.stripeAccountId.startsWith('acct_')) {
-        alert(
-          'B2B Payment nicht möglich: Provider hat kein konfiguriertes Stripe Connect Konto. ' +
-            'Bitte kontaktieren Sie den Anbieter oder verwenden Sie eine andere Zahlungsmethode.'
-        );
-        return;
-      }
-
       // Berechne den Gesamtbetrag
       const hourlyRate = provider.hourlyRate || 0;
       const durationStr = selectedDateTime.duration;
@@ -162,16 +119,15 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
 
       const totalAmountCents = Math.round(hourlyRate * totalHours * 100); // In Cents
 
-      // Erstelle B2B Project Data für die neue B2BPaymentComponent
+      // Erstelle Escrow Project Data für die neue EscrowPaymentComponent
       const projectData = {
-        projectId: `b2b-booking-${Date.now()}`,
+        projectId: `escrow-booking-${Date.now()}`,
         projectTitle: `Service-Buchung: ${provider.companyName || provider.userName}`,
         projectDescription: `${description}\n\nStunden: ${totalHours}h\nStundensatz: €${hourlyRate}/h`,
         amount: totalAmountCents,
-        currency: 'eur',
+        currency: 'EUR',
         paymentType: 'project_deposit' as const,
         providerId: provider.id,
-        providerStripeAccountId: provider.stripeAccountId,
       };
 
       setB2bProjectData(projectData);
@@ -186,9 +142,8 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
     }
   };
 
-  const handleStripePaymentSuccess = async (paymentIntentId: string) => {
-    // KORREKT: Webhook erstellt die Order automatisch - kein Frontend-Order-Creation
-    // Der Webhook verarbeitet den payment_intent.succeeded Event und erstellt die Order
+  const handleStripePaymentSuccess = async (escrowId: string) => {
+    // Escrow wurde erstellt - Buchung erfolgreich
 
     alert(
       'Buchung erfolgreich abgeschlossen! Die Bestellung wird automatisch erstellt. Sie erhalten eine Bestätigung per E-Mail.'
@@ -560,21 +515,27 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
             </div>
           )}
 
-          {/* B2B Payment wird als separates Modal gerendert */}
+          {/* Escrow Payment wird als separates Modal gerendert */}
         </div>
       </div>
 
-      {/* B2B Payment Component */}
+      {/* Escrow Payment Component (ersetzt B2B Payment) */}
       {b2bProjectData && (
-        <B2BPaymentComponent
-          projectData={b2bProjectData}
+        <EscrowPaymentComponent
+          projectData={{
+            projectId: b2bProjectData.projectId,
+            projectTitle: b2bProjectData.projectTitle,
+            projectDescription: b2bProjectData.projectDescription,
+            amount: b2bProjectData.amount,
+            currency: b2bProjectData.currency || 'EUR',
+            paymentType: b2bProjectData.paymentType,
+            providerId: b2bProjectData.providerId,
+          }}
           customerData={{
             customerId: user?.uid || 'anonymous',
-            companyName: '', // Wird aus Firebase geladen basierend auf customerId
+            companyName: '',
             name: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Taskilo Kunde',
             email: user?.email || 'kunde@taskilo.de',
-            phone: '', // Wird aus Firebase geladen basierend auf customerId
-            address: undefined, // Wird aus Firebase geladen basierend auf customerId
           }}
           isOpen={isB2BPaymentOpen}
           onClose={() => {

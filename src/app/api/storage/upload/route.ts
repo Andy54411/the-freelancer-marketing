@@ -1,14 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth as adminAuth } from '@/firebase/server';
 
 /**
  * Cloud Storage Upload Endpoint
  * Lädt Dateien in Cloud Storage hoch und gibt Referenzen zurück
+ * 
+ * Unterstützt zwei Modi:
+ * 1. companyId-basiert: Für bestehende Firmen (Belege, etc.)
+ * 2. userId-basiert: Für Registrierung (Identitätsdokumente, etc.)
  */
 export async function POST(request: NextRequest) {
   try {
+    // Auth-Token prüfen für Registration-Uploads
+    const authHeader = request.headers.get('authorization');
+    let authenticatedUserId: string | null = null;
+    
+    if (authHeader?.startsWith('Bearer ') && adminAuth) {
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const decodedToken = await adminAuth.verifyIdToken(token);
+        authenticatedUserId = decodedToken.uid;
+      } catch {
+        // Token-Verifikation fehlgeschlagen - ignorieren für companyId-basierte Uploads
+      }
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const companyId = formData.get('companyId') as string;
+    const userId = formData.get('userId') as string;
+    const purpose = formData.get('purpose') as string;
 
     if (!file) {
       return NextResponse.json(
@@ -20,11 +41,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!companyId) {
+    // Bestimme die ID für den Speicherpfad
+    let storageOwnerId: string;
+    let isRegistrationUpload = false;
+
+    if (userId) {
+      // Registration-Upload: userId muss mit authentifiziertem User übereinstimmen
+      if (authenticatedUserId && authenticatedUserId !== userId) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Unauthorized: userId mismatch',
+          },
+          { status: 403 }
+        );
+      }
+      storageOwnerId = userId;
+      isRegistrationUpload = true;
+    } else if (companyId) {
+      storageOwnerId = companyId;
+    } else {
       return NextResponse.json(
         {
           success: false,
-          error: 'Company ID required',
+          error: 'Company ID or User ID required',
         },
         { status: 400 }
       );
@@ -45,7 +85,32 @@ export async function POST(request: NextRequest) {
 
     // Convert file to buffer
     const buffer = Buffer.from(await file.arrayBuffer());
-    const fileName = `${companyId}/receipts/${Date.now()}-${file.name}`;
+    
+    // Bestimme Dateipfad basierend auf purpose oder Standard
+    let fileName: string;
+    const fileExtension = file.name.split('.').pop() || 'bin';
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    
+    if (isRegistrationUpload && purpose) {
+      // Registration-Uploads mit purpose-basiertem Pfad
+      switch (purpose) {
+        case 'identity_document':
+          fileName = `companies/${storageOwnerId}/identity/${uniqueId}.${fileExtension}`;
+          break;
+        case 'business_icon':
+        case 'business_logo':
+          fileName = `companies/${storageOwnerId}/branding/${uniqueId}.${fileExtension}`;
+          break;
+        case 'additional_verification':
+          fileName = `companies/${storageOwnerId}/documents/${uniqueId}.${fileExtension}`;
+          break;
+        default:
+          fileName = `companies/${storageOwnerId}/uploads/${uniqueId}.${fileExtension}`;
+      }
+    } else {
+      // Standard-Pfad für Belege etc.
+      fileName = `${storageOwnerId}/receipts/${Date.now()}-${file.name}`;
+    }
 
     // Real cloud storage upload implementation
     // Priority upload strategy:
@@ -211,8 +276,16 @@ export async function POST(request: NextRequest) {
       throw new Error('All upload methods failed');
     }
 
+    // Generiere eindeutige fileId für die Rückgabe
+    const fileId = `file_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
     return NextResponse.json({
       success: true,
+      // Für Registration-Uploads: fileId ist wichtig
+      fileId,
+      firebaseStorageUrl: uploadResult.fileUrl,
+      firebaseStoragePath: uploadResult.gcsPath || fileName,
+      // Legacy-Felder für bestehende Integrationen
       data: uploadResult,
       s3Path: uploadResult.s3Path,
       gcsPath: uploadResult.gcsPath,
@@ -223,7 +296,8 @@ export async function POST(request: NextRequest) {
         fileSize: file.size,
         mimeType: file.type,
         uploadedAt: new Date().toISOString(),
-        companyId,
+        ownerId: storageOwnerId,
+        purpose: purpose || 'general',
       },
     });
   } catch (error) {

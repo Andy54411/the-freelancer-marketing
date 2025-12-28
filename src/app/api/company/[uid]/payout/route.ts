@@ -1,448 +1,254 @@
-import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
-
-// Admin approval utilities
-const BLOCKED_ACTIONS = {
-  PAYOUT_REQUEST: 'payout_request',
-};
-
-// Dynamic Firebase imports to prevent build-time issues
-let db: any;
-
-async function getFirebaseServices(companyId: string) {
-  if (!db) {
-    try {
-      // DIRECT Firebase initialization without JSON imports
-      const firebaseAdmin = await import('firebase-admin');
-
-      // Check if app is already initialized
-      let app;
-      try {
-        app = firebaseAdmin.app();
-      } catch (appError) {
-        if (
-          process.env.FIREBASE_PROJECT_ID &&
-          process.env.FIREBASE_PRIVATE_KEY &&
-          process.env.FIREBASE_CLIENT_EMAIL
-        ) {
-          app = firebaseAdmin.initializeApp({
-            credential: firebaseAdmin.credential.cert({
-              projectId: process.env.FIREBASE_PROJECT_ID,
-              clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-              privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-            }),
-          });
-        } else if (process.env.FIREBASE_PROJECT_ID) {
-          app = firebaseAdmin.initializeApp({
-            credential: firebaseAdmin.credential.applicationDefault(),
-            projectId: process.env.FIREBASE_PROJECT_ID,
-          });
-        } else {
-          throw new Error('No Firebase configuration found');
-        }
-      }
-
-      db = firebaseAdmin.firestore(app);
-    } catch (error) {
-      throw error;
-    }
-  }
-  return { db };
-}
-
-// Mock admin approval check for now
-async function checkAdminApproval(uid: string) {
-  return { isApproved: true };
-}
-
-function createApprovalErrorResponse(result: any) {
-  return { error: 'Admin approval required' };
-}
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',
-});
-
-interface PayoutRequest {
-  amount?: number; // Optional: specific amount, otherwise all available
-  description?: string;
-}
-
 /**
- * POST: Company requests manual payout from held funds
- * Money is already in connected account as "held funds", just needs payout to bank
+ * Company Payout API - Revolut/Escrow-basiert
+ * 
+ * POST - Auszahlung an Provider-Bankkonto anfordern
+ * GET - Ausstehende Auszahlungen abrufen
+ * 
+ * Ersetzt Stripe Payouts durch Revolut Business API
  */
-export async function POST(request: NextRequest, { params }: { params: { uid: string } }) {
-  try {
-    const resolvedParams = await params;
-    const { db: adminDb } = await getFirebaseServices(resolvedParams.uid);
 
-    if (!adminDb) {
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyApiAuth, authErrorResponse, isAuthorizedForCompany } from '@/lib/apiAuth';
+
+const PAYMENT_BACKEND_URL = process.env.PAYMENT_BACKEND_URL || 'https://mail.taskilo.de';
+const PAYMENT_API_KEY = process.env.PAYMENT_API_KEY || process.env.WEBMAIL_API_KEY;
+
+export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+  try {
+    // Auth prüfen
+    const authResult = await verifyApiAuth(request);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
+    }
+
+    const { uid: companyId } = await params;
+
+    // Prüfe Berechtigung
+    if (!isAuthorizedForCompany(authResult.userId, companyId, authResult.token)) {
+      return NextResponse.json({ error: 'Nicht berechtigt' }, { status: 403 });
+    }
+
+    // Firebase Admin
+    const { admin } = await import('@/firebase/server');
+    if (!admin) {
       return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
     }
 
-    const { uid } = resolvedParams;
-    const body: PayoutRequest = await request.json();
+    const adminDb = admin.firestore();
+    const body = await request.json();
+    const { escrowIds } = body;
 
-    // Check admin approval
-    const approvalResult = await checkAdminApproval(uid);
-    if (!approvalResult.isApproved) {
-      return NextResponse.json(
-        {
-          ...createApprovalErrorResponse(approvalResult),
-          blockedAction: BLOCKED_ACTIONS.PAYOUT_REQUEST,
-        },
-        { status: 403 }
-      );
+    // Hole Company-Daten für Bankverbindung
+    const companyDoc = await adminDb.collection('companies').doc(companyId).get();
+    if (!companyDoc.exists) {
+      return NextResponse.json({ error: 'Company nicht gefunden' }, { status: 404 });
     }
 
-    let totalAvailableAmount = 0;
-    const orderIds: string[] = [];
-    const quotePaymentIds: string[] = [];
+    const companyData = companyDoc.data()!;
+    
+    // Prüfe Bankverbindung
+    const iban = companyData.iban || companyData.bankDetails?.iban || companyData.step3?.iban;
+    if (!iban) {
+      return NextResponse.json({ 
+        error: 'Keine Bankverbindung hinterlegt',
+        message: 'Bitte fügen Sie Ihre IBAN in den Unternehmenseinstellungen hinzu.',
+      }, { status: 400 });
+    }
 
-    // 1. Find completed orders ready for payout
-    const ordersRef = adminDb.collection('auftraege');
-    const completedOrdersQuery = ordersRef
-      .where('selectedAnbieterId', '==', uid)
-      .where('status', '==', 'ABGESCHLOSSEN')
-      .where('payoutStatus', '==', 'available_for_payout');
+    // Wenn spezifische Escrows angegeben
+    if (escrowIds && Array.isArray(escrowIds)) {
+      // Hole alle angegebenen Escrows
+      const escrows: Array<{ id: string; orderId?: string; amount: number; providerAmount?: number; currency?: string; providerId?: string; status?: string }> = [];
+      for (const escrowId of escrowIds) {
+        const escrowDoc = await adminDb.collection('escrows').doc(escrowId).get();
+        if (escrowDoc.exists) {
+          const data = escrowDoc.data()!;
+          if (data.providerId === companyId && data.status === 'held') {
+            escrows.push({ 
+              id: escrowId, 
+              orderId: data.orderId,
+              amount: data.amount || 0,
+              providerAmount: data.providerAmount,
+              currency: data.currency,
+              providerId: data.providerId,
+              status: data.status,
+            });
+          }
+        }
+      }
 
-    const completedOrdersSnap = await completedOrdersQuery.get();
+      if (escrows.length === 0) {
+        return NextResponse.json({ 
+          error: 'Keine auszahlbaren Escrows gefunden' 
+        }, { status: 400 });
+      }
 
-    completedOrdersSnap.forEach(doc => {
-      const orderData = doc.data();
-      const platformFee =
-        orderData.sellerCommissionInCents || orderData.applicationFeeAmountFromStripe || 0;
-      const netAmount = orderData.totalAmountPaidByBuyer - platformFee;
+      // Berechne Gesamtbetrag
+      const totalAmount = escrows.reduce((sum, e) => sum + (e.providerAmount || e.amount), 0);
 
-      // Include additional hours amount
-      const additionalHoursAmount = orderData.additionalHoursPayoutAmount || 0;
+      // Rufe Payment Backend für Batch-Payout
+      try {
+        const response = await fetch(`${PAYMENT_BACKEND_URL}/api/payment/payout/batch`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': PAYMENT_API_KEY || '',
+          },
+          body: JSON.stringify({
+            payouts: escrows.map(e => ({
+              orderId: e.orderId,
+              providerId: companyId,
+              amount: e.providerAmount || e.amount,
+              currency: e.currency || 'EUR',
+              iban: iban,
+              bic: companyData.bic || companyData.bankDetails?.bic,
+              name: companyData.companyName || companyData.name,
+              reference: `Taskilo Auszahlung ${e.orderId}`,
+            })),
+          }),
+        });
 
-      totalAvailableAmount += netAmount + additionalHoursAmount;
-      orderIds.push(doc.id);
-    });
+        const result = await response.json();
 
-    // 2. Find quote payments ready for payout
-    const quotesRef = adminDb.collection('companies').doc(uid).collection('quotes');
-    const quotesQuery = quotesRef.where('status', '==', 'contacts_exchanged');
-    const quotesSnap = await quotesQuery.get();
-
-    const quoteProvisionTransfers: Array<{
-      quoteId: string;
-      proposalId: string;
-      provisionAmount: number;
-      netAmount: number;
-    }> = [];
-
-    for (const quoteDoc of quotesSnap.docs) {
-      const quoteData = quoteDoc.data();
-      const proposalsRef = quoteDoc.ref.collection('proposals');
-      const proposalsQuery = proposalsRef
-        .where('providerId', '==', uid)
-        .where('paymentComplete', '==', true);
-      const proposalsSnap = await proposalsQuery.get();
-
-      proposalsSnap.forEach(proposalDoc => {
-        const proposalData = proposalDoc.data();
-
-        if (
-          proposalData.payoutStatus === 'payout_requested' ||
-          proposalData.payoutStatus === 'completed'
-        ) {
-          return;
+        if (!response.ok) {
+          throw new Error(result.error || 'Payout Backend Fehler');
         }
 
-        const totalAmount = proposalData.totalAmount || 0;
-        const platformFeePercent = 0.05; // 5% Platform Fee
-        const platformFeeAmount = Math.round(totalAmount * 100 * platformFeePercent);
-        const netAmount = totalAmount * 100 - platformFeeAmount;
-
-        if (netAmount > 0) {
-          totalAvailableAmount += netAmount;
-          quotePaymentIds.push(`quote_${quoteDoc.id}`);
-
-          quoteProvisionTransfers.push({
-            quoteId: quoteDoc.id,
-            proposalId: proposalDoc.id,
-            provisionAmount: platformFeeAmount,
-            netAmount: netAmount,
+        // Update Escrows auf 'released'
+        for (const escrow of escrows) {
+          await adminDb.collection('escrows').doc(escrow.id).update({
+            status: 'released',
+            releasedAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
         }
-      });
+
+        return NextResponse.json({
+          success: true,
+          message: `Auszahlung von ${totalAmount.toFixed(2)} EUR eingeleitet`,
+          amount: totalAmount,
+          escrowsReleased: escrows.length,
+        });
+      } catch (backendError) {
+        console.error('[Payout] Backend error:', backendError);
+        return NextResponse.json({ 
+          error: 'Auszahlung fehlgeschlagen',
+          details: backendError instanceof Error ? backendError.message : 'Unknown',
+        }, { status: 500 });
+      }
     }
 
-    if (totalAvailableAmount <= 0) {
-      return NextResponse.json(
-        { error: 'No completed orders or quote payments available for payout' },
-        { status: 400 }
-      );
+    // Ohne spezifische Escrows: Hole alle verfügbaren
+    const availableEscrows = await adminDb
+      .collection('escrows')
+      .where('providerId', '==', companyId)
+      .where('status', '==', 'held')
+      .get();
+
+    // Filter: Nur Escrows mit abgelaufener Clearing-Periode
+    const now = admin.firestore.Timestamp.now();
+    const releasableEscrows = availableEscrows.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter((e: any) => e.clearingEndsAt && e.clearingEndsAt.toMillis() <= now.toMillis());
+
+    if (releasableEscrows.length === 0) {
+      return NextResponse.json({ 
+        error: 'Keine auszahlbaren Beträge verfügbar',
+        message: 'Alle Zahlungen befinden sich noch in der Clearing-Periode.',
+      }, { status: 400 });
     }
 
-    // 3. Validate payout amount
-    const payoutAmount = body.amount
-      ? Math.min(body.amount * 100, totalAvailableAmount)
-      : totalAvailableAmount;
-
-    if (payoutAmount <= 0) {
-      return NextResponse.json({ error: 'No valid amount available for payout' }, { status: 400 });
-    }
-
-    // 4. Get company Stripe account info
-    const companyRef = adminDb.collection('companies').doc(uid);
-    const companySnap = await companyRef.get();
-
-    if (!companySnap.exists) {
-      return NextResponse.json(
-        { error: 'Company not found in companies collection' },
-        { status: 404 }
-      );
-    }
-
-    const companyData = companySnap.data();
-    const stripeAccountId = companyData?.stripeAccountId;
-
-    if (!stripeAccountId) {
-      return NextResponse.json(
-        { error: 'No Stripe account configured for this company' },
-        { status: 400 }
-      );
-    }
-
-    // 5. Create Stripe Payout from held funds in connected account
-    // Note: Money is already in connected account as "held funds" from original payment
-    let stripePayoutId: string | undefined;
-
-    try {
-      const payout = await stripe.payouts.create(
-        {
-          amount: payoutAmount,
-          currency: 'eur',
-          method: 'standard',
-          statement_descriptor: 'Taskilo Auszahlung',
-          description:
-            body.description ||
-            `Auszahlung für ${orderIds.length} Aufträge und ${quotePaymentIds.length} Quote Payments`,
-          metadata: {
-            companyId: uid,
-            orderIds: orderIds.join(','),
-            quotePaymentIds: quotePaymentIds.join(','),
-            totalOrders: orderIds.length.toString(),
-            totalQuotePayments: quotePaymentIds.length.toString(),
-            requestedAt: new Date().toISOString(),
-            releaseType: 'held_funds_release',
-          },
-        },
-        {
-          stripeAccount: stripeAccountId,
-        }
-      );
-
-      stripePayoutId = payout.id;
-    } catch (stripeError: any) {
-      return NextResponse.json(
-        {
-          error: 'Payout failed',
-          details: stripeError.message,
-          code: stripeError.code,
-        },
-        { status: 400 }
-      );
-    }
-
-    // 6. Update order status to "payout_requested"
-    const batch = adminDb.batch();
-
-    completedOrdersSnap.forEach(doc => {
-      batch.update(doc.ref, {
-        payoutStatus: 'payout_requested',
-        payoutRequestedAt: new Date(),
-        stripePayoutId: stripePayoutId,
-        updatedAt: new Date(),
-      });
-    });
-
-    // Update quote proposals
-    for (const transfer of quoteProvisionTransfers) {
-      const quoteRef = adminDb
-        .collection('companies')
-        .doc(uid)
-        .collection('quotes')
-        .doc(transfer.quoteId);
-      const proposalRef = quoteRef.collection('proposals').doc(transfer.proposalId);
-
-      batch.update(proposalRef, {
-        payoutStatus: 'payout_requested',
-        payoutRequestedAt: new Date(),
-        stripePayoutId: stripePayoutId,
-        updatedAt: new Date(),
-      });
-    }
-
-    await batch.commit();
-
-    // 7. Create payout log
-    const totalProvisionAmount = quoteProvisionTransfers.reduce(
-      (sum, transfer) => sum + transfer.provisionAmount,
-      0
-    );
-
-    const payoutLogRef = adminDb.collection('payout_logs').doc();
-    await payoutLogRef.set({
-      companyId: uid,
-      stripePayoutId: stripePayoutId,
-      amount: payoutAmount,
-      currency: 'EUR',
-      orderIds: orderIds,
-      quotePaymentIds: quotePaymentIds,
-      orderCount: orderIds.length,
-      quotePaymentCount: quotePaymentIds.length,
-      totalProvisionAmount: totalProvisionAmount,
-      provisionTransfers: quoteProvisionTransfers,
-      requestedAt: new Date(),
-      status: 'requested',
-      method: 'bank_transfer',
-      releaseType: 'held_funds_release',
-      description:
-        body.description ||
-        `Auszahlung für ${orderIds.length} Aufträge und ${quotePaymentIds.length} Quote Payments`,
-    });
+    const totalAmount = releasableEscrows.reduce((sum, e: any) => sum + (e.providerAmount || e.amount), 0);
 
     return NextResponse.json({
       success: true,
-      message: 'Payout request processed successfully - held funds released',
-      payout: {
-        id: stripePayoutId,
-        amount: payoutAmount / 100,
-        currency: 'EUR',
-        orderCount: orderIds.length,
-        quotePaymentCount: quotePaymentIds.length,
-        totalProvisionTransferred: totalProvisionAmount / 100,
-        estimatedArrival: '1-2 Werktage',
-        status: 'requested',
-        method: 'bank_transfer',
-        releaseType: 'held_funds_release',
-      },
+      availableAmount: totalAmount,
+      escrowCount: releasableEscrows.length,
+      escrows: releasableEscrows.map((e: any) => ({
+        id: e.id,
+        orderId: e.orderId,
+        amount: e.providerAmount || e.amount,
+        clearingEndsAt: e.clearingEndsAt?.toDate?.() || e.clearingEndsAt,
+      })),
+      message: 'Nutzen Sie POST mit escrowIds um Auszahlung zu initiieren',
     });
-  } catch (error: any) {
+
+  } catch (error) {
+    console.error('[Payout] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to process payout request', details: error.message },
+      { error: 'Interner Server-Fehler', details: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
     );
   }
 }
 
-/**
- * GET: Get available payout amount for company
- * Shows database calculations + Stripe balance
- */
-export async function GET(request: NextRequest, { params }: { params: { uid: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
-    const resolvedParams = await params;
-    const { db: adminDb } = await getFirebaseServices(resolvedParams.uid);
+    // Auth prüfen
+    const authResult = await verifyApiAuth(request);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
+    }
 
-    if (!adminDb) {
+    const { uid: companyId } = await params;
+
+    // Prüfe Berechtigung
+    if (!isAuthorizedForCompany(authResult.userId, companyId, authResult.token)) {
+      return NextResponse.json({ error: 'Nicht berechtigt' }, { status: 403 });
+    }
+
+    // Firebase Admin
+    const { admin } = await import('@/firebase/server');
+    if (!admin) {
       return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
     }
 
-    const { uid } = resolvedParams;
+    const adminDb = admin.firestore();
 
-    // 1. Get company Stripe account info
-    const companyRef = adminDb.collection('companies').doc(uid);
-    const companySnap = await companyRef.get();
+    // Hole alle Escrows für diese Company
+    const escrowsSnapshot = await adminDb
+      .collection('escrows')
+      .where('providerId', '==', companyId)
+      .get();
 
-    if (!companySnap.exists) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
-    }
+    const escrows = escrowsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const now = admin.firestore.Timestamp.now();
 
-    const companyData = companySnap.data();
-    const stripeAccountId = companyData?.stripeAccountId;
+    // Kategorisiere
+    const held = escrows.filter((e: any) => e.status === 'held');
+    const clearing = held.filter((e: any) => e.clearingEndsAt && e.clearingEndsAt.toMillis() > now.toMillis());
+    const available = held.filter((e: any) => !e.clearingEndsAt || e.clearingEndsAt.toMillis() <= now.toMillis());
+    const released = escrows.filter((e: any) => e.status === 'released');
 
-    if (!stripeAccountId) {
-      return NextResponse.json({ error: 'No Stripe account configured' }, { status: 400 });
-    }
-
-    // 2. Calculate database amounts (what should be available)
-    let databaseAvailableAmount = 0;
-    const orders: any[] = [];
-
-    // Regular orders
-    const ordersRef = adminDb.collection('auftraege');
-    const completedOrdersQuery = ordersRef
-      .where('selectedAnbieterId', '==', uid)
-      .where('status', '==', 'ABGESCHLOSSEN')
-      .where('payoutStatus', '==', 'available_for_payout')
-      .limit(10);
-
-    const completedOrdersSnap = await completedOrdersQuery.get();
-
-    completedOrdersSnap.forEach(doc => {
-      const orderData = doc.data();
-      const platformFee =
-        orderData.sellerCommissionInCents || orderData.applicationFeeAmountFromStripe || 0;
-      const netAmount = orderData.totalAmountPaidByBuyer - platformFee;
-      const additionalHoursAmount = orderData.additionalHoursPayoutAmount || 0;
-      const totalAmount = netAmount + additionalHoursAmount;
-
-      databaseAvailableAmount += totalAmount;
-
-      orders.push({
-        id: doc.id,
-        type: 'regular_order',
-        amount: totalAmount / 100,
-        completedAt: orderData.completedAt,
-        projectTitle: orderData.projectTitle || orderData.description,
-        status: orderData.payoutStatus || 'completed',
-      });
-    });
-
-    // 3. Get Stripe balance for comparison
-    let stripeBalance;
-    try {
-      stripeBalance = await stripe.balance.retrieve({
-        stripeAccount: stripeAccountId,
-      });
-    } catch (stripeError: any) {
-      return NextResponse.json(
-        { error: 'Failed to get Stripe balance', details: stripeError.message },
-        { status: 500 }
-      );
-    }
-
-    const availableBalanceEur = stripeBalance.available.find(balance => balance.currency === 'eur');
-    const pendingBalanceEur = stripeBalance.pending.find(balance => balance.currency === 'eur');
-
-    const stripeAvailableAmount = availableBalanceEur ? availableBalanceEur.amount / 100 : 0;
-    const stripePendingAmount = pendingBalanceEur ? pendingBalanceEur.amount / 100 : 0;
+    const clearingTotal = clearing.reduce((sum, e: any) => sum + (e.providerAmount || e.amount || 0), 0);
+    const availableTotal = available.reduce((sum, e: any) => sum + (e.providerAmount || e.amount || 0), 0);
+    const releasedTotal = released.reduce((sum, e: any) => sum + (e.providerAmount || e.amount || 0), 0);
 
     return NextResponse.json({
-      // Database calculations (what should be available based on completed orders)
-      databaseAvailableAmount: databaseAvailableAmount / 100,
-      orderCount: completedOrdersSnap.size,
-      orders: orders,
-
-      // Actual Stripe balance (may be different due to held funds, etc.)
-      stripeBalance: {
-        available: stripeAvailableAmount,
-        pending: stripePendingAmount,
-        lastUpdated: new Date().toISOString(),
+      success: true,
+      balance: {
+        inClearing: clearingTotal,
+        available: availableTotal,
+        released: releasedTotal,
+        currency: 'EUR',
       },
-
-      // Display the database amount as primary (held funds scenario)
-      availableAmount: databaseAvailableAmount / 100, // Show database calculation
-      pendingAmount: stripePendingAmount,
-      currency: 'EUR',
-
-      breakdown: {
-        message: 'Available amount based on completed orders (held funds release system)',
-        note: 'Money is held in Stripe Connect account until both parties confirm completion',
-        databaseCalculation: databaseAvailableAmount / 100,
-        stripeAvailable: stripeAvailableAmount,
-        difference: databaseAvailableAmount / 100 - stripeAvailableAmount,
+      counts: {
+        inClearing: clearing.length,
+        available: available.length,
+        released: released.length,
       },
+      availableEscrows: available.map((e: any) => ({
+        id: e.id,
+        orderId: e.orderId,
+        amount: e.providerAmount || e.amount,
+        createdAt: e.createdAt?.toDate?.() || e.createdAt,
+      })),
     });
-  } catch (error: any) {
+
+  } catch (error) {
+    console.error('[Payout GET] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to get available payout amount', details: error.message },
+      { error: 'Interner Server-Fehler', details: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
     );
   }

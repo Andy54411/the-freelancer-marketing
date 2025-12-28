@@ -1,14 +1,25 @@
+/**
+ * Order Complete API Route
+ * 
+ * PATCH - Auftrag als abgeschlossen markieren und Escrow-Freigabe initiieren
+ * GET - Order-Details abrufen
+ * 
+ * Ersetzt die alte Stripe-basierte Implementierung durch das Escrow/Revolut-System.
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
+import { verifyApiAuth, authErrorResponse } from '@/lib/apiAuth';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',
-});
-
-export async function PATCH(request: NextRequest, { params }: { params: { orderId: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
   try {
+    // Auth prüfen
+    const authResult = await verifyApiAuth(request);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
+    }
+
     // Dynamically import Firebase setup to avoid build-time initialization
-    const { admin } = await import('../../../../../firebase/server');
+    const { admin } = await import('@/firebase/server');
 
     // Check if Firebase is properly initialized
     if (!admin) {
@@ -32,64 +43,84 @@ export async function PATCH(request: NextRequest, { params }: { params: { orderI
 
     const orderData = orderDoc.data()!;
 
+    // Prüfe Berechtigung (Anbieter oder Kunde)
+    const isProvider = orderData.selectedAnbieterId === authResult.userId;
+    const isCustomer = orderData.customerFirebaseUid === authResult.userId;
+    
+    if (!isProvider && !isCustomer) {
+      return NextResponse.json({ error: 'Nicht berechtigt' }, { status: 403 });
+    }
+
     // Prüfe ob Auftrag bereits abgeschlossen
     if (orderData.status === 'completed') {
       return NextResponse.json({ error: 'Auftrag bereits abgeschlossen' }, { status: 400 });
     }
 
-    // Prüfe ob Payment Intent existiert
-    if (!orderData.paymentIntentId || !orderData.companyStripeAccountId) {
-      return NextResponse.json({ error: 'Zahlungsdaten nicht vollständig' }, { status: 400 });
+    // Berechne Beträge
+    const totalAmount = orderData.totalAmount || orderData.betrag || 0;
+    const platformFeePercent = 10; // 10% Taskilo Provision
+    const platformFeeAmount = Math.round(totalAmount * (platformFeePercent / 100) * 100) / 100;
+    const payoutAmount = Math.round((totalAmount - platformFeeAmount) * 100) / 100;
+
+    // Update Order Status - Escrow-basiert
+    await adminDb.collection('auftraege').doc(orderId).update({
+      status: 'completed',
+      completedAt: admin.firestore.FieldValue.serverTimestamp(),
+      completionFeedback: feedback,
+      // Escrow Status
+      escrowStatus: 'pending_release', // Warte auf Clearing-Periode
+      payoutStatus: 'clearing',
+      payoutAmount,
+      platformFeeAmount,
+      platformFeePercent,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Prüfe ob Escrow existiert und aktualisiere ihn
+    const escrowQuery = await adminDb
+      .collection('escrows')
+      .where('orderId', '==', orderId)
+      .limit(1)
+      .get();
+
+    if (!escrowQuery.empty) {
+      const escrowDoc = escrowQuery.docs[0];
+      await escrowDoc.ref.update({
+        status: 'held',
+        clearingEndsAt: admin.firestore.Timestamp.fromDate(
+          new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // 14 Tage Clearing
+        ),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
     }
-
-    const platformFeeAmount = Math.round(orderData.totalAmount * 0.035); // 3.5%
-    const payoutAmount = orderData.totalAmount - platformFeeAmount;
-
-    // ✅ CONTROLLED PAYOUT: Markiere für manuelle Auszahlung statt automatischer Transfer
-
-    // Update Order Status für kontrollierte Auszahlung
-    await adminDb.collection('auftraege').doc(orderId).update({
-      status: 'completed',
-      completedAt: new Date(),
-      completionFeedback: feedback,
-      payoutStatus: 'available_for_payout', // 🎯 Für manuellen Payout markieren
-      payoutAmount,
-      platformFeeAmount,
-      updatedAt: new Date(),
-    });
-
-    // ✅ CONTROLLED PAYOUT: Markiere für manuelle Auszahlung statt automatischer Transfer
-
-    // Update Order Status für kontrollierte Auszahlung
-    await adminDb.collection('auftraege').doc(orderId).update({
-      status: 'completed',
-      completedAt: new Date(),
-      completionFeedback: feedback,
-      payoutStatus: 'available_for_payout', // 🎯 Für manuellen Payout markieren
-      payoutAmount,
-      platformFeeAmount,
-      updatedAt: new Date(),
-    });
 
     return NextResponse.json({
       success: true,
-      message: 'Auftrag erfolgreich abgeschlossen - Auszahlung über Dashboard verfügbar',
+      message: 'Auftrag erfolgreich abgeschlossen - Auszahlung nach Clearing-Periode',
       payoutAmount,
       platformFeeAmount,
-      payoutStatus: 'available_for_payout',
+      payoutStatus: 'clearing',
+      clearingDays: 14,
     });
-  } catch (error: any) {
+  } catch (error) {
+    console.error('[Order Complete] Error:', error);
     return NextResponse.json(
-      { error: 'Interner Server-Fehler', details: error.message },
+      { error: 'Interner Server-Fehler', details: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
     );
   }
 }
 
-export async function GET(request: NextRequest, { params }: { params: { orderId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
   try {
+    // Auth prüfen
+    const authResult = await verifyApiAuth(request);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
+    }
+
     // Dynamically import Firebase setup to avoid build-time initialization
-    const { admin } = await import('../../../../../firebase/server');
+    const { admin } = await import('@/firebase/server');
 
     // Check if Firebase is properly initialized
     if (!admin) {
@@ -107,13 +138,25 @@ export async function GET(request: NextRequest, { params }: { params: { orderId:
 
     const orderData = orderDoc.data()!;
 
+    // Prüfe Berechtigung
+    const isProvider = orderData.selectedAnbieterId === authResult.userId;
+    const isCustomer = orderData.customerFirebaseUid === authResult.userId;
+    
+    if (!isProvider && !isCustomer) {
+      return NextResponse.json({ error: 'Nicht berechtigt' }, { status: 403 });
+    }
+
     return NextResponse.json({
-      id: orderId,
-      ...orderData,
+      success: true,
+      order: {
+        id: orderId,
+        ...orderData,
+      },
     });
-  } catch (error: any) {
+  } catch (error) {
+    console.error('[Order GET] Error:', error);
     return NextResponse.json(
-      { error: 'Interner Server-Fehler', details: error.message },
+      { error: 'Interner Server-Fehler', details: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
     );
   }

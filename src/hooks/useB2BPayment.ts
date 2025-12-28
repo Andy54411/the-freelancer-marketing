@@ -1,4 +1,10 @@
 // src/hooks/useB2BPayment.ts
+/**
+ * B2B Payment Hook - Escrow/Revolut Integration
+ * 
+ * Ersetzt die alte Stripe-basierte Implementierung.
+ * Verwendet jetzt das Escrow-System für sichere B2B-Zahlungen.
+ */
 import { useState, useCallback } from 'react';
 import { db } from '@/firebase/clients';
 import {
@@ -31,7 +37,8 @@ interface B2BPaymentProject {
   // Parties
   customerId: string;
   providerId: string;
-  providerStripeAccountId: string;
+  // Escrow-basiert statt Stripe
+  escrowId?: string;
 
   // Payment Terms
   paymentTermsDays: number;
@@ -51,7 +58,7 @@ interface B2BPaymentMilestone {
   status: 'pending' | 'paid' | 'cancelled';
   dueDate?: string;
   paidAt?: any;
-  paymentIntentId?: string;
+  escrowId?: string; // Escrow statt PaymentIntent
 }
 
 interface B2BPaymentHistory {
@@ -62,7 +69,7 @@ interface B2BPaymentHistory {
   platformFee: number;
   providerAmount: number;
   status: 'pending' | 'succeeded' | 'failed' | 'cancelled';
-  paymentIntentId: string;
+  escrowId: string; // Escrow statt PaymentIntent
   createdAt: any;
   paidAt?: any;
 }
@@ -79,7 +86,7 @@ export function useB2BPayment() {
       totalBudget: number;
       customerId: string;
       providerId: string;
-      providerStripeAccountId: string;
+      // Kein Stripe Account mehr benötigt
       paymentTermsDays?: number;
       currency?: string;
       taxRate?: number;
@@ -110,7 +117,7 @@ export function useB2BPayment() {
 
           customerId: projectData.customerId,
           providerId: projectData.providerId,
-          providerStripeAccountId: projectData.providerStripeAccountId,
+          // Escrow wird bei Zahlung erstellt
 
           paymentTermsDays: projectData.paymentTermsDays || 30,
           currency: projectData.currency || 'eur',
@@ -158,24 +165,24 @@ export function useB2BPayment() {
     []
   );
 
-  // Process B2B Payment Success
+  // Process B2B Payment Success (Escrow-basiert)
   const processB2BPaymentSuccess = useCallback(
-    async (paymentIntentId: string, projectId: string, milestoneId?: string): Promise<void> => {
+    async (escrowId: string, projectId: string, milestoneId?: string): Promise<void> => {
       setLoading(true);
       setError(null);
 
       try {
-        // Get payment details from Firestore
-        const paymentDoc = await getDoc(doc(db, 'b2b_payments', paymentIntentId));
+        // Get escrow details from Firestore
+        const escrowDoc = await getDoc(doc(db, 'escrows', escrowId));
 
-        if (!paymentDoc.exists()) {
-          throw new Error('Payment record not found');
+        if (!escrowDoc.exists()) {
+          throw new Error('Escrow record not found');
         }
 
-        const paymentData = paymentDoc.data();
+        const escrowData = escrowDoc.data();
 
         // Update payment status
-        await updateDoc(doc(db, 'b2b_payments', paymentIntentId), {
+        await updateDoc(doc(db, 'b2b_payments', escrowId), {
           status: 'succeeded',
           paidAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -188,7 +195,7 @@ export function useB2BPayment() {
         if (projectDoc.exists()) {
           const project = projectDoc.data() as B2BPaymentProject;
 
-          const updatedPaidAmount = project.paidAmount + paymentData.grossAmount;
+          const updatedPaidAmount = project.paidAmount + escrowData.amount;
           const updatedRemainingAmount = project.totalBudget - updatedPaidAmount;
 
           // Update milestones if applicable
@@ -200,7 +207,7 @@ export function useB2BPayment() {
                     ...milestone,
                     status: 'paid' as const,
                     paidAt: serverTimestamp(),
-                    paymentIntentId,
+                    escrowId,
                   }
                 : milestone
             );
@@ -219,6 +226,7 @@ export function useB2BPayment() {
             remainingAmount: updatedRemainingAmount,
             milestones: updatedMilestones,
             status: newStatus,
+            escrowId,
             updatedAt: serverTimestamp(),
           });
         }

@@ -23,8 +23,8 @@ import * as httpOrders from './http_orders';
 
 // Explicitly import and export functions to ensure Firebase CLI can correctly parse them.
 
-// Stripe Callable Functions (einige nach Next.js migriert, aber Frontend nutzt noch httpsCallable)
-import * as callableStripe from './callable_stripe';
+// STRIPE DEAKTIVIERT: Ersetzt durch Escrow/Revolut Payment System
+// import * as callableStripe from './callable_stripe';
 import * as callableGeneral from './callable_general';
 import * as httpGeneral from './http_general';
 import * as httpWebhooks from './http_webhooks';
@@ -52,15 +52,15 @@ import * as jobAlertNotifications from './job_alert_notifications';
 import * as triggersJobApplications from './triggers_job_applications';
 export const onJobApplicationCreated = triggersJobApplications.onJobApplicationCreated;
 
-// Stripe Callable Functions (Frontend nutzt noch httpsCallable)
-export const createStripeAccountIfComplete = callableStripe.createStripeAccountIfComplete;
-export const getOrCreateStripeCustomer = callableStripe.getOrCreateStripeCustomer;
-export const updateStripeCompanyDetails = callableStripe.updateStripeCompanyDetails;
-export const getOrderParticipantDetails = callableStripe.getOrderParticipantDetails;
-export const createSetupIntent = callableStripe.createSetupIntent;
-export const getStripeAccountStatus = callableStripe.getStripeAccountStatus;
-export const getSavedPaymentMethods = callableStripe.getSavedPaymentMethods;
-export const getProviderStripeAccountId = callableStripe.getProviderStripeAccountId;
+// STRIPE DEAKTIVIERT - Alle Funktionen durch Escrow/Revolut ersetzt
+// export const createStripeAccountIfComplete = callableStripe.createStripeAccountIfComplete;
+// export const getOrCreateStripeCustomer = callableStripe.getOrCreateStripeCustomer;
+// export const updateStripeCompanyDetails = callableStripe.updateStripeCompanyDetails;
+// export const getOrderParticipantDetails = callableStripe.getOrderParticipantDetails;
+// export const createSetupIntent = callableStripe.createSetupIntent;
+// export const getStripeAccountStatus = callableStripe.getStripeAccountStatus;
+// export const getSavedPaymentMethods = callableStripe.getSavedPaymentMethods;
+// export const getProviderStripeAccountId = callableStripe.getProviderStripeAccountId;
 
 // General Callables
 export const getClientIp = callableGeneral.getClientIp;
@@ -85,8 +85,9 @@ export const createJobPosting = httpGeneral.createJobPosting;
 export const getReviewsByProviderHTTP = httpGeneral.getReviewsByProviderHTTP;
 
 // HTTP Webhooks & Uploads
-export const stripeWebhookHandler = httpWebhooks.stripeWebhookHandler;
-export const uploadStripeFile = httpFileUploads.uploadStripeFile;
+// STRIPE DEAKTIVIERT: Webhook Handler nicht mehr benötigt
+// export const stripeWebhookHandler = httpWebhooks.stripeWebhookHandler;
+// export const uploadStripeFile = httpFileUploads.uploadStripeFile;
 
 // Firestore Triggers
 export const createUserProfile = triggersFirestore.createUserProfile;
@@ -185,6 +186,11 @@ export { scheduledRecurringInvoices };
 import * as scheduledClearingReleaseModule from './scheduled-clearing-release';
 export const scheduledClearingRelease = scheduledClearingReleaseModule.scheduledClearingRelease;
 export const triggerClearingReleaseManually = scheduledClearingReleaseModule.triggerClearingReleaseManually;
+
+// Auto Payouts - Automatische Auszahlungen nach Clearing (Revolut)
+import * as scheduledAutoPayoutsModule from './scheduled-auto-payouts';
+export const scheduledAutoPayouts = scheduledAutoPayoutsModule.scheduledAutoPayouts;
+export const triggerAutoPayouts = scheduledAutoPayoutsModule.triggerAutoPayouts;
 
 // Test Functions
 import * as testUsageCalculationModule from './test-usage-calculation';

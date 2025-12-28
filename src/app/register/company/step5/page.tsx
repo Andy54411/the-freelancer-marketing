@@ -33,26 +33,23 @@ import {
 import { db, app as firebaseApp } from '../../../../firebase/clients';
 import { functions as firebaseFunctions } from '../../../../firebase/clients';
 import { httpsCallable } from 'firebase/functions';
-import type Stripe from 'stripe';
 
-interface CreateStripeAccountCallableResult {
+// STRIPE DEAKTIVIERT - Escrow/Revolut System aktiv
+// import type Stripe from 'stripe';
+
+interface CreateAccountResult {
   success: boolean;
-  accountId?: string;
   message?: string;
-  accountLinkUrl?: string;
-  missingFields?: string[];
-  personId?: string;
-  detailsSubmitted?: boolean;
-  payoutsEnabled?: boolean;
 }
 
 interface FileUploadResult {
-  stripeFileId: string;
+  fileId: string; // Umbenannt von fileId
   firebaseStorageUrl?: string;
   firebaseStoragePath?: string;
 }
 
-interface CreateStripeAccountClientData {
+// STRIPE DEAKTIVIERT - Interface bleibt für Datensammlung
+interface CompanyRegistrationData {
   userId: string;
   clientIp: string;
   firstName?: string;
@@ -86,8 +83,8 @@ interface CreateStripeAccountClientData {
   mcc?: string;
   iban?: string;
   accountHolder?: string;
-  bic?: string; // 🔧 ADD: BIC für Stripe Function Interface
-  bankName?: string; // 🔧 ADD: bankName für Stripe Function Interface
+  bic?: string;
+  bankName?: string;
   profilePictureFileId?: string;
   businessLicenseFileId?: string;
   masterCraftsmanCertificateFileId?: string;
@@ -103,7 +100,8 @@ interface CreateStripeAccountClientData {
 
 type GetClientIpData = Record<string, never>;
 type GetClientIpResult = { ip: string };
-type FilePurpose = Stripe.FileCreateParams.Purpose;
+// STRIPE DEAKTIVIERT - Verwende generischen File Purpose
+type FilePurpose = 'identity_document' | 'additional_verification' | 'business_icon' | 'business_logo';
 
 const MAX_ID_DOC_SIZE_BYTES = 8 * 1024 * 1024;
 const WEBP_QUALITY = 0.8;
@@ -371,7 +369,8 @@ export default function Step5CompanyPage() {
     [convertImageToWebP]
   );
 
-  const uploadFileToStripeAndStorage = useCallback(
+  // STRIPE DEAKTIVIERT - Upload nur noch in Firebase Storage
+  const uploadFileToStorage = useCallback(
     async (
       file: File | object | null | undefined,
       purpose: FilePurpose,
@@ -384,43 +383,18 @@ export default function Step5CompanyPage() {
         return null;
       }
       setCurrentStepMessage(`Lade ${fileNameForLog} hoch...`);
+      
+      // Upload direkt zu Firebase Storage statt Stripe
       const formData = new FormData();
       formData.append('file', file);
       formData.append('purpose', purpose);
       formData.append('userId', userId);
 
-      const { UPLOAD_STRIPE_FILE_API_URL } = await import('@/lib/constants');
-      const uploadUrl = UPLOAD_STRIPE_FILE_API_URL;
-
-      console.log(`[DEBUG ${fileNameForLog}] Upload-Request vorbereiten:`, {
-        uploadUrl,
-        purpose,
-        userId,
-        fileSize: file.size,
-        fileType: file.type,
-        environment: process.env.NODE_ENV,
-        NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL: process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL
-      });
-
-      if (!uploadUrl || uploadUrl.includes('undefined')) {
-        console.error('[ERROR] Upload URL Konfigurationsfehler:', {
-          uploadUrl,
-          UPLOAD_STRIPE_FILE_API_URL,
-          NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL: process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL
-        });
-        throw new Error(
-          'Upload URL ist nicht korrekt konfiguriert oder konnte nicht generiert werden. ' +
-          'Bitte prüfen Sie die Umgebungsvariable NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL.'
-        );
-      }
+      // Verwende die Storage-Upload-API
+      const uploadUrl = `/api/storage/upload`;
 
       let response: Response;
       try {
-        // Token-Debug (erste 10 Zeichen)
-        console.log(`[DEBUG ${fileNameForLog}] Auth-Token (gekürzt):`, idToken.substring(0, 10) + '...');
-        
-        console.log(`[DEBUG ${fileNameForLog}] Starte Upload-Request...`);
-        const startTime = Date.now();
         response = await fetch(uploadUrl, {
           method: 'POST',
           headers: {
@@ -428,62 +402,13 @@ export default function Step5CompanyPage() {
           },
           body: formData,
         });
-        const duration = Date.now() - startTime;
-        
-        console.log(`[DEBUG ${fileNameForLog}] Response erhalten nach ${duration}ms:`, {
-          ok: response.ok,
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries()),
-          timing: {
-            duration,
-            timestamp: new Date().toISOString()
-          }
-        });
       } catch (networkError: any) {
         const msg = networkError?.message || String(networkError);
-        // Detailliertes Error-Logging mit Stack Trace und Request-Details
-        console.error(`[ERROR ${fileNameForLog}] Netzwerkfehler beim Upload:`, {
-          error: {
-            name: networkError?.name,
-            message: msg,
-            stack: networkError?.stack?.split('\n'),
-            type: networkError?.type,
-            code: networkError?.code,
-            raw: String(networkError)
-          },
-          requestDetails: {
-            url: uploadUrl,
-            purpose,
-            fileInfo: {
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              lastModified: new Date(file.lastModified).toISOString()
-            }
-          },
-          environment: {
-            node_env: process.env.NODE_ENV,
-            baseUrl: process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL,
-            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-            origin: typeof window !== 'undefined' ? window.location.origin : 'SSR',
-            userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'SSR'
-          }
-        });
         throw new Error(`Netzwerkfehler beim Upload von ${fileNameForLog}: ${msg}`);
       }
 
       if (!response.ok) {
         const errTxt = await response.text();
-        console.error(`[ERROR ${fileNameForLog}] Upload-Response nicht OK:`, {
-          status: response.status,
-          statusText: response.statusText,
-          responseText: errTxt,
-          headers: Object.fromEntries(response.headers.entries()),
-          url: response.url
-        });
-        
-        // Bessere Fehlermeldungen für häufige Probleme
         let userFriendlyMessage = `Upload-Fehler für ${fileNameForLog}: ${response.status}`;
         if (response.status === 500) {
           userFriendlyMessage = `Server-Fehler beim Upload von ${fileNameForLog}. Bitte versuchen Sie es in wenigen Sekunden erneut.`;
@@ -491,15 +416,13 @@ export default function Step5CompanyPage() {
           userFriendlyMessage = `Datei ${fileNameForLog} ist zu groß. Bitte verwenden Sie eine kleinere Datei.`;
         } else if (response.status === 401) {
           userFriendlyMessage = `Authentifizierungsfehler beim Upload von ${fileNameForLog}. Bitte laden Sie die Seite neu.`;
-        } else if (response.status === 403) {
-          userFriendlyMessage = `CORS oder Berechtigungsfehler beim Upload von ${fileNameForLog}. Bitte Support kontaktieren.`;
         }
         throw new Error(`${userFriendlyMessage} Details: ${errTxt}`);
       }
       const result = await response.json();
-      if (result.success && result.stripeFileId)
+      if (result.success && result.fileId)
         return {
-          stripeFileId: result.stripeFileId,
+          fileId: result.fileId,
           firebaseStorageUrl: result.firebaseStorageUrl,
           firebaseStoragePath: result.firebaseStoragePath,
         };
@@ -746,28 +669,28 @@ export default function Step5CompanyPage() {
         throw new Error('Kritische Dateien für den Upload fehlen.');
       }
 
-      const profilePicResult = await uploadFileToStripeAndStorage(
+      const profilePicResult = await uploadFileToStorage(
         profilePictureFile,
-        'account_requirement',
+        'business_logo', // Profilbild als business_logo
         'Profilbild',
         currentAuthUserUID,
         idToken
       );
-      const businessLicResult = await uploadFileToStripeAndStorage(
+      const businessLicResult = await uploadFileToStorage(
         businessLicenseFile,
         'additional_verification',
         'Gewerbeschein',
         currentAuthUserUID,
         idToken
       );
-      const idFrontResult = await uploadFileToStripeAndStorage(
+      const idFrontResult = await uploadFileToStorage(
         identityFrontFile,
         'identity_document',
         'Ausweis Vorderseite',
         currentAuthUserUID,
         idToken
       );
-      const idBackResult = await uploadFileToStripeAndStorage(
+      const idBackResult = await uploadFileToStorage(
         identityBackFile,
         'identity_document',
         'Ausweis Rückseite',
@@ -778,21 +701,21 @@ export default function Step5CompanyPage() {
       let masterCertStripeFileId: string | undefined = undefined;
       let masterCertResult: FileUploadResult | null = null;
       if (masterCraftsmanCertificateFile instanceof File) {
-        masterCertResult = await uploadFileToStripeAndStorage(
+        masterCertResult = await uploadFileToStorage(
           masterCraftsmanCertificateFile,
           'additional_verification',
           'Meisterbrief',
           currentAuthUserUID,
           idToken
         );
-        masterCertStripeFileId = masterCertResult?.stripeFileId;
+        masterCertStripeFileId = masterCertResult?.fileId;
       }
 
       if (
-        !profilePicResult?.stripeFileId ||
-        !businessLicResult?.stripeFileId ||
-        !idFrontResult?.stripeFileId ||
-        !idBackResult?.stripeFileId
+        !profilePicResult?.fileId ||
+        !businessLicResult?.fileId ||
+        !idFrontResult?.fileId ||
+        !idBackResult?.fileId
       ) {
         throw new Error('Ein oder mehrere kritische Datei-Uploads sind fehlgeschlagen.');
       }
@@ -847,9 +770,9 @@ export default function Step5CompanyPage() {
         // bankCountry: companyCountry || personalCountry || 'DE',  // ❌ ENTFERNT
 
         // Stripe Dokumente
-        identityFrontUrlStripeId: idFrontResult.stripeFileId,
-        identityBackUrlStripeId: idBackResult.stripeFileId,
-        businessLicenseStripeId: businessLicResult.stripeFileId,
+        identityFrontUrlStripeId: idFrontResult.fileId,
+        identityBackUrlStripeId: idBackResult.fileId,
+        businessLicenseStripeId: businessLicResult.fileId,
         masterCraftsmanCertificateStripeId: masterCertStripeFileId || deleteField(),
         identityFrontFirebaseUrl: idFrontResult.firebaseStorageUrl || null,
         identityBackFirebaseUrl: idBackResult.firebaseStorageUrl || null,
@@ -888,7 +811,7 @@ export default function Step5CompanyPage() {
 
         // Profile Picture (GEHÖRT ZUR FIRMA!)
         profilePictureURL: profilePicResult.firebaseStorageUrl || null,
-        profilePictureStripeFileId: profilePicResult.stripeFileId,
+        profilePictureStripeFileId: profilePicResult.fileId,
 
         // Firmendetails für öffentliches Profil
         companyWebsite: companyWebsite || null,
@@ -1060,13 +983,17 @@ export default function Step5CompanyPage() {
         } catch (finalError) {}
       }
 
-      setCurrentStepMessage('Zahlungskonto wird bei Stripe eingerichtet...');
+      // ============================================================
+      // STRIPE DEAKTIVIERT - Zahlungssystem wird konfiguriert
+      // ============================================================
+      setCurrentStepMessage('Zahlungssystem wird konfiguriert...');
 
-      const dataForStripeCallable: CreateStripeAccountClientData = {
+      // Sammle Registrierungsdaten für Firebase (ohne Stripe-Upload)
+      const registrationData: CompanyRegistrationData = {
         userId: currentAuthUserUID,
         clientIp: clientIpAddress,
         firstName: firstName?.trim(),
-        lastName: lastName?.trim(), // Persönliche Daten des Vertreters
+        lastName: lastName?.trim(),
         email: email!,
         phoneNumber: normalizedPersonalPhoneNumber,
         dateOfBirth,
@@ -1076,14 +1003,14 @@ export default function Step5CompanyPage() {
         personalCity,
         personalCountry,
         isManagingDirectorOwner,
-        ownershipPercentage: ownershipPercentage ?? undefined, // Daten zur wirtschaftlich berechtigten Person
+        ownershipPercentage: ownershipPercentage ?? undefined,
         isActualDirector: isActualDirector ?? undefined,
         isActualOwner: isActualOwner ?? undefined,
         actualOwnershipPercentage: actualOwnershipPercentage ?? undefined,
         isActualExecutive: isActualExecutive ?? undefined,
         actualRepresentativeTitle,
         companyName,
-        legalForm, // Firmendaten
+        legalForm,
         companyAddressLine1: fullCompanyAddressForFirestore,
         companyCity,
         companyPostalCode,
@@ -1096,14 +1023,13 @@ export default function Step5CompanyPage() {
         mcc: derivedMcc,
         iban,
         accountHolder: accountHolder?.trim(),
-        bic: bic?.trim(), // 🔧 ADD: BIC an Stripe Function übergeben
-        bankName: bankName?.trim(), // 🔧 ADD: bankName an Stripe Function übergeben
-        profilePictureFileId: profilePicResult.stripeFileId,
-        businessLicenseFileId: businessLicResult.stripeFileId,
+        bic: bic?.trim(),
+        bankName: bankName?.trim(),
+        profilePictureFileId: profilePicResult.fileId,
+        businessLicenseFileId: businessLicResult.fileId,
         masterCraftsmanCertificateFileId: masterCertStripeFileId,
-        identityFrontFileId: idFrontResult.stripeFileId,
-        identityBackFileId: idBackResult.stripeFileId,
-        // Pass the URLs to the backend as well for correct Firestore saving
+        identityFrontFileId: idFrontResult.fileId,
+        identityBackFileId: idBackResult.fileId,
         profilePictureUrl: profilePicResult.firebaseStorageUrl,
         businessLicenseUrl: businessLicResult.firebaseStorageUrl,
         masterCraftsmanCertificateUrl: masterCertResult?.firebaseStorageUrl,
@@ -1112,46 +1038,41 @@ export default function Step5CompanyPage() {
       };
 
       if (
-        dataForStripeCallable.legalForm === 'Einzelunternehmen' ||
-        dataForStripeCallable.legalForm === 'Freiberufler'
+        registrationData.legalForm === 'Einzelunternehmen' ||
+        registrationData.legalForm === 'Freiberufler'
       ) {
-        dataForStripeCallable.personalStreet = fullCompanyAddressForFirestore;
-        dataForStripeCallable.personalHouseNumber = '';
-        dataForStripeCallable.personalPostalCode = dataForStripeCallable.companyPostalCode;
-        dataForStripeCallable.personalCity = dataForStripeCallable.companyCity;
-        dataForStripeCallable.personalCountry = dataForStripeCallable.companyCountry;
+        registrationData.personalStreet = fullCompanyAddressForFirestore;
+        registrationData.personalHouseNumber = '';
+        registrationData.personalPostalCode = registrationData.companyPostalCode;
+        registrationData.personalCity = registrationData.companyCity;
+        registrationData.personalCountry = registrationData.companyCountry;
       }
 
-      // Stripe Account über API-Route erstellen
-      const response = await fetch('/api/stripe/create-account', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify(dataForStripeCallable)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Fehler bei der Stripe Account Erstellung');
-      }
-
-      const result = await response.json();
+      // ============================================================
+      // STRIPE DEAKTIVIERT - ESCROW/REVOLUT-SYSTEM AKTIV
+      // ============================================================
+      // Stripe Account wird nicht mehr erstellt. Zahlungen laufen über das
+      // neue Escrow/Revolut-System (siehe EscrowService).
+      // Die Dokumente werden weiterhin in Firebase Storage gespeichert.
+      
+      setCurrentStepMessage('Zahlungssystem wird konfiguriert...');
+      
+      // Erfolgreiche Registrierung ohne Stripe
+      const result = {
+        success: true,
+      };
 
       if (result.success) {
-        const companyStripeUpdate = {
-          stripeAccountId: result.accountId,
-          stripeRepresentativePersonId: result.personId || deleteField(),
-          stripeAccountDetailsSubmitted: result.detailsSubmitted ?? false,
-          stripeAccountPayoutsEnabled: result.payoutsEnabled ?? false,
+        const companyPaymentUpdate = {
+          // KEIN stripeAccountId mehr
+          paymentSystem: 'escrow_revolut', // Neues Zahlungssystem
+          paymentSetupComplete: true,
+          // Revolut-basiertes Auszahlungssystem
+          revolutPayoutEnabled: true,
           updatedAt: serverTimestamp(),
-          'common.stripeVerificationStatus': result.detailsSubmitted
-            ? 'details_submitted'
-            : 'pending',
         };
         // Update companies collection (wo alle Firmendaten liegen)
-        await updateDoc(doc(db, 'companies', currentAuthUserUID), { ...companyStripeUpdate });
+        await updateDoc(doc(db, 'companies', currentAuthUserUID), { ...companyPaymentUpdate });
 
         setCurrentStepMessage('Onboarding-System wird vorbereitet...');
 
@@ -1207,9 +1128,9 @@ export default function Step5CompanyPage() {
 
         const step5Data = {
           // 🔧 FIX: Dokument-URLs aus Step5 Registration speichern
-          identityFrontStripeId: idFrontResult.stripeFileId,
-          identityBackStripeId: idBackResult.stripeFileId,
-          businessLicenseStripeId: businessLicResult.stripeFileId,
+          identityFrontStripeId: idFrontResult.fileId,
+          identityBackStripeId: idBackResult.fileId,
+          businessLicenseStripeId: businessLicResult.fileId,
           masterCraftsmanCertificateStripeId: masterCertStripeFileId || null,
           identityFrontUrl: idFrontResult.firebaseStorageUrl || null,
           identityBackUrl: idBackResult.firebaseStorageUrl || null,
@@ -1259,11 +1180,8 @@ export default function Step5CompanyPage() {
           // NEU: Redirect zum Onboarding anstatt Dashboard (nach Dokumentation)
           router.push(`/dashboard/company/${currentAuthUserUID}/onboarding/welcome`);
         }, 1500);
-      } else {
-        setFormError(
-          `Problem bei Stripe: ${result.data.message || 'Unbekannter Fehler.'} ${result.data.missingFields ? `Fehlende Felder: ${result.data.missingFields.join(', ')}` : ''}`
-        );
       }
+      // STRIPE DEAKTIVIERT - Fehlerfall kann nicht mehr auftreten
     } catch (error: unknown) {
       let specificErrorMessage = 'Ein unerwarteter Fehler ist aufgetreten.';
 
@@ -1288,7 +1206,7 @@ export default function Step5CompanyPage() {
     <div className="min-h-screen flex flex-col">
       {/* Loading Overlay */}
       {(isLoading || isConvertingImage || isProcessingImage || isRedirecting) && (
-        <div className="fixed inset-0 bg-gray-900/75 flex items-center justify-center z-[101]">
+        <div className="fixed inset-0 bg-gray-900/75 flex items-center justify-center z-101">
           <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm mx-4">
             <Loader2 className="animate-spin h-10 w-10 mb-4 text-[#14ad9f]" />
             <span className="text-lg font-medium text-gray-800 text-center mb-2">

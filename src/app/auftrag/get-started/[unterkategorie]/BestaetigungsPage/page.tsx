@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
-import { Loader2, AlertCircle, CreditCard, Shield, CheckCircle, ArrowLeft, Clock, MapPin, Calendar, FileText, X } from 'lucide-react';
+import { Loader2, AlertCircle, CreditCard, Shield, CheckCircle, ArrowLeft, Clock, MapPin, Calendar, FileText, Building2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRegistration } from '@/contexts/Registration-Context';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/firebase/clients';
-import SimpleStripeForm from '@/components/SimpleStripeForm';
+import { EscrowPaymentComponent } from '@/components/EscrowPaymentComponent';
 import BestaetigungsContent from './components/BestaetigungsContent';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -29,7 +29,6 @@ interface TemporaryJobDraftData {
 
 interface TemporaryJobDraftResult {
   tempDraftId: string;
-  anbieterStripeAccountId: string;
 }
 
 // Interface für Firebase Callable Function Result
@@ -42,15 +41,14 @@ export default function BestaetigungsPage() {
   const searchParams = useSearchParams();
   const pathParams = useParams();
   const { firebaseUser, loading: authLoading } = useAuth();
-  const registration = useRegistration();
+  const _registration = useRegistration();
 
   // States
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [anbieterStripeAccountId, setAnbieterStripeAccountId] = useState<string | null>(null);
+  const [showEscrowPayment, setShowEscrowPayment] = useState(false);
   const [tempJobDraftId, setTempJobDraftId] = useState<string | null>(null);
-  const [forceRerender, setForceRerender] = useState(0); // Force re-render trigger
+  const [_forceRerender, setForceRerender] = useState(0); // Force re-render trigger
 
   // Debug: Log bei jedem Render
 
@@ -63,23 +61,15 @@ export default function BestaetigungsPage() {
     (priceInCents: number) => {
       setJobPriceInCents(priceInCents);
       setTotalAmountPayableInCents(priceInCents); // Gesamtbetrag = Jobpreis
-      // PaymentIntent automatisch erstellen sobald Preis berechnet wurde
-      if (firebaseUser && priceInCents > 0) {
-        createPaymentIntent(priceInCents);
-      }
     },
-    [firebaseUser]
+    []
   );
 
   const handleDetailsChangeFromChild = useCallback(() => {
-    // Reset clientSecret wenn sich Details ändern
-    setClientSecret(null);
+    // Reset wenn sich Details ändern
     setTempJobDraftId(null);
-    // PaymentIntent neu erstellen wenn sich Details ändern
-    if (firebaseUser && jobPriceInCents && jobPriceInCents > 0) {
-      setTimeout(() => createPaymentIntent(jobPriceInCents), 100);
-    }
-  }, [firebaseUser, jobPriceInCents]);
+    setShowEscrowPayment(false);
+  }, []);
 
   // URL Parameter extrahieren
   const urlParams = useMemo(() => {
@@ -116,8 +106,8 @@ export default function BestaetigungsPage() {
     const authCheckTimer = setTimeout(() => {
       if (authLoading) return;
 
-      // WICHTIG: Nicht umleiten, wenn bereits ein Payment-Flow läuft (clientSecret vorhanden)
-      if (!firebaseUser && !clientSecret && !isLoading) {
+      // WICHTIG: Nicht umleiten, wenn bereits ein Payment-Flow läuft
+      if (!firebaseUser && !showEscrowPayment && !isLoading) {
         const currentPath = `${window.location.pathname}${window.location.search}`;
         router.push(`/register/user?redirectTo=${encodeURIComponent(currentPath)}`);
         return;
@@ -159,28 +149,14 @@ export default function BestaetigungsPage() {
 
     // Cleanup timer
     return () => clearTimeout(authCheckTimer);
-  }, [firebaseUser, authLoading, urlParams, router, clientSecret, isLoading, setError]);
+  }, [firebaseUser, authLoading, urlParams, router, showEscrowPayment, isLoading, setError]);
 
-  // Auto-PaymentIntent-Erstellung wenn User + Preis vorhanden
-  useEffect(() => {
-    if (firebaseUser && jobPriceInCents && jobPriceInCents > 0 && !clientSecret && !isLoading) {
-      // Kleine Verzögerung um sicherzustellen, dass alle States gesetzt sind
-      const timer = setTimeout(() => {
-        createPaymentIntent(jobPriceInCents);
-      }, 500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [firebaseUser, jobPriceInCents, clientSecret, isLoading]);
-
-  // Payment Intent erstellen - extrahiert aus handlePaymentClick für automatische Erstellung
-  const createPaymentIntent = async (priceInCents: number) => {
-    if (!firebaseUser || !priceInCents || priceInCents <= 0) {
-      return;
-    }
-
-    // Avoid duplicate PaymentIntent creation
-    if (clientSecret || isLoading) {
+  // Job-Entwurf erstellen und Escrow-Payment öffnen
+  const handleOpenEscrowPayment = async () => {
+    if (!firebaseUser || !jobPriceInCents || jobPriceInCents <= 0) {
+      setError(
+        'Preis wurde noch nicht berechnet oder User nicht eingeloggt. Bitte warten Sie einen Moment.'
+      );
       return;
     }
 
@@ -188,32 +164,7 @@ export default function BestaetigungsPage() {
     setError(null);
 
     try {
-      // Sofort ein fresh Auth Token holen
-      const freshIdToken = await firebaseUser.getIdToken(true); // force refresh
-
-      // 1. Stripe Customer ID erstellen oder abrufen
-      const customerResponse = await fetch('/api/stripe/get-or-create-customer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${freshIdToken}`,
-        },
-        body: JSON.stringify({
-          email: firebaseUser.email,
-          name: firebaseUser.displayName || 'Kunde',
-          firebaseUserId: firebaseUser.uid,
-        }),
-      });
-
-      const customerData = await customerResponse.json();
-
-      if (!customerResponse.ok || !customerData.stripeCustomerId) {
-        throw new Error(customerData.error || 'Fehler beim Erstellen des Stripe Kunden');
-      }
-
-      const stripeCustomerId = customerData.stripeCustomerId;
-
-      // 2. Temporären Job-Entwurf erstellen
+      // Temporären Job-Entwurf erstellen
       const hours = parseFloat(urlParams.duration);
       const orderDataForDraft: TemporaryJobDraftData = {
         customerType: hours >= 8 ? 'business' : 'private', // 8+ Stunden = B2B, weniger = B2C
@@ -226,7 +177,7 @@ export default function BestaetigungsPage() {
         selectedAnbieterId: urlParams.anbieterId,
         jobDurationString: urlParams.duration,
         jobTotalCalculatedHours: hours,
-        jobCalculatedPriceInCents: priceInCents,
+        jobCalculatedPriceInCents: jobPriceInCents,
       };
 
       // Firebase Callable Function direkt aufrufen
@@ -239,57 +190,8 @@ export default function BestaetigungsPage() {
         throw new Error('Fehler beim Erstellen des Job-Entwurfs');
       }
 
-      const tempDraftId = tempDraftResult.data.tempDraftId;
-      const stripeAccountId = tempDraftResult.data.anbieterStripeAccountId;
-
-      setTempJobDraftId(tempDraftId);
-      setAnbieterStripeAccountId(stripeAccountId);
-
-      // 3. Billing Details vorbereiten
-      const billingDetails: any = {
-        name: firebaseUser.displayName || 'Kunde',
-        email: firebaseUser.email || '',
-        address: {
-          line1: 'Musterstraße 1',
-          line2: undefined,
-          city: 'Berlin',
-          postal_code: '10115',
-          country: 'DE',
-        },
-      };
-
-      // 4. Payment Intent erstellen
-      const idToken = await firebaseUser.getIdToken();
-
-      const paymentResponse = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          amount: priceInCents,
-          jobPriceInCents: priceInCents,
-          currency: 'eur',
-          connectedAccountId: stripeAccountId,
-          taskId: tempDraftId,
-          firebaseUserId: firebaseUser.uid,
-          stripeCustomerId: stripeCustomerId,
-          customerName: firebaseUser.displayName || 'Kunde',
-          customerEmail: firebaseUser.email || '',
-          billingDetails: billingDetails,
-        }),
-      });
-
-      const paymentData = await paymentResponse.json();
-
-      if (!paymentResponse.ok || !paymentData.clientSecret) {
-        throw new Error(paymentData.error || 'Fehler beim Erstellen der Zahlung');
-      }
-
-      setClientSecret(paymentData.clientSecret);
-
-      // Force re-render durch State-Update
+      setTempJobDraftId(tempDraftResult.data.tempDraftId);
+      setShowEscrowPayment(true);
       setForceRerender(prev => prev + 1);
     } catch (err) {
       setError(
@@ -300,216 +202,17 @@ export default function BestaetigungsPage() {
     }
   };
 
-  // Veralteter handlePaymentClick - wird jetzt nur noch für finale Zahlung verwendet
-  const handlePaymentClick = async () => {
-    if (!firebaseUser || !jobPriceInCents || jobPriceInCents <= 0) {
-      setError(
-        'Preis wurde noch nicht berechnet oder User nicht eingeloggt. Bitte warten Sie einen Moment.'
-      );
-      return;
-    }
-
-    // WICHTIG: Auth-Daten zwischenspeichern für den Fall, dass Auth während Payment verloren geht
-    const authBackup = {
-      uid: firebaseUser.uid,
-      email: firebaseUser.email,
-      displayName: firebaseUser.displayName,
-    };
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Sofort ein fresh Auth Token holen
-      const freshIdToken = await firebaseUser.getIdToken(true); // force refresh
-
-      // 1. Stripe Customer ID erstellen oder abrufen
-      const customerResponse = await fetch('/api/stripe/get-or-create-customer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${freshIdToken}`,
-        },
-        body: JSON.stringify({
-          email: authBackup.email,
-          name: authBackup.displayName || 'Kunde',
-          firebaseUserId: authBackup.uid,
-        }),
-      });
-
-      const customerData = await customerResponse.json();
-
-      if (!customerResponse.ok || !customerData.stripeCustomerId) {
-        throw new Error(customerData.error || 'Fehler beim Erstellen des Stripe Kunden');
-      }
-
-      const stripeCustomerId = customerData.stripeCustomerId;
-
-      // 2. Temporären Job-Entwurf erstellen
-
-      // Erstelle orderData aus URL-Parametern und berechneten Werten
-      const hours = parseFloat(urlParams.duration);
-      const orderDataForDraft: TemporaryJobDraftData = {
-        customerType: registration.customerType || 'private',
-        selectedCategory: registration.selectedCategory || 'Gastronomie',
-        selectedSubcategory: urlParams.unterkategorie,
-        description: decodeURIComponent(urlParams.description),
-        jobPostalCode: urlParams.postalCode,
-        jobDateFrom: urlParams.dateFrom,
-        jobTimePreference: urlParams.time,
-        selectedAnbieterId: urlParams.anbieterId,
-        jobDurationString: `${urlParams.duration} Stunden`,
-        jobTotalCalculatedHours: hours,
-        jobCalculatedPriceInCents: jobPriceInCents,
-      };
-
-      // Debug: Log die Daten die gesendet werden
-
-      const createDraftCallable = httpsCallable<TemporaryJobDraftData, TemporaryJobDraftResult>(
-        functions,
-        'createTemporaryJobDraft'
-      );
-
-      const draftResult = await createDraftCallable(orderDataForDraft);
-
-      const { tempDraftId, anbieterStripeAccountId: stripeAccountId } = draftResult.data;
-
-      setTempJobDraftId(tempDraftId);
-      setAnbieterStripeAccountId(stripeAccountId);
-
-      // 3. Lade Benutzeradresse für Billing Details
-
-      let billingDetails: {
-        name?: string;
-        email?: string;
-        address?: {
-          line1?: string;
-          line2?: string;
-          city?: string;
-          postal_code?: string;
-          country?: string;
-        };
-      } | null = null;
-
-      try {
-        const { doc, getDoc } = await import('firebase/firestore');
-        const { db } = await import('@/firebase/clients');
-
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-
-          // Erstelle Billing Details aus Firebase-Daten oder Registration Context
-          const street = userData.street || registration.personalStreet;
-          const postalCode = userData.postalCode || registration.personalPostalCode;
-          const city = userData.city || registration.personalCity;
-          const country = userData.country || registration.personalCountry || 'DE';
-
-          if (street && postalCode && city) {
-            billingDetails = {
-              name: userData.displayName
-                ? userData.displayName
-                : firebaseUser.displayName || 'Kunde',
-              email: userData.email || firebaseUser.email,
-              address: {
-                line1: street,
-                line2: undefined,
-                city: city,
-                postal_code: postalCode,
-                country: country,
-              },
-            };
-          }
-        }
-      } catch (_addressError) {}
-
-      // Fallback Billing Details wenn keine Adresse gefunden
-      if (!billingDetails) {
-        billingDetails = {
-          name: firebaseUser.displayName || 'Kunde',
-          email: firebaseUser.email || '',
-          address: {
-            line1: 'Musterstraße 1',
-            line2: undefined,
-            city: 'Berlin',
-            postal_code: '10115',
-            country: 'DE',
-          },
-        };
-      }
-
-      // 4. Payment Intent erstellen
-
-      const idToken = await firebaseUser.getIdToken();
-
-      const paymentResponse = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          amount: jobPriceInCents,
-          jobPriceInCents: jobPriceInCents,
-          currency: 'eur',
-          connectedAccountId: stripeAccountId,
-          taskId: tempDraftId,
-          firebaseUserId: firebaseUser.uid,
-          stripeCustomerId: stripeCustomerId,
-          customerName: firebaseUser.displayName || 'Kunde',
-          customerEmail: firebaseUser.email || '',
-          billingDetails: billingDetails,
-        }),
-      });
-
-      const paymentData = await paymentResponse.json();
-
-      if (!paymentResponse.ok || !paymentData.clientSecret) {
-        throw new Error(paymentData.error || 'Fehler beim Erstellen der Zahlung');
-      }
-
-      setClientSecret(paymentData.clientSecret);
-
-      // Force re-render durch State-Update
-      setForceRerender(prev => prev + 1);
-      setTimeout(() => {}, 100);
-    } catch (err) {
-      // Detaillierte Fehlerbehandlung für Firebase Functions
-      if (err && typeof err === 'object' && 'code' in err) {
-        const firebaseError = err as { code: string; message: string; details?: unknown };
-
-        if (firebaseError.code === 'functions/invalid-argument') {
-          setError(`Ungültige Auftragsdaten: ${firebaseError.message}`);
-        } else if (firebaseError.code === 'functions/unauthenticated') {
-          setError('Authentifizierung fehlgeschlagen. Bitte melden Sie sich erneut an.');
-        } else {
-          setError(`Firebase Fehler (${firebaseError.code}): ${firebaseError.message}`);
-        }
-      } else {
-        setError(err instanceof Error ? err.message : 'Fehler beim Vorbereiten der Zahlung');
-      }
-    } finally {
-      setIsLoading(false);
-    }
+  // Escrow Payment Success Handler
+  const handleEscrowSuccess = (escrowId: string) => {
+    setShowEscrowPayment(false);
+    // Weiterleitung zur Erfolgsseite
+    router.push(`/auftrag/erfolg?orderId=${tempJobDraftId}&escrowId=${escrowId}`);
   };
 
-  // Payment Success Handler
-  const handlePaymentSuccess = (_paymentIntentId: string) => {
-    // Reset Registration Context
-    if (registration.resetRegistrationData) {
-      registration.resetRegistrationData();
-    }
-
-    // Weiterleitung zum Dashboard
-    setTimeout(() => {
-      router.push(`/dashboard/user/${firebaseUser?.uid}`);
-    }, 2000);
-  };
-
-  // Payment Error Handler
-  const handlePaymentError = (errorMessage: string) => {
-    setError(`Zahlungsfehler: ${errorMessage}`);
-    setClientSecret(null); // Reset für erneuten Versuch
+  // Escrow Payment Error Handler
+  const handleEscrowError = (errorMsg: string) => {
+    setError(errorMsg);
+    setShowEscrowPayment(false);
   };
 
   // Loading State
@@ -801,50 +504,44 @@ export default function BestaetigungsPage() {
                     </div>
                   </div>
 
-                  {/* Stripe Payment Form */}
+                  {/* Escrow Payment Section */}
                   <div className="border-t border-gray-100 pt-6">
                     <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                      <CreditCard className="w-4 h-4 text-[#14ad9f]" />
+                      <Building2 className="w-4 h-4 text-[#14ad9f]" />
                       Zahlungsmethode
                     </h3>
                     
-                    {clientSecret ? (
-                      <SimpleStripeForm
-                        clientSecret={clientSecret}
-                        amount={urlParams.price}
-                        anbieterDetails={{
-                          id: urlParams.anbieterId,
-                          companyName: 'Dienstleister',
-                          category: urlParams.unterkategorie,
-                        }}
-                        jobDetails={{
-                          category: urlParams.unterkategorie || '',
-                          description: urlParams.description || '',
-                          dateFrom: urlParams.dateFrom || '',
-                          dateTo: urlParams.dateTo || '',
-                          duration: urlParams.duration ? parseInt(urlParams.duration) : 0,
-                        }}
-                      />
-                    ) : (
-                      <div className="text-center py-8">
-                        <div className="relative">
-                          <div className="animate-pulse space-y-3">
-                            <div className="bg-gray-200 h-12 w-full rounded-xl"></div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="bg-gray-200 h-12 rounded-xl"></div>
-                              <div className="bg-gray-200 h-12 rounded-xl"></div>
-                            </div>
-                            <div className="bg-gray-200 h-12 w-full rounded-xl"></div>
-                          </div>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2 flex items-center gap-2">
-                              <Loader2 className="animate-spin text-[#14ad9f]" size={20} />
-                              <span className="text-sm font-medium text-gray-700">Wird geladen...</span>
-                            </div>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-teal-50 rounded-xl border border-teal-100">
+                        <div className="flex items-start gap-3">
+                          <Shield className="w-5 h-5 text-teal-600 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-teal-800">Sichere Treuhand-Zahlung</p>
+                            <p className="text-xs text-teal-600 mt-1">
+                              Ihr Geld wird sicher verwahrt und erst nach Auftragsabschluss an den Dienstleister freigegeben.
+                            </p>
                           </div>
                         </div>
                       </div>
-                    )}
+                      
+                      <button
+                        onClick={handleOpenEscrowPayment}
+                        disabled={isLoading || !jobPriceInCents || jobPriceInCents <= 0}
+                        className="w-full py-4 px-6 bg-[#14ad9f] hover:bg-teal-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="animate-spin" size={20} />
+                            <span>Wird vorbereitet...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard size={20} />
+                            <span>Jetzt bezahlen</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Trust Indicators */}
@@ -855,7 +552,7 @@ export default function BestaetigungsPage() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <CheckCircle className="w-4 h-4 text-[#14ad9f]" />
-                      <span>Stripe gesichert</span>
+                      <span>Treuhand gesichert</span>
                     </div>
                   </div>
                 </div>
@@ -864,6 +561,30 @@ export default function BestaetigungsPage() {
           </div>
         </div>
       </div>
+
+      {/* Escrow Payment Modal */}
+      {showEscrowPayment && jobPriceInCents && (
+        <EscrowPaymentComponent
+          projectData={{
+            projectId: tempJobDraftId || 'new-order',
+            projectTitle: `Auftrag: ${urlParams.unterkategorie}`,
+            projectDescription: urlParams.description,
+            amount: jobPriceInCents,
+            currency: 'EUR',
+            paymentType: 'project_deposit',
+            providerId: urlParams.anbieterId,
+          }}
+          customerData={{
+            customerId: firebaseUser?.uid || 'guest',
+            name: firebaseUser?.displayName || 'Kunde',
+            email: firebaseUser?.email || '',
+          }}
+          isOpen={showEscrowPayment}
+          onClose={() => setShowEscrowPayment(false)}
+          onSuccess={handleEscrowSuccess}
+          onError={handleEscrowError}
+        />
+      )}
     </Suspense>
   );
 }

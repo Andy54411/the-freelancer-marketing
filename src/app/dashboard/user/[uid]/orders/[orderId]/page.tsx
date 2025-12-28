@@ -25,8 +25,8 @@ import UserInfoCard from '@/components/UserInfoCard';
 
 // Die Chat-Komponente
 import ChatComponent from '@/components/ChatComponent';
-// Payment-Komponente
-import InlinePaymentComponent from '@/components/InlinePaymentComponent';
+// Escrow Payment-Komponente
+import { EscrowPaymentComponent } from '@/components/EscrowPaymentComponent';
 // Stunden-Übersicht Komponente
 import HoursBillingOverview from '@/components/HoursBillingOverview';
 // Order Completion Komponente
@@ -112,9 +112,8 @@ export default function OrderDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false); // NEU: Ladezustand für Aktionen
   const [successMessage, setSuccessMessage] = useState<string | null>(null); // NEU: Success feedback
 
-  // Payment Modal States
+  // Payment Modal States (Escrow-System)
   const [showInlinePayment, setShowInlinePayment] = useState(false);
-  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [paymentHours, setPaymentHours] = useState(0);
 
@@ -230,8 +229,8 @@ export default function OrderDetailPage() {
     return () => {};
   }, [authLoading, currentUser?.uid, orderId, router]); // firebaseUser entfernt, da es sich häufig ändert
 
-  // Payment Modal State Monitor
-  useEffect(() => {}, [showInlinePayment, paymentClientSecret, paymentAmount, paymentHours]);
+  // Payment Modal State Monitor (Escrow-System)
+  useEffect(() => {}, [showInlinePayment, paymentAmount, paymentHours]);
 
   // Order Completion Handlers
   const handleCompleteOrder = () => {
@@ -286,15 +285,15 @@ export default function OrderDetailPage() {
     }
   };
 
-  // Payment Modal Handler - kann von CustomerApprovalInterface aufgerufen werden
-  const handlePaymentRequest = (clientSecret: string, amount: number, hours: number) => {
-    setPaymentClientSecret(clientSecret);
+  // Payment Modal Handler - kann von CustomerApprovalInterface aufgerufen werden (Escrow-System)
+  const handlePaymentRequest = (_clientSecret: string, amount: number, hours: number) => {
+    // clientSecret wird nicht mehr benötigt für Escrow-System
     setPaymentAmount(amount);
     setPaymentHours(hours);
     setShowInlinePayment(true);
   };
 
-  // Direct Payment Modal Handler - Echte Billing-Daten verwenden
+  // Direct Payment Modal Handler - Escrow-System
   const handleOpenPayment = async () => {
     if (!orderId) return;
 
@@ -302,12 +301,11 @@ export default function OrderDetailPage() {
       // Import TimeTracker dynamisch
       const { TimeTracker } = await import('@/lib/timeTracker');
 
-      // Stelle echte Stripe-Abrechnung für genehmigte Stunden
-      const billingResult = await TimeTracker.billApprovedHours(orderId);
-
-      // Berechne echte Payment Hours aus OrderDetails - KORRIGIERT: Suche nach billing_pending Status
+      // Hole Order Details für Payment-Berechnung
       const orderDetails = await TimeTracker.getOrderDetails(orderId);
-      const paymentHours =
+      
+      // Berechne echte Payment Hours aus OrderDetails
+      const calculatedPaymentHours =
         orderDetails?.timeTracking?.timeEntries
           ?.filter((e: any) => {
             // Alle Stunden die genehmigt sind aber noch bezahlt werden müssen
@@ -318,24 +316,17 @@ export default function OrderDetailPage() {
           })
           ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0;
 
-      // Setze echte Daten
-      setPaymentClientSecret(billingResult.clientSecret);
-      setPaymentAmount(billingResult.customerPays);
-      setPaymentHours(paymentHours);
+      // Berechne den Betrag (Stunden * Stundensatz)
+      const hourlyRate = order?.priceInCents ? Math.round(order.priceInCents / (order.jobTotalCalculatedHours || 1)) : 0;
+      const calculatedAmount = calculatedPaymentHours * hourlyRate;
+
+      // Setze Payment-Daten für Escrow
+      setPaymentAmount(calculatedAmount > 0 ? calculatedAmount : order?.priceInCents || 0);
+      setPaymentHours(calculatedPaymentHours);
       setShowInlinePayment(true);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
-
-      if (
-        errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
-        errorMessage.includes('Stripe Connect')
-      ) {
-        alert(
-          'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\nBitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
-        );
-      } else {
-        alert(`Fehler beim Erstellen der Zahlung: ${errorMessage}`);
-      }
+      alert(`Fehler beim Erstellen der Zahlung: ${errorMessage}`);
     }
   };
 
@@ -759,17 +750,23 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Payment Modal */}
-          {showInlinePayment && paymentClientSecret && (
-            <InlinePaymentComponent
-              clientSecret={paymentClientSecret}
-              orderId={orderId}
-              totalAmount={paymentAmount}
-              totalHours={paymentHours}
-              customerId={order?.customerId}
+          {/* Payment Modal (Escrow-System) */}
+          {showInlinePayment && order && (
+            <EscrowPaymentComponent
+              projectData={{
+                projectId: orderId,
+                projectTitle: order.serviceTitle || `Auftrag ${orderId.slice(-6).toUpperCase()}`,
+                amount: paymentAmount,
+                paymentType: 'order_payment',
+                providerId: order.providerId,
+              }}
+              customerData={{
+                customerId: order.customerId || '',
+                name: order.customerName,
+              }}
               isOpen={showInlinePayment}
               onClose={handlePaymentCancel}
-              onSuccess={(paymentIntentId: string) => {
+              onSuccess={(escrowId: string) => {
                 handlePaymentSuccess();
               }}
               onError={(error: string) => {

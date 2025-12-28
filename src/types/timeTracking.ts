@@ -36,6 +36,10 @@ export interface TimeEntry {
   escrowAuthorizedAt?: Timestamp; // Wann das Geld autorisiert/gehalten wurde
   escrowReleasedAt?: Timestamp; // Wann das Geld freigegeben wurde
   escrowStatus?: 'none' | 'authorized' | 'released' | 'failed'; // Status des Escrow-Prozesses
+  
+  // NEUES Escrow-System Felder (Revolut-basiert)
+  escrowId?: string; // Escrow ID im neuen System
+  escrowCreatedAt?: Timestamp; // Wann Escrow erstellt wurde
 
   // Platform Hold System Felder (NEU)
   platformHoldPaymentIntentId?: string; // Stripe PaymentIntent ID für Platform Hold
@@ -67,6 +71,19 @@ export interface OrderTimeTracking {
   inititalizedAt?: Timestamp; // Wann TimeTracking gestartet wurde
   // Escrow-System Felder
   escrowPaymentIntents?: EscrowPaymentIntent[]; // Alle gehaltenen PaymentIntents
+  
+  // NEUES Escrow-System Daten (Revolut-basiert)
+  escrowData?: {
+    escrowId: string;
+    amount: number;
+    platformFee: number;
+    providerAmount: number;
+    createdAt?: Timestamp;
+    paidAt?: Timestamp;
+    releasedAt?: Timestamp;
+    status: 'pending' | 'held' | 'released' | 'refunded' | 'disputed';
+  };
+  
   projectCompletionStatus?: ProjectCompletionStatus; // Status der Projektabnahme
 }
 

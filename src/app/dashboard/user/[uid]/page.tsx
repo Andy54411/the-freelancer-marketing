@@ -36,8 +36,6 @@ import {
   RotateCw,
 } from 'lucide-react';
 import Modal from './components/Modal';
-import { Elements } from '@stripe/react-stripe-js';
-import AddPaymentMethodForm from './components/AddPaymentMethodForm';
 import AddressForm from './components/AddressForm';
 import { httpsCallable } from 'firebase/functions';
 import { toast } from 'sonner'; // Importiere toast
@@ -51,7 +49,7 @@ import TimeTrackingOverview from '@/components/TimeTrackingOverview';
 import BillingHistory from '@/components/BillingHistory';
 import JobBoardPromoModal from './components/JobBoardPromoModal';
 
-import { stripePromise } from '@/lib/stripe';
+// Stripe wurde durch Escrow-System ersetzt - keine stripePromise mehr benötigt
 
 const PAGE_LOG = 'UserDashboardPage:'; // Für Logging
 
@@ -1076,25 +1074,23 @@ export default function UserDashboardPage() {
         {showAddPaymentMethodModal && (
           <Modal
             onClose={() => setShowAddPaymentMethodModal(false)}
-            title="Zahlungsmethode hinzufügen"
+            title="Zahlungsmethode"
           >
-            {clientSecretForSetupIntent ? (
-              <Elements
-                stripe={stripePromise}
-                options={{ clientSecret: clientSecretForSetupIntent }}
-              >
-                <AddPaymentMethodForm
-                  onSuccess={handlePaymentMethodAdded}
-                  onError={(msg: string) => setSetupIntentError(msg)}
-                  clientSecret={clientSecretForSetupIntent}
-                />
-              </Elements>
-            ) : (
-              <div className="text-center p-4">
-                <FiLoader className="animate-spin text-3xl text-[#14ad9f] mx-auto mb-3" />
-                <p>Bereite Formular vor...</p>
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiLoader className="text-3xl text-[#14ad9f]" />
               </div>
-            )}
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Sichere Treuhand-Zahlungen
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Taskilo verwendet jetzt ein sicheres Treuhand-System für alle Zahlungen. 
+                Zahlungen werden direkt bei der Auftragserstellung abgewickelt.
+              </p>
+              <p className="text-sm text-gray-500">
+                Unterstützte Zahlungsmethoden: SEPA-Überweisung, Revolut Business
+              </p>
+            </div>
           </Modal>
         )}
         {showAddAddressModal && (

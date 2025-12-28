@@ -27,8 +27,8 @@ import TimeTrackingManager from '@/components/TimeTrackingManager';
 import ChatComponent from '@/components/ChatComponent';
 // Stunden-Übersicht Komponente
 import HoursBillingOverview from '@/components/HoursBillingOverview';
-// Payment-Komponente
-import InlinePaymentComponent from '@/components/InlinePaymentComponent';
+// Escrow Payment-Komponente
+import { EscrowPaymentComponent } from '@/components/EscrowPaymentComponent';
 // Provider Storno-Warnung
 import ProviderStornoWarning from '@/components/storno/ProviderStornoWarning';
 
@@ -96,9 +96,8 @@ export default function CompanyOrderDetailPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [_userRole, setUserRole] = useState<'provider' | 'customer' | null>(null); // Track user role for this order - currently unused
 
-  // Payment Modal States - für HoursBillingOverview
+  // Payment Modal States - für HoursBillingOverview (Escrow-System)
   const [showInlinePayment, setShowInlinePayment] = useState(false);
-  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [paymentHours, setPaymentHours] = useState(0);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -423,7 +422,7 @@ export default function CompanyOrderDetailPage() {
     }
   };
 
-  // Payment Modal Handler - für HoursBillingOverview
+  // Payment Modal Handler - für HoursBillingOverview (Escrow-System)
   const handleOpenPayment = async () => {
     if (!orderId) return;
 
@@ -431,11 +430,10 @@ export default function CompanyOrderDetailPage() {
       // Import TimeTracker dynamisch
       const { TimeTracker } = await import('@/lib/timeTracker');
 
-      // Stelle echte Stripe-Abrechnung für genehmigte Stunden
-      const billingResult = await TimeTracker.billApprovedHours(orderId);
-
-      // Berechne echte Payment Hours aus OrderDetails
+      // Hole Order Details für Payment-Berechnung
       const orderDetails = await TimeTracker.getOrderDetails(orderId);
+      
+      // Berechne echte Payment Hours aus OrderDetails
       const paymentHours =
         orderDetails?.timeTracking?.timeEntries
           ?.filter((e: any) => {
@@ -447,24 +445,17 @@ export default function CompanyOrderDetailPage() {
           })
           ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0;
 
-      // Setze echte Daten
-      setPaymentClientSecret(billingResult.clientSecret);
-      setPaymentAmount(billingResult.customerPays);
+      // Berechne den Betrag (Stunden * Stundensatz)
+      const hourlyRate = order?.priceInCents ? Math.round(order.priceInCents / (order.jobTotalCalculatedHours || 1)) : 0;
+      const calculatedAmount = paymentHours * hourlyRate;
+
+      // Setze Payment-Daten für Escrow
+      setPaymentAmount(calculatedAmount > 0 ? calculatedAmount : order?.priceInCents || 0);
       setPaymentHours(paymentHours);
       setShowInlinePayment(true);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
-
-      if (
-        errorMessage.includes('PAYMENT SETUP ERFORDERLICH') ||
-        errorMessage.includes('Stripe Connect')
-      ) {
-        alert(
-          'Der Dienstleister muss seine Zahlungseinrichtung abschließen.\n\nBitte kontaktieren Sie den Support oder warten Sie, bis der Dienstleister seine Stripe Connect Einrichtung vollendet hat.'
-        );
-      } else {
-        alert(`Fehler beim Erstellen der Zahlung: ${errorMessage}`);
-      }
+      alert(`Fehler beim Erstellen der Zahlung: ${errorMessage}`);
     }
   };
 
@@ -1016,16 +1007,22 @@ export default function CompanyOrderDetailPage() {
         </div>
 
         {/* Payment Modal */}
-        {showInlinePayment && paymentClientSecret && (
-          <InlinePaymentComponent
-            clientSecret={paymentClientSecret}
-            orderId={orderId}
-            totalAmount={paymentAmount}
-            totalHours={paymentHours}
-            customerId={order?.customerId}
+        {showInlinePayment && order && (
+          <EscrowPaymentComponent
+            projectData={{
+              projectId: orderId,
+              projectTitle: order.serviceTitle || `Auftrag ${orderId.slice(-6).toUpperCase()}`,
+              amount: paymentAmount,
+              paymentType: 'order_payment',
+              providerId: order.providerId,
+            }}
+            customerData={{
+              customerId: order.customerId || '',
+              name: order.customerName,
+            }}
             isOpen={showInlinePayment}
             onClose={handlePaymentCancel}
-            onSuccess={(paymentIntentId: string) => {
+            onSuccess={(escrowId: string) => {
               handlePaymentSuccess();
             }}
             onError={(error: string) => {

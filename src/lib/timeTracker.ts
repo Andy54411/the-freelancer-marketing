@@ -1,4 +1,13 @@
 // /Users/andystaudinger/Tasko/src/lib/timeTracker.ts
+/**
+ * TimeTracker - Stundenerfassung und Abrechnung
+ * 
+ * HINWEIS: Stripe-basierte Zahlungsmethoden sind DEPRECATED.
+ * Das neue Escrow/Revolut-System wird für alle neuen Zahlungen verwendet.
+ * 
+ * Legacy-Methoden bleiben für bestehende Aufträge erhalten, werden aber nicht
+ * mehr für neue Aufträge verwendet.
+ */
 
 import {
   collection,
@@ -10,6 +19,7 @@ import {
   where,
   Timestamp,
   serverTimestamp,
+  addDoc,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import {
@@ -1907,4 +1917,233 @@ export class TimeTracker {
 
     return Math.max(0, workingMinutes / 60);
   }
+
+  // ============================================================
+  // NEUE ESCROW-BASIERTE METHODEN
+  // ============================================================
+
+  /**
+   * Erstellt ein Escrow für genehmigte Zusatzstunden (NEUES SYSTEM)
+   * Ersetzt billApprovedHours für neue Aufträge
+   */
+  static async createEscrowForApprovedHours(orderId: string): Promise<{
+    escrowId: string;
+    amount: number;
+    platformFee: number;
+    providerAmount: number;
+  }> {
+    try {
+      const orderRef = doc(db, 'auftraege', orderId);
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        throw new Error('Auftrag nicht gefunden');
+      }
+
+      const orderData = orderDoc.data() as AuftragWithTimeTracking;
+
+      if (!orderData.timeTracking) {
+        throw new Error('TimeTracking nicht initialisiert');
+      }
+
+      // Hole genehmigte zusätzliche Stunden
+      const approvedEntries = orderData.timeTracking.timeEntries.filter(
+        entry =>
+          entry.category === 'additional' &&
+          entry.status === 'customer_approved'
+      );
+
+      if (approvedEntries.length === 0) {
+        throw new Error('Keine genehmigten Zusatzstunden vorhanden');
+      }
+
+      const totalAmount = approvedEntries.reduce(
+        (sum, entry) => sum + (entry.billableAmount || 0),
+        0
+      );
+
+      if (totalAmount <= 0) {
+        throw new Error('Kein abrechnungsfähiger Betrag');
+      }
+
+      // Berechne Plattformgebühr (10%)
+      const platformFee = Math.round(totalAmount * 0.10);
+      const providerAmount = totalAmount - platformFee;
+
+      // Erstelle Escrow über API
+      const response = await fetch('/api/payment/escrow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          orderId,
+          customerId: orderData.customerFirebaseUid,
+          providerId: orderData.selectedAnbieterId,
+          amount: totalAmount,
+          currency: 'EUR',
+          paymentMethod: 'bank_transfer',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Fehler beim Erstellen des Escrows');
+      }
+
+      // Markiere Einträge als escrow_pending
+      const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
+        if (
+          entry.category === 'additional' &&
+          entry.status === 'customer_approved'
+        ) {
+          return {
+            ...entry,
+            status: 'escrow_pending' as const,
+            escrowId: result.escrow.id,
+            escrowCreatedAt: Timestamp.now(),
+          };
+        }
+        return entry;
+      });
+
+      // Update Auftrag
+      await updateDoc(orderRef, {
+        'timeTracking.timeEntries': updatedTimeEntries,
+        'timeTracking.status': 'escrow_pending',
+        'timeTracking.lastUpdated': serverTimestamp(),
+        'timeTracking.escrowData': {
+          escrowId: result.escrow.id,
+          amount: totalAmount,
+          platformFee,
+          providerAmount,
+          createdAt: serverTimestamp(),
+          status: 'pending',
+        },
+      });
+
+      return {
+        escrowId: result.escrow.id,
+        amount: totalAmount,
+        platformFee,
+        providerAmount,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Markiert Escrow als bezahlt und aktualisiert den Auftrag
+   */
+  static async markEscrowAsPaid(orderId: string, escrowId: string): Promise<void> {
+    try {
+      const orderRef = doc(db, 'auftraege', orderId);
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        throw new Error('Auftrag nicht gefunden');
+      }
+
+      const orderData = orderDoc.data() as AuftragWithTimeTracking;
+
+      if (!orderData.timeTracking) {
+        throw new Error('TimeTracking nicht initialisiert');
+      }
+
+      // Update TimeEntries
+      const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
+        if ((entry as any).escrowId === escrowId) {
+          return {
+            ...entry,
+            status: 'billed' as const,
+            escrowStatus: 'held',
+            billedAt: Timestamp.now(),
+          };
+        }
+        return entry;
+      });
+
+      // Berechne neue Statistiken
+      const totalBilledHours = updatedTimeEntries
+        .filter(entry => entry.status === 'billed')
+        .reduce((sum, entry) => sum + entry.hours, 0);
+
+      await updateDoc(orderRef, {
+        'timeTracking.timeEntries': updatedTimeEntries,
+        'timeTracking.totalBilledHours': totalBilledHours,
+        'timeTracking.status': 'escrow_held',
+        'timeTracking.lastUpdated': serverTimestamp(),
+        'timeTracking.escrowData.status': 'held',
+        'timeTracking.escrowData.paidAt': serverTimestamp(),
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Gibt Escrow-Gelder an den Provider frei
+   */
+  static async releaseEscrowToProvider(orderId: string): Promise<void> {
+    try {
+      const orderRef = doc(db, 'auftraege', orderId);
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        throw new Error('Auftrag nicht gefunden');
+      }
+
+      const orderData = orderDoc.data() as AuftragWithTimeTracking;
+      
+      if (!orderData.timeTracking) {
+        throw new Error('TimeTracking nicht initialisiert');
+      }
+      
+      const escrowId = (orderData.timeTracking as any).escrowData?.escrowId;
+
+      if (!escrowId) {
+        throw new Error('Kein Escrow vorhanden');
+      }
+
+      // Release über API
+      const response = await fetch('/api/payment/escrow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'release',
+          escrowId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Fehler bei der Freigabe');
+      }
+
+      // Update TimeEntries
+      const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
+        if ((entry as any).escrowId === escrowId) {
+          return {
+            ...entry,
+            escrowStatus: 'released',
+            releasedAt: Timestamp.now(),
+          };
+        }
+        return entry;
+      });
+
+      await updateDoc(orderRef, {
+        'timeTracking.timeEntries': updatedTimeEntries,
+        'timeTracking.status': 'completed',
+        'timeTracking.lastUpdated': serverTimestamp(),
+        'timeTracking.escrowData.status': 'released',
+        'timeTracking.escrowData.releasedAt': serverTimestamp(),
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
 }
+

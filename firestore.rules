@@ -457,6 +457,51 @@ service cloud.firestore {
       }
     }
 
+    // --- escrows Collection (Treuhand-Zahlungen) ---
+    // Escrows speichern Zahlungsinformationen zwischen Käufer und Anbieter
+    match /escrows/{escrowId} {
+      // Käufer und Anbieter dürfen ihre eigenen Escrows lesen
+      allow get: if request.auth != null && resource != null && (
+        resource.data.buyerId == request.auth.uid ||
+        resource.data.providerId == request.auth.uid ||
+        isEmployeeOf(resource.data.providerId) ||
+        isSupportStaff()
+      );
+      
+      // Listen erlaubt mit Filter auf buyerId oder providerId
+      allow list: if request.auth != null && (
+        isSupportStaff() ||
+        (
+          'where' in request.query &&
+          request.query.where != null &&
+          request.query.where.size() > 0 &&
+          (
+            (request.query.where[0].path == 'buyerId' && request.query.where[0].value == request.auth.uid) ||
+            (request.query.where[0].path == 'providerId' && request.query.where[0].value == request.auth.uid) ||
+            (request.query.where[0].path == 'orderId')
+          )
+        )
+      );
+      
+      // Nur Backend (Cloud Functions) darf Escrows erstellen/ändern
+      // Keine direkten Client-Writes erlaubt für Sicherheit
+      allow create: if request.auth != null && (
+        request.resource.data.buyerId == request.auth.uid ||
+        isSupportStaff()
+      );
+      
+      // Updates nur von Support oder dem System (via Cloud Functions)
+      allow update: if request.auth != null && resource != null && (
+        // Käufer darf nur status auf 'disputed' setzen
+        (resource.data.buyerId == request.auth.uid && 
+         request.resource.data.status == 'disputed' && 
+         resource.data.status == 'held') ||
+        isSupportStaff()
+      );
+      
+      allow delete: if false;
+    }
+
     // --- temporaryJobDrafts Collection ---
     // Diese Dokumente müssen ein Feld `customerFirebaseUid` enthalten.
     match /temporaryJobDrafts/{draftId} {
