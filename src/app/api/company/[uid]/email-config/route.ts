@@ -18,7 +18,6 @@ export async function GET(
     
     // userId aus Query-Parameter holen (für benutzer-spezifische Config)
     const { searchParams } = new URL(request.url);
-    const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId') || uid;
     
     // Prüfe Gmail-Konfiguration in emailConfigs Subcollection
