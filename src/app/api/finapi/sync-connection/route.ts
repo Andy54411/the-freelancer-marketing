@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { finapiService } from '@/lib/finapi-sdk-service';
+import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 /**
  * POST /api/finapi/sync-connection
@@ -12,6 +13,12 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+    
+    // Authentifizierung - nur eigene Verbindung synchronisieren
+    const authResult = await verifyCompanyAccess(request, userId);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
     }
 
     // For now, we'll simulate sync operation

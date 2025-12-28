@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createFinAPIService } from '@/lib/finapi-sdk-service';
 import { db } from '@/firebase/server';
+import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 /**
  * DELETE /api/finapi/delete-connection
@@ -16,6 +17,12 @@ export async function DELETE(request: NextRequest) {
         { error: 'Connection ID and User ID are required' },
         { status: 400 }
       );
+    }
+    
+    // Authentifizierung - nur eigene Verbindung löschen
+    const authResult = await verifyCompanyAccess(request, userId);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
     }
 
     try {

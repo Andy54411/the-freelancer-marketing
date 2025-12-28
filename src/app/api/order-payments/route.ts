@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { verifyApiAuth, authErrorResponse } from '@/lib/apiAuth';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
@@ -9,6 +10,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  * API: Suche alle Payment Intents für einen bestimmten Auftrag
  */
 export async function GET(request: NextRequest) {
+  // Authentifizierung - Zahlungsdaten nur für eingeloggte Benutzer
+  const authResult = await verifyApiAuth(request);
+  if (!authResult.success) {
+    return authErrorResponse(authResult);
+  }
+  
   try {
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('orderId');

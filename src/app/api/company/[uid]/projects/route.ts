@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 import { Timestamp } from 'firebase-admin/firestore';
+import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 /**
  * API Route für Projekte eines Unternehmens
@@ -15,6 +16,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!companyId) {
       return NextResponse.json({ error: 'Company ID ist erforderlich' }, { status: 400 });
+    }
+
+    // 🔐 AUTHENTIFIZIERUNG: Prüfe ob User auf diese Company zugreifen darf
+    const authResult = await verifyCompanyAccess(request, companyId);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
     }
 
     // Projekte aus der companies/{companyId}/projects Collection laden
@@ -53,6 +60,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     if (!companyId) {
       return NextResponse.json({ error: 'Company ID ist erforderlich' }, { status: 400 });
+    }
+
+    // 🔐 AUTHENTIFIZIERUNG: Prüfe ob User auf diese Company zugreifen darf
+    const authResult = await verifyCompanyAccess(request, companyId);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
     }
 
     // Validierung der erforderlichen Felder

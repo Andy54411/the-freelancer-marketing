@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { verifyApiAuth, authErrorResponse } from '@/lib/apiAuth';
 
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
@@ -64,6 +65,12 @@ interface ReceiptData {
 }
 
 export async function POST(request: NextRequest) {
+  // Authentifizierung - AI-Dienste nur für eingeloggte Benutzer
+  const authResult = await verifyApiAuth(request);
+  if (!authResult.success) {
+    return authErrorResponse(authResult);
+  }
+  
   try {
     const receiptData: ReceiptData = await request.json();
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { verifyApiAuth, authErrorResponse } from '@/lib/apiAuth';
 
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
@@ -7,7 +8,13 @@ if (!apiKey) {
 }
 const genAI = new GoogleGenerativeAI(apiKey);
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Authentifizierung - AI-Dienste nur für eingeloggte Benutzer
+  const authResult = await verifyApiAuth(request);
+  if (!authResult.success) {
+    return authErrorResponse(authResult);
+  }
+  
   try {
     // List available models for debugging
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
@@ -33,6 +40,12 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  // Authentifizierung - AI-Dienste nur für eingeloggte Benutzer
+  const authResult = await verifyApiAuth(request);
+  if (!authResult.success) {
+    return authErrorResponse(authResult);
+  }
+  
   try {
     const { prompt } = await request.json();
 

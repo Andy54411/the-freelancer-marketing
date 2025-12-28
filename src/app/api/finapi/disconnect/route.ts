@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
+import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
-export async function POST(request: NextRequest, companyId: string) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { companyId } = body;
 
     if (!companyId) {
       return NextResponse.json({ error: 'Company ID ist erforderlich' }, { status: 400 });
+    }
+
+    // 🔐 AUTHENTIFIZIERUNG: Disconnect erfordert Berechtigung
+    const authResult = await verifyCompanyAccess(request, companyId);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
     }
 
     // Lösche finAPI-Daten aus der Company-Collection

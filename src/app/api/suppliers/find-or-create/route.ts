@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
+import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 /**
  * Find or Create Supplier
@@ -15,6 +16,12 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'Company ID und Name sind erforderlich' },
         { status: 400 }
       );
+    }
+    
+    // Authentifizierung - nur für eigene Company Suppliers erstellen
+    const authResult = await verifyCompanyAccess(request, companyId);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
     }
 
     if (!db) {

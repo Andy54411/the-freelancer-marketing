@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
+import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,6 +15,12 @@ export async function GET(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    // 🔐 AUTHENTIFIZIERUNG: Prüfe ob User auf diese Company zugreifen darf
+    const authResult = await verifyCompanyAccess(request, companyId);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
     }
 
     // Firebase Admin SDK Abfrage für Kunden/Lieferanten
@@ -87,6 +94,12 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    // 🔐 AUTHENTIFIZIERUNG: Prüfe ob User auf diese Company zugreifen darf
+    const authResult = await verifyCompanyAccess(request, companyId);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
     }
 
     const customerData = {

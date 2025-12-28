@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
+import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 /**
  * GET /api/company/[uid]/notifications
@@ -7,11 +8,17 @@ import { db } from '@/firebase/server';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ uid: string }> },
-  companyId: string
+  { params }: { params: Promise<{ uid: string }> }
 ) {
   try {
     const { uid } = await params;
+    
+    // 🔐 AUTHENTIFIZIERUNG: Prüfe ob User auf diese Company zugreifen darf
+    const authResult = await verifyCompanyAccess(request, uid);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
+    }
+    
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
 
@@ -67,11 +74,17 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ uid: string }> },
-  companyId: string
+  { params }: { params: Promise<{ uid: string }> }
 ) {
   try {
     const { uid } = await params;
+    
+    // 🔐 AUTHENTIFIZIERUNG: Prüfe ob User auf diese Company zugreifen darf
+    const authResult = await verifyCompanyAccess(request, uid);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
+    }
+    
     const body = await request.json();
     const { type, title, message, link, metadata } = body;
 

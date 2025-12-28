@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createFinAPIService } from '@/lib/finapi-sdk-service';
 import { db } from '@/firebase/server';
+import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 /**
  * POST /api/finapi/sync-transactions
@@ -13,6 +14,12 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    // 🔐 AUTHENTIFIZIERUNG: Bankdaten-Sync erfordert Berechtigung
+    const authResult = await verifyCompanyAccess(request, userId);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
     }
 
     try {

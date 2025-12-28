@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createFinAPIService } from '@/lib/finapi-sdk-service';
 import { db } from '@/firebase/server';
 import { getFinApiBaseUrl } from '@/lib/finapi-config';
+import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +24,12 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       );
+    }
+
+    // 🔐 AUTHENTIFIZIERUNG: Banküberweisungen sind hochkritisch!
+    const authResult = await verifyCompanyAccess(request, userId);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
     }
 
     // Get company data to retrieve email

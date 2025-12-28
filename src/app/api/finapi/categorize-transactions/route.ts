@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { finapiService } from '@/lib/finapi-sdk-service';
+import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 /**
  * POST /api/finapi/categorize-transactions
@@ -15,6 +16,12 @@ export async function POST(request: NextRequest) {
         { error: 'User ID and transaction IDs are required' },
         { status: 400 }
       );
+    }
+    
+    // Authentifizierung - nur eigene Transaktionen kategorisieren
+    const authResult = await verifyCompanyAccess(request, userId);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
     }
 
     // For now, we'll simulate categorization

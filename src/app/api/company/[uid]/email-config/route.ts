@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, withFirebase } from '@/firebase/server';
+import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 // GET - E-Mail-Konfiguration abrufen
 export async function GET(
@@ -9,7 +10,14 @@ export async function GET(
   try {
     const { uid } = await params;
     
+    // 🔐 AUTHENTIFIZIERUNG: Prüfe ob User auf diese Company zugreifen darf
+    const authResult = await verifyCompanyAccess(request, uid);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
+    }
+    
     // userId aus Query-Parameter holen (für benutzer-spezifische Config)
+    const { searchParams } = new URL(request.url);
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId') || uid;
     

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createFinAPIService } from '@/lib/finapi-sdk-service';
 import { db } from '@/firebase/server';
+import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 /**
  * POST /api/finapi/webform
@@ -16,6 +17,12 @@ export async function POST(request: NextRequest) {
         { error: 'Bank-ID und Benutzer-ID sind erforderlich' },
         { status: 400 }
       );
+    }
+    
+    // Authentifizierung - nur für eigene Company Webform erstellen
+    const authResult = await verifyCompanyAccess(request, companyId || userId);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
     }
 
     // Für Testing: Verwende userId direkt als Email wenn es eine Email ist

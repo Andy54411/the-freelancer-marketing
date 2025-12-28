@@ -2,6 +2,7 @@
 // KONSISTENT: Verwendet jetzt Destination Charges wie B2C
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
+import { verifyApiAuth, authErrorResponse } from '@/lib/apiAuth';
 
 // Stripe initialization
 function getStripeInstance() {
@@ -17,6 +18,12 @@ function getStripeInstance() {
 }
 
 export async function POST(request: NextRequest) {
+  // Authentifizierung - Zahlungen nur für eingeloggte Benutzer
+  const authResult = await verifyApiAuth(request);
+  if (!authResult.success) {
+    return authErrorResponse(authResult);
+  }
+  
   const stripe = getStripeInstance();
   if (!stripe) {
     return NextResponse.json(
