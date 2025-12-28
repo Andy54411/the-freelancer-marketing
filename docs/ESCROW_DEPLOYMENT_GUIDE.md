@@ -2,7 +2,7 @@
 
 ## Deployment Status (Stand: 29.12.2025)
 
-### ✅ ERLEDIGT
+### ✅ VOLLSTÄNDIG DEPLOYED
 
 | Komponente | Status | Datum |
 |------------|--------|-------|
@@ -10,6 +10,21 @@
 | Firestore Indexes | ✅ Deployed | 29.12.2025 |
 | Firebase Functions | ✅ Deployed | 29.12.2025 |
 | Vercel (Next.js) | ✅ Deployed | 29.12.2025 |
+| Hetzner Payment Backend | ✅ Deployed | 29.12.2025 |
+| Revolut Zertifikate | ✅ Konfiguriert | 29.12.2025 |
+| Revolut API Credentials | ✅ Eingerichtet | 29.12.2025 |
+| Nginx Proxy Config | ✅ Konfiguriert | 29.12.2025 |
+
+### ⚠️ BEKANNTES PROBLEM
+
+| Problem | Status | Beschreibung |
+|---------|--------|--------------|
+| Cloudflare Block | ⚠️ Offen | Revolut API blockiert Hetzner-Server IP |
+
+**Hinweis:** Die gesamte Infrastruktur ist deployed. Revolut API-Calls werden aktuell durch Cloudflare blockiert (403). Mögliche Lösungen:
+1. IP-Whitelisting bei Revolut anfragen
+2. Calls über Taskilo-Backend auf Vercel routen
+3. Cloudflare-kompatiblen Client implementieren
 
 ---
 

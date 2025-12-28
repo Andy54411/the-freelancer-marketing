@@ -98,7 +98,66 @@ interface RevolutPaymentResponse {
   currency: string;
 }
 
+// Vercel Token Proxy URL (Cloudflare blockiert Hetzner-IPs)
+const VERCEL_TOKEN_PROXY = process.env.VERCEL_TOKEN_PROXY_URL || 'https://taskilo.de/api/revolut/token';
+const API_KEY = process.env.WEBMAIL_API_KEY || '';
+
 async function getAccessToken(scope: string = 'READ'): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // Versuche zuerst über Vercel Token Proxy
+    const proxyUrl = new URL(VERCEL_TOKEN_PROXY);
+    
+    const postData = JSON.stringify({ scope });
+
+    const options = {
+      hostname: proxyUrl.hostname,
+      port: proxyUrl.port || 443,
+      path: proxyUrl.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData),
+        'X-API-Key': API_KEY,
+      },
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode !== 200) {
+          // Fallback to direct Revolut call (might fail due to Cloudflare)
+          console.error('[Token Proxy] Failed, trying direct call:', res.statusCode, data.substring(0, 200));
+          getAccessTokenDirect(scope).then(resolve).catch(reject);
+          return;
+        }
+        try {
+          const tokenData = JSON.parse(data);
+          if (tokenData.success && tokenData.access_token) {
+            console.log('[Token Proxy] Success - got access token');
+            resolve(tokenData.access_token);
+          } else {
+            reject(new Error(`Token proxy error: ${tokenData.error || 'Unknown error'}`));
+          }
+        } catch {
+          reject(new Error(`Failed to parse token response: ${data}`));
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      console.error('[Token Proxy] Request failed:', error.message);
+      // Fallback to direct call
+      getAccessTokenDirect(scope).then(resolve).catch(reject);
+    });
+
+    req.write(postData);
+    req.end();
+  });
+}
+
+// Direct Revolut call (fallback, may fail due to Cloudflare)
+async function getAccessTokenDirect(scope: string = 'READ'): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!revolutConfig.clientId || !revolutConfig.privateKey) {
       reject(new Error('Revolut configuration incomplete'));
@@ -107,12 +166,11 @@ async function getAccessToken(scope: string = 'READ'): Promise<string> {
 
     const now = Math.floor(Date.now() / 1000);
     const payload = {
-      iss: revolutConfig.clientId,
+      iss: 'taskilo.de', // Issuer as configured in Revolut dashboard
       sub: revolutConfig.clientId,
       aud: 'https://revolut.com',
       iat: now,
       exp: now + 300,
-      scope: scope,
     };
 
     let token: string;
@@ -146,6 +204,8 @@ async function getAccessToken(scope: string = 'READ'): Promise<string> {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Content-Length': Buffer.byteLength(postData),
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
       },
     };
 
@@ -154,7 +214,7 @@ async function getAccessToken(scope: string = 'READ'): Promise<string> {
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
         if (res.statusCode !== 200) {
-          reject(new Error(`Revolut Auth Error: ${res.statusCode} - ${data}`));
+          reject(new Error(`Revolut Auth Error: ${res.statusCode} - ${data.substring(0, 500)}`));
           return;
         }
         try {
@@ -196,6 +256,7 @@ async function makeRevolutRequest<T>(
           'Authorization': `Bearer ${accessToken}`,
           'Accept': 'application/json',
           'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         },
       };
 
