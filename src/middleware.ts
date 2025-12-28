@@ -21,22 +21,45 @@ export default async function middleware(request: NextRequest) {
   
   // Skip static files completely - ALL public folder assets
   if (
+    // Next.js internal
     pathname.startsWith('/_next/') || 
+    // Public folders
     pathname.startsWith('/images/') || 
     pathname.startsWith('/app_svg/') ||
     pathname.startsWith('/fonts/') ||
     pathname.startsWith('/icons/') ||
+    pathname.startsWith('/icon/') ||
+    pathname.startsWith('/pdf-worker/') ||
+    // Root public files
     pathname === '/favicon.ico' ||
+    pathname === '/favicon.svg' ||
     pathname === '/manifest.json' ||
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
+    pathname === '/pdf.worker.min.mjs' ||
+    pathname === '/real-time-monitor.js' ||
+    pathname === '/oauth-test.html' ||
+    pathname === '/revolut-business-logo.svg' ||
+    // All static file extensions
     pathname.endsWith('.svg') ||
     pathname.endsWith('.png') ||
     pathname.endsWith('.jpg') ||
     pathname.endsWith('.jpeg') ||
     pathname.endsWith('.gif') ||
     pathname.endsWith('.ico') ||
-    pathname.endsWith('.webp')
+    pathname.endsWith('.webp') ||
+    pathname.endsWith('.woff') ||
+    pathname.endsWith('.woff2') ||
+    pathname.endsWith('.ttf') ||
+    pathname.endsWith('.eot') ||
+    pathname.endsWith('.js') ||
+    pathname.endsWith('.mjs') ||
+    pathname.endsWith('.css') ||
+    pathname.endsWith('.json') ||
+    pathname.endsWith('.xml') ||
+    pathname.endsWith('.txt') ||
+    pathname.endsWith('.pdf') ||
+    pathname.endsWith('.html')
   ) {
     return NextResponse.next();
   }
