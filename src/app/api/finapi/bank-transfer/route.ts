@@ -18,18 +18,26 @@ export async function POST(request: NextRequest) {
       executionDate
     } = await request.json();
 
-    // Validate required fields
-    if (!userId || !credentialType || !accountId || !receiverName || !iban || !bic || !purpose || !amount) {
+    // 🔐 AUTHENTIFIZIERUNG ZUERST: Banküberweisungen sind hochkritisch!
+    // Auth muss VOR Feldvalidierung kommen, um keine Informationen zu leaken
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'Missing userId' },
+        { status: 400 }
+      );
+    }
+    
+    const authResult = await verifyCompanyAccess(request, userId);
+    if (!authResult.success) {
+      return authErrorResponse(authResult);
+    }
+
+    // Validate required fields (nach Auth!)
+    if (!credentialType || !accountId || !receiverName || !iban || !bic || !purpose || !amount) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       );
-    }
-
-    // 🔐 AUTHENTIFIZIERUNG: Banküberweisungen sind hochkritisch!
-    const authResult = await verifyCompanyAccess(request, userId);
-    if (!authResult.success) {
-      return authErrorResponse(authResult);
     }
 
     // Get company data to retrieve email
