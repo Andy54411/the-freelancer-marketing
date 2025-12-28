@@ -19,8 +19,25 @@ export default async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const pathname = request.nextUrl.pathname;
   
-  // Skip static files completely
-  if (pathname.startsWith('/_next/') || pathname.startsWith('/images/') || pathname === '/favicon.ico') {
+  // Skip static files completely - ALL public folder assets
+  if (
+    pathname.startsWith('/_next/') || 
+    pathname.startsWith('/images/') || 
+    pathname.startsWith('/app_svg/') ||
+    pathname.startsWith('/fonts/') ||
+    pathname.startsWith('/icons/') ||
+    pathname === '/favicon.ico' ||
+    pathname === '/manifest.json' ||
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml' ||
+    pathname.endsWith('.svg') ||
+    pathname.endsWith('.png') ||
+    pathname.endsWith('.jpg') ||
+    pathname.endsWith('.jpeg') ||
+    pathname.endsWith('.gif') ||
+    pathname.endsWith('.ico') ||
+    pathname.endsWith('.webp')
+  ) {
     return NextResponse.next();
   }
   
