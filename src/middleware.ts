@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Middleware-Logs
+// Middleware-Logs für Audit-Trail (Datenschutz/Sicherheit)
 function logMiddleware(message: string, request: NextRequest, additionalData?: Record<string, unknown>) {
   const timestamp = new Date().toISOString();
   const url = request.nextUrl.pathname;
@@ -20,7 +20,7 @@ export default async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   
   // Skip static files completely - ALL public folder assets
-  if (
+  const isStaticAsset = (
     // Next.js internal
     pathname.startsWith('/_next/') || 
     // Public folders
@@ -30,6 +30,8 @@ export default async function middleware(request: NextRequest) {
     pathname.startsWith('/icons/') ||
     pathname.startsWith('/icon/') ||
     pathname.startsWith('/pdf-worker/') ||
+    // API routes pass through (protected by their own auth)
+    pathname.startsWith('/api/') ||
     // Root public files
     pathname === '/favicon.ico' ||
     pathname === '/favicon.svg' ||
@@ -52,73 +54,16 @@ export default async function middleware(request: NextRequest) {
     pathname.endsWith('.woff2') ||
     pathname.endsWith('.ttf') ||
     pathname.endsWith('.eot') ||
-    pathname.endsWith('.js') ||
-    pathname.endsWith('.mjs') ||
     pathname.endsWith('.css') ||
-    pathname.endsWith('.json') ||
-    pathname.endsWith('.xml') ||
-    pathname.endsWith('.txt') ||
-    pathname.endsWith('.pdf') ||
-    pathname.endsWith('.html')
-  ) {
+    pathname.endsWith('.map')
+  );
+
+  if (isStaticAsset) {
     return NextResponse.next();
   }
-  
-  // SUBDOMAIN ROUTING - Check this FIRST
-  if (hostname.includes('kalender.') || hostname.includes('calendar.')) {
-    console.log('[Middleware] KALENDER SUBDOMAIN DETECTED');
-    const url = request.nextUrl.clone();
-    url.pathname = '/webmail/calendar' + (pathname === '/' ? '' : pathname);
-    const response = NextResponse.rewrite(url);
-    response.headers.set('x-subdomain-rewrite', '/webmail/calendar');
-    return response;
-  }
-  
-  if (hostname.includes('email.') || hostname.includes('mail.')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/webmail' + (pathname === '/' ? '' : pathname);
-    const response = NextResponse.rewrite(url);
-    response.headers.set('x-subdomain-rewrite', '/webmail');
-    return response;
-  }
-  
-  if (hostname.includes('drive.')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/webmail/drive' + (pathname === '/' ? '' : pathname);
-    const response = NextResponse.rewrite(url);
-    response.headers.set('x-subdomain-rewrite', '/webmail/drive');
-    return response;
-  }
-  
-  if (hostname.includes('task.') || hostname.includes('tasks.')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/webmail/tasks' + (pathname === '/' ? '' : pathname);
-    const response = NextResponse.rewrite(url);
-    response.headers.set('x-subdomain-rewrite', '/webmail/tasks');
-    return response;
-  }
-  
-  if (hostname.includes('kontakt.') || hostname.includes('contact.')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/webmail/contacts' + (pathname === '/' ? '' : pathname);
-    const response = NextResponse.rewrite(url);
-    response.headers.set('x-subdomain-rewrite', '/webmail/contacts');
-    return response;
-  }
-  
-  if (hostname.includes('meet.')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/webmail/meet' + (pathname === '/' ? '' : pathname);
-    const response = NextResponse.rewrite(url);
-    response.headers.set('x-subdomain-rewrite', '/webmail/meet');
-    return response;
-  }
-
-  logMiddleware('Middleware ausgeführt', request);
 
   // Helper function to add no-cache headers for subdomain rewrites
   const createSubdomainRewrite = (targetPath: string) => {
-    console.log('[Middleware] Creating rewrite to:', targetPath);
     const url = request.nextUrl.clone();
     url.pathname = targetPath;
     const response = NextResponse.rewrite(url);
@@ -129,10 +74,14 @@ export default async function middleware(request: NextRequest) {
     return response;
   };
 
-  // email.taskilo.de -> /webmail
+  // ============================================
+  // SUBDOMAIN ROUTING
+  // ============================================
+  
+  // email.taskilo.de / mail.taskilo.de -> /webmail
   if (hostname.startsWith('email.') || hostname.startsWith('mail.')) {
     logMiddleware('Email Subdomain erkannt', request, { hostname });
-    if (!pathname.startsWith('/webmail') && !isApiOrStatic) {
+    if (!pathname.startsWith('/webmail')) {
       return createSubdomainRewrite(`/webmail${pathname === '/' ? '' : pathname}`);
     }
     return NextResponse.next();
@@ -141,7 +90,7 @@ export default async function middleware(request: NextRequest) {
   // drive.taskilo.de -> /webmail/drive
   if (hostname.startsWith('drive.')) {
     logMiddleware('Drive Subdomain erkannt', request, { hostname });
-    if (!pathname.startsWith('/webmail/drive') && !isApiOrStatic) {
+    if (!pathname.startsWith('/webmail/drive')) {
       return createSubdomainRewrite(`/webmail/drive${pathname === '/' ? '' : pathname}`);
     }
     return NextResponse.next();
@@ -150,7 +99,7 @@ export default async function middleware(request: NextRequest) {
   // kalender.taskilo.de / calendar.taskilo.de -> /webmail/calendar
   if (hostname.startsWith('kalender.') || hostname.startsWith('calendar.')) {
     logMiddleware('Kalender Subdomain erkannt', request, { hostname });
-    if (!pathname.startsWith('/webmail/calendar') && !isApiOrStatic) {
+    if (!pathname.startsWith('/webmail/calendar')) {
       return createSubdomainRewrite(`/webmail/calendar${pathname === '/' ? '' : pathname}`);
     }
     return NextResponse.next();
@@ -159,7 +108,7 @@ export default async function middleware(request: NextRequest) {
   // meet.taskilo.de -> /webmail/meet
   if (hostname.startsWith('meet.')) {
     logMiddleware('Meet Subdomain erkannt', request, { hostname });
-    if (!pathname.startsWith('/webmail/meet') && !isApiOrStatic) {
+    if (!pathname.startsWith('/webmail/meet')) {
       return createSubdomainRewrite(`/webmail/meet${pathname === '/' ? '' : pathname}`);
     }
     return NextResponse.next();
@@ -168,7 +117,7 @@ export default async function middleware(request: NextRequest) {
   // task.taskilo.de / tasks.taskilo.de -> /webmail/tasks
   if (hostname.startsWith('task.') || hostname.startsWith('tasks.')) {
     logMiddleware('Tasks Subdomain erkannt', request, { hostname });
-    if (!pathname.startsWith('/webmail/tasks') && !isApiOrStatic) {
+    if (!pathname.startsWith('/webmail/tasks')) {
       return createSubdomainRewrite(`/webmail/tasks${pathname === '/' ? '' : pathname}`);
     }
     return NextResponse.next();
@@ -177,87 +126,91 @@ export default async function middleware(request: NextRequest) {
   // kontakt.taskilo.de / contact.taskilo.de -> /webmail/contacts
   if (hostname.startsWith('kontakt.') || hostname.startsWith('contact.') || hostname.startsWith('contacts.')) {
     logMiddleware('Contacts Subdomain erkannt', request, { hostname });
-    if (!pathname.startsWith('/webmail/contacts') && !isApiOrStatic) {
+    if (!pathname.startsWith('/webmail/contacts')) {
       return createSubdomainRewrite(`/webmail/contacts${pathname === '/' ? '' : pathname}`);
     }
     return NextResponse.next();
   }
 
-  // Skip middleware for SEO machine-readable endpoints
-  if (
-    pathname === '/robots.txt' ||
-    pathname === '/sitemap.xml' ||
-    pathname === '/sitemap.xml.gz' ||
-    pathname === '/favicon.ico' ||
-    pathname === '/manifest.json'
-  ) {
-    logMiddleware('SEO/Static endpoint – Middleware übersprungen', request, { pathname });
-    return;
-  }
+  // ============================================
+  // AUTHENTICATION & AUTHORIZATION CHECKS
+  // ============================================
 
-  // Company Dashboard Onboarding Protection (nach Dokumentation)
-  if (request.nextUrl.pathname.startsWith('/dashboard/company/')) {
+  // Company Dashboard - Role-based access with onboarding check
+  if (pathname.startsWith('/dashboard/company/')) {
     logMiddleware('Company Dashboard Zugriff erkannt', request);
+    
+    // Extract company UID for audit logging
+    const pathSegments = pathname.split('/');
+    const companyUid = pathSegments[3];
+    
+    if (companyUid) {
+      logMiddleware('Company Dashboard Zugriff', request, { 
+        companyUid,
+        accessType: 'company_dashboard'
+      });
+    }
+    
     // TEMPORÄR DEAKTIVIERT FÜR PAYMENT TESTS
-    // const onboardingCheck = checkCompanyOnboardingStatus(request);
+    // const onboardingCheck = await checkCompanyOnboardingStatus(request);
     // if (onboardingCheck) {
-    //   logMiddleware('Company Dashboard blockiert - Umleitung zu Onboarding', request);
     //   return onboardingCheck;
     // }
-    logMiddleware('Company Dashboard Zugriff erlaubt (ONBOARDING CHECK DEAKTIVIERT)', request);
   }
 
-  // Admin Authentication Protection
+  // Admin Dashboard - Strict authentication required
   if (
-    request.nextUrl.pathname.startsWith('/dashboard/admin') &&
-    !request.nextUrl.pathname.startsWith('/dashboard/admin/login')
+    pathname.startsWith('/dashboard/admin') &&
+    !pathname.startsWith('/dashboard/admin/login')
   ) {
     logMiddleware('Admin Dashboard Zugriff erkannt', request);
-    // Check if admin session exists
     const adminToken = request.cookies.get('taskilo_admin_session')?.value;
 
     if (!adminToken) {
-      logMiddleware('Admin Dashboard blockiert - kein Token', request);
-      // Redirect to login page if no session
+      logMiddleware('Admin Dashboard blockiert - kein Token', request, {
+        accessType: 'admin_blocked',
+        reason: 'missing_token'
+      });
       return NextResponse.redirect(new URL('/dashboard/admin/login', request.url));
     }
-    logMiddleware('Admin Dashboard Zugriff erlaubt', request);
+    
+    logMiddleware('Admin Dashboard Zugriff erlaubt', request, {
+      accessType: 'admin_allowed'
+    });
   }
 
-  // ✅ PDF Generation Bypass - Allow server-side PDF generation access
+  // ============================================
+  // SPECIAL ACCESS CONTROLS
+  // ============================================
+
+  // PDF Generation Bypass - Allow server-side PDF generation
   const userAgent = request.headers.get('User-Agent') || '';
-  const isPreviewRoute = request.nextUrl.pathname.includes('/preview');
+  const isPreviewRoute = pathname.includes('/preview');
   const isPdfGenerator = userAgent.includes('Taskilo-PDF-Generator');
   
   if (isPreviewRoute && isPdfGenerator) {
-    logMiddleware('✅ PDF Generation Bypass - Server access allowed', request, {
+    logMiddleware('PDF Generation Bypass - Server access allowed', request, {
       userAgent: userAgent.substring(0, 50),
-      path: request.nextUrl.pathname,
+      path: pathname,
+      accessType: 'pdf_generator'
     });
-    return NextResponse.next(); // Allow direct access for PDF generation
+    return NextResponse.next();
   }
 
-  // Skip internationalization for admin routes and API routes
-  if (
-    request.nextUrl.pathname.startsWith('/dashboard/admin') ||
-    request.nextUrl.pathname.startsWith('/api/') ||
-    request.nextUrl.pathname.startsWith('/contacts')
-  ) {
-    return;
-  }
-
-  // Apply internationalization middleware for other routes
-  return createMiddleware({
-    locales: ['de', 'en', 'fr', 'es'],
-    defaultLocale: 'de',
-  })(request);
+  // Allow all other routes
+  return NextResponse.next();
 }
 
-async function checkCompanyOnboardingStatus(request: NextRequest) {
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+// Onboarding check function (currently disabled but kept for future use)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function checkCompanyOnboardingStatus(request: NextRequest): Promise<NextResponse | null> {
   try {
     logMiddleware('Onboarding-Status wird geprüft', request);
 
-    // Get user UID from path
     const pathSegments = request.nextUrl.pathname.split('/');
     const companyUid = pathSegments[3]; // /dashboard/company/[uid]/...
 
@@ -266,23 +219,22 @@ async function checkCompanyOnboardingStatus(request: NextRequest) {
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
 
-    // Allow onboarding pages (nicht blockieren)
+    // Allow onboarding pages
     if (pathSegments[4] === 'onboarding') {
       logMiddleware('Onboarding-Seite erkannt - Zugriff erlaubt', request, { companyUid });
-      return null; // Continue to onboarding
+      return null;
     }
 
-    // ALTERNATIVE: Check onboarding status from cookies (falls verfügbar)
+    // Check onboarding status from cookies (minimal data exposure)
     const onboardingComplete = request.cookies.get('taskilo_onboarding_complete')?.value;
     const profileStatus = request.cookies.get('taskilo_profile_status')?.value;
 
     logMiddleware('Cookie-basierte Prüfung', request, {
       companyUid,
-      onboardingComplete,
-      profileStatus,
+      onboardingComplete: onboardingComplete ? 'present' : 'absent',
+      profileStatus: profileStatus ? 'present' : 'absent',
     });
 
-    // If no cookies available, allow access (safer fallback)
     if (!onboardingComplete) {
       logMiddleware('Keine Onboarding-Cookies gefunden - Zugriff erlaubt (Fallback)', request, {
         companyUid,
@@ -290,49 +242,36 @@ async function checkCompanyOnboardingStatus(request: NextRequest) {
       return null;
     }
 
-    // Check if onboarding is required
     const needsOnboarding = onboardingComplete !== 'true';
 
     if (needsOnboarding) {
-      logMiddleware('Onboarding erforderlich (Cookie) - Umleitung zu Onboarding', request, {
-        companyUid,
-      });
+      logMiddleware('Onboarding erforderlich - Umleitung', request, { companyUid });
       return NextResponse.redirect(
         new URL(`/dashboard/company/${companyUid}/onboarding/welcome`, request.url)
       );
     }
 
-    // Check profile status
     const isRejected = profileStatus === 'rejected';
 
     if (isRejected) {
-      logMiddleware(
-        'Profil abgelehnt (Cookie) - Umleitung zu Onboarding mit Rejection-Status',
-        request,
-        {
-          companyUid,
-          profileStatus,
-        }
-      );
+      logMiddleware('Profil abgelehnt - Umleitung mit Rejection-Status', request, {
+        companyUid,
+      });
       return NextResponse.redirect(
         new URL(`/dashboard/company/${companyUid}/onboarding/welcome?status=rejected`, request.url)
       );
     }
 
-    logMiddleware('Dashboard-Zugriff vollständig erlaubt (Cookie)', request, {
-      companyUid,
-      profileStatus,
-    });
-    return null; // Continue to dashboard
-  } catch (error) {
-    logMiddleware('Middleware Fehler beim Onboarding-Check', request, { error: error.message });
-    console.error('Middleware onboarding check error:', error);
-    // Allow access on error (safe fallback)
+    logMiddleware('Dashboard-Zugriff erlaubt', request, { companyUid });
     return null;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logMiddleware('Middleware Fehler beim Onboarding-Check', request, { error: errorMessage });
+    console.error('Middleware onboarding check error:', error);
+    return null; // Allow access on error (safe fallback)
   }
 }
 
 export const config = {
-  // Match ALL routes - let middleware decide what to skip
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
