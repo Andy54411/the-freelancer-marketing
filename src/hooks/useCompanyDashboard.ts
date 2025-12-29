@@ -99,6 +99,18 @@ export function useCompanyDashboard() {
 
         setUserData(data);
 
+        // KRITISCHER FIX: Wenn onboardingCompleted === true, KEIN Onboarding mehr nötig!
+        const isOnboardingComplete = data?.onboardingCompleted === true;
+        
+        if (isOnboardingComplete) {
+          setMissingFields([]);
+          setNeedsOnboarding(false);
+          setCompletionPercentage(100);
+          setCurrentStep(6);
+          setIsChecking(false);
+          return;
+        }
+
         // Die Logik zur Überprüfung fehlender Felder bleibt gleich.
         const missing: string[] = [];
         const companyName = data?.companyName || data?.step2?.companyName;
