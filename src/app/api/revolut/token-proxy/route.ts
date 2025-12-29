@@ -120,9 +120,13 @@ export async function POST(request: NextRequest) {
     // Verify API Key from Hetzner
     const apiKey = request.headers.get('X-API-Key') || request.headers.get('x-api-key');
     
+    console.log('[Token Proxy] API Key received:', apiKey?.substring(0, 10) + '...');
+    console.log('[Token Proxy] Expected:', HETZNER_API_KEY?.substring(0, 10) + '...');
+    
     if (!apiKey || apiKey !== HETZNER_API_KEY) {
+      console.log('[Token Proxy] Auth failed - keys do not match');
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized', debug: { receivedKeyPrefix: apiKey?.substring(0, 10), expectedKeyPrefix: HETZNER_API_KEY?.substring(0, 10) } },
         { status: 401 }
       );
     }
