@@ -265,7 +265,7 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
   const handleDelete = async (file: DriveFile) => {
     try {
       await DriveApiService.delete(file.id, file.type);
-      toast.success(`${file.type === 'folder' ? 'Ordner' : 'Datei'} geloescht`);
+      toast.success(`${file.type === 'folder' ? 'Ordner' : 'Datei'} gelöscht`);
       loadContents();
       loadStorage();
     } catch (error) {
@@ -746,7 +746,7 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
                           onClick={(e) => { e.stopPropagation(); handleDelete(file); }}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Loeschen
+                          Löschen
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -767,8 +767,8 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
                     isDark ? "border-[#5f6368] bg-[#3c4043]" : "border-gray-200 bg-gray-50"
                   )}>
                     <th className={cn("text-left py-3 px-4 text-sm font-medium", isDark ? "text-white" : "text-gray-600")}>Name</th>
-                    <th className={cn("text-left py-3 px-4 text-sm font-medium hidden sm:table-cell", isDark ? "text-white" : "text-gray-600")}>Groesse</th>
-                    <th className={cn("text-left py-3 px-4 text-sm font-medium hidden md:table-cell", isDark ? "text-white" : "text-gray-600")}>Geaendert</th>
+                    <th className={cn("text-left py-3 px-4 text-sm font-medium hidden sm:table-cell", isDark ? "text-white" : "text-gray-600")}>Größe</th>
+                    <th className={cn("text-left py-3 px-4 text-sm font-medium hidden md:table-cell", isDark ? "text-white" : "text-gray-600")}>Geändert</th>
                     <th className="w-10"></th>
                   </tr>
                 </thead>
@@ -835,7 +835,7 @@ export default function WebmailDrivePage({ initialFolderId }: WebmailDrivePagePr
                                 onClick={(e) => { e.stopPropagation(); handleDelete(file); }}
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Loeschen
+                                Löschen
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

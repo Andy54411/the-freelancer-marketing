@@ -903,11 +903,11 @@ export class NumberSequenceService {
       { type: 'Lieferschein', format: 'LI-%NUMBER', nextNumber: 1000, prefix: 'LI-' },
       { type: 'Gutschrift', format: 'GU-%NUMBER', nextNumber: 1000, prefix: 'GU-' },
       { type: 'Auftragsbestätigung', format: 'AB-%NUMBER', nextNumber: 1000, prefix: 'AB-' },
-      { type: 'Debitor', format: '%NUMBER', nextNumber: 10000 },
-      { type: 'Kreditor', format: '%NUMBER', nextNumber: 70000 },
-      { type: 'Produkt', format: '%NUMBER', nextNumber: 1001 },
-      { type: 'Inventar', format: '%NUMBER', nextNumber: 1000 },
-      { type: 'Kontakt', format: '%NUMBER', nextNumber: 1000 }];
+      { type: 'Debitor', format: '%NUMBER', nextNumber: 10000, prefix: '' },
+      { type: 'Kreditor', format: '%NUMBER', nextNumber: 70000, prefix: '' },
+      { type: 'Produkt', format: '%NUMBER', nextNumber: 1001, prefix: '' },
+      { type: 'Inventar', format: '%NUMBER', nextNumber: 1000, prefix: '' },
+      { type: 'Kontakt', format: '%NUMBER', nextNumber: 1000, prefix: '' }];
 
 
       const createdSequences: NumberSequence[] = [];
@@ -943,7 +943,7 @@ export class NumberSequenceService {
           format: template.format,
           nextNumber: template.nextNumber,
           nextFormatted: this.formatNumber(template.nextNumber, template.format),
-          prefix: template.prefix,
+          prefix: template.prefix || '',
           canEdit: true,
           canDelete: false,
           createdAt: new Date(),

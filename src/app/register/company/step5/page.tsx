@@ -1262,7 +1262,7 @@ export default function Step5CompanyPage() {
               Abschluss & Verifizierung
             </h1>
             <p className="text-lg text-white/80 max-w-xl mx-auto">
-              Fast geschafft! Geben Sie Ihre Bankverbindung an und verifizieren Sie Ihre Identitaet.
+              Fast geschafft! Geben Sie Ihre Bankverbindung an und verifizieren Sie Ihre Identität.
             </p>
           </motion.div>
         </div>
@@ -1419,12 +1419,12 @@ export default function Step5CompanyPage() {
                   </div>
                 </div>
 
-                {/* Stripe Trust Badge */}
+                {/* Secure Payment Badge */}
                 <div className="mt-6 pt-4 border-t border-gray-100">
                   <div className="flex items-center justify-center text-xs text-gray-500">
                     <Lock className="w-3 h-3 mr-1" />
                     <span>Sichere Zahlungsabwicklung durch</span>
-                    <span className="ml-1 font-semibold text-[#635bff]">Stripe</span>
+                    <span className="ml-1 font-semibold text-teal-600">Taskilo Escrow</span>
                   </div>
                 </div>
               </motion.div>
@@ -1441,11 +1441,11 @@ export default function Step5CompanyPage() {
                     <div className="p-3 bg-[#14ad9f]/10 rounded-xl mr-3">
                       <Shield className="w-6 h-6 text-[#14ad9f]" />
                     </div>
-                    <h2 className="text-xl font-bold text-gray-800">Identitaet</h2>
+                    <h2 className="text-xl font-bold text-gray-800">Identität</h2>
                   </div>
                   <div className="flex items-center text-xs text-gray-500">
                     <Lock className="w-3 h-3 mr-1" />
-                    Verschluesselt
+                    Verschlüsselt
                   </div>
                 </div>
 
@@ -1499,7 +1499,7 @@ export default function Step5CompanyPage() {
                   {/* Back ID */}
                   <div>
                     <label className={`block text-sm font-medium mb-2 ${hasAttemptedSubmit && !(identityBackFile instanceof File) ? 'text-red-600' : 'text-gray-700'}`}>
-                      Ausweis Rueckseite*
+                      Ausweis Rückseite*
                     </label>
                     <div 
                       onClick={() => !isLoading && document.getElementById('identityBackInput')?.click()}
@@ -1515,7 +1515,7 @@ export default function Step5CompanyPage() {
                         <div className="relative">
                           <Image
                             src={identityBackPreview}
-                            alt="Vorschau Rueckseite"
+                            alt="Vorschau Rückseite"
                             width={180}
                             height={100}
                             style={{ objectFit: 'contain' }}
@@ -1536,7 +1536,7 @@ export default function Step5CompanyPage() {
                         type="file"
                         id="identityBackInput"
                         accept="image/jpeg, image/png"
-                        onChange={e => handleFileChangeAndPreview(e, setIdentityBackFile, setIdentityBackPreview, MAX_ID_DOC_SIZE_BYTES, 'Ausweis Rueckseite', false)}
+                        onChange={e => handleFileChangeAndPreview(e, setIdentityBackFile, setIdentityBackPreview, MAX_ID_DOC_SIZE_BYTES, 'Ausweis Rückseite', false)}
                         className="hidden"
                       />
                     </div>
@@ -1547,7 +1547,7 @@ export default function Step5CompanyPage() {
                 <div className="mt-6 pt-4 border-t border-gray-100">
                   <div className="flex items-center justify-center text-xs text-gray-500">
                     <Shield className="w-3 h-3 mr-1" />
-                    <span>Daten werden verschluesselt uebertragen</span>
+                    <span>Daten werden verschlüsselt übertragen</span>
                   </div>
                 </div>
               </motion.div>
@@ -1594,12 +1594,12 @@ export default function Step5CompanyPage() {
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="w-3 h-3 mr-1" />
-                  <span>Stripe Partner</span>
+                  <span>Verifiziert</span>
                 </div>
               </div>
               
               <p className="text-xs text-gray-500 mt-4 text-center max-w-md">
-                Mit Klick bestaetigst du die Richtigkeit deiner Angaben und stimmst unseren AGB & Datenschutzbestimmungen zu.
+                Mit Klick bestätigst du die Richtigkeit deiner Angaben und stimmst unseren AGB & Datenschutzbestimmungen zu.
               </p>
             </motion.div>
           </motion.div>

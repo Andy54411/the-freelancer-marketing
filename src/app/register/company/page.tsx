@@ -249,13 +249,13 @@ export default function Step1() {
                   </div>
 
                   {/* Telefonnummer */}
-                  <div>
+                  <div className="min-w-0">
                     <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="phoneNumber">
                       Telefonnummer
                     </label>
                     <div className="flex gap-2">
                       <select
-                        className="w-24 shrink-0 px-3 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent text-gray-900 bg-gray-50 text-sm transition-all"
+                        className="w-20 shrink-0 px-2 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent text-gray-900 bg-gray-50 text-sm transition-all"
                         value={localPhoneCountryCode}
                         onChange={e => setLocalPhoneCountryCode(e.target.value)}
                       >
@@ -270,7 +270,7 @@ export default function Step1() {
                         onChange={e => setLocalPhoneNumber(e.target.value)}
                         required
                         placeholder="123 456789"
-                        className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent text-gray-900 bg-gray-50 transition-all"
+                        className="flex-1 min-w-0 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent text-gray-900 bg-gray-50 transition-all"
                       />
                     </div>
                   </div>

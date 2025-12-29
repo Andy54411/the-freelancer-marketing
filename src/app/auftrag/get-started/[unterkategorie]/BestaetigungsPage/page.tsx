@@ -548,7 +548,7 @@ export default function BestaetigungsPage() {
                   <div className="flex items-center justify-center gap-6 pt-4 border-t border-gray-100 text-xs text-gray-500">
                     <div className="flex items-center gap-1.5">
                       <Shield className="w-4 h-4 text-[#14ad9f]" />
-                      <span>SSL verschluesselt</span>
+                      <span>SSL verschlüsselt</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <CheckCircle className="w-4 h-4 text-[#14ad9f]" />
