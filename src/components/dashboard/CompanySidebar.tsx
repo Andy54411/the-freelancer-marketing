@@ -809,7 +809,7 @@ export default function CompanySidebar({
       loadUnreadCounts();
 
       // Auto-refresh every 60 seconds only on email pages
-      const interval = setInterval(loadUnreadCounts, 60000);
+      const interval = setInterval(loadUnreadCounts, 120000);
       return () => {
         isMounted = false;
         clearInterval(interval);

@@ -234,8 +234,8 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
     // Initial fetch
     fetchUnreadCount();
 
-    // Poll every 30 seconds instead of real-time listener
-    const interval = setInterval(fetchUnreadCount, 30000);
+    // Poll every 2 minutes (andere Komponenten pollen auch)
+    const interval = setInterval(fetchUnreadCount, 120000);
 
     return () => clearInterval(interval);
   }, [company?.uid, currentUser?.uid]);

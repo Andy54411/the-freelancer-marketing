@@ -14,8 +14,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
 
-    console.log(`📊 API: Getting email counts for company ${uid}, user ${userId}`);
-
     const counts: Record<string, { total: number; unread: number }> = {};
 
     await withFirebase(async () => {
@@ -23,8 +21,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       
       // Lade E-Mails für diesen spezifischen User
       const snapshot = await emailCacheRef.where('userId', '==', userId).get();
-
-      console.log(`📧 Found ${snapshot.size} emails for user ${userId} in cache`);
 
       // Initialize counts
       const folders = ['inbox', 'sent', 'drafts', 'spam', 'trash', 'starred', 'archived'];
@@ -69,8 +65,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
       });
     });
-
-    console.log(`✅ Email counts:`, counts);
 
     return NextResponse.json({
       success: true,

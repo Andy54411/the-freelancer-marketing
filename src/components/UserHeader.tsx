@@ -416,8 +416,8 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     // Initial fetch
     fetchUnreadCount();
 
-    // Poll every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
+    // Poll every 2 minutes (andere Komponenten pollen auch)
+    const interval = setInterval(fetchUnreadCount, 120000);
 
     return () => clearInterval(interval);
   }, [currentUid, currentUser?.uid]);
