@@ -521,13 +521,29 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       companyUpdates.profileComplete = true;
       companyUpdates.profileStatus = 'pending_review';
 
-      // Step structures für Functions
-      if (stepData[1]) companyUpdates.step1 = stepData[1];
-      if (stepData[2]) companyUpdates.step2 = stepData[2];
-      if (stepData[3]) companyUpdates.step3 = stepData[3];
-      if (stepData[4]) companyUpdates.step4 = stepData[4];
-      if (stepData[5]) companyUpdates.step5 = stepData[5];
-      if (stepData[6]) companyUpdates.step6 = stepData[6];
+      // Helper: Entferne undefined Werte aus Objekten (Firestore erlaubt keine undefined)
+      const removeUndefined = (obj: any): any => {
+        if (obj === null || obj === undefined) return null;
+        if (Array.isArray(obj)) return obj.map(removeUndefined).filter(v => v !== undefined);
+        if (typeof obj === 'object') {
+          const cleaned: any = {};
+          for (const [key, value] of Object.entries(obj)) {
+            if (value !== undefined) {
+              cleaned[key] = removeUndefined(value);
+            }
+          }
+          return cleaned;
+        }
+        return obj;
+      };
+
+      // Step structures für Functions - mit undefined-Bereinigung
+      if (stepData[1]) companyUpdates.step1 = removeUndefined(stepData[1]);
+      if (stepData[2]) companyUpdates.step2 = removeUndefined(stepData[2]);
+      if (stepData[3]) companyUpdates.step3 = removeUndefined(stepData[3]);
+      if (stepData[4]) companyUpdates.step4 = removeUndefined(stepData[4]);
+      if (stepData[5]) companyUpdates.step5 = removeUndefined(stepData[5]);
+      if (stepData[6]) companyUpdates.step6 = removeUndefined(stepData[6]);
 
       // Update companies document mit allen Onboarding-Daten
       console.log('[submitOnboarding] Speichere Updates...', { 
