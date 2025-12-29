@@ -14,7 +14,7 @@ async function verifyAdminAuth(
 ): Promise<{ isValid: boolean; userId?: string; error?: string }> {
   try {
     const cookieStore = await cookies();
-    const adminToken = cookieStore.get('taskilo-admin-token')?.value;
+    const adminToken = cookieStore.get('taskilo_admin_session')?.value;
 
     if (adminToken) {
       try {

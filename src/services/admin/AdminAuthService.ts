@@ -201,7 +201,7 @@ export class AdminAuthService {
     try {
       const { cookies } = await import('next/headers');
       const cookieStore = await cookies();
-      const token = cookieStore.get('taskilo-admin-token')?.value;
+      const token = cookieStore.get('taskilo_admin_session')?.value;
 
       if (!token) {
         return null;

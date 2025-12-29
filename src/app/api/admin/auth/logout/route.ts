@@ -6,7 +6,7 @@ export async function POST(_request: NextRequest) {
   try {
     // Admin-Token Cookie löschen
     const cookieStore = await cookies();
-    cookieStore.delete('taskilo-admin-token');
+    cookieStore.delete('taskilo_admin_session');
 
     return NextResponse.json({
       success: true,

@@ -17,7 +17,7 @@ async function verifyAdminAuth(): Promise<{ valid: boolean; error?: string }> {
   }
 
   const cookieStore = await cookies();
-  const token = cookieStore.get('taskilo-admin-token')?.value;
+  const token = cookieStore.get('taskilo_admin_session')?.value;
 
   if (!token) {
     return { valid: false, error: 'Nicht autorisiert' };

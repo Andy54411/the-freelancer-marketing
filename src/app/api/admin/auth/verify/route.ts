@@ -12,7 +12,7 @@ export async function GET(_request: NextRequest) {
   try {
     // JWT Token aus Cookie lesen
     const cookieStore = await cookies();
-    const token = cookieStore.get('taskilo-admin-token')?.value;
+    const token = cookieStore.get('taskilo_admin_session')?.value;
 
     if (!token) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });

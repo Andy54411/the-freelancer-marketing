@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     // Cookie setzen
     const cookieStore = await cookies();
-    cookieStore.set('taskilo-admin-token', result.token!, {
+    cookieStore.set('taskilo_admin_session', result.token!, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
