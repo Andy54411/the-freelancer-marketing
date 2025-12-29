@@ -417,15 +417,20 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   );
 
   const submitOnboarding = useCallback(async (): Promise<void> => {
+    console.log('[submitOnboarding] Start', { user: user?.uid, companyId });
+    
     if (!user || !companyId) {
-      return;
+      console.error('[submitOnboarding] Fehler: user oder companyId fehlt', { user: !!user, companyId });
+      throw new Error('User oder CompanyId fehlt');
     }
 
     try {
+      console.log('[submitOnboarding] Lade Company-Dokument...');
       // 🔧 SAUBERE TRENNUNG: Alle Onboarding-Daten in companies collection
       const companyDocRef = doc(db, 'companies', companyId);
       const companyDocSnap = await getDoc(companyDocRef);
       const existingCompanyData = companyDocSnap.exists() ? companyDocSnap.data() : {};
+      console.log('[submitOnboarding] Company-Dokument geladen:', { exists: companyDocSnap.exists() });
 
       // Alle Onboarding-Daten gehen in companies collection
       const companyUpdates: any = {};
@@ -525,8 +530,14 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (stepData[6]) companyUpdates.step6 = stepData[6];
 
       // Update companies document mit allen Onboarding-Daten
+      console.log('[submitOnboarding] Speichere Updates...', { 
+        updateKeys: Object.keys(companyUpdates),
+        hasStep6: !!companyUpdates.step6,
+        documentsCompleted: companyUpdates.documentsCompleted
+      });
 
       await updateDoc(companyDocRef, companyUpdates);
+      console.log('[submitOnboarding] Updates gespeichert!');
 
       // Create default payment accounts (Kasse und Basiskonto)
       try {
@@ -543,9 +554,11 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
       document.cookie = `taskilo_onboarding_complete=true; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict`;
       document.cookie = `taskilo_profile_status=pending_review; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict`;
-
+      
+      console.log('[submitOnboarding] Cookies gesetzt, Onboarding erfolgreich abgeschlossen!');
       // Update onboarding status
     } catch (error) {
+      console.error('[submitOnboarding] FEHLER:', error);
       throw error;
     }
   }, [user, companyId, stepData]);

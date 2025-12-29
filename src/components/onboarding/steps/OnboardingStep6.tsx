@@ -199,16 +199,24 @@ export default function OnboardingStep6({ companyUid }: OnboardingStep6Props) {
   // Debugging für Completion-Berechnung
 
   const handleSubmit = async () => {
-    if (!canComplete || isOffline) return;
+    console.log('[Step6] handleSubmit gestartet', { canComplete, isOffline, user: user?.uid });
+    
+    if (!canComplete || isOffline) {
+      console.log('[Step6] Abbruch:', { canComplete, isOffline });
+      return;
+    }
 
     setIsSubmitting(true);
     setSubmitError(null);
 
     try {
+      console.log('[Step6] Speichere aktuellen Step...');
       // Erst aktuellen Step speichern
       await saveCurrentStep();
+      console.log('[Step6] Step gespeichert, starte submitOnboarding...');
       // Dann Onboarding abschließen
       await submitOnboarding();
+      console.log('[Step6] submitOnboarding erfolgreich!');
 
       // CRITICAL FIX: Erfolgreiche Weiterleitung zum Company Dashboard
 
