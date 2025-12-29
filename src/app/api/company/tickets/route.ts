@@ -11,7 +11,8 @@ import { FirebaseTicketService } from '@/services/admin/FirebaseTicketService';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const ticketId = searchParams.get('ticketId');
+    // Akzeptiere sowohl 'ticketId' als auch 'id' als Parameter
+    const ticketId = searchParams.get('ticketId') || searchParams.get('id');
     // Akzeptiere sowohl 'email' als auch 'customerEmail' als Parameter
     const customerEmail = searchParams.get('customerEmail') || searchParams.get('email');
 
