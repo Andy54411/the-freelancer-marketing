@@ -98,88 +98,53 @@ interface RevolutPaymentResponse {
   currency: string;
 }
 
-// Vercel Token Proxy URL (Cloudflare blockiert Hetzner-IPs)
-const VERCEL_TOKEN_PROXY = process.env.VERCEL_TOKEN_PROXY_URL || 'https://taskilo.de/api/revolut/token';
-const API_KEY = process.env.WEBMAIL_API_KEY || '';
+// Cached access token
+let cachedAccessToken: string | null = process.env.REVOLUT_ACCESS_TOKEN || null;
+let tokenExpiresAt: number = 0;
 
-async function getAccessToken(scope: string = 'READ'): Promise<string> {
-  return new Promise((resolve, reject) => {
-    // Versuche zuerst über Vercel Token Proxy
-    const proxyUrl = new URL(VERCEL_TOKEN_PROXY);
-    
-    const postData = JSON.stringify({ scope });
+async function getAccessToken(_scope: string = 'READ'): Promise<string> {
+  // Check if we have a valid cached token
+  const now = Math.floor(Date.now() / 1000);
+  if (cachedAccessToken && tokenExpiresAt > now + 60) {
+    console.log('[Revolut] Using cached access token');
+    return cachedAccessToken;
+  }
 
-    const options = {
-      hostname: proxyUrl.hostname,
-      port: proxyUrl.port || 443,
-      path: proxyUrl.pathname,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData),
-        'X-API-Key': API_KEY,
-      },
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        if (res.statusCode !== 200) {
-          // Fallback to direct Revolut call (might fail due to Cloudflare)
-          console.error('[Token Proxy] Failed, trying direct call:', res.statusCode, data.substring(0, 200));
-          getAccessTokenDirect(scope).then(resolve).catch(reject);
-          return;
-        }
-        try {
-          const tokenData = JSON.parse(data);
-          if (tokenData.success && tokenData.access_token) {
-            console.log('[Token Proxy] Success - got access token');
-            resolve(tokenData.access_token);
-          } else {
-            reject(new Error(`Token proxy error: ${tokenData.error || 'Unknown error'}`));
-          }
-        } catch {
-          reject(new Error(`Failed to parse token response: ${data}`));
-        }
-      });
-    });
-
-    req.on('error', (error) => {
-      console.error('[Token Proxy] Request failed:', error.message);
-      // Fallback to direct call
-      getAccessTokenDirect(scope).then(resolve).catch(reject);
-    });
-
-    req.write(postData);
-    req.end();
-  });
+  // Need to refresh the token
+  console.log('[Revolut] Refreshing access token...');
+  return refreshAccessToken();
 }
 
-// Direct Revolut call (fallback, may fail due to Cloudflare)
-async function getAccessTokenDirect(scope: string = 'READ'): Promise<string> {
+async function refreshAccessToken(): Promise<string> {
   return new Promise((resolve, reject) => {
+    const refreshToken = process.env.REVOLUT_REFRESH_TOKEN;
+    if (!refreshToken) {
+      reject(new Error('No refresh token available'));
+      return;
+    }
+
     if (!revolutConfig.clientId || !revolutConfig.privateKey) {
       reject(new Error('Revolut configuration incomplete'));
       return;
     }
 
+    // Create JWT for client assertion
     const now = Math.floor(Date.now() / 1000);
     const payload = {
-      iss: 'taskilo.de', // Issuer as configured in Revolut dashboard
+      iss: 'taskilo.de',
       sub: revolutConfig.clientId,
       aud: 'https://revolut.com',
       iat: now,
       exp: now + 300,
     };
 
-    let token: string;
+    let clientAssertion: string;
     try {
-      token = jwt.sign(payload, revolutConfig.privateKey, {
+      clientAssertion = jwt.sign(payload, revolutConfig.privateKey, {
         algorithm: 'RS256',
         header: {
           alg: 'RS256',
-          kid: revolutConfig.clientId,
+          typ: 'JWT',
         },
       });
     } catch (err) {
@@ -188,23 +153,21 @@ async function getAccessTokenDirect(scope: string = 'READ'): Promise<string> {
     }
 
     const postData = new URLSearchParams({
-      grant_type: 'client_credentials',
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: revolutConfig.clientId,
       client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
-      client_assertion: token,
-      scope: scope,
+      client_assertion: clientAssertion,
     }).toString();
 
-    const url = new URL(`${revolutConfig.authUrl}/oauth/token`);
-
     const options = {
-      hostname: url.hostname,
-      port: url.port || 443,
-      path: url.pathname,
+      hostname: 'b2b.revolut.com',
+      port: 443,
+      path: '/api/1.0/auth/token',
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Content-Length': Buffer.byteLength(postData),
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'application/json',
       },
     };
@@ -214,11 +177,15 @@ async function getAccessTokenDirect(scope: string = 'READ'): Promise<string> {
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
         if (res.statusCode !== 200) {
-          reject(new Error(`Revolut Auth Error: ${res.statusCode} - ${data.substring(0, 500)}`));
+          console.error('[Revolut] Token refresh failed:', res.statusCode, data);
+          reject(new Error(`Token refresh failed: ${res.statusCode} - ${data}`));
           return;
         }
         try {
           const tokenData = JSON.parse(data);
+          cachedAccessToken = tokenData.access_token;
+          tokenExpiresAt = Math.floor(Date.now() / 1000) + (tokenData.expires_in || 2400) - 60;
+          console.log('[Revolut] Access token refreshed successfully');
           resolve(tokenData.access_token);
         } catch {
           reject(new Error(`Failed to parse token response: ${data}`));
@@ -227,7 +194,7 @@ async function getAccessTokenDirect(scope: string = 'READ'): Promise<string> {
     });
 
     req.on('error', (error) => {
-      reject(new Error(`Request failed: ${error.message}`));
+      reject(new Error(`Token refresh request failed: ${error.message}`));
     });
 
     req.write(postData);
