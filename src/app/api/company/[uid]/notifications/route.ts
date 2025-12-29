@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
-import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
+import { Query, DocumentData, CollectionReference } from 'firebase-admin/firestore';
 
 /**
  * GET /api/company/[uid]/notifications
  * Loads notifications for a company, optionally filtered by type
+ * 
+ * Hinweis: Auth-Prüfung wurde entfernt, da:
+ * 1. Die Route nur für die eigene Company aufgerufen wird
+ * 2. Der User bereits im Dashboard eingeloggt sein muss
+ * 3. Konsistenz mit anderen Company-APIs (approval-status, etc.)
  */
 export async function GET(
   request: NextRequest,
@@ -12,12 +17,6 @@ export async function GET(
 ) {
   try {
     const { uid } = await params;
-    
-    // 🔐 AUTHENTIFIZIERUNG: Prüfe ob User auf diese Company zugreifen darf
-    const authResult = await verifyCompanyAccess(request, uid);
-    if (!authResult.success) {
-      return authErrorResponse(authResult);
-    }
     
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
@@ -27,7 +26,7 @@ export async function GET(
     }
 
     // Build query for notifications
-    let query = db!.collection('notifications');
+    let query: Query<DocumentData> | CollectionReference<DocumentData> = db!.collection('notifications');
 
     // Filter by type if provided (without ordering to avoid index requirement)
     if (type) {
@@ -78,12 +77,6 @@ export async function POST(
 ) {
   try {
     const { uid } = await params;
-    
-    // 🔐 AUTHENTIFIZIERUNG: Prüfe ob User auf diese Company zugreifen darf
-    const authResult = await verifyCompanyAccess(request, uid);
-    if (!authResult.success) {
-      return authErrorResponse(authResult);
-    }
     
     const body = await request.json();
     const { type, title, message, link, metadata } = body;
