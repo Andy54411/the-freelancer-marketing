@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const ticketId = searchParams.get('ticketId');
-    const customerEmail = searchParams.get('email');
+    // Akzeptiere sowohl 'email' als auch 'customerEmail' als Parameter
+    const customerEmail = searchParams.get('customerEmail') || searchParams.get('email');
 
     // Einzelnes Ticket abrufen
     if (ticketId) {

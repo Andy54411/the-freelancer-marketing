@@ -89,27 +89,28 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
     if (!uid) return;
 
     try {
-      // Erst versuchen, die E-Mail aus dem Auth-Context zu nehmen, falls es der gleiche User ist
-      if (user?.uid === uid && user?.email) {
+      // Erst versuchen, die E-Mail aus dem Auth-Context zu nehmen
+      if (user?.email) {
         setUserEmail(user.email);
         return;
       }
 
-      // Ansonsten aus der Firebase/AWS-Datenbank laden
-      // Für jetzt verwenden wir eine einfache Zuordnung - später über API
-      // TODO: Erstelle eine API-Route um User-Details per UID zu holen
-
-      // Temporäre Zuordnung basierend auf bekannten UIDs
-      const uidToEmailMap: Record<string, string> = {
-        '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1': 'a.staudinger32@icloud.com',
-      };
-
-      const email = uidToEmailMap[uid];
-      if (email) {
-        setUserEmail(email);
-      } else {
+      // Fallback: Versuche E-Mail aus der Company-Collection zu laden
+      const response = await fetch(`/api/company/${uid}/profile`);
+      if (response.ok) {
+        const data = await response.json();
+        const email = data.company?.contactPerson?.email || data.company?.email;
+        if (email) {
+          setUserEmail(email);
+          return;
+        }
       }
-    } catch (error) {}
+
+      // Wenn keine E-Mail gefunden, setze loading auf false
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+    }
   };
 
   // Tickets laden
