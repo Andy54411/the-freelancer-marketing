@@ -135,7 +135,8 @@ export default function OnboardingStep6({ companyUid }: OnboardingStep6Props) {
     // Company-Daten validieren (aus Registrierung)
     if (!companyData?.companyName) missing.push('Unternehmensname');
     if (!companyData?.legalForm) missing.push('Rechtsform');
-    if (!companyData?.address?.city) missing.push('Stadt');
+    // Stadt ist bei Registrierung Pflicht, aber Service-Gebiete in Step 4 sind optional
+    // Daher hier keine Stadt-Validierung
 
     // Step 2 validieren - Steuerliche Einstellungen
     const step2 = stepData[2];
@@ -145,7 +146,7 @@ export default function OnboardingStep6({ companyUid }: OnboardingStep6Props) {
     const step3 = stepData[3];
     if (!step3?.skills || step3.skills.length === 0) missing.push('Mindestens eine Fähigkeit');
 
-    // Step 4 validieren
+    // Step 4 validieren - Service-Gebiete sind optional, nur Verfügbarkeitstyp ist Pflicht
     const step4 = stepData[4];
     if (!step4?.availabilityType) missing.push('Verfügbarkeitstyp');
 
