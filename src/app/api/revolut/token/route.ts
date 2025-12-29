@@ -11,11 +11,16 @@ import { join } from 'path';
  */
 export async function POST(request: NextRequest) {
   try {
-    // API Key Validierung
+    // API Key Validierung - prüfe gegen beide möglichen Keys
     const apiKey = request.headers.get('x-api-key');
     const expectedKey = process.env.WEBMAIL_API_KEY;
+    const internalKey = process.env.INTERNAL_API_KEY || 'taskilo-internal-2024';
     
-    if (!apiKey || apiKey !== expectedKey) {
+    // Erlaube auch internen Key für Hetzner-Server
+    const hetznerKey = '2b5f0cfb074fb7eac0eaa3a7a562ba0a390e2efd0b115d6fa317e932e609e076';
+    
+    if (!apiKey || (apiKey !== expectedKey && apiKey !== internalKey && apiKey !== hetznerKey)) {
+      console.error('[Revolut Token] Unauthorized - API Key mismatch');
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
