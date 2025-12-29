@@ -447,13 +447,13 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.open('/dashboard/company/documents', '_blank')}
+                onClick={() => window.open(`/dashboard/company/${companyId}/documents`, '_blank')}
               >
                 <Upload className="h-4 w-4 mr-2" />
                 Dokumente
               </Button>
 
-              <Button variant="outline" size="sm" onClick={() => window.open('/contact', '_blank')}>
+              <Button variant="outline" size="sm" onClick={() => window.location.href = `/dashboard/company/${companyId}/support`}>
                 <Mail className="h-4 w-4 mr-2" />
                 Support
               </Button>
