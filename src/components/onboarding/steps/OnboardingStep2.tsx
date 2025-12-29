@@ -112,24 +112,17 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
     setIsSaving(true);
 
     try {
-      // 1. Nur lokal updaten (KEIN Firestore!)
-
+      // 1. Lokal updaten
       updateStepData(2, formData);
 
-      // 2. Kurz warten damit lokale Updates verarbeitet werden
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // 3. EINMAL in Firestore speichern
-
+      // 2. In Firestore speichern
       await saveCurrentStep();
 
-      // 4. Zum nächsten Step (OHNE weitere Speicherung)
-
-      goToNextStep();
+      // 3. Zum nächsten Step - skipValidation=true weil wir bereits validiert haben
+      goToNextStep(true);
     } catch (error) {
       alert('Fehler beim Speichern der Daten. Bitte versuchen Sie es erneut.');
     } finally {
-      // Sofort zurücksetzen - keine Verzögerung
       setIsSaving(false);
     }
   };

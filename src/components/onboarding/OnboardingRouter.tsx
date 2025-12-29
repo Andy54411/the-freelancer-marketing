@@ -6,6 +6,7 @@ import OnboardingStep2 from './steps/OnboardingStep2';
 import OnboardingStep3 from './steps/OnboardingStep3';
 import OnboardingStep4 from './steps/OnboardingStep4';
 import OnboardingStep5 from './steps/OnboardingStep5';
+import OnboardingStep6 from './steps/OnboardingStep6';
 
 interface OnboardingRouterProps {
   currentStep: number;
@@ -24,6 +25,8 @@ const OnboardingRouter: React.FC<OnboardingRouterProps> = ({ currentStep, compan
       return <OnboardingStep4 companyUid={companyUid} />;
     case 5:
       return <OnboardingStep5 companyUid={companyUid} />;
+    case 6:
+      return <OnboardingStep6 companyUid={companyUid} />;
     default:
       return (
         <div className="text-center py-8">

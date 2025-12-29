@@ -21,18 +21,6 @@ const WebmailClient = dynamic(
   }
 );
 
-const CreateEmailForm = dynamic(
-  () => import('@/components/email/CreateEmailForm').then((mod) => ({ default: mod.CreateEmailForm })),
-  {
-    loading: () => (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
-      </div>
-    ),
-    ssr: false,
-  }
-);
-
 const HeroHeader = dynamic(
   () => import('@/components/hero8-header').then((mod) => ({ default: mod.HeroHeader })),
   { ssr: false }
@@ -420,13 +408,61 @@ function WebmailPageContent() {
         <main className="webmail-main">
           {showCreateForm ? (
             <div className="webmail-login-container">
-              <CreateEmailForm onEmailCreated={handleEmailCreated} />
-              <button 
-                className="webmail-create-link"
-                onClick={() => setShowCreateForm(false)}
-              >
-                Bereits eine @taskilo.de Adresse? Anmelden
-              </button>
+              {/* Weiterleitung zur neuen mehrstufigen Registrierung */}
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ 
+                  width: '80px', 
+                  height: '80px', 
+                  background: 'linear-gradient(135deg, #14ad9f 0%, #0d8a7f 100%)',
+                  borderRadius: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 24px'
+                }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="white" style={{ width: '40px', height: '40px' }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                  </svg>
+                </div>
+                <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>
+                  Neue @taskilo.de E-Mail erstellen
+                </h2>
+                <p style={{ color: '#6b7280', marginBottom: '32px', maxWidth: '400px', margin: '0 auto 32px' }}>
+                  Erstellen Sie Ihre persönliche E-Mail-Adresse mit 1 GB Speicherplatz, 
+                  integriertem Webmail und Spam-Schutz.
+                </p>
+                <a 
+                  href="/webmail/register"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '14px 32px',
+                    background: 'linear-gradient(135deg, #14ad9f 0%, #0d8a7f 100%)',
+                    color: 'white',
+                    borderRadius: '12px',
+                    fontWeight: '600',
+                    fontSize: '16px',
+                    textDecoration: 'none',
+                    boxShadow: '0 4px 14px rgba(20, 173, 159, 0.3)',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  Jetzt E-Mail erstellen
+                </a>
+                <div style={{ marginTop: '24px' }}>
+                  <button 
+                    className="webmail-create-link"
+                    onClick={() => setShowCreateForm(false)}
+                  >
+                    Bereits eine @taskilo.de Adresse? Anmelden
+                  </button>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="webmail-login-container">
@@ -521,12 +557,12 @@ function WebmailPageContent() {
                 </button>
               </form>
               
-              <button 
+              <a 
+                href="/webmail/register"
                 className="webmail-create-link"
-                onClick={() => setShowCreateForm(true)}
               >
                 Neue @taskilo.de Adresse erstellen
-              </button>
+              </a>
             </div>
           )}
         </main>

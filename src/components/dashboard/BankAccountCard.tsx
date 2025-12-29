@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { auth } from '@/firebase/clients';
 import { getFinAPICredentialType } from '@/lib/finapi-config';
 
 interface BankAccount {
@@ -54,8 +55,21 @@ export default function BankAccountCard({
     try {
       if (!user?.uid) return;
 
+      // Get auth token for API call
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        setAccounts([]);
+        setTotalBalance(0);
+        return;
+      }
+
       const response = await fetch(
-        `/api/finapi/accounts-enhanced?userId=${user.uid}&credentialType=${credentialType}`
+        `/api/finapi/accounts-enhanced?userId=${user.uid}&credentialType=${credentialType}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
       );
 
       if (!response.ok) {
@@ -98,15 +112,21 @@ export default function BankAccountCard({
         return;
       }
 
-      console.log(
-        '🔄 BankAccountCard: Loading transactions page',
-        currentPage,
-        'for accounts:',
-        selectedAccounts
-      );
+      // Get auth token for API call
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        setTransactions([]);
+        setTotalTransactions(0);
+        return;
+      }
 
       const response = await fetch(
-        `/api/finapi/transactions?userId=${user.uid}&accountIds=${selectedAccounts.join(',')}&credentialType=${credentialType}&page=${currentPage}&perPage=${transactionsPerPage}`
+        `/api/finapi/transactions?userId=${user.uid}&accountIds=${selectedAccounts.join(',')}&credentialType=${credentialType}&page=${currentPage}&perPage=${transactionsPerPage}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
       );
 
       console.log('📡 BankAccountCard: API Response status:', response.status);

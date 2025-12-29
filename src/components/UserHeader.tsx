@@ -231,17 +231,20 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   // Lade Profil aus Firestore (Company oder User Collection)
   const loadProfileFromFirestore = useCallback(async (uid: string) => {
     try {
-      // Debug-Log entfernt
-
       // Versuche zuerst companies Collection
       const companyDoc = await getDoc(doc(db, 'companies', uid));
       if (companyDoc.exists()) {
         const companyData = companyDoc.data();
+        
         const profileUrl =
-          companyData.step3?.profilePictureURL ||
           companyData.profilePictureURL ||
+          companyData.logoUrl ||
+          companyData.step3?.profilePictureURL ||
           companyData.profilePictureFirebaseUrl ||
           companyData.profileImage ||
+          companyData.logo ||
+          companyData.companyLogo ||
+          companyData.imageUrl ||
           null;
 
         // Company Logo laden
@@ -267,31 +270,33 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     } catch (error) {
       setProfilePictureURLFromStorage(null);
     }
-  }, []); // 🎯 NEUE FUNKTION: Lade Profilbild aus Firestore Company-Collection
+  }, []); // NEUE FUNKTION: Lade Profilbild aus Firestore Company-Collection
   const loadProfilePictureFromFirestore = useCallback(async (uid: string) => {
     if (!uid) {
-      // Debug-Log entfernt
       setProfilePictureFromFirestore(null);
       return;
     }
     try {
-      // Debug-Log entfernt
       const companyDoc = await getDoc(doc(db, 'companies', uid));
 
       if (companyDoc.exists()) {
         const companyData = companyDoc.data();
         const profileImage =
-          companyData.profileImage || companyData.profileImageUrl || companyData.avatar;
+          companyData.profileImage ||
+          companyData.profileImageUrl ||
+          companyData.avatar ||
+          companyData.logoUrl ||
+          companyData.logo ||
+          companyData.step3?.profilePictureURL ||
+          companyData.profilePictureURL ||
+          companyData.profilePictureFirebaseUrl;
 
         if (profileImage) {
-          // Debug-Log entfernt
           setProfilePictureFromFirestore(profileImage);
         } else {
-          // Debug-Log entfernt
           setProfilePictureFromFirestore(null);
         }
       } else {
-        // Debug-Log entfernt
         setProfilePictureFromFirestore(null);
       }
     } catch (error) {
@@ -988,15 +993,19 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                     className="flex items-center"
                   >
                     {companyLogo || profilePictureURLFromStorage || currentUser.photoURL ? (
-                      <img
-                        src={
-                          companyLogo || profilePictureURLFromStorage || currentUser.photoURL || ''
-                        }
-                        alt={companyLogo ? 'Company Logo' : 'Avatar'}
-                        className={`w-7 h-7 sm:w-8 sm:h-8 object-cover ${
-                          companyLogo ? 'rounded-md' : 'rounded-full'
-                        }`}
-                      />
+                      <div className={`w-7 h-7 sm:w-8 sm:h-8 bg-white flex items-center justify-center ${
+                        companyLogo ? 'rounded-md' : 'rounded-full'
+                      }`}>
+                        <img
+                          src={
+                            companyLogo || profilePictureURLFromStorage || currentUser.photoURL || ''
+                          }
+                          alt={companyLogo ? 'Firmenlogo' : 'Avatar'}
+                          className={`w-full h-full object-contain ${
+                            companyLogo ? 'rounded-md' : 'rounded-full'
+                          }`}
+                        />
+                      </div>
                     ) : (
                       <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center">
                         <FiUser className="text-gray-500 w-4 h-4" />

@@ -618,8 +618,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
     // Actions
     goToStep,
-    goToNextStep: () => {
-      if (canGoNext()) {
+    goToNextStep: (skipValidation?: boolean) => {
+      if (skipValidation || canGoNext()) {
         setCurrentStep(prev => Math.min(prev + 1, onboardingSteps.length));
       }
     },

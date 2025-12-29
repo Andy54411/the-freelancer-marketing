@@ -1,171 +1,222 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { CheckCircle, FileText, Shield, AlertCircle } from 'lucide-react';
-import { RequiredFieldLabel, RequiredFieldIndicator } from '@/components/onboarding/RequiredFieldLabel';
+import { 
+  Mail, 
+  CheckCircle, 
+  AlertCircle, 
+  Loader2,
+  ArrowRight,
+  Plus,
+  ExternalLink,
+  Shield,
+  LogIn
+} from 'lucide-react';
+import { RequiredFieldIndicator } from '@/components/onboarding/RequiredFieldLabel';
 
-// Step5Data Interface
+// API Base URL für Hetzner Webmail-Proxy
+const WEBMAIL_API_URL = process.env.NEXT_PUBLIC_WEBMAIL_API_URL || 'https://mail.taskilo.de';
+
+// Step5Data Interface - E-Mail-Verbindung
 interface Step5Data {
-  documentsCompleted: boolean;
+  emailType: 'gmail' | 'taskilo' | 'existing-taskilo' | 'skip' | null;
+  gmailConnected: boolean;
+  gmailEmail?: string;
+  taskiloEmailRequested: boolean;
+  taskiloEmailPrefix?: string;
+  taskiloEmailConnected?: boolean;
+  taskiloEmail?: string;
 }
 
 interface OnboardingStep5Props {
   companyUid?: string;
 }
 
-export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
+// Innere Komponente mit useSearchParams
+function OnboardingStep5Content({ companyUid }: OnboardingStep5Props) {
+  const searchParams = useSearchParams();
   const { 
     stepData, 
     updateStepData, 
     goToNextStep, 
     goToPreviousStep,
-    saveCurrentStep,
-    submitOnboarding 
+    saveCurrentStep 
   } = useOnboarding();
   const { user } = useAuth();
 
   const [step5Data, setStep5Data] = useState<Step5Data>(
     stepData[5] || {
-      documentsCompleted: false,
+      emailType: null,
+      gmailConnected: false,
+      taskiloEmailRequested: false,
     }
   );
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [isOffline, setIsOffline] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  
+  // State für bestehendes Konto verbinden
+  const [existingEmail, setExistingEmail] = useState('');
+  const [existingPassword, setExistingPassword] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
 
-  const updateField = (field: keyof Step5Data, value: any) => {
+  // URL-Parameter verarbeiten (Rückkehr von Webmail-Registrierung)
+  useEffect(() => {
+    const taskiloEmail = searchParams.get('taskiloEmail');
+    const emailConnected = searchParams.get('emailConnected');
+    
+    if (taskiloEmail && emailConnected === 'true') {
+      // E-Mail wurde erfolgreich erstellt - State aktualisieren
+      const newData: Step5Data = {
+        ...step5Data,
+        emailType: 'taskilo',
+        taskiloEmailConnected: true,
+        taskiloEmail: taskiloEmail,
+        taskiloEmailRequested: true,
+      };
+      setStep5Data(newData);
+      updateStepData(5, newData);
+      
+      // URL bereinigen (Parameter entfernen)
+      const url = new URL(window.location.href);
+      url.searchParams.delete('taskiloEmail');
+      url.searchParams.delete('emailConnected');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams]);
+
+  const updateField = <K extends keyof Step5Data>(field: K, value: Step5Data[K]) => {
     const newData = { ...step5Data, [field]: value };
     setStep5Data(newData);
     updateStepData(5, newData);
   };
 
-  // Fehlende Felder aus vorherigen Schritten ermitteln
-  const getMissingFields = (): string[] => {
-    const missing: string[] = [];
-    
-    // Step 1 validieren
-    const step1 = stepData[1];
-    if (!step1?.companyName) missing.push('Unternehmensname');
-    if (!step1?.legalForm) missing.push('Rechtsform');
-    if (!step1?.address?.street) missing.push('Straße');
-    if (!step1?.address?.city) missing.push('Stadt');
-
-    // Step 2 validieren
-    const step2 = stepData[2];
-    if (!step2?.contactPerson?.firstName) missing.push('Vorname Ansprechpartner');
-    if (!step2?.contactPerson?.lastName) missing.push('Nachname Ansprechpartner');
-    if (!step2?.contactPerson?.email) missing.push('E-Mail Ansprechpartner');
-    if (!step2?.contactPerson?.phone) missing.push('Telefon Ansprechpartner');
-
-    // Step 3 validieren
-    const step3 = stepData[3];
-    if (!step3?.skills || step3.skills.length === 0) missing.push('Mindestens eine Fähigkeit');
-
-    // Step 4 validieren
-    const step4 = stepData[4];
-    if (!step4?.availabilityType) missing.push('Verfügbarkeitstyp');
-
-    return missing;
-  };
-
-  // Gesamtkompletion berechnen
-  const getOverallCompletion = (): number => {
-    const totalFields = 10; // Geschätzte Anzahl wichtiger Felder
-    const missingCount = getMissingFields().length;
-    return Math.max(0, ((totalFields - missingCount) / totalFields) * 100);
-  };
-
-  // Online/Offline Status überwachen
-  useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
-
-    // Initial check
-    setIsOffline(!navigator.onLine);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  const missingFields = getMissingFields();
-  const completionPercentage = Math.round(getOverallCompletion());
-  const canComplete = missingFields.length === 0 && step5Data.documentsCompleted;
-
-  // Validierungsstatus prüfen
-  const isValidForNext = () => {
-    return canComplete;
-  };
-
-  const getValidationMessage = () => {
-    if (!step5Data.documentsCompleted) {
-      return "Bestätigung dass alle Dokumente vollständig sind ist erforderlich";
-    }
-    if (missingFields.length > 0) {
-      return `Fehlende Felder in vorherigen Schritten: ${missingFields.join(', ')}`;
-    }
-    return null;
-  };
-
-  // Debugging für Completion-Berechnung
-
-  const handleSubmit = async () => {
-    if (!canComplete || isOffline) return;
-
-    setIsSubmitting(true);
-    setSubmitError(null);
+  // Gmail OAuth verbinden
+  const handleConnectGmail = async () => {
+    setIsConnecting(true);
+    setConnectionError(null);
 
     try {
-      // Erst aktuellen Step speichern
-      await saveCurrentStep();
-      // Dann Onboarding abschließen
-      await submitOnboarding();
+      // OAuth Flow starten
+      const response = await fetch('/api/auth/gmail/authorize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          companyId: companyUid || user?.uid,
+          redirectUrl: window.location.href
+        }),
+      });
 
-      // CRITICAL FIX: Erfolgreiche Weiterleitung zum Company Dashboard
-
-      setIsCompleted(true);
-
-      // Kurze Verzögerung für UI-Feedback
-      setTimeout(() => {
-        window.location.href = `/dashboard/company/${user?.uid}?onboarding=completed`;
-      }, 1500);
-    } catch (error) {
-      // Erweiterte Fehlerbehandlung für Netzwerkprobleme
-      if (error instanceof Error && error.message.includes('network')) {
-        setSubmitError(
-          'Netzwerkfehler: Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.'
-        );
-      } else if (error instanceof Error && error.message.includes('Firebase')) {
-        setSubmitError(
-          'Verbindungsfehler zum Server. Bitte versuchen Sie es in einem Moment erneut.'
-        );
-      } else {
-        setSubmitError('Unerwarteter Fehler beim Abschließen. Bitte versuchen Sie es erneut.');
+      if (!response.ok) {
+        throw new Error('Fehler beim Starten der Gmail-Verbindung');
       }
 
-      setIsSubmitting(false);
-      setIsCompleted(false);
+      const data = await response.json();
+      
+      if (data.authUrl) {
+        // Redirect zu Google OAuth
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error('Keine Auth-URL erhalten');
+      }
+    } catch (error) {
+      setConnectionError(
+        error instanceof Error ? error.message : 'Fehler beim Verbinden mit Gmail'
+      );
+      setIsConnecting(false);
     }
+  };
+
+  // Taskilo E-Mail erstellen - Weiterleitung zur Registrierungsseite
+  const handleCreateTaskiloEmail = () => {
+    // Öffne die Webmail-Registrierung im selben Tab (Rückkehr per URL-Parameter)
+    const returnUrl = encodeURIComponent(window.location.href);
+    window.location.href = `/webmail/register?returnUrl=${returnUrl}&companyId=${companyUid || user?.uid}`;
+  };
+
+  // Bestehendes Taskilo-Konto verbinden
+  const handleConnectExistingTaskilo = async () => {
+    if (!existingEmail.trim() || !existingPassword.trim()) {
+      setConnectionError('Bitte E-Mail und Passwort eingeben');
+      return;
+    }
+
+    // Validiere E-Mail-Format
+    if (!existingEmail.endsWith('@taskilo.de')) {
+      setConnectionError('Nur @taskilo.de E-Mail-Adressen werden akzeptiert');
+      return;
+    }
+
+    setIsVerifying(true);
+    setConnectionError(null);
+
+    try {
+      // Prüfe Zugangsdaten gegen Mailcow via webmail-proxy
+      const response = await fetch(`${WEBMAIL_API_URL}/api/registration/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: existingEmail,
+          password: existingPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Konto erfolgreich verifiziert
+        const newData: Step5Data = {
+          ...step5Data,
+          emailType: 'existing-taskilo',
+          taskiloEmailConnected: true,
+          taskiloEmail: existingEmail,
+        };
+        setStep5Data(newData);
+        updateStepData(5, newData);
+        setExistingPassword(''); // Passwort aus State entfernen
+      } else {
+        setConnectionError(data.error || 'Ungültige Zugangsdaten');
+      }
+    } catch {
+      setConnectionError('Verbindung zum Server fehlgeschlagen');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Validierung
+  const isValidForNext = () => {
+    // Mindestens eine Option muss gewählt sein (oder bewusst übersprungen)
+    return step5Data.emailType === 'skip' || 
+           step5Data.gmailConnected || 
+           step5Data.taskiloEmailRequested ||
+           step5Data.taskiloEmailConnected;
+  };
+
+  const handleNext = async () => {
+    await saveCurrentStep();
+    goToNextStep(true);
+  };
+
+  const handleSkip = () => {
+    updateField('emailType', 'skip');
   };
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
+      {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Abschluss & Finalisierung</h1>
-        <p className="text-gray-600">
-          Überprüfen Sie Ihre Angaben und schließen Sie das Onboarding ab
+        <div className="w-16 h-16 bg-[#14ad9f]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <Mail className="h-8 w-8 text-[#14ad9f]" />
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">E-Mail-Verbindung</h1>
+        <p className="text-gray-600 max-w-lg mx-auto">
+          Verbinden Sie Ihr Gmail-Konto oder erstellen Sie eine professionelle @taskilo.de E-Mail-Adresse
         </p>
       </div>
 
@@ -173,311 +224,376 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
       <RequiredFieldIndicator />
 
       <div className="space-y-6">
-        {/* Submit-Fehleranzeige */}
-        {submitError && (
-          <Card className="border-gray-200 bg-gray-50">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-[#14ad9f]" />
-                <div>
-                  <h4 className="font-medium text-gray-900">Fehler beim Abschließen</h4>
-                  <p className="text-sm text-gray-700">{submitError}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Fehleranzeige */}
+        {connectionError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-red-800">Verbindungsfehler</h4>
+              <p className="text-sm text-red-700">{connectionError}</p>
+            </div>
+          </div>
         )}
 
-        {/* Offline-Warnung */}
-        {isOffline && (
-          <Card className="border-gray-200 bg-gray-50">
-            <CardContent className="pt-6">
+        {/* Option 1: Gmail verbinden */}
+        <Card className={`cursor-pointer transition-all ${
+          step5Data.emailType === 'gmail' 
+            ? 'border-2 border-[#14ad9f] ring-2 ring-[#14ad9f]/20' 
+            : 'border-gray-200 hover:border-[#14ad9f]/50'
+        }`}>
+          <CardHeader 
+            className="cursor-pointer"
+            onClick={() => updateField('emailType', 'gmail')}
+          >
+            <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-[#14ad9f]" />
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  step5Data.emailType === 'gmail' ? 'bg-[#14ad9f]' : 'bg-gray-100'
+                }`}>
+                  <svg className={`w-6 h-6 ${step5Data.emailType === 'gmail' ? 'text-white' : 'text-gray-600'}`} viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M20 18h-2V9.25L12 13 6 9.25V18H4V6h1.2l6.8 4.25L18.8 6H20m0-2H4c-1.11 0-2 .89-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"/>
+                  </svg>
+                </div>
                 <div>
-                  <h4 className="font-medium text-gray-900">Keine Internetverbindung</h4>
-                  <p className="text-sm text-gray-700">
-                    Bitte stellen Sie eine Internetverbindung her, um das Onboarding abzuschließen.
-                  </p>
+                  <h3 className="font-semibold text-gray-900">Gmail verbinden</h3>
+                  <p className="text-sm text-gray-500 font-normal">Nutzen Sie Ihr bestehendes Google-Konto</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Fortschrittsanzeige */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5" />
-              Ihr Fortschritt
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Onboarding-Fortschritt</span>
-                <span className="text-sm text-gray-500">{Math.round(completionPercentage)}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-[#14ad9f] h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${completionPercentage}%` }}
-                ></div>
-              </div>
-
-              {completionPercentage >= 100 ? (
+              {step5Data.gmailConnected && (
                 <div className="flex items-center gap-2 text-[#14ad9f]">
-                  <CheckCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">Alle Schritte abgeschlossen!</span>
-                </div>
-              ) : (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="h-4 w-4 text-[#14ad9f]" />
-                    <span className="text-sm font-medium text-gray-700">
-                      Bitte vervollständigen Sie alle vorherigen Schritte, bevor Sie fortfahren.
-                    </span>
-                  </div>
-                  {missingFields.length > 0 && (
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium">Fehlende Felder: </span>
-                      {missingFields.join(', ')}
-                    </div>
-                  )}
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="text-sm font-medium">Verbunden</span>
                 </div>
               )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Übersicht der eingegebenen Daten */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Übersicht Ihrer Angaben</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Step 1 Übersicht */}
-            {stepData[1] && (
-              <div className="border-l-4 border-[#14ad9f] pl-4">
-                <h4 className="font-medium text-gray-900">Unternehmensinformationen</h4>
-                <div className="text-sm text-gray-600 space-y-1">
-                  {stepData[1].businessType && (
-                    <p>
-                      Unternehmenstyp:{' '}
-                      <span className="font-medium">{stepData[1].businessType}</span>
-                    </p>
-                  )}
-                  {stepData[1].employees && (
-                    <p>
-                      Mitarbeiteranzahl:{' '}
-                      <span className="font-medium">{stepData[1].employees}</span>
-                    </p>
-                  )}
-                  {stepData[1].website && (
-                    <p>
-                      Website: <span className="font-medium">{stepData[1].website}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Step 2 Übersicht */}
-            {stepData[2] && (
-              <div className="border-l-4 border-[#14ad9f] pl-4">
-                <h4 className="font-medium text-gray-900">Steuerliche Einstellungen</h4>
-                <div className="text-sm text-gray-600 space-y-1">
-                  {stepData[2].kleinunternehmer && (
-                    <p>
-                      Kleinunternehmerregelung:{' '}
-                      <span className="font-medium">
-                        {stepData[2].kleinunternehmer === 'ja' ? 'Ja' : 'Nein'}
-                      </span>
-                    </p>
-                  )}
-                  {stepData[2].profitMethod && (
-                    <p>
-                      Gewinnermittlung:{' '}
-                      <span className="font-medium">
-                        {stepData[2].profitMethod === 'euer' ? 'EÜR' : 'Bilanz'}
-                      </span>
-                    </p>
-                  )}
-                  {stepData[2].priceInput && (
-                    <p>
-                      Preiseingabe:{' '}
-                      <span className="font-medium">
-                        {stepData[2].priceInput === 'brutto' ? 'Brutto' : 'Netto'}
-                      </span>
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Step 3 Übersicht */}
-            {stepData[3] && (
-              <div className="border-l-4 border-[#14ad9f] pl-4">
-                <h4 className="font-medium text-gray-900">Profil & Services</h4>
-                <div className="text-sm text-gray-600 space-y-1">
-                  {stepData[3].skills && stepData[3].skills.length > 0 && (
-                    <p>
-                      Fähigkeiten:{' '}
-                      <span className="font-medium">{stepData[3].skills.length} definiert</span>
-                    </p>
-                  )}
-                  {stepData[3].servicePackages && stepData[3].servicePackages.length > 0 && (
-                    <p>
-                      Service-Pakete:{' '}
-                      <span className="font-medium">
-                        {stepData[3].servicePackages.length} erstellt
-                      </span>
-                    </p>
-                  )}
-                  {stepData[3].instantBooking && (
-                    <p>
-                      Sofortbuchung: <span className="font-medium">Aktiviert</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Step 4 Übersicht */}
-            {stepData[4] && (
-              <div className="border-l-4 border-[#14ad9f] pl-4">
-                <h4 className="font-medium text-gray-900">Service-Bereich & Verfügbarkeit</h4>
-                <div className="text-sm text-gray-600 space-y-1">
-                  {stepData[4].availabilityType && (
-                    <p>
-                      Verfügbarkeit:{' '}
-                      <span className="font-medium">
-                        {stepData[4].availabilityType === 'flexible'
-                          ? 'Flexibel'
-                          : stepData[4].availabilityType === 'fixed'
-                            ? 'Feste Zeiten'
-                            : 'Auf Abruf'}
-                      </span>
-                    </p>
-                  )}
-                  {stepData[4].maxTravelDistance && (
-                    <p>
-                      Max. Entfernung:{' '}
-                      <span className="font-medium">{stepData[4].maxTravelDistance} km</span>
-                    </p>
-                  )}
-                  {stepData[4].serviceAreas && stepData[4].serviceAreas.length > 0 && (
-                    <p>
-                      Service-Gebiete:{' '}
-                      <span className="font-medium">
-                        {stepData[4].serviceAreas.length} definiert
-                      </span>
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Finale Bestätigung */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Finale Bestätigung
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <FileText className="h-5 w-5 text-[#14ad9f] shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-1">Dokumentenvollständigkeit</h4>
-                  <p className="text-sm text-gray-700 mb-3">
-                    Bitte bestätigen Sie, dass alle Ihre Angaben vollständig und korrekt sind. Nach
-                    dem Abschluss wird Ihr Profil zur Überprüfung eingereicht.
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="documentsCompleted"
-                      checked={step5Data.documentsCompleted}
-                      onCheckedChange={checked => updateField('documentsCompleted', checked)}
-                    />
-
-                    <RequiredFieldLabel 
-                      required={true}
-                      tooltip="Pflicht: Bestätigung dass alle Informationen korrekt und vollständig sind"
-                      className="text-sm font-medium text-gray-900"
+          
+          {step5Data.emailType === 'gmail' && (
+            <CardContent className="pt-0">
+              <div className="bg-gray-50 rounded-xl p-5">
+                {step5Data.gmailConnected ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[#14ad9f]/20 rounded-full flex items-center justify-center">
+                        <CheckCircle className="h-5 w-5 text-[#14ad9f]" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{step5Data.gmailEmail}</p>
+                        <p className="text-sm text-gray-500">Gmail erfolgreich verbunden</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        updateField('gmailConnected', false);
+                        updateField('gmailEmail', undefined);
+                      }}
                     >
-                      Ich bestätige, dass alle Dokumente und Angaben vollständig sind
-                    </RequiredFieldLabel>
+                      Trennen
+                    </Button>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <Shield className="h-5 w-5 text-[#14ad9f] shrink-0 mt-0.5" />
+                      <div className="text-sm text-gray-600">
+                        <p className="font-medium text-gray-900 mb-1">Sichere Verbindung</p>
+                        <p>Wir nutzen OAuth 2.0 für eine sichere Verbindung. Taskilo erhält nur Lesezugriff auf Ihre E-Mails.</p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={handleConnectGmail}
+                      disabled={isConnecting}
+                      className="w-full bg-[#14ad9f] hover:bg-teal-600 h-12"
+                    >
+                      {isConnecting ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          Verbinde...
+                        </>
+                      ) : (
+                        <>
+                          <ExternalLink className="h-5 w-5 mr-2" />
+                          Mit Google verbinden
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </div>
-            </div>
-
-            {canComplete && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-green-700">
-                  <CheckCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">
-                    Bereit zum Abschluss! Sie können Ihr Onboarding jetzt finalisieren.
-                  </span>
-                </div>
-              </div>
-            )}
-          </CardContent>
+            </CardContent>
+          )}
         </Card>
 
-        {/* Nächste Schritte */}
-        <Card className="bg-gray-50">
-          <CardContent className="pt-6">
-            <h3 className="font-medium mb-3">Was passiert als Nächstes?</h3>
-            <div className="space-y-3 text-sm text-gray-600">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-xs font-medium">
-                  1
+        {/* Option 2: Taskilo E-Mail erstellen */}
+        <Card className={`cursor-pointer transition-all ${
+          step5Data.emailType === 'taskilo' 
+            ? 'border-2 border-[#14ad9f] ring-2 ring-[#14ad9f]/20' 
+            : 'border-gray-200 hover:border-[#14ad9f]/50'
+        }`}>
+          <CardHeader 
+            className="cursor-pointer"
+            onClick={() => updateField('emailType', 'taskilo')}
+          >
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  step5Data.emailType === 'taskilo' ? 'bg-[#14ad9f]' : 'bg-gray-100'
+                }`}>
+                  <Mail className={`w-6 h-6 ${step5Data.emailType === 'taskilo' ? 'text-white' : 'text-gray-600'}`} />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">Profil-Überprüfung</p>
-                  <p>Unser Team überprüft Ihre Angaben (normalerweise innerhalb von 24 Stunden)</p>
+                  <h3 className="font-semibold text-gray-900">Taskilo E-Mail erstellen</h3>
+                  <p className="text-sm text-gray-500 font-normal">Professionelle @taskilo.de Adresse</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-xs font-medium">
-                  2
+              {step5Data.taskiloEmailRequested && (
+                <div className="flex items-center gap-2 text-[#14ad9f]">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="text-sm font-medium">Beantragt</span>
                 </div>
-                <div>
-                  <p className="font-medium text-gray-900">Freischaltung</p>
-                  <p>
-                    Bei erfolgreicher Prüfung wird Ihr Profil aktiviert und Sie erhalten eine E-Mail
-                  </p>
-                </div>
+              )}
+            </CardTitle>
+          </CardHeader>
+          
+          {step5Data.emailType === 'taskilo' && (
+            <CardContent className="pt-0">
+              <div className="bg-gray-50 rounded-xl p-5">
+                {step5Data.taskiloEmailConnected ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[#14ad9f]/20 rounded-full flex items-center justify-center">
+                        <CheckCircle className="h-5 w-5 text-[#14ad9f]" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {step5Data.taskiloEmail}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Taskilo E-Mail erfolgreich verbunden
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        updateField('taskiloEmailConnected', false);
+                        updateField('taskiloEmail', undefined);
+                        updateField('taskiloEmailRequested', false);
+                      }}
+                    >
+                      Trennen
+                    </Button>
+                  </div>
+                ) : step5Data.taskiloEmailRequested ? (
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#14ad9f]/20 rounded-full flex items-center justify-center">
+                      <CheckCircle className="h-5 w-5 text-[#14ad9f]" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {step5Data.taskiloEmailPrefix}@taskilo.de
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Wird nach Abschluss des Onboardings aktiviert
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3 p-3 bg-[#14ad9f]/5 rounded-lg">
+                      <Shield className="h-5 w-5 text-[#14ad9f] shrink-0 mt-0.5" />
+                      <div className="text-sm text-gray-600">
+                        <p className="font-medium text-gray-900 mb-1">Inklusive Features</p>
+                        <ul className="space-y-1">
+                          <li>Professionelle @taskilo.de Adresse</li>
+                          <li>Integriertes Webmail</li>
+                          <li>Spam-Schutz & Sicherheit</li>
+                          <li>1 GB Speicherplatz</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleCreateTaskiloEmail}
+                      className="w-full bg-[#14ad9f] hover:bg-teal-600 h-12"
+                    >
+                      <Plus className="h-5 w-5 mr-2" />
+                      Neue Taskilo E-Mail erstellen
+                    </Button>
+                    
+                    <p className="text-xs text-gray-500 text-center">
+                      Sie werden zur E-Mail-Registrierung weitergeleitet
+                    </p>
+                  </div>
+                )}
               </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-xs font-medium">
-                  3
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Los geht&apos;s</p>
-                  <p>Sie können Aufträge annehmen und Ihre Services anbieten</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
+            </CardContent>
+          )}
         </Card>
+
+        {/* Option 3: Bestehendes Taskilo-Konto verbinden */}
+        <Card className={`cursor-pointer transition-all ${
+          step5Data.emailType === 'existing-taskilo' 
+            ? 'border-2 border-[#14ad9f] ring-2 ring-[#14ad9f]/20' 
+            : 'border-gray-200 hover:border-[#14ad9f]/50'
+        }`}>
+          <CardHeader 
+            className="cursor-pointer"
+            onClick={() => updateField('emailType', 'existing-taskilo')}
+          >
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  step5Data.emailType === 'existing-taskilo' ? 'bg-[#14ad9f]' : 'bg-gray-100'
+                }`}>
+                  <LogIn className={`w-6 h-6 ${step5Data.emailType === 'existing-taskilo' ? 'text-white' : 'text-gray-600'}`} />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Bestehendes Konto verbinden</h3>
+                  <p className="text-sm text-gray-500 font-normal">Sie haben bereits eine @taskilo.de E-Mail</p>
+                </div>
+              </div>
+              {step5Data.emailType === 'existing-taskilo' && step5Data.taskiloEmailConnected && (
+                <div className="flex items-center gap-2 text-[#14ad9f]">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="text-sm font-medium">Verbunden</span>
+                </div>
+              )}
+            </CardTitle>
+          </CardHeader>
+          
+          {step5Data.emailType === 'existing-taskilo' && (
+            <CardContent className="pt-0">
+              <div className="bg-gray-50 rounded-xl p-5">
+                {step5Data.taskiloEmailConnected ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[#14ad9f]/20 rounded-full flex items-center justify-center">
+                        <CheckCircle className="h-5 w-5 text-[#14ad9f]" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{step5Data.taskiloEmail}</p>
+                        <p className="text-sm text-gray-500">Konto erfolgreich verbunden</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        updateField('taskiloEmailConnected', false);
+                        updateField('taskiloEmail', undefined);
+                        setExistingEmail('');
+                      }}
+                    >
+                      Trennen
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <Shield className="h-5 w-5 text-[#14ad9f] shrink-0 mt-0.5" />
+                      <div className="text-sm text-gray-600">
+                        <p className="font-medium text-gray-900 mb-1">Konto verifizieren</p>
+                        <p>Geben Sie Ihre Taskilo E-Mail und Ihr Passwort ein, um Ihr bestehendes Konto zu verbinden.</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <input
+                        type="email"
+                        value={existingEmail}
+                        onChange={(e) => setExistingEmail(e.target.value)}
+                        placeholder="ihre-email@taskilo.de"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#14ad9f] focus:outline-none transition-colors"
+                      />
+                      <input
+                        type="password"
+                        value={existingPassword}
+                        onChange={(e) => setExistingPassword(e.target.value)}
+                        placeholder="Passwort"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#14ad9f] focus:outline-none transition-colors"
+                      />
+                    </div>
+                    
+                    <Button
+                      onClick={handleConnectExistingTaskilo}
+                      disabled={isVerifying || !existingEmail.trim() || !existingPassword.trim()}
+                      className="w-full bg-[#14ad9f] hover:bg-teal-600 h-12"
+                    >
+                      {isVerifying ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          Verifiziere...
+                        </>
+                      ) : (
+                        <>
+                          <LogIn className="h-5 w-5 mr-2" />
+                          Konto verbinden
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* Option 4: Überspringen */}
+        <Card className={`cursor-pointer transition-all ${
+          step5Data.emailType === 'skip' 
+            ? 'border-2 border-gray-400' 
+            : 'border-gray-200 hover:border-gray-300'
+        }`}>
+          <CardHeader 
+            className="cursor-pointer"
+            onClick={handleSkip}
+          >
+            <CardTitle className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                step5Data.emailType === 'skip' ? 'bg-gray-400' : 'bg-gray-100'
+              }`}>
+                <ArrowRight className={`w-6 h-6 ${step5Data.emailType === 'skip' ? 'text-white' : 'text-gray-400'}`} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-700">Später einrichten</h3>
+                <p className="text-sm text-gray-500 font-normal">E-Mail-Verbindung im Dashboard nachholen</p>
+              </div>
+              {step5Data.emailType === 'skip' && (
+                <CheckCircle className="h-5 w-5 text-gray-400 ml-auto" />
+              )}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+
+        {/* Info-Box */}
+        <div className="bg-[#14ad9f]/5 border border-[#14ad9f]/20 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <Mail className="h-5 w-5 text-[#14ad9f] shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium text-gray-900 mb-1">Warum E-Mail verbinden?</p>
+              <p className="text-gray-600">
+                Mit einer verbundenen E-Mail können Sie direkt aus Taskilo heraus mit Kunden kommunizieren,
+                Rechnungen versenden und Benachrichtigungen erhalten.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Validation Message */}
       {!isValidForNext() && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-gray-700">
-            <AlertCircle className="h-5 w-5 text-[#14ad9f]" />
-            <span className="font-medium">Onboarding kann nicht abgeschlossen werden:</span>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-medium text-amber-800">E-Mail-Option wählen</h4>
+            <p className="text-sm text-amber-700">
+              Bitte wählen Sie eine E-Mail-Option oder überspringen Sie diesen Schritt.
+            </p>
           </div>
-          <p className="mt-1 text-sm text-gray-600">{getValidationMessage()}</p>
         </div>
       )}
 
@@ -486,32 +602,53 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
         <Button
           variant="outline"
           onClick={goToPreviousStep}
-          disabled={isSubmitting}
-          className="px-6"
+          disabled={isConnecting}
+          className="px-6 h-12"
         >
           Zurück
         </Button>
         <Button
-          onClick={handleSubmit}
-          disabled={!canComplete || isSubmitting || isOffline}
-          className={`px-8 ${
-            canComplete && !isOffline
-              ? 'bg-[#14ad9f] hover:bg-taskilo-hover text-white'
+          onClick={handleNext}
+          disabled={!isValidForNext() || isConnecting}
+          className={`px-8 h-12 text-base font-semibold ${
+            isValidForNext()
+              ? 'bg-linear-to-r from-[#14ad9f] to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-lg hover:shadow-xl'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }`}
         >
-          {isSubmitting ? (
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              {isCompleted ? 'Erfolgreich! Weiterleitung...' : 'Wird abgeschlossen...'}
-            </div>
-          ) : isOffline ? (
-            'Internetverbindung erforderlich'
-          ) : (
-            'Onboarding abschließen'
-          )}
+          <span className="flex items-center gap-2">
+            Weiter
+            <ArrowRight className="h-5 w-5" />
+          </span>
         </Button>
       </div>
     </div>
+  );
+}
+
+// Loading Fallback
+function Step5LoadingFallback() {
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="animate-pulse space-y-8">
+        <div className="h-16 bg-gray-200 rounded-2xl w-16 mx-auto" />
+        <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto" />
+        <div className="h-4 bg-gray-200 rounded w-2/3 mx-auto" />
+        <div className="space-y-4">
+          <div className="h-24 bg-gray-200 rounded-xl" />
+          <div className="h-24 bg-gray-200 rounded-xl" />
+          <div className="h-24 bg-gray-200 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Exportierte Komponente mit Suspense-Wrapper
+export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
+  return (
+    <Suspense fallback={<Step5LoadingFallback />}>
+      <OnboardingStep5Content companyUid={companyUid} />
+    </Suspense>
   );
 }

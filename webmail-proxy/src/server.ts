@@ -16,6 +16,7 @@ import { recordingRouter } from './routes/recording';
 import contactsRouter from './routes/contacts';
 import { driveRouter } from './routes/drive';
 import { paymentRouter } from './routes/payment';
+import registrationRouter from './routes/registration';
 import { 
   apiRateLimiter, 
   authRateLimiter,
@@ -103,9 +104,18 @@ app.use(express.json({ limit: '25mb' })); // Erhöht für Attachments
 // Rate Limiting
 app.use('/api', apiRateLimiter);
 app.use('/api/test', authRateLimiter); // Strenger für Auth
+app.use('/api/registration', authRateLimiter); // Strenger für Registration
 
-// API Key Validierung Middleware (Timing-Safe)
+// API Routes - E-Mail Registration (ÖFFENTLICH - VOR API-Key Middleware!)
+app.use('/api/registration', registrationRouter);
+
+// API Key Validierung Middleware (Timing-Safe) - Registration ausgeschlossen
 app.use('/api', (req, res, next) => {
+  // Registration-Endpunkte überspringen (sind öffentlich)
+  if (req.path.startsWith('/registration')) {
+    return next();
+  }
+  
   const apiKey = req.headers['x-api-key'] as string;
   
   if (!apiKey || !secureCompare(apiKey, API_KEY)) {

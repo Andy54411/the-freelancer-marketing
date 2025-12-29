@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef, useCallback } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, User, Building2, Shield, ArrowRight } from 'lucide-react';
@@ -23,7 +23,9 @@ function SmoothRedirectOverlayContent() {
   const [redirectMessage, setRedirectMessage] = useState('');
   const [progress, setProgress] = useState(0);
   const [userName, setUserName] = useState<string>('');
-  const [redirecting, setRedirecting] = useState(false);
+  const redirectStartedRef = useRef(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const targetPathRef = useRef<string>('');
 
   // Firebase-Daten laden für personalisierten Namen
   useEffect(() => {
@@ -88,15 +90,23 @@ function SmoothRedirectOverlayContent() {
     }
   }, [user]);
 
+  // Overlay ausblenden wenn wir auf dem Dashboard sind
   useEffect(() => {
-    if (!loading && user && userName && !redirecting) {
+    if (pathname?.includes('/dashboard/') && showOverlay) {
+      setShowOverlay(false);
+    }
+  }, [pathname, showOverlay]);
+
+  useEffect(() => {
+    if (!loading && user && userName && !redirectStartedRef.current) {
       // Prüfe ob User auf falscher Seite ist und redirect benötigt
       let needsRedirect = false;
       let targetPath = '';
       let message = '';
       
-      // Prüfe ob es einen redirectTo Parameter gibt
-      const redirectTo = searchParams?.get('redirectTo');
+      // Prüfe ob es einen redirectTo Parameter gibt und decodiere ihn
+      const rawRedirectTo = searchParams?.get('redirectTo');
+      const redirectTo = rawRedirectTo ? decodeURIComponent(rawRedirectTo) : null;
 
       // Master/Support
       if (user.user_type === 'master' || user.user_type === 'support') {
@@ -131,33 +141,42 @@ function SmoothRedirectOverlayContent() {
       }
 
       if (needsRedirect && targetPath) {
-        setRedirecting(true);
+        // Verhindere doppelte Ausführung
+        redirectStartedRef.current = true;
+        targetPathRef.current = targetPath;
         setRedirectMessage(message);
         setShowOverlay(true);
+        setProgress(0);
 
-        // Progressiver Ladebalken
+        // Starte Progress-Animation
         let currentProgress = 0;
-        const progressInterval = setInterval(() => {
+        intervalRef.current = setInterval(() => {
           currentProgress += 10;
-
-          // Stelle sicher, dass Progress nie über 100% geht
           const cappedProgress = Math.min(currentProgress, 100);
           setProgress(cappedProgress);
 
           if (cappedProgress >= 100) {
-            clearInterval(progressInterval);
-
-            // Kurze Verzögerung dann redirect
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
+            // Redirect nach kurzer Verzögerung
             setTimeout(() => {
-              router.push(targetPath);
-            }, 300);
+              router.push(targetPathRef.current);
+            }, 200);
           }
-        }, 100);
-
-        return () => clearInterval(progressInterval);
+        }, 80);
       }
     }
-  }, [user, loading, pathname, router, userName, redirecting, searchParams]);
+
+    // Cleanup beim Unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [user, loading, pathname, router, userName, searchParams]);
 
   // Icon basierend auf User-Rolle
   const getRoleIcon = () => {

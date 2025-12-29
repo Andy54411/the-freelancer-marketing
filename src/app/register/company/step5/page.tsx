@@ -711,13 +711,21 @@ export default function Step5CompanyPage() {
         masterCertStripeFileId = masterCertResult?.fileId;
       }
 
+      // Validiere fileId UND firebaseStorageUrl für alle kritischen Uploads
       if (
         !profilePicResult?.fileId ||
         !businessLicResult?.fileId ||
         !idFrontResult?.fileId ||
         !idBackResult?.fileId
       ) {
-        throw new Error('Ein oder mehrere kritische Datei-Uploads sind fehlgeschlagen.');
+        throw new Error('Ein oder mehrere kritische Datei-Uploads sind fehlgeschlagen (fileId fehlt).');
+      }
+      
+      // KRITISCH: Profilbild-URL muss vorhanden sein für Header-Anzeige
+      if (!profilePicResult.firebaseStorageUrl) {
+        throw new Error(
+          'Profilbild wurde hochgeladen, aber keine URL generiert. Bitte versuchen Sie es erneut.'
+        );
       }
 
       setCurrentStepMessage('Profildaten werden gespeichert...');
@@ -769,11 +777,11 @@ export default function Step5CompanyPage() {
         // accountHolder: accountHolder?.trim() || '',  // ❌ ENTFERNT
         // bankCountry: companyCountry || personalCountry || 'DE',  // ❌ ENTFERNT
 
-        // Stripe Dokumente
-        identityFrontUrlStripeId: idFrontResult.fileId,
-        identityBackUrlStripeId: idBackResult.fileId,
-        businessLicenseStripeId: businessLicResult.fileId,
-        masterCraftsmanCertificateStripeId: masterCertStripeFileId || deleteField(),
+        // Dokumente IDs (für Taskilo Escrow System)
+        identityFrontFileId: idFrontResult.fileId,
+        identityBackFileId: idBackResult.fileId,
+        businessLicenseFileId: businessLicResult.fileId,
+        masterCraftsmanCertificateFileId: masterCertStripeFileId || deleteField(),
         identityFrontFirebaseUrl: idFrontResult.firebaseStorageUrl || null,
         identityBackFirebaseUrl: idBackResult.firebaseStorageUrl || null,
         businessLicenseFirebaseUrl: businessLicResult.firebaseStorageUrl || null,
@@ -811,7 +819,8 @@ export default function Step5CompanyPage() {
 
         // Profile Picture (GEHÖRT ZUR FIRMA!)
         profilePictureURL: profilePicResult.firebaseStorageUrl || null,
-        profilePictureStripeFileId: profilePicResult.fileId,
+        profilePictureFileId: profilePicResult.fileId,
+        logoUrl: profilePicResult.firebaseStorageUrl || null, // Alias für Header-Anzeige
 
         // Firmendetails für öffentliches Profil
         companyWebsite: companyWebsite || null,
@@ -862,7 +871,7 @@ export default function Step5CompanyPage() {
           key !== 'isActualOwner' &&
           key !== 'actualOwnershipPercentage' &&
           key !== 'isActualExecutive' &&
-          key !== 'masterCraftsmanCertificateStripeId'
+          key !== 'masterCraftsmanCertificateFileId'
         ) {
           cleanedCompanyData[key] = null;
         }
@@ -1127,11 +1136,11 @@ export default function Step5CompanyPage() {
         };
 
         const step5Data = {
-          // 🔧 FIX: Dokument-URLs aus Step5 Registration speichern
-          identityFrontStripeId: idFrontResult.fileId,
-          identityBackStripeId: idBackResult.fileId,
-          businessLicenseStripeId: businessLicResult.fileId,
-          masterCraftsmanCertificateStripeId: masterCertStripeFileId || null,
+          // Dokument-IDs und URLs aus Step5 Registration speichern
+          identityFrontFileId: idFrontResult.fileId,
+          identityBackFileId: idBackResult.fileId,
+          businessLicenseFileId: businessLicResult.fileId,
+          masterCraftsmanCertificateFileId: masterCertStripeFileId || null,
           identityFrontUrl: idFrontResult.firebaseStorageUrl || null,
           identityBackUrl: idBackResult.firebaseStorageUrl || null,
           businessLicenseUrl: businessLicResult.firebaseStorageUrl || null,

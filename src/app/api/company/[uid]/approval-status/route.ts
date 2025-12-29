@@ -22,17 +22,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (approvalResult.companyData && !approvalResult.isApproved) {
       const data = approvalResult.companyData;
 
-      // Check for missing documents
-      if (!data.step3?.identityFrontUrl || !data.step3?.identityBackUrl) {
+      // Check for missing documents - Dokumente sind in step5 gespeichert
+      if (!data.step5?.identityFrontUrl || !data.step5?.identityBackUrl) {
         pendingActions.push('Ausweisdokumente hochladen');
       }
 
-      if (!data.step3?.businessLicenseURL) {
+      if (!data.step5?.businessLicenseUrl) {
         pendingActions.push('Gewerbeschein hochladen');
       }
 
-      if (!data.step5?.stripeAccountId) {
-        pendingActions.push('Stripe-Konto einrichten');
+      // Bankdaten prüfen (in step4 oder step5)
+      if (!data.step4?.iban && !data.step5?.iban && !data.iban) {
+        pendingActions.push('Bankverbindung einrichten');
       }
 
       if (!data.onboardingCompleted) {

@@ -331,7 +331,7 @@ export const HeroHeader = () => {
                       size="sm"
                       className="bg-white hover:bg-gray-100 text-[#14ad9f] font-semibold h-9 px-3 text-sm"
                     >
-                      <Link href="/webmail">
+                      <Link href="/webmail/register">
                         <Mail className="w-4 h-4 mr-1" />
                         Mail Account erstellen
                       </Link>
@@ -443,7 +443,7 @@ export const HeroHeader = () => {
                           variant="outline"
                           className="w-full"
                         >
-                          <Link href="/webmail">
+                          <Link href="/webmail/register">
                             <Mail className="w-4 h-4 mr-2" />
                             Mail Account erstellen
                           </Link>

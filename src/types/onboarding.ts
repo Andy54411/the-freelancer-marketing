@@ -45,7 +45,7 @@ export interface OnboardingContextType {
 
   // Actions
   goToStep: (step: number) => void;
-  goToNextStep: () => void;
+  goToNextStep: (skipValidation?: boolean) => void;
   goToPreviousStep: () => void;
   updateStepData: (step: number, data: Partial<any>) => void;
   saveCurrentStep: () => Promise<void>;
@@ -209,6 +209,13 @@ export const onboardingSteps: StepNavigationInfo[] = [
   },
   {
     step: 5,
+    title: 'E-Mail-Verbindung',
+    description: 'Gmail verbinden oder Taskilo E-Mail erstellen',
+    isRequired: false,
+    estimatedTime: '1-2 Minuten',
+  },
+  {
+    step: 6,
     title: 'Überprüfung & Freischaltung',
     description: 'Finale Überprüfung und Profil-Aktivierung',
     isRequired: true,

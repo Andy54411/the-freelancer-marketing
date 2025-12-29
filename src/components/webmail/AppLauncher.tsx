@@ -295,15 +295,84 @@ export function AppLauncher({ className, hasTheme = false }: AppLauncherProps) {
   // Wenn ein Hintergrundbild-Theme aktiv ist, verwende helle Farben
   const useWhiteIcons = hasTheme;
 
+  // Webmail-Session aus Cookie lesen
+  function getWebmailEmail(): string | null {
+    if (typeof document === 'undefined') return null;
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'webmail_session' && value) {
+        try {
+          const binString = atob(value);
+          const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0) as number);
+          const jsonStr = new TextDecoder().decode(bytes);
+          const data = JSON.parse(jsonStr);
+          return data.email || null;
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  }
+
   // Check admin permissions on mount
+  // Admin-Apps werden nur angezeigt wenn:
+  // 1. Ein Admin-Token existiert UND
+  // 2. Die aktuelle Webmail-Email mit der Admin-Email übereinstimmt
   useEffect(() => {
     async function checkAdminPermissions() {
       try {
-        const response = await fetch('/api/admin/auth/verify');
-        if (response.ok) {
-          const data = await response.json();
-          // API gibt success: true zurück wenn Admin eingeloggt
-          setIsAdmin(data.success === true || data.valid === true);
+        // Hole die aktuelle Webmail-Email aus dem Cookie
+        const currentWebmailEmail = getWebmailEmail();
+        
+        // DEBUG: Logge die Webmail-Email
+        // eslint-disable-next-line no-console
+        console.log('[AppLauncher] Current Webmail Email:', currentWebmailEmail);
+        
+        // Wenn ein Webmail-Login aktiv ist, muss die Email mit der Admin-Email übereinstimmen
+        if (currentWebmailEmail) {
+          // Hole Admin-Daten
+          const adminResponse = await fetch('/api/admin/auth/verify');
+          if (adminResponse.ok) {
+            const adminData = await adminResponse.json();
+            const adminEmail = adminData.user?.email;
+            
+            // DEBUG: Logge Admin-Daten
+            // eslint-disable-next-line no-console
+            console.log('[AppLauncher] Admin Email:', adminEmail, 'Admin Success:', adminData.success);
+            // eslint-disable-next-line no-console
+            console.log('[AppLauncher] Full Admin Data:', JSON.stringify(adminData, null, 2));
+            
+            // Admin-Apps nur anzeigen wenn Admin-Email existiert UND mit Webmail-Email übereinstimmt
+            if (adminData.success && adminEmail) {
+              const isMatch = adminEmail.toLowerCase() === currentWebmailEmail.toLowerCase();
+              // eslint-disable-next-line no-console
+              console.log('[AppLauncher] Email Match Check:', isMatch, `(${adminEmail} vs ${currentWebmailEmail})`);
+              setIsAdmin(isMatch);
+            } else {
+              // eslint-disable-next-line no-console
+              console.log('[AppLauncher] No admin or no admin email - hiding admin apps');
+              setIsAdmin(false);
+            }
+          } else {
+            // eslint-disable-next-line no-console
+            console.log('[AppLauncher] Admin verify failed with status:', adminResponse.status);
+            setIsAdmin(false);
+          }
+        } else {
+          // eslint-disable-next-line no-console
+          console.log('[AppLauncher] No Webmail login - checking admin token only');
+          // Kein Webmail-Login - prüfe nur ob Admin-Token gültig ist
+          const adminResponse = await fetch('/api/admin/auth/verify');
+          if (adminResponse.ok) {
+            const adminData = await adminResponse.json();
+            // eslint-disable-next-line no-console
+            console.log('[AppLauncher] Admin token valid:', adminData.success);
+            setIsAdmin(adminData.success === true);
+          } else {
+            setIsAdmin(false);
+          }
         }
       } catch {
         // Not an admin or error checking permissions

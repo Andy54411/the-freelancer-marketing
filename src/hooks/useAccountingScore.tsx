@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { auth } from '@/firebase/clients';
 import { getFinAPICredentialType } from '@/lib/finapi-config';
 
 interface AccountingScoreData {
@@ -42,9 +43,30 @@ export function useAccountingScore(companyId: string | null): AccountingScoreDat
       try {
         const credentialType = getFinAPICredentialType();
 
+        // Get auth token for API call
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) {
+          if (isMounted) {
+            setData({
+              score: 100,
+              totalTransactions: 0,
+              linkedTransactions: 0,
+              unlinkedTransactions: 0,
+              loading: false,
+              error: null,
+            });
+          }
+          return;
+        }
+
         // 1. Transaktionen laden
         const transactionsResponse = await fetch(
-          `/api/finapi/transactions?userId=${validCompanyId}&credentialType=${credentialType}&page=1&perPage=500`
+          `/api/finapi/transactions?userId=${validCompanyId}&credentialType=${credentialType}&page=1&perPage=500`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }
         );
 
         if (!transactionsResponse.ok) {

@@ -185,95 +185,21 @@ export async function POST(request: NextRequest) {
         signedUrl: signedUrl.substring(0, 100) + '...',
       });
     } catch (firebaseError) {
-      console.error('[STORAGE] ❌ Firebase Storage upload failed:', firebaseError);
-
-      // Fallback to development mode with base64
-      const isDevelopment = !process.env.AWS_ACCESS_KEY_ID || process.env.NODE_ENV === 'development';
-
-      if (isDevelopment) {
-        console.log('[STORAGE] Development mode detected - using Base64 Data URL for immediate processing');
-        
-        // Create Base64 Data URL for development/testing
-        const base64Data = buffer.toString('base64');
-        const dataUrl = `data:${file.type};base64,${base64Data}`;
-
-        uploadResult = {
-          success: true,
-          s3Path: null,
-          gcsPath: null,
-          fileUrl: dataUrl,
-          storage: 'BASE64_DEVELOPMENT',
-        };
-
-        console.log('[STORAGE] Base64 Data URL created for development processing:', {
-          fileName,
-          mimeType: file.type,
-          sizeKB: Math.round(buffer.length / 1024),
-          base64Length: base64Data.length
-        });
-      } else {
-        try {
-          // Production mode: Try real S3 upload
-          console.log('[STORAGE] Production mode - attempting real S3 upload for file:', fileName);
-
-          // TODO: Implement real S3 upload when AWS credentials are available
-          // For now, simulate until production credentials are configured
-          await new Promise(resolve => setTimeout(resolve, 100));
-
-          uploadResult = {
-            success: true,
-            s3Path: `s3://${process.env.AWS_S3_BUCKET || 'taskilo-file-storage'}/${fileName}`,
-            fileUrl: null,
-            gcsPath: null,
-            storage: 'S3_PRODUCTION_SIMULATED',
-          };
-
-          console.log('[STORAGE] S3 upload successful:', uploadResult.s3Path);
-        } catch (s3Error) {
-          console.warn('[STORAGE] S3 upload failed, trying GCS:', s3Error);
-
-          try {
-            // For now, simulate GCS upload until Google Cloud SDK is properly configured
-            // TODO: Implement real GCS upload when SDK is available
-
-            console.log('[STORAGE] Simulating GCS upload for file:', fileName);
-
-            // Simulate GCS upload delay
-            await new Promise(resolve => setTimeout(resolve, 100));
-
-            uploadResult = {
-              success: true,
-              s3Path: null,
-              gcsPath: `gs://${process.env.GCS_BUCKET || 'tilvo-f142f.appspot.com'}/${fileName}`,
-              fileUrl: null,
-              storage: 'GCS_SIMULATED',
-            };
-
-            console.log('[STORAGE] GCS upload simulated successfully:', uploadResult.gcsPath);
-          } catch (gcsError) {
-            console.warn('[STORAGE] GCS upload failed, creating temporary storage:', gcsError);
-
-            // Fallback: Create a data URL for immediate processing
-            // This is a temporary solution until cloud storage is fully configured
-            const base64Data = buffer.toString('base64');
-            const dataUrl = `data:${file.type};base64,${base64Data}`;
-
-            uploadResult = {
-              success: true,
-              s3Path: null,
-              gcsPath: null,
-              fileUrl: dataUrl,
-              storage: 'BASE64_FALLBACK',
-            };
-
-            console.log('[STORAGE] Fallback to base64 data URL for immediate processing');
-          }
-        }
-      }
+      // KEINE FALLBACKS! Firebase Storage MUSS funktionieren.
+      // Fehler sofort werfen damit das Problem sichtbar wird.
+      console.error('[STORAGE] Firebase Storage upload failed:', firebaseError);
+      throw new Error(
+        `Firebase Storage Upload fehlgeschlagen: ${firebaseError instanceof Error ? firebaseError.message : String(firebaseError)}`
+      );
     }
 
     if (!uploadResult) {
-      throw new Error('All upload methods failed');
+      throw new Error('Upload fehlgeschlagen - kein Ergebnis');
+    }
+    
+    // Validiere dass URL vorhanden ist - KEINE Fallbacks!
+    if (!uploadResult.fileUrl) {
+      throw new Error('Upload erfolgreich aber keine URL generiert');
     }
 
     // Generiere eindeutige fileId für die Rückgabe
