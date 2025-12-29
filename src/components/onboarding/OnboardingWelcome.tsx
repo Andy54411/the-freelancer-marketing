@@ -31,7 +31,7 @@ function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeP
     {
       icon: <Shield className="h-6 w-6 text-[#14ad9f]" />,
       title: 'Sichere Zahlungsabwicklung',
-      description: 'Integrierte Stripe-Zahlungen für sicheren Geldtransfer und Rechnungsstellung',
+      description: 'Sichere Escrow-Zahlungen für transparenten Geldtransfer und Rechnungsstellung',
     },
     {
       icon: <TrendingUp className="h-6 w-6 text-[#14ad9f]" />,
@@ -50,7 +50,7 @@ function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeP
     'Automatisierte Rechnungsstellung und Buchhaltung',
     'Erweiterte Marketing- und Sichtbarkeitsoptionen',
     'Priorisierter Kundensupport und Account-Management',
-    'Stripe Connect für sichere B2B-Zahlungen',
+    'Escrow-System für sichere B2B-Zahlungen',
     'Compliance-Tools für Steuer und Recht',
   ];
 

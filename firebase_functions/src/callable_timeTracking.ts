@@ -2,11 +2,10 @@
 
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { getDb, getStripeInstance } from "./helpers";
-import { defineSecret } from "firebase-functions/params";
+import { getDb } from "./helpers";
 import { FieldValue } from "firebase-admin/firestore";
 
-const STRIPE_SECRET_KEY_TIME = defineSecret("STRIPE_SECRET_KEY");
+// STRIPE ENTFERNT - Jetzt Escrow/Revolut System
 
 interface InitializeTimeTrackingPayload {
     orderId: string;
@@ -404,7 +403,6 @@ export const billApprovedAdditionalHours = onCall(
     {
         cors: allowedOrigins,
         region: "europe-west1",
-        secrets: [STRIPE_SECRET_KEY_TIME]
     },
     async (request: CallableRequest<BillAdditionalHoursPayload>) => {
         logger.info(`[billApprovedAdditionalHours] Called for order: ${request.data.orderId}`);
@@ -417,7 +415,6 @@ export const billApprovedAdditionalHours = onCall(
         const providerId = request.auth.uid;
 
         const db = getDb();
-        const stripe = getStripeInstance(STRIPE_SECRET_KEY_TIME.value());
 
         try {
             // Prüfe Berechtigung
@@ -450,7 +447,7 @@ export const billApprovedAdditionalHours = onCall(
                 throw new HttpsError('failed-precondition', 'No billable approved entries found.');
             }
 
-            // Hole Kundendaten für Stripe
+            // Hole Kundendaten
             const orderDoc = await db.collection('auftraege').doc(orderId).get();
             const orderData = orderDoc.data();
             const customerId = orderData?.customerFirebaseUid;
@@ -459,42 +456,37 @@ export const billApprovedAdditionalHours = onCall(
                 throw new HttpsError('failed-precondition', 'Customer ID not found.');
             }
 
-            const customerDoc = await db.collection('users').doc(customerId).get();
-            const customerData = customerDoc.data();
-            const stripeCustomerId = customerData?.stripeCustomerId;
+            // Erstelle einen Escrow-Eintrag in Firestore (Revolut/Escrow Workflow)
+            const platformFeeAmount = Math.round(totalAmount * 0.045); // 4.5% Platform Fee
 
-            if (!stripeCustomerId) {
-                throw new HttpsError('failed-precondition', 'Customer Stripe ID not found.');
-            }
-
-            // Erstelle Payment Intent für zusätzliche Stunden
-            const paymentIntent = await stripe.paymentIntents.create({
+            const escrowDoc = {
+                orderId,
+                providerId,
+                customerId,
                 amount: totalAmount,
                 currency: 'eur',
-                customer: stripeCustomerId,
-                application_fee_amount: Math.round(totalAmount * 0.045), // 4.5% Platform Fee
-                transfer_data: {
-                    destination: trackingData.providerStripeAccountId, // Provider's Stripe Account
-                },
+                platformFeeAmount,
+                providerAccountId: trackingData?.providerRevolutAccountId || null,
+                type: 'additional_hours',
+                entryIds: approvedEntryIds,
+                status: 'created',
+                createdAt: FieldValue.serverTimestamp(),
                 metadata: {
-                    orderId,
-                    type: 'additional_hours',
-                    entryIds: approvedEntryIds.join(','),
                     providerId,
                     customerId,
-                },
-                automatic_payment_methods: {
-                    enabled: true,
-                },
-            });
+                    orderId,
+                }
+            } as any;
 
-            // Markiere Einträge als "billed"
+            const escrowRef = await db.collection('escrows').add(escrowDoc);
+
+            // Markiere Einträge als "billed" und verknüpfe mit escrowId
             const batch = db.batch();
 
             for (const entry of approvedEntries) {
                 batch.update(db.collection('timeEntries').doc(entry.id), {
                     status: 'billed',
-                    paymentIntentId: paymentIntent.id,
+                    escrowId: escrowRef.id,
                     billedAt: FieldValue.serverTimestamp(),
                 });
             }
@@ -507,13 +499,12 @@ export const billApprovedAdditionalHours = onCall(
 
             await batch.commit();
 
-            logger.info(`[billApprovedAdditionalHours] Successfully created payment intent: ${paymentIntent.id}`);
+            logger.info(`[billApprovedAdditionalHours] Created escrow: ${escrowRef.id}`);
             return {
                 success: true,
-                paymentIntentId: paymentIntent.id,
-                clientSecret: paymentIntent.client_secret,
+                escrowId: escrowRef.id,
                 amount: totalAmount,
-                message: 'Payment intent created for additional hours.'
+                message: 'Escrow created for additional hours.'
             };
 
         } catch (error: any) {

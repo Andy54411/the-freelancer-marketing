@@ -229,7 +229,7 @@ export default function FeaturesSection() {
     },
     {
       title: 'Banking & Zahlungen',
-      description: 'Stripe, Revolut & FinAPI Integration mit automatischem Transaktionsabgleich. Alle Bankkonten zentral verwalten.',
+      description: 'Escrow, Revolut & FinAPI Integration mit automatischem Transaktionsabgleich. Alle Bankkonten zentral verwalten.',
       image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?q=80&w=2070&auto=format&fit=crop',
       badges: ['DSGVO-konform', 'Multi-Bank'],
       href: '/features/banking',

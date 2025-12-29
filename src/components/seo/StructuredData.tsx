@@ -154,7 +154,7 @@ export function generateStructuredData({
         },
         openingHours: 'Mo-Fr 09:00-18:00',
         priceRange: '€€',
-        paymentAccepted: ['Credit Card', 'SEPA', 'PayPal', 'Stripe'],
+        paymentAccepted: ['Credit Card', 'SEPA', 'PayPal', 'Revolut'],
         currenciesAccepted: 'EUR',
         ...data,
       };
