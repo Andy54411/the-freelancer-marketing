@@ -133,9 +133,14 @@ function OnboardingStep5Content({ companyUid }: OnboardingStep5Props) {
   };
 
   // Taskilo E-Mail erstellen - Weiterleitung zur Registrierungsseite
-  const handleCreateTaskiloEmail = () => {
-    // Öffne die Webmail-Registrierung im selben Tab (Rückkehr per URL-Parameter)
-    const returnUrl = encodeURIComponent(window.location.href);
+  const handleCreateTaskiloEmail = async () => {
+    // Speichere aktuellen Step bevor wir weiterleiten
+    await saveCurrentStep();
+    
+    // Generiere explizite returnUrl zu Step 5
+    const baseUrl = window.location.origin;
+    const step5Url = `${baseUrl}/dashboard/company/${companyUid || user?.uid}/onboarding/step/5`;
+    const returnUrl = encodeURIComponent(step5Url);
     window.location.href = `/webmail/register?returnUrl=${returnUrl}&companyId=${companyUid || user?.uid}`;
   };
 

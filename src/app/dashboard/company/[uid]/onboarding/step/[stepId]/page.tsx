@@ -41,8 +41,8 @@ export default function CompanyOnboardingStepPage(): JSX.Element {
           return;
         }
 
-        // Prüfe gültigen Step-Bereich
-        if (stepId < 1 || stepId > 5) {
+        // Prüfe gültigen Step-Bereich (6 Steps im Onboarding)
+        if (stepId < 1 || stepId > 6) {
           router.push(`/dashboard/company/${companyUid}/onboarding/step/1`);
           return;
         }
