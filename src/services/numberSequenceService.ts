@@ -896,7 +896,8 @@ export class NumberSequenceService {
    */
   static async createDefaultSequences(companyId: string): Promise<NumberSequence[]> {
     try {
-      const defaultTypes = [
+      // Explizite Typ-Definition stellt sicher, dass alle Felder definiert sind
+      const defaultTypes: Array<{ type: string; format: string; nextNumber: number; prefix: string }> = [
       { type: 'Rechnung', format: 'RE-%NUMBER', nextNumber: 1000, prefix: 'RE-' },
       { type: 'Angebot', format: 'AN-%NUMBER', nextNumber: 1000, prefix: 'AN-' },
       { type: 'Kunde', format: 'KD-%NUMBER', nextNumber: 1000, prefix: 'KD-' },
@@ -943,7 +944,7 @@ export class NumberSequenceService {
           format: template.format,
           nextNumber: template.nextNumber,
           nextFormatted: this.formatNumber(template.nextNumber, template.format),
-          prefix: template.prefix || '',
+          prefix: template.prefix,
           canEdit: true,
           canDelete: false,
           createdAt: new Date(),
