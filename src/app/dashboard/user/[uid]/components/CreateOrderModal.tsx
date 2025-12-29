@@ -241,49 +241,6 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
         throw new Error('Fehler: Unvollständige Angaben. Bitte versuchen Sie es erneut.');
       }
 
-      if (!selectedProvider.stripeAccountId) {
-        throw new Error(
-          'Der ausgewählte Anbieter kann derzeit keine Zahlungen empfangen. Bitte wählen Sie einen anderen Anbieter.'
-        );
-      }
-
-      // Automatische Erstellung von BEIDEN Stripe-Profilen wenn sie fehlen
-      if (!userProfile.stripeCustomerId || !userProfile.stripeAccountId) {
-        try {
-          const createProfilesResponse = await fetch('/api/create-company-stripe-profiles', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              companyName: userProfile.companyName || userProfile.displayName || 'Unternehmen',
-              email: userProfile.email,
-              uid: userProfile.uid,
-              user_type: 'firma',
-            }),
-          });
-
-          if (!createProfilesResponse.ok) {
-            const errorData = await createProfilesResponse.json();
-            throw new Error(errorData.error || 'Stripe-Profile-Erstellung fehlgeschlagen');
-          }
-
-          const profileData = await createProfilesResponse.json();
-
-          // Update das lokale userProfile mit den neuen IDs
-          if (profileData.stripeCustomerId) {
-            userProfile.stripeCustomerId = profileData.stripeCustomerId;
-          }
-          if (profileData.stripeAccountId) {
-            userProfile.stripeAccountId = profileData.stripeAccountId;
-          }
-        } catch (profileError) {
-          throw new Error(
-            "Ihre Zahlungsprofile konnten nicht automatisch erstellt werden. Bitte fügen Sie unter 'Einstellungen' eine Zahlungsmethode hinzu, bevor Sie buchen."
-          );
-        }
-      }
-
       let dateFromFormatted: string,
         dateToFormatted: string,
         calculatedNumberOfDays = 1;
@@ -406,8 +363,6 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
       setTempJobDraftId(newTempJobDraftId); // Speichere im State
       setFinalOrderData(orderDetailsForBackend); // FinalOrderData hier aktualisieren
 
-      // Hinzugefügt
-
       const tempDraftToSave = {
         ...orderDetailsForBackend,
         providerName: selectedProvider.companyName,
@@ -419,20 +374,18 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
       await setDoc(doc(db, 'temporaryJobDrafts', newTempJobDraftId), tempDraftToSave);
 
-      const response = await fetch('/api/create-payment-intent', {
+      // Escrow-Eintrag erstellen
+      const response = await fetch('/api/payment/escrow/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: totalPriceInCents,
-          jobPriceInCents: servicePriceInCents, // Der Basispreis, von dem die Gebühr berechnet wird. Muss mit `amount` übereinstimmen.
           currency: 'eur',
-          connectedAccountId: selectedProvider.stripeAccountId,
-          // platformFee wird serverseitig berechnet, daher hier nicht mehr senden (TRUST_AND_SUPPORT_FEE_EUR ist nur für die Client-Anzeige)
-          taskId: newTempJobDraftId, // Verwende die generierte ID als taskId für Stripe Metadata
-          firebaseUserId: currentUser.uid,
-          stripeCustomerId: userProfile.stripeCustomerId,
+          providerId: selectedProvider.id,
+          customerId: currentUser.uid,
+          taskId: newTempJobDraftId,
           orderDetails: orderDetailsForBackend,
-          billingDetails: billingDetailsForApi, // Hinzufügen von billingDetails auf Root-Ebene
+          billingDetails: billingDetailsForApi,
         }),
       });
 
@@ -443,7 +396,6 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
         );
       }
 
-      setClientSecret(data.clientSecret);
       setFinalTotalPriceInCents(totalPriceInCents);
       setCurrentStep('payment');
     } catch (err: unknown) {

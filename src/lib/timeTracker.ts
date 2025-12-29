@@ -2,11 +2,8 @@
 /**
  * TimeTracker - Stundenerfassung und Abrechnung
  * 
- * HINWEIS: Stripe-basierte Zahlungsmethoden sind DEPRECATED.
- * Das neue Escrow/Revolut-System wird für alle neuen Zahlungen verwendet.
- * 
- * Legacy-Methoden bleiben für bestehende Aufträge erhalten, werden aber nicht
- * mehr für neue Aufträge verwendet.
+ * Alle Zahlungen laufen über das Escrow/Revolut-System.
+ * Stripe wird NICHT mehr verwendet.
  */
 
 import {
@@ -584,11 +581,10 @@ export class TimeTracker {
    * ESCROW-SYSTEM: Genehmigte Stunden in Escrow autorisieren (Geld halten, nicht auszahlen)
    */
   static async authorizeAdditionalHoursEscrow(orderId: string): Promise<{
-    paymentIntentId: string;
+    escrowId: string;
     customerPays: number;
     companyReceives: number;
     platformFee: number;
-    clientSecret: string;
     escrowStatus: string;
   }> {
     try {
@@ -628,58 +624,28 @@ export class TimeTracker {
         throw new Error('No billable amount found');
       }
 
-      // Hole Kundendaten für Stripe Customer ID
-      const customerDoc = await getDoc(doc(db, 'users', orderData.customerFirebaseUid));
-      const customerData = customerDoc.data();
-      const customerStripeId = customerData?.stripeCustomerId;
+      // Berechne Platform Fee (4.5%)
+      const platformFee = Math.round(totalAmount * 0.045);
+      const companyReceives = totalAmount - platformFee;
 
-      if (!customerStripeId) {
-        throw new Error('Customer Stripe ID not found');
-      }
-
-      // Hole Anbieter Stripe Account ID
-      const providerDoc = await getDoc(doc(db, 'companies', orderData.selectedAnbieterId));
-      const providerData = providerDoc.data();
-      const providerStripeAccountId = providerData?.stripeConnectAccountId;
-
-      if (!providerStripeAccountId) {
-        throw new Error('Provider Stripe Connect Account ID not found');
-      }
-
-      // Erstelle Platform Hold PaymentIntent über unsere API
-      const response = await fetch('/api/bill-additional-hours', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          orderId,
-          approvedEntryIds: approvedEntries.map(e => e.id),
-          customerStripeId,
-          providerStripeAccountId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create Platform Hold PaymentIntent');
-      }
-
-      const paymentData = await response.json();
-
-      // Erstelle PlatformHoldPaymentIntent Eintrag
-      const platformHoldPaymentIntent = {
-        id: paymentData.paymentIntentId,
-        amount: paymentData.customerPays,
-        companyAmount: paymentData.companyReceives,
-        platformFee: paymentData.platformFee,
+      // Erstelle Escrow-Eintrag in Firestore
+      const escrowData = {
+        orderId,
+        providerId: orderData.selectedAnbieterId,
+        customerId: orderData.customerFirebaseUid,
+        amount: totalAmount,
+        currency: 'eur',
+        platformFeeAmount: platformFee,
+        providerAmount: companyReceives,
+        type: 'additional_hours',
         entryIds: approvedEntries.map(e => e.id),
-        heldAt: Timestamp.now(),
-        status: 'held' as const,
-        clientSecret: paymentData.clientSecret,
+        status: 'authorized',
+        createdAt: serverTimestamp(),
       };
 
-      // Markiere Einträge als platform-hold
+      const escrowRef = await addDoc(collection(db, 'escrows'), escrowData);
+
+      // Markiere Einträge als escrow-authorized
       const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
         if (
           entry.category === 'additional' &&
@@ -688,29 +654,28 @@ export class TimeTracker {
         ) {
           return {
             ...entry,
-            status: 'platform_held' as const,
-            platformHoldPaymentIntentId: paymentData.paymentIntentId,
-            platformHoldAt: Timestamp.now(),
-            platformHoldStatus: 'held' as const,
+            status: 'escrow_authorized' as const,
+            escrowId: escrowRef.id,
+            escrowAuthorizedAt: Timestamp.now(),
+            escrowStatus: 'authorized' as const,
           };
         }
         return entry;
       });
 
-      // Update den Auftrag mit Platform Hold-Daten (ohne platformHoldPaymentIntents für jetzt)
+      // Update den Auftrag mit Escrow-Daten
       await updateDoc(orderRef, {
         'timeTracking.timeEntries': updatedTimeEntries,
-        'timeTracking.status': 'platform_hold_pending',
+        'timeTracking.status': 'escrow_authorized',
         'timeTracking.lastUpdated': serverTimestamp(),
       });
 
       return {
-        paymentIntentId: paymentData.paymentIntentId,
-        customerPays: paymentData.customerPays,
-        companyReceives: paymentData.companyReceives,
-        platformFee: paymentData.platformFee,
-        clientSecret: paymentData.clientSecret,
-        escrowStatus: 'authorized', // Legacy compatibility
+        escrowId: escrowRef.id,
+        customerPays: totalAmount,
+        companyReceives,
+        platformFee,
+        escrowStatus: 'authorized',
       };
     } catch (error) {
       throw error;
@@ -874,15 +839,13 @@ export class TimeTracker {
   }
 
   /**
-   * Genehmigte Stunden in Stripe abrechnen (integriert in Auftrag) - LEGACY VERSION
-   * Diese Methode wird durch das Escrow-System ersetzt, bleibt aber für Rückwärtskompatibilität
+   * Genehmigte Stunden über das Escrow-System abrechnen
    */
   static async billApprovedHours(orderId: string): Promise<{
-    paymentIntentId: string;
+    escrowId: string;
     customerPays: number;
     companyReceives: number;
     platformFee: number;
-    clientSecret: string;
   }> {
     try {
       // Hole den Auftrag
@@ -899,8 +862,7 @@ export class TimeTracker {
         throw new Error('Time tracking not found');
       }
 
-      // Hole genehmigte zusätzliche Stunden (customer_approved UND billing_pending)
-      // billing_pending = bereits genehmigt aber Payment fehlgeschlagen/wiederholt
+      // Hole genehmigte zusätzliche Stunden
       const approvedEntries = orderData.timeTracking.timeEntries.filter(
         entry =>
           entry.category === 'additional' &&
@@ -920,167 +882,28 @@ export class TimeTracker {
         throw new Error('No billable amount found');
       }
 
-      // Hole Kundendaten für Stripe Customer ID
-      const customerDoc = await getDoc(doc(db, 'users', orderData.customerFirebaseUid));
-      const customerData = customerDoc.data();
-      const customerStripeId = customerData?.stripeCustomerId;
+      // Berechne Platform Fee (4.5%)
+      const platformFee = Math.round(totalAmount * 0.045);
+      const companyReceives = totalAmount - platformFee;
 
-      if (!customerStripeId) {
-        throw new Error('Customer Stripe ID not found');
-      }
+      // Erstelle Escrow-Eintrag in Firestore
+      const escrowData = {
+        orderId,
+        providerId: orderData.selectedAnbieterId,
+        customerId: orderData.customerFirebaseUid,
+        amount: totalAmount,
+        currency: 'eur',
+        platformFeeAmount: platformFee,
+        providerAmount: companyReceives,
+        type: 'additional_hours',
+        entryIds: approvedEntries.map(e => e.id),
+        status: 'pending',
+        createdAt: serverTimestamp(),
+      };
 
-      // Hole Anbieter Stripe Account ID
-      const providerDoc = await getDoc(doc(db, 'companies', orderData.selectedAnbieterId));
-      const providerData = providerDoc.data();
-      const providerStripeAccountId = providerData?.stripeConnectAccountId;
+      const escrowRef = await addDoc(collection(db, 'escrows'), escrowData);
 
-      if (!providerStripeAccountId) {
-        // Versuche auch in der users Collection zu suchen (Fallback für alte Daten)
-        const providerUserDoc = await getDoc(doc(db, 'users', orderData.selectedAnbieterId));
-        const providerUserData = providerUserDoc.data();
-        const fallbackStripeAccountId = providerUserData?.stripeAccountId;
-
-        // Falls Fallback verfügbar, verwende ihn
-        if (fallbackStripeAccountId) {
-          // Fortsetzung mit der gefundenen ID - Migration wird Server-seitig in der API behandelt
-          const providerStripeAccountIdFallback = fallbackStripeAccountId;
-
-          // Erstelle PaymentIntent über unsere API (mit Fallback ID)
-          const response = await fetch('/api/bill-additional-hours', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              orderId,
-              approvedEntryIds: approvedEntries.map(e => e.id),
-              customerStripeId,
-              providerStripeAccountId: providerStripeAccountIdFallback,
-            }),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-
-            // Spezielle Behandlung für Stripe Connect Probleme
-            if (
-              errorData.error?.includes('Stripe Connect') ||
-              errorData.error?.includes('account')
-            ) {
-              throw new Error(
-                `❌ PAYMENT SETUP ERFORDERLICH\n\n` +
-                  `Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n` +
-                  `Bitte kontaktieren Sie den Support für weitere Hilfe.\n\n` +
-                  `Technische Details: ${errorData.error}`
-              );
-            }
-
-            throw new Error(errorData.error || 'Failed to create PaymentIntent');
-          }
-
-          const paymentData = await response.json();
-
-          // Markiere NEUE Einträge als billing_pending, aktualisiere BEREITS billing_pending Einträge
-          const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
-            if (
-              entry.category === 'additional' &&
-              (entry.status === 'customer_approved' || entry.status === 'billing_pending')
-            ) {
-              return {
-                ...entry,
-                status: 'billing_pending' as const,
-                paymentIntentId: paymentData.paymentIntentId,
-                billingInitiatedAt:
-                  entry.status === 'billing_pending' && 'billingInitiatedAt' in entry
-                    ? entry.billingInitiatedAt
-                    : Timestamp.now(),
-              };
-            }
-            return entry;
-          });
-
-          // Berechne neue Statistiken
-          const totalBilledHours = updatedTimeEntries
-            .filter(entry => entry.status === 'billed' || entry.status === 'billing_pending')
-            .reduce((sum, entry) => sum + entry.hours, 0);
-
-          // Update den Auftrag
-          await updateDoc(orderRef, {
-            'timeTracking.timeEntries': updatedTimeEntries,
-            'timeTracking.totalBilledHours': totalBilledHours,
-            'timeTracking.status': 'billing_pending',
-            'timeTracking.lastUpdated': serverTimestamp(),
-            'timeTracking.billingData': {
-              paymentIntentId: paymentData.paymentIntentId,
-              customerPays: paymentData.customerPays,
-              companyReceives: paymentData.companyReceives,
-              platformFee: paymentData.platformFee,
-              initiatedAt: serverTimestamp(),
-              status: 'pending',
-            },
-          });
-
-          return {
-            paymentIntentId: paymentData.paymentIntentId,
-            customerPays: paymentData.customerPays,
-            companyReceives: paymentData.companyReceives,
-            platformFee: paymentData.platformFee,
-            clientSecret: paymentData.clientSecret,
-          };
-        }
-
-        throw new Error(
-          `❌ STRIPE CONNECT SETUP ERFORDERLICH\n\n` +
-            `Problem: Kein Stripe Connect Account für Provider gefunden.\n` +
-            `Provider ID: ${orderData.selectedAnbieterId}\n\n` +
-            `Lösungsschritte:\n` +
-            `1. Provider muss Stripe Connect Onboarding abschließen\n` +
-            `2. In companies/${orderData.selectedAnbieterId} sollte 'stripeConnectAccountId' vorhanden sein\n` +
-            `3. Account muss Status 'active' haben\n\n` +
-            `Für Details siehe Browser Console.`
-        );
-      }
-
-      // Erstelle PaymentIntent über unsere API
-      const response = await fetch('/api/bill-additional-hours', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          orderId,
-          approvedEntryIds: approvedEntries.map(e => e.id),
-          customerStripeId,
-          providerStripeAccountId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-
-        let errorData: any;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { error: errorText };
-        }
-
-        // Spezielle Behandlung für Stripe Connect Probleme
-        if (errorData.error?.includes('Stripe Connect') || errorData.error?.includes('account')) {
-          throw new Error(
-            `❌ PAYMENT SETUP ERFORDERLICH\n\n` +
-              `Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n` +
-              `Bitte kontaktieren Sie den Support für weitere Hilfe.\n\n` +
-              `Technische Details: ${errorData.error}`
-          );
-        }
-
-        throw new Error(errorData.error || 'Failed to create PaymentIntent');
-      }
-
-      const paymentData = await response.json();
-
-      // Markiere NEUE Einträge als billing_pending, aktualisiere BEREITS billing_pending Einträge
+      // Markiere Einträge als billed mit escrowId
       const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
         if (
           entry.category === 'additional' &&
@@ -1088,12 +911,9 @@ export class TimeTracker {
         ) {
           return {
             ...entry,
-            status: 'billing_pending' as const,
-            paymentIntentId: paymentData.paymentIntentId,
-            billingInitiatedAt:
-              entry.status === 'billing_pending' && 'billingInitiatedAt' in entry
-                ? entry.billingInitiatedAt
-                : Timestamp.now(),
+            status: 'billed' as const,
+            escrowId: escrowRef.id,
+            billedAt: Timestamp.now(),
           };
         }
         return entry;
@@ -1101,31 +921,30 @@ export class TimeTracker {
 
       // Berechne neue Statistiken
       const totalBilledHours = updatedTimeEntries
-        .filter(entry => entry.status === 'billed' || entry.status === 'billing_pending')
+        .filter(entry => entry.status === 'billed')
         .reduce((sum, entry) => sum + entry.hours, 0);
 
       // Update den Auftrag
       await updateDoc(orderRef, {
         'timeTracking.timeEntries': updatedTimeEntries,
         'timeTracking.totalBilledHours': totalBilledHours,
-        'timeTracking.status': 'billing_pending',
+        'timeTracking.status': 'billed',
         'timeTracking.lastUpdated': serverTimestamp(),
         'timeTracking.billingData': {
-          paymentIntentId: paymentData.paymentIntentId,
-          customerPays: paymentData.customerPays,
-          companyReceives: paymentData.companyReceives,
-          platformFee: paymentData.platformFee,
-          initiatedAt: serverTimestamp(),
-          status: 'pending',
+          escrowId: escrowRef.id,
+          customerPays: totalAmount,
+          companyReceives,
+          platformFee,
+          billedAt: serverTimestamp(),
+          status: 'completed',
         },
       });
 
       return {
-        paymentIntentId: paymentData.paymentIntentId,
-        customerPays: paymentData.customerPays,
-        companyReceives: paymentData.companyReceives,
-        platformFee: paymentData.platformFee,
-        clientSecret: paymentData.clientSecret,
+        escrowId: escrowRef.id,
+        customerPays: totalAmount,
+        companyReceives,
+        platformFee,
       };
     } catch (error) {
       throw error;
@@ -1521,177 +1340,6 @@ export class TimeTracker {
         'timeTracking.totalLoggedHours': totalLoggedHours,
         'timeTracking.lastUpdated': serverTimestamp(),
       });
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  /**
-   * Admin-Funktion: Migriert Stripe Account ID von users zu companies collection
-   */
-  static async migrateProviderStripeAccount(providerId: string): Promise<{
-    success: boolean;
-    message: string;
-    migratedAccountId?: string;
-  }> {
-    try {
-      // Hole beide Dokumente
-      const usersDoc = await getDoc(doc(db, 'users', providerId));
-      const companiesDoc = await getDoc(doc(db, 'companies', providerId));
-
-      if (!usersDoc.exists()) {
-        return {
-          success: false,
-          message: `Provider ${providerId} nicht in users-Collection gefunden`,
-        };
-      }
-
-      const usersData = usersDoc.data();
-      const stripeAccountId = usersData?.stripeAccountId;
-
-      if (!stripeAccountId) {
-        return {
-          success: false,
-          message: `Keine Stripe Account ID in users-Collection gefunden für Provider ${providerId}`,
-        };
-      }
-
-      // Prüfe ob companies bereits eine ID hat
-      const companiesData = companiesDoc.data();
-      if (companiesData?.stripeConnectAccountId) {
-        return {
-          success: false,
-          message: `Companies-Collection hat bereits stripeConnectAccountId: ${companiesData.stripeConnectAccountId}`,
-        };
-      }
-
-      // Migriere zur companies-Collection
-      const migrationData = {
-        stripeConnectAccountId: stripeAccountId,
-        stripeConnectStatus: usersData.stripeAccountDetailsSubmitted
-          ? 'details_submitted'
-          : 'pending',
-        migratedFromUsers: true,
-        migratedAt: serverTimestamp(),
-        companyName: usersData.companyName || companiesData?.companyName || 'Unbekannt',
-      };
-
-      if (companiesDoc.exists()) {
-        await updateDoc(doc(db, 'companies', providerId), migrationData);
-      } else {
-        // Erstelle companies-Dokument falls nicht vorhanden
-        await updateDoc(doc(db, 'companies', providerId), {
-          ...migrationData,
-          createdAt: serverTimestamp(),
-          createdByMigration: true,
-        });
-      }
-
-      return {
-        success: true,
-        message: `Stripe Account ID ${stripeAccountId} erfolgreich migriert`,
-        migratedAccountId: stripeAccountId,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `Fehler bei der Migration: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
-      };
-    }
-  }
-
-  /**
-   * Diagnostische Funktion für Provider Stripe Connect Status
-   */
-  static async diagnoseProviderStripeSetup(providerId: string): Promise<{
-    hasStripeAccount: boolean;
-    accountSource: 'companies' | 'users' | 'none';
-    stripeAccountId?: string;
-    status?: string;
-    recommendations: string[];
-    debugInfo: any;
-  }> {
-    try {
-      // Prüfe companies collection
-      const companiesDoc = await getDoc(doc(db, 'companies', providerId));
-      const companiesData = companiesDoc.data();
-
-      // Prüfe users collection (Fallback)
-      const usersDoc = await getDoc(doc(db, 'users', providerId));
-      const usersData = usersDoc.data();
-
-      const debugInfo = {
-        providerId,
-        companies: {
-          exists: companiesDoc.exists(),
-          stripeConnectAccountId: companiesData?.stripeConnectAccountId,
-          stripeConnectStatus: companiesData?.stripeConnectStatus,
-          companyName: companiesData?.companyName,
-        },
-        users: {
-          exists: usersDoc.exists(),
-          stripeAccountId: usersData?.stripeAccountId,
-          user_type: usersData?.user_type,
-          stripeAccountDetailsSubmitted: usersData?.stripeAccountDetailsSubmitted,
-          stripeAccountPayoutsEnabled: usersData?.stripeAccountPayoutsEnabled,
-        },
-      };
-
-      let hasStripeAccount = false;
-      let accountSource: 'companies' | 'users' | 'none' = 'none';
-      let stripeAccountId: string | undefined;
-      let status: string | undefined;
-      const recommendations: string[] = [];
-
-      // Prüfe companies collection zuerst
-      if (companiesData?.stripeConnectAccountId) {
-        hasStripeAccount = true;
-        accountSource = 'companies';
-        stripeAccountId = companiesData.stripeConnectAccountId;
-        status = companiesData.stripeConnectStatus || 'unknown';
-      }
-      // Fallback auf users collection
-      else if (usersData?.stripeAccountId) {
-        hasStripeAccount = true;
-        accountSource = 'users';
-        stripeAccountId = usersData.stripeAccountId;
-        status = usersData.stripeAccountDetailsSubmitted ? 'details_submitted' : 'pending';
-
-        recommendations.push(
-          '✅ Stripe Account in users-Collection gefunden - Migration zu companies-Collection empfohlen'
-        );
-      }
-
-      // Generiere Empfehlungen
-      if (!hasStripeAccount) {
-        recommendations.push('❌ Kein Stripe Connect Account gefunden');
-        recommendations.push('🔧 Provider muss Registrierung abschließen: /register/company/step5');
-        recommendations.push(
-          '📋 Oder Admin muss manuell stripeConnectAccountId in companies-Collection hinzufügen'
-        );
-      } else {
-        if (accountSource === 'users') {
-          recommendations.push(
-            '🔄 Migration der Stripe Account ID zur companies-Collection erforderlich'
-          );
-        }
-
-        if (status === 'pending' || status === 'unknown') {
-          recommendations.push('⏳ Stripe Connect Onboarding nicht abgeschlossen');
-          recommendations.push('🔗 Provider muss Account Link vervollständigen');
-        } else if (status === 'details_submitted' || status === 'active') {
-          recommendations.push('✅ Stripe Connect Account ist aktiv');
-        }
-      }
-
-      return {
-        hasStripeAccount,
-        accountSource,
-        stripeAccountId,
-        status,
-        recommendations,
-        debugInfo,
-      };
     } catch (error) {
       throw error;
     }

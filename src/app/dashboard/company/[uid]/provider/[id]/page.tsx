@@ -280,47 +280,6 @@ export default function CompanyProviderDetailPage() {
       return;
     }
 
-    // Automatische Erstellung von BEIDEN Stripe-Profilen wenn sie fehlen
-    if (!userProfile.stripeCustomerId || !userProfile.stripeAccountId) {
-      try {
-        const createProfilesResponse = await fetch('/api/create-company-stripe-profiles', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            companyName: userProfile.companyName || userProfile.displayName || 'Unternehmen',
-            email: userProfile.email,
-            uid: userProfile.uid,
-            user_type: 'firma',
-          }),
-        });
-
-        if (!createProfilesResponse.ok) {
-          const errorData = await createProfilesResponse.json();
-          throw new Error(errorData.error || 'Stripe-Profile-Erstellung fehlgeschlagen');
-        }
-
-        const profileData = await createProfilesResponse.json();
-
-        // Update das lokale userProfile mit den neuen IDs
-        if (profileData.stripeCustomerId) {
-          userProfile.stripeCustomerId = profileData.stripeCustomerId;
-        }
-        if (profileData.stripeAccountId) {
-          userProfile.stripeAccountId = profileData.stripeAccountId;
-        }
-      } catch (profileError) {
-        const setupPayment = confirm(
-          'Ihre Zahlungsprofile konnten nicht automatisch erstellt werden. Möchten Sie jetzt zu den Einstellungen gehen, um die Zahlungsmethoden manuell einzurichten?'
-        );
-        if (setupPayment) {
-          router.push(`/dashboard/company/${companyUid}/settings`);
-        }
-        return;
-      }
-    }
-
     // Prüfe ob Adressdaten vorhanden sind
     if (!userProfile.savedAddresses || userProfile.savedAddresses.length === 0) {
       const setupAddress = confirm(
@@ -418,7 +377,7 @@ export default function CompanyProviderDetailPage() {
         addressName: defaultAddress?.name || 'Standard-Adresse',
       };
 
-      // Billing Details für Stripe - verwende gespeicherte Adresse oder Standardwerte
+      // Billing Details für Rechnung
       const billingDetailsForApi = {
         name:
           `${userProfile.firstname || ''} ${userProfile.lastname || ''}`.trim() ||
@@ -446,19 +405,16 @@ export default function CompanyProviderDetailPage() {
 
       await setDoc(doc(db, 'temporaryJobDrafts', tempJobDraftId), tempDraftToSave);
 
-      // Stripe Payment Intent erstellen
-
-      const response = await fetch('/api/create-payment-intent', {
+      // Escrow-Eintrag erstellen
+      const response = await fetch('/api/payment/escrow/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: totalPriceInCents,
-          jobPriceInCents: servicePriceInCents,
           currency: 'eur',
-          connectedAccountId: provider.stripeAccountId || '',
+          providerId: provider.id,
+          customerId: firebaseUser.uid,
           taskId: tempJobDraftId,
-          firebaseUserId: firebaseUser.uid,
-          stripeCustomerId: userProfile.stripeCustomerId,
           orderDetails: orderDetailsForBackend,
           billingDetails: billingDetailsForApi,
         }),
@@ -471,9 +427,9 @@ export default function CompanyProviderDetailPage() {
         );
       }
 
-      // Erfolgreiche Buchung mit Payment Intent
+      // Erfolgreiche Buchung mit Escrow
       alert(
-        `Buchungsanfrage erstellt!\n\nProvider: ${provider.companyName || provider.userName}\nDatum: ${dateFromFormatted}\nUhrzeit: ${time}\nDauer: ${durationString}\nGesamtpreis: €${(totalPriceInCents / 100).toFixed(2)}\n\nDie Zahlung wird über Stripe abgewickelt.`
+        `Buchungsanfrage erstellt!\n\nProvider: ${provider.companyName || provider.userName}\nDatum: ${dateFromFormatted}\nUhrzeit: ${time}\nDauer: ${durationString}\nGesamtpreis: €${(totalPriceInCents / 100).toFixed(2)}\n\nDie Zahlung wird über das Escrow-System abgewickelt.`
       );
 
       // Weiterleitung zur Zahlungsseite oder zurück zum Dashboard
