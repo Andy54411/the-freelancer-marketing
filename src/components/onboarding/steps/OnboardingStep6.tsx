@@ -91,20 +91,27 @@ export default function OnboardingStep6({ companyUid }: OnboardingStep6Props) {
         const companyDoc = await getDoc(doc(db, 'companies', uid));
         if (companyDoc.exists()) {
           const data = companyDoc.data();
+          
+          // Prüfe verschiedene mögliche Speicherorte für Adressdaten
+          // 1. Direkt in address
+          // 2. In step1.address (Onboarding-Format)
+          // 3. Als Top-Level Felder
+          const addressData = data.address || data.step1?.address || {
+            street: data.street || data.step1?.address?.street,
+            zip: data.zip || data.postalCode || data.step1?.address?.postalCode,
+            city: data.city || data.step1?.address?.city,
+            country: data.country || data.step1?.address?.country,
+          };
+          
           setCompanyData({
-            companyName: data.companyName || data.name,
-            legalForm: data.legalForm,
-            address: data.address || {
-              street: data.street,
-              zip: data.zip || data.postalCode,
-              city: data.city,
-              country: data.country,
-            },
-            contactPerson: data.contactPerson,
+            companyName: data.companyName || data.name || data.step1?.companyName,
+            legalForm: data.legalForm || data.step1?.legalForm,
+            address: addressData,
+            contactPerson: data.contactPerson || data.step2?.contactPerson,
             hourlyRate: data.hourlyRate,
             taxNumber: data.taxNumber,
             vatId: data.vatId,
-            companyRegister: data.companyRegister,
+            companyRegister: data.companyRegister || data.step1?.companyRegister,
           });
         }
       } catch (error) {
