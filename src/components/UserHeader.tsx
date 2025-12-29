@@ -416,10 +416,8 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     // Initial fetch
     fetchUnreadCount();
 
-    // Poll every 2 minutes (andere Komponenten pollen auch)
-    const interval = setInterval(fetchUnreadCount, 120000);
-
-    return () => clearInterval(interval);
+    // Kein Polling mehr - spart API-Kosten
+    // E-Mails werden nur bei Seitenwechsel oder manuellem Refresh aktualisiert
   }, [currentUid, currentUser?.uid]);
 
   useEffect(() => {

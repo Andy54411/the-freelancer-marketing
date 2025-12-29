@@ -805,15 +805,11 @@ export default function CompanySidebar({
     const isEmailPage = pathname?.includes('/emails');
 
     if (uid && isEmailPage) {
-      // Initial load
+      // Initial load nur auf E-Mail-Seiten
       loadUnreadCounts();
-
-      // Auto-refresh every 60 seconds only on email pages
-      const interval = setInterval(loadUnreadCounts, 120000);
-      return () => {
-        isMounted = false;
-        clearInterval(interval);
-      };
+      
+      // Kein Polling mehr - spart API-Kosten
+      // E-Mails werden nur bei Seitenwechsel aktualisiert
     }
 
     return () => {

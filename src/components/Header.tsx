@@ -234,10 +234,8 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
     // Initial fetch
     fetchUnreadCount();
 
-    // Poll every 2 minutes (andere Komponenten pollen auch)
-    const interval = setInterval(fetchUnreadCount, 120000);
-
-    return () => clearInterval(interval);
+    // Kein Polling mehr - spart API-Kosten
+    // E-Mails werden nur bei Seitenwechsel oder manuellem Refresh aktualisiert
   }, [company?.uid, currentUser?.uid]);
 
   const loadProfilePictureFromStorage = useCallback(async (uid: string) => {
