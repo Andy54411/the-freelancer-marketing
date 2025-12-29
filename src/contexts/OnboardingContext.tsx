@@ -495,9 +495,18 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (stepData[4]?.maxTravelDistance)
         companyUpdates.maxTravelDistance = Number(stepData[4].maxTravelDistance);
 
-      // Step 5: Finale Bestätigung
-      if (stepData[5]?.documentsCompleted !== undefined)
-        companyUpdates.documentsCompleted = Boolean(stepData[5].documentsCompleted);
+      // Step 5: E-Mail-Verbindung
+      if (stepData[5]?.emailType) companyUpdates.emailType = String(stepData[5].emailType);
+      if (stepData[5]?.gmailConnected !== undefined)
+        companyUpdates.gmailConnected = Boolean(stepData[5].gmailConnected);
+      if (stepData[5]?.gmailEmail) companyUpdates.gmailEmail = String(stepData[5].gmailEmail);
+      if (stepData[5]?.taskiloEmailConnected !== undefined)
+        companyUpdates.taskiloEmailConnected = Boolean(stepData[5].taskiloEmailConnected);
+      if (stepData[5]?.taskiloEmail) companyUpdates.taskiloEmail = String(stepData[5].taskiloEmail);
+
+      // Step 6: Finale Bestätigung
+      if (stepData[6]?.documentsCompleted !== undefined)
+        companyUpdates.documentsCompleted = Boolean(stepData[6].documentsCompleted);
 
       // Onboarding completion metadata
       companyUpdates.onboardingCompleted = true;
@@ -513,6 +522,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (stepData[3]) companyUpdates.step3 = stepData[3];
       if (stepData[4]) companyUpdates.step4 = stepData[4];
       if (stepData[5]) companyUpdates.step5 = stepData[5];
+      if (stepData[6]) companyUpdates.step6 = stepData[6];
 
       // Update companies document mit allen Onboarding-Daten
 
