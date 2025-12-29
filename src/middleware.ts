@@ -171,7 +171,8 @@ export default async function middleware(request: NextRequest) {
         accessType: 'admin_blocked',
         reason: 'missing_token'
       });
-      return NextResponse.redirect(new URL('/dashboard/admin/login', request.url));
+      // Korrekte Admin-Login-Route ist /admin/login, nicht /dashboard/admin/login
+      return NextResponse.redirect(new URL('/admin/login', request.url));
     }
     
     logMiddleware('Admin Dashboard Zugriff erlaubt', request, {
