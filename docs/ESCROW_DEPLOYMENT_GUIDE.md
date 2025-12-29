@@ -57,53 +57,35 @@ Deployed Files:
 
 ---
 
-## ⏳ OPTIONAL: Hetzner Backend (für echte Revolut-Auszahlungen)
+## ~~Hetzner Backend~~ ✅ ERLEDIGT
 
-Das Payment-Backend auf mail.taskilo.de für echte Revolut-Auszahlungen.
+Das Payment-Backend auf mail.taskilo.de ist vollständig konfiguriert:
+- Docker Container läuft auf Port 3100
+- Nginx Proxy leitet `/api/payment/` weiter
+- Revolut API funktioniert
 
-```bash
-# SSH auf Hetzner Server
-ssh root@mail.taskilo.de
-
-cd /app/webmail-proxy
-git pull origin main
-pnpm install
-pnpm build
-pm2 restart webmail-proxy
-```
-
-**Benötigte Umgebungsvariablen auf Hetzner:**
-```env
-REVOLUT_CLIENT_ID=xxx
-REVOLUT_ENVIRONMENT=sandbox  # oder 'production'
-REVOLUT_CERTS_DIR=/app/certs/revolut
-PAYMENT_API_KEY=xxx
-```
-
-**Revolut Zertifikate:**
-Die Transport-Zertifikate müssen in `/app/certs/revolut/` liegen:
-- `transport.pem`
-- `private.key`
+**Konfigurierte Umgebungsvariablen:**
+- [x] REVOLUT_CLIENT_ID
+- [x] REVOLUT_ENVIRONMENT=production
+- [x] REVOLUT_ACCESS_TOKEN
+- [x] REVOLUT_REFRESH_TOKEN
+- [x] Alle Zertifikate in `/opt/taskilo/webmail-proxy/certs/revolut/`
 
 ---
 
-## Deployment Commands (Quick Reference)
+## Quick Reference Commands
 
 ```bash
-# 1. Alles auf einmal (außer Hetzner)
+# Firebase Datenbank bereinigen (für Tests)
 cd /Users/andystaudinger/Tasko
+npx tsx scripts/cleanup-firebase.ts
 
-# Firestore Rules + Indexes
-firebase deploy --only firestore
+# Hetzner Container neustarten
+ssh root@mail.taskilo.de "cd /opt/taskilo/webmail-proxy && docker compose restart webmail-proxy"
 
-# Firebase Functions (nur Escrow-relevante)
-cd firebase_functions && pnpm build && cd ..
-firebase deploy --only functions:scheduledAutoPayouts,functions:triggerAutoPayouts,functions:scheduledClearingRelease,functions:triggerClearingReleaseManually
-
-# Vercel (automatisch bei git push, oder manuell)
-git add -A
-git commit -m "Deploy Escrow System"
-git push origin main
+# Revolut API testen
+curl -s -H "X-API-Key: 2b5f0cfb074fb7eac0eaa3a7a562ba0a390e2efd0b115d6fa317e932e609e076" \
+  https://mail.taskilo.de/api/payment/accounts | jq .
 ```
 
 ---
@@ -140,21 +122,21 @@ Nach Deployment:
 
 ---
 
-## Environment Variables Checklist
+## Environment Variables ✅ ALLES KONFIGURIERT
 
 ### Vercel (Production)
-- [x] NEXT_PUBLIC_FIREBASE_* (bereits konfiguriert)
-- [x] PAYMENT_BACKEND_URL=https://mail.taskilo.de (nicht benötigt für erste Tests)
-- [x] WEBMAIL_API_KEY (nicht benötigt für erste Tests)
+- [x] NEXT_PUBLIC_FIREBASE_*
+- [x] REVOLUT_CLIENT_ID
+- [x] REVOLUT_ENVIRONMENT=production
+- [x] REVOLUT_PRIVATE_KEY (Base64)
+- [x] WEBMAIL_API_KEY
 
-### Firebase Functions
-- [x] PAYMENT_BACKEND_URL (nicht benötigt für erste Tests)
-- [x] PAYMENT_API_KEY (nicht benötigt für erste Tests)
-
-### Hetzner (mail.taskilo.de) - OPTIONAL
-- [ ] REVOLUT_CLIENT_ID
-- [ ] REVOLUT_ENVIRONMENT
-- [ ] REVOLUT_CERTS_DIR
+### Hetzner (mail.taskilo.de)
+- [x] REVOLUT_CLIENT_ID
+- [x] REVOLUT_ENVIRONMENT=production
+- [x] REVOLUT_ACCESS_TOKEN
+- [x] REVOLUT_REFRESH_TOKEN
+- [x] Alle Zertifikate
 
 ---
 
