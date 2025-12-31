@@ -7,6 +7,12 @@ import { db } from '@/firebase/server';
  */
 export async function GET(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.redirect(
+        `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent('Database not available')}`
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const code = searchParams.get('code');
     const state = searchParams.get('state');

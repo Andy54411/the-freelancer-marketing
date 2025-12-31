@@ -115,12 +115,23 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
 
   // Tickets laden
   const loadTickets = async () => {
-    if (!userEmail) return;
-
     try {
-      const response = await fetch(
-        `/api/company/tickets?customerEmail=${encodeURIComponent(userEmail)}`
-      );
+      // Lade Tickets sowohl nach companyId als auch nach customerEmail
+      const params = new URLSearchParams();
+      if (uid) {
+        params.append('companyId', uid);
+      }
+      if (userEmail) {
+        params.append('customerEmail', userEmail);
+      }
+
+      // Mindestens ein Parameter muss vorhanden sein
+      if (!uid && !userEmail) {
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(`/api/company/tickets?${params.toString()}`);
 
       if (response.ok) {
         const data = await response.json();
@@ -138,8 +149,11 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
   }, [uid, user]);
 
   useEffect(() => {
-    loadTickets();
-  }, [userEmail]);
+    // Lade Tickets wenn uid verfügbar ist (auch ohne Email)
+    if (uid) {
+      loadTickets();
+    }
+  }, [uid, userEmail]);
 
   // Neues Ticket erstellen
   const createTicket = async () => {

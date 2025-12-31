@@ -16,16 +16,35 @@ async function verifyAdminAuth(
     const cookieStore = await cookies();
     const adminToken = cookieStore.get('taskilo_admin_session')?.value;
 
+    console.log('[APPROVAL DEBUG] Cookie check:', {
+      hasCookie: !!adminToken,
+      cookieLength: adminToken?.length || 0,
+      allCookies: cookieStore.getAll().map(c => c.name),
+    });
+
     if (adminToken) {
       try {
         const { payload } = await jwtVerify(adminToken, JWT_SECRET);
         const decoded = payload as any;
-        if (decoded.role === 'admin') {
-          return { isValid: true, userId: decoded.userId };
+        console.log('[APPROVAL DEBUG] JWT verified:', {
+          role: decoded.role,
+          userId: decoded.userId,
+          exp: decoded.exp,
+          iat: decoded.iat,
+        });
+        if (decoded.role === 'admin' || decoded.role === 'master-admin') {
+          return { isValid: true, userId: decoded.userId || decoded.sub };
         }
-      } catch (error) {}
+        console.log('[APPROVAL DEBUG] Role is not admin:', decoded.role);
+      } catch (jwtError) {
+        console.error('[APPROVAL DEBUG] JWT verification failed:', jwtError);
+      }
+    } else {
+      console.log('[APPROVAL DEBUG] No admin cookie found');
     }
-  } catch (error) {}
+  } catch (error) {
+    console.error('[APPROVAL DEBUG] Error in verifyAdminAuth:', error);
+  }
 
   return { isValid: false, error: 'Keine gültige Admin-Authentifizierung gefunden' };
 }

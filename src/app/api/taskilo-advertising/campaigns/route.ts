@@ -10,6 +10,13 @@ import { db } from '@/firebase/server';
  */
 export async function GET(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const includeMetrics = searchParams.get('metrics') !== 'false';
@@ -176,6 +183,13 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { companyId, name, type, budget, biddingStrategy, targeting, schedule, creatives } = body;
 

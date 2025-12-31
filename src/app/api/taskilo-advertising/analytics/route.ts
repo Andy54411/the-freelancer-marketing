@@ -10,6 +10,13 @@ import { db } from '@/firebase/server';
  */
 export async function GET(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const startDate = searchParams.get('startDate') || '2024-01-01';

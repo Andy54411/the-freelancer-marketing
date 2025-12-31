@@ -5,6 +5,13 @@ import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { companyId } = body;
 
@@ -19,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Lösche finAPI-Daten aus der Company-Collection
-    const companyRef = db!.collection('companies').doc(companyId);
+    const companyRef = db.collection('companies').doc(companyId);
     const companyDoc = await companyRef.get();
 
     if (!companyDoc.exists) {
@@ -40,7 +47,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Lösche alle finAPI-Sessions für diese Company
-    const sessionsQuery = db!.collection('finapi_sessions');
+    const sessionsQuery = db.collection('finapi_sessions');
 
     const sessionsSnapshot = await sessionsQuery.get();
     const deletePromises = sessionsSnapshot.docs.map(doc => doc.ref.delete());
@@ -53,7 +60,7 @@ export async function POST(request: NextRequest) {
     await Promise.all(disconnectDeletePromises);
 
     // Füge ein Log-Eintrag hinzu für die Trennung
-    await db!.collection('finapi_disconnections').add({
+    await db.collection('finapi_disconnections').add({
       companyId,
       disconnectedAt: new Date().toISOString(),
       reason: 'user_initiated',

@@ -1170,7 +1170,7 @@ export default function SchedulePage({ params }: SchedulePageProps) {
                               {employee.firstName} {employee.lastName}
                             </span>
                             {employee.isShiftLeader && (
-                              <Key className="h-3 w-3 text-amber-500" title="Schichtleiter" />
+                              <Key className="h-3 w-3 text-amber-500" aria-label="Schichtleiter" />
                             )}
                           </div>
                           <div className="text-xs text-gray-500 truncate">
@@ -1247,7 +1247,7 @@ export default function SchedulePage({ params }: SchedulePageProps) {
                             {employee.firstName} {employee.lastName}
                           </span>
                           {employee.isShiftLeader && (
-                            <Key className="h-3 w-3 text-amber-500" title="Schichtleiter" />
+                            <Key className="h-3 w-3 text-amber-500" aria-label="Schichtleiter" />
                           )}
                         </div>
                         <div className="text-xs text-gray-500 truncate">
@@ -1426,7 +1426,7 @@ export default function SchedulePage({ params }: SchedulePageProps) {
                             <div className="flex items-center gap-1">
                               <span className="font-medium">{employee?.firstName} {employee?.lastName}</span>
                               {employee?.isShiftLeader && (
-                                <Key className="h-3 w-3 text-amber-500" title="Schichtleiter" />
+                                <Key className="h-3 w-3 text-amber-500" aria-label="Schichtleiter" />
                               )}
                             </div>
                           </div>

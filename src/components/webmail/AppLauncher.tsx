@@ -43,6 +43,7 @@ interface AdminAppItem {
 // Taskilo Brand Colors
 const TEAL_100 = '#ccfbf1';
 const TEAL_200 = '#99f6e4';
+const TEAL_300 = '#5eead4';
 const TEAL_400 = '#2dd4bf';
 const TEAL_500 = '#14b8a6';
 const TEAL_600 = '#0d9488';
@@ -283,14 +284,204 @@ const apps: AppItem[] = [
 interface AppLauncherProps {
   className?: string;
   hasTheme?: boolean;
+  companyId?: string; // Wenn gesetzt, zeige Company-Dashboard Apps
+  isDarkMode?: boolean; // Expliziter Dark Mode Wert vom Parent
 }
 
-export function AppLauncher({ className, hasTheme = false }: AppLauncherProps) {
+// Company Dashboard Apps - alle wichtigen Apps aus CompanySidebar (ohne E-Mail, da in Taskilo Apps)
+const getCompanyApps = (companyId: string): AppItem[] => [
+  {
+    name: 'Übersicht',
+    href: `/dashboard/company/${companyId}`,
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        <rect x="4" y="4" width="18" height="18" rx="3" fill={TEAL_600}/>
+        <rect x="26" y="4" width="18" height="18" rx="3" fill={TEAL_500}/>
+        <rect x="4" y="26" width="18" height="18" rx="3" fill={TEAL_500}/>
+        <rect x="26" y="26" width="18" height="18" rx="3" fill={TEAL_400}/>
+      </svg>
+    ),
+  },
+  {
+    name: 'Tasker',
+    href: `/dashboard/company/${companyId}/orders/overview`,
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        <rect x="6" y="8" width="36" height="32" rx="4" fill={TEAL_600}/>
+        <rect x="12" y="16" width="24" height="3" rx="1.5" fill={TEAL_100}/>
+        <rect x="12" y="23" width="18" height="3" rx="1.5" fill={TEAL_200}/>
+        <rect x="12" y="30" width="20" height="3" rx="1.5" fill={TEAL_100}/>
+      </svg>
+    ),
+  },
+  {
+    name: 'Kalender',
+    href: `/dashboard/company/${companyId}/calendar`,
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        <rect x="6" y="10" width="36" height="32" rx="4" fill={TEAL_600}/>
+        <rect x="6" y="10" width="36" height="10" rx="4" fill={TEAL_800}/>
+        <rect x="6" y="16" width="36" height="4" fill={TEAL_800}/>
+        <rect x="14" y="6" width="4" height="10" rx="2" fill={TEAL_700}/>
+        <rect x="30" y="6" width="4" height="10" rx="2" fill={TEAL_700}/>
+        <text x="24" y="34" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold" fontFamily="system-ui">
+          {new Date().getDate()}
+        </text>
+      </svg>
+    ),
+  },
+  {
+    name: 'Buchhaltung',
+    href: `/dashboard/company/${companyId}/finance/invoices`,
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        <rect x="8" y="6" width="32" height="36" rx="4" fill={TEAL_600}/>
+        <rect x="14" y="14" width="20" height="2" rx="1" fill={TEAL_100}/>
+        <rect x="14" y="20" width="16" height="2" rx="1" fill={TEAL_200}/>
+        <rect x="14" y="26" width="18" height="2" rx="1" fill={TEAL_100}/>
+        <circle cx="34" cy="34" r="8" fill={TEAL_400}/>
+        <text x="34" y="38" textAnchor="middle" fill={TEAL_800} fontSize="10" fontWeight="bold">$</text>
+      </svg>
+    ),
+  },
+  {
+    name: 'Geschäftspartner',
+    href: `/dashboard/company/${companyId}/customers`,
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        <circle cx="18" cy="14" r="8" fill={TEAL_600}/>
+        <path d="M6 38c0-7 5.4-12 12-12s12 5 12 12" fill={TEAL_500}/>
+        <circle cx="32" cy="18" r="6" fill={TEAL_500}/>
+        <path d="M24 42c0-5 4-9 8-9s8 4 8 9" fill={TEAL_400}/>
+      </svg>
+    ),
+  },
+  {
+    name: 'WhatsApp',
+    href: `/dashboard/company/${companyId}/whatsapp`,
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        <circle cx="24" cy="24" r="20" fill={TEAL_600}/>
+        <path d="M24 8c-8.8 0-16 7.2-16 16 0 2.8.7 5.5 2.1 7.9l-2.2 8.1 8.3-2.2c2.3 1.2 4.9 1.9 7.8 1.9 8.8 0 16-7.2 16-16s-7.2-16-16-16zm0 28c-2.3 0-4.5-.6-6.4-1.7l-.5-.3-4.8 1.3 1.3-4.7-.3-.5c-1.2-2-1.8-4.3-1.8-6.6 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 12-12 12z" fill={TEAL_100}/>
+      </svg>
+    ),
+  },
+  {
+    name: 'Banking',
+    href: `/dashboard/company/${companyId}/banking`,
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        <path d="M24 4L4 16v4h40v-4L24 4z" fill={TEAL_700}/>
+        <rect x="8" y="20" width="4" height="16" fill={TEAL_600}/>
+        <rect x="16" y="20" width="4" height="16" fill={TEAL_500}/>
+        <rect x="24" y="20" width="4" height="16" fill={TEAL_600}/>
+        <rect x="32" y="20" width="4" height="16" fill={TEAL_500}/>
+        <rect x="4" y="36" width="40" height="6" rx="2" fill={TEAL_700}/>
+      </svg>
+    ),
+  },
+  {
+    name: 'Lagerbestand',
+    href: `/dashboard/company/${companyId}/finance/inventory`,
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        <rect x="4" y="20" width="16" height="24" rx="2" fill={TEAL_600}/>
+        <rect x="16" y="12" width="16" height="32" rx="2" fill={TEAL_500}/>
+        <rect x="28" y="4" width="16" height="40" rx="2" fill={TEAL_400}/>
+        <rect x="8" y="24" width="8" height="2" fill={TEAL_100}/>
+        <rect x="20" y="16" width="8" height="2" fill={TEAL_100}/>
+        <rect x="32" y="8" width="8" height="2" fill={TEAL_100}/>
+      </svg>
+    ),
+  },
+  {
+    name: 'Advertising',
+    href: `/dashboard/company/${companyId}/taskilo-advertising`,
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        <rect x="4" y="8" width="40" height="28" rx="4" fill={TEAL_600}/>
+        <path d="M12 28l8-10 6 6 10-12" stroke={TEAL_100} strokeWidth="3" fill="none" strokeLinecap="round"/>
+        <circle cx="36" cy="12" r="3" fill={TEAL_300}/>
+        <rect x="8" y="38" width="8" height="4" rx="1" fill={TEAL_500}/>
+        <rect x="20" y="38" width="8" height="4" rx="1" fill={TEAL_500}/>
+        <rect x="32" y="38" width="8" height="4" rx="1" fill={TEAL_500}/>
+      </svg>
+    ),
+  },
+  {
+    name: 'Personal',
+    href: `/dashboard/company/${companyId}/personal/employees`,
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        <circle cx="16" cy="12" r="7" fill={TEAL_600}/>
+        <circle cx="32" cy="12" r="7" fill={TEAL_500}/>
+        <path d="M4 36c0-6 5-10 12-10s12 4 12 10" fill={TEAL_600}/>
+        <path d="M20 40c0-6 5-10 12-10s12 4 12 10" fill={TEAL_500}/>
+        <circle cx="24" cy="26" r="5" fill={TEAL_400}/>
+      </svg>
+    ),
+  },
+  {
+    name: 'Recruiting',
+    href: `/dashboard/company/${companyId}/recruiting`,
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        <circle cx="20" cy="16" r="10" fill={TEAL_600}/>
+        <path d="M4 42c0-8 6.5-14 16-14s16 6 16 14" fill={TEAL_500}/>
+        <circle cx="36" cy="20" r="8" fill="none" stroke={TEAL_400} strokeWidth="4"/>
+        <path d="M42 26l6 6" stroke={TEAL_400} strokeWidth="4" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  {
+    name: 'Workspace',
+    href: `/dashboard/company/${companyId}/workspace`,
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        <rect x="4" y="10" width="40" height="28" rx="4" fill={TEAL_600}/>
+        <rect x="8" y="14" width="16" height="10" rx="2" fill={TEAL_100}/>
+        <rect x="8" y="26" width="16" height="8" rx="2" fill={TEAL_200}/>
+        <rect x="26" y="14" width="14" height="20" rx="2" fill={TEAL_300}/>
+      </svg>
+    ),
+  },
+  {
+    name: 'Support',
+    href: `/dashboard/company/${companyId}/support`,
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        <circle cx="24" cy="24" r="20" fill={TEAL_600}/>
+        <circle cx="24" cy="24" r="12" fill={TEAL_100}/>
+        <circle cx="24" cy="24" r="6" fill={TEAL_700}/>
+        <rect x="22" y="4" width="4" height="8" fill={TEAL_700}/>
+        <rect x="22" y="36" width="4" height="8" fill={TEAL_700}/>
+        <rect x="4" y="22" width="8" height="4" fill={TEAL_700}/>
+        <rect x="36" y="22" width="8" height="4" fill={TEAL_700}/>
+      </svg>
+    ),
+  },
+  {
+    name: 'Einstellungen',
+    href: `/dashboard/company/${companyId}/settings`,
+    icon: (
+      <svg viewBox="0 0 48 48" className="w-12 h-12">
+        <path d="M24 4l4 4 6-2 2 6 6 2-2 6 4 4-4 4 2 6-6 2-2 6-6-2-4 4-4-4-6 2-2-6-6-2 2-6-4-4 4-4-2-6 6-2 2-6 6 2z" fill={TEAL_600}/>
+        <circle cx="24" cy="24" r="8" fill={TEAL_100}/>
+        <circle cx="24" cy="24" r="4" fill={TEAL_700}/>
+      </svg>
+    ),
+  },
+];
+
+export function AppLauncher({ className, hasTheme = false, companyId, isDarkMode }: AppLauncherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const { isDark } = useWebmailTheme();
+  const { isDark: themeIsDark } = useWebmailTheme();
+  
+  // isDarkMode Prop hat Priorität, sonst Theme-Context
+  const isDark = isDarkMode !== undefined ? isDarkMode : themeIsDark;
   
   // Wenn ein Hintergrundbild-Theme aktiv ist, verwende helle Farben
   const useWhiteIcons = hasTheme;
@@ -461,7 +652,7 @@ export function AppLauncher({ className, hasTheme = false }: AppLauncherProps) {
               <h3 className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-700'}`}>Taskilo Apps</h3>
             </div>
 
-            {/* Webmail Apps */}
+            {/* Webmail Apps - immer anzeigen */}
             <div className="p-3 grid grid-cols-3 gap-1">
               {apps.map((app) => {
                 const url = getAppUrl(app.href);
@@ -507,6 +698,44 @@ export function AppLauncher({ className, hasTheme = false }: AppLauncherProps) {
                 );
               })}
             </div>
+
+            {/* Admin Apps - Only shown if user has admin rights */}
+            {companyId && (
+              <>
+                <div className={`px-4 py-2 border-t ${isDark ? 'border-[#5f6368]' : 'border-gray-100'}`}>
+                  <h4 className={`text-xs font-medium uppercase tracking-wide ${isDark ? 'text-white' : 'text-gray-500'}`}>
+                    Company Apps
+                  </h4>
+                </div>
+                <div className="p-3 grid grid-cols-3 gap-1">
+                  {getCompanyApps(companyId).map((app) => {
+                    const url = app.href;
+                    return (
+                      <Link
+                        key={app.name}
+                        href={url}
+                        onClick={() => setIsOpen(false)}
+                        className={cn(
+                          'flex flex-col items-center justify-center',
+                          'p-3 rounded-lg',
+                          isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100',
+                          'transition-colors',
+                          'focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2'
+                        )}
+                        role="menuitem"
+                      >
+                        <div className="mb-1">
+                          {app.icon}
+                        </div>
+                        <span className={`text-xs ${isDark ? 'text-white' : 'text-gray-700'} text-center leading-tight`}>
+                          {app.name}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </>
+            )}
 
             {/* Admin Apps - Only shown if user has admin rights */}
             {isAdmin && (

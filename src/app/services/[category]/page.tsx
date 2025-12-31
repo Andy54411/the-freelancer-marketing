@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Search, Star, Briefcase } from 'lucide-react';
+import { ArrowLeft, Star, Briefcase } from 'lucide-react';
 import { categories } from '@/lib/categoriesData';
 import Header from '@/components/Header';
 import Link from 'next/link';
@@ -34,8 +34,16 @@ export default function CategoryPage() {
   // Finde die Kategorie durch Vergleich der normalisierten Namen
   const categoryInfo = categories.find(cat => {
     const expectedSlug = normalizeToSlug(cat.title);
-    // Prüfe sowohl den URL-Slug als auch mögliche andere Varianten
-    return expectedSlug === category || expectedSlug === decodedCategory;
+    // Normalisiere auch die URL-Parameter für korrekten Vergleich
+    const normalizedCategory = normalizeToSlug(category);
+    const normalizedDecodedCategory = normalizeToSlug(decodedCategory);
+    // Prüfe alle möglichen Varianten
+    return (
+      expectedSlug === category ||
+      expectedSlug === decodedCategory ||
+      expectedSlug === normalizedCategory ||
+      expectedSlug === normalizedDecodedCategory
+    );
   });
 
   // Funktion zum Laden der Subcategory-Statistiken
@@ -91,7 +99,7 @@ export default function CategoryPage() {
       }
 
       setSubcategoryStats(stats);
-    } catch (error) {
+    } catch {
       // Fallback-Werte bei Fehler
       const fallbackStats: Record<string, SubcategoryStats> = {};
       categoryInfo.subcategories.forEach(subcategory => {
@@ -112,6 +120,7 @@ export default function CategoryPage() {
     if (categoryInfo) {
       loadSubcategoryStats();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryInfo]);
 
   if (!categoryInfo) {
@@ -215,7 +224,7 @@ export default function CategoryPage() {
                     {/* Card Header */}
                     <div className="p-6 pb-4">
                       <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 bg-linear-to-br from-[#14ad9f] to-[#129488] rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <div className="w-12 h-12 bg-linear-to-br from-[#14ad9f] to-taskilo-hover rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                           <span className="text-white font-bold text-lg">
                             {subcategory.charAt(0).toUpperCase()}
                           </span>
@@ -275,7 +284,7 @@ export default function CategoryPage() {
           </div>
 
           {/* CTA Section */}
-          <div className="mt-16 bg-linear-to-r from-[#14ad9f] to-[#129488] rounded-2xl p-8 text-center text-white">
+          <div className="mt-16 bg-linear-to-r from-[#14ad9f] to-taskilo-hover rounded-2xl p-8 text-center text-white">
             <h3 className="text-2xl font-bold mb-4">Sind Sie Anbieter?</h3>
             <p className="text-white/90 mb-6 max-w-2xl mx-auto">
               Werden Sie Teil der Taskilo-Community und erreichen Sie tausende potenzielle Kunden.

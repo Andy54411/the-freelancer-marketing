@@ -3,15 +3,15 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
+  const baseUrl = process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:3000' 
+    : (process.env.NEXT_PUBLIC_BASE_URL || 'https://taskilo.de');
+
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     const state = searchParams.get('state'); // companyId
     const error = searchParams.get('error');
-    
-    const baseUrl = process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:3000' 
-      : (process.env.NEXT_PUBLIC_BASE_URL || 'https://taskilo.de');
 
     if (error) {
       console.error('Google OAuth Error:', error);
@@ -76,6 +76,12 @@ export async function GET(request: NextRequest) {
     };
 
     // Save to Firestore under company's advertising connections
+    if (!db) {
+      return NextResponse.redirect(
+        `${baseUrl}/dashboard/company/${state}/taskilo-advertising/google-ads?error=database_not_available`
+      );
+    }
+
     await setDoc(
       doc(db, 'companies', state, 'advertising_connections', 'google-ads'),
       connectionData

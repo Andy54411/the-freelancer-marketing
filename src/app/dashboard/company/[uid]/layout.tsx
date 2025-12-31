@@ -6,6 +6,8 @@ import { useParams, useRouter, usePathname } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import UserHeader from '@/components/UserHeader';
+import { MailHeader } from '@/components/webmail/MailHeader';
+import AppHeaderNavigation from '@/components/AppHeaderNavigation';
 import CompanySidebar from '@/components/dashboard/CompanySidebar';
 import CompanyMobileSidebar from '@/components/dashboard/CompanyMobileSidebar';
 import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
@@ -68,6 +70,30 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
 
   // AuthContext für zusätzliche Fallback-Daten
   const { user, firebaseUser } = useAuth();
+
+  // Webmail-Verbindungsstatus
+  const [isWebmailConnected, setIsWebmailConnected] = useState(false);
+  const [webmailEmail, setWebmailEmail] = useState<string | null>(null);
+
+  // Prüfe ob Webmail verbunden ist
+  useEffect(() => {
+    const checkWebmailConnection = async () => {
+      if (!uid) return;
+      try {
+        const companyDoc = await getDoc(doc(db, 'companies', uid));
+        if (companyDoc.exists()) {
+          const webmailConfig = companyDoc.data()?.webmailConfig;
+          if (webmailConfig?.status === 'connected' && webmailConfig?.email?.endsWith('@taskilo.de')) {
+            setIsWebmailConnected(true);
+            setWebmailEmail(webmailConfig.email);
+          }
+        }
+      } catch (error) {
+        console.error('[Layout] Error checking webmail connection:', error);
+      }
+    };
+    checkWebmailConnection();
+  }, [uid]);
 
   // Ermittle ob User der Owner dieser Company ist
   // Owner = user_type 'firma' UND uid stimmt mit URL überein
@@ -245,7 +271,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         typeof window !== 'undefined'
           ? `${window.location.pathname}${window.location.search}`
           : pathname || '';
-      router.replace(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
+      router.replace(`/?redirectTo=${encodeURIComponent(currentPath)}`);
     }
   }, [isChecking, isAuthorized, router, pathname]);
 
@@ -457,7 +483,34 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     <SidebarVisibilityProvider>
       <div className="flex flex-col min-h-screen">
         <div className="print:hidden">
-          <UserHeader currentUid={uid} />
+          {isWebmailConnected && webmailEmail ? (
+            <>
+              <MailHeader
+                userEmail={webmailEmail}
+                userInitial={webmailEmail.charAt(0).toUpperCase()}
+                searchPlaceholder="Dienstleistung auswählen..."
+                hideSearch={false}
+                companyId={uid}
+                isDashboard={true}
+                onMenuToggle={() => {
+                  // Mobile: Öffne Mobile Sidebar
+                  if (window.innerWidth < 768) {
+                    setIsSidebarOpen(!isSidebarOpen);
+                  } else {
+                    // Desktop: Toggle Sidebar Collapsed State
+                    setIsSidebarCollapsed(!isSidebarCollapsed);
+                    localStorage.setItem('sidebar-collapsed', (!isSidebarCollapsed).toString());
+                  }
+                }}
+                onSearch={(query) => {
+                  router.push(`/services?search=${encodeURIComponent(query)}`);
+                }}
+              />
+              <AppHeaderNavigation />
+            </>
+          ) : (
+            <UserHeader currentUid={uid} />
+          )}
         </div>
 
         <div className="flex flex-1">
@@ -481,6 +534,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
                   onToggleCollapsed={setIsSidebarCollapsed}
                   isEmployee={isEmployee}
                   employeePermissions={employeePermissions}
+                  hideEmailMenu={isWebmailConnected}
+                  hideCollapseButton={isWebmailConnected}
                 />
               </div>
             </aside>
@@ -497,6 +552,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
               getCurrentView={getCurrentView}
               isEmployee={isEmployee}
               employeePermissions={employeePermissions}
+              hideEmailMenu={isWebmailConnected}
             />
           </div>
 

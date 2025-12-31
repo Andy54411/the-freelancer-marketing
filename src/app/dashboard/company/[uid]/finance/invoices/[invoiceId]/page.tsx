@@ -693,9 +693,9 @@ export default function InvoiceDetailPage() {
 
       // If we get here, something unexpected happened
       throw new Error('Unerwartetes Response-Format vom PDF-Service');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Error downloading PDF:', error);
-      toast.error(`Fehler beim Herunterladen der PDF: ${error.message}`);
+      toast.error(`Fehler beim Herunterladen der PDF: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
     } finally {
       setDownloadingPdf(false);
     }
@@ -874,9 +874,9 @@ export default function InvoiceDetailPage() {
       }, 5000);
 
       toast.success('PDF erfolgreich heruntergeladen!');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Error downloading PDF:', error);
-      toast.error(`Fehler beim Herunterladen der PDF: ${error.message}`);
+      toast.error(`Fehler beim Herunterladen der PDF: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
     } finally {
       setDownloadingPdf(false);
     }

@@ -24,11 +24,16 @@ import {
   Sun,
   Moon,
   HardDrive,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
 import { WebmailThemeProvider, useWebmailTheme } from '@/contexts/WebmailThemeContext';
+import { MailHeader } from '@/components/webmail/MailHeader';
 
 interface AdminUser {
   email: string;
@@ -49,7 +54,9 @@ const navigation = [
   { name: 'Chat-Monitoring', href: '/dashboard/admin/chat-monitoring', icon: MessageSquare },
   { name: 'Storno-Verwaltung', href: '/dashboard/admin/storno-management', icon: XCircle },
   { name: 'Enhanced Analytics', href: '/dashboard/admin/analytics', icon: BarChart3 },
+  { name: 'Taskilo KI Analytics', href: '/dashboard/admin/ai-analytics', icon: Sparkles },
   { name: 'Updates & Changelog', href: '/dashboard/admin/updates', icon: Bell },
+  { name: 'Bewertungen', href: '/dashboard/admin/reviews', icon: Star },
   { name: 'Unternehmen', href: '/dashboard/admin/companies', icon: Building2 },
   { name: 'Benutzer', href: '/dashboard/admin/users', icon: Users },
   { name: 'Admin-Benutzer', href: '/dashboard/admin/admin-users', icon: Shield },
@@ -63,6 +70,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('admin-sidebar-collapsed');
+      if (saved !== null) return saved === 'true';
+      return window.innerWidth < 1536;
+    }
+    return true;
+  });
   const router = useRouter();
   const pathname = usePathname();
 
@@ -107,7 +122,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <WebmailThemeProvider>
-      <AdminLayoutContent user={user} handleLogout={handleLogout} pathname={pathname} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}>
+      <AdminLayoutContent 
+        user={user} 
+        handleLogout={handleLogout} 
+        pathname={pathname} 
+        sidebarOpen={sidebarOpen} 
+        setSidebarOpen={setSidebarOpen}
+        isSidebarCollapsed={isSidebarCollapsed}
+        setIsSidebarCollapsed={setIsSidebarCollapsed}
+      >
         {children}
       </AdminLayoutContent>
     </WebmailThemeProvider>
@@ -120,6 +143,8 @@ function AdminLayoutContent({
   pathname, 
   sidebarOpen, 
   setSidebarOpen,
+  isSidebarCollapsed,
+  setIsSidebarCollapsed,
   children 
 }: { 
   user: AdminUser; 
@@ -127,39 +152,47 @@ function AdminLayoutContent({
   pathname: string;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
+  isSidebarCollapsed: boolean;
+  setIsSidebarCollapsed: (collapsed: boolean) => void;
   children: React.ReactNode;
 }) {
   const { isDark, toggleTheme } = useWebmailTheme();
 
+  const handleMenuToggle = () => {
+    // Mobile: Öffne Mobile Sidebar
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setSidebarOpen(!sidebarOpen);
+    } else {
+      // Desktop: Toggle Sidebar Collapsed State
+      const newState = !isSidebarCollapsed;
+      setIsSidebarCollapsed(newState);
+      localStorage.setItem('admin-sidebar-collapsed', newState.toString());
+    }
+  };
+
   return (
     <SidebarVisibilityProvider>
       <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        {/* Simple Admin Header - No User Auth */}
-        <header className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-4 py-3 lg:hidden`}>
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(!sidebarOpen)}>
-              <Menu className={`h-6 w-6 ${isDark ? 'text-white' : ''}`} />
-            </Button>
-            <h1 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Admin Dashboard</h1>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={toggleTheme}>
-                {isDark ? <Sun className="h-5 w-5 text-yellow-400" /> : <Moon className="h-5 w-5" />}
-              </Button>
-              <Button onClick={handleLogout} variant="ghost" size="sm">
-                <LogOut className={`h-5 w-5 ${isDark ? 'text-white' : ''}`} />
-              </Button>
-            </div>
-          </div>
-        </header>
+        {/* Admin MailHeader */}
+        <MailHeader
+          userEmail={user.email}
+          userInitial={user.name?.charAt(0) || 'A'}
+          onMenuToggle={handleMenuToggle}
+          onLogout={handleLogout}
+          appName="Admin"
+          hideSearch={true}
+          isDashboard={true}
+        />
 
         <div className="flex">
-          {/* Mobile sidebar */}
-          <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-            <div
-              className={`fixed inset-0 ${isDark ? 'bg-black' : 'bg-gray-600'} bg-opacity-75`}
-              onClick={() => setSidebarOpen(false)}
-            />
-            <div className={`fixed inset-y-0 left-0 flex w-64 flex-col ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+          {/* Mobile sidebar overlay */}
+          {sidebarOpen && (
+            <div className="fixed inset-0 z-60 lg:hidden">
+              <div
+                className={`fixed inset-0 ${isDark ? 'bg-black' : 'bg-gray-600'} bg-opacity-75`}
+                onClick={() => setSidebarOpen(false)}
+              />
+              <div className={`fixed inset-y-0 left-0 flex w-64 flex-col z-70 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
               <div className={`flex items-center justify-between h-16 px-4 border-b ${isDark ? 'border-gray-700' : ''}`}>
                 <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Taskilo Admin</h1>
                 <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
@@ -190,21 +223,28 @@ function AdminLayoutContent({
                 })}
               </nav>
             </div>
-          </div>
+            </div>
+          )}
 
-          {/* Desktop sidebar - Normal flow like company dashboard */}
-          <div className={`hidden lg:block w-64 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r`}>
+          {/* Desktop sidebar - Dynamic width based on collapsed state */}
+          <div className={`hidden lg:block transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-64'} ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r`}>
             <div className="flex flex-col h-screen sticky top-0">
-              <div className={`flex items-center justify-between h-16 px-4 border-b ${isDark ? 'border-gray-700' : ''}`}>
-                <div className="flex items-center">
-                  <Shield className="h-8 w-8 text-[#14ad9f] mr-2" />
-                  <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Taskilo Admin</h1>
-                </div>
-                <Button variant="ghost" size="sm" onClick={toggleTheme} className="ml-2">
-                  {isDark ? <Sun className="h-5 w-5 text-yellow-400" /> : <Moon className="h-5 w-5" />}
-                </Button>
+              <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} h-16 px-4 border-b ${isDark ? 'border-gray-700' : ''}`}>
+                {isSidebarCollapsed ? (
+                  <Shield className="h-8 w-8 text-[#14ad9f]" />
+                ) : (
+                  <>
+                    <div className="flex items-center">
+                      <Shield className="h-8 w-8 text-[#14ad9f] mr-2" />
+                      <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Taskilo Admin</h1>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={toggleTheme} className="ml-2">
+                      {isDark ? <Sun className="h-5 w-5 text-yellow-400" /> : <Moon className="h-5 w-5" />}
+                    </Button>
+                  </>
+                )}
               </div>
-              <nav className="flex-1 px-4 py-4 space-y-2">
+              <nav className={`flex-1 ${isSidebarCollapsed ? 'px-2' : 'px-4'} py-4 space-y-2`}>
                 {navigation.map(item => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
@@ -212,7 +252,8 @@ function AdminLayoutContent({
                     <Link
                       key={item.name}
                       href={item.href}
-                      className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      title={isSidebarCollapsed ? item.name : undefined}
+                      className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'px-3'} py-2 rounded-md text-sm font-medium transition-colors ${
                         isActive 
                           ? 'bg-[#14ad9f] text-white' 
                           : isDark 
@@ -220,34 +261,58 @@ function AdminLayoutContent({
                             : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      <Icon className="mr-3 h-5 w-5" />
-                      {item.name}
+                      <Icon className={`h-5 w-5 ${isSidebarCollapsed ? '' : 'mr-3'}`} />
+                      {!isSidebarCollapsed && item.name}
                     </Link>
                   );
                 })}
               </nav>
-              <div className={`p-4 border-t ${isDark ? 'border-gray-700' : ''}`}>
-                <Card className={isDark ? 'bg-gray-700 border-gray-600' : ''}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-1">
-                        <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{user.name}</p>
-                        <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{user.email}</p>
-                        <p className="text-xs text-[#14ad9f] font-medium">{user.role}</p>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={handleLogout}
-                      variant="outline"
-                      size="sm"
-                      className={`w-full mt-3 ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-600' : ''}`}
-                    >
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Abmelden
-                    </Button>
-                  </CardContent>
-                </Card>
+              {/* Collapse Button */}
+              <div className={`px-2 py-2 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const newState = !isSidebarCollapsed;
+                    setIsSidebarCollapsed(newState);
+                    localStorage.setItem('admin-sidebar-collapsed', newState.toString());
+                  }}
+                  className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-start'} ${isDark ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                >
+                  {isSidebarCollapsed ? (
+                    <ChevronRight className="h-5 w-5" />
+                  ) : (
+                    <>
+                      <ChevronLeft className="h-5 w-5 mr-2" />
+                      <span>Einklappen</span>
+                    </>
+                  )}
+                </Button>
               </div>
+              {!isSidebarCollapsed && (
+                <div className={`p-4 border-t ${isDark ? 'border-gray-700' : ''}`}>
+                  <Card className={isDark ? 'bg-gray-700 border-gray-600' : ''}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-1">
+                          <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{user.name}</p>
+                          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{user.email}</p>
+                          <p className="text-xs text-[#14ad9f] font-medium">{user.role}</p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={handleLogout}
+                        variant="outline"
+                        size="sm"
+                        className={`w-full mt-3 ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-600' : ''}`}
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Abmelden
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
           </div>
 

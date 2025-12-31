@@ -3,6 +3,13 @@ import { auth, db } from '@/firebase/server';
 
 export async function POST(request: NextRequest) {
   try {
+    if (!db || !auth) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const { orderId } = await request.json();
 
     if (!orderId) {
@@ -28,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the order from Firestore
-    const orderDoc = await db!.collection('auftraege').doc(orderId).get();
+    const orderDoc = await db.collection('auftraege').doc(orderId).get();
 
     if (!orderDoc.exists) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
@@ -57,7 +64,7 @@ export async function POST(request: NextRequest) {
     try {
       const providerId = orderData?.selectedAnbieterId || orderData?.providerFirebaseUid;
       if (providerId) {
-        const providerDoc = await db!.collection('users').doc(providerId).get();
+        const providerDoc = await db.collection('users').doc(providerId).get();
         if (providerDoc.exists) {
           const providerData = providerDoc.data();
 

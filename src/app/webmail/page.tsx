@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/firebase/clients';
+import { getWebmailCredentials, saveWebmailCredentials } from '@/lib/webmail-session';
 
 // Lazy load heavy components
 const WebmailClient = dynamic(
@@ -99,9 +102,11 @@ function WebmailPageContent() {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [companyId, setCompanyId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const checkSession = async () => {
+      // 1. Prüfe Cookie (direkter Webmail-Login)
       const savedCredentials = getCookie();
       if (savedCredentials && savedCredentials.email && savedCredentials.password) {
         try {
@@ -137,6 +142,8 @@ function WebmailPageContent() {
             }
             
             setIsConnected(true);
+            setIsCheckingSession(false);
+            return;
           } else {
             // Ungültige Credentials im Cookie - löschen
             deleteCookie();
@@ -147,15 +154,72 @@ function WebmailPageContent() {
           if (savedCredentials.email.includes('@') && savedCredentials.password.length > 0) {
             setEmail(savedCredentials.email);
             setPassword(savedCredentials.password);
+            setIsConnected(true);
+            setIsCheckingSession(false);
+            return;
           } else {
             deleteCookie();
           }
         }
       }
-      setIsCheckingSession(false);
+      
+      // 2. Prüfe lokale Credentials (Dashboard-Verbindung)
+      // Warte auf Firebase Auth Status
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          // Setze companyId für AppLauncher (User UID ist Company ID bei Company-Accounts)
+          setCompanyId(user.uid);
+          
+          const localCredentials = getWebmailCredentials(user.uid);
+          if (localCredentials && localCredentials.email && localCredentials.password) {
+            try {
+              const response = await fetch('/api/webmail/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  email: localCredentials.email,
+                  password: localCredentials.password,
+                  imapHost: 'mail.taskilo.de',
+                  imapPort: 993,
+                }),
+              });
+
+              const data = await response.json();
+
+              if (data.success) {
+                setEmail(localCredentials.email);
+                setPassword(localCredentials.password);
+                // Setze auch Cookie für konsistente Session
+                setCookie(localCredentials.email, localCredentials.password, true);
+                setIsConnected(true);
+              }
+            } catch {
+              // Netzwerkfehler - trotzdem verbinden wenn Credentials valide aussehen
+              if (localCredentials.email.includes('@') && localCredentials.password.length > 0) {
+                setEmail(localCredentials.email);
+                setPassword(localCredentials.password);
+                setCookie(localCredentials.email, localCredentials.password, true);
+                setIsConnected(true);
+              }
+            }
+          }
+        }
+        setIsCheckingSession(false);
+        unsubscribe();
+      });
     };
 
     checkSession();
+  }, []);
+
+  // Separater Effect um companyId zu setzen, auch wenn User über Cookie eingeloggt ist
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCompanyId(user.uid);
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   const handleConnect = async () => {
@@ -233,6 +297,7 @@ function WebmailPageContent() {
         password={password} 
         onLogout={handleLogout}
         initialComposeTo={composeParam === 'true' && toParam ? toParam : undefined}
+        companyId={companyId}
       />
     );
   }

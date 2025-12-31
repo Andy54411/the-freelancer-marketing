@@ -10,6 +10,13 @@ export async function GET(
   { params }: { params: Promise<{ customerId: string }> }
 ) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const { customerId } = await params;
 
     if (!customerId) {

@@ -81,7 +81,7 @@ function VerifyEmailChangeContent() {
                 Bitte melden Sie sich mit Ihrer neuen E-Mail-Adresse an.
               </p>
               <Button
-                onClick={() => router.push('/login')}
+                onClick={() => router.push('/')}
                 className="mt-4 bg-teal-600 hover:bg-teal-700 text-white"
               >
                 Zur Anmeldung

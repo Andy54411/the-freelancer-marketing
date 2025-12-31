@@ -92,7 +92,7 @@ export const getReviewsByProviderHTTP = httpGeneral.getReviewsByProviderHTTP;
 // Firestore Triggers
 export const createUserProfile = triggersFirestore.createUserProfile;
 export const updateUserProfile = triggersFirestore.updateUserProfile; // REPARIERT: Endlosschleife behoben
-// export const syncCompanyToUserOnUpdate = triggersFirestore.syncCompanyToUserOnUpdate; // DEAKTIVIERT: Companies Collection Trigger
+export const syncCompanyToUserOnUpdate = triggersFirestore.syncCompanyToUserOnUpdate; // REAKTIVIERT: Sync zu Hetzner Webmail-Profil
 // DEAKTIVIERT: Keine automatische Stripe-Account-Erstellung basierend auf User-Updates
 // export const createStripeCustomAccountOnUserUpdate = triggersFirestore.createStripeCustomAccountOnUserUpdate;
 

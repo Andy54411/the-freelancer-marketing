@@ -35,6 +35,10 @@ import {
   FileImage,
   RefreshCw,
   Trash2,
+  MessageSquare,
+  Send,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 
 interface CompanyDetails {
@@ -46,6 +50,8 @@ interface CompanyDetails {
   selectedSubcategory?: string;
   website?: string;
   phone?: string;
+  phoneVerifiedFromWebmail?: boolean;
+  phoneVerifiedAt?: string;
   status: 'active' | 'inactive' | 'suspended';
   profileStatus?: string;
   stripeVerificationStatus?: string;
@@ -80,6 +86,13 @@ interface CompanyDetails {
   stripeAccountPayoutsEnabled?: boolean;
   stripeAccountDetailsSubmitted?: boolean;
   stripeAccountCreationDate?: string;
+
+  // Taskilo E-Mail Integration
+  taskiloEmailConnected?: boolean;
+  taskiloEmail?: string;
+  gmailConnected?: boolean;
+  gmailEmail?: string;
+  emailType?: string;
 
   // Geschäftsdaten
   businessType?: string;
@@ -180,10 +193,22 @@ interface CompanyDetails {
   suspensionReason?: string;
 }
 
+interface SupportTicket {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  category: string;
+  createdAt: string;
+  updatedAt: string;
+  commentsCount: number;
+}
+
 export default function AdminCompanyDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const [company, setCompany] = useState<CompanyDetails | null>(null);
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDocument, setSelectedDocument] = useState<{ url: string; title: string } | null>(
     null
@@ -193,7 +218,154 @@ export default function AdminCompanyDetailsPage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [contactSubject, setContactSubject] = useState('');
+  const [contactMessage, setContactMessage] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [isSyncingProfile, setIsSyncingProfile] = useState(false);
   const companyId = params?.id as string;
+
+  // Vordefinierte Nachrichten-Templates
+  const messageTemplates = [
+    {
+      label: 'Banner-Bild fehlt',
+      subject: 'Bitte laden Sie ein Banner-Bild hoch',
+      message: `Sehr geehrte Damen und Herren,
+
+wir haben festgestellt, dass Ihr Firmenprofil noch kein Banner-Bild enthält. Ein professionelles Banner verbessert die Sichtbarkeit Ihres Unternehmens erheblich.
+
+Bitte laden Sie ein Banner-Bild in Ihrem Dashboard unter Einstellungen > Profilbilder hoch.
+
+Empfohlene Größe: 1200x400 Pixel
+Format: JPG oder PNG
+
+Bei Fragen stehen wir Ihnen gerne zur Verfügung.
+
+Mit freundlichen Grüßen,
+Ihr Taskilo Team`,
+    },
+    {
+      label: 'Dokumente unvollständig',
+      subject: 'Fehlende Dokumente in Ihrem Profil',
+      message: `Sehr geehrte Damen und Herren,
+
+zur Verifizierung Ihres Accounts benötigen wir noch folgende Dokumente:
+
+- Gewerbeschein / Handelsregisterauszug
+- Ausweisdokument (Vorder- und Rückseite)
+
+Bitte laden Sie diese im Onboarding-Bereich hoch.
+
+Mit freundlichen Grüßen,
+Ihr Taskilo Team`,
+    },
+    {
+      label: 'Profil unvollständig',
+      subject: 'Bitte vervollständigen Sie Ihr Profil',
+      message: `Sehr geehrte Damen und Herren,
+
+Ihr Firmenprofil ist noch nicht vollständig. Um alle Funktionen nutzen zu können, vervollständigen Sie bitte Ihr Profil.
+
+Besuchen Sie dazu: Dashboard > Einstellungen > Profil
+
+Mit freundlichen Grüßen,
+Ihr Taskilo Team`,
+    },
+  ];
+
+  // Manueller Webmail-Profil-Sync
+  const handleSyncWebmailProfile = async () => {
+    if (!company || !company.taskiloEmail) {
+      alert('Keine Taskilo E-Mail verbunden');
+      return;
+    }
+
+    setIsSyncingProfile(true);
+    try {
+      const response = await fetch('/api/admin/sync-webmail-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId: company.id,
+          taskiloEmail: company.taskiloEmail,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        let message = 'Sync erfolgreich!';
+        if (result.verifiedPhone) {
+          message += `\nVerifizierte Telefonnummer: ${result.verifiedPhone}`;
+        }
+        if (result.phoneUpdated) {
+          message += '\nFirebase-Telefonnummer wurde aktualisiert.';
+        }
+        alert(message);
+        await loadCompanyDetails();
+      } else {
+        alert(`Sync fehlgeschlagen: ${result.error || 'Unbekannter Fehler'}`);
+      }
+    } catch (error) {
+      alert('Netzwerkfehler beim Sync');
+    } finally {
+      setIsSyncingProfile(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!company || !contactSubject.trim() || !contactMessage.trim()) return;
+
+    setIsSendingMessage(true);
+    try {
+      // Multi-Channel Benachrichtigung senden
+      const response = await fetch('/api/admin/contact-company', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId: company.id,
+          companyName: company.companyName,
+          companyEmail: company.email,
+          companyPhone: company.phone,
+          taskiloEmail: company.taskiloEmail,
+          title: contactSubject,
+          message: contactMessage,
+          priority: 'medium',
+          category: 'admin-kontakt',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Erfolgreich - Modal schließen und Tickets neu laden
+        setShowContactModal(false);
+        setContactSubject('');
+        setContactMessage('');
+        await loadCompanyDetails();
+        
+        // Detaillierte Erfolgsmeldung
+        const { summary } = result;
+        let alertMessage = `Ticket ${result.ticketId} erstellt.\n\n`;
+        
+        if (summary.successChannels.length > 0) {
+          alertMessage += `Erfolgreich gesendet über:\n${summary.successChannels.map((c: string) => `  - ${c}`).join('\n')}\n`;
+        }
+        
+        if (summary.failedChannels.length > 0) {
+          alertMessage += `\nFehlgeschlagen:\n${summary.failedChannels.map((c: string) => `  - ${c}`).join('\n')}`;
+        }
+        
+        alert(alertMessage);
+      } else {
+        alert(`Fehler: ${result.error || 'Nachricht konnte nicht gesendet werden'}`);
+      }
+    } catch (error) {
+      alert('Netzwerkfehler beim Senden der Nachricht');
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
 
   useEffect(() => {
     if (companyId) {
@@ -208,6 +380,7 @@ export default function AdminCompanyDetailsPage() {
       if (response.ok) {
         const data = await response.json();
         setCompany(data.company);
+        setSupportTickets(data.supportTickets || []);
         setLastUpdated(new Date());
       } else {
         console.error('❌ Fehler beim Laden der Unternehmensdaten:', response.status);
@@ -458,7 +631,143 @@ export default function AdminCompanyDetailsPage() {
           <Trash2 className="h-4 w-4 mr-2" />
           Löschen
         </Button>
+        <Button
+          variant="outline"
+          className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 border-teal-300"
+          onClick={() => setShowContactModal(true)}
+        >
+          <MessageSquare className="h-4 w-4 mr-2" />
+          Firma kontaktieren
+        </Button>
       </div>
+
+      {/* Contact Company Modal */}
+      {showContactModal && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-xl border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <MessageSquare className="h-5 w-5 mr-2 text-teal-600" />
+              Firma kontaktieren
+            </h3>
+            
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-3">
+                Erstellen Sie ein Support-Ticket für <strong>{company.companyName}</strong>. 
+                Die Firma wird im Dashboard darüber benachrichtigt.
+              </p>
+              
+              {/* Notification Channels Status */}
+              <div className="bg-gray-50 rounded-lg p-3 mb-4 border border-gray-200">
+                <p className="text-xs font-medium text-gray-700 mb-2">Benachrichtigungskanäle:</p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex items-center">
+                    <span className={`w-2 h-2 rounded-full mr-2 ${company.email ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                    <span className="text-gray-600">E-Mail: {company.email || 'Keine'}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className={`w-2 h-2 rounded-full mr-2 ${company.taskiloEmail ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                    <span className="text-gray-600">Taskilo E-Mail: {company.taskiloEmail || 'Nicht verbunden'}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className={`w-2 h-2 rounded-full mr-2 ${company.phone && company.phoneVerifiedFromWebmail ? 'bg-green-500' : company.phone ? 'bg-yellow-500' : 'bg-red-500'}`}></span>
+                    <span className="text-gray-600">
+                      SMS/WhatsApp: {company.phone || 'Keine Nummer'}
+                      {company.phoneVerifiedFromWebmail && <span className="text-green-600 ml-1">(verifiziert)</span>}
+                      {company.phone && !company.phoneVerifiedFromWebmail && <span className="text-yellow-600 ml-1">(nicht verifiziert)</span>}
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="w-2 h-2 rounded-full mr-2 bg-green-500"></span>
+                    <span className="text-gray-600">Dashboard: Immer aktiv</span>
+                  </div>
+                </div>
+                {!company.phone && (
+                  <p className="text-xs text-amber-600 mt-2 flex items-center">
+                    <AlertCircle className="w-3 h-3 mr-1" />
+                    SMS/WhatsApp nicht möglich - keine Telefonnummer hinterlegt. Bitte Webmail-Profil synchronisieren.
+                  </p>
+                )}
+              </div>
+              
+              {/* Quick Templates */}
+              <div className="mb-4">
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Schnellauswahl:</label>
+                <div className="flex flex-wrap gap-2">
+                  {messageTemplates.map((template, idx) => (
+                    <Button
+                      key={idx}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setContactSubject(template.subject);
+                        setContactMessage(template.message);
+                      }}
+                      className="text-xs"
+                    >
+                      {template.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Subject */}
+              <div className="mb-4">
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Betreff *</label>
+                <input
+                  type="text"
+                  value={contactSubject}
+                  onChange={(e) => setContactSubject(e.target.value)}
+                  placeholder="Betreff der Nachricht..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                />
+              </div>
+
+              {/* Message */}
+              <div className="mb-4">
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Nachricht *</label>
+                <textarea
+                  value={contactMessage}
+                  onChange={(e) => setContactMessage(e.target.value)}
+                  placeholder="Ihre Nachricht an die Firma..."
+                  rows={10}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowContactModal(false);
+                  setContactSubject('');
+                  setContactMessage('');
+                }}
+                disabled={isSendingMessage}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                className="bg-teal-600 hover:bg-teal-700 text-white"
+                onClick={handleSendMessage}
+                disabled={isSendingMessage || !contactSubject.trim() || !contactMessage.trim()}
+              >
+                {isSendingMessage ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Wird gesendet...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Nachricht senden
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirm && (
@@ -505,11 +814,46 @@ export default function AdminCompanyDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Grundinformationen */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Tarif & Abonnement - jetzt im Hauptbereich links */}
-          <CompanySubscriptionCard companyId={companyId} />
+          {/* Tarif & Abonnement - nur anzeigen wenn Onboarding abgeschlossen */}
+          {company.onboardingCompleted && (
+            <>
+              <CompanySubscriptionCard companyId={companyId} />
+              {/* Testphase & Promo-Codes */}
+              <PromoCodeCard companyId={companyId} />
+            </>
+          )}
 
-          {/* Testphase & Promo-Codes */}
-          <PromoCodeCard companyId={companyId} />
+          {/* Onboarding-Hinweis wenn nicht abgeschlossen */}
+          {!company.onboardingCompleted && (
+            <Card className="border-amber-200 bg-amber-50">
+              <CardHeader>
+                <CardTitle className="flex items-center text-amber-800">
+                  <Settings className="h-5 w-5 mr-2 animate-spin" />
+                  Onboarding nicht abgeschlossen
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-amber-700">
+                  Diese Firma hat das Onboarding noch nicht abgeschlossen. 
+                  Tarif- und Abonnement-Informationen werden nach Abschluss des Onboardings angezeigt.
+                </p>
+                {company.onboardingCompletionPercentage !== undefined && (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-sm text-amber-600 mb-1">
+                      <span>Fortschritt</span>
+                      <span>{company.onboardingCompletionPercentage}%</span>
+                    </div>
+                    <div className="w-full bg-amber-200 rounded-full h-2">
+                      <div 
+                        className="bg-amber-500 h-2 rounded-full transition-all" 
+                        style={{ width: `${company.onboardingCompletionPercentage}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
@@ -571,6 +915,12 @@ export default function AdminCompanyDetailsPage() {
                   </p>
                 </div>
                 <div>
+                  <label className="text-sm font-medium text-gray-500">Steuernummer</label>
+                  <p className="font-medium">
+                    {company.taxNumber || company.taxNumberForBackend || 'Nicht angegeben'}
+                  </p>
+                </div>
+                <div>
                   <label className="text-sm font-medium text-gray-500">Rechtsform</label>
                   <p className="font-medium">{company.legalForm || 'Nicht angegeben'}</p>
                 </div>
@@ -591,6 +941,54 @@ export default function AdminCompanyDetailsPage() {
                 <div>
                   <label className="text-sm font-medium text-gray-500">Account Holder</label>
                   <p className="font-medium">{company.accountHolder || 'Nicht angegeben'}</p>
+                </div>
+              </div>
+
+              {/* Taskilo E-Mail Integration */}
+              <Separator />
+              <div>
+                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Taskilo E-Mail Integration
+                </label>
+                <div className="mt-2 space-y-3">
+                  {company.taskiloEmailConnected ? (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-green-100 text-green-800">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Verbunden
+                        </Badge>
+                        <span className="font-medium text-[#14ad9f]">{company.taskiloEmail}</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleSyncWebmailProfile}
+                        disabled={isSyncingProfile}
+                        className="flex items-center gap-2"
+                      >
+                        {isSyncingProfile ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                        {isSyncingProfile ? 'Synchronisiere...' : 'Webmail-Profil synchronisieren'}
+                      </Button>
+                      <p className="text-xs text-gray-500">
+                        Synchronisiert Firebase-Daten mit dem Webmail-Server und holt die verifizierte Telefonnummer.
+                      </p>
+                    </>
+                  ) : company.gmailConnected ? (
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-blue-100 text-blue-800">Gmail verbunden</Badge>
+                      <span className="font-medium">{company.gmailEmail}</span>
+                    </div>
+                  ) : company.emailType === 'skip' ? (
+                    <Badge className="bg-gray-100 text-gray-600">Übersprungen</Badge>
+                  ) : (
+                    <Badge className="bg-amber-100 text-amber-800">Nicht eingerichtet</Badge>
+                  )}
                 </div>
               </div>
 
@@ -816,7 +1214,7 @@ export default function AdminCompanyDetailsPage() {
                   </div>
                 )}
 
-                {company.profileBannerImage && (
+                {company.profileBannerImage && !company.profileBannerImage.startsWith('blob:') && (
                   <div className="bg-gray-50 p-3 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-gray-900">Banner-Bild</h4>
@@ -827,6 +1225,10 @@ export default function AdminCompanyDetailsPage() {
                         src={company.profileBannerImage}
                         alt="Banner-Bild"
                         className="h-16 w-24 rounded-lg object-cover border"
+                        onError={(e) => {
+                          // Verstecke das Bild wenn es nicht geladen werden kann
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
                       />
 
                       <div className="flex space-x-2">
@@ -959,6 +1361,87 @@ export default function AdminCompanyDetailsPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Support-Tickets */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center">
+                  <FileText className="h-5 w-5 mr-2" />
+                  Support-Tickets
+                  {supportTickets.length > 0 && (
+                    <Badge className="ml-2 bg-teal-100 text-teal-800">{supportTickets.length}</Badge>
+                  )}
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/dashboard/admin/tickets?email=${company?.email}`)}
+                >
+                  Alle anzeigen
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {supportTickets.length === 0 ? (
+                <div className="text-center py-6 text-gray-500">
+                  <FileText className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                  <p>Keine Support-Tickets vorhanden</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {supportTickets.map((ticket) => (
+                    <div 
+                      key={ticket.id} 
+                      className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+                      onClick={() => router.push(`/dashboard/admin/tickets?id=${ticket.id}`)}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-medium text-gray-900 text-sm truncate flex-1">
+                          {ticket.title}
+                        </h4>
+                        <div className="flex gap-1 ml-2">
+                          <Badge className={
+                            ticket.status === 'open' ? 'bg-blue-100 text-blue-800' :
+                            ticket.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
+                            ticket.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }>
+                            {ticket.status === 'open' ? 'Offen' :
+                             ticket.status === 'in-progress' ? 'In Bearbeitung' :
+                             ticket.status === 'resolved' ? 'Gelöst' : 'Geschlossen'}
+                          </Badge>
+                          <Badge className={
+                            ticket.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                            ticket.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                            ticket.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }>
+                            {ticket.priority === 'urgent' ? 'Dringend' :
+                             ticket.priority === 'high' ? 'Hoch' :
+                             ticket.priority === 'medium' ? 'Mittel' : 'Niedrig'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Kategorie: {ticket.category}</span>
+                        <span>{ticket.commentsCount} Kommentare</span>
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        Erstellt: {new Date(ticket.createdAt).toLocaleDateString('de-DE', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Sidebar */}

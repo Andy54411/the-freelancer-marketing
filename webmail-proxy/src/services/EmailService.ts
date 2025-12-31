@@ -66,6 +66,7 @@ export interface EmailAttachment {
   size: number;
   contentId?: string;
   partId?: string;
+  data?: string; // Base64-kodierte Daten für Inline-Attachments
 }
 
 export interface Mailbox {
@@ -80,19 +81,58 @@ export interface Mailbox {
 
 export class EmailService {
   private credentials: EmailCredentials;
+  private useMasterUser: boolean;
 
-  constructor(credentials: EmailCredentialsInput) {
+  constructor(credentials: EmailCredentialsInput, useMasterUser = false) {
     this.credentials = EmailCredentialsSchema.parse(credentials);
+    this.useMasterUser = useMasterUser;
+  }
+
+  /**
+   * Erstellt einen EmailService mit Master User Authentifizierung.
+   * Erfordert keine Benutzer-Passwörter - nutzt Dovecot Master User.
+   */
+  static withMasterUser(userEmail: string): EmailService {
+    const masterUser = process.env.DOVECOT_MASTER_USER;
+    const masterPassword = process.env.DOVECOT_MASTER_PASSWORD;
+    
+    if (!masterUser || !masterPassword) {
+      throw new Error('Dovecot Master User nicht konfiguriert');
+    }
+    
+    // Dovecot Master User Format: user@domain*masteruser
+    const authUser = `${userEmail}*${masterUser}`;
+    
+    return new EmailService({
+      email: userEmail,
+      password: masterPassword,
+      imapHost: 'mail.taskilo.de',
+      imapPort: 993,
+      smtpHost: 'mail.taskilo.de',
+      smtpPort: 587,
+    }, true);
   }
 
   private createImapClient(): ImapFlow {
+    // Bei Master User: user@domain*masteruser als Login
+    const masterUser = process.env.DOVECOT_MASTER_USER;
+    const masterPassword = process.env.DOVECOT_MASTER_PASSWORD;
+    
+    let authUser = this.credentials.email;
+    let authPass = this.credentials.password;
+    
+    if (this.useMasterUser && masterUser && masterPassword) {
+      authUser = `${this.credentials.email}*${masterUser}`;
+      authPass = masterPassword;
+    }
+    
     return new ImapFlow({
       host: this.credentials.imapHost,
       port: this.credentials.imapPort,
       secure: true,
       auth: {
-        user: this.credentials.email,
-        pass: this.credentials.password,
+        user: authUser,
+        pass: authPass,
       },
       logger: false,
     });
@@ -252,6 +292,26 @@ export class EmailService {
       }
 
       const { text, html, attachments } = await this.parseMessageBody(client, uid, msg.bodyStructure);
+      
+      // Lade Inline-Attachments (mit contentId) für CID-Bilder in E-Mails
+      for (const att of attachments) {
+        if (att.contentId && att.partId) {
+          try {
+            const download = await client.download(uid.toString(), att.partId, { uid: true });
+            if (download && download.content) {
+              const chunks: Buffer[] = [];
+              for await (const chunk of download.content) {
+                chunks.push(chunk);
+              }
+              const buffer = Buffer.concat(chunks);
+              att.data = buffer.toString('base64');
+            }
+          } catch {
+            // Fehler beim Laden des Inline-Attachments - ignorieren
+          }
+        }
+      }
+      
       await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true });
       await client.logout();
 

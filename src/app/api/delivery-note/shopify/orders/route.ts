@@ -48,6 +48,13 @@ interface ShopifyOrder {
 // GET: Shopify-Bestellungen abrufen
 export async function GET(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const limit = searchParams.get('limit') || '50';
@@ -127,6 +134,13 @@ export async function GET(request: NextRequest) {
 // POST: Bestellung in Lieferschein konvertieren
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { companyId, orderId, shopifyOrderData } = body;
 

@@ -39,11 +39,13 @@ export class FirestoreInvoiceService {
       };
 
       return finalResult;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
       console.error('❌ Fehler beim Generieren der Rechnungsnummer:', {
         error,
-        errorMessage: error?.message,
-        errorStack: error?.stack,
+        errorMessage,
+        errorStack,
         companyId,
       });
 

@@ -23,10 +23,6 @@ interface Step1Data {
   website: string;
   description: string;
   managerData?: ManagerData;
-  // E-Mail Einstellungen
-  emailSetup?: 'gmail' | 'taskilo' | 'skip';
-  taskiloEmailPrefix?: string; // z.B. "max.mustermann" für max.mustermann@taskilo.de
-  gmailConnected?: boolean;
 }
 
 const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
@@ -65,6 +61,8 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             employees: existingStep1.employees || '',
             website: existingStep1.website || userData.companyWebsite || '',
             description: existingStep1.description || '',
+            wantsTaskiloEmail: existingStep1.wantsTaskiloEmail !== false, // Default true
+            taskiloEmailPrefix: existingStep1.taskiloEmailPrefix || '',
           });
 
           // Lade Manager-Daten falls erforderlich

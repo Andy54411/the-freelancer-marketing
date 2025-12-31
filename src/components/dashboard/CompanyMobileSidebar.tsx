@@ -11,7 +11,6 @@ import {
   User as FiUser,
   Settings as FiSettings,
   MessageSquare as FiMessageSquare,
-  DollarSign as FiDollarSign,
   Mail as FiMail,
   ClipboardList as FiClipboardList,
   ChevronDown as FiChevronDown,
@@ -21,7 +20,6 @@ import {
   TrendingUp as FiTrendingUp,
   Banknote as FiBanknote,
   Shield as FiShield,
-  Building2 as FiBuilding2,
   Folder as FiFolder,
   FileText as FiFileText,
   Users as FiUsers,
@@ -52,6 +50,9 @@ interface CompanyMobileSidebarProps {
   onToggleExpanded: (itemValue: string) => void;
   onNavigate: (value: string, href?: string) => void;
   getCurrentView: () => string;
+  isEmployee?: boolean;
+  employeePermissions?: EmployeePermissions;
+  hideEmailMenu?: boolean;
 }
 
 const navigationItems: NavigationItem[] = [
@@ -350,6 +351,7 @@ export default function CompanyMobileSidebar({
   getCurrentView,
   isEmployee = false,
   employeePermissions,
+  hideEmailMenu = false,
 }: CompanyMobileSidebarProps) {
   const pathname = usePathname();
 
@@ -384,6 +386,12 @@ export default function CompanyMobileSidebar({
               } else {
                 navItems = navigationItems;
               }
+              
+              // Filtere E-Mail-Menü wenn Taskilo Webmail verbunden ist
+              if (hideEmailMenu) {
+                navItems = navItems.filter(item => item.value !== 'email');
+              }
+              
               return navItems;
             })().map(item => {
               const currentView = getCurrentView();

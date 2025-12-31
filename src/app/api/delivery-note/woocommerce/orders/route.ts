@@ -68,6 +68,13 @@ interface WooCommerceOrder {
 // GET: WooCommerce-Bestellungen abrufen
 export async function GET(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const page = searchParams.get('page') || '1';
@@ -167,6 +174,13 @@ export async function GET(request: NextRequest) {
 // POST: Bestellung in Lieferschein konvertieren
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { companyId, orderId, wooOrderData } = body;
 

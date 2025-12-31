@@ -14,6 +14,10 @@ export interface CompanyListData {
  * This is the server-side equivalent of the `/api/companies` route.
  */
 export async function getCompaniesData(): Promise<CompanyListData[]> {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   const companiesSnapshot = await db.collection('companies').get();
 
   if (companiesSnapshot.empty) {

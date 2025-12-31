@@ -81,7 +81,7 @@ Achte darauf, dass:
         console.error('API Error:', response.status, errorData);
 
         // Use the improved error messages from the API
-        const errorMessage = errorData.error || 'KI-Service nicht verfügbar';
+        const errorMessage = errorData.error || 'Taskilo KI-Service nicht verfügbar';
         const isRetryable = errorData.retryable;
 
         if (response.status === 503) {
@@ -143,7 +143,7 @@ Achte darauf, dass:
         console.error('Fehler beim Parsen der AI-Antwort:', parseError);
         console.error('Rohe AI-Antwort:', data.response);
         toast.error(
-          'Die KI-Antwort konnte nicht verarbeitet werden. Die Antwort war nicht im erwarteten JSON-Format.'
+          'Die Taskilo KI-Antwort konnte nicht verarbeitet werden. Bitte versuche es erneut.'
         );
       }
     } catch (error: any) {
@@ -169,13 +169,13 @@ Achte darauf, dass:
 
       // Final error handling - no more retries
       if (error.message?.includes('503') || error.message?.includes('overloaded')) {
-        toast.error('🤖 Die KI ist überlastet. Versuchen Sie es in wenigen Minuten erneut.');
+        toast.error('Taskilo KI ist überlastet. Versuche es in wenigen Minuten erneut.');
       } else if (error.message?.includes('429')) {
         toast.error('⏱️ Zu viele Anfragen. Warten Sie 30 Sekunden und probieren Sie es nochmal.');
       } else if (error.message?.includes('500')) {
         toast.error('🔧 Interner Fehler. Versuchen Sie es in wenigen Minuten erneut.');
       } else {
-        toast.error(error.message || '❌ Fehler bei der KI-Generierung. Versuchen Sie es erneut.');
+        toast.error(error.message || 'Fehler bei der Taskilo KI-Generierung. Versuche es erneut.');
       }
 
       // Set loading to false only for final errors (no retry)
@@ -242,9 +242,9 @@ Achte darauf, dass:
             </Button>
 
             {/* Info-Hinweis */}
-            <div className="text-xs text-[#14ad9f] bg-teal-50 p-2 rounded border border-teal-200">
-              💡 Die KI kann manchmal überlastet sein. Falls ein Fehler auftritt, warten Sie kurz
-              und versuchen Sie es erneut.
+            <div className="text-xs text-teal-600 bg-teal-50 p-2 rounded border border-teal-200">
+              Taskilo KI kann manchmal überlastet sein. Falls ein Fehler auftritt, warte kurz
+              und versuche es erneut.
             </div>
           </div>
 
@@ -252,8 +252,8 @@ Achte darauf, dass:
           {aiSuggestions.length > 0 && (
             <div className="mt-4">
               <div className="flex items-center justify-between mb-3">
-                <Label className="text-sm font-medium text-[#14ad9f]">
-                  KI-Vorschläge ({aiSuggestions.length}) - Bearbeitbar
+                <Label className="text-sm font-medium text-teal-600">
+                  Taskilo KI-Vorschläge ({aiSuggestions.length}) - Bearbeitbar
                 </Label>
                 <Button
                   size="sm"

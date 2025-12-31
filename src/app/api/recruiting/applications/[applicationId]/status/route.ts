@@ -32,8 +32,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Status required' }, { status: 400 });
     }
 
-    let appDoc = null;
-    let appRef = null;
+    let appDoc: FirebaseFirestore.DocumentSnapshot | null = null;
+    let appRef: FirebaseFirestore.DocumentReference | null = null;
     let companyId = providedCompanyId;
 
     // 1. Direct lookup if companyId is provided
@@ -59,20 +59,11 @@ export async function PATCH(
 
     // 2. If not found or companyId missing, try to find via document's companyId field
     if (!appDoc || !appDoc.exists) {
-      console.log('Searching for application without companyId...');
-      
-      // Try to get from the application document itself if it has companyId stored
-      // We need to search - try common company IDs or use collectionGroup with proper index
-      
-      // Fallback: Parse applicationId from URL path if it contains company info
-      // Or search in a known company (from the request URL context)
-      
       // Extract companyId from referer header if available
       const referer = request.headers.get('referer') || '';
       const companyMatch = referer.match(/\/company\/([^\/]+)/);
       if (companyMatch && companyMatch[1]) {
         companyId = companyMatch[1];
-        console.log('Extracted companyId from referer:', companyId);
         
         appRef = db
           .collection('companies')

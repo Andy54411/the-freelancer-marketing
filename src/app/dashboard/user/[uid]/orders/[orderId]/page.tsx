@@ -152,7 +152,7 @@ export default function OrderDetailPage() {
     // Wenn nach dem Laden kein Benutzer da ist, zum Login weiterleiten.
     if (!currentUser) {
       const currentPath = window.location.pathname + window.location.search;
-      router.replace(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
+      router.replace(`/?redirectTo=${encodeURIComponent(currentPath)}`);
       return;
     }
 

@@ -25,6 +25,7 @@ import {
 import { categories, Category } from '@/lib/categoriesData'; // Categories for search
 import { WorkspaceService } from '@/services/WorkspaceService'; // For Quick Note functionality
 import { Logo } from '@/components/logo';
+import LoginPopup from '@/components/LoginPopup';
 import AppHeaderNavigation from './AppHeaderNavigation'; // Category navigation below header
 import { QuickNoteDialog } from '@/components/workspace/QuickNoteDialog'; // Quick Note Dialog
 import {
@@ -79,6 +80,7 @@ interface UserHeaderProps {
 }
 
 const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
   const { user: authUser, loading: authLoading, unreadMessagesCount, recentChats } = useAuth(); // KORREKTUR: Alle Daten aus dem Context beziehen
 
   // Update-Notification System
@@ -312,12 +314,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         loadProfileFromFirestore(user.uid);
       } else {
         setProfilePictureURLFromStorage(null);
-        // If no user, and not on login page, redirect to login
-        if (!window.location.pathname.startsWith('/login')) {
-          router.replace(
-            `/login?redirectTo=${encodeURIComponent(window.location.pathname + window.location.search)}`
-          );
-        }
+        // Login-Modal wird jetzt im Header angezeigt, kein Redirect nötig
       }
     });
     return () => unsubscribe();
@@ -416,8 +413,19 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     // Initial fetch
     fetchUnreadCount();
 
-    // Kein Polling mehr - spart API-Kosten
-    // E-Mails werden nur bei Seitenwechsel oder manuellem Refresh aktualisiert
+    // Polling alle 2 Minuten für neue E-Mails
+    const pollingInterval = setInterval(fetchUnreadCount, 120000);
+
+    // Event-Listener für E-Mail-Status-Updates (wenn E-Mails gelesen werden)
+    const handleEmailReadUpdate = () => {
+      fetchUnreadCount();
+    };
+    window.addEventListener('emailReadStatusChanged', handleEmailReadUpdate);
+
+    return () => {
+      clearInterval(pollingInterval);
+      window.removeEventListener('emailReadStatusChanged', handleEmailReadUpdate);
+    };
   }, [currentUid, currentUser?.uid]);
 
   useEffect(() => {
@@ -592,13 +600,25 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                       <ul className="mt-1">
                         {category.subcategories.map(subcategory => (
                           <li key={subcategory}>
-                            <Link
-                              href={`/login`}
-                              className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-[#14ad9f] rounded"
-                              onClick={handleSubcategorySelect}
-                            >
-                              {subcategory}
-                            </Link>
+                            {currentUser ? (
+                              <Link
+                                href={`/dashboard/user/${currentUser.uid}/services/${encodeURIComponent(category.title.toLowerCase().replace(/\s+/g, '-'))}/${encodeURIComponent(subcategory.toLowerCase().replace(/\s+/g, '-'))}`}
+                                className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-[#14ad9f] rounded"
+                                onClick={handleSubcategorySelect}
+                              >
+                                {subcategory}
+                              </Link>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  handleSubcategorySelect();
+                                  setShowLoginPopup(true);
+                                }}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-[#14ad9f] rounded"
+                              >
+                                {subcategory}
+                              </button>
+                            )}
                           </li>
                         ))}
                       </ul>
@@ -907,12 +927,21 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                 onMouseEnter={handleInboxEnter}
                 onMouseLeave={handleInboxLeave}
               >
-                <Link
-                  href={currentUser ? `/dashboard/user/${currentUser.uid}/inbox` : '/login'}
-                  className="text-gray-600 hover:text-[#14ad9f] p-1 block"
-                >
-                  <FiMail size={20} />
-                </Link>
+                {currentUser ? (
+                  <Link
+                    href={`/dashboard/user/${currentUser.uid}/inbox`}
+                    className="text-gray-600 hover:text-[#14ad9f] p-1 block"
+                  >
+                    <FiMail size={20} />
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => setShowLoginPopup(true)}
+                    className="text-gray-600 hover:text-[#14ad9f] p-1 block"
+                  >
+                    <FiMail size={20} />
+                  </button>
+                )}
                 {unreadMessagesCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-[#14ad9f] text-white rounded-full px-1.5 py-0.5 text-xs font-medium z-10">
                     {unreadMessagesCount}
@@ -965,13 +994,25 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                       </p>
                     )}
                     <div className="border-t p-2 text-center">
-                      <Link
-                        href={currentUser ? `/dashboard/user/${currentUser.uid}/inbox` : '/login'}
-                        onClick={() => setIsInboxDropdownOpen(false)}
-                        className="text-sm font-medium text-[#14ad9f] hover:underline"
-                      >
-                        Zum Posteingang
-                      </Link>
+                      {currentUser ? (
+                        <Link
+                          href={`/dashboard/user/${currentUser.uid}/inbox`}
+                          onClick={() => setIsInboxDropdownOpen(false)}
+                          className="text-sm font-medium text-[#14ad9f] hover:underline"
+                        >
+                          Zum Posteingang
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setIsInboxDropdownOpen(false);
+                            setShowLoginPopup(true);
+                          }}
+                          className="text-sm font-medium text-[#14ad9f] hover:underline"
+                        >
+                          Zum Posteingang
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1175,15 +1216,23 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                   )}
                 </div>
               ) : (
-                <Link href="/login" className="text-sm font-medium text-[#14ad9f] hover:underline">
+                <button
+                  onClick={() => setShowLoginPopup(true)}
+                  className="text-sm font-medium text-[#14ad9f] hover:underline"
+                >
                   Anmelden
-                </Link>
+                </button>
               )}
             </div>
           </div>
         </div>
         <AppHeaderNavigation />
       </header>
+
+      <LoginPopup 
+        isOpen={showLoginPopup} 
+        onClose={() => setShowLoginPopup(false)} 
+      />
     </>
   );
 };

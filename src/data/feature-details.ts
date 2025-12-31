@@ -1,11 +1,11 @@
 // Central feature data for detail pages
 export const allFeatureDetails = {
-  // 🔍 Intelligente Suche & Matching
+  // Intelligente Suche & Matching
   'ki-basierte-anbietersuche': {
-    title: 'KI-basierte Anbietersuche',
+    title: 'Taskilo KI-Anbietersuche',
     subtitle: 'Intelligente Algorithmen finden den perfekten Match für Ihr Projekt',
     description:
-      'Unsere KI analysiert Ihre Projektanforderungen und findet automatisch die besten passenden Dienstleister basierend auf Standort, Verfügbarkeit, Expertise und Bewertungen.',
+      'Unsere Taskilo KI analysiert Ihre Projektanforderungen und findet automatisch die besten passenden Dienstleister basierend auf Standort, Verfügbarkeit, Expertise und Bewertungen.',
     category: 'Intelligente Suche & Matching',
     benefits: [
       'Machine Learning Algorithmen für optimale Matches',
@@ -22,7 +22,7 @@ export const allFeatureDetails = {
     ],
     howItWorks: [
       'Beschreiben Sie Ihr Projekt in natürlicher Sprache',
-      'KI analysiert Schlüsselwörter und Projektkontext',
+      'Taskilo KI analysiert Schlüsselwörter und Projektkontext',
       'Automatische Zuordnung zu passenden Dienstleisterkategorien',
       'Scoring-System bewertet Anbieter nach Passgenauigkeit',
       'Präsentation der Top-Matches mit Begründung',
@@ -33,7 +33,7 @@ export const allFeatureDetails = {
       { value: '4.8/5', label: 'Kundenzufriedenheit' },
     ],
     callToAction: {
-      primary: { text: 'KI-Suche testen', href: '/auftrag/get-started' },
+      primary: { text: 'Taskilo KI-Suche testen', href: '/auftrag/get-started' },
       secondary: { text: 'Wie es funktioniert', href: '/help/ki-suche' },
     },
   },
@@ -243,12 +243,12 @@ export const allFeatureDetails = {
 
   '247-support-system': {
     title: '24/7 Support-System',
-    subtitle: 'KI-gestützter Support rund um die Uhr verfügbar',
+    subtitle: 'Taskilo KI-Support rund um die Uhr verfügbar',
     description:
-      'Unser intelligentes Support-System kombiniert KI-Chat, Wissensdatenbank und menschliche Experten für schnelle Hilfe zu jeder Tages- und Nachtzeit.',
+      'Unser intelligentes Support-System kombiniert Taskilo KI-Chat, Wissensdatenbank und menschliche Experten für schnelle Hilfe zu jeder Tages- und Nachtzeit.',
     category: 'Sicherheit & Vertrauen',
     benefits: [
-      'KI-Chat für sofortige Antworten',
+      'Taskilo KI-Chat für sofortige Antworten',
       'Menschliche Experten bei komplexen Fragen',
       'Umfassende Wissensdatenbank',
       'Multi-Channel Support (Chat, E-Mail, Telefon)',
@@ -261,7 +261,7 @@ export const allFeatureDetails = {
       'Konfliktlösung zwischen Kunden und Anbietern',
     ],
     howItWorks: [
-      'KI-Chat analysiert Ihre Frage sofort',
+      'Taskilo KI-Chat analysiert Ihre Frage sofort',
       'Automatische Weiterleitung an passende Ressourcen',
       'Bei Bedarf Verbindung zu menschlichen Experten',
       'Ticket-System für komplexe Anfragen',

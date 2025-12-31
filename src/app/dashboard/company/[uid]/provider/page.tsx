@@ -372,9 +372,14 @@ const ProviderProfilePage = () => {
                     {/* Beschreibung */}
                     <div>
                       <h3 className="text-lg font-semibold mb-3">Über {getProviderName()}</h3>
-                      <p className="text-gray-700 leading-relaxed">
-                        {profile.description || profile.bio || 'Keine Beschreibung verfügbar.'}
-                      </p>
+                      {(profile.description || profile.bio) ? (
+                        <div 
+                          className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: profile.description || profile.bio || '' }}
+                        />
+                      ) : (
+                        <p className="text-gray-700 leading-relaxed">Keine Beschreibung verfügbar.</p>
+                      )}
                     </div>
 
                     {/* Skills */}

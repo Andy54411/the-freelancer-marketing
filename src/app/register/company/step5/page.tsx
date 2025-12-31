@@ -529,6 +529,19 @@ export default function Step5CompanyPage() {
     setHasAttemptedSubmit(true);
     setFormError(null);
 
+    // 🔧 DEBUG: Prüfe welche Steuerdaten aus dem Context kommen
+    console.log('🔧 DEBUG Registration - Steuerdaten:', {
+      vatId,
+      taxNumber,
+      companyPhoneNumber,
+      companyWebsite,
+      phoneNumber,
+      iban,
+      bic,
+      bankName,
+      accountHolder,
+    });
+
     if (!isFormValid()) {
       const missingFieldsList: string[] = [];
       if (!iban?.trim()) missingFieldsList.push('IBAN');
@@ -922,6 +935,9 @@ export default function Step5CompanyPage() {
           email: email!,
           companyName: cleanedCompanyData.companyName || 'Unbekannt',
           legalForm: cleanedCompanyData.legalForm || 'Einzelunternehmen',
+          // KRITISCH: user_type und accountType MÜSSEN in coreData sein für korrektes Routing!
+          user_type: 'firma',
+          accountType: 'business',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           // Storage: Default 500 MB Free Plan
@@ -943,38 +959,101 @@ export default function Step5CompanyPage() {
 
         // Schritt 2: Erweiterte Daten hinzufügen (nur sichere primitive Werte)
         const extendedData = {
+          // Adressdaten
           companyCity: cleanedCompanyData.companyCity || null,
           companyPostalCode: cleanedCompanyData.companyPostalCode || null,
           companyCountry: cleanedCompanyData.companyCountry || 'DE',
           companyStreet: cleanedCompanyData.companyStreet || null,
           companyHouseNumber: cleanedCompanyData.companyHouseNumber || null,
-          companyPhoneNumber: cleanedCompanyData.companyPhoneNumber || null,
-          companyWebsite: cleanedCompanyData.companyWebsite || null,
-          // 🔧 FIX: selectedCategory und selectedSubcategory hinzufügen!
+          // Admin-kompatible Alias-Felder für Adresse
+          city: cleanedCompanyData.companyCity || null,
+          postalCode: cleanedCompanyData.companyPostalCode || null,
+          country: cleanedCompanyData.companyCountry || 'DE',
+          address: `${cleanedCompanyData.companyStreet || ''} ${cleanedCompanyData.companyHouseNumber || ''}`.trim() || null,
+          
+          // Kontaktdaten
+          companyPhoneNumber: cleanedCompanyData.companyPhoneNumber || normalizedCompanyPhoneNumber || null,
+          companyWebsite: cleanedCompanyData.companyWebsite || companyWebsite || null,
+          // Admin-kompatible Alias-Felder für Kontakt
+          phone: normalizedCompanyPhoneNumber || normalizedPersonalPhoneNumber || null,
+          website: companyWebsite || null,
+          
+          // Steuerdaten (KRITISCH - fehlten vorher!)
+          vatId: vatId || cleanedCompanyData.vatIdForBackend || null,
+          taxNumber: taxNumber || cleanedCompanyData.taxNumberForBackend || null,
+          
+          // Banking-Daten (KRITISCH - fehlten vorher!)
+          iban: iban || null,
+          bic: bic || null,
+          bankName: bankName || null,
+          accountHolder: accountHolder?.trim() || null,
+          
+          // Persönliche Daten des Inhabers
+          phoneNumber: cleanedCompanyData.phoneNumber || null,
+          dateOfBirth: cleanedCompanyData.dateOfBirth || null,
+          personalStreet: cleanedCompanyData.personalStreet || null,
+          personalCity: cleanedCompanyData.personalCity || null,
+          personalPostalCode: cleanedCompanyData.personalPostalCode || null,
+          personalCountry: cleanedCompanyData.personalCountry || null,
+          
+          // Kategorien
           selectedCategory: cleanedCompanyData.selectedCategory || '',
           selectedSubcategory: cleanedCompanyData.selectedSubcategory || '',
+          industry: cleanedCompanyData.selectedCategory || '', // Admin-kompatibles Alias
           description: cleanedCompanyData.description || '',
           skills: cleanedCompanyData.skills || [],
           serviceAreas: cleanedCompanyData.serviceAreas || [],
-          // 🔧 FIX: user_type hinzufügen für Kunde vs. Firma Unterscheidung
-          user_type: 'firma', // Korrigiert: user_type statt userType
-          accountType: 'business', // Alternative Bezeichnung
-          // 🔧 DEBUG: hourlyRate in extendedData prüfen
+          
+          // Benutzertyp
+          user_type: 'firma',
+          accountType: 'business',
+          
+          // Stundensatz
           hourlyRate: (() => {
             const rate = Number(cleanedCompanyData.hourlyRate) || Number(hourlyRate) || 0;
-
             return rate;
           })(),
+          
+          // Standort
           lat: cleanedCompanyData.lat || null,
           lng: cleanedCompanyData.lng || null,
           radiusKm: cleanedCompanyData.radiusKm || 30,
-          // 🔧 FIX: Zusammengesetztes location Feld für Service-Seite
-          location:
-            `${cleanedCompanyData.companyCity || ''}${cleanedCompanyData.companyPostalCode ? ', ' + cleanedCompanyData.companyPostalCode : ''}`.trim(),
+          location: `${cleanedCompanyData.companyCity || ''}${cleanedCompanyData.companyPostalCode ? ', ' + cleanedCompanyData.companyPostalCode : ''}`.trim(),
+          
+          // DOKUMENT-URLs (KRITISCH für Admin-Ansicht!)
+          identityFrontUrl: idFrontResult.firebaseStorageUrl || null,
+          identityBackUrl: idBackResult.firebaseStorageUrl || null,
+          businessLicenseURL: businessLicResult.firebaseStorageUrl || null,
+          profilePictureURL: profilePicResult.firebaseStorageUrl || null,
+          logoUrl: profilePicResult.firebaseStorageUrl || null,
+          masterCraftsmanCertificateUrl: masterCertResult?.firebaseStorageUrl || null,
+          // Dokument File-IDs
+          identityFrontFileId: idFrontResult.fileId || null,
+          identityBackFileId: idBackResult.fileId || null,
+          businessLicenseFileId: businessLicResult.fileId || null,
+          profilePictureFileId: profilePicResult.fileId || null,
+          masterCraftsmanCertificateFileId: masterCertStripeFileId || null,
+          // Boolean-Flags für schnelle Prüfung
+          hasIdentityDocuments: !!(idFrontResult.firebaseStorageUrl && idBackResult.firebaseStorageUrl),
+          hasBusinessLicense: !!businessLicResult.firebaseStorageUrl,
+          
+          // Status
           status: 'pending_verification',
           profileComplete: false,
           updatedAt: serverTimestamp(),
         };
+
+        // 🔧 DEBUG: Prüfe welche Steuerdaten in extendedData gespeichert werden
+        console.log('🔧 DEBUG extendedData - Steuerdaten:', {
+          vatId: extendedData.vatId,
+          taxNumber: extendedData.taxNumber,
+          phone: extendedData.phone,
+          website: extendedData.website,
+          iban: extendedData.iban,
+          bic: extendedData.bic,
+          bankName: extendedData.bankName,
+          accountHolder: extendedData.accountHolder,
+        });
 
         await updateDoc(doc(db, 'companies', currentAuthUserUID), extendedData);
       } catch (firestoreError) {
@@ -1100,6 +1179,12 @@ export default function Step5CompanyPage() {
             country: companyCountry || 'DE',
           },
           companyRegister: companyRegister || '',
+          // Steuerdaten (KRITISCH für GoBD-Compliance)
+          vatId: vatId || '',
+          taxNumber: taxNumber || '',
+          // Kontaktdaten
+          phone: companyPhoneNumber || '',
+          website: companyWebsite || '',
         };
 
         const step2Data = {
@@ -1117,6 +1202,9 @@ export default function Step5CompanyPage() {
             city: personalCity || '',
             country: personalCountry || 'DE',
           },
+          // Steuerdaten auch in step2 für Kompatibilität
+          vatId: vatId || '',
+          taxNumber: taxNumber || '',
         };
 
         const step3Data = {
@@ -1180,13 +1268,13 @@ export default function Step5CompanyPage() {
         setCurrentStepMessage('Weiterleitung zum Onboarding...');
         setIsRedirecting(true);
 
-        // Kurze Verzögerung bevor Weiterleitung für bessere UX
+        // Kurze Verzögerung für bessere UX
         setTimeout(() => {
           alert(
             'Registrierung abgeschlossen! Sie werden nun durch unser Onboarding-System geführt, um Ihr Firmenprofil zu vervollständigen.'
           );
           if (resetRegistrationData) resetRegistrationData();
-          // NEU: Redirect zum Onboarding anstatt Dashboard (nach Dokumentation)
+          // Client-Side Navigation - useCompanyDashboard prüft jetzt firebaseUser
           router.push(`/dashboard/company/${currentAuthUserUID}/onboarding/welcome`);
         }, 1500);
       }

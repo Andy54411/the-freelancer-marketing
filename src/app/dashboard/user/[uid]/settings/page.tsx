@@ -57,7 +57,7 @@ export default function UserSettingsDashboardPage() {
         router.replace(`/dashboard/user/${globalCurrentUser.uid}/settings`);
       }
     } else {
-      router.replace(`/login?redirectTo=/dashboard/user/${pageUid}/settings`);
+      router.replace(`/?redirectTo=/dashboard/user/${pageUid}/settings`);
     }
   }, [pageUid, router, fetchUserData, globalCurrentUser, authLoading]); // Add globalCurrentUser and authLoading to dependencies
 

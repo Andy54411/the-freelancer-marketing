@@ -249,8 +249,9 @@ const UserProfilePage = () => {
                 )}
 
                 <p className="text-sm text-gray-500 mt-2">
-                  {profile.description?.substring(0, 100) || 'Keine Beschreibung vorhanden.'}
-                  {profile.description && profile.description.length > 100 && '...'}
+                  {profile.description 
+                    ? (profile.description.replace(/<[^>]*>/g, '').substring(0, 100) + (profile.description.replace(/<[^>]*>/g, '').length > 100 ? '...' : ''))
+                    : 'Keine Beschreibung vorhanden.'}
                 </p>
 
                 {isOwnProfile ? (

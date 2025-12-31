@@ -4,6 +4,13 @@ import { Timestamp } from 'firebase-admin/firestore';
 
 export async function POST(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const data = await req.json();
     const { userId, type, title, message, link, isRead = false } = data;
 
@@ -26,7 +33,7 @@ export async function POST(req: NextRequest) {
       updatedAt: Timestamp.now(),
     };
 
-    const docRef = await db!.collection('notifications').add(notificationData);
+    const docRef = await db.collection('notifications').add(notificationData);
 
     return NextResponse.json({
       success: true,
@@ -43,6 +50,13 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
 

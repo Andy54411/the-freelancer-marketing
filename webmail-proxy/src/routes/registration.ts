@@ -15,6 +15,7 @@
 
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import profileService from '../services/ProfileService';
 
 const router = Router();
 
@@ -811,13 +812,31 @@ router.post('/step6', async (req: Request, res: Response) => {
       });
     }
 
+    // Profil in SQLite speichern (mit verifizierter Telefonnummer!)
+    const email = `${emailPrefix}@taskilo.de`;
+    try {
+      profileService.createProfile({
+        email,
+        firstName,
+        lastName: lastName || undefined,
+        phone: session.data.phone || '',
+        phoneVerified: session.data.phoneVerified || false,
+        birthDate: session.data.birthDate || undefined,
+        gender: session.data.gender || undefined,
+      });
+      console.log(`[Registration] Profile saved for ${email} with phone ${session.data.phone}`);
+    } catch (profileError) {
+      // Profil-Fehler loggen aber nicht abbrechen (Mailbox wurde erstellt)
+      console.error(`[Registration] Error saving profile for ${email}:`, profileError);
+    }
+
     // Session löschen
     registrationSessions.delete(sessionId);
 
     res.json({
       success: true,
       message: 'Ihr Taskilo E-Mail-Account wurde erfolgreich erstellt!',
-      email: `${emailPrefix}@taskilo.de`,
+      email: email,
       loginUrl: '/webmail',
     });
   } catch {

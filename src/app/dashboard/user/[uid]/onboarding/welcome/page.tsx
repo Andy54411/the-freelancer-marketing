@@ -13,7 +13,7 @@ export default function UserOnboardingWelcome() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/login');
+      router.push('/');
       return;
     }
 
@@ -95,7 +95,7 @@ export default function UserOnboardingWelcome() {
                 <div className="shrink-0 w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center text-white font-bold text-sm mr-4">
                   1
                 </div>
-                <div className="flex-grow">
+                <div className="grow">
                   <h3 className="text-white font-semibold">Profil vervollständigen</h3>
                   <p className="text-white/80 text-sm">
                     Fügen Sie ein Profilbild und weitere Informationen hinzu
@@ -107,7 +107,7 @@ export default function UserOnboardingWelcome() {
                 <div className="shrink-0 w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center text-white font-bold text-sm mr-4">
                   2
                 </div>
-                <div className="flex-grow">
+                <div className="grow">
                   <h3 className="text-white font-semibold">Erste Service-Buchung</h3>
                   <p className="text-white/80 text-sm">
                     Durchstöbern Sie unsere Kategorien und buchen Sie Ihren ersten Service
@@ -119,7 +119,7 @@ export default function UserOnboardingWelcome() {
                 <div className="shrink-0 w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center text-white font-bold text-sm mr-4">
                   3
                 </div>
-                <div className="flex-grow">
+                <div className="grow">
                   <h3 className="text-white font-semibold">Projekt erstellen</h3>
                   <p className="text-white/80 text-sm">
                     Erstellen Sie detaillierte Projektanfragen für größere Aufträge

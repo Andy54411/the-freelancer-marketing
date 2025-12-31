@@ -1,6 +1,12 @@
 import { collection, getDocs, query, where, limit } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 
+interface CustomerData {
+  name: string;
+  email?: string;
+  customerNumber?: string;
+}
+
 interface CustomerMatchCandidate {
   id: string;
   name: string;
@@ -92,7 +98,7 @@ export class CustomerMatchingService {
       const allCustomersSnapshot = await getDocs(customersRef);
       const allCustomers = allCustomersSnapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...(doc.data() as CustomerData)
       }));
       
       const normalizedSearchName = this.normalizeString(customerName);

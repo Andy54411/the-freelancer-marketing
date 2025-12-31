@@ -9,6 +9,13 @@ import { db } from '@/firebase/server';
  */
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
 
     const { webFormId, userId, status, bankId, connectionId } = body;
@@ -23,7 +30,7 @@ export async function POST(request: NextRequest) {
     if (status === 'completed' || status === 'success') {
       try {
         // Get company data
-        const companyDoc = await db!.collection('companies').doc(userId).get();
+        const companyDoc = await db.collection('companies').doc(userId).get();
         if (!companyDoc.exists) {
           return NextResponse.json({ error: 'Company not found' }, { status: 404 });
         }

@@ -564,6 +564,64 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         // Don't fail onboarding if payment accounts creation fails
       }
 
+      // Sync mit Hetzner Webmail wenn taskiloEmail vorhanden
+      // Dies synchronisiert Firebase-Daten → Hetzner und holt die verifizierte Telefonnummer zurück
+      const taskiloEmail = stepData[5]?.taskiloEmail || existingCompanyData?.taskiloEmail;
+      if (taskiloEmail && taskiloEmail.endsWith('@taskilo.de')) {
+        try {
+          console.log('[submitOnboarding] Starte Webmail-Profil-Sync für:', taskiloEmail);
+          const { WebmailProfileSyncService } = await import('@/services/webmail/WebmailProfileSyncService');
+          
+          // Contact Person Daten aus step2
+          const contactPerson = existingCompanyData?.step2?.contactPerson || {};
+          
+          // Sammle Company-Daten für den Sync (mit allen möglichen Feldnamen)
+          const companyDataForSync = {
+            companyId,
+            companyName: existingCompanyData?.companyName || existingCompanyData?.name || '',
+            street: existingCompanyData?.companyStreet || existingCompanyData?.street || '',
+            houseNumber: existingCompanyData?.companyHouseNumber || existingCompanyData?.houseNumber || '',
+            zip: existingCompanyData?.companyPostalCode || existingCompanyData?.postalCode || existingCompanyData?.zip || '',
+            city: existingCompanyData?.companyCity || existingCompanyData?.city || '',
+            country: existingCompanyData?.companyCountry || existingCompanyData?.country || 'DE',
+            vatId: existingCompanyData?.vatId || '',
+            taxNumber: existingCompanyData?.taxNumber || '',
+            phone: existingCompanyData?.phone || existingCompanyData?.phoneNumber || existingCompanyData?.companyPhoneNumber || '',
+            website: existingCompanyData?.companyWebsite || existingCompanyData?.website || '',
+            legalForm: existingCompanyData?.legalForm || '',
+            // Zusätzliche Felder
+            iban: existingCompanyData?.iban || '',
+            bic: existingCompanyData?.bic || '',
+            bankName: existingCompanyData?.bankName || '',
+            industry: existingCompanyData?.industry || existingCompanyData?.selectedCategory || '',
+            accountHolder: existingCompanyData?.accountHolder || '',
+            // Contact Person - Vor- und Nachname
+            firstName: contactPerson.firstName || existingCompanyData?.firstName || '',
+            lastName: contactPerson.lastName || existingCompanyData?.lastName || '',
+          };
+
+          const syncResult = await WebmailProfileSyncService.syncCompanyWithWebmail(
+            taskiloEmail,
+            companyDataForSync
+          );
+
+          // Wenn die verifizierte Telefonnummer zurückkommt, überschreibe Firebase-Telefonnummer
+          if (syncResult.success && syncResult.verifiedPhone && syncResult.phoneVerified) {
+            console.log('[submitOnboarding] Verifizierte Telefonnummer aus Webmail:', syncResult.verifiedPhone);
+            await updateDoc(companyDocRef, {
+              phone: syncResult.verifiedPhone,
+              phoneNumber: syncResult.verifiedPhone,
+              phoneVerifiedFromWebmail: true,
+              phoneVerifiedAt: serverTimestamp(),
+            });
+            console.log('[submitOnboarding] Firebase Telefonnummer aktualisiert mit verifizierter Nummer');
+          }
+        } catch (syncError) {
+          console.error('[submitOnboarding] Webmail-Sync fehlgeschlagen:', syncError);
+          // Sync-Fehler sollen das Onboarding nicht abbrechen
+        }
+      }
+
       // SUCCESS: Onboarding abgeschlossen - companies-only architecture
 
       // Set cookies for middleware

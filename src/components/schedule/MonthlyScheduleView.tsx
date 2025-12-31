@@ -33,7 +33,7 @@ export function MonthlyScheduleView({
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
 
-    const days = [];
+    const days: Array<{ date: Date; isCurrentMonth: boolean; day: number }> = [];
 
     // Vorherige Monatstage (grau dargestellt)
     const prevMonth = new Date(year, month - 1, 0);

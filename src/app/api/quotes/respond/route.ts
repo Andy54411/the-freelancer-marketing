@@ -69,7 +69,7 @@ async function handleNewQuoteResponse(
     const subcategory = quoteData?.serviceSubcategory || quoteData?.title || 'Service';
 
     // Prüfen ob bereits ein Angebot existiert
-    const hasExisting = await ProposalSubcollectionService.hasExistingProposal(quoteId, companyUid);
+    const hasExisting = await ProposalSubcollectionService.hasExistingProposal(quoteId, companyUid, companyId);
     if (hasExisting) {
       return NextResponse.json(
         { error: 'Sie haben bereits ein Angebot für diese Anfrage abgegeben' },
@@ -96,7 +96,7 @@ async function handleNewQuoteResponse(
 
     // Erstelle Proposal in Subcollection
     try {
-      await ProposalSubcollectionService.createProposal(quoteId, proposalData, response);
+      await ProposalSubcollectionService.createProposal(quoteId, proposalData, companyId, response);
     } catch (proposalError) {
       throw proposalError; // Re-throw to be caught by outer try-catch
     }
@@ -140,7 +140,7 @@ async function handleNewQuoteResponse(
 /**
  * Behandelt Ablehnung einer Quote (action: "decline")
  */
-async function handleQuoteDecline(request: NextRequest, quoteId: string, companyId: string) {
+async function handleQuoteDecline(quoteId: string, companyId: string) {
   // TODO: Implement quote decline logic
   // This could involve creating a decline record, updating quote status, etc.
 
@@ -154,19 +154,19 @@ async function handleQuoteDecline(request: NextRequest, quoteId: string, company
  * API Route zum Antworten auf eine Quote (Angebot abgeben)
  * POST /api/quotes/respond
  */
-export async function POST(request: NextRequest, companyId: string) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Neue Struktur: { quoteId, action, response: { serviceItems, totalAmount, message, ... } }
-    const { quoteId, action, response } = body;
+    // Neue Struktur: { quoteId, action, response: { serviceItems, totalAmount, message, ... }, companyId }
+    const { quoteId, action, response, companyId } = body;
 
-    if (action === 'respond' && response) {
-      return await handleNewQuoteResponse(request, quoteId, response);
+    if (action === 'respond' && response && companyId) {
+      return await handleNewQuoteResponse(request, quoteId, response, companyId);
     }
 
-    if (action === 'decline') {
-      return await handleQuoteDecline(request, quoteId);
+    if (action === 'decline' && companyId) {
+      return await handleQuoteDecline(quoteId, companyId);
     }
 
     // Alte Struktur: { quoteId, companyUid, proposedPrice, message, ... }
@@ -187,8 +187,9 @@ export async function POST(request: NextRequest, companyId: string) {
       return NextResponse.json({ error: 'Fehlende erforderliche Felder' }, { status: 400 });
     }
 
-    // Check if company has already submitted a proposal
-    const hasExisting = await ProposalSubcollectionService.hasExistingProposal(quoteId, companyUid);
+    // Check if company has already submitted a proposal - verwende companyId aus body oder companyUid als Fallback
+    const targetCompanyId = companyId || companyUid;
+    const hasExisting = await ProposalSubcollectionService.hasExistingProposal(quoteId, companyUid, targetCompanyId);
     if (hasExisting) {
       return NextResponse.json(
         { error: 'Sie haben bereits ein Angebot für diese Anfrage abgegeben' },
@@ -212,7 +213,7 @@ export async function POST(request: NextRequest, companyId: string) {
     };
 
     // Erstelle Proposal in Subcollection
-    await ProposalSubcollectionService.createProposal(quoteId, proposalData);
+    await ProposalSubcollectionService.createProposal(quoteId, proposalData, targetCompanyId);
 
     // Sende Benachrichtigung an Kunden (falls customerUid verfügbar)
     if (customerUid) {
@@ -252,14 +253,14 @@ export async function POST(request: NextRequest, companyId: string) {
  * API Route um bestehende Angebote zu aktualisieren
  * PUT /api/quotes/respond
  */
-export async function PUT(request: NextRequest, companyId: string) {
+export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { quoteId, proposalId, status, updateData } = body;
+    const { quoteId, proposalId, status, updateData, companyId } = body;
 
     // Validierung
-    if (!quoteId || !proposalId || !status) {
+    if (!quoteId || !proposalId || !status || !companyId) {
       return NextResponse.json({ error: 'Fehlende erforderliche Felder' }, { status: 400 });
     }
 
@@ -274,12 +275,13 @@ export async function PUT(request: NextRequest, companyId: string) {
       quoteId,
       proposalId,
       status as 'accepted' | 'declined',
+      companyId,
       updateData
     );
 
     // Bei Annahme: Andere Proposals ablehnen
     if (status === 'accepted') {
-      await ProposalSubcollectionService.declineOtherProposals(quoteId, proposalId);
+      await ProposalSubcollectionService.declineOtherProposals(quoteId, proposalId, companyId);
     }
 
     return NextResponse.json({
@@ -299,19 +301,20 @@ export async function PUT(request: NextRequest, companyId: string) {
 
 /**
  * API Route um Angebote für eine Quote zu laden
- * GET /api/quotes/respond?quoteId=xxx
+ * GET /api/quotes/respond?quoteId=xxx&companyId=xxx
  */
-export async function GET(request: NextRequest, companyId: string) {
+export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const quoteId = searchParams.get('quoteId');
+    const companyId = searchParams.get('companyId');
 
-    if (!quoteId) {
-      return NextResponse.json({ error: 'Quote ID ist erforderlich' }, { status: 400 });
+    if (!quoteId || !companyId) {
+      return NextResponse.json({ error: 'Quote ID und Company ID sind erforderlich' }, { status: 400 });
     }
 
     // Lade alle Proposals für die Quote
-    const proposals = await ProposalSubcollectionService.getProposalsForQuote(quoteId);
+    const proposals = await ProposalSubcollectionService.getProposalsForQuote(quoteId, companyId);
 
     return NextResponse.json({
       success: true,

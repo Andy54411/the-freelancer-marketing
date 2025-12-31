@@ -245,7 +245,7 @@ export default function UserDashboardPage() {
         setCurrentUser(user);
         loadInitialDashboardData(user); // Lade Dashboard-Daten
       } else {
-        router.replace(`/login?redirectTo=/dashboard/user/${pageUid}`);
+        router.replace(`/?redirectTo=/dashboard/user/${pageUid}`);
       }
     });
     return () => unsubscribe();
@@ -514,7 +514,7 @@ export default function UserDashboardPage() {
   const _handleLogout = async () => {
     try {
       await signOut(auth);
-      router.replace('/login');
+      router.replace('/');
     } catch (err: any) {
       alert(`Fehler beim Abmelden: ${err.message || 'Unbekannter Fehler'}`);
     }

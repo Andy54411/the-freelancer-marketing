@@ -305,7 +305,7 @@ export class XRechnungParserService {
       description: item.description,
       quantity: item.quantity,
       unit: this.mapUnitCode(item.unitCode),
-      pricePerUnit: item.unitPrice,
+      unitPrice: item.unitPrice,
       taxRate: item.taxRate,
       total: item.totalAmount,
     }));

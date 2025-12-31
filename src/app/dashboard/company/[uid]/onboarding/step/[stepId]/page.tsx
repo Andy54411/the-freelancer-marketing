@@ -20,7 +20,7 @@ export default function CompanyOnboardingStepPage(): JSX.Element {
   useEffect(() => {
     async function checkAuthorization() {
       if (!user || !companyUid || !params) {
-        router.push('/auth/login');
+        router.push('/');
         return;
       }
 

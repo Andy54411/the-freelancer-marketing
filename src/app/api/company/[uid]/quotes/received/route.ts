@@ -9,6 +9,13 @@ export async function GET(
   const { uid } = await params;
 
   try {
+    if (!db || !auth) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     // Check if this is a request for a specific quote (has quoteId in URL)
     const url = new URL(request.url);
     const pathSegments = url.pathname.split('/');
@@ -48,13 +55,13 @@ export async function GET(
     let customerEmail: string | undefined;
 
     // Try companies collection first (for B2B)
-    const companyDoc = await db!.collection('companies').doc(uid).get();
+    const companyDoc = await db.collection('companies').doc(uid).get();
     if (companyDoc.exists) {
       const companyData = companyDoc.data();
       customerEmail = companyData?.email || companyData?.ownerEmail;
     } else {
       // Fallback to users collection (for B2C)
-      const userDoc = await db!.collection('users').doc(uid).get();
+      const userDoc = await db.collection('users').doc(uid).get();
       if (userDoc.exists) {
         const userData = userDoc.data();
         customerEmail = userData?.email;
@@ -228,9 +235,9 @@ export async function GET(
       success: true,
       quotes,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

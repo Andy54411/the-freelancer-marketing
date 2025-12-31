@@ -21,6 +21,13 @@ export async function registerEmployee(
   prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
+  if (!auth || !db) {
+    return {
+      error: 'Datenbankverbindung nicht verfügbar.',
+      success: false,
+    };
+  }
+
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const firstName = formData.get('firstName') as string;

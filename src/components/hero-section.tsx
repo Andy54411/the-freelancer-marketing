@@ -221,29 +221,34 @@ export default function HeroSection() {
                         }
 
                         return (
-                          <motion.div 
+                          <Link 
                             key={company.id} 
-                            className="flex items-center gap-3 px-5 py-3 bg-white rounded-full shadow-xl"
-                            whileHover={{ scale: 1.05, y: -2 }}
-                            transition={{ type: 'spring', stiffness: 300 }}
+                            href={`/profile/${company.id}`}
+                            className="block"
                           >
-                            <Image
-                              className="h-10 w-10 rounded-full object-cover border-2 border-[#14ad9f]"
-                              src={imageUrl}
-                              alt={`${company.name} Logo`}
-                              width={40}
-                              height={40}
-                              loading="lazy"
-                              onError={e => {
-                                const target = e.currentTarget as HTMLImageElement;
-                                const container = target.closest('.flex') as HTMLElement;
-                                if (container) {
-                                  container.style.display = 'none';
-                                }
-                              }}
-                            />
-                            <span className="text-sm font-bold text-gray-900 whitespace-nowrap">{company.name}</span>
-                          </motion.div>
+                            <motion.div 
+                              className="flex items-center gap-3 px-5 py-3 bg-white rounded-full shadow-xl cursor-pointer"
+                              whileHover={{ scale: 1.05, y: -2 }}
+                              transition={{ type: 'spring', stiffness: 300 }}
+                            >
+                              <Image
+                                className="h-10 w-10 rounded-full object-cover border-2 border-[#14ad9f]"
+                                src={imageUrl}
+                                alt={`${company.name} Logo`}
+                                width={40}
+                                height={40}
+                                loading="lazy"
+                                onError={e => {
+                                  const target = e.currentTarget as HTMLImageElement;
+                                  const container = target.closest('.flex') as HTMLElement;
+                                  if (container) {
+                                    container.style.display = 'none';
+                                  }
+                                }}
+                              />
+                              <span className="text-sm font-bold text-gray-900 whitespace-nowrap">{company.name}</span>
+                            </motion.div>
+                          </Link>
                         );
                       })}
                     </div>

@@ -42,6 +42,12 @@ export class ProjectNotificationService {
       message?: string;
     }
   ): Promise<void> {
+    if (!db) {
+      throw new Error('Datenbank nicht initialisiert');
+    }
+
+    const database = db; // Local reference für TypeScript Narrowing
+
     try {
       const priceText = proposalData.proposedPrice
         ? ` Angebotspreis: ${proposalData.proposedPrice.toLocaleString('de-DE')} €`
@@ -93,8 +99,8 @@ export class ProjectNotificationService {
 
       // Send notifications parallel
       await Promise.all([
-        db.collection('notifications').add(customerNotification),
-        db.collection('notifications').add(companyNotification),
+        database.collection('notifications').add(customerNotification),
+        database.collection('notifications').add(companyNotification),
       ]);
     } catch (error) {
       throw error;
@@ -116,6 +122,12 @@ export class ProjectNotificationService {
       isCustomerAction?: boolean; // Um zu unterscheiden, wer die Aktion ausgeführt hat
     }
   ): Promise<void> {
+    if (!db) {
+      throw new Error('Datenbank nicht initialisiert');
+    }
+
+    const database = db; // Local reference für TypeScript Narrowing
+
     try {
       let title: string;
       let message: string;
@@ -160,7 +172,7 @@ export class ProjectNotificationService {
         metadata: proposalData,
       };
 
-      await db.collection('notifications').add(notification);
+      await database.collection('notifications').add(notification);
     } catch (error) {
       throw error;
     }

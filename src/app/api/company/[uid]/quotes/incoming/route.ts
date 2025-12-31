@@ -9,6 +9,13 @@ export async function GET(
   const { uid } = await params;
 
   try {
+    if (!db || !auth) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     // Get the auth token from the request headers
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -34,10 +41,10 @@ export async function GET(
     }
 
     // Get company data to verify it exists and get additional info - Try companies collection first
-    let companyDoc = await db!.collection('companies').doc(uid).get();
+    let companyDoc = await db.collection('companies').doc(uid).get();
     if (!companyDoc.exists) {
       // Fallback to users collection
-      companyDoc = await db!.collection('users').doc(uid).get();
+      companyDoc = await db.collection('users').doc(uid).get();
       if (!companyDoc.exists) {
         return NextResponse.json({ error: 'Company not found' }, { status: 404 });
       }
@@ -46,10 +53,10 @@ export async function GET(
     const _companyData = companyDoc.data();
 
     // Get company's service subcategory to filter relevant projects - Try companies collection first
-    let companyUserDoc = await db!.collection('companies').doc(uid).get();
+    let companyUserDoc = await db.collection('companies').doc(uid).get();
     if (!companyUserDoc.exists) {
       // Fallback to users collection
-      companyUserDoc = await db!.collection('users').doc(uid).get();
+      companyUserDoc = await db.collection('users').doc(uid).get();
       if (!companyUserDoc.exists) {
         return NextResponse.json({ error: 'Company user data not found' }, { status: 404 });
       }
@@ -71,7 +78,7 @@ export async function GET(
     let quotesSnapshot;
     try {
       // Get only quotes for this specific provider to improve performance
-      quotesSnapshot = await db!
+      quotesSnapshot = await db
         .collection('companies')
         .doc(companyId)
         .collection('quotes')
@@ -267,9 +274,9 @@ export async function GET(
       success: true,
       quotes,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

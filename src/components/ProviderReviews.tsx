@@ -131,10 +131,10 @@ export default function ProviderReviews({
             id: doc.id,
             rating: data.rating || 0,
             comment: data.comment || data.reviewText || '',
-            reviewerName: data.reviewerName || 'Anonymer Nutzer',
-            reviewerCountry: data.reviewerCountry,
-            date: data.date,
-            projectTitle: data.projectTitle,
+            reviewerName: data.reviewerName || data.customerName || data.userName || 'Anonymer Nutzer',
+            reviewerCountry: data.reviewerCountry || data.location || 'Deutschland',
+            date: data.date || data.createdAt,
+            projectTitle: data.projectTitle || data.serviceType,
             projectPrice: data.projectPrice,
             projectDuration: data.projectDuration,
             isVerified: data.isVerified || false,
@@ -402,7 +402,7 @@ export default function ProviderReviews({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-          Bewertungen ({reviews.length})
+          Bewertungen ({reviewCount})
         </h2>
         <div className="space-y-6">
           {[...Array(3)].map((_, i) => (
@@ -428,7 +428,7 @@ export default function ProviderReviews({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-        Bewertungen ({reviews.length})
+        Bewertungen ({reviewCount})
       </h2>
 
       {/* Rating Summary */}
@@ -441,7 +441,7 @@ export default function ProviderReviews({
               </div>
               {renderStars(Math.round(averageRating), 'md')}
               <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {reviews.length} Bewertungen
+                {reviewCount} Bewertungen
               </div>
             </div>
           </div>

@@ -320,23 +320,24 @@ export function CustomerHistoryTab({ customer }: CustomerHistoryTabProps) {
       if (snapshot.empty) {
         // Convert createdAt to valid Date
         let timestamp;
-        if (customer.createdAt) {
-          // Handle Firestore Timestamp
-          if (customer.createdAt?.toDate && typeof customer.createdAt.toDate === 'function') {
-            timestamp = customer.createdAt.toDate();
+        const createdAtValue = customer.createdAt as unknown;
+        if (createdAtValue) {
+          // Handle Firestore Timestamp (has toDate method)
+          if (typeof createdAtValue === 'object' && createdAtValue !== null && 'toDate' in createdAtValue && typeof (createdAtValue as { toDate: () => Date }).toDate === 'function') {
+            timestamp = (createdAtValue as { toDate: () => Date }).toDate();
           }
           // Handle Date object
-          else if (customer.createdAt instanceof Date) {
-            timestamp = customer.createdAt;
+          else if (createdAtValue instanceof Date) {
+            timestamp = createdAtValue;
           }
           // Handle string
-          else if (typeof customer.createdAt === 'string') {
-            const dateObj = new Date(customer.createdAt);
+          else if (typeof createdAtValue === 'string') {
+            const dateObj = new Date(createdAtValue);
             timestamp = isNaN(dateObj.getTime()) ? serverTimestamp() : dateObj;
           }
           // Handle number (Unix timestamp)
-          else if (typeof customer.createdAt === 'number') {
-            timestamp = new Date(customer.createdAt * 1000);
+          else if (typeof createdAtValue === 'number') {
+            timestamp = new Date(createdAtValue * 1000);
           } else {
             timestamp = serverTimestamp();
           }

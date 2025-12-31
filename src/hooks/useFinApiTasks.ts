@@ -141,6 +141,7 @@ export function useFinApiTasks(
         }
       };
     }
+    return undefined;
   }, [autoRefresh, refreshInterval, fetchTasks]);
 
   // Cleanup on unmount
@@ -259,6 +260,7 @@ export function useFinApiTask(
         }
       };
     }
+    return undefined;
   }, [autoRefresh, refreshInterval, fetchTask, task]);
 
   // Cleanup on unmount

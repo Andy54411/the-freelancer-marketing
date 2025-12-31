@@ -12,6 +12,13 @@ import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
 // GET - Alle Projekte eines Unternehmens laden
 export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const { uid: companyId } = await params;
 
     if (!companyId) {
@@ -55,6 +62,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 // POST - Neues Projekt erstellen
 export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const { uid: companyId } = await params;
     const body = await request.json();
 

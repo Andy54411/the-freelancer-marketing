@@ -2,6 +2,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, isFirebaseAvailable } from '@/firebase/server';
 
+// Support Ticket Interface
+interface SupportTicket {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  category: string;
+  createdAt: string;
+  updatedAt: string;
+  commentsCount: number;
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -266,9 +278,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       industry: data?.selectedCategory || data?.industry,
       selectedSubcategory: data?.selectedSubcategory,
 
-      // Kontaktdaten
-      website: data?.website || data?.step1?.website,
-      phone: data?.step1?.phoneNumber || data?.companyPhoneNumber,
+      // Kontaktdaten - prüfe mehrere mögliche Felder
+      website: data?.website || data?.step1?.website || data?.companyWebsite,
+      // Priorisiere verifizierte Webmail-Nummer, dann andere Quellen
+      phone: data?.phoneVerifiedFromWebmail 
+        ? (data?.phone || data?.phoneNumber) 
+        : (data?.phone || data?.phoneNumber || data?.step2?.contactPerson?.phone || data?.step1?.phone || data?.companyPhoneNumber),
+      phoneVerifiedFromWebmail: data?.phoneVerifiedFromWebmail || false,
+      phoneVerifiedAt: data?.phoneVerifiedAt?.toDate?.()?.toISOString(),
 
       // Status und Verifizierung
       status: status,
@@ -423,6 +440,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       isActualOwner: data?.step1?.isActualOwner,
       ownershipPercentage: data?.step1?.ownershipPercentage,
 
+      // Taskilo E-Mail Integration
+      taskiloEmailConnected: data?.step5?.taskiloEmailConnected || data?.taskiloEmailConnected || false,
+      taskiloEmail: data?.step5?.taskiloEmail || data?.taskiloEmail,
+      gmailConnected: data?.step5?.gmailConnected || data?.gmailConnected || false,
+      gmailEmail: data?.step5?.gmailEmail || data?.gmailEmail,
+      emailType: data?.step5?.emailType || data?.emailType,
+
       // Legacy-Kompatibilität
       documentsUploaded: data?.documentsUploaded || [],
       notificationSettings: data?.notificationSettings,
@@ -430,8 +454,37 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       paymentSettings: data?.paymentSettings,
     };
 
+    // Support-Tickets für diese Company laden
+    let supportTickets: SupportTicket[] = [];
+    try {
+      const ticketsSnapshot = await db!
+        .collection('adminTickets')
+        .where('customerEmail', '==', data?.email)
+        .orderBy('createdAtTimestamp', 'desc')
+        .limit(20)
+        .get();
+
+      supportTickets = ticketsSnapshot.docs.map(doc => {
+        const ticketData = doc.data();
+        return {
+          id: doc.id,
+          title: ticketData.title || 'Kein Titel',
+          status: ticketData.status || 'open',
+          priority: ticketData.priority || 'medium',
+          category: ticketData.category || 'support',
+          createdAt: ticketData.createdAt || ticketData.createdAtTimestamp?.toDate?.()?.toISOString(),
+          updatedAt: ticketData.updatedAt || ticketData.updatedAtTimestamp?.toDate?.()?.toISOString(),
+          commentsCount: ticketData.comments?.length || 0,
+        };
+      });
+    } catch (ticketError) {
+      console.log('[DEBUG] Error loading tickets:', ticketError);
+      // Tickets sind optional - Fehler nicht werfen
+    }
+
     return NextResponse.json({
       company,
+      supportTickets,
       source: 'firebase_direct',
       timestamp: new Date().toISOString(),
     });

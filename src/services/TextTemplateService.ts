@@ -428,7 +428,7 @@ export class TextTemplateService {
    * Konvertiert QuerySnapshot zu TextTemplate Array
    */
   private static mapQuerySnapshotToTemplates(
-    querySnapshot: QuerySnapshot<DocumentData>
+    querySnapshot: QuerySnapshot<DocumentData, DocumentData>
   ): TextTemplate[] {
     return querySnapshot.docs.map(doc => {
       const data = doc.data();

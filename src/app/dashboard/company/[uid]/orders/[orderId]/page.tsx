@@ -111,7 +111,7 @@ export default function CompanyOrderDetailPage() {
     if (!currentUser) {
       // If auth is done and there's no user, redirect.
       const currentPath = window.location.pathname + window.location.search;
-      router.replace(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
+      router.replace(`/?redirectTo=${encodeURIComponent(currentPath)}`);
       return;
     }
 

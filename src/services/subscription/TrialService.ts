@@ -93,13 +93,15 @@ export class TrialService {
       } else if (data.trialEndDate) {
         effectiveEndDate = data.trialEndDate.toDate ? data.trialEndDate.toDate() : new Date(data.trialEndDate);
       } else {
-        // Kein Trial-Datum - Account direkt blockieren
+        // Kein Trial-Datum - Account ist auf Free Plan, nicht blockiert
+        // Neue Companies starten ohne Trial (FreeMail ist kostenlos)
+        const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
         return {
-          trialStartDate: new Date(),
-          trialEndDate: new Date(),
-          daysRemaining: 0,
-          isExpired: true,
-          isBlocked: true,
+          trialStartDate: createdAt,
+          trialEndDate: new Date(createdAt.getTime() + 365 * 24 * 60 * 60 * 1000), // 1 Jahr ab Erstellung
+          daysRemaining: 365,
+          isExpired: false,
+          isBlocked: false,
         };
       }
 

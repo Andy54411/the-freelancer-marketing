@@ -101,7 +101,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setFirebaseUser(null);
       // Optional: Leite den Benutzer nach dem Logout weiter
-      window.location.href = '/login';
+      window.location.href = '/';
     } catch (error) {
       // Hier könnten Sie dem Benutzer eine Fehlermeldung anzeigen
     }
@@ -273,8 +273,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
               const redirectTo = urlParams?.get('redirectTo');
 
-              // 1. Nach Login-Redirect ODER Homepage-Redirect ODER Dashboard-Base-Route
-              if (pathname?.includes('/login') || pathname === '/' || pathname === '/dashboard') {
+              // 1. Nach Homepage-Redirect ODER Dashboard-Base-Route
+              if (pathname === '/' || pathname === '/dashboard') {
                 needsRedirect = true;
               }
               // 2. Firma User auf User Dashboard - SOFORT UMLEITEN!
@@ -388,7 +388,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             // Mitarbeiter-Redirect wenn kein DB-Dokument gefunden wurde
             if (roleFromClaim === 'mitarbeiter' && employeeCompanyIdFromClaim && !isRedirecting) {
               const currentPath = window.location.pathname;
-              if (currentPath.includes('/login') || currentPath === '/') {
+              if (currentPath === '/') {
                 setIsRedirecting(true);
                 window.location.assign(`/dashboard/company/${employeeCompanyIdFromClaim}`);
                 return;

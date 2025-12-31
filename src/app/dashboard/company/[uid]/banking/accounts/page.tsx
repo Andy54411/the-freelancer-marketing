@@ -2170,7 +2170,7 @@ export default function BankingAccountsPage() {
                   {/* Page Numbers */}
                   <div className="flex items-center space-x-1">
                     {(() => {
-                      const pages = [];
+                      const pages: React.ReactNode[] = [];
                       const maxVisiblePages = 5;
 
                       let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));

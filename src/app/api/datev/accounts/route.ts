@@ -10,6 +10,13 @@ import { db } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
   try {
+    if (!db) {
+      return Response.json(
+        { error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     // Extract company ID from URL or headers
     const url = new URL(request.url);
     const companyId = url.searchParams.get('companyId') || request.headers.get('x-company-id');

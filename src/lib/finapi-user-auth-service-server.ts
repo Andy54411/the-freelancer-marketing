@@ -36,6 +36,10 @@ export class FinAPIUserAuthServiceServer {
    * Holt oder erstellt einen finAPI User für den aktuellen Firebase User
    */
   async getOrCreateFinAPIUser(firebaseUid: string, userEmail: string): Promise<User | null> {
+    if (!db) {
+      throw new Error('Datenbank nicht initialisiert');
+    }
+
     try {
       // 1. Prüfe ob User bereits in Firestore existiert
       const userDocRef = db.collection('finapi_users').doc(firebaseUid);
@@ -118,6 +122,10 @@ export class FinAPIUserAuthServiceServer {
    * Erstellt User-spezifischen Access Token für finAPI Requests
    */
   async getUserAccessToken(firebaseUid: string): Promise<string | null> {
+    if (!db) {
+      throw new Error('Datenbank nicht initialisiert');
+    }
+
     try {
       const userDocRef = db.collection('finapi_users').doc(firebaseUid);
       const userDoc = await userDocRef.get();
@@ -162,6 +170,10 @@ export class FinAPIUserAuthServiceServer {
    * Markiert finAPI User als inaktiv (anstatt zu löschen)
    */
   async deactivateFinAPIUser(firebaseUid: string): Promise<boolean> {
+    if (!db) {
+      throw new Error('Datenbank nicht initialisiert');
+    }
+
     try {
       const userDocRef = db.collection('finapi_users').doc(firebaseUid);
       const userDoc = await userDocRef.get();
@@ -186,6 +198,10 @@ export class FinAPIUserAuthServiceServer {
    * Prüft den Status eines finAPI Users
    */
   async getUserStatus(firebaseUid: string): Promise<UserAuthData | null> {
+    if (!db) {
+      throw new Error('Datenbank nicht initialisiert');
+    }
+
     try {
       const userDocRef = db.collection('finapi_users').doc(firebaseUid);
       const userDoc = await userDocRef.get();

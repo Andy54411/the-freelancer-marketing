@@ -655,13 +655,12 @@ export default function CompanyProviderDetailPage() {
                 >
                   Über {provider.isCompany ? 'das Unternehmen' : 'mich'}
                 </h2>
-                <p
-                  className="text-gray-600 dark:text-gray-400 leading-relaxed"
+                <div
+                  className="prose prose-lg max-w-none text-gray-600 dark:text-gray-400 leading-relaxed"
                   data-translatable
                   data-translation-key="provider.about.description"
-                >
-                  {provider.bio || provider.description}
-                </p>
+                  dangerouslySetInnerHTML={{ __html: provider.bio || provider.description || '' }}
+                />
               </div>
             )}
 

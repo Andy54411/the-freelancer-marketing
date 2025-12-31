@@ -14,6 +14,10 @@ export interface InviteCode {
  * Fetches all unused invite codes from Firestore for the admin dashboard.
  */
 export async function getUnusedInviteCodes(): Promise<InviteCode[]> {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   const codesRef = db.collection('invite_codes');
   const snapshot = await codesRef.where('used', '==', false).orderBy('createdAt', 'desc').get();
 

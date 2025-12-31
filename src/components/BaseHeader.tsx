@@ -34,7 +34,7 @@ export function BaseHeader({ currentUid, menuItems = [], children }: BaseHeaderP
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      window.location.href = '/login';
+      window.location.href = '/';
     } catch (error) {}
   };
 

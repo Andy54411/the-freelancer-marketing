@@ -12,7 +12,7 @@ const isNonEmptyString = (val: unknown): val is string =>
   typeof val === 'string' && val.trim() !== '';
 
 export function useCompanyDashboard() {
-  const { user, loading: authLoading } = useAuth(); // Verwende den zentralen Auth-Kontext
+  const { user, firebaseUser, loading: authLoading } = useAuth(); // Verwende den zentralen Auth-Kontext
   const params = useParams();
   const uid = useMemo(
     () => (Array.isArray(params?.uid) ? params.uid[0] : params?.uid),
@@ -54,15 +54,26 @@ export function useCompanyDashboard() {
       return;
     }
 
+    // WICHTIG: Wenn Firebase Auth User existiert aber Firestore-Daten noch nicht geladen,
+    // weiter warten statt zur Login-Seite weiterleiten (Race Condition nach Registrierung)
+    if (firebaseUser && !user) {
+      setIsChecking(true);
+      return;
+    }
+
     // Autorisierungslogik: Firma-Owner ODER Mitarbeiter der Firma
     // Owner = user_type 'firma' UND uid stimmt mit URL überein
     const isOwner = user?.user_type === 'firma' && user?.uid === uid;
     // Mitarbeiter = user_type 'mitarbeiter' UND companyId entspricht dieser Firma (aus Custom Claims)
     const isEmployee = user?.user_type === 'mitarbeiter' && user?.companyId === uid;
     
+    // Zusätzliche Prüfung: Wenn UID in URL mit Firebase Auth UID übereinstimmt,
+    // ist der User berechtigt (für frisch registrierte Companies)
+    const isNewlyRegistered = firebaseUser?.uid === uid;
+    
     // Wenn die Authentifizierung abgeschlossen ist, aber kein Benutzer da ist
     // oder weder Owner noch Mitarbeiter ist, ist der Zugriff nicht gestattet.
-    if (!user || (!isOwner && !isEmployee)) {
+    if (!user || (!isOwner && !isEmployee && !isNewlyRegistered)) {
       setIsAuthorized(false);
       setIsChecking(false);
       // Die <ProtectedRoute>-Komponente kümmert sich um die Weiterleitung.

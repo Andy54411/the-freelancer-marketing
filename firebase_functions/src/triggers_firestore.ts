@@ -404,14 +404,97 @@ export const syncCompanyToUserOnUpdate = onDocumentUpdated({
   region: "europe-west1"
 }, async (event) => {
   const companyId = event.params.companyId;
+  const beforeData = event.data?.before.data();
+  const afterData = event.data?.after.data();
   
-  // ❌ KOMPLETT DEAKTIVIERT - KEINE FIRMENDATEN IN USERS COLLECTION!
-  loggerV2.info(`[syncCompanyToUserOnUpdate] DEACTIVATED - No company data will be synced to users collection. Company ${companyId} data stays in companies collection only.`);
+  if (!afterData) {
+    loggerV2.warn(`[syncCompanyToUserOnUpdate] No after data for company ${companyId}`);
+    return null;
+  }
+
+  // Prüfe ob relevante Felder geändert wurden
+  const relevantFields = [
+    'status', 'profileStatus', 'accountStatus', 'suspended', 'blocked',
+    'companyName', 'companyStreet', 'companyHouseNumber', 'companyCity', 
+    'companyPostalCode', 'companyCountry', 'vatId', 'taxNumber', 
+    'iban', 'bic', 'bankName', 'industry', 'legalForm',
+    'step2' // Für contactPerson firstName/lastName
+  ];
+
+  const hasRelevantChanges = relevantFields.some(field => {
+    const before = beforeData?.[field];
+    const after = afterData?.[field];
+    return JSON.stringify(before) !== JSON.stringify(after);
+  });
+
+  if (!hasRelevantChanges) {
+    loggerV2.info(`[syncCompanyToUserOnUpdate] No relevant changes for company ${companyId} - skipping Hetzner sync`);
+    return null;
+  }
+
+  // Finde die Taskilo E-Mail für dieses Unternehmen
+  const taskiloEmail = afterData.step5?.taskiloEmail || afterData.step6?.taskiloEmail || afterData.taskiloEmail;
   
-  // ARCHITEKTUR-REGEL: 
-  // users collection = NUR Authentifizierung + Basis-Profildaten + Status-Flags
-  // companies collection = ALLE Firmendaten + Stripe + Geschäftsinformationen
-  
+  if (!taskiloEmail || !taskiloEmail.endsWith('@taskilo.de')) {
+    loggerV2.info(`[syncCompanyToUserOnUpdate] No Taskilo email for company ${companyId} - skipping Hetzner sync`);
+    return null;
+  }
+
+  // Sync zu Hetzner
+  try {
+    const WEBMAIL_API_URL = process.env.WEBMAIL_API_URL || 'https://mail.taskilo.de';
+    
+    // Contact Person aus step2
+    const contactPerson = afterData.step2?.contactPerson || {};
+    
+    const syncPayload = {
+      email: taskiloEmail,
+      companyId: companyId,
+      companyData: {
+        companyName: afterData.companyName || '',
+        street: afterData.companyStreet || afterData.street || '',
+        houseNumber: afterData.companyHouseNumber || afterData.houseNumber || '',
+        city: afterData.companyCity || afterData.city || '',
+        zip: afterData.companyPostalCode || afterData.postalCode || '',
+        country: afterData.companyCountry || afterData.country || 'DE',
+        vatId: afterData.vatId || '',
+        taxNumber: afterData.taxNumber || '',
+        iban: afterData.iban || '',
+        bic: afterData.bic || '',
+        bankName: afterData.bankName || '',
+        industry: afterData.industry || afterData.selectedCategory || '',
+        legalForm: afterData.legalForm || '',
+        phone: afterData.phone || afterData.phoneNumber || '',
+        website: afterData.website || afterData.companyWebsite || '',
+        accountHolder: afterData.accountHolder || '',
+        firstName: contactPerson.firstName || afterData.firstName || '',
+        lastName: contactPerson.lastName || afterData.lastName || '',
+        // Account Status
+        accountStatus: afterData.status || afterData.profileStatus || 'active',
+        suspended: afterData.suspended === true,
+        blocked: afterData.blocked === true,
+      },
+    };
+
+    loggerV2.info(`[syncCompanyToUserOnUpdate] Syncing company ${companyId} to Hetzner for ${taskiloEmail}`);
+
+    const response = await fetch(`${WEBMAIL_API_URL}/api/profile/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(syncPayload),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      loggerV2.info(`[syncCompanyToUserOnUpdate] Hetzner sync successful for ${taskiloEmail}:`, result);
+    } else {
+      const errorText = await response.text();
+      loggerV2.error(`[syncCompanyToUserOnUpdate] Hetzner sync failed for ${taskiloEmail}: ${response.status} - ${errorText}`);
+    }
+  } catch (error) {
+    loggerV2.error(`[syncCompanyToUserOnUpdate] Error syncing to Hetzner for company ${companyId}:`, error);
+  }
+
   return null;
 });
 

@@ -1543,19 +1543,20 @@ class GoogleAdsClientService {
           login_customer_id: MANAGER_ID,
         },
         {
-          onMutationStart: async ({ mutation, editOptions }) => {
+          onMutationStart: async (args: { mutation: Record<string, unknown>; editOptions: (options: Record<string, unknown>) => void }) => {
             // Die Library sendet { operations: [...] }, aber die API erwartet { operation: {...} }
             // Wir müssen den Request transformieren
+            const mutation = args.mutation as { operations?: unknown[] };
             if (mutation.operations && Array.isArray(mutation.operations)) {
               const firstOp = mutation.operations[0];
-              editOptions({
+              args.editOptions({
                 operation: firstOp,
               });
               // Loesche das falsche operations-Feld
               delete mutation.operations;
             }
           },
-        }
+        } as Parameters<typeof this.client.Customer>[1]
       );
 
       const response = await customer.customerClientLinks.create([

@@ -222,7 +222,7 @@ export function EmployeeTable({
                           <XCircle className="h-4 w-4 text-red-500" />
                         )}
                         {employee.appAccess?.registered && (
-                          <Smartphone className="h-4 w-4 text-blue-500" title="App-Zugang aktiv" />
+                          <Smartphone className="h-4 w-4 text-blue-500" aria-label="App-Zugang aktiv" />
                         )}
                       </div>
                       <p className="text-sm text-gray-600">{employee.position}</p>

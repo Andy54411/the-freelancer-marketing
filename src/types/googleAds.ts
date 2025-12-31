@@ -369,10 +369,10 @@ export interface GoogleAdsError {
   message: string;
   retryable: boolean;
   retryAfter?: number;
-  isProductionAccount?: boolean; // NEW: Flag für Production Account Fehler
-  details?: any;
-  // Legacy für Backward Compatibility
-  details?: any;
+  isProductionAccount?: boolean;
+  isManagerAccount?: boolean;
+  needsNewInvitation?: boolean;
+  details?: unknown;
 }
 
 export type GoogleAdsLegacyServiceStatus =

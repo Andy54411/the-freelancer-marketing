@@ -620,6 +620,7 @@ export function EmailClient({
   // WICHTIG: handleMarkAsRead muss VOR handleEmailClick definiert werden!
   const handleMarkAsRead = useCallback(
     async (emailIds: string[], read: boolean) => {
+      console.log('📧 [handleMarkAsRead] Called with:', { emailIds, read, companyId });
       try {
         // WICHTIG: Wir updaten NUR das 'read' Feld, NICHT das 'timestamp'!
         // Das verhindert, dass Emails beim Lesen neu sortiert werden
@@ -627,18 +628,25 @@ export function EmailClient({
 
         emailIds.forEach(emailId => {
           const emailRef = doc(db, 'companies', companyId, 'emailCache', emailId);
+          console.log('📧 [handleMarkAsRead] Updating doc:', emailRef.path);
 
           // NUR das read-Feld updaten - kein merge, kein timestamp update
           batch.update(emailRef, { read: read });
         });
 
         await batch.commit();
+        console.log('📧 [handleMarkAsRead] Batch committed successfully');
+
+        // Benachrichtige andere Komponenten (z.B. Header) über die Änderung
+        window.dispatchEvent(new CustomEvent('emailReadStatusChanged'));
+        console.log('📧 [handleMarkAsRead] Event dispatched');
 
         // DEBUG: Verify the update actually happened in Firestore
         const firstEmailId = emailIds[0];
         const verifyRef = doc(db, 'companies', companyId, 'emailCache', firstEmailId);
         const verifyDoc = await getDoc(verifyRef);
         if (verifyDoc.exists()) {
+          console.log('📧 [handleMarkAsRead] Verified - read is now:', verifyDoc.data()?.read);
         }
 
         // Auswahl aufheben nach erfolgreichem Markieren (nur bei Mehrfachauswahl)
@@ -1125,7 +1133,7 @@ export function EmailClient({
   }
 
   return (
-    <div className={cn('h-screen w-screen flex bg-white', className)}>
+    <div className={cn('h-full w-full flex bg-white', className)}>
       {/* Email List - Fixed Width */}
       <div
         className={cn(

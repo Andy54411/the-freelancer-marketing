@@ -8,6 +8,13 @@ export async function GET(
 ) {
   const { uid, quoteId } = await params;
   try {
+    if (!db || !auth) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     // Get the auth token from the request headers
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -33,7 +40,7 @@ export async function GET(
     }
 
     // Try to get the quote from quotes collection
-    const quoteDoc = await db!
+    const quoteDoc = await db
       .collection('companies')
       .doc(companyId)
       .collection('quotes')

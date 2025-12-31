@@ -108,7 +108,7 @@ export default function MarketplaceProposalsPage() {
     if (!params?.uid) return;
     if (authLoading) return;
     if (!user || !firebaseUser) {
-      router.push('/login');
+      router.push('/');
       return;
     }
 

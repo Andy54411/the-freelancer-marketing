@@ -62,6 +62,10 @@ export async function storeBankConnection(
   firebaseUid: string,
   connectionData: Omit<StoredBankConnection, 'createdAt' | 'updatedAt'>
 ): Promise<void> {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   try {
     const userDocRef = db.collection('users').doc(firebaseUid);
     const now = new Date();
@@ -131,6 +135,10 @@ export async function storeBankAccounts(
   firebaseUid: string,
   accounts: StoredBankAccount[]
 ): Promise<void> {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   try {
     // 🔧 FIX: Für Unternehmen in companies Collection mit step4 Struktur speichern
     const companyDocRef = db.collection('companies').doc(firebaseUid);
@@ -201,6 +209,10 @@ export async function storeBankAccounts(
  * Aktualisiert Banking-Statistiken in companies Collection (Anzahl Banken, Konten, Gesamtsaldo)
  */
 export async function updateBankingStatistics(firebaseUid: string): Promise<void> {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   try {
     // 🔧 FIX: companies Collection statt users
     const companyDocRef = db.collection('companies').doc(firebaseUid);
@@ -253,6 +265,10 @@ export async function updateBankingStatistics(firebaseUid: string): Promise<void
  * Gruppiert nach Banken für bessere Übersicht
  */
 export async function getUserBankConnections(firebaseUid: string): Promise<StoredBankConnection[]> {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   try {
     // 🔧 FIX: companies Collection statt users
     const companyDocRef = db.collection('companies').doc(firebaseUid);
@@ -273,6 +289,10 @@ export async function getUserBankConnections(firebaseUid: string): Promise<Store
  * Holt gespeicherte Bankkonten einer Company
  */
 export async function getUserBankAccounts(firebaseUid: string): Promise<StoredBankAccount[]> {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   try {
     // 🔧 FIX: companies Collection statt users
     const companyDocRef = db.collection('companies').doc(firebaseUid);
@@ -330,6 +350,10 @@ export async function getUserBankingOverview(firebaseUid: string): Promise<{
     activeConnections: number;
   };
 } | null> {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   try {
     // 🔧 FIX: companies Collection statt users
     const companyDocRef = db.collection('companies').doc(firebaseUid);
@@ -373,6 +397,10 @@ export async function getAccountsByBank(
   }
 }
 export async function hasUserBankingSetup(firebaseUid: string): Promise<boolean> {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   try {
     // 🔧 FIX: companies Collection statt users
     const companyDocRef = db.collection('companies').doc(firebaseUid);
@@ -395,6 +423,10 @@ export async function deactivateBankConnection(
   firebaseUid: string,
   connectionId: string
 ): Promise<void> {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   try {
     // 🔧 FIX: companies Collection statt users
     const companyDocRef = db.collection('companies').doc(firebaseUid);
@@ -420,6 +452,10 @@ export async function updateAccountBalances(
   firebaseUid: string,
   accountUpdates: Array<{ finapiAccountId: string; balance: number; availableBalance: number }>
 ): Promise<void> {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   try {
     // 🔧 FIX: companies Collection statt users + step4 Update für primäres Konto
     const companyDocRef = db.collection('companies').doc(firebaseUid);

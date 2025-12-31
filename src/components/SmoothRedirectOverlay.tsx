@@ -110,7 +110,7 @@ function SmoothRedirectOverlayContent() {
 
       // Master/Support
       if (user.user_type === 'master' || user.user_type === 'support') {
-        if (pathname === '/' || pathname === '/login' || pathname === '/register') {
+        if (pathname === '/' || pathname === '/register') {
           needsRedirect = true;
           // Nutze redirectTo wenn vorhanden und es ein Admin-Pfad ist, sonst Standard
           targetPath = redirectTo?.includes('/dashboard/admin') 
@@ -121,7 +121,7 @@ function SmoothRedirectOverlayContent() {
       }
       // Firma
       else if (user.user_type === 'firma') {
-        if (pathname === '/' || pathname === '/login' || pathname === '/register') {
+        if (pathname === '/' || pathname === '/register') {
           needsRedirect = true;
           // Nutze redirectTo wenn vorhanden und es ein Company-Pfad ist, sonst Standard
           targetPath = redirectTo?.includes(`/dashboard/company/${user.uid}`) 
@@ -131,7 +131,7 @@ function SmoothRedirectOverlayContent() {
         }
       }
       // Kunde
-      else if (pathname === '/login' || pathname === '/register') {
+      else if (pathname === '/register') {
         needsRedirect = true;
         // Nutze redirectTo wenn vorhanden und es ein User-Pfad ist, sonst Standard
         targetPath = redirectTo?.includes(`/dashboard/user/${user.uid}`) 

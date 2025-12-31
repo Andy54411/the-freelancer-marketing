@@ -835,8 +835,8 @@ export class InventoryService {
             createdBy: companyId,
             companyId: companyId,
           });
-        } catch (itemError) {
-          errors.push(`Fehler bei Artikel "${deliveryItem.name}": ${itemError.message}`);
+        } catch (itemError: unknown) {
+          errors.push(`Fehler bei Artikel "${deliveryItem.name}": ${itemError instanceof Error ? itemError.message : 'Unbekannter Fehler'}`);
         }
       }
 
@@ -848,8 +848,8 @@ export class InventoryService {
       } else {
         return { success: false, errors };
       }
-    } catch (error) {
-      return { success: false, errors: [`Allgemeiner Fehler: ${error.message}`] };
+    } catch (error: unknown) {
+      return { success: false, errors: [`Allgemeiner Fehler: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`] };
     }
   }
 }

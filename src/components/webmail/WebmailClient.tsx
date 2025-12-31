@@ -237,6 +237,7 @@ interface WebmailClientProps {
   password: string;
   onLogout?: () => void;
   initialComposeTo?: string;
+  companyId?: string;
 }
 
 // Helper function to format dates like EmailClient
@@ -661,33 +662,55 @@ function EmailViewer({
     mb.path.toLowerCase() === 'inbox'
   );
   
-  // Process HTML to open links in new tab
-  const processedHtml = email.html 
-    ? email.html
-        // Add target="_blank" and rel="noopener noreferrer" to all links
-        .replace(/<a\s+/gi, '<a target="_blank" rel="noopener noreferrer" ')
-        // Remove any existing target attributes to avoid duplicates
-        .replace(/target="_blank"\s+target="[^"]*"/gi, 'target="_blank"')
-    : '';
+  // Process HTML to open links in new tab and replace CID images with inline data
+  const processedHtml = (() => {
+    if (!email.html) return '';
+    
+    let html = email.html
+      // Add target="_blank" and rel="noopener noreferrer" to all links
+      .replace(/<a\s+/gi, '<a target="_blank" rel="noopener noreferrer" ')
+      // Remove any existing target attributes to avoid duplicates
+      .replace(/target="_blank"\s+target="[^"]*"/gi, 'target="_blank"')
+      // Add referrerpolicy="no-referrer" to all images to allow external images (e.g. Gmail signatures)
+      .replace(/<img\s+/gi, '<img referrerpolicy="no-referrer" ');
+    
+    // Replace CID images with Base64 data from inline attachments
+    if (email.attachments && email.attachments.length > 0) {
+      email.attachments.forEach(att => {
+        if (att.contentId && att.data) {
+          // CID kann mit oder ohne < > sein
+          const cidClean = att.contentId.replace(/^<|>$/g, '');
+          const dataUrl = `data:${att.contentType};base64,${att.data}`;
+          
+          // Ersetze alle Varianten von CID-Referenzen
+          html = html
+            .replace(new RegExp(`src=["']cid:${cidClean}["']`, 'gi'), `src="${dataUrl}"`)
+            .replace(new RegExp(`src=["']cid:${att.contentId}["']`, 'gi'), `src="${dataUrl}"`);
+        }
+      });
+    }
+    
+    return html;
+  })();
   
   return (
     <div className={cn("h-full flex flex-col", isDark ? "bg-[#2d2e30]" : "bg-white")}>
       {/* Header */}
       <div className={cn("border-b px-6 py-4 flex items-center justify-between shrink-0", isDark ? "border-[#5f6368]" : "")}>
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={onClose}>
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <Button variant="ghost" size="sm" onClick={onClose} className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className={cn("text-lg font-semibold truncate max-w-xl", isDark ? "text-white" : "")}>{email.subject}</h1>
+          <h1 className={cn("text-lg font-semibold truncate", isDark ? "text-white" : "")}>{email.subject}</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 ml-4">
           <Button variant="ghost" size="sm" onClick={onReply}>
             <Reply className="h-4 w-4 mr-1" />
-            Antworten
+            <span className="hidden sm:inline">Antworten</span>
           </Button>
           <Button variant="ghost" size="sm" onClick={onForward}>
             <Forward className="h-4 w-4 mr-1" />
-            Weiterleiten
+            <span className="hidden sm:inline">Weiterleiten</span>
           </Button>
           <Button
             variant="ghost"
@@ -893,7 +916,7 @@ const convertWebmailToEmailClientMessage = (msg: EmailMessage): EmailClientMessa
 };
 
 // ===== MAIN WEBMAIL CLIENT - LIKE EMAILCLIENT =====
-export function WebmailClient({ email, password, onLogout, initialComposeTo }: WebmailClientProps) {
+export function WebmailClient({ email, password, onLogout, initialComposeTo, companyId }: WebmailClientProps) {
   const {
     mailboxes,
     messages,
@@ -1439,6 +1462,7 @@ export function WebmailClient({ email, password, onLogout, initialComposeTo }: W
       <div className="relative z-50">
         <MailHeader
           userEmail={email}
+          companyId={companyId}
           onMenuToggle={() => {
             // On mobile, open the drawer; on desktop, collapse sidebar
             if (window.innerWidth < 768) {

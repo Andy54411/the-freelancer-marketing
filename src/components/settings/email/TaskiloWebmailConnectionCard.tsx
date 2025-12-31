@@ -11,7 +11,8 @@ import {
   Loader2, 
   ExternalLink,
   Crown,
-  AlertCircle 
+  AlertCircle,
+  Key
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,12 +25,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  saveWebmailCredentials, 
+  hasWebmailCredentials,
+  clearWebmailCredentials 
+} from '@/lib/webmail-session';
 
 interface WebmailConfig {
   id: string;
   email: string;
   provider: 'taskilo-webmail';
-  status: 'connected' | 'error' | 'disconnected';
+  status: 'connected' | 'error' | 'disconnected' | 'requires_password';
   connectedAt: string;
   subscriptionPlan?: 'free' | 'domain' | 'pro' | 'business';
   displayName?: string;
@@ -38,6 +45,7 @@ interface WebmailConfig {
 interface TaskiloWebmailConnectionCardProps {
   companyId: string;
   webmailConfig?: WebmailConfig;
+  useMasterUser?: boolean;
   onConnect: (email: string, password: string) => Promise<void>;
   onDisconnect: () => Promise<void>;
   isConnecting?: boolean;
@@ -46,17 +54,28 @@ interface TaskiloWebmailConnectionCardProps {
 export function TaskiloWebmailConnectionCard({
   companyId,
   webmailConfig,
+  useMasterUser = false,
   onConnect,
   onDisconnect,
   isConnecting = false
 }: TaskiloWebmailConnectionCardProps) {
+  const { user } = useAuth();
   const [showConnectDialog, setShowConnectDialog] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasWebmailAccount, setHasWebmailAccount] = useState<boolean | null>(null);
   const [checkingAccount, setCheckingAccount] = useState(false);
+  const [hasLocalCredentials, setHasLocalCredentials] = useState(false);
+
+  // Prüfe ob lokale Credentials vorhanden sind
+  useEffect(() => {
+    if (user?.uid) {
+      setHasLocalCredentials(hasWebmailCredentials(user.uid));
+    }
+  }, [user?.uid]);
 
   // Prüfe ob der Benutzer ein Taskilo Webmail Konto hat
   const checkWebmailAccount = useCallback(async () => {
@@ -80,6 +99,8 @@ export function TaskiloWebmailConnectionCard({
   useEffect(() => {
     if (!webmailConfig) {
       checkWebmailAccount();
+    } else if (webmailConfig.email) {
+      setEmail(webmailConfig.email);
     }
   }, [webmailConfig, checkWebmailAccount]);
 
@@ -93,7 +114,15 @@ export function TaskiloWebmailConnectionCard({
       setIsLoading(true);
       setError(null);
       await onConnect(email, password);
+      
+      // Speichere Credentials lokal im Browser
+      if (user?.uid) {
+        saveWebmailCredentials(user.uid, email, password);
+        setHasLocalCredentials(true);
+      }
+      
       setShowConnectDialog(false);
+      setShowPasswordDialog(false);
       setPassword('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Verbindung fehlgeschlagen');
@@ -102,9 +131,69 @@ export function TaskiloWebmailConnectionCard({
     }
   };
 
+  const handleSavePassword = async () => {
+    if (!password) {
+      setError('Bitte Passwort eingeben');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Teste die Verbindung mit dem Passwort
+      const testResponse = await fetch('/api/webmail/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      const testData = await testResponse.json();
+      
+      if (!testData.success) {
+        throw new Error(testData.error || 'Passwort ungültig');
+      }
+      
+      // Speichere Credentials serverseitig in Firebase (verschlüsselt)
+      const saveResponse = await fetch(`/api/company/${companyId}/webmail-credentials`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      if (!saveResponse.ok) {
+        const saveError = await saveResponse.json().catch(() => ({ error: 'Speichern fehlgeschlagen' }));
+        throw new Error(saveError.error || 'Zugangsdaten konnten nicht gespeichert werden');
+      }
+      
+      // Speichere auch lokal für schnelleren Zugriff
+      if (user?.uid) {
+        saveWebmailCredentials(user.uid, email, password);
+        setHasLocalCredentials(true);
+      }
+      
+      setShowPasswordDialog(false);
+      setPassword('');
+      
+      // Weiterleitung zum Posteingang
+      window.location.href = `/dashboard/company/${companyId}/emails`;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Passwort ungültig');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleDisconnect = async () => {
     try {
       setIsLoading(true);
+      
+      // Lösche auch lokale Credentials
+      if (user?.uid) {
+        clearWebmailCredentials(user.uid);
+        setHasLocalCredentials(false);
+      }
+      
       await onDisconnect();
     } finally {
       setIsLoading(false);
@@ -124,9 +213,10 @@ export function TaskiloWebmailConnectionCard({
     }
   };
 
-  // Verbundene Webmail-Card
-  if (webmailConfig) {
+  // Verbundene Webmail-Card (inkl. Master User Zugriff für @taskilo.de)
+  if (webmailConfig && (webmailConfig.status === 'connected' || useMasterUser)) {
     return (
+      <>
       <Card className="border-2 border-teal-500 bg-teal-50 relative overflow-hidden">
         {/* Premium-Banner für Taskilo-Kunden */}
         <div className="absolute top-0 left-0 right-0 bg-linear-to-r from-teal-600 to-teal-500 text-white text-xs py-1 text-center font-medium">
@@ -166,8 +256,112 @@ export function TaskiloWebmailConnectionCard({
               {webmailConfig.displayName}
             </p>
           )}
+          
+          {/* Link zum Posteingang - prüft erst auf lokale Credentials */}
+          <Button
+            variant="outline"
+            className="mt-4 w-full"
+            onClick={() => {
+              if (hasLocalCredentials) {
+                window.location.href = `/dashboard/company/${companyId}/emails`;
+              } else {
+                setShowPasswordDialog(true);
+              }
+            }}
+          >
+            {hasLocalCredentials ? (
+              <>
+                <Mail className="h-4 w-4 mr-2" />
+                Zum Posteingang
+              </>
+            ) : (
+              <>
+                <Key className="h-4 w-4 mr-2" />
+                Passwort eingeben
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
+
+      {/* Passwort-Dialog für bereits verbundene Konten */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-teal-600" />
+              E-Mail-Passwort eingeben
+            </DialogTitle>
+            <DialogDescription>
+              Ihr Passwort wird nur in diesem Browser gespeichert und nach 7 Tagen automatisch gelöscht.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="password-email">E-Mail-Adresse</Label>
+              <Input
+                id="password-email"
+                type="email"
+                value={webmailConfig?.email || email}
+                disabled
+                className="bg-gray-50"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password-input">Passwort</Label>
+              <Input
+                id="password-input"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Ihr E-Mail-Passwort"
+                onKeyDown={(e) => e.key === 'Enter' && handleSavePassword()}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowPasswordDialog(false);
+                setPassword('');
+                setError(null);
+              }}
+              disabled={isLoading}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              onClick={handleSavePassword}
+              disabled={isLoading || !password}
+              className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Prüfe...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Speichern & Öffnen
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      </>
     );
   }
 

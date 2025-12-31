@@ -45,7 +45,7 @@ interface Employee {
   email: string;
   position: string;
   department: string;
-  employmentType: 'FULL_TIME' | 'PART_TIME' | 'FREELANCER' | 'INTERN';
+  employmentType: 'FULL_TIME' | 'PART_TIME' | 'FREELANCER' | 'INTERN' | 'MINIJOB' | 'WERKSTUDENT' | 'AUSHILFE';
   startDate: string;
   grossSalary: number;
   hourlyRate?: number;

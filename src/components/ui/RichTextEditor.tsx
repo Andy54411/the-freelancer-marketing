@@ -2,6 +2,7 @@
 
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
 import {
   Bold,
   Italic,
@@ -28,12 +29,14 @@ interface RichTextEditorProps {
 
 export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [StarterKit, Underline],
     content: value,
+    editable: true,
     editorProps: {
       attributes: {
         class:
-          'min-h-[150px] w-full rounded-md bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 prose prose-sm max-w-none',
+          'min-h-[150px] w-full rounded-md bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 prose prose-sm max-w-none focus:outline-none cursor-text',
+        'data-placeholder': placeholder || 'Schreibe hier...',
       },
     },
     onUpdate: ({ editor }) => {
@@ -42,7 +45,8 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
     immediatelyRender: false,
   });
 
-  // Update content if value changes externally (e.g. reset form)
+  // Update content if value changes externally (e.g. AI generation, form reset)
+  // Only update if the editor exists and the content is actually different
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
       editor.commands.setContent(value);

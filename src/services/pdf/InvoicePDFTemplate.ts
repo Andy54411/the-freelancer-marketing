@@ -38,9 +38,9 @@ export class InvoicePDFTemplate {
       const pdfBuffer = Buffer.from(pdfOutput);
 
       return pdfBuffer;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[PDF-Template] Error generating PDF:', error);
-      throw new Error(`PDF template generation failed: ${error.message}`);
+      throw new Error(`PDF template generation failed: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
     }
   }
 

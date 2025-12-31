@@ -15,6 +15,17 @@ export interface RawFirestoreUserData {
   profilePictureFirebaseUrl?: string;
   identityFrontUrlStripeId?: string;
   identityBackUrlStripeId?: string;
+  // Tasker Profile fields (Root-Level)
+  bio?: string;
+  description?: string;
+  selectedCategory?: string;
+  selectedSubcategory?: string;
+  skills?: string[];
+  hourlyRate?: number;
+  location?: string;
+  offersVideoConsultation?: boolean;
+  level?: number;
+  isTopRated?: boolean;
   // E-Mail-Änderungsanfrage
   emailChangeRequest?: {
     newEmail: string;
@@ -139,6 +150,15 @@ export interface RawFirestoreUserData {
     profileBannerImage?: string;
     identityFrontUrl?: string;
     identityBackUrl?: string;
+    // Tasker Profile fields
+    bio?: string;
+    selectedCategory?: string;
+    selectedSubcategory?: string;
+    skills?: string[];
+    location?: string;
+    offersVideoConsultation?: boolean;
+    level?: number;
+    isTopRated?: boolean;
   };
   step4?: {
     businessLicense?: string;
@@ -205,6 +225,17 @@ export interface UserDataForSettings {
   lng?: number;
   radiusKm?: number;
   profileBannerImage?: string;
+  profilePictureURL?: string;
+  // Tasker Profile fields (Root-Level access)
+  bio?: string;
+  selectedCategory?: string;
+  selectedSubcategory?: string;
+  skills?: string[];
+  hourlyRate?: number;
+  location?: string;
+  offersVideoConsultation?: boolean;
+  level?: number;
+  isTopRated?: boolean;
   step1?: {
     personalData?: {
       gender?: string;
@@ -304,6 +335,15 @@ export interface UserDataForSettings {
     profileBannerImage?: string;
     identityFrontUrl?: string;
     identityBackUrl?: string;
+    // Tasker Profile fields
+    bio?: string;
+    selectedCategory?: string;
+    selectedSubcategory?: string;
+    skills?: string[];
+    location?: string;
+    offersVideoConsultation?: boolean;
+    level?: number;
+    isTopRated?: boolean;
   };
   step4?: {
     businessLicense?: string;

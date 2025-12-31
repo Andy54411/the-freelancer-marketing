@@ -45,7 +45,7 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
     }
 
     if (!user) {
-      router.push('/login');
+      router.push('/');
       return;
     }
 
@@ -121,7 +121,7 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Nicht angemeldet</h2>
             <p className="text-gray-600 mb-4">Sie werden zur Anmeldung weitergeleitet...</p>
             <Button
-              onClick={() => router.push('/login')}
+              onClick={() => router.push('/')}
               className="bg-[#14ad9f] hover:bg-taskilo-hover text-white"
             >
               Zur Anmeldung

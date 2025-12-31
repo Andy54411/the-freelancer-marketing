@@ -85,6 +85,7 @@ const PaymentTermsForm: React.FC<PaymentTermsFormProps> = ({ formData, handleCha
       const timer = setTimeout(() => setMessage(null), 3000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [formData?.paymentTermsSettings?.defaultPaymentTerms]);
 
   return (

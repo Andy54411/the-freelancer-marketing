@@ -2,44 +2,34 @@
 'use client';
 
 // PDF-API wird serverseitig verwendet - keine Client-Dependencies nötig
-import { FinanceService } from '@/services/financeService';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/clients';
 import { doc, updateDoc } from 'firebase/firestore';
 
-import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Send,
   Mail,
   Download,
   Printer,
-  Eye,
-  X,
   AlertTriangle,
   FileText,
   Loader2,
   ChevronDown,
-  ChevronUp,
-  ZoomIn,
-  ZoomOut,
   CheckCircle,
   Palette,
   Layout,
   Settings,
-  Image,
+  Image as ImageIcon,
   ChevronRight,
   Upload,
   Minus,
@@ -47,7 +37,113 @@ import {
 'lucide-react';
 import { toast } from 'sonner';
 import { InvoiceData } from '@/types/invoiceTypes';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import type { Quote } from '@/services/quoteService';
+import type { GoBDLockStatus } from '@/types/gobdTypes';
+import { formatDate } from '@/lib/utils';
+
+// E-Invoice data structure matching InvoiceData.eInvoiceData
+interface EInvoiceData {
+  format: string;
+  version: string;
+  guid: string;
+  xmlUrl?: string;
+  validationStatus?: 'valid' | 'invalid' | 'pending';
+  createdAt: string;
+}
+
+// Base document type with common fields between Invoice and Quote
+interface BaseDocument {
+  id: string;
+  number: string;
+  customerName: string;
+  customerEmail: string;
+  customerAddress?: string | { street: string; city: string; postalCode: string; country: string };
+  customerNumber?: string;
+  customerOrderNumber?: string;
+  total: number;
+  status: string;
+  notes?: string;
+  footerText?: string;
+  headTextHtml?: string;
+  title?: string;
+  currency?: string;
+  items: Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+    taxRate?: number;
+    unit?: string;
+    discountPercent?: number;
+  }>;
+  // Skonto fields (shared)
+  skontoEnabled?: boolean;
+  skontoDays?: number;
+  skontoPercentage?: number;
+  skontoText?: string;
+  // Tax rule fields
+  taxRule?: string;
+  taxRuleType?: string;
+  paymentTerms?: string;
+  // Date fields (string for compatibility)
+  date: string | Date;
+}
+
+// Document type that can have optional fields from various document types
+interface DocumentWithGoBD extends BaseDocument {
+  gobdStatus?: GoBDLockStatus;
+  totalAmount?: number; // Alternative field name for total
+  validUntil?: string; // Quote-specific field
+  // Invoice-specific fields (optional)
+  invoiceNumber?: string;
+  sequentialNumber?: number;
+  issueDate?: string;
+  dueDate?: string;
+  companyName?: string;
+  companyAddress?: string;
+  companyEmail?: string;
+  companyPhone?: string;
+  companyWebsite?: string;
+  companyLogo?: string;
+  companyVatId?: string;
+  companyTaxNumber?: string;
+  customerVatId?: string;
+  documentNumber?: string;
+  bankDetails?: {
+    iban: string;
+    bic?: string;
+    accountHolder: string;
+    bankName?: string;
+  };
+  tax?: number;
+  amount?: number;
+  vatRate?: number;
+  eInvoiceData?: EInvoiceData;
+}
+
+// Send options for email/download/print actions
+interface SendOptions {
+  recipientEmail?: string;
+  subject?: string;
+  message?: string;
+  sendCopy?: boolean;
+  pdfBlob?: Blob;
+  [key: string]: unknown;
+}
+
+// Invoice data for saving - extends InvoiceData with optional fields
+type InvoiceToSave = Partial<InvoiceData> & {
+  companyId: string;
+  customerName: string;
+  items: InvoiceData['items'];
+  total: number;
+  invoiceNumber: string;
+  number: string;
+  sequentialNumber: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
 import PDFTemplate from './PDFTemplates';
 import { EmailSendModal } from './EmailSendModal';
 import { SimplePDFViewer } from './SimplePDFViewer';
@@ -58,11 +154,11 @@ import { useGoBDActionWarning } from '@/components/finance/gobd';
 interface SendDocumentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  document: InvoiceData | any; // Flexibel für verschiedene Datentypen
+  document: DocumentWithGoBD;
   documentType: 'invoice' | 'quote' | 'reminder' | 'credit-note' | 'cancellation';
   companyId: string;
-  onSend?: (method: 'email' | 'download' | 'print' | 'save' | 'post', options?: any) => Promise<void>;
-  redirectAfterAction?: string | ((documentId: string, documentType: string) => string); // Flexible redirect logic
+  onSend?: (method: 'email' | 'download' | 'print' | 'save' | 'post', options?: SendOptions) => Promise<void>;
+  redirectAfterAction?: string | ((documentId: string, documentType: string) => string);
 }
 
 type SendOption =
@@ -78,7 +174,7 @@ type SendOption =
 'einvoice';
 
 // Template State Management with useReducer
-interface TemplateState {
+interface _TemplateState {
   layout: string;
   color: string;
   logoUrl: string | null;
@@ -90,7 +186,7 @@ interface TemplateState {
   expandedSections: Set<SendOption>;
 }
 
-type TemplateAction =
+type _TemplateAction =
 {type: 'SET_LAYOUT';payload: string;} |
 {type: 'SET_COLOR';payload: string;} |
 {type: 'SET_LOGO';payload: {url: string | null;file: File | null;};} |
@@ -100,49 +196,6 @@ type TemplateAction =
 {type: 'SET_ACTIVE_OPTION';payload: SendOption;} |
 {type: 'TOGGLE_SECTION';payload: SendOption;} |
 {type: 'RESET';};
-
-const initialTemplateState: TemplateState = {
-  layout: 'TEMPLATE_NEUTRAL',
-  color: '#14ad9f',
-  logoUrl: null,
-  logoFile: null,
-  logoSize: 50,
-  pageMode: 'single',
-  zoomLevel: 4, // 100% zoom
-  activeOption: 'download',
-  expandedSections: new Set(['download'])
-};
-
-function templateReducer(state: TemplateState, action: TemplateAction): TemplateState {
-  switch (action.type) {
-    case 'SET_LAYOUT':
-      return { ...state, layout: action.payload };
-    case 'SET_COLOR':
-      return { ...state, color: action.payload };
-    case 'SET_LOGO':
-      return { ...state, logoUrl: action.payload.url, logoFile: action.payload.file };
-    case 'SET_LOGO_SIZE':
-      return { ...state, logoSize: action.payload };
-    case 'SET_PAGE_MODE':
-      return { ...state, pageMode: action.payload };
-    case 'SET_ZOOM_LEVEL':
-      return { ...state, zoomLevel: action.payload };
-    case 'SET_ACTIVE_OPTION':
-      return { ...state, activeOption: action.payload };
-    case 'TOGGLE_SECTION':
-      const newExpanded = new Set(state.expandedSections);
-      if (newExpanded.has(action.payload)) {
-        newExpanded.delete(action.payload);
-      } else {
-        newExpanded.add(action.payload);
-      }
-      return { ...state, expandedSections: newExpanded };
-    case 'RESET':
-      return initialTemplateState;
-    default:
-      return state;
-  }
-}
 
 export function SendDocumentModal({
   isOpen,
@@ -200,11 +253,11 @@ export function SendDocumentModal({
 
   const [emailMessage, setEmailMessage] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
-  const [sendCopy, setSendCopy] = useState(false);
+  const [sendCopy, _setSendCopy] = useState(false);
 
   // Email modal state
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [activeOption, setActiveOption] = useState<SendOption>('download'); // Start with download like SevDesk
+  const [_activeOption, setActiveOption] = useState<SendOption>('download'); // Start with download like SevDesk
   const [expandedSections, setExpandedSections] = useState<Set<SendOption>>(
     new Set(['download', 'layout', 'color'])
   );
@@ -220,39 +273,41 @@ export function SendDocumentModal({
   const [manualOverride, setManualOverride] = useState(false);
 
   // 💰 SKONTO-STATES (NUR FÜR DATENBANK-SPEICHERUNG!)
-  const [skontoEnabled, setSkontoEnabled] = useState<boolean>(document?.skontoEnabled);
-  const [skontoDays, setSkontoDays] = useState<number>(document?.skontoDays);
-  const [skontoPercentage, setSkontoPercentage] = useState<number>(document?.skontoPercentage);
-  const [skontoText, setSkontoText] = useState<string>(document?.skontoText);
+  const [skontoEnabled, setSkontoEnabled] = useState<boolean | undefined>(document?.skontoEnabled);
+  const [skontoDays, setSkontoDays] = useState<number | undefined>(document?.skontoDays);
+  const [skontoPercentage, setSkontoPercentage] = useState<number | undefined>(document?.skontoPercentage);
+  const [skontoText, setSkontoText] = useState<string | undefined>(document?.skontoText);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // E-Invoice specific states
-  const [eInvoiceData, setEInvoiceData] = useState<any>(null);
+  const [eInvoiceData, setEInvoiceData] = useState<EInvoiceData | null>(null);
   const [loadingEInvoiceData, setLoadingEInvoiceData] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
-  const [epcQrCodeUrl, setEpcQrCodeUrl] = useState<string | null>(null);
+  const [_epcQrCodeUrl, setEpcQrCodeUrl] = useState<string | null>(null);
   const [realDocumentData, setRealDocumentData] = useState<InvoiceData | null>(null);
   const [enrichedDocumentData, setEnrichedDocumentData] = useState<InvoiceData | null>(null);
-  const [templateReady, setTemplateReady] = useState(true); // Start optimistically as ready
+  const [_templateReady, setTemplateReady] = useState(true); // Start optimistically as ready
   const [cachedHtml, setCachedHtml] = useState<string | null>(null);
   const [preExtractedHtml, setPreExtractedHtml] = useState<string | null>(null);
 
   // 🤖 INITIAL SETUP: Set smart mode when document loads
   useEffect(() => {
     const newItemsCount = document?.items?.length || 0;
-    const newSmartMode = newItemsCount >= 3 ? 'multi' : 'single';
+    const _newSmartMode = newItemsCount >= 3 ? 'multi' : 'single';
 
     // Set initial mode when document first loads (not manually overridden)
     if (newItemsCount > 0 && !manualOverride) {
-      setPageMode(newSmartMode);
+      setPageMode(_newSmartMode);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [document?.items?.length]);
 
   // 🤖 AUTO-ADJUST: Update pageMode when document items change (only if not manually overridden)
   useEffect(() => {
     const newItemsCount = document?.items?.length || 0;
-    const newSmartMode = newItemsCount >= 3 ? 'multi' : 'single';
+    const _newSmartMode = newItemsCount >= 3 ? 'multi' : 'single';
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [document, pageMode, manualOverride]);
 
   // 🚨 CRITICAL: Clear cached HTML when pageMode changes OR template updates
@@ -290,7 +345,7 @@ export function SendDocumentModal({
   };
 
   // Template Page Detection
-  const templatePageInfo = useTemplatePageDetection({
+  const _templatePageInfo = useTemplatePageDetection({
     templateId: selectedLayout,
     documentData: { items: (realDocumentData || document)?.items },
     enableDynamicAnalysis: true
@@ -321,7 +376,7 @@ export function SendDocumentModal({
       try {
         // Wenn document.id vorhanden ist, lade echte Daten aus der Datenbank
         if (document?.id) {
-          let realDoc: any = null;
+          let realDoc: InvoiceData | Quote | null = null;
 
           // Je nach Dokumenttyp den entsprechenden Service verwenden
           if (documentType === 'quote') {
@@ -333,28 +388,30 @@ export function SendDocumentModal({
           }
 
           if (realDoc) {
-            setRealDocumentData(realDoc);
+            // Cast to InvoiceData for setRealDocumentData (which expects InvoiceData)
+            setRealDocumentData(realDoc as InvoiceData);
 
             // Lade E-Invoice-Daten wenn vorhanden (nur für Rechnungen)
-            if (documentType === 'invoice' && (realDoc as any)?.eInvoiceData) {
-              setEInvoiceData((realDoc as any).eInvoiceData);
+            const invoiceDoc = realDoc as DocumentWithGoBD;
+            if (documentType === 'invoice' && invoiceDoc?.eInvoiceData) {
+              setEInvoiceData(invoiceDoc.eInvoiceData);
 
               // Generiere QR-Code für E-Invoice
-              if ((realDoc as any).eInvoiceData.guid) {
-                await generateQRCode((realDoc as any).eInvoiceData.guid, realDoc);
+              if (invoiceDoc.eInvoiceData.guid) {
+                await generateQRCode(invoiceDoc.eInvoiceData.guid, invoiceDoc as InvoiceData);
               }
             }
 
             // Set default email
-            if ((realDoc as any)?.customerEmail) {
-              setRecipientEmail((realDoc as any).customerEmail);
+            if (realDoc?.customerEmail) {
+              setRecipientEmail(realDoc.customerEmail);
             }
           } else {
-            setRealDocumentData(document);
+            setRealDocumentData(document as InvoiceData);
           }
         } else {
           // Für neue Dokumente (ohne ID): Verwende direkt die übergebenen Daten
-          setRealDocumentData(document);
+          setRealDocumentData(document as InvoiceData);
 
           // Set default email from document
           if (document.customerEmail) {
@@ -363,7 +420,7 @@ export function SendDocumentModal({
         }
       } catch (error) {
         console.error('❌ Error loading real document data:', error);
-        setRealDocumentData(document); // Fallback to provided document
+        setRealDocumentData(document as InvoiceData); // Fallback to provided document
         toast.error(`Fehler beim Laden der ${documentLabels[documentType] || 'Dokument'}-Daten`);
       } finally {
         setLoadingEInvoiceData(false);
@@ -371,6 +428,7 @@ export function SendDocumentModal({
     };
 
     loadRealDocumentData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, document?.id, document, documentType]);
 
   // Load company data and enrich document data
@@ -457,6 +515,7 @@ export function SendDocumentModal({
     }, 100);
 
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, companyId, document?.id]); // ✅ FIX: realDocumentData removed to prevent infinite loop
 
   // PDF-API ist serverseitig verfügbar - keine Client-Library-Checks nötig
@@ -464,9 +523,9 @@ export function SendDocumentModal({
   // Generate QR Code when showQRCode is enabled
   useEffect(() => {
     if (documentSettings.showQRCode && (realDocumentData || document)) {
-      const docData = realDocumentData || document;
-      const guid = (docData as any)?.eInvoiceData?.guid || 'default-guid';
-      generateQRCode(guid, docData);
+      const docData = (realDocumentData || document) as DocumentWithGoBD;
+      const guid = docData?.eInvoiceData?.guid || 'default-guid';
+      generateQRCode(guid, docData as InvoiceData);
     } else {
       setQrCodeUrl(null); // Clear QR code when disabled
       setDocumentSettings((prev) => ({
@@ -474,12 +533,13 @@ export function SendDocumentModal({
         qrCodeUrl: undefined
       }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentSettings.showQRCode, realDocumentData, document, documentType]);
 
   // Generate EPC QR Code when showEPCQRCode is enabled
   useEffect(() => {
     if (documentSettings.showEPCQRCode && (realDocumentData || document)) {
-      const docData = realDocumentData || document;
+      const docData = (realDocumentData || document) as DocumentWithGoBD;
       generateEPCQRCode(docData);
     } else {
       setEpcQrCodeUrl(null); // Clear EPC QR code when disabled
@@ -488,10 +548,11 @@ export function SendDocumentModal({
         epcQrCodeUrl: undefined
       }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentSettings.showEPCQRCode, realDocumentData, document, companyId]);
 
   // Generate QR Code for Document (Quote/Invoice)
-  const generateQRCode = async (guid: string, invoiceData: InvoiceData) => {
+  const generateQRCode = async (_guid: string, _invoiceData: DocumentWithGoBD) => {
     try {
 
       let qrContent: string;
@@ -523,10 +584,11 @@ export function SendDocumentModal({
   };
 
   // Generate EPC QR Code (Girocode) for SEPA transfers
-  const generateEPCQRCode = async (invoiceData: InvoiceData) => {
+  const generateEPCQRCode = async (invoiceData: DocumentWithGoBD) => {
     try {
 
       // EPC QR Code Format nach SEPA Standard
+      const docWithExtras = invoiceData;
       const epcData = [
       'BCD', // Service Tag
       '002', // Version
@@ -535,7 +597,7 @@ export function SendDocumentModal({
       'DETESTEE', // BIC (aus Unternehmensdaten)
       'Mietkoch Andy', // Empfängername
       'DE89370400440532013000', // IBAN (aus Unternehmensdaten)
-      `EUR${(invoiceData.total || (invoiceData as any).totalAmount || 0).toFixed(2)}`, // Währung + Betrag
+      `EUR${(docWithExtras.total || docWithExtras.totalAmount || 0).toFixed(2)}`, // Währung + Betrag
       '', // Purpose (leer)
       `RE-${invoiceData.invoiceNumber || invoiceData.number || ''}`, // Verwendungszweck
       '' // Remittance Information (leer)
@@ -557,25 +619,26 @@ export function SendDocumentModal({
   };
 
   // Generate QR Code for E-Invoice (legacy function for E-Invoice specific QR codes)
-  const generateEInvoiceQRCode = async (guid: string, invoiceData: InvoiceData) => {
+  const _generateEInvoiceQRCode = async (guid: string, invoiceData: InvoiceData) => {
     try {
       // E-Invoice QR-Code-Inhalt nach GS1 Standard
+      const docWithExtras = invoiceData as DocumentWithGoBD;
       const qrContent = JSON.stringify({
         format: 'ZUGFeRD',
         version: '2.1.1',
         guid: guid,
         invoiceNumber: invoiceData.invoiceNumber || invoiceData.number,
         issueDate: invoiceData.date || invoiceData.issueDate,
-        dueDate: (invoiceData as any).dueDate || (invoiceData as any).validUntil,
+        dueDate: invoiceData.dueDate || docWithExtras.validUntil,
         totalAmount: invoiceData.total,
         currency: invoiceData.currency || 'EUR',
         seller: {
           name: invoiceData.companyName,
-          vatId: (invoiceData as any).companyVatId
+          vatId: invoiceData.companyVatId
         },
         buyer: {
           name: invoiceData.customerName,
-          vatId: (invoiceData as any).customerVatId
+          vatId: invoiceData.customerVatId
         },
         downloadUrl: `${window.location.origin}/api/einvoices/${guid}/xml`
       });
@@ -837,7 +900,7 @@ export function SendDocumentModal({
 
   // Zoom levels matching SevDesk
   const zoomLevels = [2, 1.75, 1.5, 1.25, 1, 0.75, 0.5];
-  const zoomLabels = ['200%', '175%', '150%', '125%', '100%', '75%', '50%'];
+  const _zoomLabels = ['200%', '175%', '150%', '125%', '100%', '75%', '50%'];
 
   const toggleSection = (section: SendOption) => {
     setExpandedSections((prev) => {
@@ -897,6 +960,8 @@ export function SendDocumentModal({
 
       return () => clearTimeout(timeoutId);
     }
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, loadingEInvoiceData, realDocumentData, document, selectedLayout]);
 
   // Cache template HTML for later use
@@ -909,6 +974,7 @@ export function SendDocumentModal({
     } catch (error) {
       console.error('❌ Failed to cache HTML:', error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Extract HTML with all styles
@@ -951,7 +1017,7 @@ export function SendDocumentModal({
     // Get all <style> tags
     const styleTags = window.document.querySelectorAll('style');
 
-    styleTags.forEach((styleElement, index) => {
+    styleTags.forEach((styleElement, _index) => {
       if (styleElement.textContent) {
         allStyles.push(styleElement.textContent);
       }
@@ -960,7 +1026,7 @@ export function SendDocumentModal({
     // Get all linked stylesheets
     const linkTags = window.document.querySelectorAll('link[rel="stylesheet"]');
 
-    linkTags.forEach((linkElement, index) => {
+    linkTags.forEach((linkElement, _index) => {
       try {
         const link = linkElement as HTMLLinkElement;
         if (link.sheet && link.sheet.cssRules) {
@@ -971,7 +1037,7 @@ export function SendDocumentModal({
 
           allStyles.push(css);
         }
-      } catch (e) {}
+      } catch {}
     });
 
     // Create complete HTML with ALL styles
@@ -1012,11 +1078,15 @@ export function SendDocumentModal({
       const subject = `${documentLabel} ${document.invoiceNumber || document.number}`;
       setEmailSubject(subject);
 
+      // Convert date to string if it's a Date object
+      const dateStr = typeof document.date === 'string' ? document.date : document.date?.toISOString?.() || '';
+      const dueDateStr = document.dueDate || dateStr;
+
       const message = `Sehr geehrte Damen und Herren,
 
-anbei erhalten Sie Ihre ${documentLabel.toLowerCase()} ${document.invoiceNumber || document.number} vom ${formatDate(document.date)}.
+anbei erhalten Sie Ihre ${documentLabel.toLowerCase()} ${document.invoiceNumber || document.number} vom ${formatDate(dateStr)}.
 
-${documentType === 'invoice' ? `Die ${documentLabel.toLowerCase()} ist bis zum ${formatDate(document.dueDate || document.date)} zu begleichen.` : ''}
+${documentType === 'invoice' ? `Die ${documentLabel.toLowerCase()} ist bis zum ${formatDate(dueDateStr)} zu begleichen.` : ''}
 
 Bei Fragen stehen wir Ihnen gerne zur Verfügung.
 
@@ -1041,6 +1111,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
       setLogoUrl(null);
       setLogoSize(50);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, document, documentType, documentLabel]);
 
   // ✅ Extract rendered HTML from the current template with ALL EXISTING STYLES
@@ -1050,7 +1121,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
     const basicReady = !loadingEInvoiceData && (!!realDocumentData || !!document);
 
     return basicReady;
-  }, [templateReady, loadingEInvoiceData, realDocumentData, document]);
+  }, [loadingEInvoiceData, realDocumentData, document]);
 
   const getRenderedHtml = useCallback(async () => {
     // Prüfen ob Daten noch geladen werden
@@ -1079,7 +1150,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
 
     return await extractHtmlWithStyles();
   }, [
-  templateReady,
+  preExtractedHtml,
   loadingEInvoiceData,
   realDocumentData,
   document,
@@ -1115,13 +1186,14 @@ ${document.companyName || 'Ihr Unternehmen'}`;
       }
 
       // Ansonsten GoBD-Warnung anzeigen
+      const docWithGoBD = document as DocumentWithGoBD;
       showWarning({
         actionType: actionTypeMap[method],
         documentType: 'Rechnung',
-        documentNumber: document.documentNumber || 'Unbekannt',
+        documentNumber: docWithGoBD.documentNumber || 'Unbekannt',
         companyId: companyId || 'unknown',
         documentId: document.id,
-        isAlreadyLocked: (document as any).gobdStatus?.isLocked || false,
+        isAlreadyLocked: docWithGoBD.gobdStatus?.isLocked || false,
         onConfirm: () => performSend(method),
         onConsentSaved: () => {
           // Aktualisiere den State, damit beim nächsten Mal nicht mehr gefragt wird
@@ -1181,7 +1253,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
     // 1. Finale PDF-Daten aus Template holen
     // Annahme: PDFTemplateProps stehen zur Verfügung (siehe PDFTemplates.tsx)
     // Wir nutzen enrichedDocumentData oder realDocumentData als Basis
-    const pdfTemplateProps = {
+    const _pdfTemplateProps = {
       document: {
         ...(enrichedDocumentData || realDocumentData || document),
         // Skonto-Daten für PDF-Generierung hinzufügen
@@ -1268,7 +1340,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
               }
               allStyles.push(css);
             }
-          } catch (e) {
+          } catch {
 
             // Ignoriere CORS-Fehler für externe Stylesheets
           }});
@@ -1346,7 +1418,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
       setSending(true);
 
       // 3. Dokument ZUERST speichern, wenn noch keine ID vorhanden (für neue Dokumente)
-      let invoiceId = realDocumentData?.id || document?.id;
+      let invoiceId: string | undefined = realDocumentData?.id || document?.id;
 
       // WICHTIG: Für Print müssen wir IMMER überprüfen, ob das Dokument in Firestore existiert
       // weil die ID aus dem Client-State kommen könnte und nicht aus Firestore
@@ -1368,12 +1440,12 @@ ${document.companyName || 'Ihr Unternehmen'}`;
           if (!docSnap.exists()) {
 
             needsSaving = true;
-            invoiceId = null; // Setze ID zurück, damit neue ID generiert wird
+            invoiceId = undefined; // Setze ID zurück, damit neue ID generiert wird
           }
         } catch (e) {
           console.error('Fehler beim Prüfen des Dokuments:', e);
           needsSaving = true;
-          invoiceId = null;
+          invoiceId = undefined;
         }
       }
 
@@ -1386,7 +1458,8 @@ ${document.companyName || 'Ihr Unternehmen'}`;
 
         try {
           // Kombiniere die Daten aus realDocumentData und document
-          const sourceData = realDocumentData || document;
+          // Cast to DocumentWithGoBD for accessing optional invoice-specific fields
+          const sourceData = (realDocumentData || document) as DocumentWithGoBD;
 
           // 🔥 KRITISCHER FIX: Generiere neue Rechnungsnummer falls noch nicht vorhanden
           let finalInvoiceNumber = sourceData.invoiceNumber || '';
@@ -1409,19 +1482,33 @@ ${document.companyName || 'Ihr Unternehmen'}`;
             }
           }
 
+          // Helper to convert address to string
+          const getAddressString = (addr: string | { street: string; city: string; postalCode: string; country: string } | undefined): string => {
+            if (!addr) return '';
+            if (typeof addr === 'string') return addr;
+            return `${addr.street}, ${addr.postalCode} ${addr.city}, ${addr.country}`;
+          };
+
+          // Helper to convert date to string
+          const getDateString = (date: string | Date | undefined): string => {
+            if (!date) return new Date().toISOString();
+            if (typeof date === 'string') return date;
+            return date.toISOString();
+          };
+
           // Bereite die Invoice-Daten vor und entferne undefined Felder
-          const invoiceToSave: any = {
+          const invoiceToSave: InvoiceToSave = {
             companyId,
             customerName: sourceData.customerName || '',
-            customerAddress: sourceData.customerAddress || '',
+            customerAddress: getAddressString(sourceData.customerAddress),
             customerEmail: sourceData.customerEmail || '',
             items: sourceData.items || [],
             total: sourceData.total || 0,
-            status: sourceData.status || 'draft',
+            status: (sourceData.status as InvoiceData['status']) || 'draft',
             invoiceNumber: finalInvoiceNumber, // ✅ Atomisch generierte Nummer
             number: finalInvoiceNumber, // ✅ Atomisch generierte Nummer
             sequentialNumber: finalSequentialNumber, // ✅ Atomisch generierte Nummer
-            date: sourceData.date || new Date().toISOString(),
+            date: getDateString(sourceData.date),
             issueDate: sourceData.issueDate || new Date().toISOString(),
             dueDate: sourceData.dueDate || new Date().toISOString(),
             createdAt: new Date(),
@@ -1662,6 +1749,8 @@ ${document.companyName || 'Ihr Unternehmen'}`;
             cleanFooterText = 'Wir bitten Sie, den Rechnungsbetrag von [%GESAMTBETRAG%] unter Angabe der Rechnungsnummer [%RECHNUNGSNUMMER%] auf das unten angegebene Konto zu überweisen. Zahlungsziel: [%ZAHLUNGSZIEL%] Rechnungsdatum: [%RECHNUNGSDATUM%] Vielen Dank für Ihr Vertrauen und die angenehme Zusammenarbeit!<br>Mit freundlichen Grüßen<br>[%KONTAKTPERSON%]';
           }
 
+          const docWithTaxRule = document as DocumentWithGoBD;
+          const realDocWithTaxRule = realDocumentData as DocumentWithGoBD | null;
           await updateDoc(docRef, {
             templateId: selectedLayout,
             template: selectedLayout,
@@ -1673,8 +1762,8 @@ ${document.companyName || 'Ihr Unternehmen'}`;
             documentSettings: cleanDocumentSettings,
             footerText: cleanFooterText, // ← Speichere bereinigten Footer-Text
             // 🔥 CRITICAL: Speichere Tax Rule für Print-Ansicht
-            taxRule: document?.taxRule || (realDocumentData as any)?.taxRule || null,
-            taxRuleType: document?.taxRuleType || (realDocumentData as any)?.taxRuleType || null,
+            taxRule: docWithTaxRule?.taxRule || realDocWithTaxRule?.taxRule || null,
+            taxRuleType: docWithTaxRule?.taxRuleType || realDocWithTaxRule?.taxRuleType || null,
             updatedAt: new Date()
           });
 
@@ -1868,12 +1957,12 @@ ${document.companyName || 'Ihr Unternehmen'}`;
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogPrimitive.Content className="max-w-7xl h-[90vh] w-[95vw] p-0 overflow-hidden flex flex-col fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
+      <DialogPrimitive.Content className="max-w-7xl h-[90vh] w-[95vw] p-0 overflow-hidden flex flex-col fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
         <DialogHeader className="px-6 py-4 border-b bg-[#14ad9f] text-white shrink-0 relative">
           {/* Weißes X-Icon */}
           <button
             onClick={onClose}
-            className="absolute top-2 right-4 text-white hover:text-white/80 hover:bg-white/10 z-[9999] p-2 rounded transition-colors"
+            className="absolute top-2 right-4 text-white hover:text-white/80 hover:bg-white/10 z-10000 p-2 rounded transition-colors"
             style={{ color: '#FFFFFF !important', fontSize: '20px', fontWeight: 'bold' }}>
 
             ✕
@@ -2116,7 +2205,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                     onClick={() => toggleSection('logo')}>
 
                     <div className="flex items-center gap-3">
-                      <Image className="h-5 w-5 text-gray-600" />
+                      <ImageIcon className="h-5 w-5 text-gray-600" />
                       <span className="font-medium">Dein Firmenlogo</span>
                     </div>
                     {isExpanded('logo') ?
@@ -2176,6 +2265,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                               ✓ Logo hochgeladen: {logoFile.name}
                             </div>
                             <div className="flex justify-center">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                             src={logoUrl}
                             alt="Logo Vorschau"
@@ -2203,7 +2293,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
 
                             <Minus className="h-3 w-3" />
                           </Button>
-                          <span className="text-sm font-medium min-w-[3rem] text-center">
+                          <span className="text-sm font-medium min-w-12 text-center">
                             {logoSize}%
                           </span>
                           <Button
@@ -2409,6 +2499,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
                           {qrCodeUrl &&
                       <div className="bg-white rounded-lg p-3 border text-center">
                               <div className="text-sm font-medium mb-2">QR-Code</div>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                           src={qrCodeUrl}
                           alt="E-Invoice QR Code"
@@ -2695,7 +2786,7 @@ ${document.companyName || 'Ihr Unternehmen'}`;
         isTemplateReady={isTemplateReady()}
         onSend={async (emailData) => {
           if (onSend) {
-            await onSend('email', emailData);
+            await onSend('email', emailData as unknown as SendOptions);
           }
         }} />
 

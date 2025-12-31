@@ -741,6 +741,10 @@ export class AdminWorkspaceService {
     // Get updated workspace
     const workspace = await this.getWorkspace(workspaceId);
 
+    if (!workspace) {
+      throw new Error(`Workspace ${workspaceId} nicht gefunden`);
+    }
+
     // Send AWS EventBridge event for realtime updates (both client and server)
     awsRealtimeService
       .broadcastWorkspaceUpdate('workspace.updated', workspaceId, workspace.adminId, workspace)

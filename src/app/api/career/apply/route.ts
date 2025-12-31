@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const applicantProfile = profileDoc.data();
+    const applicantProfile = profileDoc.data()!;
 
     // 3. Create Application
     const applicationData = {

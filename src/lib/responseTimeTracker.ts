@@ -106,7 +106,7 @@ export class ResponseTimeTracker {
           !tracking.responseTime &&
           tracking.customerMessageTime > latestTime
         ) {
-          latestUnrespondedMessage = { messageId, ...tracking };
+          latestUnrespondedMessage = { ...tracking, messageId };
           latestTime = tracking.customerMessageTime;
         }
       }

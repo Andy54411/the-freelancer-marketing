@@ -9,6 +9,13 @@ import { verifyCompanyAccess, authErrorResponse } from '@/lib/apiAuth';
  */
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { userId, connectionId, bankId, reason } = body;
 
@@ -24,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // Get company data
-      const companyDoc = await db!.collection('companies').doc(userId).get();
+      const companyDoc = await db.collection('companies').doc(userId).get();
 
       if (!companyDoc.exists) {
         return NextResponse.json({ error: 'Company not found' }, { status: 404 });
@@ -38,7 +45,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Check if connection exists
-      const connectionDoc = await db!.collection('finapi_connections').doc(userId).get();
+      const connectionDoc = await db.collection('finapi_connections').doc(userId).get();
 
       if (!connectionDoc.exists) {
         return NextResponse.json({
@@ -51,7 +58,7 @@ export async function POST(request: NextRequest) {
       const connectionData = connectionDoc.data();
 
       // Log disconnection reason
-      await db!.collection('finapi_disconnections').add({
+      await db.collection('finapi_disconnections').add({
         userId,
         companyEmail,
         connectionId: connectionId || connectionData?.connectionId,
@@ -63,7 +70,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Remove the connection
-      await db!.collection('finapi_connections').doc(userId).delete();
+      await db.collection('finapi_connections').doc(userId).delete();
 
       // Try to disconnect from finAPI (if real connection exists)
       let finapiDisconnected = false;
@@ -124,6 +131,13 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
 

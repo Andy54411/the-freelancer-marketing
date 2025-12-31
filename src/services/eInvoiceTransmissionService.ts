@@ -388,6 +388,10 @@ export class EInvoiceTransmissionService {
       throw new Error('EDI/Webservice-Einstellungen fehlen');
     }
 
+    if (!recipientSettings.edi.authentication) {
+      throw new Error('EDI-Authentifizierungseinstellungen fehlen');
+    }
+
     try {
       // Webservice-Aufruf simulieren
       const requestPayload = {

@@ -15,7 +15,7 @@ export default function DashboardProfileRedirect() {
         router.replace(`/profile/${user.uid}`);
       } else {
         // User ist nicht eingeloggt, leite zur Login-Seite weiter
-        router.replace('/login');
+        router.replace('/');
       }
     });
 

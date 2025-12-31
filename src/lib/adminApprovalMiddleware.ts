@@ -14,6 +14,14 @@ export interface AdminApprovalResult {
  */
 export async function checkAdminApproval(companyId: string): Promise<AdminApprovalResult> {
   try {
+    if (!db) {
+      return {
+        isApproved: false,
+        error: 'Datenbank nicht verfügbar',
+        errorCode: 'DATABASE_NOT_AVAILABLE',
+      };
+    }
+
     if (!companyId) {
       return {
         isApproved: false,

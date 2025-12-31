@@ -15,6 +15,13 @@ export async function GET(
   { params }: { params: Promise<{ uid: string; projectId: string }> }
 ) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const { uid: companyId, projectId } = await params;
 
     if (!companyId || !projectId) {
@@ -60,6 +67,13 @@ export async function PUT(
   { params }: { params: Promise<{ uid: string; projectId: string }> }
 ) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const { uid: companyId, projectId } = await params;
     const body = await request.json();
 
@@ -116,6 +130,13 @@ export async function DELETE(
   { params }: { params: Promise<{ uid: string; projectId: string }> }
 ) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const { uid: companyId, projectId } = await params;
 
     if (!companyId || !projectId) {
@@ -126,7 +147,7 @@ export async function DELETE(
     }
 
     // Projekt aus Firestore löschen
-    await db!.collection('companies').doc(companyId).collection('projects').doc(projectId).delete();
+    await db.collection('companies').doc(companyId).collection('projects').doc(projectId).delete();
 
     return NextResponse.json({
       success: true,

@@ -160,7 +160,7 @@ const AppHeaderNavigation: React.FC = () => {
 
   // Helper function to get the correct service URL - Zu Services-Seiten mit korrekter URL-Kodierung
   const getServiceUrl = (category: string, subcategory?: string) => {
-    if (!user?.uid) return '/login';
+    if (!user?.uid) return '/';
 
     if (subcategory) {
       // Für Subcategorien führen wir zu den Services-Seiten mit Anbietern

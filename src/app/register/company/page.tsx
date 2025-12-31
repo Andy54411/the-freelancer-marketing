@@ -401,7 +401,7 @@ export default function Step1() {
                 {/* Login Link */}
                 <p className="mt-6 text-center text-sm text-gray-600">
                   Bereits registriert?{' '}
-                  <Link href="/login" className="text-[#14ad9f] hover:underline font-medium">
+                  <Link href="/" className="text-[#14ad9f] hover:underline font-medium">
                     Jetzt anmelden
                   </Link>
                 </p>

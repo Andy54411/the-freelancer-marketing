@@ -45,6 +45,7 @@ export default function RevolutConnectModal({
         document.body.style.width = '';
       };
     }
+    return undefined;
   }, [isOpen]);
 
   // Listen for OAuth success messages from popup
@@ -81,6 +82,7 @@ export default function RevolutConnectModal({
         window.removeEventListener('message', handleMessage);
       };
     }
+    return undefined;
   }, [isOpen, onSuccess, onClose]);
 
   // Handle Revolut OAuth flow

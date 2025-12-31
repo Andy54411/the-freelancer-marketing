@@ -73,7 +73,7 @@ const GoogleMapComponent: React.FC<{
           onChange={e => onRadiusChange(Number(e.target.value))}
           className="w-full"
         />
-        <span className="min-w-[3rem]">{radiusKm} km</span>
+        <span className="min-w-12">{radiusKm} km</span>
       </div>
     </div>
   );

@@ -38,6 +38,13 @@ interface CampaignData {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!adminDb) {
+      return NextResponse.json({
+        success: false,
+        error: 'Datenbank nicht verfügbar',
+      }, { status: 500 });
+    }
+
     const { companyId, campaignData }: { companyId: string; campaignData: CampaignData } = await request.json();
 
     if (!companyId || !campaignData) {

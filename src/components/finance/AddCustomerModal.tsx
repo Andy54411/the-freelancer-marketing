@@ -44,6 +44,7 @@ export interface SkontoProduct {
 export interface Customer {
   id: string;
   customerNumber: string;
+  kundenNummer?: string; // Legacy Alias für customerNumber
   name: string;
   email: string;
   phone?: string;
@@ -60,7 +61,7 @@ export interface Customer {
   isSupplier?: boolean; // Unterscheidung zwischen Kunde und Lieferant
   totalInvoices: number;
   totalAmount: number;
-  createdAt: string;
+  createdAt: string | Date | { toDate: () => Date; seconds: number; nanoseconds: number };
   contactPersons: ContactPerson[];
   companyId: string;
   // Erweiterte Felder

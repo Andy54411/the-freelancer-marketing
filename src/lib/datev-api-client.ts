@@ -55,7 +55,7 @@ export class DatevApiClient {
     }
 
     // If we have a company ID, try Firestore
-    if (companyId) {
+    if (companyId && db) {
       try {
         const tokenDoc = await db
           .collection('users')

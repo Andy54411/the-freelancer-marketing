@@ -8,26 +8,19 @@ import {
   Calendar as FiCalendar,
   User as FiUser,
   Settings as FiSettings,
-  MessageSquare as FiMessageSquare,
   DollarSign as FiDollarSign,
-  Mail as FiMail,
   Send as FiSend,
   ClipboardList as FiClipboardList,
   ChevronDown as FiChevronDown,
   ChevronRight as FiChevronRight,
-  Bot as FiBot,
   TrendingUp as FiTrendingUp,
-  Shield as FiShield,
   Banknote as FiBanknote,
   Users as FiUsers,
   UserPlus as FiUserPlus,
-  Clock as FiClock,
   Calculator as FiCalculator,
   BarChart3 as FiBarChart3,
-  CalendarDays as FiCalendarDays,
   FileText as FiFileText,
   Folder as FiFolder,
-  FolderTree as FiFolderTree,
   Boxes as FiBoxes,
   Briefcase as FiBriefcase,
   HelpCircle as FiHelpCircle,
@@ -68,6 +61,10 @@ interface CompanySidebarProps {
   getCurrentView: () => string;
   isCollapsed?: boolean;
   onToggleCollapsed?: (collapsed: boolean) => void;
+  // Verstecke E-Mail-Menü wenn Taskilo Webmail verbunden (MailHeader übernimmt)
+  hideEmailMenu?: boolean;
+  // Verstecke Collapse-Button wenn MailHeader aktiv ist (MailHeader hat eigenes Hamburger-Menü)
+  hideCollapseButton?: boolean;
 }
 
 const navigationItems: NavigationItem[] = [
@@ -81,6 +78,11 @@ const navigationItems: NavigationItem[] = [
     icon: FiClipboardList,
     value: 'tasker',
     subItems: [
+      {
+        label: 'Posteingang',
+        value: 'inbox',
+        href: 'inbox',
+      },
       {
         label: 'Aufträge',
         value: 'orders',
@@ -117,14 +119,21 @@ const navigationItems: NavigationItem[] = [
         ],
       },
       {
-        label: 'Posteingang',
-        value: 'inbox',
-        href: 'inbox',
-      },
-      {
         label: 'Bewertungen',
         value: 'reviews',
         href: 'reviews',
+      },
+      {
+        label: 'Tasker-Einstellungen',
+        value: 'tasker-settings',
+        href: 'tasker/settings',
+        subItems: [
+          { label: 'Profil', value: 'tasker-profile', href: 'tasker/settings?view=profile' },
+          { label: 'Keyword-Analyse', value: 'tasker-keywords', href: 'settings/keyword-analysis' },
+          { label: 'Portfolio', value: 'tasker-portfolio', href: 'tasker/settings?view=portfolio' },
+          { label: 'Dienstleistungen', value: 'tasker-services', href: 'tasker/settings?view=services' },
+          { label: 'FAQs', value: 'tasker-faqs', href: 'tasker/settings?view=faqs' },
+        ],
       },
     ],
   },
@@ -376,9 +385,6 @@ const navigationItems: NavigationItem[] = [
       { label: 'Zahlungskonditionen', value: 'settings-payment-terms' },
       { label: 'Bankverbindung', value: 'settings-bank' },
       { label: 'Logo & Dokumente', value: 'settings-logo' },
-      { label: 'Portfolio', value: 'settings-portfolio' },
-      { label: 'Dienstleistungen', value: 'settings-services' },
-      { label: 'FAQs', value: 'settings-faqs' },
       { label: 'Auszahlungen', value: 'settings-payouts' },
       { label: 'Storno-Einstellungen', value: 'settings-storno', href: 'settings/storno' },
       { label: 'Textvorlagen', value: 'settings-textvorlagen', href: 'settings/textvorlagen' },
@@ -461,6 +467,10 @@ interface CompanySidebarProps {
   onToggleCollapsed?: (collapsed: boolean) => void;
   isEmployee?: boolean; // Mitarbeiter-Modus
   employeePermissions?: EmployeePermissions; // Berechtigungen für Mitarbeiter
+  // Verstecke E-Mail-Menü wenn Taskilo Webmail verbunden (MailHeader übernimmt)
+  hideEmailMenu?: boolean;
+  // Verstecke Collapse-Button wenn MailHeader aktiv ist (MailHeader hat eigenes Hamburger-Menü)
+  hideCollapseButton?: boolean;
 }
 
 // Prüfe ob alle Permissions aktiviert sind (voller Zugang wie Inhaber)
@@ -669,6 +679,8 @@ export default function CompanySidebar({
   onToggleCollapsed,
   isEmployee = false,
   employeePermissions,
+  hideEmailMenu = false,
+  hideCollapseButton = false,
 }: CompanySidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
@@ -685,7 +697,7 @@ export default function CompanySidebar({
     trash: 0,
   });
   const [emailSearchQuery, setEmailSearchQuery] = useState('');
-  const [checkingBankConnection, setCheckingBankConnection] = useState(true);
+  const [_checkingBankConnection, setCheckingBankConnection] = useState(true);
 
   // Use prop if provided, otherwise use local state
   const isCollapsed = isCollapsedProp ?? false;
@@ -1045,17 +1057,20 @@ export default function CompanySidebar({
                 )}
               </div>
             )}
-            <button
-              onClick={handleToggleCollapsed}
-              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors shrink-0"
-              title={isCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}
-            >
-              {isCollapsed ? (
-                <FiPanelLeftOpen className="h-5 w-5" />
-              ) : (
-                <FiPanelLeftClose className="h-5 w-5" />
-              )}
-            </button>
+            {/* Collapse-Button nur anzeigen wenn MailHeader NICHT aktiv ist */}
+            {!hideCollapseButton && (
+              <button
+                onClick={handleToggleCollapsed}
+                className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors shrink-0"
+                title={isCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}
+              >
+                {isCollapsed ? (
+                  <FiPanelLeftOpen className="h-5 w-5" />
+                ) : (
+                  <FiPanelLeftClose className="h-5 w-5" />
+                )}
+              </button>
+            )}
           </div>
 
           {/* Navigation */}
@@ -1073,6 +1088,12 @@ export default function CompanySidebar({
                 // Vollständige Navigation für Admin/Inhaber
                 navItems = navigationItems;
               }
+              
+              // Filtere E-Mail-Menü wenn Taskilo Webmail verbunden ist
+              if (hideEmailMenu) {
+                navItems = navItems.filter(item => item.value !== 'email');
+              }
+              
               return navItems;
             })().map(item => {
               const isMainActive = isItemActive(item);
@@ -1177,40 +1198,23 @@ export default function CompanySidebar({
                         }
                       }
 
-                      // ✅ Immer zuerst navigieren, auch bei Items mit SubItems
+                      // Wenn SubItems vorhanden sind: NUR aufklappen, nicht navigieren
+                      if (hasSubItems) {
+                        onToggleExpanded(item.value);
+                        return; // Nicht navigieren!
+                      }
+                      
+                      // Nur bei Items OHNE SubItems navigieren
                       if (item.href) {
                         onNavigate(item.value, item.href);
                       } else if (item.value === 'dashboard') {
                         // Dashboard hat keine href, also explizit navigieren
                         onNavigate(item.value);
-                      } else if (item.value === 'finance') {
-                        // Finance zur Hauptseite navigieren
-                        onNavigate(item.value, 'finance');
-                      } else if (item.value === 'tasker') {
-                        // Tasker zur Orders Overview navigieren
-                        onNavigate(item.value, 'orders/overview');
                       } else if (item.value === 'contacts') {
                         // Contacts hat bereits href
                         onNavigate(item.value, item.href);
-                      } else if (item.value === 'banking') {
-                        // Banking zur Accounts-Seite navigieren
-                        onNavigate(item.value, 'banking/accounts');
-                      } else if (item.value === 'personal') {
-                        // Personal zur Übersicht navigieren
-                        onNavigate(item.value, 'personal');
-                      } else if (item.value === 'workspace') {
-                        // Workspace zur Übersicht navigieren
-                        onNavigate(item.value, 'workspace');
-                      } else if (item.value === 'settings') {
-                        // Settings zur Allgemein-Seite navigieren
-                        onNavigate('settings-general');
                       } else {
                         onNavigate(item.value);
-                      }
-
-                      // ✅ Zusätzlich SubItems expandieren falls vorhanden
-                      if (hasSubItems) {
-                        onToggleExpanded(item.value);
                       }
                     }}
                     className={`${
@@ -1299,7 +1303,7 @@ export default function CompanySidebar({
                               className={`${
                                 isSubActive
                                   ? 'bg-[#14ad9f] text-white'
-                                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                  : 'text-teal-600 hover:bg-teal-50 hover:text-teal-700'
                               } group flex items-center justify-between px-2 py-1.5 text-sm rounded-md w-full transition-colors`}
                             >
                               <div className="flex items-center">
@@ -1309,7 +1313,7 @@ export default function CompanySidebar({
                                       e.stopPropagation();
                                       onToggleExpanded(subItem.value);
                                     }}
-                                    className="mr-2 hover:bg-white/20 rounded p-0.5 cursor-pointer inline-flex"
+                                    className="mr-2 hover:bg-white/20 rounded p-0.5 cursor-pointer inline-flex w-4 h-4 items-center justify-center"
                                   >
                                     {expandedItems.includes(subItem.value) ? (
                                       <FiChevronDown className="h-4 w-4" />
@@ -1318,7 +1322,7 @@ export default function CompanySidebar({
                                     )}
                                   </span>
                                 ) : (
-                                  <FiChevronRight className="mr-2 h-4 w-4" />
+                                  <span className="mr-2 w-4 h-4" />
                                 )}
                                 {subItem.label}
                               </div>
@@ -1380,10 +1384,9 @@ export default function CompanySidebar({
                         <div className="mt-3 pt-3 border-t border-gray-200">
                           <button
                             onClick={() => onNavigate('email-favorites', 'emails/starred')}
-                            className="text-gray-500 hover:bg-gray-50 hover:text-gray-700 group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors justify-between"
+                            className="text-teal-600 hover:bg-teal-50 hover:text-teal-700 group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors justify-between"
                           >
                             <div className="flex items-center">
-                              <FiChevronRight className="mr-2 h-4 w-4" />
                               Favoriten
                             </div>
                             {unreadEmailCounts.starred > 0 && (
@@ -1394,10 +1397,9 @@ export default function CompanySidebar({
                           </button>
                           <button
                             onClick={() => onNavigate('email-archive', 'emails/archived')}
-                            className="text-gray-500 hover:bg-gray-50 hover:text-gray-700 group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors justify-between"
+                            className="text-teal-600 hover:bg-teal-50 hover:text-teal-700 group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors justify-between"
                           >
                             <div className="flex items-center">
-                              <FiChevronRight className="mr-2 h-4 w-4" />
                               Archiv
                             </div>
                             {unreadEmailCounts.archived > 0 && (
@@ -1408,9 +1410,8 @@ export default function CompanySidebar({
                           </button>
                           <button
                             onClick={() => onNavigate('email-settings', 'email-integration')}
-                            className="text-gray-500 hover:bg-gray-50 hover:text-gray-700 group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors"
+                            className="text-teal-600 hover:bg-teal-50 hover:text-teal-700 group flex items-center px-2 py-1.5 text-sm rounded-md w-full transition-colors"
                           >
-                            <FiChevronRight className="mr-2 h-4 w-4" />
                             Einstellungen
                           </button>
                         </div>

@@ -4,6 +4,13 @@ import { db } from '@/firebase/server';
 // POST: UPS-Versandlabel erstellen
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { companyId, deliveryNoteId, shipmentData } = body;
 
@@ -199,6 +206,13 @@ export async function POST(request: NextRequest) {
 // GET: Tracking-Informationen abrufen
 export async function GET(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const trackingNumber = searchParams.get('trackingNumber');

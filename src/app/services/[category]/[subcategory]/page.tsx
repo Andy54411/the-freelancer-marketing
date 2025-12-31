@@ -1,18 +1,33 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/firebase/clients';
 import { collection, query, getDocs, limit } from 'firebase/firestore';
-import { Star, MapPin, ArrowLeft, Briefcase, Clock } from 'lucide-react';
-import { categories } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
-import { SERVICE_TAG_MAPPING } from '@/lib/serviceTagMapping';
+import { Star, ArrowLeft, Briefcase, ChevronDown, Info } from 'lucide-react';
+import { categories } from '@/lib/categoriesData';
 import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
 import Header from '@/components/Header';
-import ServiceHeader from '@/components/ServiceHeader';
-import AuthModal from '@/components/AuthModal';
+import LoginPopup from '@/components/LoginPopup';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import ServiceFilters, {
+  ServiceFiltersState,
+  matchesBudgetFilter,
+  matchesEmployeeSizeFilter,
+  matchesBusinessTypeFilter,
+  matchesLanguageFilter,
+  matchesLocationFilter,
+} from '@/components/services/ServiceFilters';
+import ProviderCard, { ProviderCardSkeleton } from '@/components/services/ProviderCard';
 
 interface Provider {
   id: string;
@@ -21,7 +36,7 @@ interface Provider {
   profilePictureFirebaseUrl?: string;
   profilePictureURL?: string;
   photoURL?: string;
-  profileBannerImage?: string; // Banner-Bild für Hero-Bereich
+  profileBannerImage?: string;
   bio?: string;
   location?: string;
   skills?: string[];
@@ -34,13 +49,37 @@ interface Provider {
   priceRange?: string;
   hourlyRate?: number;
   responseTime?: string;
+  // Filter fields
+  languages?: Array<{ language: string; proficiency?: string }>;
+  employees?: string;
+  businessType?: string;
+  city?: string;
+  serviceAreas?: string[];
+  adminApproved?: boolean;
+  availabilityType?: string;
+  // Internal ranking fields (not visible to users)
+  _searchTags?: string[];
+  _profileTitle?: string;
+  _internalScore?: number;
+  _companyRating?: number;
+  _companyReviewCount?: number;
 }
+
+type SortOption = 'recommended' | 'rating' | 'reviews' | 'price-low' | 'price-high' | 'newest';
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'recommended', label: 'Empfohlen' },
+  { value: 'rating', label: 'Beste Bewertung' },
+  { value: 'reviews', label: 'Meiste Reviews' },
+  { value: 'price-low', label: 'Niedrigster Preis' },
+  { value: 'price-high', label: 'Höchster Preis' },
+  { value: 'newest', label: 'Neueste' },
+];
 
 export default function SubcategoryPage() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { user } = useAuth(); // Auth Context für intelligente Payment-Weiterleitung
+  const { user } = useAuth();
   const category = (params?.category as string) || '';
   const subcategory = (params?.subcategory as string) || '';
 
@@ -48,17 +87,22 @@ export default function SubcategoryPage() {
   const decodedCategory = decodeURIComponent(category);
   const decodedSubcategory = decodeURIComponent(subcategory);
 
-  // Tag-basierte Navigation Parameter
-  const fromTag = searchParams?.get('tag') || '';
-  const filteredByTag = searchParams?.get('filtered') === 'true';
-
+  // States
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'rating' | 'reviews' | 'price' | 'newest'>('rating');
+  const [sortBy, setSortBy] = useState<SortOption>('recommended');
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [filters, setFilters] = useState<ServiceFiltersState>({
+    budgetRanges: [],
+    languages: [],
+    businessTypes: [],
+    employeeSizes: [],
+    locations: [],
+    verifiedOnly: false,
+    instantAvailable: false,
+  });
 
   // Normalisierungsfunktion
   const normalizeToSlug = (str: string) =>
@@ -71,708 +115,563 @@ export default function SubcategoryPage() {
       .replace(/ü/g, 'ue')
       .replace(/ß/g, 'ss');
 
-  // Finde die Kategorie durch Vergleich der normalisierten Namen - handle both %26 and & cases
+  // Finde die Kategorie
   const categoryInfo = categories.find(cat => {
     const expectedSlug = normalizeToSlug(cat.title);
-    // Auch prüfen ob die URL bereits %26 enthält (von der Navigation)
-    const urlSlug = category.includes('%26') ? category : normalizeToSlug(cat.title);
-    return expectedSlug === decodedCategory || expectedSlug === category || urlSlug === category;
+    return expectedSlug === decodedCategory || expectedSlug === category;
   });
 
-  // Finde die Unterkategorie durch Vergleich der normalisierten Namen
+  // Finde die Unterkategorie
   const subcategoryName = categoryInfo?.subcategories.find(sub => {
     const expectedSlug = normalizeToSlug(sub);
-    // Auch prüfen ob die URL bereits %26 enthält (von der Navigation)
-    const urlSlug = subcategory.includes('%26') ? subcategory : normalizeToSlug(sub);
-    return (
-      expectedSlug === decodedSubcategory || expectedSlug === subcategory || urlSlug === subcategory
-    );
+    return expectedSlug === decodedSubcategory || expectedSlug === subcategory;
   });
 
-  // Lade echte Bewertungen und abgeschlossene Aufträge für Provider
-  const enrichProvidersWithReviews = async (providers: Provider[]): Promise<Provider[]> => {
-    try {
-      // Create maps for efficient lookup
-      const reviewsMap = new Map<string, any[]>();
-      const completedJobsMap = new Map<string, number>();
+  // Berechne verfügbare Filter-Optionen aus geladenen Providern
+  const { availableLanguages, availableLocations, averageRating, totalReviews } = useMemo(() => {
+    const languages = new Set<string>();
+    const locations = new Set<string>();
+    let totalRating = 0;
+    let ratingCount = 0;
+    let reviewSum = 0;
 
-      // Load reviews for each provider from their subcollection
-      for (const provider of providers) {
+    providers.forEach(p => {
+      // Sprachen sammeln
+      p.languages?.forEach(l => languages.add(l.language));
+
+      // Standorte sammeln
+      if (p.city) locations.add(p.city);
+      p.serviceAreas?.forEach(area => locations.add(area));
+
+      // Rating berechnen
+      if (p.rating && p.rating > 0) {
+        totalRating += p.rating;
+        ratingCount++;
+      }
+      reviewSum += p.reviewCount || 0;
+    });
+
+    return {
+      availableLanguages: Array.from(languages).sort(),
+      availableLocations: Array.from(locations).sort(),
+      averageRating: ratingCount > 0 ? (totalRating / ratingCount).toFixed(1) : '0',
+      totalReviews: reviewSum,
+    };
+  }, [providers]);
+
+  // Filter und Sortieren der Provider
+  const filteredAndSortedProviders = useMemo(() => {
+    const result = providers.filter(provider => {
+      // Budget Filter
+      if (!matchesBudgetFilter(provider.hourlyRate, filters.budgetRanges)) return false;
+
+      // Employee Size Filter
+      if (!matchesEmployeeSizeFilter(provider.employees, filters.employeeSizes)) return false;
+
+      // Business Type Filter
+      if (!matchesBusinessTypeFilter(provider.businessType, filters.businessTypes)) return false;
+
+      // Language Filter
+      if (!matchesLanguageFilter(provider.languages, filters.languages)) return false;
+
+      // Location Filter
+      if (!matchesLocationFilter(provider.city, provider.serviceAreas, filters.locations))
+        return false;
+
+      // Verified Only Filter
+      if (filters.verifiedOnly && !provider.adminApproved) return false;
+
+      // Instant Available Filter
+      if (filters.instantAvailable && provider.availabilityType !== 'flexible') return false;
+
+      return true;
+    });
+
+    // Sortieren
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'recommended':
+          // Internes Ranking basierend auf kombiniertem Score
+          // Neue Formel mit 4 Komponenten:
+          // - SEO-Score: 25% (Profil-Vollständigkeit)
+          // - Service-Bewertungen: 35% (Rating nach Aufträgen)
+          // - Firmenbewertungen: 25% (Generelle Firmenbewertung)
+          // - Review-Anzahl: 15% (Mehr Bewertungen = mehr Vertrauen)
+          const seoA = (a._internalScore || 0) * 0.25;
+          const serviceRatingA = ((a.rating || 0) * 20) * 0.35;
+          const companyRatingA = ((a._companyRating || 0) * 20) * 0.25;
+          const reviewCountA = (Math.min((a.reviewCount || 0) + (a._companyReviewCount || 0), 30) * 1.5) * 0.15;
+          const scoreA = seoA + serviceRatingA + companyRatingA + reviewCountA;
+          
+          const seoB = (b._internalScore || 0) * 0.25;
+          const serviceRatingB = ((b.rating || 0) * 20) * 0.35;
+          const companyRatingB = ((b._companyRating || 0) * 20) * 0.25;
+          const reviewCountB = (Math.min((b.reviewCount || 0) + (b._companyReviewCount || 0), 30) * 1.5) * 0.15;
+          const scoreB = seoB + serviceRatingB + companyRatingB + reviewCountB;
+          
+          return scoreB - scoreA;
+        case 'rating':
+          return (b.rating || 0) - (a.rating || 0);
+        case 'reviews':
+          return (b.reviewCount || 0) - (a.reviewCount || 0);
+        case 'price-low':
+          return (a.hourlyRate || Infinity) - (b.hourlyRate || Infinity);
+        case 'price-high':
+          return (b.hourlyRate || 0) - (a.hourlyRate || 0);
+        case 'newest':
+          return 0; // Would need createdAt field
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [providers, filters, sortBy]);
+
+  // Lade echte Bewertungen für Provider (Service-Bewertungen + Firmenbewertungen)
+  const enrichProvidersWithReviews = async (providersList: Provider[]): Promise<Provider[]> => {
+    try {
+      // Lade alle Firmenbewertungen einmal
+      const companyReviewsSnapshot = await getDocs(collection(db, 'companyReviews'));
+      const companyReviewsMap: Record<string, { totalRating: number; count: number }> = {};
+      
+      companyReviewsSnapshot.forEach(doc => {
+        const data = doc.data();
+        const providerId = data.providerId;
+        const avgRating = data.averageRating || 0;
+        
+        if (providerId) {
+          if (!companyReviewsMap[providerId]) {
+            companyReviewsMap[providerId] = { totalRating: 0, count: 0 };
+          }
+          companyReviewsMap[providerId].totalRating += avgRating;
+          companyReviewsMap[providerId].count += 1;
+        }
+      });
+      
+      for (const provider of providersList) {
         try {
-          const reviewsQuery = query(
-            collection(db, `companies/${provider.id}/reviews`),
-            limit(50) // Reasonable limit per provider
-          );
+          // Service-Bewertungen laden
+          const reviewsQuery = query(collection(db, `companies/${provider.id}/reviews`), limit(50));
           const reviewsSnapshot = await getDocs(reviewsQuery);
 
-          const providerReviews: any[] = [];
+          const providerReviews: { rating: number }[] = [];
           reviewsSnapshot.forEach(doc => {
-            providerReviews.push(doc.data());
+            providerReviews.push(doc.data() as { rating: number });
           });
 
           if (providerReviews.length > 0) {
-            reviewsMap.set(provider.id, providerReviews);
-            completedJobsMap.set(provider.id, providerReviews.length);
+            const totalRating = providerReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0);
+            provider.rating = parseFloat((totalRating / providerReviews.length).toFixed(1));
+            provider.reviewCount = providerReviews.length;
+            provider.completedJobs = providerReviews.length;
           }
-        } catch (error) {
-          // Skip provider if subcollection doesn't exist or access denied
-          continue;
+          
+          // Firmenbewertungen hinzufügen
+          const companyReviewData = companyReviewsMap[provider.id];
+          if (companyReviewData && companyReviewData.count > 0) {
+            provider._companyRating = parseFloat((companyReviewData.totalRating / companyReviewData.count).toFixed(1));
+            provider._companyReviewCount = companyReviewData.count;
+          }
+        } catch {
+          // Skip on error
         }
       }
-
-      // Enrich each provider with their reviews and completed jobs
-      const enrichedProviders = providers.map(provider => {
-        const providerReviews = reviewsMap.get(provider.id) || [];
-        const completedJobs = completedJobsMap.get(provider.id) || 0;
-
-        // Calculate average rating
-        let averageRating = 0;
-        let totalRating = 0;
-
-        if (providerReviews.length > 0) {
-          totalRating = providerReviews.reduce((sum, review) => {
-            const rating = Number(review.rating) || 0;
-            return sum + rating;
-          }, 0);
-
-          averageRating = totalRating / providerReviews.length;
-        }
-
-        return {
-          ...provider,
-          rating: parseFloat(averageRating.toFixed(1)),
-          reviewCount: providerReviews.length,
-          completedJobs: completedJobs,
-        };
-      });
-
-      return enrichedProviders;
-    } catch (error) {
-      return providers.map(provider => ({
-        ...provider,
-        rating: provider.rating || 0,
-        reviewCount: provider.reviewCount || 0,
-        completedJobs: provider.completedJobs || 0,
-      }));
+      return providersList;
+    } catch {
+      return providersList;
     }
   };
 
+  // Lade Provider
   useEffect(() => {
     if (!categoryInfo || !subcategoryName) return;
-    loadProviders();
-  }, [category, subcategory, sortBy]);
 
-  const loadProviders = async () => {
-    try {
-      setLoading(true);
+    const loadProviders = async () => {
+      try {
+        setLoading(true);
 
-      // 🔧 SAUBERE TRENNUNG: Nur companies collection verwenden
-      const companiesCollectionRef = collection(db, 'companies');
-      const companiesQuery = query(companiesCollectionRef, limit(50));
+        const companiesQuery = query(collection(db, 'companies'), limit(100));
+        const companiesSnapshot = await getDocs(companiesQuery);
 
-      const companiesSnapshot = await getDocs(companiesQuery);
+        const companyProviders: Provider[] = companiesSnapshot.docs
+          .map(doc => {
+            const data = doc.data();
+            
+            // Berechne internen SEO-Score basierend auf Profil-Vollständigkeit
+            // Diese Berechnung ist vereinfacht - der echte Score wird vom KeywordAnalysisService berechnet
+            let internalScore = 0;
+            
+            // Profil-Titel vorhanden? (15 Punkte)
+            const profileTitle = data.profileTitle || '';
+            if (profileTitle.length >= 30) internalScore += 15;
+            else if (profileTitle.length >= 20) internalScore += 10;
+            else if (profileTitle.length > 0) internalScore += 5;
+            
+            // Beschreibung vorhanden und ausreichend lang? (20 Punkte)
+            const description = data.description || data.bio || '';
+            const descLength = description.replace(/<[^>]*>/g, '').length;
+            if (descLength >= 500) internalScore += 20;
+            else if (descLength >= 200) internalScore += 15;
+            else if (descLength >= 100) internalScore += 10;
+            else if (descLength > 0) internalScore += 5;
+            
+            // Such-Tags vorhanden? (15 Punkte - 3 pro Tag)
+            const searchTags = data.searchTags || [];
+            internalScore += Math.min(15, searchTags.length * 3);
+            
+            // Skills vorhanden? (15 Punkte)
+            const skills = data.skills || data.step3?.skills || [];
+            if (skills.length >= 5) internalScore += 15;
+            else if (skills.length >= 3) internalScore += 10;
+            else if (skills.length > 0) internalScore += 5;
+            
+            // Profilbild vorhanden? (10 Punkte)
+            if (data.step3?.profilePictureURL || data.profilePictureURL) internalScore += 10;
+            
+            // Verifiziert? (15 Punkte)
+            if (data.adminApproved === true) internalScore += 15;
+            
+            // Standort angegeben? (10 Punkte)
+            if (data.location || data.city || data.companyCity) internalScore += 10;
+            
+            return {
+              id: doc.id,
+              companyName: data.companyName,
+              profilePictureFirebaseUrl: data.step3?.profilePictureURL || data.profilePictureURL,
+              profilePictureURL: data.step3?.profilePictureURL || data.profilePictureURL,
+              photoURL: data.step3?.profilePictureURL || data.profilePictureURL,
+              profileBannerImage: data.profileBannerImage || data.step3?.profileBannerImage,
+              bio: data.description || data.bio,
+              location:
+                data.location ||
+                (data.companyCity && data.companyPostalCode
+                  ? `${data.companyCity}, ${data.companyPostalCode}`
+                  : data.companyCity),
+              hourlyRate: data.hourlyRate || data.step4?.hourlyRate,
+              skills: data.skills || data.step3?.skills || [],
+              selectedCategory: data.selectedCategory,
+              selectedSubcategory: data.selectedSubcategory,
+              rating: 0,
+              reviewCount: 0,
+              completedJobs: data.completedJobs || 0,
+              isCompany: true,
+              responseTime: data.responseTime,
+              // Filter fields
+              languages: data.languages || data.step3?.languages || [],
+              employees: data.employees,
+              businessType: data.businessType,
+              city: data.city || data.companyCity,
+              serviceAreas: data.serviceAreas || data.step4?.serviceAreas || [],
+              adminApproved: data.adminApproved === true,
+              availabilityType: data.availabilityType || data.step4?.availabilityType,
+              // Internal ranking fields (not visible to users)
+              _searchTags: searchTags,
+              _profileTitle: profileTitle,
+              _internalScore: internalScore,
+            };
+          })
+          .filter(provider => {
+            const data = companiesSnapshot.docs.find(doc => doc.id === provider.id)?.data();
+            
+            // Nur inaktive Anbieter ausfiltern, nicht suspendierte (die können noch angezeigt werden)
+            if (data?.status === 'inactive') {
+              return false;
+            }
+            // Ausfiltern wenn accountSuspended explizit true ist
+            if (data?.accountSuspended === true) {
+              return false;
+            }
 
-      const companyProviders: Provider[] = companiesSnapshot.docs
-        .map(doc => {
-          const data = doc.data();
+            // Filter nach Subcategory
+            if (provider.selectedSubcategory) {
+              const matches = 
+                provider.selectedSubcategory === subcategoryName ||
+                provider.selectedSubcategory.toLowerCase() === subcategoryName?.toLowerCase();
+              if (matches) {
+                return true;
+              }
+            }
 
-          return {
-            id: doc.id,
-            companyName: data.companyName,
-            profilePictureFirebaseUrl: data.step3?.profilePictureURL || data.profilePictureURL,
-            profilePictureURL: data.step3?.profilePictureURL || data.profilePictureURL,
-            photoURL: data.step3?.profilePictureURL || data.profilePictureURL,
-            // Banner-Bild für Hero-Bereich
-            profileBannerImage: data.profileBannerImage || data.step3?.profileBannerImage,
-            bio: data.description || data.bio,
-            location:
-              data.location ||
-              (data.companyCity && data.companyPostalCode
-                ? `${data.companyCity}, ${data.companyPostalCode}`
-                : data.companyCity ||
-                  (data.serviceAreas && data.serviceAreas.length > 0
-                    ? data.serviceAreas[0]
-                    : null)),
-            hourlyRate:
-              data.hourlyRate ||
-              data.step4?.hourlyRate ||
-              data.step5?.hourlyRate ||
-              (data.step1?.hourlyRate ? Number(data.step1.hourlyRate) : null) ||
-              // Fallback: Suche in allen Step-Daten nach hourlyRate
-              Object.values(data).find(val => val && typeof val === 'object' && val.hourlyRate)
-                ?.hourlyRate ||
-              null,
-            skills: data.skills || data.step3?.skills || [],
-            selectedCategory: data.selectedCategory || 'Hotel & Gastronomie', // Fallback basierend auf Skills
-            selectedSubcategory:
-              data.selectedSubcategory ||
-              (data.skills?.some((skill: string) => skill.toLowerCase().includes('koch'))
-                ? 'Mietkoch'
-                : null),
-            // Diese werden später durch echte Reviews überschrieben - Standardwerte auf 0 setzen
-            rating: 0,
-            reviewCount: 0,
-            completedJobs: data.completedJobs || 0,
-            isCompany: true,
-            priceRange: data.priceRange,
-            responseTime: data.responseTime,
-          };
-        })
-        // Filter nur inaktive Firmen aus (aber zeige Firmen ohne isActive Feld)
-        .filter(provider => {
-          const data = companiesSnapshot.docs.find(doc => doc.id === provider.id)?.data();
-          // Zeige Provider wenn status nicht 'inactive' ist
-          return data?.status !== 'inactive';
-        });
-
-      // 🔧 SAUBERE TRENNUNG: Nur companies verwenden, keine users mehr
-      const allProviders = companyProviders;
-
-      // Anreichern mit echten Bewertungen
-      const enrichedProviders = await enrichProvidersWithReviews(allProviders);
-
-      // Filter nach Subcategory - erweiterte und allgemeine Prüfung
-      let filteredProviders = enrichedProviders.filter(provider => {
-        // 🔧 PRIORITÄT 1: Exakte Kategorie/Unterkategorie Übereinstimmung
-        if (provider.isCompany && provider.selectedSubcategory) {
-          // Exakte Übereinstimmung
-          if (provider.selectedSubcategory === subcategoryName) {
-            return true;
-          }
-
-          // Case-insensitive Übereinstimmung
-          if (provider.selectedSubcategory.toLowerCase() === subcategoryName?.toLowerCase()) {
-            return true;
-          }
-
-          // URL-Parameter Übereinstimmung
-          if (provider.selectedSubcategory.toLowerCase() === subcategory.toLowerCase()) {
-            return true;
-          }
-        }
-
-        // 🔧 PRIORITÄT 2: Skills Array Übereinstimmung
-        const skillsMatch = provider.skills?.some(
-          skill =>
-            skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
-            skill.toLowerCase().includes(subcategory.toLowerCase())
-        );
-
-        if (skillsMatch) {
-          return true;
-        }
-
-        // 🔧 PRIORITÄT 3: Nur sehr spezifische Matches für Namen/Bio
-        // Für Provider ohne explizite Skills/Subcategory: Prüfe Namen und Bio (STRIKTERE MATCHING)
-        const nameMatch =
-          // Nur exakte Wort-Matches, keine Teilstring-Matches
-          provider.companyName
-            ?.toLowerCase()
-            .split(' ')
-            .some(
-              word => word === subcategory.toLowerCase() || word === subcategoryName?.toLowerCase()
-            ) ||
-          provider.userName
-            ?.toLowerCase()
-            .split(' ')
-            .some(
-              word => word === subcategory.toLowerCase() || word === subcategoryName?.toLowerCase()
+            // Skills check
+            const skillsMatch = provider.skills?.some(
+              skill =>
+                skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
+                skill.toLowerCase().includes(subcategory.toLowerCase())
             );
 
-        const bioMatch =
-          // Nur wenn die komplette Subcategory im Bio-Text vorkommt
-          provider.bio?.toLowerCase().includes(subcategory.toLowerCase()) ||
-          provider.bio?.toLowerCase().includes(subcategoryName?.toLowerCase() || '');
+            return skillsMatch;
+          });
 
-        // 🔧 SPEZIAL-MATCHING: Für "Mietkoch" - prüfe auch ob im Namen "Koch" vorkommt
-        const specialMietkochMatch =
-          (subcategoryName?.toLowerCase() === 'mietkoch' ||
-            subcategory.toLowerCase() === 'mietkoch') &&
-          (provider.companyName?.toLowerCase().includes('koch') ||
-            provider.companyName?.toLowerCase().includes('mietkoch') ||
-            provider.userName?.toLowerCase().includes('koch') ||
-            provider.userName?.toLowerCase().includes('mietkoch'));
-
-        // 🔧 ANTI-MATCH: Verhindere Cross-Category Matches
-        // Wenn Provider explizit eine andere Kategorie hat, nicht matchen
-        if (provider.selectedCategory && provider.selectedSubcategory) {
-          const providerCategory = provider.selectedCategory.toLowerCase();
-          const targetCategory = categoryInfo?.title.toLowerCase();
-
-          // Wenn Provider aus völlig anderer Kategorie kommt, ausschließen
-          if (providerCategory !== targetCategory && !specialMietkochMatch && !skillsMatch) {
-            return false;
-          }
-        }
-
-        // Tag-basierte Filterung wenn verfügbar
-        let tagMatch = false;
-        if (fromTag && filteredByTag) {
-          const tagMapping = SERVICE_TAG_MAPPING[fromTag];
-          if (tagMapping) {
-            // Prüfe ob Provider zu den Filtern aus dem Tag Mapping passt
-            const filterMatch = tagMapping.filters?.some(
-              filter =>
-                provider.companyName?.toLowerCase().includes(filter.toLowerCase()) ||
-                provider.userName?.toLowerCase().includes(filter.toLowerCase()) ||
-                provider.bio?.toLowerCase().includes(filter.toLowerCase()) ||
-                provider.skills?.some(skill => skill.toLowerCase().includes(filter.toLowerCase()))
-            );
-
-            // Zusätzlich prüfe Kategorie/Unterkategorie Match
-            const categoryMatch =
-              provider.selectedCategory?.toLowerCase() === tagMapping.category.toLowerCase() ||
-              provider.selectedSubcategory?.toLowerCase() === tagMapping.subcategory.toLowerCase();
-
-            tagMatch = filterMatch || categoryMatch;
-          }
-        }
-
-        const finalMatch =
-          skillsMatch ||
-          nameMatch ||
-          bioMatch ||
-          specialMietkochMatch ||
-          (filteredByTag ? tagMatch : true);
-
-        return finalMatch;
-      });
-
-      // Suchfilter
-      if (searchQuery) {
-        filteredProviders = filteredProviders.filter(
-          provider =>
-            provider.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            provider.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            provider.bio?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            provider.skills?.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
+        const enrichedProviders = await enrichProvidersWithReviews(companyProviders);
+        setProviders(enrichedProviders);
+      } catch {
+        setProviders([]);
+      } finally {
+        setLoading(false);
       }
-
-      // Sortierung
-      filteredProviders.sort((a, b) => {
-        switch (sortBy) {
-          case 'rating':
-            return (b.rating || 0) - (a.rating || 0);
-          case 'reviews':
-            return (b.reviewCount || 0) - (a.reviewCount || 0);
-          case 'price':
-            // Hier könnte eine Preissortierung implementiert werden
-            return 0;
-          case 'newest':
-            return 0; // Könnte mit createdAt implementiert werden
-          default:
-            return 0;
-        }
-      });
-
-      setProviders(filteredProviders);
-    } catch (_error) {
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getProfileImage = (provider: Provider) => {
-    return (
-      provider.profilePictureFirebaseUrl ||
-      provider.profilePictureURL ||
-      provider.photoURL ||
-      '/images/default-avatar.jpg'
-    );
-  };
-
-  const getBannerImage = (provider: Provider) => {
-    // 🔧 FIX: Da Banner-Bilder derzeit als Blob-URLs gespeichert werden (nicht gültig),
-    // verwenden wir kategorie-spezifische Banner-Bilder
-
-    // Zuerst versuchen wir ein echtes Banner-Bild (falls es jemals korrekt hochgeladen wird)
-    const bannerImage =
-      (provider as any).profileBannerImage || (provider as any).step3?.profileBannerImage;
-
-    if (bannerImage && !bannerImage.startsWith('blob:')) {
-      return bannerImage;
-    }
-
-    // Kategorie-spezifische Banner-Bilder als Fallback
-    const categoryBanners = {
-      'Hotel & Gastronomie': '/images/banners/gastronomy-banner.jpg',
-      Handwerk: '/images/banners/handwerk-banner.jpg',
-      'IT & Technik': '/images/banners/it-banner.jpg',
-      'Marketing & Vertrieb': '/images/banners/marketing-banner.jpg',
-      default: '/images/banners/default-service-banner.jpg',
     };
 
-    const categoryBanner =
-      categoryBanners[provider.selectedCategory as keyof typeof categoryBanners] ||
-      categoryBanners.default;
+    loadProviders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, subcategory]);
 
-    // Fallback auf Profilbild wenn kein Banner existiert
-    return categoryBanner || getProfileImage(provider);
-  };
-
-  const getProviderName = (provider: Provider) => {
-    return provider.companyName || provider.userName || 'Unbekannter Anbieter';
-  };
-
-  // Debug logging für troubleshooting
-
-  const handleBookNow = (provider: Provider) => {
-    // Auth-Check: Wenn nicht eingeloggt, Auth-Modal öffnen
+  // Booking Handler
+  const handleBookClick = (provider: Provider) => {
     if (!user) {
-      setSelectedProvider(provider);
       setIsAuthModalOpen(true);
       return;
     }
-
-    // Wenn eingeloggt, Booking-Modal öffnen
     setSelectedProvider(provider);
     setIsBookingModalOpen(true);
   };
 
-  const handleBookingConfirm = async (
-    _selection: any,
-    _time: string,
-    _durationString: string,
-    _description: string
-  ) => {
-    try {
-      // Schließe das Modal
-      setIsBookingModalOpen(false);
-      setSelectedProvider(null);
-
-      // Intelligente Weiterleitung basierend auf User-Typ
-      if (!user) {
-        // Nicht eingeloggt → Login/Registrierung
-
-        router.push(
-          `/auftrag/get-started?provider=${selectedProvider?.id}&category=${categoryInfo?.title}&subcategory=${subcategoryName}`
-        );
-        return;
-      }
-
-      // Prüfe ob User eine Firma ist (B2B) oder Kunde (B2C)
-      // TODO: Implementiere korrekte User-Type-Detection
-      const isCompany = (user as any).isCompany || (user as any).role === 'firma';
-
-      if (isCompany) {
-        // Firma → B2B Payment im Company Dashboard
-
-        router.push(`/dashboard/company/${user.uid}/provider/${selectedProvider?.id}?booking=true`);
-        return;
-      }
-
-      // Standardfall: B2C Payment Flow für normale Kunden
-      router.push(
-        `/auftrag/get-started?provider=${selectedProvider?.id}&category=${categoryInfo?.title}&subcategory=${subcategoryName}`
-      );
-    } catch (error) {
-      alert('Fehler bei der Weiterleitung. Bitte versuchen Sie es erneut.');
-    }
-  };
-
-  const handleCloseBookingModal = () => {
-    setIsBookingModalOpen(false);
-    setSelectedProvider(null);
-  };
-
-  if (!categoryInfo || !subcategoryName) {
+  if (!categoryInfo) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <>
         <Header />
-        {/* Debug Header - Zeige immer einen Header */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            {/* Breadcrumb Navigation */}
-            <nav className="text-sm text-gray-500 mb-6">
-              <Link href="/" className="hover:text-[#14ad9f] transition-colors">
-                Startseite
-              </Link>
-              <span className="mx-2">/</span>
-              <Link href="/services" className="hover:text-[#14ad9f] transition-colors">
-                Services
-              </Link>
-              <span className="mx-2">/</span>
-              <span className="text-gray-900 font-medium">{decodedCategory}</span>
-              <span className="mx-2">/</span>
-              <span className="text-gray-900 font-medium">{decodedSubcategory}</span>
-            </nav>
-
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/services')}
-                className="text-gray-600 hover:text-[#14ad9f] transition-colors"
-              >
-                <ArrowLeft className="w-6 h-6" />
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">{decodedSubcategory}</h1>
-                <p className="text-gray-600 mt-1">Service-Kategorie nicht gefunden</p>
-              </div>
-            </div>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Kategorie nicht gefunden</h1>
+            <Button onClick={() => router.back()} variant="outline">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Zurück
+            </Button>
           </div>
         </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Kategorie nicht gefunden</h2>
-            <p className="text-gray-600 mb-4">
-              Die angeforderte Kategorie &quot;{decodedCategory}&quot; oder Unterkategorie &quot;
-              {decodedSubcategory}&quot; konnte nicht gefunden werden.
-            </p>
-            <div className="space-y-2">
-              <p className="text-sm text-gray-500">Verfügbare Kategorien:</p>
-              <div className="text-sm text-gray-400">
-                {categories.map(c => normalizeToSlug(c.title)).join(', ')}
-              </div>
-            </div>
-            <button
-              onClick={() => router.push('/services')}
-              className="mt-6 bg-[#14ad9f] hover:bg-taskilo-hover text-white py-2 px-4 rounded-lg font-medium transition-colors"
-            >
-              Zu allen Services
-            </button>
-          </div>
-        </div>
-      </div>
+      </>
     );
   }
 
   return (
     <>
-      {/* Dynamic Gradient Background */}
-      <div className="fixed inset-0 bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 -z-10"></div>
-      <div className="fixed inset-0 bg-black/20 -z-10"></div>
+      <Header />
 
-      <div className="min-h-screen relative z-10">
-        <Header />
+      {/* Hero Section - Fiverr Style */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+            <Link href="/" className="hover:text-teal-600 transition-colors">
+              Startseite
+            </Link>
+            <span>/</span>
+            <Link href="/services" className="hover:text-teal-600 transition-colors">
+              Services
+            </Link>
+            <span>/</span>
+            <Link
+              href={`/services/${normalizeToSlug(categoryInfo.title)}`}
+              className="hover:text-teal-600 transition-colors"
+            >
+              {categoryInfo.title}
+            </Link>
+            <span>/</span>
+            <span className="text-gray-900 font-medium">{subcategoryName}</span>
+          </nav>
 
-        <ServiceHeader
-          categoryTitle={categoryInfo.title}
-          subcategoryName={subcategoryName}
-          decodedCategory={decodedCategory}
-          providerCount={providers.length}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          fromTag={fromTag}
-          filteredByTag={filteredByTag}
-        />
-
-        {/* Anbieter Liste - mit Gradient Hintergrund */}
-        <div className="relative z-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {loading ? (
-              <div className="space-y-6">
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-white/20 p-6 animate-pulse"
-                  >
-                    <div className="flex items-start gap-6">
-                      <div className="w-20 h-20 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
-                      <div className="flex-1 space-y-3">
-                        <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-1/3"></div>
-                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/4"></div>
-                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
-                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : providers.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm p-8 border border-white/20 max-w-md mx-auto">
-                  <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Keine Anbieter gefunden
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    Derzeit sind keine Anbieter für {subcategoryName} verfügbar.
-                  </p>
-                  <button
-                    onClick={() => router.push(`/services/${decodedCategory}`)}
-                    className="text-[#14ad9f] hover:text-taskilo-hover font-medium"
-                  >
-                    Alle {categoryInfo.title} Anbieter anzeigen
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {providers.map(provider => (
-                  <div
-                    key={provider.id}
-                    className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 group border border-white/20 overflow-hidden"
-                  >
-                    {/* Provider Image */}
-                    <div className="relative group/image">
-                      <img
-                        src={getBannerImage(provider)}
-                        alt={getProviderName(provider)}
-                        className="w-full h-48 object-cover"
-                        onError={e => {
-                          (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
-                        }}
-                      />
-
-                      {/* Hover Overlay for Profile View - only on image hover */}
-                      <div
-                        className="absolute inset-0 bg-black bg-opacity-0 group-hover/image:bg-opacity-40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover/image:opacity-100 cursor-pointer"
-                        onClick={e => {
-                          e.preventDefault();
-                          e.stopPropagation();
-
-                          // Profil-Ansicht für alle User ermöglichen
-                          router.push(`/profile/${provider.id}`);
-                        }}
-                      >
-                        <button className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium shadow-lg transform translate-y-2 group-hover/image:translate-y-0 transition-transform">
-                          Profil anzeigen
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Card Content */}
-                    <div className="p-5">
-                      {/* Provider Info */}
-                      <div className="flex items-start gap-3 mb-4">
-                        <img
-                          src={getProfileImage(provider)}
-                          alt={getProviderName(provider)}
-                          className="w-10 h-10 rounded-full object-cover"
-                          onError={e => {
-                            (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
-                          }}
-                        />
-
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 text-base truncate group-hover:text-[#14ad9f] transition-colors">
-                            {getProviderName(provider)}
-                          </h3>
-                          {provider.location && (
-                            <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                              <MapPin className="w-3 h-3" />
-                              <span className="truncate">{provider.location}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {/* Service Title */}
-                      <h4 className="text-gray-900 font-medium text-sm mb-3 line-clamp-2 leading-5">
-                        {provider.bio
-                          ? provider.bio.length > 60
-                            ? `${provider.bio.substring(0, 60)}...`
-                            : provider.bio
-                          : `Professionelle ${subcategoryName} Services`}
-                      </h4>
-                      {/* Skills/Tags */}
-                      {provider.skills && provider.skills.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-4">
-                          {provider.skills.slice(0, 3).map((skill, index) => (
-                            <span
-                              key={index}
-                              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                          {provider.skills.length > 3 && (
-                            <span className="text-xs text-gray-400">
-                              +{provider.skills.length - 3}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {/* Stats Row - Immer anzeigen mit Fallback-Werten */}
-                      {/* Stats Row - Immer anzeigen, echte Bewertungen oder Fallback */}
-                      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                        <div className="flex items-center gap-3">
-                          {provider.rating && provider.rating > 0 ? (
-                            <div className="flex items-center gap-1">
-                              <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                              <span className="font-medium text-gray-900">
-                                {provider.rating.toFixed(1)}
-                              </span>
-                              {provider.reviewCount && provider.reviewCount > 0 && (
-                                <span className="text-gray-500">({provider.reviewCount})</span>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1">
-                              <Star className="w-3 h-3 text-gray-300" />
-                              <span className="text-gray-400">Noch keine Bewertungen</span>
-                            </div>
-                          )}
-                          {(provider.completedJobs ?? 0) > 0 && (
-                            <div className="flex items-center gap-1">
-                              <Briefcase className="w-3 h-3" />
-                              <span>{provider.completedJobs} Aufträge</span>
-                            </div>
-                          )}
-                        </div>
-                        {provider.responseTime && (
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            <span className="text-xs">Antwort in {provider.responseTime}h</span>
-                          </div>
-                        )}
-                      </div>
-                      {/* Price & Action */}
-                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-gray-900">
-                            <span className="text-sm text-gray-500 font-normal">Ab </span>
-                            {provider.hourlyRate
-                              ? `€${provider.hourlyRate}/h`
-                              : provider.priceRange || 'Preis auf Anfrage'}
-                          </div>
-                        </div>
-                        <button
-                          onClick={e => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleBookNow(provider);
-                          }}
-                          className="bg-[#14ad9f] hover:bg-taskilo-hover text-white px-3 py-1.5 rounded-lg font-medium transition-colors text-xs whitespace-nowrap"
-                          type="button"
-                        >
-                          {user ? 'Jetzt buchen' : 'Anmelden & buchen'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* Title Section */}
+          <div className="mb-6">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">{subcategoryName}</h1>
+            <p className="text-lg text-gray-600">
+              Finden Sie professionelle {subcategoryName}-Dienstleister in Ihrer Nähe
+            </p>
           </div>
 
-          {/* Intelligent Booking Modal - Unterscheidet automatisch zwischen B2B und B2C */}
-          {/* B2C: Weiterleitung zu get-started | B2B (Firma): Weiterleitung zu Company Dashboard */}
-          {isBookingModalOpen && selectedProvider && (
-            <ProviderBookingModal
-              isOpen={isBookingModalOpen}
-              onClose={handleCloseBookingModal}
-              provider={selectedProvider}
-              onConfirm={handleBookingConfirm}
-            />
+          {/* Rating Badge - Like Fiverr */}
+          {totalReviews > 0 && (
+            <div className="inline-flex items-center gap-3 bg-gray-50 rounded-full px-4 py-2 border border-gray-200 mb-6">
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map(star => (
+                  <Star
+                    key={star}
+                    className={`w-4 h-4 ${
+                      star <= Math.round(Number(averageRating))
+                        ? 'fill-amber-400 text-amber-400'
+                        : 'fill-gray-200 text-gray-200'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="font-semibold text-gray-900">{averageRating}/5</span>
+              <span className="text-gray-500 text-sm">
+                Durchschnittsbewertung basierend auf {totalReviews.toLocaleString('de-DE')} Reviews
+              </span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="w-4 h-4 text-gray-400" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Basierend auf verifizierten Kundenbewertungen</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           )}
 
-          {/* Debug Info - können Sie später entfernen */}
+          {/* Related Subcategories Pills - Like Fiverr */}
+          {categoryInfo.subcategories.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              {categoryInfo.subcategories.slice(0, 8).map(sub => {
+                const isActive = sub === subcategoryName;
+                return (
+                  <Link
+                    key={sub}
+                    href={`/services/${normalizeToSlug(categoryInfo.title)}/${normalizeToSlug(sub)}`}
+                    className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
+                      isActive
+                        ? 'bg-teal-600 text-white border-teal-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-teal-500 hover:text-teal-600'
+                    }`}
+                  >
+                    {sub}
+                  </Link>
+                );
+              })}
+              {categoryInfo.subcategories.length > 8 && (
+                <span className="px-4 py-2 text-sm text-gray-500">
+                  +{categoryInfo.subcategories.length - 8} weitere
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => {
-          setIsAuthModalOpen(false);
-          setSelectedProvider(null);
-        }}
-        providerName={selectedProvider?.companyName || selectedProvider?.userName}
-        service={subcategoryName}
+      {/* Filter Bar */}
+      <ServiceFilters
+        filters={filters}
+        onFiltersChange={setFilters}
+        availableLanguages={availableLanguages}
+        availableLocations={availableLocations}
+        resultCount={filteredAndSortedProviders.length}
+      />
+
+      {/* Results Section */}
+      <div className="bg-gray-50 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Results Header */}
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-gray-600">
+              <span className="font-semibold text-gray-900">
+                {filteredAndSortedProviders.length.toLocaleString('de-DE')}
+              </span>{' '}
+              Ergebnisse
+            </p>
+
+            {/* Sort Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  Sortieren: {SORT_OPTIONS.find(o => o.value === sortBy)?.label}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {SORT_OPTIONS.map(option => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setSortBy(option.value)}
+                    className={sortBy === option.value ? 'bg-teal-50 text-teal-700' : ''}
+                  >
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Provider Grid */}
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, i) => (
+                <ProviderCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : filteredAndSortedProviders.length === 0 ? (
+            <div className="text-center py-16">
+              <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Keine Anbieter gefunden
+              </h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                Leider gibt es aktuell keine Anbieter, die Ihren Filterkriterien entsprechen.
+                Versuchen Sie, Ihre Filter anzupassen.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  setFilters({
+                    budgetRanges: [],
+                    languages: [],
+                    businessTypes: [],
+                    employeeSizes: [],
+                    locations: [],
+                    verifiedOnly: false,
+                    instantAvailable: false,
+                  })
+                }
+              >
+                Filter zurücksetzen
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredAndSortedProviders.map(provider => (
+                <ProviderCard
+                  key={provider.id}
+                  provider={provider}
+                  onBookClick={handleBookClick}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* CTA Section */}
+          <div className="mt-16 bg-linear-to-r from-teal-600 to-teal-500 rounded-2xl p-8 text-center text-white">
+            <h3 className="text-2xl font-bold mb-4">
+              Sind Sie {subcategoryName}?
+            </h3>
+            <p className="text-white/90 mb-6 max-w-2xl mx-auto">
+              Werden Sie Teil der Taskilo-Community und erreichen Sie tausende potenzielle Kunden.
+              Professionelle Tools, faire Provisionen, transparente Abrechnung.
+            </p>
+            <Link
+              href="/register/company"
+              className="inline-flex items-center gap-2 bg-white text-teal-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+            >
+              <Briefcase className="w-5 h-5" />
+              Jetzt als Anbieter registrieren
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
+      {selectedProvider && (
+        <ProviderBookingModal
+          provider={{
+            id: selectedProvider.id,
+            companyName: selectedProvider.companyName || selectedProvider.userName || '',
+          }}
+          isOpen={isBookingModalOpen}
+          onClose={() => {
+            setIsBookingModalOpen(false);
+            setSelectedProvider(null);
+          }}
+          onConfirm={async (_dateSelection, _time, _duration, _description) => {
+            // Booking confirmation handled by modal
+            setIsBookingModalOpen(false);
+            setSelectedProvider(null);
+          }}
+        />
+      )}
+
+      <LoginPopup 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={() => setIsAuthModalOpen(false)}
       />
     </>
   );

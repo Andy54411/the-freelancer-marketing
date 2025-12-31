@@ -315,6 +315,22 @@ export class FirebaseTicketService {
   }
 
   /**
+   * Get tickets by company ID
+   */
+  static async getTicketsByCompanyId(companyId: string): Promise<TicketData[]> {
+    if (!db) {
+      return [];
+    }
+    
+    const snapshot = await db.collection(COLLECTION_PATH)
+      .where('companyId', '==', companyId)
+      .limit(100)
+      .get();
+    
+    return snapshot.docs.map(doc => doc.data() as TicketData);
+  }
+
+  /**
    * Assign ticket to admin
    */
   static async assignTicket(ticketId: string, adminId: string, adminName: string): Promise<TicketData> {

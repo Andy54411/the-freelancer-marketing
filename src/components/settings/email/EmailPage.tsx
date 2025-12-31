@@ -17,7 +17,7 @@ interface WebmailConfig {
   id: string;
   email: string;
   provider: 'taskilo-webmail';
-  status: 'connected' | 'error' | 'disconnected';
+  status: 'connected' | 'error' | 'disconnected' | 'requires_password';
   connectedAt: string;
   subscriptionPlan?: 'free' | 'domain' | 'pro' | 'business';
   displayName?: string;
@@ -33,6 +33,7 @@ export function EmailPage({ companyId }: EmailPageProps) {
   const { user } = useAuth();
   const [emailConfig, setEmailConfig] = useState<EmailConfig | null>(null);
   const [webmailConfig, setWebmailConfig] = useState<WebmailConfig | null>(null);
+  const [useMasterUser, setUseMasterUser] = useState(false);
   const [isConnectingWebmail, setIsConnectingWebmail] = useState(false);
   const [emailSettings, setEmailSettings] = useState<EmailSettings>({
     defaultFrom: '',
@@ -69,6 +70,10 @@ export function EmailPage({ companyId }: EmailPageProps) {
           const webmailData = await webmailResponse.json();
           if (webmailData.connected && webmailData.config) {
             setWebmailConfig(webmailData.config);
+          }
+          // Prüfe ob Master User Zugriff möglich ist (für @taskilo.de E-Mails)
+          if (webmailData.useMasterUser) {
+            setUseMasterUser(true);
           }
         }
 
@@ -299,6 +304,7 @@ export function EmailPage({ companyId }: EmailPageProps) {
                   companyId={companyId}
                   emailConfigs={emailConfig ? [emailConfig] : []}
                   webmailConfig={webmailConfig ?? undefined}
+                  useMasterUser={useMasterUser}
                   onDeleteConfig={handleGmailDisconnect}
                   onConnectGmail={handleGmailConnect}
                   onConnectWebmail={handleWebmailConnect}

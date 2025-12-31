@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
     const ticketId = searchParams.get('ticketId') || searchParams.get('id');
     // Akzeptiere sowohl 'email' als auch 'customerEmail' als Parameter
     const customerEmail = searchParams.get('customerEmail') || searchParams.get('email');
+    // CompanyId für Admin-Tickets
+    const companyId = searchParams.get('companyId');
 
     // Einzelnes Ticket abrufen
     if (ticketId) {
@@ -33,10 +35,43 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Alle Tickets für Kunde abrufen
+    // Tickets für Company via companyId abrufen (für Admin-erstellte Tickets)
+    if (companyId) {
+      const companyTickets = await FirebaseTicketService.getTicketsByCompanyId(companyId);
+      
+      // Wenn auch customerEmail vorhanden, kombiniere beide Ergebnisse
+      let allTickets = companyTickets;
+      
+      if (customerEmail) {
+        const emailTickets = await FirebaseTicketService.getTicketsByCustomer(customerEmail);
+        // Merge und deduplizieren
+        const ticketMap = new Map<string, typeof allTickets[0]>();
+        [...companyTickets, ...emailTickets].forEach(t => ticketMap.set(t.id, t));
+        allTickets = Array.from(ticketMap.values());
+      }
+
+      // Nur öffentliche Kommentare zurückgeben
+      const publicTickets = allTickets.map(ticket => ({
+        ...ticket,
+        comments: ticket.comments.filter(c => !c.isInternal),
+      }));
+
+      // Sortiere nach Datum (neueste zuerst)
+      publicTickets.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      return NextResponse.json({
+        success: true,
+        tickets: publicTickets,
+        total: publicTickets.length,
+      });
+    }
+
+    // Alle Tickets für Kunde via Email abrufen
     if (!customerEmail) {
       return NextResponse.json(
-        { error: 'E-Mail-Adresse ist erforderlich' },
+        { error: 'E-Mail-Adresse oder companyId ist erforderlich' },
         { status: 400 }
       );
     }

@@ -498,6 +498,9 @@ export async function POST(
         status: 'declined',
       });
     }
+
+    // Fallback für nicht erkannte Aktion (sollte nicht erreicht werden)
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

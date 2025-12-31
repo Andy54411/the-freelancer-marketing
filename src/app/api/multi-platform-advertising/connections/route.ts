@@ -83,7 +83,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Alle Plattformen abfragen
-    const connections = [];
+    interface ConnectionInfo {
+      platform: string;
+      status: string;
+      lastConnected: string | null;
+      accountInfo: { id: string; name: string; currency: string } | null;
+    }
+    const connections: ConnectionInfo[] = [];
     
     for (const platformName of allPlatforms) {
       try {

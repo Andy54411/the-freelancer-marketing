@@ -49,7 +49,7 @@ function RegistrationForm() {
   useEffect(() => {
     if (state.success) {
       setTimeout(() => {
-        window.location.href = '/login';
+        window.location.href = '/';
       }, 2000);
     }
   }, [state.success]);

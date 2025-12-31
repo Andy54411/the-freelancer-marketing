@@ -1087,8 +1087,10 @@ export async function POST(request: Request) {
             { status: 500 }
           );
         }
-        break;
     }
+
+    // Fallback-Return (sollte nicht erreicht werden, da alle case-Blöcke return haben sollten)
+    return NextResponse.json({ error: 'Unbekannte Aktion' }, { status: 400 });
   } catch (error) {
     return NextResponse.json({ error: 'Ein unbekannter Fehler ist aufgetreten.' }, { status: 500 });
   }

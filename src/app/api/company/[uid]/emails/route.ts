@@ -1,5 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, withFirebase } from '@/firebase/server';
+import crypto from 'crypto';
+
+// Encryption Key - muss mit der in webmail-credentials/route.ts übereinstimmen
+const ENCRYPTION_KEY = process.env.WEBMAIL_ENCRYPTION_KEY || 'taskilo-webmail-encryption-key-32b';
+
+/**
+ * Entschlüsselt einen String mit AES-256-GCM
+ */
+function decryptPassword(encryptedText: string): string {
+  try {
+    const parts = encryptedText.split(':');
+    if (parts.length !== 3) {
+      // Nicht verschlüsselt (Legacy) - direkt zurückgeben
+      return encryptedText;
+    }
+    
+    const [ivHex, authTagHex, encrypted] = parts;
+    const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+    const iv = Buffer.from(ivHex, 'hex');
+    const authTag = Buffer.from(authTagHex, 'hex');
+    
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(authTag);
+    
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    
+    return decrypted;
+  } catch {
+    // Bei Fehler: Annahme, dass es nicht verschlüsselt ist (Legacy)
+    return encryptedText;
+  }
+}
 
 // Hilfsfunktion: Prüfe ob Webmail verbunden ist
 async function checkWebmailConnection(companyId: string): Promise<{ connected: boolean; email?: string; password?: string }> {
@@ -9,10 +42,12 @@ async function checkWebmailConnection(companyId: string): Promise<{ connected: b
     
     const webmailConfig = companyDoc.data()?.webmailConfig;
     if (webmailConfig?.status === 'connected' && webmailConfig.credentials?.email && webmailConfig.credentials?.password) {
+      // Passwort entschlüsseln
+      const decryptedPassword = decryptPassword(webmailConfig.credentials.password);
       return {
         connected: true,
         email: webmailConfig.credentials.email,
-        password: webmailConfig.credentials.password,
+        password: decryptedPassword,
       };
     }
     return { connected: false };

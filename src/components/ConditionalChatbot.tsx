@@ -8,7 +8,6 @@ export default function ConditionalChatbot() {
 
   // Liste der Pfade, wo Chatbot NICHT angezeigt werden soll
   const hiddenChatbotPaths = [
-    '/login',
     '/register',
     '/dashboard',
     '/admin',

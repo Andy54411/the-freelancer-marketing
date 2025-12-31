@@ -20,13 +20,18 @@ export async function GET(_request: NextRequest) {
     companiesSnapshot.forEach(doc => {
       const data = doc.data();
 
-      // Status-Logik: NUR Admin-Freigabe zählt (Onboarding-System hat Fehler)
+      // Status-Logik: Admin-Freigabe hat höchste Priorität
       let status = 'inactive';
 
       const isAdminApproved = data?.adminApproved === true;
+      const isAccountSuspended = data?.accountSuspended === true;
+      const rawStatus = data?.status;
 
-      // Status basierend auf Admin-Freigabe
-      if (data?.accountSuspended === true || data?.status === 'suspended') {
+      // Status basierend auf Admin-Aktionen
+      // 1. Explizite Sperrung durch Admin (accountSuspended) hat höchste Priorität
+      // 2. Admin-Freigabe macht aktiv
+      // 3. Sonst inaktiv
+      if (isAccountSuspended) {
         status = 'suspended';
       } else if (isAdminApproved) {
         status = 'active';
@@ -42,7 +47,7 @@ export async function GET(_request: NextRequest) {
         companyName: data.companyName,
         industry: data.selectedCategory || data.industry,
         website: data.website || data.step1?.website,
-        phone: data.step1?.phoneNumber || data.companyPhoneNumber,
+        phone: data.phone || data.phoneNumber || data.step1?.phoneNumber || data.companyPhoneNumber,
         status: status,
         createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
         lastLogin: data.lastLogin?.toDate?.()?.toISOString(),
@@ -57,6 +62,8 @@ export async function GET(_request: NextRequest) {
         verified: isAdminApproved,
         // Debug-Informationen
         adminApproved: isAdminApproved,
+        accountSuspended: isAccountSuspended,
+        rawStatus: rawStatus,
         onboardingCompleted: data.onboardingCompleted,
         profileComplete: data.profileComplete,
       });

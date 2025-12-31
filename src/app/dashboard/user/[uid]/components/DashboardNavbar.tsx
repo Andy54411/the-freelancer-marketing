@@ -42,7 +42,7 @@ export function DashboardNavbar({ currentUid }: { currentUid: string }) {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      window.location.href = '/login';
+      window.location.href = '/';
     } catch (error) {}
   };
 
@@ -116,7 +116,7 @@ export function DashboardNavbar({ currentUid }: { currentUid: string }) {
                 ) : (
                   <>
                     <Button asChild size="sm">
-                      <Link href="/login">Login</Link>
+                      <Link href="/">Login</Link>
                     </Button>
                     <Button asChild size="sm">
                       <Link href="/register/company">Starte mit Taskilo</Link>
@@ -150,7 +150,7 @@ export function DashboardNavbar({ currentUid }: { currentUid: string }) {
                   ) : (
                     <>
                       <Button asChild variant="outline" size="sm">
-                        <Link href="/login">Login</Link>
+                        <Link href="/">Login</Link>
                       </Button>
                       <Button asChild size="sm">
                         <Link href="/register/company">Starte mit Taskilo</Link>

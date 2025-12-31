@@ -163,6 +163,10 @@ export async function saveTokensToFirestore(
   userId: string,
   tokens: { access_token: string; refresh_token?: string; expires_in: number }
 ) {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   const userRef = db.collection('users').doc(userId);
   await userRef.set(
     {

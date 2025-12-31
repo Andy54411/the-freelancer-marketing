@@ -4,6 +4,8 @@ import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useOnboarding } from '@/contexts/OnboardingContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Image from 'next/image';
 import { 
   Upload, 
@@ -13,7 +15,8 @@ import {
   Sparkles, 
   Target,
   ImageIcon,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { RequiredFieldLabel, RequiredFieldIndicator } from '@/components/onboarding/RequiredFieldLabel';
 
@@ -87,6 +90,8 @@ interface OnboardingStep3Props {
 
 export default function OnboardingStep3(_props: OnboardingStep3Props) {
   const { stepData, updateStepData, goToNextStep, goToPreviousStep } = useOnboarding();
+  const { user } = useAuth();
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
   // Normalisiere die Daten bei der Initialisierung
   const normalizeStep3Data = (data: Record<string, unknown> | undefined): Step3Data => {
@@ -188,13 +193,26 @@ export default function OnboardingStep3(_props: OnboardingStep3Props) {
     updateField('languages', currentLanguages.filter((_, i) => i !== index));
   }, [step3Data.languages, updateField]);
 
-  // Banner Upload
-  const handleBannerUpload = useCallback((file: File) => {
-    if (file && file.type.startsWith('image/')) {
-      const imageUrl = URL.createObjectURL(file);
-      updateField('profileBannerImage', imageUrl);
+  // Banner Upload - direkt zu Firebase Storage
+  const handleBannerUpload = useCallback(async (file: File) => {
+    if (!file || !file.type.startsWith('image/') || !user?.uid) return;
+    
+    setIsUploadingBanner(true);
+    try {
+      const storage = getStorage();
+      const timestamp = Date.now();
+      const fileRef = ref(storage, `companies/${user.uid}/banner/${timestamp}-${file.name}`);
+      
+      await uploadBytes(fileRef, file);
+      const downloadUrl = await getDownloadURL(fileRef);
+      
+      updateField('profileBannerImage', downloadUrl);
+    } catch (error) {
+      console.error('Fehler beim Banner-Upload:', error);
+    } finally {
+      setIsUploadingBanner(false);
     }
-  }, [updateField]);
+  }, [updateField, user?.uid]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -250,9 +268,15 @@ export default function OnboardingStep3(_props: OnboardingStep3Props) {
                 >
                   Profilbanner
                 </RequiredFieldLabel>
+                {isUploadingBanner && (
+                  <div className="flex items-center gap-2 text-sm text-[#14ad9f]">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Wird hochgeladen...
+                  </div>
+                )}
               </div>
               
-              {step3Data.profileBannerImage ? (
+              {step3Data.profileBannerImage && !step3Data.profileBannerImage.startsWith('blob:') ? (
                 <div className="relative group">
                   <div className="aspect-3/1 rounded-lg overflow-hidden bg-gray-100 relative">
                     <Image

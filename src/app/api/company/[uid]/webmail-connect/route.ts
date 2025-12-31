@@ -5,8 +5,16 @@ import { z } from 'zod';
 // Schema für Webmail-Verbindungsdaten
 const ConnectWebmailSchema = z.object({
   email: z.string().email('Ungültige E-Mail-Adresse'),
-  password: z.string().min(1, 'Passwort erforderlich'),
+  password: z.string().min(1, 'Passwort erforderlich').optional(),
 });
+
+/**
+ * Prüft ob eine E-Mail für Master User Zugriff qualifiziert ist.
+ * Nur @taskilo.de E-Mails können ohne Passwort per Master User abgerufen werden.
+ */
+function canUseMasterUser(email: string): boolean {
+  return email.endsWith('@taskilo.de');
+}
 
 /**
  * GET /api/company/[uid]/webmail-connect
@@ -38,26 +46,92 @@ export async function GET(
     const companyData = companyDoc.data();
     const webmailConfig = companyData?.webmailConfig;
 
-    if (!webmailConfig) {
+    // Prüfe auch die Onboarding-Daten für Taskilo E-Mail
+    const taskiloEmail = companyData?.taskiloEmail || companyData?.step5?.taskiloEmail;
+    const taskiloEmailConnected = companyData?.taskiloEmailConnected || companyData?.step5?.taskiloEmailConnected;
+
+    // Prüfe ob Credentials für E-Mail-Abruf verfügbar sind
+    const hasCredentials = !!(webmailConfig?.credentials?.password);
+
+    // Wenn webmailConfig existiert MIT Credentials, nutze das (vollständig verbunden)
+    if (webmailConfig && hasCredentials) {
+      return NextResponse.json({
+        success: true,
+        connected: webmailConfig.status === 'connected',
+        hasCredentials: true,
+        useMasterUser: false,
+        config: {
+          id: webmailConfig.id,
+          email: webmailConfig.email,
+          provider: 'taskilo-webmail',
+          status: webmailConfig.status,
+          connectedAt: webmailConfig.connectedAt,
+          subscriptionPlan: webmailConfig.subscriptionPlan,
+          displayName: webmailConfig.displayName,
+        }
+      });
+    }
+
+    // Wenn webmailConfig existiert OHNE Credentials
+    if (webmailConfig && !hasCredentials) {
+      const useMasterUser = canUseMasterUser(webmailConfig.email);
+      
+      return NextResponse.json({
+        success: true,
+        connected: true,
+        hasCredentials: false,
+        useMasterUser,
+        requiresPassword: !useMasterUser,
+        config: {
+          id: webmailConfig.id,
+          email: webmailConfig.email,
+          provider: 'taskilo-webmail',
+          status: useMasterUser ? 'connected' : 'requires_password',
+          connectedAt: webmailConfig.connectedAt,
+          subscriptionPlan: webmailConfig.subscriptionPlan,
+          displayName: webmailConfig.displayName,
+        }
+      });
+    }
+
+    // Wenn Taskilo E-Mail aus Onboarding existiert
+    if (taskiloEmail && taskiloEmailConnected) {
+      const useMasterUser = canUseMasterUser(taskiloEmail);
+      
+      return NextResponse.json({
+        success: true,
+        connected: true,
+        hasCredentials: false,
+        useMasterUser,
+        requiresPassword: !useMasterUser,
+        config: {
+          id: `onboarding-${companyId}`,
+          email: taskiloEmail,
+          provider: 'taskilo-webmail',
+          status: useMasterUser ? 'connected' : 'requires_password',
+          connectedAt: companyData?.onboardingCompletedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          subscriptionPlan: 'free',
+          displayName: companyData?.companyName || taskiloEmail.split('@')[0],
+        }
+      });
+    }
+
+    // Wenn nur Taskilo E-Mail existiert (noch nicht vollständig verbunden)
+    if (taskiloEmail) {
       return NextResponse.json({
         success: true,
         connected: false,
+        pendingEmail: taskiloEmail,
+        useMasterUser: canUseMasterUser(taskiloEmail),
         config: null
       });
     }
 
     return NextResponse.json({
       success: true,
-      connected: webmailConfig.status === 'connected',
-      config: {
-        id: webmailConfig.id,
-        email: webmailConfig.email,
-        provider: 'taskilo-webmail',
-        status: webmailConfig.status,
-        connectedAt: webmailConfig.connectedAt,
-        subscriptionPlan: webmailConfig.subscriptionPlan,
-        displayName: webmailConfig.displayName,
-      }
+      connected: false,
+      useMasterUser: false,
+      config: null
     });
 
   } catch {

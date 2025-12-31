@@ -101,7 +101,7 @@ export default function WebmailPage() {
   }
 
   if (!user) {
-    router.push('/login');
+    router.push('/');
     return null;
   }
 

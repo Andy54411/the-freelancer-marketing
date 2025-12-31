@@ -6,7 +6,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   collection,
   query,
-  where,
   orderBy,
   onSnapshot,
   QueryDocumentSnapshot,
@@ -57,7 +56,7 @@ function ReviewItem({ review, onReplySubmitted }: ReviewItemProps) {
 
     setSubmittingReply(true);
     try {
-      const reviewRef = doc(db, 'reviews', review.id);
+      const reviewRef = doc(db, `companies/${review.providerId}/reviews`, review.id);
 
       await updateDoc(reviewRef, {
         providerResponse: {
@@ -222,9 +221,9 @@ export default function ReviewsPage() {
     setError(null);
 
     try {
+      // Lade Reviews aus der Company-Subcollection
       const reviewsQuery = query(
-        collection(db, 'reviews'),
-        where('providerId', '==', uid),
+        collection(db, `companies/${uid}/reviews`),
         orderBy('createdAt', 'desc')
       );
 
@@ -237,15 +236,15 @@ export default function ReviewsPage() {
             return {
               id: doc.id,
               rating: data.rating || 0,
-              comment: data.comment || data.review || '',
-              customerName: data.customerName || 'Anonymer Kunde',
+              comment: data.comment || data.review || data.reviewText || '',
+              customerName: data.customerName || data.reviewerName || data.userName || 'Anonymer Kunde',
               customerEmail: data.customerEmail || '',
-              orderId: data.orderId || '',
-              createdAt: data.createdAt,
+              orderId: data.orderId || data.serviceType || '',
+              createdAt: data.createdAt || data.date,
               updatedAt: data.updatedAt,
-              providerId: data.providerId || '',
+              providerId: data.providerId || uid,
               customerId: data.customerId || '',
-              providerResponse: data.providerResponse || null, // WICHTIG: Anbieter-Antwort laden
+              providerResponse: data.providerResponse || null,
             } as Review;
           });
 
@@ -259,9 +258,10 @@ export default function ReviewsPage() {
       );
 
       return () => unsubscribe();
-    } catch (err) {
+    } catch {
       setError('Fehler beim Laden der Bewertungen');
       setLoading(false);
+      return undefined;
     }
   }, [uid]);
 
@@ -302,13 +302,6 @@ export default function ReviewsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Bewertungen</h1>
-        <p className="text-gray-600 mt-1">
-          Verwalten Sie Ihre Kundenbewertungen und antworten Sie auf Feedback
-        </p>
-      </div>
-
       {/* Statistiken */}
       {reviews.length > 0 && (
         <div className="bg-white rounded-lg shadow p-6">

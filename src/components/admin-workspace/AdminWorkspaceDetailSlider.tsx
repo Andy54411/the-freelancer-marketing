@@ -61,6 +61,7 @@ export function AdminWorkspaceDetailSlider({
       document.addEventListener('keydown', handleEscape);
       return () => document.removeEventListener('keydown', handleEscape);
     }
+    return undefined;
   }, [isOpen, onClose]);
 
   if (!workspace) return null;

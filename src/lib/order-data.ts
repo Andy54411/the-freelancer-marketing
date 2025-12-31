@@ -28,7 +28,12 @@ function serializeFirestoreData(data: any): any {
 }
 
 export async function getAllOrders() {
-  const ordersSnapshot = await db.collection('auftraege').get();
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
+  const database = db; // Local reference für TypeScript Narrowing
+  const ordersSnapshot = await database.collection('auftraege').get();
 
   // Sammle alle einzigartigen Kunden-UIDs
   const customerUids = new Set<string>();
@@ -50,7 +55,7 @@ export async function getAllOrders() {
   if (customerUids.size > 0) {
     const userPromises = Array.from(customerUids).map(async uid => {
       try {
-        const userDoc = await db.collection('users').doc(uid).get();
+        const userDoc = await database.collection('users').doc(uid).get();
         if (userDoc.exists) {
           const userData = userDoc.data();
           return { uid, data: userData };

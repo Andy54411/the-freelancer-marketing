@@ -595,7 +595,7 @@ export default function AdminWorkspaceDetailPage() {
                                     {formatDateShort(task.dueDate)}
                                   </span>
                                 )}
-                                {task.tags.length > 0 && (
+                                {task.tags && task.tags.length > 0 && (
                                   <div className="flex gap-1">
                                     {task.tags.slice(0, 2).map(tag => (
                                       <Badge key={tag} variant="outline" className="text-xs">

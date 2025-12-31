@@ -67,7 +67,7 @@ export default function CompanyChatPage() {
 
     if (!currentUser) {
       const currentPath = window.location.pathname + window.location.search;
-      router.replace(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
+      router.replace(`/?redirectTo=${encodeURIComponent(currentPath)}`);
       return;
     }
 

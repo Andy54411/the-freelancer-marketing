@@ -17,6 +17,8 @@ import contactsRouter from './routes/contacts';
 import { driveRouter } from './routes/drive';
 import { paymentRouter } from './routes/payment';
 import registrationRouter from './routes/registration';
+import profileRouter from './routes/profile';
+import phoneVerificationRouter from './routes/phone-verification';
 import { 
   apiRateLimiter, 
   authRateLimiter,
@@ -105,14 +107,21 @@ app.use(express.json({ limit: '25mb' })); // Erhöht für Attachments
 app.use('/api', apiRateLimiter);
 app.use('/api/test', authRateLimiter); // Strenger für Auth
 app.use('/api/registration', authRateLimiter); // Strenger für Registration
+app.use('/api/phone-verification', authRateLimiter); // Strenger für Phone Verification
 
 // API Routes - E-Mail Registration (ÖFFENTLICH - VOR API-Key Middleware!)
 app.use('/api/registration', registrationRouter);
 
+// API Routes - Profile (ÖFFENTLICH für Sync)
+app.use('/api/profile', profileRouter);
+
+// API Routes - Phone Verification (ÖFFENTLICH für nachträgliche Verifizierung)
+app.use('/api/phone-verification', phoneVerificationRouter);
+
 // API Key Validierung Middleware (Timing-Safe) - Registration ausgeschlossen
 app.use('/api', (req, res, next) => {
-  // Registration-Endpunkte überspringen (sind öffentlich)
-  if (req.path.startsWith('/registration')) {
+  // Registration-, Profile- und Phone-Verification-Endpunkte überspringen (sind öffentlich)
+  if (req.path.startsWith('/registration') || req.path.startsWith('/profile') || req.path.startsWith('/phone-verification')) {
     return next();
   }
   

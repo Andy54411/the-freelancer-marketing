@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react'; // Import memo
 import AppHeaderNavigation from './AppHeaderNavigation'; // Pfad anpassen, falls nötig
 import Link from 'next/link'; // Importiere Link
+import LoginPopup from '@/components/LoginPopup';
 import {
   Search as FiSearch,
   Bell as FiBell,
@@ -72,6 +73,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardClick }) => {
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
   const [profilePictureURLFromStorage, setProfilePictureURLFromStorage] = useState<string | null>(
     null
   );
@@ -543,19 +545,29 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                       <ul className="mt-1">
                         {category.subcategories.map(subcategory => (
                           <li key={subcategory}>
-                            <Link
-                              href={
-                                currentUser
-                                  ? company
+                            {currentUser ? (
+                              <Link
+                                href={
+                                  company
                                     ? `/dashboard/company/${company.uid}/services/${encodeURIComponent(category.title.toLowerCase().replace(/\s+/g, '-'))}/${encodeURIComponent(subcategory.toLowerCase().replace(/\s+/g, '-'))}`
                                     : `/dashboard/user/${currentUser.uid}/services/${encodeURIComponent(category.title.toLowerCase().replace(/\s+/g, '-'))}/${encodeURIComponent(subcategory.toLowerCase().replace(/\s+/g, '-'))}`
-                                  : '/login'
-                              }
-                              className="block px-4 py-2 text-xs sm:text-sm text-gray-600 hover:bg-gray-100 hover:text-[#14ad9f] rounded"
-                              onClick={handleSubcategorySelect}
-                            >
-                              {subcategory}
-                            </Link>
+                                }
+                                className="block px-4 py-2 text-xs sm:text-sm text-gray-600 hover:bg-gray-100 hover:text-[#14ad9f] rounded"
+                                onClick={handleSubcategorySelect}
+                              >
+                                {subcategory}
+                              </Link>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  handleSubcategorySelect();
+                                  setShowLoginPopup(true);
+                                }}
+                                className="block w-full text-left px-4 py-2 text-xs sm:text-sm text-gray-600 hover:bg-gray-100 hover:text-[#14ad9f] rounded"
+                              >
+                                {subcategory}
+                              </button>
+                            )}
                           </li>
                         ))}
                       </ul>
@@ -595,18 +607,25 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                     onMouseEnter={handleInboxEnter}
                     onMouseLeave={handleInboxLeave}
                   >
-                    <Link
-                      href={
-                        currentUser
-                          ? company
+                    {currentUser ? (
+                      <Link
+                        href={
+                          company
                             ? `/dashboard/company/${company.uid}/inbox`
                             : `/dashboard/user/${currentUser.uid}/inbox`
-                          : '/login'
-                      }
-                      className="text-gray-600 hover:text-[#14ad9f] p-1 block"
-                    >
-                      <FiMail size={20} />
-                    </Link>
+                        }
+                        className="text-gray-600 hover:text-[#14ad9f] p-1 block"
+                      >
+                        <FiMail size={20} />
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => setShowLoginPopup(true)}
+                        className="text-gray-600 hover:text-[#14ad9f] p-1 block"
+                      >
+                        <FiMail size={20} />
+                      </button>
+                    )}
                     {isInboxDropdownOpen && currentUser && (
                       <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-30 ring-1 ring-black ring-opacity-5">
                         <div className="p-3 border-b">
@@ -654,19 +673,29 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                           </p>
                         )}
                         <div className="border-t p-2 text-center">
-                          <Link
-                            href={
-                              currentUser
-                                ? company
+                          {currentUser ? (
+                            <Link
+                              href={
+                                company
                                   ? `/dashboard/company/${company.uid}/inbox`
                                   : `/dashboard/user/${currentUser.uid}/inbox`
-                                : '/login'
-                            }
-                            onClick={() => setIsInboxDropdownOpen(false)}
-                            className="text-sm font-medium text-[#14ad9f] hover:underline"
-                          >
-                            Zum Posteingang
-                          </Link>
+                              }
+                              onClick={() => setIsInboxDropdownOpen(false)}
+                              className="text-sm font-medium text-[#14ad9f] hover:underline"
+                            >
+                              Zum Posteingang
+                            </Link>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setIsInboxDropdownOpen(false);
+                                setShowLoginPopup(true);
+                              }}
+                              className="text-sm font-medium text-[#14ad9f] hover:underline"
+                            >
+                              Zum Posteingang
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
@@ -861,12 +890,12 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                 </div>
               ) : (
                 // Anmelden-Button für nicht-eingeloggte Benutzer
-                <Link
-                  href="/login"
+                <button
+                  onClick={() => setShowLoginPopup(true)}
                   className="text-xs sm:text-sm font-medium text-[#14ad9f] hover:underline px-2 py-1"
                 >
                   Anmelden
-                </Link>
+                </button>
               )}
             </div>
           </div>
@@ -875,6 +904,11 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
         {/* Die Kategorien-Navigation wird nur im allgemeinen Modus angezeigt, nicht im Company-Dashboard */}
         {!company && <AppHeaderNavigation />}
       </header>
+
+      <LoginPopup 
+        isOpen={showLoginPopup} 
+        onClose={() => setShowLoginPopup(false)} 
+      />
 
       <style jsx>
         {`

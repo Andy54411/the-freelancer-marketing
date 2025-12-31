@@ -69,8 +69,8 @@ function initializeFirebase() {
         storageBucket: 'tilvo-f142f.firebasestorage.app',
       });
     }
-  } catch (error) {
-    console.warn('Firebase initialization warning:', error.message);
+  } catch (error: unknown) {
+    console.warn('Firebase initialization warning:', error instanceof Error ? error.message : 'Unknown error');
     // Initialize with minimal config for build-time
     try {
       admin.initializeApp({

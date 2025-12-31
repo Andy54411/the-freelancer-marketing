@@ -2927,14 +2927,23 @@ service cloud.firestore {
       allow read, list: if request.auth != null;
     }
     
-    // AI Feedback - Für Performance-Verbesserung
+    // AI Feedback - Für Performance-Verbesserung und KI-Prompt-Analyse
     match /ai_feedback/{feedbackId} {
-      // Benutzer können Feedback zu ihren Konversationen geben
+      // Benutzer können Feedback zu KI-generierten Inhalten geben
+      // Unterstützt sowohl alte Chatbot-Feedbacks als auch neue Profilbeschreibungs-Feedbacks
       allow create: if request.auth != null
-                    && request.resource.data.keys().hasAll(['conversationId', 'wasHelpful', 'rating', 'timestamp']);
+                    && (
+                      // Alte Struktur (Chatbot)
+                      request.resource.data.keys().hasAll(['conversationId', 'wasHelpful', 'rating', 'timestamp']) ||
+                      // Neue Struktur (Taskilo KI Profilbeschreibung)
+                      request.resource.data.keys().hasAll(['promptId', 'category', 'subcategory', 'rating', 'userId', 'createdAt'])
+                    );
       
-      // Support Staff kann alle Feedbacks lesen
-      allow read: if isSupportStaff();
+      // Benutzer können ihr eigenes Feedback lesen
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Support Staff kann alle Feedbacks lesen für Analytics
+      allow read, list: if isSupportStaff();
     }
 
     // ❌ DEPRECATED: OLD TEXT TEMPLATES COLLECTION (Root Level)
@@ -3056,6 +3065,38 @@ service cloud.firestore {
                              (request.auth.token.role == 'admin' ||
                               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
                                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.user_type == 'admin'));
+    }
+
+    // ==========================================
+    // Review Requests (Bewertungsanfragen nach Auftragsabschluss)
+    // ==========================================
+    match /reviewRequests/{requestId} {
+      // Öffentlicher Lesezugriff für Token-basierte Bewertungen (keine Auth erforderlich)
+      // Die Token-Validierung erfolgt im Code
+      allow read: if true;
+      
+      // Schreiben nur für authentifizierte Nutzer oder Server (Admin SDK)
+      allow update: if true;  // Token-basierte Updates werden im Code validiert
+      
+      // Erstellen nur über Admin SDK (API Routes)
+      allow create: if false;
+      
+      // Löschen verboten
+      allow delete: if false;
+    }
+
+    // ==========================================
+    // Company Reviews (Firmenbewertungen)
+    // ==========================================
+    match /companyReviews/{reviewId} {
+      // Öffentlicher Lesezugriff für alle
+      allow read: if true;
+      
+      // Erstellen nur über API (Token-Validierung im Code)
+      allow create: if true;
+      
+      // Aktualisieren/Löschen nur für Support
+      allow update, delete: if isSupportStaff();
     }
 
   }

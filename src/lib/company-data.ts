@@ -6,6 +6,10 @@ export interface CompanyData {
 }
 
 export async function getAllCompanies() {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   try {
     const companiesSnapshot = await db.collection('users').get();
     const companies = companiesSnapshot.docs.map((doc: admin.firestore.QueryDocumentSnapshot) => ({
@@ -21,6 +25,10 @@ export async function getAllCompanies() {
 }
 
 export async function getCompanyData(id: string): Promise<CompanyData | null> {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   const userDocRef = db.collection('users').doc(id);
   const companyDocRef = db.collection('users').doc(id);
 
@@ -56,6 +64,10 @@ export async function getCompanyData(id: string): Promise<CompanyData | null> {
  * @returns Ein Promise, das ein Array von Objekten mit der Firmen-ID auflöst.
  */
 export async function getAllCompanyIds(): Promise<{ id: string }[]> {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   const companiesRef = db.collection('companies');
   const snapshot = await companiesRef.get();
 

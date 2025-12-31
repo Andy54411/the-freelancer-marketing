@@ -203,7 +203,7 @@ export default function JobDetailClient({
                   href={
                     user
                       ? `/dashboard/user/${user.uid}/career/jobs/${job.id}/apply`
-                      : `/login?redirect=/dashboard/user/guest/career/jobs/${job.id}/apply`
+                      : `/?redirect=/dashboard/user/guest/career/jobs/${job.id}/apply`
                   }
                 >
                   <Button className="bg-[#14ad9f] hover:bg-teal-700 text-white w-full md:w-auto shadow-lg">
@@ -348,7 +348,7 @@ export default function JobDetailClient({
                 href={
                   user
                     ? `/dashboard/user/${user.uid}/career/jobs/${job.id}/apply`
-                    : `/login?redirect=/dashboard/user/guest/career/jobs/${job.id}/apply`
+                    : `/?redirect=/dashboard/user/guest/career/jobs/${job.id}/apply`
                 }
               >
                 <Button className="bg-[#14ad9f] hover:bg-teal-700 text-white px-10 py-6 text-lg shadow-lg">

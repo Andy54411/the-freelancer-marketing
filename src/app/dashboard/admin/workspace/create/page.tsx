@@ -214,8 +214,8 @@ export default function CreateAdminWorkspacePage() {
       } else {
         router.push(`/dashboard/admin/workspace`);
       }
-    } catch (error) {
-      toast.error(`Fehler beim Erstellen des Workspace: ${error.message}`);
+    } catch (error: unknown) {
+      toast.error(`Fehler beim Erstellen des Workspace: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
     } finally {
       setLoading(false);
     }

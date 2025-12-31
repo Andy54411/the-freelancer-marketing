@@ -29,9 +29,14 @@ export async function POST(
         .collection('emailCache');
 
       // Migriere in Batches von 50
-      const emails = oldEmailsSnapshot.docs.map(doc => ({
+      interface EmailData {
+        id: string;
+        folder?: string;
+        [key: string]: unknown;
+      }
+      const emails: EmailData[] = oldEmailsSnapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...(doc.data() as Omit<EmailData, 'id'>)
       }));
 
       const batchSize = 50;
@@ -81,10 +86,10 @@ export async function POST(
       migrated: true
     });
     
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Email migration error:', error);
     return NextResponse.json(
-      { error: 'Email migration failed', details: error.message },
+      { error: 'Email migration failed', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

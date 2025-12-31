@@ -10,6 +10,12 @@ const BaseSchema = z.object({
   mailbox: z.string().default('INBOX'),
 });
 
+// Master User Base Schema - kein Passwort erforderlich
+const MasterBaseSchema = z.object({
+  email: z.string().email(),
+  mailbox: z.string().default('INBOX'),
+});
+
 const MarkReadSchema = BaseSchema.extend({
   action: z.literal('markRead'),
   uid: z.number(),
@@ -81,6 +87,35 @@ const DeleteDraftSchema = z.object({
   uid: z.number(),
 });
 
+// Master User Schemas
+const MarkReadMasterSchema = MasterBaseSchema.extend({
+  action: z.literal('markRead'),
+  uid: z.number(),
+  read: z.boolean().default(true),
+});
+
+const MarkUnreadMasterSchema = MasterBaseSchema.extend({
+  action: z.literal('markUnread'),
+  uid: z.number(),
+});
+
+const FlagMasterSchema = MasterBaseSchema.extend({
+  action: z.literal('flag'),
+  uid: z.number(),
+  flagged: z.boolean().default(true),
+});
+
+const DeleteMasterSchema = MasterBaseSchema.extend({
+  action: z.literal('delete'),
+  uid: z.number(),
+});
+
+const MoveMasterSchema = MasterBaseSchema.extend({
+  action: z.literal('move'),
+  uid: z.number(),
+  targetMailbox: z.string(),
+});
+
 const ActionSchema = z.discriminatedUnion('action', [
   MarkReadSchema,
   MarkUnreadSchema,
@@ -92,6 +127,14 @@ const ActionSchema = z.discriminatedUnion('action', [
   RenameMailboxSchema,
   SaveDraftSchema,
   DeleteDraftSchema,
+]);
+
+const MasterActionSchema = z.discriminatedUnion('action', [
+  MarkReadMasterSchema,
+  MarkUnreadMasterSchema,
+  FlagMasterSchema,
+  DeleteMasterSchema,
+  MoveMasterSchema,
 ]);
 
 router.post('/', async (req, res) => {
@@ -153,6 +196,55 @@ router.post('/', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('[ACTIONS] Error:', error);
+    const message = error instanceof Error ? error.message : 'Action failed';
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
+/**
+ * Master User Actions Route - kein Benutzer-Passwort erforderlich.
+ * Unterstützt: markRead, markUnread, flag, delete, move
+ */
+router.post('/master', async (req, res) => {
+  try {
+    console.log('[ACTIONS/MASTER] Request body:', JSON.stringify(req.body, null, 2));
+    const data = MasterActionSchema.parse(req.body);
+    
+    if (!data.email.endsWith('@taskilo.de')) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Master User Zugriff nur für Taskilo E-Mails erlaubt' 
+      });
+    }
+    
+    console.log('[ACTIONS/MASTER] Parsed action:', data.action);
+    const emailService = EmailService.withMasterUser(data.email);
+    
+    switch (data.action) {
+      case 'markRead':
+        await emailService.markAsRead(data.mailbox, data.uid, data.read);
+        break;
+        
+      case 'markUnread':
+        await emailService.markAsRead(data.mailbox, data.uid, false);
+        break;
+        
+      case 'flag':
+        await emailService.markAsFlagged(data.mailbox, data.uid, data.flagged);
+        break;
+        
+      case 'delete':
+        await emailService.deleteMessage(data.mailbox, data.uid);
+        break;
+        
+      case 'move':
+        await emailService.moveMessage(data.mailbox, data.uid, data.targetMailbox);
+        break;
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[ACTIONS/MASTER] Error:', error);
     const message = error instanceof Error ? error.message : 'Action failed';
     res.status(500).json({ success: false, error: message });
   }

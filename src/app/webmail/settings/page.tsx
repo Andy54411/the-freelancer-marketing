@@ -10,7 +10,10 @@ import {
   Shield, 
   Palette,
   Trash2,
-  Save
+  Save,
+  Phone,
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +30,8 @@ import {
 import { toast } from 'sonner';
 import { useWebmailTheme } from '@/contexts/WebmailThemeContext';
 import { cn } from '@/lib/utils';
+import { MailHeader } from '@/components/webmail/MailHeader';
+import { getAppUrl } from '@/lib/webmail-urls';
 
 interface UserSettings {
   displayName: string;
@@ -77,6 +82,20 @@ export default function WebmailSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [activeSection, setActiveSection] = useState('account');
 
+  // Phone Verification State
+  const [phoneStatus, setPhoneStatus] = useState<{
+    hasProfile: boolean;
+    phone: string | null;
+    phoneVerified: boolean;
+    isLoading: boolean;
+  }>({ hasProfile: false, phone: null, phoneVerified: false, isLoading: true });
+  const [phoneInput, setPhoneInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationSessionId, setVerificationSessionId] = useState<string | null>(null);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+
   const loadSettings = useCallback(() => {
     if (!session?.email) return;
     
@@ -98,8 +117,133 @@ export default function WebmailSettingsPage() {
   useEffect(() => {
     if (session?.isAuthenticated) {
       loadSettings();
+      loadPhoneStatus();
     }
   }, [session?.isAuthenticated, loadSettings]);
+
+  // Phone Status laden
+  const loadPhoneStatus = useCallback(async () => {
+    if (!session?.email) return;
+    
+    try {
+      const response = await fetch(
+        `https://mail.taskilo.de/api/phone-verification/status?email=${encodeURIComponent(session.email)}`
+      );
+      const data = await response.json();
+      
+      setPhoneStatus({
+        hasProfile: data.hasProfile || false,
+        phone: data.phone || null,
+        phoneVerified: data.phoneVerified || false,
+        isLoading: false,
+      });
+    } catch (error) {
+      console.error('Error loading phone status:', error);
+      setPhoneStatus(prev => ({ ...prev, isLoading: false }));
+    }
+  }, [session?.email]);
+
+  // SMS-Code senden
+  const handleSendCode = async () => {
+    if (!session?.email || !phoneInput || !passwordInput) {
+      toast.error('Bitte alle Felder ausfüllen');
+      return;
+    }
+
+    setIsSendingCode(true);
+    try {
+      const response = await fetch('https://mail.taskilo.de/api/phone-verification/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: session.email,
+          password: passwordInput,
+          phone: phoneInput,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setVerificationSessionId(data.sessionId);
+        toast.success('SMS-Code wurde gesendet');
+      } else {
+        toast.error(data.error || 'Fehler beim Senden des Codes');
+      }
+    } catch {
+      toast.error('Netzwerkfehler');
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  // Code verifizieren
+  const handleVerifyCode = async () => {
+    if (!verificationSessionId || !verificationCode) {
+      toast.error('Bitte Code eingeben');
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const response = await fetch('https://mail.taskilo.de/api/phone-verification/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: verificationSessionId,
+          code: verificationCode,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Telefonnummer erfolgreich verifiziert');
+        setPhoneStatus({
+          hasProfile: true,
+          phone: data.phone,
+          phoneVerified: true,
+          isLoading: false,
+        });
+        setVerificationSessionId(null);
+        setVerificationCode('');
+        setPhoneInput('');
+        setPasswordInput('');
+      } else {
+        toast.error(data.error || 'Ungültiger Code');
+      }
+    } catch {
+      toast.error('Netzwerkfehler');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Code erneut senden
+  const handleResendCode = async () => {
+    if (!verificationSessionId) return;
+
+    setIsSendingCode(true);
+    try {
+      const response = await fetch('https://mail.taskilo.de/api/phone-verification/resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: verificationSessionId }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('SMS-Code wurde erneut gesendet');
+      } else {
+        toast.error(data.error || 'Fehler beim erneuten Senden');
+      }
+    } catch {
+      toast.error('Netzwerkfehler');
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
 
   const saveSettings = () => {
     if (!session?.email) return;
@@ -116,6 +260,7 @@ export default function WebmailSettingsPage() {
 
   const sections = [
     { id: 'account', name: 'Konto', icon: User },
+    { id: 'phone', name: 'Telefon', icon: Phone },
     { id: 'notifications', name: 'Benachrichtigungen', icon: Bell },
     { id: 'appearance', name: 'Darstellung', icon: Palette },
     { id: 'privacy', name: 'Datenschutz', icon: Shield },
@@ -123,14 +268,21 @@ export default function WebmailSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className={cn("h-screen flex items-center justify-center", isDark ? "bg-[#202124]" : "bg-white")}>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" />
       </div>
     );
   }
 
   return (
-    <div className={cn("h-[calc(100vh-4rem)] flex", isDark ? "bg-[#202124]" : "bg-white")}>
+    <div className={cn("h-screen flex flex-col", isDark ? "bg-[#202124]" : "bg-white")}>
+      {/* MailHeader */}
+      <MailHeader
+        userEmail={session?.email || ''}
+        onLogout={() => window.location.href = getAppUrl('/webmail')}
+      />
+
+      <div className={cn("flex-1 flex overflow-hidden", isDark ? "bg-[#202124]" : "bg-white")}>
       {/* Sidebar */}
       <div className={cn(
         "w-64 border-r p-4",
@@ -266,6 +418,161 @@ export default function WebmailSettingsPage() {
                   </Button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Phone Section */}
+          {activeSection === 'phone' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className={cn("text-xl font-semibold", isDark ? "text-white" : "text-gray-900")}>Telefonnummer</h2>
+                <p className={cn("text-sm mt-1", isDark ? "text-white" : "text-gray-500")}>
+                  Verifiziere deine Telefonnummer für zusätzliche Sicherheit
+                </p>
+              </div>
+
+              {phoneStatus.isLoading ? (
+                <div className={cn(
+                  "rounded-xl border p-6 flex items-center justify-center",
+                  isDark ? "bg-[#2d2e30] border-[#5f6368]" : "bg-white border-gray-200"
+                )}>
+                  <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
+                </div>
+              ) : phoneStatus.phoneVerified ? (
+                // Bereits verifiziert
+                <div className={cn(
+                  "rounded-xl border p-6",
+                  isDark ? "bg-[#2d2e30] border-[#5f6368]" : "bg-white border-gray-200"
+                )}>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-teal-100">
+                      <CheckCircle2 className="h-5 w-5 text-teal-600" />
+                    </div>
+                    <div>
+                      <p className={cn("font-medium", isDark ? "text-white" : "text-gray-900")}>
+                        Telefonnummer verifiziert
+                      </p>
+                      <p className={cn("text-sm", isDark ? "text-gray-400" : "text-gray-500")}>
+                        {phoneStatus.phone}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : verificationSessionId ? (
+                // Code eingeben
+                <div className={cn(
+                  "rounded-xl border p-6 space-y-4",
+                  isDark ? "bg-[#2d2e30] border-[#5f6368]" : "bg-white border-gray-200"
+                )}>
+                  <div className="text-center">
+                    <Phone className={cn("h-10 w-10 mx-auto mb-2", isDark ? "text-teal-400" : "text-teal-600")} />
+                    <p className={cn("font-medium", isDark ? "text-white" : "text-gray-900")}>
+                      SMS-Code eingeben
+                    </p>
+                    <p className={cn("text-sm mt-1", isDark ? "text-gray-400" : "text-gray-500")}>
+                      Wir haben einen 6-stelligen Code an deine Telefonnummer gesendet
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="verificationCode" className={cn(isDark && "text-white")}>
+                      Verifizierungscode
+                    </Label>
+                    <Input
+                      id="verificationCode"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="123456"
+                      className={cn(
+                        "mt-1 text-center text-2xl tracking-widest",
+                        isDark && "bg-[#3c4043] border-[#5f6368] text-white"
+                      )}
+                      maxLength={6}
+                    />
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={handleResendCode}
+                      disabled={isSendingCode}
+                      className="flex-1"
+                    >
+                      {isSendingCode && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Erneut senden
+                    </Button>
+                    <Button
+                      onClick={handleVerifyCode}
+                      disabled={isVerifying || verificationCode.length !== 6}
+                      className="flex-1 bg-teal-600 hover:bg-teal-700"
+                    >
+                      {isVerifying && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Verifizieren
+                    </Button>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setVerificationSessionId(null);
+                      setVerificationCode('');
+                    }}
+                    className={cn("text-sm underline", isDark ? "text-gray-400" : "text-gray-500")}
+                  >
+                    Andere Nummer verwenden
+                  </button>
+                </div>
+              ) : (
+                // Telefonnummer eingeben
+                <div className={cn(
+                  "rounded-xl border p-6 space-y-4",
+                  isDark ? "bg-[#2d2e30] border-[#5f6368]" : "bg-white border-gray-200"
+                )}>
+                  <p className={cn("text-sm", isDark ? "text-gray-400" : "text-gray-500")}>
+                    Verifiziere deine Telefonnummer um dein Konto abzusichern und wichtige 
+                    Benachrichtigungen per SMS zu erhalten.
+                  </p>
+
+                  <div>
+                    <Label htmlFor="phoneInput" className={cn(isDark && "text-white")}>
+                      Telefonnummer
+                    </Label>
+                    <Input
+                      id="phoneInput"
+                      type="tel"
+                      value={phoneInput}
+                      onChange={(e) => setPhoneInput(e.target.value)}
+                      placeholder="0170 1234567"
+                      className={cn("mt-1", isDark && "bg-[#3c4043] border-[#5f6368] text-white")}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="passwordInput" className={cn(isDark && "text-white")}>
+                      E-Mail-Passwort
+                    </Label>
+                    <Input
+                      id="passwordInput"
+                      type="password"
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
+                      placeholder="Dein Webmail-Passwort"
+                      className={cn("mt-1", isDark && "bg-[#3c4043] border-[#5f6368] text-white")}
+                    />
+                    <p className={cn("text-xs mt-1", isDark ? "text-gray-500" : "text-gray-400")}>
+                      Zur Bestätigung deiner Identität
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={handleSendCode}
+                    disabled={isSendingCode || !phoneInput || !passwordInput}
+                    className="w-full bg-teal-600 hover:bg-teal-700"
+                  >
+                    {isSendingCode && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    SMS-Code senden
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -460,6 +767,7 @@ export default function WebmailSettingsPage() {
             </Button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

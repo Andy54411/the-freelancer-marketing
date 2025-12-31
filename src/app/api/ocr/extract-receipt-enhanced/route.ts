@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       return await performBasicFallback(file, companyId);
     }
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ OCR API Error:', error);
     return NextResponse.json(
       {

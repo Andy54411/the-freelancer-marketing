@@ -30,7 +30,7 @@ function ProtectedRouteInternal({ children }: { children: React.ReactNode }) {
 
     // When loading is finished and there's no user, redirect.
     if (!user) {
-      router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+      router.replace(`/?redirectTo=${encodeURIComponent(redirectTo)}`);
     }
   }, [user, loading, router, redirectTo, pathname]);
 

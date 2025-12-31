@@ -73,6 +73,21 @@ export interface InvoiceData {
   districtCourt?: string;
   legalForm?: string;
   companyTax?: string;
+  // Strukturierte Adressfelder für Templates
+  companyStreet?: string;
+  companyHouseNumber?: string;
+  companyPostalCode?: string;
+  companyCity?: string;
+  companyCountry?: string;
+  // Bankdaten für Templates
+  companyIban?: string;
+  companyBic?: string;
+  // Registrierungsdaten
+  companyRegistrationNumber?: string;
+  // Buchhaltungseinstellungen
+  taxRate?: number | string;
+  taxMethod?: string;
+  accountingSystem?: string;
   // Strukturierte Unternehmensdaten für Templates
   company?: {
     name: string;

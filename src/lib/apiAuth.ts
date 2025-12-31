@@ -47,10 +47,6 @@ export async function verifyApiAuth(request: NextRequest): Promise<AuthResponse>
     
     // Prüfe ob Authorization Header vorhanden
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.warn('[API Auth] Missing or invalid Authorization header', {
-        path: request.nextUrl.pathname,
-        timestamp: new Date().toISOString(),
-      });
       return {
         success: false,
         error: 'Authorization header missing or invalid',

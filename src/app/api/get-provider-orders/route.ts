@@ -3,6 +3,13 @@ import { db, auth } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
   try {
+    if (!db || !auth) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     // CORS Headers setzen
     const headers = new Headers();
     headers.set('Access-Control-Allow-Origin', '*');

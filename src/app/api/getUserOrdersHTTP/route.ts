@@ -3,6 +3,13 @@ import { auth, db } from '../../../firebase/server';
 
 export async function POST(request: Request) {
   try {
+    if (!db || !auth) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { userType = 'customer', limit = 20, lastOrderId } = body;
 
@@ -40,7 +47,7 @@ export async function POST(request: Request) {
     if (userType === 'customer') {
       // Suche sowohl in kundeId als auch customerFirebaseUid
 
-      const kundeIdQuery = db!.collection('auftraege').where('kundeId', '==', userId);
+      const kundeIdQuery = db.collection('auftraege').where('kundeId', '==', userId);
       const customerUidQuery = db
         .collection('auftraege')
         .where('customerFirebaseUid', '==', userId);

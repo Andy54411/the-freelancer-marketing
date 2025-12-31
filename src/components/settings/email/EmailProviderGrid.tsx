@@ -12,7 +12,7 @@ interface WebmailConfig {
   id: string;
   email: string;
   provider: 'taskilo-webmail';
-  status: 'connected' | 'error' | 'disconnected';
+  status: 'connected' | 'error' | 'disconnected' | 'requires_password';
   connectedAt: string;
   subscriptionPlan?: 'free' | 'domain' | 'pro' | 'business';
   displayName?: string;
@@ -22,6 +22,7 @@ interface EmailProviderGridProps {
   companyId: string;
   emailConfigs: EmailConfig[];
   webmailConfig?: WebmailConfig;
+  useMasterUser?: boolean;
   onDeleteConfig: (configId: string) => void;
   onConnectGmail: () => void;
   onConnectWebmail: (email: string, password: string) => Promise<void>;
@@ -33,6 +34,7 @@ export function EmailProviderGrid({
   companyId, 
   emailConfigs, 
   webmailConfig,
+  useMasterUser = false,
   onDeleteConfig, 
   onConnectGmail,
   onConnectWebmail,
@@ -50,6 +52,7 @@ export function EmailProviderGrid({
       <TaskiloWebmailConnectionCard
         companyId={companyId}
         webmailConfig={webmailConfig}
+        useMasterUser={useMasterUser}
         onConnect={onConnectWebmail}
         onDisconnect={onDisconnectWebmail}
         isConnecting={isConnectingWebmail}

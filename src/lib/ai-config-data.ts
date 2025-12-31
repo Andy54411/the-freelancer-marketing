@@ -17,6 +17,10 @@ export type AiConfig = {
  * This is the server-side equivalent of the /api/ai-config route.
  */
 export async function getAiConfigData(): Promise<AiConfig> {
+  if (!db) {
+    throw new Error('Datenbank nicht initialisiert');
+  }
+
   const docRef = db.collection('chatbot_config').doc('knowledge_base');
   const configDoc = await docRef.get();
 

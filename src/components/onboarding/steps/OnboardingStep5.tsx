@@ -174,7 +174,24 @@ function OnboardingStep5Content({ companyUid }: OnboardingStep5Props) {
       const data = await response.json();
 
       if (data.success) {
-        // Konto erfolgreich verifiziert
+        // Konto erfolgreich verifiziert - Passwort verschlüsselt speichern
+        const companyId = companyUid || user?.uid;
+        if (companyId) {
+          // Speichere verschlüsseltes Passwort via API
+          const saveCredentialsResponse = await fetch(`/api/company/${companyId}/webmail-credentials`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: existingEmail,
+              password: existingPassword,
+            }),
+          });
+          
+          if (!saveCredentialsResponse.ok) {
+            console.warn('Credentials konnten nicht gespeichert werden - E-Mail-Abruf erfordert erneute Anmeldung');
+          }
+        }
+
         const newData: Step5Data = {
           ...step5Data,
           emailType: 'existing-taskilo',
@@ -223,6 +240,12 @@ function OnboardingStep5Content({ companyUid }: OnboardingStep5Props) {
         <p className="text-gray-600 max-w-lg mx-auto">
           Verbinden Sie Ihr Gmail-Konto oder erstellen Sie eine professionelle @taskilo.de E-Mail-Adresse
         </p>
+        
+        {/* Inklusive Hinweis */}
+        <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-[#14ad9f]/10 text-[#14ad9f] rounded-full text-sm font-medium">
+          <CheckCircle className="h-4 w-4" />
+          <span>Eine @taskilo.de E-Mail-Adresse ist in Ihrem Account inklusive!</span>
+        </div>
       </div>
 
       {/* Required Fields Indicator */}
@@ -291,8 +314,14 @@ function OnboardingStep5Content({ companyUid }: OnboardingStep5Props) {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        updateField('gmailConnected', false);
-                        updateField('gmailEmail', undefined);
+                        const newData: Step5Data = {
+                          ...step5Data,
+                          gmailConnected: false,
+                          gmailEmail: undefined,
+                          emailType: null,
+                        };
+                        setStep5Data(newData);
+                        updateStepData(5, newData);
                       }}
                     >
                       Trennen
@@ -331,7 +360,7 @@ function OnboardingStep5Content({ companyUid }: OnboardingStep5Props) {
           )}
         </Card>
 
-        {/* Option 2: Taskilo E-Mail erstellen */}
+        {/* Option 2: Taskilo E-Mail erstellen - INKLUSIVE */}
         <Card className={`cursor-pointer transition-all ${
           step5Data.emailType === 'taskilo' 
             ? 'border-2 border-[#14ad9f] ring-2 ring-[#14ad9f]/20' 
@@ -349,8 +378,11 @@ function OnboardingStep5Content({ companyUid }: OnboardingStep5Props) {
                   <Mail className={`w-6 h-6 ${step5Data.emailType === 'taskilo' ? 'text-white' : 'text-gray-600'}`} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Taskilo E-Mail erstellen</h3>
-                  <p className="text-sm text-gray-500 font-normal">Professionelle @taskilo.de Adresse</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-gray-900">Taskilo E-Mail erstellen</h3>
+                    <span className="px-2 py-0.5 bg-[#14ad9f] text-white text-xs font-bold rounded-full">INKLUSIVE</span>
+                  </div>
+                  <p className="text-sm text-gray-500 font-normal">Professionelle @taskilo.de Adresse - kostenlos</p>
                 </div>
               </div>
               {step5Data.taskiloEmailRequested && (
@@ -384,9 +416,15 @@ function OnboardingStep5Content({ companyUid }: OnboardingStep5Props) {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        updateField('taskiloEmailConnected', false);
-                        updateField('taskiloEmail', undefined);
-                        updateField('taskiloEmailRequested', false);
+                        const newData: Step5Data = {
+                          ...step5Data,
+                          taskiloEmailConnected: false,
+                          taskiloEmail: undefined,
+                          taskiloEmailRequested: false,
+                          emailType: null,
+                        };
+                        setStep5Data(newData);
+                        updateStepData(5, newData);
                       }}
                     >
                       Trennen
@@ -411,12 +449,12 @@ function OnboardingStep5Content({ companyUid }: OnboardingStep5Props) {
                     <div className="flex items-start gap-3 p-3 bg-[#14ad9f]/5 rounded-lg">
                       <Shield className="h-5 w-5 text-[#14ad9f] shrink-0 mt-0.5" />
                       <div className="text-sm text-gray-600">
-                        <p className="font-medium text-gray-900 mb-1">Inklusive Features</p>
+                        <p className="font-medium text-gray-900 mb-1">Kostenlos inklusive</p>
                         <ul className="space-y-1">
                           <li>Professionelle @taskilo.de Adresse</li>
-                          <li>Integriertes Webmail</li>
+                          <li>Integriertes Webmail mit Drive & Kalender</li>
                           <li>Spam-Schutz & Sicherheit</li>
-                          <li>1 GB Speicherplatz</li>
+                          <li>1 GB E-Mail-Speicher & 2 GB Cloud-Speicher</li>
                         </ul>
                       </div>
                     </div>
@@ -488,8 +526,14 @@ function OnboardingStep5Content({ companyUid }: OnboardingStep5Props) {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        updateField('taskiloEmailConnected', false);
-                        updateField('taskiloEmail', undefined);
+                        const newData: Step5Data = {
+                          ...step5Data,
+                          taskiloEmailConnected: false,
+                          taskiloEmail: undefined,
+                          emailType: null,
+                        };
+                        setStep5Data(newData);
+                        updateStepData(5, newData);
                         setExistingEmail('');
                       }}
                     >

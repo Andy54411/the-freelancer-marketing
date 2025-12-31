@@ -28,7 +28,7 @@ export default function CompanyOnboardingWelcomePage(): JSX.Element {
       }
 
       if (!user || !companyUid) {
-        router.push('/login');
+        router.push('/');
         return;
       }
 

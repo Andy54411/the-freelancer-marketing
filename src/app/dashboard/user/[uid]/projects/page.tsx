@@ -362,8 +362,9 @@ const ProjectsPage: React.FC = () => {
         unsubscribeQuotes1();
         unsubscribeQuotes2();
       };
-    } catch (error) {
+    } catch {
       setLoading(false);
+      return undefined;
     }
   }, [uid, user]);
 

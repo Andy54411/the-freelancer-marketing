@@ -140,7 +140,7 @@ function EmployeeLoginContent() {
             )}
             
             <div className="space-y-3">
-              <Link href={`/login?redirectTo=/employee/login${companyCode ? `?code=${companyCode}` : ''}`}>
+              <Link href={`/?redirectTo=/employee/login${companyCode ? `?code=${companyCode}` : ''}`}>
                 <Button className="w-full bg-teal-600 hover:bg-teal-700">
                   <LogIn className="h-4 w-4 mr-2" />
                   Mit bestehendem Konto anmelden

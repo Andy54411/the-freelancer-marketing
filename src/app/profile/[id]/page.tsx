@@ -2,20 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, collection, query, getDocs, limit, where } from 'firebase/firestore';
+import { doc, getDoc, collection, query, getDocs, limit, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import {
   FiLoader,
   FiAlertCircle,
   FiMapPin,
-  FiUser,
   FiArrowLeft,
   FiClock,
   FiCheckCircle,
   FiHome,
-  FiAward,
 } from 'react-icons/fi';
-import { Star } from 'lucide-react';
+import { Star, Heart, Share2, MoreHorizontal, Flag } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { DynamicHeader } from '@/components/DynamicHeader';
@@ -28,6 +26,7 @@ import RequestQuoteModal from '@/components/RequestQuoteModal';
 import { auth } from '@/firebase/clients';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { UserProfileData } from '@/types/types';
+import LoginPopup from '@/components/LoginPopup';
 
 // Review Interface
 interface Review {
@@ -38,13 +37,14 @@ interface Review {
   rating: number;
   comment?: string;
   serviceType?: string;
-  createdAt: any;
+  createdAt: Date | { toDate: () => Date } | string;
 }
 
 interface CompanyProfile {
   id: string;
   companyName: string;
   displayName?: string;
+  profileTitle?: string;
   description?: string;
   country?: string;
   city?: string;
@@ -69,9 +69,11 @@ interface CompanyProfile {
   responseTime?: number;
   completionRate?: number;
   totalOrders?: number;
+  ordersInProgress?: number; // Aufträge in Bearbeitung
   averageRating?: number;
   totalReviews?: number;
   completedJobs?: number;
+  repeatCustomerRate?: number; // Prozentsatz wiederkehrender Kunden (0-100)
   stripeVerificationStatus?: string;
   // Profil URL von Taskilo
   taskiloProfileUrl?: string;
@@ -83,22 +85,39 @@ interface CompanyProfile {
   selectedSubcategory?: string;
   selectedCategory?: string;
   radiusKm?: number;
+  // Zusätzliche öffentliche Unternehmensinformationen
+  employees?: string;
+  legalForm?: string;
+  serviceAreas?: string[];
+  maxTravelDistance?: number;
+  businessType?: string;
+  profileBannerImage?: string;
+  foundingYear?: string;
+}
+
+interface AdditionalService {
+  name: string;
+  price: number;
+  description?: string;
 }
 
 interface ServicePackage {
   id: string;
   title?: string;
+  name?: string;
   packageType: 'basic' | 'standard' | 'premium';
   price: number;
   deliveryTime: number;
   deliveryUnit: string;
   description: string;
   features: string[];
-  additionalServices?: any[];
+  additionalServices?: AdditionalService[];
   addonsTotal?: number;
   totalPrice?: number;
   serviceId?: string;
   subcategory?: string;
+  duration?: string;
+  revisions?: number;
 }
 
 interface PortfolioItem {
@@ -119,6 +138,7 @@ interface PortfolioItem {
   duration?: string;
   budget?: string;
   status?: 'completed' | 'in-progress' | 'cancelled';
+  views?: number; // Echte View-Anzahl
 }
 
 interface FAQ {
@@ -136,9 +156,10 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [_isDescriptionExpanded, _setIsDescriptionExpanded] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [showReviewManagement, setShowReviewManagement] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [showReviewManagement, _setShowReviewManagement] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isCreateOrderModalOpen, setIsCreateOrderModalOpen] = useState(false);
@@ -146,16 +167,55 @@ export default function ProfilePage() {
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
-  const [servicePackages, setServicePackages] = useState<any[]>([]);
+  const [reviewCarouselIndex, setReviewCarouselIndex] = useState(0);
+  const [servicePackages, setServicePackages] = useState<ServicePackage[]>([]);
   const [activePackageTab, setActivePackageTab] = useState(0);
-  const [bookingData, setBookingData] = useState<{
-    selection: any;
+  
+  // Favoriten und Action-Bar States
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteCount, setFavoriteCount] = useState(0);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'report' | null>(null);
+  const [_bookingData, _setBookingData] = useState<{
+    selection: { date?: string; time?: string; service?: string };
     time: string;
     durationString: string;
     description: string;
   } | null>(null);
 
   const companyId = params?.id as string;
+
+  // Funktion zum Inkrementieren der Portfolio-Views
+  const incrementPortfolioViews = async (providerId: string, portfolioItems: PortfolioItem[]) => {
+    if (!portfolioItems || portfolioItems.length === 0) return;
+
+    try {
+      const companyRef = doc(db, 'companies', providerId);
+      const companyDoc = await getDoc(companyRef);
+      
+      if (companyDoc.exists()) {
+        const data = companyDoc.data();
+        const currentPortfolio = data?.step3?.portfolio || [];
+        
+        // Inkrementiere Views für alle Portfolio-Items
+        const updatedPortfolio = currentPortfolio.map((item: PortfolioItem) => ({
+          ...item,
+          views: (item.views || 0) + 1
+        }));
+        
+        // Update in Datenbank
+        await updateDoc(companyRef, {
+          'step3.portfolio': updatedPortfolio
+        });
+        
+        return updatedPortfolio;
+      }
+    } catch {
+      // Fehler stillschweigend ignorieren - View-Tracking ist nicht kritisch
+    }
+    return portfolioItems;
+  };
 
   // Funktion zum Laden der echten abgeschlossenen Aufträge aus der reviews Collection
   // Da Reviews nur für abgeschlossene Aufträge erstellt werden, können wir sie als Proxy verwenden
@@ -173,7 +233,83 @@ export default function ProfilePage() {
       const completedCount = reviewsSnapshot.size;
 
       return completedCount;
-    } catch (error) {
+    } catch {
+      return 0;
+    }
+  };
+
+  // Funktion zur Berechnung der Stammkunden-Rate (wiederkehrende Kunden)
+  // Ein Stammkunde ist jemand, der mehr als einmal beim Anbieter bestellt hat
+  const loadRepeatCustomerRate = async (providerId: string): Promise<number> => {
+    try {
+      // Lade alle Aufträge des Anbieters
+      const ordersQuery = query(
+        collection(db, `companies/${providerId}/auftraege`),
+        limit(200)
+      );
+      const ordersSnapshot = await getDocs(ordersQuery);
+      
+      if (ordersSnapshot.size < 3) {
+        // Mindestens 3 Aufträge für aussagekräftige Statistik
+        return 0;
+      }
+
+      // Zähle wie oft jeder Kunde bestellt hat
+      const customerOrderCounts = new Map<string, number>();
+      
+      ordersSnapshot.docs.forEach(doc => {
+        const order = doc.data();
+        const customerId = order.customerId || order.userId || order.clientId;
+        if (customerId) {
+          customerOrderCounts.set(customerId, (customerOrderCounts.get(customerId) || 0) + 1);
+        }
+      });
+
+      // Berechne wie viele Kunden mehr als einmal bestellt haben
+      const totalCustomers = customerOrderCounts.size;
+      if (totalCustomers === 0) return 0;
+
+      let repeatCustomers = 0;
+      customerOrderCounts.forEach(count => {
+        if (count > 1) repeatCustomers++;
+      });
+
+      // Berechne Prozentsatz (wiederkehrende Kunden / alle Kunden * 100)
+      const repeatRate = (repeatCustomers / totalCustomers) * 100;
+      
+      return Math.round(repeatRate);
+    } catch {
+      return 0;
+    }
+  };
+
+  // Funktion zum Laden der Aufträge in Bearbeitung
+  const loadOrdersInProgress = async (providerId: string): Promise<number> => {
+    try {
+      const ordersQuery = query(
+        collection(db, `companies/${providerId}/auftraege`),
+        limit(200)
+      );
+      const ordersSnapshot = await getDocs(ordersQuery);
+      
+      // Zähle Aufträge mit Status "in Bearbeitung" oder ähnlich
+      let inProgressCount = 0;
+      ordersSnapshot.docs.forEach(doc => {
+        const order = doc.data();
+        const status = (order.status || '').toUpperCase();
+        // Aktive Aufträge die noch nicht abgeschlossen sind
+        if (status === 'AKTIV' || 
+            status === 'IN BEARBEITUNG' || 
+            status === 'IN_PROGRESS' ||
+            status === 'ACCEPTED' ||
+            status === 'CONFIRMED' ||
+            status === 'STARTED') {
+          inProgressCount++;
+        }
+      });
+
+      return inProgressCount;
+    } catch {
       return 0;
     }
   };
@@ -205,7 +341,7 @@ export default function ProfilePage() {
         averageRating: parseFloat(averageRating.toFixed(1)),
         totalReviews: reviews.length,
       };
-    } catch (error) {
+    } catch {
       return { averageRating: 0, totalReviews: 0 };
     }
   };
@@ -242,7 +378,7 @@ export default function ProfilePage() {
   const handleStartChat = () => {
     if (!currentUser) {
       // Benutzer zur Anmeldung weiterleiten
-      window.location.href = `/login?redirectTo=${encodeURIComponent(window.location.pathname)}`;
+      window.location.href = `/?redirectTo=${encodeURIComponent(window.location.pathname)}`;
       return;
     }
 
@@ -254,7 +390,7 @@ export default function ProfilePage() {
   const handleBookNow = async () => {
     if (!currentUser) {
       // Benutzer zur Anmeldung weiterleiten
-      window.location.href = `/login?redirectTo=${encodeURIComponent(window.location.pathname)}`;
+      window.location.href = `/?redirectTo=${encodeURIComponent(window.location.pathname)}`;
       return;
     }
 
@@ -278,14 +414,37 @@ export default function ProfilePage() {
       if (userDoc.exists()) {
         setUserProfile(userDoc.data() as UserProfileData);
       }
-    } catch (error) {}
+    } catch {
+      // Fehler beim Laden des User-Profils - stillschweigend ignorieren
+    }
+  };
+
+  // Teilen-Funktion mit Web Share API oder Fallback
+  const handleShare = async () => {
+    const shareData = {
+      title: profile?.companyName || 'Dienstleister bei Taskilo',
+      text: `Schau dir ${profile?.companyName} auf Taskilo an!`,
+      url: window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        // User cancelled share
+      }
+    } else {
+      // Fallback: Copy to clipboard
+      await navigator.clipboard.writeText(window.location.href);
+      alert('Link in die Zwischenablage kopiert!');
+    }
   };
 
   const handleBookingConfirm = async (
-    selection: any,
-    time: string,
-    durationString: string,
-    description: string
+    _selection: { date?: string; time?: string; service?: string },
+    _time: string,
+    _durationString: string,
+    _description: string
   ) => {
     try {
       // Prüfe ob Profile verfügbar ist
@@ -295,7 +454,7 @@ export default function ProfilePage() {
 
       setIsBookingModalOpen(false);
       setIsCreateOrderModalOpen(true);
-    } catch (error) {
+    } catch {
       alert('Fehler bei der Buchung. Bitte versuchen Sie es erneut.');
     }
   };
@@ -351,7 +510,9 @@ export default function ProfilePage() {
         if (userDoc.exists()) {
           setUserProfile(userDoc.data() as UserProfileData);
         }
-      } catch (error) {}
+      } catch {
+        // Fehler beim Laden des User-Profils - stillschweigend ignorieren
+      }
     };
 
     fetchUserProfile();
@@ -366,7 +527,8 @@ export default function ProfilePage() {
       }
 
       try {
-        let userData: any = null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let userData: Record<string, any> | null = null;
 
         // Priorität 1: Lade aus der companies Collection (Hauptquelle für Unternehmensdaten)
         const companyDocRef = doc(db, 'companies', companyId);
@@ -423,6 +585,8 @@ export default function ProfilePage() {
           // Lade echte Bewertungsdaten und abgeschlossene Aufträge
           const realRatingData = await loadRealRatingData(companyId);
           const realCompletedJobs = await loadRealCompletedJobs(companyId);
+          const repeatCustomerRate = await loadRepeatCustomerRate(companyId);
+          const ordersInProgress = await loadOrdersInProgress(companyId);
 
           // Verarbeite Skills aus verschiedenen Quellen
           const skills = userData.skills || [];
@@ -440,8 +604,12 @@ export default function ProfilePage() {
           const languages = (() => {
             // Prüfe ob userData.languages das korrekte Format hat (Array von Objekten)
             if (userData.languages && Array.isArray(userData.languages)) {
-              const validLanguages = userData.languages.filter(
-                (lang: any) =>
+              interface LanguageInput {
+                language?: string;
+                proficiency?: string;
+              }
+              const validLanguages = (userData.languages as LanguageInput[]).filter(
+                (lang: LanguageInput) =>
                   lang &&
                   typeof lang === 'object' &&
                   lang.language &&
@@ -450,8 +618,8 @@ export default function ProfilePage() {
               );
 
               if (validLanguages.length > 0) {
-                return validLanguages.map((lang: any) => ({
-                  language: lang.language.trim(),
+                return validLanguages.map((lang: LanguageInput) => ({
+                  language: lang.language!.trim(),
                   proficiency: lang.proficiency || 'Fließend',
                 }));
               }
@@ -484,6 +652,7 @@ export default function ProfilePage() {
               'Professioneller Service-Anbieter',
             displayName:
               userData.companyName || userData.step2?.companyName || userData.displayName,
+            profileTitle: userData.profileTitle || '',
             description,
             selectedSubcategory: userData.selectedSubcategory,
             selectedCategory: userData.selectedCategory,
@@ -495,7 +664,14 @@ export default function ProfilePage() {
             companyPostalCodeForBackend: userData.companyPostalCodeForBackend,
             companyCountryForBackend: userData.companyCountryForBackend,
             companyAddressLine1ForBackend: userData.companyAddressLine1ForBackend,
-            isVerified: userData.stripeVerificationStatus === 'verified',
+            isVerified: userData.adminApproved === true,
+            // Zusätzliche öffentliche Unternehmensinformationen
+            employees: userData.employees || userData.step1?.employees || undefined,
+            legalForm: userData.legalForm || userData.step1?.legalForm || undefined,
+            serviceAreas: userData.serviceAreas || userData.step4?.serviceAreas || [],
+            maxTravelDistance: userData.maxTravelDistance || userData.step4?.maxTravelDistance || userData.radiusKm || undefined,
+            businessType: userData.businessType || userData.step1?.businessType || undefined,
+            profileBannerImage: userData.profileBannerImage || userData.step3?.profileBannerImage || undefined,
             hourlyRate:
               userData.hourlyRate ||
               userData.basePrice ||
@@ -508,13 +684,14 @@ export default function ProfilePage() {
             averageRating: realRatingData.averageRating,
             totalReviews: realRatingData.totalReviews,
             completedJobs: realCompletedJobs,
+            ordersInProgress: ordersInProgress,
+            repeatCustomerRate: repeatCustomerRate,
             responseTime:
               userData.responseTime ||
               userData.responseTimeGuarantee ||
-              userData.advanceBookingHours ||
-              24,
-            completionRate: 98, // Standard hohe Abschlussrate
-            totalOrders: realCompletedJobs,
+              userData.advanceBookingHours,
+            completionRate: userData.completionRate,
+            totalOrders: realCompletedJobs + ordersInProgress,
             // Fähigkeiten und Portfolio
             skills,
             specialties,
@@ -554,27 +731,31 @@ export default function ProfilePage() {
                 companyData.photoURL,
               city: companyData.city || companyData.companyCity,
               country: companyData.country === 'DE' ? 'Deutschland' : companyData.country,
-              isVerified: companyData.stripeVerificationStatus === 'verified',
-              hourlyRate: companyData.hourlyRate || 0,
-              radiusKm: companyData.radiusKm || 30,
+              isVerified: companyData.adminApproved === true,
+              hourlyRate: companyData.hourlyRate,
+              radiusKm: companyData.radiusKm,
               stripeVerificationStatus: companyData.stripeVerificationStatus,
-              averageRating: companyData.averageRating || 4.8,
-              totalReviews: companyData.totalReviews || 12,
-              completedJobs: companyData.completedJobs || 15,
-              responseTime: companyData.responseTime || 24,
-              skills: companyData.skills || [],
-              specialties: companyData.specialties || [],
-              languages: companyData.languages || [],
-              portfolio: companyData.portfolio || [],
+              averageRating: companyData.averageRating,
+              totalReviews: companyData.totalReviews,
+              completedJobs: companyData.completedJobs,
+              repeatCustomerRate: companyData.repeatCustomerRate,
+              responseTime: companyData.responseTime,
+              skills: companyData.skills,
+              specialties: companyData.specialties,
+              languages: companyData.languages,
+              portfolio: companyData.portfolio,
               servicePackages: servicePackages,
-              certifications: companyData.certifications || [],
-              education: companyData.education || [],
+              certifications: companyData.certifications,
+              education: companyData.education,
             });
+            
+            // Lade Favoriten-Anzahl
+            setFavoriteCount(companyData.favoriteCount || 0);
           } else {
             setError('Firma nicht gefunden');
           }
         }
-      } catch (err) {
+      } catch {
         setError('Fehler beim Laden des Firmenprofils');
       } finally {
         setLoading(false);
@@ -587,7 +768,7 @@ export default function ProfilePage() {
     const fetchReviews = async () => {
       try {
         setReviewsLoading(true);
-        const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore');
+        const { collection, query, getDocs, orderBy } = await import('firebase/firestore');
 
         const reviewsQuery = query(
           collection(db, `companies/${companyId}/reviews`),
@@ -624,7 +805,7 @@ export default function ProfilePage() {
               : null
           );
         }
-      } catch (error) {
+      } catch {
         setReviews([]);
       } finally {
         setReviewsLoading(false);
@@ -641,15 +822,40 @@ export default function ProfilePage() {
         const packagesData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
-        }));
+        })) as ServicePackage[];
         setServicePackages(packagesData);
-      } catch (error) {
-        console.error('Error loading service packages:', error);
+      } catch {
+        // Fehler beim Laden der Service-Pakete - stillschweigend ignorieren
       }
     };
 
     loadServicePackages();
   }, [companyId]);
+
+  // Portfolio Views inkrementieren wenn Profil geladen wurde
+  useEffect(() => {
+    const trackPortfolioViews = async () => {
+      if (!profile?.portfolio || profile.portfolio.length === 0) return;
+      
+      // Nur einmal pro Session tracken (sessionStorage verwenden)
+      const viewedKey = `portfolio_viewed_${companyId}`;
+      if (sessionStorage.getItem(viewedKey)) return;
+      
+      try {
+        const updatedPortfolio = await incrementPortfolioViews(companyId, profile.portfolio);
+        if (updatedPortfolio) {
+          // Portfolio mit aktualisierten Views setzen
+          setProfile(prev => prev ? { ...prev, portfolio: updatedPortfolio } : null);
+          sessionStorage.setItem(viewedKey, 'true');
+        }
+      } catch {
+        // Fehler beim Tracken ignorieren
+      }
+    };
+
+    trackPortfolioViews();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
 
   if (loading) {
     return (
@@ -713,225 +919,294 @@ export default function ProfilePage() {
   return (
     <>
       <DynamicHeader />
-      <div className="min-h-screen bg-linear-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
-        <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+      <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-teal-50/30 relative">
+        {/* Hero Section with Gradient */}
+        <div className="absolute top-0 left-0 right-0 h-[400px] bg-linear-to-br from-[#14ad9f] via-teal-600 to-teal-800 overflow-hidden">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-teal-400/20 rounded-full translate-x-1/4 translate-y-1/4 blur-3xl" />
+        </div>
         <div className="relative z-10 pt-20">
           <main>
             {/* Content with proper top spacing */}
             <div className="relative z-10">
-              {/* Breadcrumb Navigation - Klickbarer Text-Pfad */}
+              {/* Breadcrumb Navigation with Action Buttons */}
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <div className="text-sm text-white/80">
-                  <Link href="/" className="hover:text-white transition-colors">
-                    Startseite
-                  </Link>
-                  <span> / </span>
-                  <Link href="/services" className="hover:text-white transition-colors">
-                    Services
-                  </Link>
-                  {profile.selectedCategory && (
-                    <>
-                      <span> / </span>
-                      <Link
-                        href={getCategoryUrl(profile.selectedCategory)}
-                        className="hover:text-white transition-colors"
+                <div className="flex items-center justify-between">
+                  {/* Left: Breadcrumb */}
+                  <nav className="flex items-center gap-2 text-sm text-white/70">
+                    <Link href="/" className="hover:text-white transition-colors flex items-center gap-1">
+                      <FiHome size={14} />
+                      <span>Startseite</span>
+                    </Link>
+                    <span className="text-white/50">/</span>
+                    <Link href="/services" className="hover:text-white transition-colors">
+                      Services
+                    </Link>
+                    {profile.selectedCategory && (
+                      <>
+                        <span className="text-white/50">/</span>
+                        <Link
+                          href={getCategoryUrl(profile.selectedCategory)}
+                          className="hover:text-white transition-colors"
+                        >
+                          {profile.selectedCategory}
+                        </Link>
+                      </>
+                    )}
+                    {profile.selectedSubcategory && (
+                      <>
+                        <span className="text-white/50">/</span>
+                        <Link
+                          href={getSubcategoryUrl(
+                            profile.selectedCategory!,
+                            profile.selectedSubcategory
+                          )}
+                          className="hover:text-white transition-colors"
+                        >
+                          {profile.selectedSubcategory}
+                        </Link>
+                      </>
+                    )}
+                    <span className="text-white/50">/</span>
+                    <span className="text-white font-medium">{profile.companyName}</span>
+                  </nav>
+
+                  {/* Right: Action Buttons */}
+                  <div className="flex items-center gap-2">
+                    {/* Favorite Button */}
+                    <button
+                      onClick={() => setIsFavorite(!isFavorite)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white"
+                      title={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufuegen'}
+                    >
+                      <Heart 
+                        size={16} 
+                        className={isFavorite ? 'fill-red-500 text-red-500' : ''} 
+                      />
+                      <span className="text-sm font-medium">{favoriteCount}</span>
+                    </button>
+
+                    {/* Share Button */}
+                    <button
+                      onClick={handleShare}
+                      className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white"
+                      title="Profil teilen"
+                    >
+                      <Share2 size={16} />
+                    </button>
+
+                    {/* More Options Button */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowMoreOptions(!showMoreOptions)}
+                        className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white"
+                        title="Weitere Optionen"
                       >
-                        {profile.selectedCategory}
-                      </Link>
-                    </>
-                  )}
-                  {profile.selectedSubcategory && (
-                    <>
-                      <span> / </span>
-                      <Link
-                        href={getSubcategoryUrl(
-                          profile.selectedCategory!,
-                          profile.selectedSubcategory
-                        )}
-                        className="hover:text-white transition-colors"
-                      >
-                        {profile.selectedSubcategory}
-                      </Link>
-                    </>
-                  )}
-                  <span> / </span>
-                  <span className="text-white font-medium">{profile.companyName}</span>
+                        <MoreHorizontal size={16} />
+                      </button>
+                      {showMoreOptions && (
+                        <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
+                          <button
+                            onClick={() => {
+                              setShowMoreOptions(false);
+                              if (!currentUser) {
+                                // Benutzer muss eingeloggt sein - zeige Login Modal
+                                setPendingAction('report');
+                                setIsLoginModalOpen(true);
+                                return;
+                              }
+                              // TODO: Problem melden Modal oeffnen
+                            }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3"
+                          >
+                            <Flag size={16} className="text-gray-500" />
+                            Ein Problem melden
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8">
+                {/* Grid Layout - wie bei Fiverr: Links Content, Rechts Sidebar von oben */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                   {/* Left Column - Main Content */}
-                  <div className="lg:col-span-2 space-y-8">
-                    {/* Provider Header Card */}
-                    <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden">
+                  <div className="lg:col-span-8 space-y-6">
+                    {/* Fiverr-Style Gig Overview Header */}
+                    <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
                       <div className="p-8">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-6">
-                            {/* Profile Image */}
-                            <div className="shrink-0">
-                              {profile.profilePictureFirebaseUrl ? (
-                                <Image
-                                  src={profile.profilePictureFirebaseUrl}
-                                  alt={profile.companyName}
-                                  width={120}
-                                  height={120}
-                                  className="w-30 h-30 rounded-full object-cover border-4 border-gray-100"
-                                />
-                              ) : (
-                                <div className="w-30 h-30 rounded-full bg-gray-200 flex items-center justify-center border-4 border-gray-100">
-                                  <FiUser size={48} className="text-gray-400" />
-                                </div>
-                              )}
-                            </div>
+                        {/* Main Service Title - Use profileTitle if available, otherwise fallback */}
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 leading-tight">
+                          {profile.profileTitle 
+                            ? profile.profileTitle
+                            : profile.description 
+                              ? (profile.description.replace(/<[^>]*>/g, '').split('.')[0] + '.').substring(0, 200)
+                              : `Ich biete professionelle ${profile.selectedSubcategory || 'Dienstleistungen'} für Ihr Projekt.`}
+                        </h1>
 
-                            {/* Provider Info */}
-                            <div className="grow">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h1 className="text-3xl font-bold text-gray-900">
-                                  {profile.companyName}
-                                </h1>
-                                {profile.isVerified && (
-                                  <FiCheckCircle className="text-green-500" size={24} />
-                                )}
-                              </div>
+                    {/* Seller Overview */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-6">
+                      {/* Profile Image */}
+                      <div className="shrink-0">
+                        {profile.profilePictureFirebaseUrl ? (
+                          <figure className="relative">
+                            <Image
+                              src={profile.profilePictureFirebaseUrl}
+                              alt={profile.companyName}
+                              width={64}
+                              height={64}
+                              className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                            />
+                          </figure>
+                        ) : (
+                          <div className="w-16 h-16 rounded-full bg-[#14ad9f] flex items-center justify-center border-2 border-gray-200">
+                            <span className="text-white text-xl font-bold">
+                              {profile.companyName?.charAt(0) || 'T'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
 
-                              <p className="text-gray-600 text-lg mb-4">
-                                {profile.selectedSubcategory || 'Professioneller Service'}
-                              </p>
-
-                              {/* Rating and Location */}
-                              <div className="flex items-center gap-6 mb-4 flex-wrap">
-                                <div className="flex items-center gap-1 whitespace-nowrap">
-                                  <div className="flex">
-                                    {[...Array(5)].map((_, i) => (
-                                      <Star
-                                        key={i}
-                                        className={`w-4 h-4 ${
-                                          i < Math.floor(profile.averageRating || 0)
-                                            ? 'text-yellow-400 fill-current'
-                                            : 'text-gray-300'
-                                        }`}
-                                      />
-                                    ))}
-                                  </div>
-                                  <span className="font-semibold text-gray-900 ml-1">
-                                    {(profile.averageRating || 0).toFixed(1)}
-                                  </span>
-                                  <span className="text-gray-500 text-sm ml-1">
-                                    ({profile.totalReviews || 0} Bewertungen)
-                                  </span>
-                                </div>
-
-                                {fullAddress && (
-                                  <div className="flex items-center gap-1 text-gray-600">
-                                    <FiMapPin size={16} />
-                                    <span>{fullAddress}</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Stats */}
-                              <div className="flex items-center gap-8 text-sm text-gray-600">
-                                <span>{profile.completedJobs || 0} Aufträge abgeschlossen</span>
-                                {profile.responseTime && (
-                                  <div className="flex items-center gap-1">
-                                    <FiClock size={14} />
-                                    <span>Antwortet in ~{profile.responseTime}h</span>
-                                  </div>
-                                )}
-                              </div>
+                      {/* Seller Info */}
+                      <div className="flex flex-col gap-3">
+                        {/* Name and Level */}
+                        <div className="flex flex-wrap items-center gap-3">
+                          <button 
+                            className="text-gray-900 font-bold hover:underline"
+                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                          >
+                            {profile.companyName}
+                          </button>
+                          
+                          {/* Level Badge */}
+                          <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
+                            <span className="text-gray-700 text-sm font-medium">
+                              {profile.isVerified ? 'Verifiziert' : 'Stufe 1'}
+                            </span>
+                            <div className="flex gap-0.5">
+                              {[...Array(3)].map((_, i) => (
+                                <svg 
+                                  key={i}
+                                  xmlns="http://www.w3.org/2000/svg" 
+                                  viewBox="0 0 10 10" 
+                                  width="10" 
+                                  height="10" 
+                                  fill={i < (profile.isVerified ? 2 : 1) ? '#14ad9f' : '#E4E5E7'}
+                                >
+                                  <path d="M4.839.22a.2.2 0 0 1 .322 0l1.942 2.636a.2.2 0 0 0 .043.043L9.782 4.84a.2.2 0 0 1 0 .322L7.146 7.105a.2.2 0 0 0-.043.043L5.161 9.784a.2.2 0 0 1-.322 0L2.897 7.148a.2.2 0 0 0-.043-.043L.218 5.163a.2.2 0 0 1 0-.322l2.636-1.942a.2.2 0 0 0 .043-.043L4.839.221Z" />
+                                </svg>
+                              ))}
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* About Section */}
-                    <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-6">Über mich</h2>
-                      <div className="prose prose-lg max-w-none">
-                        <div className="text-gray-700 leading-relaxed space-y-4">
-                          {profile.description ? (
-                            profile.description.split('\n').map(
-                              (paragraph, index) =>
-                                paragraph.trim() && (
-                                  <p key={index} className="wrap-break-word">
-                                    {paragraph.trim()}
-                                  </p>
-                                )
-                            )
-                          ) : (
-                            <p className="text-gray-500 italic">
-                              Noch keine Beschreibung verfügbar.
-                            </p>
+                          {/* Orders Stats */}
+                          {((profile.completedJobs || 0) > 0 || (profile.ordersInProgress || 0) > 0) && (
+                            <>
+                              <span className="hidden md:block w-px h-4 bg-gray-300" />
+                              <span className="text-gray-500 text-sm">
+                                {(profile.completedJobs || 0) > 0 && `${profile.completedJobs} abgeschlossen`}
+                                {(profile.completedJobs || 0) > 0 && (profile.ordersInProgress || 0) > 0 && ' | '}
+                                {(profile.ordersInProgress || 0) > 0 && `${profile.ordersInProgress} in Bearbeitung`}
+                              </span>
+                            </>
                           )}
                         </div>
+
+                        {/* Rating and Reviews */}
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1">
+                            <Star className="w-4 h-4 text-gray-900 fill-current" />
+                            <span className="font-bold text-gray-900">
+                              {(profile.averageRating || 0).toFixed(1)}
+                            </span>
+                            <button className="text-gray-500 hover:text-gray-700 text-sm">
+                              (<span className="underline">{profile.totalReviews || 0} Bewertungen</span>)
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Skills and Expertise */}
-                    {profile.skills && profile.skills.length > 0 && (
-                      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                          Fähigkeiten und Expertise
-                        </h2>
-
-                        {/* Main Skills */}
-                        <div className="mb-6">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                            Hauptkompetenzen
-                          </h3>
-                          <div className="flex flex-wrap gap-3">
-                            {profile.skills.map((skill, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full"
-                              >
-                                <span className="text-gray-800 font-medium">{skill}</span>
-                              </div>
-                            ))}
+                    {/* Loyalty Banner - nur wenn hohe Stammkundenrate (>= 30%) */}
+                    {(profile.repeatCustomerRate || 0) >= 30 && (
+                      <div className="mt-4 flex items-start gap-3">
+                        {/* Trophy with Repeat Icon - wie bei Fiverr */}
+                        <div className="shrink-0 relative">
+                          <svg className="w-8 h-8 text-gray-300" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M5 3h14a1 1 0 011 1v3a5 5 0 01-3 4.58V13a4 4 0 01-4 4h-2a4 4 0 01-4-4v-1.42A5 5 0 014 7V4a1 1 0 011-1zm0 4a3 3 0 002 2.83V7H5zm14 0v2.83A3 3 0 0019 7zM12 19v2h-2v-2h2zm-4 0v2H6v-2h2zm8 0v2h-2v-2h2z"/>
+                          </svg>
+                          {/* Small repeat icon overlay */}
+                          <div className="absolute -bottom-0.5 -right-0.5 bg-white rounded-full p-0.5">
+                            <svg className="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
                           </div>
                         </div>
-
-                        {/* Specialties - nur anzeigen wenn echte Spezialgebiete vorhanden */}
-                        {profile.specialties && profile.specialties.length > 0 && (
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                              Spezialgebiete
-                            </h3>
-                            <div className="flex flex-wrap gap-3">
-                              {profile.specialties.map((specialty, index) => (
-                                <div
-                                  key={index}
-                                  className="flex items-center gap-2 px-4 py-2 bg-[#14ad9f] text-white rounded-full"
-                                >
-                                  <span className="font-medium">{specialty}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Languages */}
-                        {profile.languages && profile.languages.length > 0 && (
-                          <div className="mt-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Sprachen</h3>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                              {profile.languages.map((lang, index) => (
-                                <div key={index} className="flex items-center gap-2">
-                                  <span className="font-medium text-gray-800">{lang.language}</span>
-                                  <span className="text-gray-500">- {lang.proficiency}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                        <div className="text-sm">
+                          <span className="font-semibold text-gray-900">Die Leute kommen immer wieder!</span>
+                          <span className="text-gray-500 ml-2">{profile.companyName} hat eine außergewöhnlich hohe Anzahl an Stammkunden.</span>
+                        </div>
                       </div>
                     )}
+                  </div>
+                </div>
 
-                    {/* Portfolio Section - Fiverr Style */}
+                    {/* Provider Quick Stats Card */}
+                    <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+                      <div className="p-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                          {/* Location */}
+                          {fullAddress && (
+                            <div className="flex flex-col">
+                              <span className="text-gray-500 text-sm mb-1">Standort</span>
+                              <div className="flex items-center gap-1 text-gray-900 font-medium">
+                                <FiMapPin size={14} className="text-[#14ad9f]" />
+                                <span className="text-sm">{fullAddress}</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Completed Jobs */}
+                          <div className="flex flex-col">
+                            <span className="text-gray-500 text-sm mb-1">Abgeschlossen</span>
+                            <span className="text-gray-900 font-bold">
+                              {profile.completedJobs || 0} Aufträge
+                            </span>
+                          </div>
+
+                          {/* Response Time */}
+                          {profile.responseTime && (
+                            <div className="flex flex-col">
+                              <span className="text-gray-500 text-sm mb-1">Antwortzeit</span>
+                              <div className="flex items-center gap-1 text-gray-900 font-medium">
+                                <FiClock size={14} className="text-[#14ad9f]" />
+                                <span>~{profile.responseTime}h</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Verified Status */}
+                          <div className="flex flex-col">
+                            <span className="text-gray-500 text-sm mb-1">Status</span>
+                            <div className="flex items-center gap-1">
+                              {profile.isVerified ? (
+                                <>
+                                  <FiCheckCircle size={14} className="text-green-500" />
+                                  <span className="text-green-600 font-medium">Verifiziert</span>
+                                </>
+                              ) : (
+                                <span className="text-gray-600">Nicht verifiziert</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Portfolio Section */}
                     {profile.portfolio && profile.portfolio.length > 0 && (
-                      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-6">
+                      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-shadow duration-300">
                         <div className="flex items-center justify-between mb-6">
                           <h2 className="text-2xl font-bold text-gray-900">Portfolio</h2>
                           <span className="text-sm text-gray-500">
@@ -980,14 +1255,25 @@ export default function ProfilePage() {
                                     {/* Rechte Seite: Text Content - nimmt 3 Spalten */}
                                     <div className="md:col-span-3 p-4 flex flex-col justify-between">
                                       <div>
-                                        {/* Category Badge */}
-                                        {item.category && (
-                                          <div className="mb-2">
+                                        {/* Category Badge und Status */}
+                                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                          {item.category && (
                                             <span className="inline-block bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium uppercase tracking-wide">
                                               {item.category}
                                             </span>
-                                          </div>
-                                        )}
+                                          )}
+                                          {item.status && (
+                                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                                              item.status === 'completed' 
+                                                ? 'bg-green-100 text-green-700' 
+                                                : item.status === 'in-progress' 
+                                                  ? 'bg-yellow-100 text-yellow-700'
+                                                  : 'bg-red-100 text-red-700'
+                                            }`}>
+                                              {item.status === 'completed' ? 'Abgeschlossen' : item.status === 'in-progress' ? 'In Bearbeitung' : 'Abgebrochen'}
+                                            </span>
+                                          )}
+                                        </div>
 
                                         {/* Title */}
                                         <h3 className="font-bold text-gray-900 mb-2 text-lg leading-tight">
@@ -998,6 +1284,45 @@ export default function ProfilePage() {
                                         <p className="text-gray-600 text-sm mb-3 leading-relaxed line-clamp-3">
                                           {item.description}
                                         </p>
+
+                                        {/* Project Details Grid */}
+                                        {(item.clientName || item.location || item.budget || item.projectDate) && (
+                                          <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+                                            {item.clientName && (
+                                              <div className="flex items-center gap-1.5 text-gray-600">
+                                                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
+                                                <span>{item.clientName}</span>
+                                              </div>
+                                            )}
+                                            {item.location && (
+                                              <div className="flex items-center gap-1.5 text-gray-600">
+                                                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                </svg>
+                                                <span>{item.location}</span>
+                                              </div>
+                                            )}
+                                            {item.budget && (
+                                              <div className="flex items-center gap-1.5 text-gray-600">
+                                                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <span>{item.budget}</span>
+                                              </div>
+                                            )}
+                                            {item.projectDate && (
+                                              <div className="flex items-center gap-1.5 text-gray-600">
+                                                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                <span>{new Date(item.projectDate).toLocaleDateString('de-DE')}</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
 
                                         {/* Technologies */}
                                         {item.technologies && item.technologies.length > 0 && (
@@ -1066,7 +1391,7 @@ export default function ProfilePage() {
                                               />
                                             </svg>
                                             <span>
-                                              {Math.floor(Math.random() * 500) + 100} Views
+                                              {item.views || 0} Views
                                             </span>
                                           </div>
                                         </div>
@@ -1174,14 +1499,309 @@ export default function ProfilePage() {
                       </div>
                     )}
 
+                    {/* Reviews Section - Fiverr Style */}
+                    {!reviewsLoading && (
+                      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-shadow duration-300">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-6">
+                          <h2 className="text-2xl font-bold text-gray-900">
+                            Was Kunden an diesem Anbieter lieben
+                          </h2>
+                          {reviews && reviews.length > 0 && (
+                            <button className="text-[#14ad9f] hover:text-[#0d8a7a] font-medium text-sm transition-colors">
+                              Alle {reviews.length} Bewertungen ansehen
+                            </button>
+                          )}
+                        </div>
+
+                        {/* No Reviews State */}
+                        {(!reviews || reviews.length === 0) && (
+                          <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-100">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                              </svg>
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Noch keine Bewertungen</h3>
+                            <p className="text-gray-500 text-sm max-w-sm mx-auto">
+                              Dieser Anbieter hat noch keine Kundenbewertungen erhalten. 
+                              Sei der Erste, der eine Bewertung hinterlaesst!
+                            </p>
+                            <button 
+                              onClick={() => setIsQuoteModalOpen(true)}
+                              className="mt-6 inline-flex items-center gap-2 px-6 py-2.5 bg-[#14ad9f] text-white rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                              </svg>
+                              Jetzt Auftrag anfragen
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Reviews Carousel - nur wenn Bewertungen vorhanden */}
+                        {reviews && reviews.length > 0 && (
+                          <div className="relative">
+                            {/* Navigation Buttons */}
+                            <div className="absolute -left-4 top-1/2 -translate-y-1/2 z-10">
+                            <button
+                              onClick={() => setReviewCarouselIndex(Math.max(0, reviewCarouselIndex - 1))}
+                              disabled={reviewCarouselIndex === 0}
+                              className={`w-10 h-10 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all ${
+                                reviewCarouselIndex === 0 
+                                  ? 'opacity-50 cursor-not-allowed' 
+                                  : 'hover:bg-gray-50 hover:shadow-xl'
+                              }`}
+                              aria-label="Vorherige Bewertung"
+                            >
+                              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                              </svg>
+                            </button>
+                          </div>
+                          <div className="absolute -right-4 top-1/2 -translate-y-1/2 z-10">
+                            <button
+                              onClick={() => setReviewCarouselIndex(Math.min(reviews.length - 1, reviewCarouselIndex + 1))}
+                              disabled={reviewCarouselIndex >= reviews.length - 1}
+                              className={`w-10 h-10 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all ${
+                                reviewCarouselIndex >= reviews.length - 1 
+                                  ? 'opacity-50 cursor-not-allowed' 
+                                  : 'hover:bg-gray-50 hover:shadow-xl'
+                              }`}
+                              aria-label="Naechste Bewertung"
+                            >
+                              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          </div>
+
+                          {/* Reviews Slider */}
+                          <div className="relative overflow-hidden">
+                            <div 
+                              className="flex transition-transform duration-300 ease-in-out"
+                              style={{ transform: `translateX(-${reviewCarouselIndex * 100}%)` }}
+                            >
+                              {reviews.map((review, index) => (
+                                <div 
+                                  key={review.id || index}
+                                  className="w-full shrink-0 px-4"
+                                >
+                                  <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                                  {/* Reviewer Info */}
+                                  <div className="flex items-start gap-3 mb-4">
+                                    {/* Avatar */}
+                                    <div 
+                                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                                      style={{ backgroundColor: `hsl(${(review.customerName || review.userName || 'A').charCodeAt(0) * 10}, 60%, 50%)` }}
+                                    >
+                                      {(review.customerName || review.userName || 'A').charAt(0).toUpperCase()}
+                                    </div>
+                                    
+                                    {/* Name, Location & Rating */}
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <h6 className="font-semibold text-gray-900 text-sm">
+                                          {review.customerName || review.userName || 'Anonymer Kunde'}
+                                        </h6>
+                                        <div className="flex items-center gap-1 text-gray-500 text-xs">
+                                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                          </svg>
+                                          <span>Deutschland</span>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Star Rating */}
+                                      <div className="flex items-center gap-1 mt-1">
+                                        {[...Array(5)].map((_, starIndex) => (
+                                          <svg 
+                                            key={starIndex}
+                                            className={`w-4 h-4 ${starIndex < (review.rating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                                            viewBox="0 0 16 15" 
+                                            xmlns="http://www.w3.org/2000/svg"
+                                          >
+                                            <path 
+                                              fillRule="evenodd" 
+                                              clipRule="evenodd" 
+                                              d="M16 5.81285C16 5.98299 15.875 6.14367 15.75 6.26654L12.2596 9.61248L13.0865 14.3384C13.0962 14.4045 13.0962 14.4612 13.0962 14.5274C13.0962 14.7732 12.9808 15 12.7019 15C12.5673 15 12.4327 14.9527 12.3173 14.8866L8 12.656L3.68269 14.8866C3.55769 14.9527 3.43269 15 3.29808 15C3.01923 15 2.89423 14.7732 2.89423 14.5274C2.89423 14.4612 2.90385 14.4045 2.91346 14.3384L3.74038 9.61248L0.240385 6.26654C0.125 6.14367 0 5.98299 0 5.81285C0 5.5293 0.298077 5.41588 0.538462 5.37807L5.36539 4.68809L7.52885 0.387524C7.61539 0.207939 7.77885 0 8 0C8.22115 0 8.38462 0.207939 8.47115 0.387524L10.6346 4.68809L15.4615 5.37807C15.6923 5.41588 16 5.5293 16 5.81285Z"
+                                              fill="currentColor"
+                                            />
+                                          </svg>
+                                        ))}
+                                        <span className="font-bold text-gray-900 text-sm ml-1">{review.rating || 0}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Review Comment */}
+                                  <div className="mb-3">
+                                    <p className="text-gray-700 text-sm leading-relaxed line-clamp-4">
+                                      {review.comment || 'Keine Bewertung verfuegbar.'}
+                                    </p>
+                                    {review.comment && review.comment.length > 200 && (
+                                      <button className="text-[#14ad9f] text-sm font-medium mt-1 hover:underline">
+                                        Mehr anzeigen
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {/* Service Type & Date */}
+                                  <div className="flex items-center justify-between text-xs text-gray-500">
+                                    {review.serviceType && (
+                                      <span className="bg-gray-100 px-2 py-1 rounded-full">
+                                        {review.serviceType}
+                                      </span>
+                                    )}
+                                    <time>
+                                      {review.createdAt 
+                                        ? typeof review.createdAt === 'string' 
+                                          ? new Date(review.createdAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })
+                                          : 'toDate' in review.createdAt
+                                            ? review.createdAt.toDate().toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })
+                                            : new Date(review.createdAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })
+                                        : 'Kuerzlich'}
+                                    </time>
+                                  </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Pagination Dots */}
+                          {reviews.length > 1 && (
+                            <div className="flex justify-center gap-2 mt-4">
+                              {reviews.slice(0, Math.min(reviews.length, 5)).map((_, index) => (
+                                <button
+                                  key={index}
+                                  onClick={() => setReviewCarouselIndex(index)}
+                                  className={`w-2 h-2 rounded-full transition-all ${
+                                    reviewCarouselIndex === index 
+                                      ? 'bg-[#14ad9f] w-6' 
+                                      : 'bg-gray-300 hover:bg-gray-400'
+                                  }`}
+                                  aria-label={`Zur Bewertung ${index + 1}`}
+                                />
+                              ))}
+                              {reviews.length > 5 && (
+                                <span className="text-gray-500 text-xs ml-1">+{reviews.length - 5}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Reviews Loading State */}
+                    {reviewsLoading && (
+                      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                        <div className="animate-pulse">
+                          <div className="h-6 bg-gray-200 rounded w-1/3 mb-6"></div>
+                          <div className="bg-gray-100 rounded-xl p-5">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                              <div className="flex-1">
+                                <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+                                <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                              </div>
+                            </div>
+                            <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* About Section */}
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-shadow duration-300">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-6">Über mich</h2>
+                      <div className="prose prose-lg max-w-none">
+                        <div className="text-gray-700 leading-relaxed space-y-4">
+                          {profile.description ? (
+                            <div 
+                              className="prose prose-lg max-w-none prose-p:text-gray-700 prose-strong:text-gray-900 prose-ul:text-gray-700"
+                              dangerouslySetInnerHTML={{ __html: profile.description }}
+                            />
+                          ) : (
+                            <p className="text-gray-500 italic">
+                              Noch keine Beschreibung verfügbar.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Skills and Expertise */}
+                    {profile.skills && profile.skills.length > 0 && (
+                      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-shadow duration-300">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                          Fähigkeiten und Expertise
+                        </h2>
+
+                        {/* Main Skills */}
+                        <div className="mb-6">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                            Hauptkompetenzen
+                          </h3>
+                          <div className="flex flex-wrap gap-3">
+                            {profile.skills.map((skill, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full"
+                              >
+                                <span className="text-gray-800 font-medium">{skill}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Specialties - nur anzeigen wenn echte Spezialgebiete vorhanden */}
+                        {profile.specialties && profile.specialties.length > 0 && (
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                              Spezialgebiete
+                            </h3>
+                            <div className="flex flex-wrap gap-3">
+                              {profile.specialties.map((specialty, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center gap-2 px-4 py-2 bg-[#14ad9f] text-white rounded-full"
+                                >
+                                  <span className="font-medium">{specialty}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Languages */}
+                        {profile.languages && profile.languages.length > 0 && (
+                          <div className="mt-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Sprachen</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                              {profile.languages.map((lang, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                  <span className="font-medium text-gray-800">{lang.language}</span>
+                                  <span className="text-gray-500">- {lang.proficiency}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* FAQ Section - Fiverr Style - ALWAYS SHOW FOR DEBUG```
                               </button>
                             </div>
                           )}
                         </div>
                        )}
-                       {/* FAQ Section - Fiverr Style */}
-                    <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
+                       {/* FAQ Section */}
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-shadow duration-300">
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-gray-900">
                           Häufig gestellte Fragen
@@ -1308,11 +1928,11 @@ export default function ProfilePage() {
                     />
                   </div>
 
-                  {/* Right Column - Contact Card */}
-                  <div className="lg:col-span-1">
-                    <div className="space-y-6">
+                  {/* Right Column - Contact Card - Sticky */}
+                  <div className="lg:col-span-4">
+                    <div className="lg:sticky lg:top-4 space-y-6">
                       {/* Contact Card */}
-                      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-6">
+                      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
                         {/* Provider Summary - Kompakter */}
                         <div className="text-center mb-4 border-b border-gray-200 pb-4">
                           <h2 className="text-lg font-bold text-gray-900 mb-1">
@@ -1373,18 +1993,18 @@ export default function ProfilePage() {
                           </div>
                         </div>
 
-                        {/* Buttons mit Taskilo-Farben */}
-                        <div className="space-y-2 mb-4">
+                        {/* Buttons mit modernen Taskilo-Farben */}
+                        <div className="space-y-3 mb-5">
                           <button
                             onClick={() => setIsQuoteModalOpen(true)}
-                            className="w-full bg-[#14ad9f] text-white py-2.5 px-4 rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors text-sm"
+                            className="w-full bg-linear-to-r from-[#14ad9f] to-teal-600 text-white py-3.5 px-4 rounded-xl font-semibold hover:from-[#0d8a7a] hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                           >
                             Angebot anfordern
                           </button>
 
                           <button
                             onClick={handleBookNow}
-                            className="w-full bg-[#14ad9f]/10 text-[#14ad9f] border border-[#14ad9f]/20 py-2.5 px-4 rounded-lg font-medium hover:bg-[#14ad9f]/20 transition-colors text-sm"
+                            className="w-full bg-white text-[#14ad9f] border-2 border-[#14ad9f] py-3.5 px-4 rounded-xl font-semibold hover:bg-[#14ad9f]/5 transition-all duration-200"
                           >
                             Jetzt buchen
                           </button>
@@ -1428,25 +2048,92 @@ export default function ProfilePage() {
 
                       {/* Verification Card */}
                       {profile.stripeVerificationStatus && (
-                        <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-6">
+                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
                           <h3 className="text-lg font-semibold text-gray-900 mb-4">
                             Verifizierung
                           </h3>
-                          <div className="flex items-center gap-3">
-                            <FiCheckCircle
-                              className={`${
-                                profile.stripeVerificationStatus === 'verified'
-                                  ? 'text-green-500'
-                                  : 'text-orange-500'
-                              }`}
-                              size={20}
-                            />
-
-                            <span className="text-gray-700">
+                          <div className="flex items-center gap-3 p-3 rounded-xl bg-linear-to-r from-green-50 to-emerald-50">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${profile.stripeVerificationStatus === 'verified' ? 'bg-green-100' : 'bg-orange-100'}`}>
+                              <FiCheckCircle
+                                className={`${profile.stripeVerificationStatus === 'verified' ? 'text-green-600' : 'text-orange-500'}`}
+                                size={20}
+                              />
+                            </div>
+                            <span className="text-gray-700 font-medium">
                               {profile.stripeVerificationStatus === 'verified'
-                                ? 'Identität verifiziert'
+                                ? 'Identitaet verifiziert'
                                 : 'Verifizierung in Bearbeitung'}
                             </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Unternehmensdetails Card - Oeffentliche Informationen */}
+                      {(profile.legalForm || profile.employees || profile.businessType || (profile.serviceAreas && profile.serviceAreas.length > 0) || profile.maxTravelDistance) && (
+                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                            Unternehmensdetails
+                          </h3>
+                          <div className="space-y-3">
+                            {/* Rechtsform */}
+                            {profile.legalForm && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Rechtsform:</span>
+                                <span className="text-gray-900 font-medium">{profile.legalForm}</span>
+                              </div>
+                            )}
+                            
+                            {/* Unternehmenstyp */}
+                            {profile.businessType && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Typ:</span>
+                                <span className="text-gray-900 font-medium">
+                                  {profile.businessType === 'hybrid' ? 'Vor-Ort & Remote' : 
+                                   profile.businessType === 'onsite' ? 'Vor-Ort' : 
+                                   profile.businessType === 'remote' ? 'Remote' : profile.businessType}
+                                </span>
+                              </div>
+                            )}
+                            
+                            {/* Mitarbeiter */}
+                            {profile.employees && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Team:</span>
+                                <span className="text-gray-900 font-medium">
+                                  {profile.employees === '1' ? 'Einzelunternehmer' :
+                                   profile.employees === '2-5' ? '2-5 Mitarbeiter' :
+                                   profile.employees === '6-10' ? '6-10 Mitarbeiter' :
+                                   profile.employees === '11-50' ? '11-50 Mitarbeiter' :
+                                   profile.employees === '50+' ? '50+ Mitarbeiter' : profile.employees}
+                                </span>
+                              </div>
+                            )}
+                            
+                            {/* Maximale Reisedistanz */}
+                            {profile.maxTravelDistance && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Max. Anfahrt:</span>
+                                <span className="text-gray-900 font-medium">{profile.maxTravelDistance} km</span>
+                              </div>
+                            )}
+                            
+                            {/* Servicegebiete */}
+                            {profile.serviceAreas && profile.serviceAreas.length > 0 && (
+                              <div className="pt-2 border-t border-gray-100">
+                                <span className="text-gray-500 text-sm block mb-2">Servicegebiete:</span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {profile.serviceAreas.map((area, index) => (
+                                    <span 
+                                      key={index}
+                                      className="inline-flex items-center px-2.5 py-1 bg-[#14ad9f]/10 text-[#14ad9f] text-xs font-medium rounded-full"
+                                    >
+                                      <FiMapPin size={10} className="mr-1" />
+                                      {area}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -1454,7 +2141,7 @@ export default function ProfilePage() {
                       {/* Education & Certifications */}
                       {((profile.education && profile.education.length > 0) ||
                         (profile.certifications && profile.certifications.length > 0)) && (
-                        <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-6">
+                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
                           <h3 className="text-lg font-semibold text-gray-900 mb-4">
                             Qualifikationen
                           </h3>
@@ -1493,9 +2180,9 @@ export default function ProfilePage() {
                         </div>
                       )}
 
-                      {/* Service Packages - Fiverr Style Tabs */}
+                      {/* Service Packages */}
                       {servicePackages && servicePackages.length > 0 && (
-                        <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden">
+                        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
                           {/* Hidden Radio Inputs */}
                           {servicePackages.map((_, index) => (
                             <input
@@ -1668,7 +2355,7 @@ export default function ProfilePage() {
                                         </h5>
                                         <ul className="space-y-2">
                                           {servicePackages[activePackageTab].additionalServices.map(
-                                            (service: any, idx: number) => (
+                                            (service: AdditionalService, idx: number) => (
                                               <li
                                                 key={idx}
                                                 className="flex items-center justify-between gap-2 text-sm"
@@ -1853,6 +2540,22 @@ export default function ProfilePage() {
           </main>
         </div>
       </div>
+
+      {/* Login Modal */}
+      <LoginPopup
+        isOpen={isLoginModalOpen}
+        onClose={() => {
+          setIsLoginModalOpen(false);
+          setPendingAction(null);
+        }}
+        onLoginSuccess={() => {
+          setIsLoginModalOpen(false);
+          if (pendingAction === 'report') {
+            // TODO: Problem melden Modal oeffnen
+            setPendingAction(null);
+          }
+        }}
+      />
     </>
   );
 }

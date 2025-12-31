@@ -161,7 +161,9 @@ export default function SidebarFilters({
 
         // console.warn wiederherstellen
         console.warn = originalConsoleWarn;
-      } catch (error) {}
+      } catch {
+        // Fehler beim Initialisieren der Autocomplete-Instanz
+      }
 
       return () => {
         // Cleanup: Entferne alle Event Listener
@@ -170,6 +172,7 @@ export default function SidebarFilters({
         }
       };
     }
+    return undefined;
     // ESLint-disable um die Endlosschleife zu vermeiden - onLoad und onPlaceChanged werden als stabil angenommen
     // handlePlaceChanged nutzt setCity und setPostalCode, aber diese sind stabil von der übergeordneten Komponente
     // eslint-disable-next-line react-hooks/exhaustive-deps
