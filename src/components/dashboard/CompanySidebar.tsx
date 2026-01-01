@@ -124,6 +124,11 @@ const navigationItems: NavigationItem[] = [
         href: 'reviews',
       },
       {
+        label: 'Tasker-Level',
+        value: 'tasker-level',
+        href: 'settings/tasker-level',
+      },
+      {
         label: 'Tasker-Einstellungen',
         value: 'tasker-settings',
         href: 'tasker/settings',
