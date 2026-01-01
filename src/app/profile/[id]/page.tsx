@@ -27,6 +27,8 @@ import { auth } from '@/firebase/clients';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { UserProfileData } from '@/types/types';
 import LoginPopup from '@/components/LoginPopup';
+import { TaskiloLevelBadge } from '@/components/level/TaskiloLevelBadge';
+import { type TaskiloLevel, LEVEL_DETAILS } from '@/services/TaskiloLevelService';
 
 // Review Interface
 interface Review {
@@ -54,6 +56,7 @@ interface CompanyProfile {
   profilePictureFirebaseUrl?: string;
   username?: string;
   isVerified?: boolean;
+  taskerLevel?: TaskiloLevel;
   // Portfolio und Skills
   portfolio?: PortfolioItem[];
   skills?: string[];
@@ -665,6 +668,7 @@ export default function ProfilePage() {
             companyCountryForBackend: userData.companyCountryForBackend,
             companyAddressLine1ForBackend: userData.companyAddressLine1ForBackend,
             isVerified: userData.adminApproved === true,
+            taskerLevel: userData.taskerLevel?.currentLevel as TaskiloLevel || 'new',
             // Zusätzliche öffentliche Unternehmensinformationen
             employees: userData.employees || userData.step1?.employees || undefined,
             legalForm: userData.legalForm || userData.step1?.legalForm || undefined,
@@ -732,6 +736,7 @@ export default function ProfilePage() {
               city: companyData.city || companyData.companyCity,
               country: companyData.country === 'DE' ? 'Deutschland' : companyData.country,
               isVerified: companyData.adminApproved === true,
+              taskerLevel: companyData.taskerLevel?.currentLevel as TaskiloLevel || 'new',
               hourlyRate: companyData.hourlyRate,
               radiusKm: companyData.radiusKm,
               stripeVerificationStatus: companyData.stripeVerificationStatus,
@@ -1080,25 +1085,7 @@ export default function ProfilePage() {
                           </button>
                           
                           {/* Level Badge */}
-                          <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
-                            <span className="text-gray-700 text-sm font-medium">
-                              {profile.isVerified ? 'Verifiziert' : 'Stufe 1'}
-                            </span>
-                            <div className="flex gap-0.5">
-                              {[...Array(3)].map((_, i) => (
-                                <svg 
-                                  key={i}
-                                  xmlns="http://www.w3.org/2000/svg" 
-                                  viewBox="0 0 10 10" 
-                                  width="10" 
-                                  height="10" 
-                                  fill={i < (profile.isVerified ? 2 : 1) ? '#14ad9f' : '#E4E5E7'}
-                                >
-                                  <path d="M4.839.22a.2.2 0 0 1 .322 0l1.942 2.636a.2.2 0 0 0 .043.043L9.782 4.84a.2.2 0 0 1 0 .322L7.146 7.105a.2.2 0 0 0-.043.043L5.161 9.784a.2.2 0 0 1-.322 0L2.897 7.148a.2.2 0 0 0-.043-.043L.218 5.163a.2.2 0 0 1 0-.322l2.636-1.942a.2.2 0 0 0 .043-.043L4.839.221Z" />
-                                </svg>
-                              ))}
-                            </div>
-                          </div>
+                          <TaskiloLevelBadge level={profile.taskerLevel || 'new'} size="sm" />
 
                           {/* Orders Stats */}
                           {((profile.completedJobs || 0) > 0 || (profile.ordersInProgress || 0) > 0) && (
