@@ -7,6 +7,11 @@ import { Star, Heart, Video, Play, Pause, Volume2, VolumeX } from 'lucide-react'
 import { TaskiloLevelIcon } from '@/components/level/TaskiloLevelBadge';
 import { type TaskiloLevel } from '@/services/TaskiloLevelService';
 
+// Helper: HTML-Tags aus Text entfernen
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').trim();
+}
+
 interface Provider {
   id: string;
   companyName?: string;
@@ -244,7 +249,7 @@ export default function ProviderCard({ provider, onFavoriteClick, isFavorite = f
         <p className={`text-sm leading-snug mb-3 line-clamp-2 transition-colors ${
           isHovered ? 'text-teal-600' : 'text-gray-700'
         }`}>
-          {provider.bio || `Professionelle Dienstleistungen im Bereich ${provider.selectedSubcategory || 'Service'}`}
+          {provider.bio ? stripHtml(provider.bio) : `Professionelle Dienstleistungen im Bereich ${provider.selectedSubcategory || 'Service'}`}
         </p>
 
         {/* Rating */}
