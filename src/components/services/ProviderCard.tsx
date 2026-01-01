@@ -4,6 +4,8 @@ import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Star, Heart, Video, Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { TaskiloLevelIcon } from '@/components/level/TaskiloLevelBadge';
+import { type TaskiloLevel } from '@/services/TaskiloLevelService';
 
 interface Provider {
   id: string;
@@ -28,6 +30,7 @@ interface Provider {
   adminApproved?: boolean;
   availabilityType?: string;
   level?: number;
+  taskerLevel?: TaskiloLevel;
   isTopRated?: boolean;
   offersVideoConsultation?: boolean;
 }
@@ -50,8 +53,7 @@ export default function ProviderCard({ provider, onFavoriteClick, isFavorite = f
   const imageUrl = provider.profilePictureURL || provider.profilePictureFirebaseUrl || provider.photoURL;
   const bannerUrl = provider.profileBannerImage;
   const videoUrl = provider.profileVideoURL;
-  const level = provider.level || 1;
-  const isTopRated = provider.isTopRated;
+  const taskerLevel = provider.taskerLevel || (provider.isTopRated ? 'top_rated' : provider.level && provider.level >= 2 ? 'level2' : provider.level === 1 ? 'level1' : 'new') as TaskiloLevel;
   const offersVideoConsultation = provider.offersVideoConsultation;
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -106,26 +108,14 @@ export default function ProviderCard({ provider, onFavoriteClick, isFavorite = f
     }
   };
 
-  // Level Badge Komponente
+  // Level Badge - verwendet das neue TaskiloLevelBadge
   const LevelBadge = () => {
-    if (isTopRated) {
-      return (
-        <span className="inline-flex items-center gap-0.5 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
-          Top Rated
-          <span className="text-amber-500">{'+'}</span>
-        </span>
-      );
+    // Nur für Level 1+ anzeigen
+    if (taskerLevel === 'new') {
+      return null;
     }
     
-    if (level >= 2) {
-      return (
-        <span className="text-xs text-gray-500">
-          Level {level} <span className="text-teal-500">{'◆'.repeat(level)}</span>
-        </span>
-      );
-    }
-    
-    return null;
+    return <TaskiloLevelIcon level={taskerLevel} size="sm" />;
   };
 
   return (

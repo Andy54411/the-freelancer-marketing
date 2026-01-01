@@ -28,6 +28,7 @@ import ServiceFilters, {
   matchesLocationFilter,
 } from '@/components/services/ServiceFilters';
 import ProviderCard, { ProviderCardSkeleton } from '@/components/services/ProviderCard';
+import { type TaskiloLevel } from '@/services/TaskiloLevelService';
 
 interface Provider {
   id: string;
@@ -48,6 +49,7 @@ interface Provider {
   completedJobs?: number;
   isCompany?: boolean;
   priceRange?: string;
+  taskerLevel?: TaskiloLevel;
   hourlyRate?: number;
   responseTime?: string;
   // Filter fields
@@ -193,22 +195,34 @@ export default function SubcategoryPage() {
       switch (sortBy) {
         case 'recommended':
           // Internes Ranking basierend auf kombiniertem Score
-          // Neue Formel mit 4 Komponenten:
+          // Formel mit 4 Komponenten + Level-Boost:
           // - SEO-Score: 25% (Profil-Vollständigkeit)
           // - Service-Bewertungen: 35% (Rating nach Aufträgen)
           // - Firmenbewertungen: 25% (Generelle Firmenbewertung)
           // - Review-Anzahl: 15% (Mehr Bewertungen = mehr Vertrauen)
+          // - Level-Boost: 0-50% Bonus basierend auf Tasker-Level
+          const getLevelBoost = (level?: TaskiloLevel): number => {
+            switch (level) {
+              case 'top_rated': return 1.5; // +50%
+              case 'level2': return 1.25; // +25%
+              case 'level1': return 1.1; // +10%
+              default: return 1.0; // kein Boost
+            }
+          };
+          
           const seoA = (a._internalScore || 0) * 0.25;
           const serviceRatingA = ((a.rating || 0) * 20) * 0.35;
           const companyRatingA = ((a._companyRating || 0) * 20) * 0.25;
           const reviewCountA = (Math.min((a.reviewCount || 0) + (a._companyReviewCount || 0), 30) * 1.5) * 0.15;
-          const scoreA = seoA + serviceRatingA + companyRatingA + reviewCountA;
+          const levelBoostA = getLevelBoost(a.taskerLevel);
+          const scoreA = (seoA + serviceRatingA + companyRatingA + reviewCountA) * levelBoostA;
           
           const seoB = (b._internalScore || 0) * 0.25;
           const serviceRatingB = ((b.rating || 0) * 20) * 0.35;
           const companyRatingB = ((b._companyRating || 0) * 20) * 0.25;
           const reviewCountB = (Math.min((b.reviewCount || 0) + (b._companyReviewCount || 0), 30) * 1.5) * 0.15;
-          const scoreB = seoB + serviceRatingB + companyRatingB + reviewCountB;
+          const levelBoostB = getLevelBoost(b.taskerLevel);
+          const scoreB = (seoB + serviceRatingB + companyRatingB + reviewCountB) * levelBoostB;
           
           return scoreB - scoreA;
         case 'rating':
@@ -367,6 +381,8 @@ export default function SubcategoryPage() {
               serviceAreas: data.serviceAreas || data.step4?.serviceAreas || [],
               adminApproved: data.adminApproved === true,
               availabilityType: data.availabilityType || data.step4?.availabilityType,
+              // Tasker Level
+              taskerLevel: data.taskerLevel?.currentLevel as TaskiloLevel | undefined,
               // Internal ranking fields (not visible to users)
               _searchTags: searchTags,
               _profileTitle: profileTitle,
