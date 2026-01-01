@@ -628,6 +628,39 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-semibold text-gray-900">Profil-Video</h3>
           <span className="px-2 py-0.5 bg-teal-100 text-teal-700 text-xs font-medium rounded">Optional</span>
+          
+          {/* Tooltip mit Tipps */}
+          <div className="relative group">
+            <button
+              type="button"
+              className="p-1 text-gray-400 hover:text-teal-600 transition-colors"
+              aria-label="Video-Tipps anzeigen"
+            >
+              <Info className="w-4 h-4" />
+            </button>
+            <div className="absolute left-0 top-full mt-2 w-72 p-3 bg-gray-900 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <div className="absolute -top-1.5 left-3 w-3 h-3 bg-gray-900 rotate-45" />
+              <p className="font-medium mb-2">Tipps für ein gutes Video:</p>
+              <ul className="space-y-1.5 text-gray-300">
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-400 mt-0.5">-</span>
+                  <span>Stelle dich und deine Dienstleistung kurz vor</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-400 mt-0.5">-</span>
+                  <span>Zeige Beispiele deiner Arbeit</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-400 mt-0.5">-</span>
+                  <span>Sprich direkt in die Kamera</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-400 mt-0.5">-</span>
+                  <span>Achte auf gute Beleuchtung und Tonqualität</span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
         <p className="text-sm text-gray-600">
           Ein kurzes Video (max. 75 Sekunden) hilft Kunden, dich besser kennenzulernen. Videos erhöhen die Conversion-Rate um bis zu 40%.
@@ -703,19 +736,6 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
           onChange={handleVideoUpload}
           className="hidden"
         />
-        
-        <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-800">
-            <strong>Tipps für ein gutes Video:</strong>
-            <ul className="mt-1 space-y-1 list-disc list-inside text-blue-700">
-              <li>Stelle dich und deine Dienstleistung kurz vor</li>
-              <li>Zeige Beispiele deiner Arbeit</li>
-              <li>Sprich direkt in die Kamera</li>
-              <li>Achte auf gute Beleuchtung und Tonqualität</li>
-            </ul>
-          </div>
-        </div>
       </div>
 
       {/* Profile Image Section */}
@@ -784,7 +804,26 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
       <div className="space-y-4">
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-semibold text-gray-900">Profil-Titel</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-gray-900">Profil-Titel</h3>
+              
+              {/* Tooltip mit Tipp */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  className="p-1 text-gray-400 hover:text-teal-600 transition-colors"
+                  aria-label="Titel-Tipps anzeigen"
+                >
+                  <Info className="w-4 h-4" />
+                </button>
+                <div className="absolute left-0 top-full mt-2 w-80 p-3 bg-gray-900 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="absolute -top-1.5 left-3 w-3 h-3 bg-gray-900 rotate-45" />
+                  <p className="font-medium mb-2">Tipp für einen guten Titel:</p>
+                  <p className="text-gray-300 mb-2">Ein guter Titel enthält Keywords wie deine Dienstleistung, Spezialisierung oder Region.</p>
+                  <p className="text-gray-400 text-xs italic">Beispiel: &quot;Erfahrener Elektriker für Sanierung und Neuinstallation in München&quot;</p>
+                </div>
+              </div>
+            </div>
             <span className="text-sm text-gray-500">{profileTitle.length}/80 Zeichen</span>
           </div>
           <p className="text-sm text-gray-600">
@@ -801,14 +840,6 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
             maxLength={80}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
           />
-        </div>
-        
-        <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-          <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-          <div className="text-sm text-amber-800">
-            <strong>Tipp:</strong> Ein guter Titel enthält Keywords wie deine Dienstleistung, Spezialisierung oder Region. 
-            Beispiel: &quot;Erfahrener Elektriker für Sanierung und Neuinstallation in München&quot;
-          </div>
         </div>
       </div>
 
