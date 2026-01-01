@@ -183,6 +183,20 @@ export default function TaskerLevelPage() {
         </div>
       </div>
       
+      {/* Info-Box wenn keine Daten vorhanden */}
+      {metrics.completedOrders === 0 && metrics.rating === 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-medium text-blue-900">Noch keine Daten verfügbar</h4>
+            <p className="text-sm text-blue-700 mt-1">
+              Deine Metriken werden berechnet, sobald du Aufträge abschließt und Bewertungen erhältst. 
+              Starte jetzt, indem du dein Profil vervollständigst und auf Kundenanfragen antwortest.
+            </p>
+          </div>
+        </div>
+      )}
+      
       {/* Metriken-Übersicht */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {/* Success Score */}

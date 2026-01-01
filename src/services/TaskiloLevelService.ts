@@ -366,13 +366,27 @@ export class TaskiloLevelService {
     const rating = data.rating || data.averageRating || 0;
     const ratingCount = data.ratingCount || data.reviewCount || 0;
 
-    // Success Score Komponenten
-    const clientSatisfaction = metrics.clientSatisfaction || (rating / 5) * 10;
-    const effectiveCommunication = metrics.effectiveCommunication || (responseRate / 100) * 10;
-    const conflictFreeOrders = metrics.conflictFreeOrders || 10;
-    const orderCancellations = metrics.orderCancellations || 10;
-    const deliveryTime = metrics.deliveryTime || 8;
-    const valueForMoney = metrics.valueForMoney || (rating / 5) * 10;
+    // Success Score Komponenten - echte Berechnungen
+    // clientSatisfaction: Basiert auf Rating (5 Sterne = 10 Punkte)
+    const clientSatisfaction = rating > 0 ? (rating / 5) * 10 : 0;
+    
+    // effectiveCommunication: Basiert auf Antwortrate
+    const effectiveCommunication = (responseRate / 100) * 10;
+    
+    // conflictFreeOrders: Berechne aus Aufträgen ohne Disputes
+    const conflictFreeData = await this.calculateConflictFreeRate(companyId);
+    const conflictFreeOrders = conflictFreeData.rate;
+    
+    // orderCancellations: Berechne Stornierungsrate (invertiert: weniger Stornos = höherer Score)
+    const cancellationData = await this.calculateCancellationRate(companyId);
+    const orderCancellations = cancellationData.score;
+    
+    // deliveryTime: Berechne aus pünktlichen Lieferungen
+    const deliveryData = await this.calculateDeliveryScore(companyId);
+    const deliveryTime = deliveryData.score;
+    
+    // valueForMoney: Basiert auf Rating (kann später durch spezifische Bewertungen ersetzt werden)
+    const valueForMoney = rating > 0 ? (rating / 5) * 10 : 0;
 
     const successScore = this.calculateSuccessScore({
       clientSatisfaction,
@@ -468,7 +482,140 @@ export class TaskiloLevelService {
 
       return Math.round((respondedCount / totalInitialMessages) * 100);
     } catch {
-      return 80; // Default bei Fehler
+      return 0; // Bei Fehler 0 statt Fake-Wert
+    }
+  }
+
+  /**
+   * Berechnet die Rate konfliktfreier Aufträge
+   */
+  static async calculateConflictFreeRate(companyId: string): Promise<{ rate: number; total: number; conflicts: number }> {
+    try {
+      const ordersRef = collection(db, 'companies', companyId, 'auftraege');
+      const ordersSnap = await getDocs(ordersRef);
+      
+      if (ordersSnap.empty) {
+        return { rate: 0, total: 0, conflicts: 0 };
+      }
+      
+      let totalOrders = 0;
+      let conflictOrders = 0;
+      
+      ordersSnap.forEach((orderDoc) => {
+        const order = orderDoc.data();
+        // Zähle abgeschlossene und stornierte Aufträge
+        if (order.status === 'completed' || order.status === 'cancelled' || order.status === 'disputed') {
+          totalOrders++;
+          // Prüfe auf Streitfälle
+          if (order.status === 'disputed' || order.hasDispute === true || order.disputeStatus) {
+            conflictOrders++;
+          }
+        }
+      });
+      
+      if (totalOrders === 0) {
+        return { rate: 0, total: 0, conflicts: 0 };
+      }
+      
+      // Score: 10 = 100% konfliktfrei, 0 = alle mit Konflikten
+      const conflictFreePercent = ((totalOrders - conflictOrders) / totalOrders) * 100;
+      const score = (conflictFreePercent / 100) * 10;
+      
+      return { rate: Math.round(score * 10) / 10, total: totalOrders, conflicts: conflictOrders };
+    } catch {
+      return { rate: 0, total: 0, conflicts: 0 };
+    }
+  }
+
+  /**
+   * Berechnet die Stornierungsrate (invertiert: weniger = besser)
+   */
+  static async calculateCancellationRate(companyId: string): Promise<{ score: number; total: number; cancelled: number }> {
+    try {
+      const ordersRef = collection(db, 'companies', companyId, 'auftraege');
+      const ordersSnap = await getDocs(ordersRef);
+      
+      if (ordersSnap.empty) {
+        return { score: 0, total: 0, cancelled: 0 };
+      }
+      
+      let totalOrders = 0;
+      let cancelledOrders = 0;
+      
+      ordersSnap.forEach((orderDoc) => {
+        const order = orderDoc.data();
+        // Zähle alle bearbeiteten Aufträge
+        if (order.status === 'completed' || order.status === 'cancelled') {
+          totalOrders++;
+          if (order.status === 'cancelled') {
+            cancelledOrders++;
+          }
+        }
+      });
+      
+      if (totalOrders === 0) {
+        return { score: 0, total: 0, cancelled: 0 };
+      }
+      
+      // Score: 10 = 0% Stornos, 0 = 100% Stornos
+      const nonCancelledPercent = ((totalOrders - cancelledOrders) / totalOrders) * 100;
+      const score = (nonCancelledPercent / 100) * 10;
+      
+      return { score: Math.round(score * 10) / 10, total: totalOrders, cancelled: cancelledOrders };
+    } catch {
+      return { score: 0, total: 0, cancelled: 0 };
+    }
+  }
+
+  /**
+   * Berechnet den Lieferpünktlichkeits-Score
+   */
+  static async calculateDeliveryScore(companyId: string): Promise<{ score: number; total: number; onTime: number }> {
+    try {
+      const ordersRef = collection(db, 'companies', companyId, 'auftraege');
+      const completedQuery = query(ordersRef, where('status', '==', 'completed'));
+      const ordersSnap = await getDocs(completedQuery);
+      
+      if (ordersSnap.empty) {
+        return { score: 0, total: 0, onTime: 0 };
+      }
+      
+      let totalOrders = 0;
+      let onTimeOrders = 0;
+      
+      ordersSnap.forEach((orderDoc) => {
+        const order = orderDoc.data();
+        totalOrders++;
+        
+        // Prüfe ob pünktlich geliefert wurde
+        if (order.completedAt && order.deadline) {
+          const completedAt = order.completedAt instanceof Timestamp 
+            ? order.completedAt.toDate() 
+            : new Date(order.completedAt);
+          const deadline = order.deadline instanceof Timestamp 
+            ? order.deadline.toDate() 
+            : new Date(order.deadline);
+          
+          if (completedAt <= deadline) {
+            onTimeOrders++;
+          }
+        } else if (order.deliveredOnTime === true || !order.wasLate) {
+          // Fallback auf explizite Felder
+          onTimeOrders++;
+        }
+      });
+      
+      if (totalOrders === 0) {
+        return { score: 0, total: 0, onTime: 0 };
+      }
+      
+      // Score: 10 = 100% pünktlich, 0 = keine pünktlichen Lieferungen
+      const onTimePercent = (onTimeOrders / totalOrders) * 100;
+      const score = (onTimePercent / 100) * 10;
+      
+      return { score: Math.round(score * 10) / 10, total: totalOrders, onTime: onTimeOrders };
+    } catch {
+      return { score: 0, total: 0, onTime: 0 };
     }
   }
 
