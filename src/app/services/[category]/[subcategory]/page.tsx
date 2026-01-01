@@ -37,6 +37,7 @@ interface Provider {
   profilePictureURL?: string;
   photoURL?: string;
   profileBannerImage?: string;
+  profileVideoURL?: string;
   bio?: string;
   location?: string;
   skills?: string[];
@@ -342,6 +343,7 @@ export default function SubcategoryPage() {
               profilePictureURL: data.step3?.profilePictureURL || data.profilePictureURL,
               photoURL: data.step3?.profilePictureURL || data.profilePictureURL,
               profileBannerImage: data.profileBannerImage || data.step3?.profileBannerImage,
+              profileVideoURL: data.profileVideoURL || data.step3?.profileVideoURL,
               bio: data.description || data.bio,
               location:
                 data.location ||

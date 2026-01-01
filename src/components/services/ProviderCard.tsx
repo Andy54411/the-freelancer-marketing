@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Star, Heart, Video } from 'lucide-react';
+import { Star, Heart, Video, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 
 interface Provider {
   id: string;
@@ -13,6 +13,7 @@ interface Provider {
   profilePictureFirebaseUrl?: string;
   photoURL?: string;
   profileBannerImage?: string;
+  profileVideoURL?: string;
   bio?: string;
   location?: string;
   skills?: string[];
@@ -41,10 +42,14 @@ interface ProviderCardProps {
 export default function ProviderCard({ provider, onFavoriteClick, isFavorite = false }: ProviderCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [localFavorite, setLocalFavorite] = useState(isFavorite);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
   
   const displayName = provider.companyName || provider.userName || 'Anbieter';
   const imageUrl = provider.profilePictureURL || provider.profilePictureFirebaseUrl || provider.photoURL;
   const bannerUrl = provider.profileBannerImage;
+  const videoUrl = provider.profileVideoURL;
   const level = provider.level || 1;
   const isTopRated = provider.isTopRated;
   const offersVideoConsultation = provider.offersVideoConsultation;
@@ -55,6 +60,49 @@ export default function ProviderCard({ provider, onFavoriteClick, isFavorite = f
     setLocalFavorite(!localFavorite);
     if (onFavoriteClick) {
       onFavoriteClick(provider);
+    }
+  };
+
+  const handleVideoPlayPause = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (videoRef.current) {
+      if (isVideoPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsVideoPlaying(!isVideoPlaying);
+    }
+  };
+
+  const handleMuteToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    // Auto-play video on hover (muted)
+    if (videoRef.current && videoUrl) {
+      videoRef.current.play().catch(() => {
+        // Autoplay blocked, user needs to click
+      });
+      setIsVideoPlaying(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    // Pause video on mouse leave
+    if (videoRef.current && videoUrl) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+      setIsVideoPlaying(false);
     }
   };
 
@@ -84,12 +132,58 @@ export default function ProviderCard({ provider, onFavoriteClick, isFavorite = f
     <Link 
       href={`/profile/${provider.id}`}
       className="group block bg-white rounded-lg overflow-hidden hover:shadow-md transition-shadow duration-200"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
-      {/* Banner/Gig Image - Fiverr Style */}
+      {/* Banner/Video Section - Fiverr Style */}
       <div className="relative aspect-4/3 bg-gray-100 overflow-hidden">
-        {bannerUrl ? (
+        {/* Video (priority if available) */}
+        {videoUrl ? (
+          <>
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              muted={isMuted}
+              loop
+              playsInline
+              className={`absolute inset-0 w-full h-full object-cover transition-transform duration-300 ${isHovered ? 'scale-105' : ''}`}
+              poster={bannerUrl}
+            />
+            
+            {/* Video Controls Overlay */}
+            <div className={`absolute inset-0 bg-black/20 transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+              {/* Play/Pause Button */}
+              <button
+                onClick={handleVideoPlayPause}
+                className="absolute bottom-3 left-3 p-2 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
+              >
+                {isVideoPlaying ? (
+                  <Pause className="w-4 h-4" />
+                ) : (
+                  <Play className="w-4 h-4 fill-white" />
+                )}
+              </button>
+              
+              {/* Mute/Unmute Button */}
+              <button
+                onClick={handleMuteToggle}
+                className="absolute bottom-3 left-12 p-2 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
+              >
+                {isMuted ? (
+                  <VolumeX className="w-4 h-4" />
+                ) : (
+                  <Volume2 className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+            
+            {/* Video Badge */}
+            <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 bg-black/60 rounded text-white text-xs">
+              <Video className="w-3 h-3" />
+              <span>Video</span>
+            </div>
+          </>
+        ) : bannerUrl ? (
           <Image
             src={bannerUrl}
             alt={displayName}

@@ -21,6 +21,9 @@ import {
   Copy,
   Eye,
   Edit3,
+  Video,
+  Play,
+  Trash2,
 } from 'lucide-react';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { UserDataForSettings } from '@/types/settings';
@@ -50,8 +53,11 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
   // Profile states
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const profileInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   // AI Description Generator states
   const [showAiGenerator, setShowAiGenerator] = useState(false);
@@ -79,6 +85,8 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
   // Get profile image URL - check root level first, then step3
   const profileImageUrl = formData.profilePictureURL || formData.step3?.profilePictureURL;
   const bannerImageUrl = formData.profileBannerImage || formData.step3?.profileBannerImage;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const profileVideoUrl = (formData as any).profileVideoURL || (formData.step3 as any)?.profileVideoURL;
 
   // Helper function to find category ID by title or ID
   const findCategoryId = (categoryValue: string): string => {
@@ -248,6 +256,110 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
       if (e.target) {
         e.target.value = '';
       }
+    }
+  };
+
+  // Handle video upload
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!userId) {
+      toast.error('Benutzer-ID fehlt');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      toast.error('Bitte nur Videodateien hochladen (MP4, WebM, MOV)');
+      return;
+    }
+
+    // Validate file size (max 50MB for video)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Video darf maximal 50MB gross sein');
+      return;
+    }
+
+    // Validate video duration (max 60 seconds)
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    
+    const checkDuration = new Promise<boolean>((resolve) => {
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        if (video.duration > 75) {
+          toast.error('Video darf maximal 75 Sekunden lang sein');
+          resolve(false);
+        } else {
+          resolve(true);
+        }
+      };
+      video.onerror = () => {
+        toast.error('Video konnte nicht gelesen werden');
+        resolve(false);
+      };
+    });
+    
+    video.src = URL.createObjectURL(file);
+    const isValidDuration = await checkDuration;
+    if (!isValidDuration) return;
+
+    setIsUploadingVideo(true);
+    setVideoUploadProgress(0);
+    
+    try {
+      // Simuliere Progress (da uploadBytes keinen Progress-Callback hat)
+      const progressInterval = setInterval(() => {
+        setVideoUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
+      
+      const timestamp = Date.now();
+      const videoPath = `profile-videos/${userId}/${timestamp}_${file.name}`;
+      const videoRef = ref(storage, videoPath);
+      const snapshot = await uploadBytes(videoRef, file);
+      const downloadUrl = await getDownloadURL(snapshot.ref);
+      
+      clearInterval(progressInterval);
+      setVideoUploadProgress(100);
+      
+      // Update Firestore
+      const docRef = doc(db, 'companies', userId);
+      await updateDoc(docRef, {
+        profileVideoURL: downloadUrl,
+        'step3.profileVideoURL': downloadUrl,
+        lastUpdated: serverTimestamp(),
+      });
+
+      handleChange('profileVideoURL', downloadUrl);
+      toast.success('Video erfolgreich hochgeladen');
+    } catch {
+      toast.error('Fehler beim Hochladen des Videos');
+    } finally {
+      setIsUploadingVideo(false);
+      setVideoUploadProgress(0);
+      if (e.target) {
+        e.target.value = '';
+      }
+    }
+  };
+
+  // Delete video
+  const handleVideoDelete = async () => {
+    if (!userId) return;
+    
+    try {
+      const docRef = doc(db, 'companies', userId);
+      await updateDoc(docRef, {
+        profileVideoURL: null,
+        'step3.profileVideoURL': null,
+        lastUpdated: serverTimestamp(),
+      });
+      
+      handleChange('profileVideoURL', null);
+      toast.success('Video entfernt');
+    } catch {
+      toast.error('Fehler beim Entfernen des Videos');
     }
   };
 
@@ -509,6 +621,101 @@ const TaskerProfileForm: React.FC<TaskerProfileFormProps> = ({ formData, handleC
           onChange={handleBannerImageUpload}
           className="hidden"
         />
+      </div>
+
+      {/* Profile Video Section - Fiverr Style */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-gray-900">Profil-Video</h3>
+          <span className="px-2 py-0.5 bg-teal-100 text-teal-700 text-xs font-medium rounded">Optional</span>
+        </div>
+        <p className="text-sm text-gray-600">
+          Ein kurzes Video (max. 75 Sekunden) hilft Kunden, dich besser kennenzulernen. Videos erhöhen die Conversion-Rate um bis zu 40%.
+        </p>
+        
+        <div className="relative aspect-video w-full max-w-md rounded-lg overflow-hidden border-2 border-dashed border-gray-300 hover:border-teal-400 transition-colors bg-gray-50">
+          {profileVideoUrl ? (
+            <>
+              <video
+                src={profileVideoUrl}
+                className="w-full h-full object-cover"
+                controls
+                preload="metadata"
+              />
+              <button
+                type="button"
+                onClick={handleVideoDelete}
+                className="absolute top-3 right-3 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                title="Video entfernen"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </>
+          ) : (
+            <div 
+              className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer"
+              onClick={() => videoInputRef.current?.click()}
+            >
+              {isUploadingVideo ? (
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-10 h-10 text-teal-500 animate-spin" />
+                  <div className="w-48">
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-teal-500 transition-all duration-300"
+                        style={{ width: `${videoUploadProgress}%` }}
+                      />
+                    </div>
+                    <span className="text-sm text-gray-600 mt-1">{videoUploadProgress}%</span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="relative">
+                    <Video className="w-12 h-12 text-gray-400" />
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-teal-500 rounded-full flex items-center justify-center">
+                      <Play className="w-3 h-3 text-white fill-white" />
+                    </div>
+                  </div>
+                  <span className="text-gray-600 font-medium mt-3">Video hochladen</span>
+                  <span className="text-sm text-gray-500 mt-1">MP4, WebM oder MOV (max. 50MB, 75 Sek.)</span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {!profileVideoUrl && !isUploadingVideo && (
+          <button
+            type="button"
+            onClick={() => videoInputRef.current?.click()}
+            className="flex items-center gap-2 px-4 py-2 border border-teal-600 text-teal-600 rounded-lg hover:bg-teal-50 text-sm font-medium"
+          >
+            <Upload className="w-4 h-4" />
+            Video auswählen
+          </button>
+        )}
+        
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime"
+          onChange={handleVideoUpload}
+          className="hidden"
+        />
+        
+        <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+          <div className="text-sm text-blue-800">
+            <strong>Tipps für ein gutes Video:</strong>
+            <ul className="mt-1 space-y-1 list-disc list-inside text-blue-700">
+              <li>Stelle dich und deine Dienstleistung kurz vor</li>
+              <li>Zeige Beispiele deiner Arbeit</li>
+              <li>Sprich direkt in die Kamera</li>
+              <li>Achte auf gute Beleuchtung und Tonqualität</li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       {/* Profile Image Section */}
