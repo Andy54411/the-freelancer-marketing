@@ -136,9 +136,9 @@ export default function WebmailMeetPage() {
   // Wenn im Meeting, zeige TaskiloMeeting Komponente
   if (isInMeeting && currentRoomCode && session?.email) {
     return (
-      <div className="h-screen flex flex-col">
+      <div className="h-screen flex flex-col overflow-hidden">
         <MailHeader userEmail={session.email} />
-        <div className="flex-1">
+        <div className="flex-1 min-h-0">
           <TaskiloMeeting
             roomCode={currentRoomCode}
             source="webmail"
