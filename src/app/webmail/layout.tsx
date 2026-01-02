@@ -58,12 +58,6 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<WebmailSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
-  
-    pathname, 
-    hasSession: !!session, 
-    isLoading, 
-    isMounted 
-  });
 
   // Mount effect
   useEffect(() => {
@@ -108,13 +102,6 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
 
   // Login page detection
   const isLoginPage = pathname === '/webmail' && !session?.isAuthenticated;
-  
-    isMounted, 
-    isLoading, 
-    isLoginPage, 
-    isPublicPage, 
-    isAuthenticated: session?.isAuthenticated 
-  });
 
   // KRITISCH: Immer denselben Wrapper rendern um Hydration-Mismatch zu vermeiden!
   // Der Loading-State wird innerhalb des Wrappers gehandelt, nicht durch unterschiedliche Returns.
