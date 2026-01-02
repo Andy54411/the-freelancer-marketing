@@ -62,74 +62,51 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Helper function to add no-cache headers for subdomain rewrites
-  const createSubdomainRewrite = (targetPath: string) => {
-    const url = request.nextUrl.clone();
-    url.pathname = targetPath;
-    const response = NextResponse.rewrite(url);
-    // Prevent Vercel Edge from caching subdomain rewrites
-    response.headers.set('x-middleware-cache', 'no-cache');
-    response.headers.set('x-subdomain-rewrite', targetPath);
-    response.headers.set('Cache-Control', 'no-store, must-revalidate');
-    return response;
+  // Helper function to redirect subdomain to path-based routing
+  const createSubdomainRedirect = (targetPath: string) => {
+    const redirectUrl = new URL(`https://taskilo.de${targetPath}`);
+    logMiddleware('Subdomain Redirect', request, { to: redirectUrl.href });
+    return NextResponse.redirect(redirectUrl, { status: 301 });
   };
 
   // ============================================
-  // SUBDOMAIN ROUTING
+  // SUBDOMAIN ROUTING - Redirect to path-based URLs
   // ============================================
   
-  // email.taskilo.de / mail.taskilo.de -> /webmail
+  // email.taskilo.de / mail.taskilo.de -> taskilo.de/webmail
   if (hostname.startsWith('email.') || hostname.startsWith('mail.')) {
-    logMiddleware('Email Subdomain erkannt', request, { hostname });
-    if (!pathname.startsWith('/webmail')) {
-      return createSubdomainRewrite(`/webmail${pathname === '/' ? '' : pathname}`);
-    }
-    return NextResponse.next();
+    logMiddleware('Email Subdomain erkannt - redirecting', request, { hostname });
+    return createSubdomainRedirect(`/webmail${pathname === '/' ? '' : pathname}`);
   }
 
-  // drive.taskilo.de -> /webmail/drive
+  // drive.taskilo.de -> taskilo.de/drive
   if (hostname.startsWith('drive.')) {
-    logMiddleware('Drive Subdomain erkannt', request, { hostname });
-    if (!pathname.startsWith('/webmail/drive')) {
-      return createSubdomainRewrite(`/webmail/drive${pathname === '/' ? '' : pathname}`);
-    }
-    return NextResponse.next();
+    logMiddleware('Drive Subdomain erkannt - redirecting', request, { hostname });
+    return createSubdomainRedirect(`/drive${pathname === '/' ? '' : pathname}`);
   }
 
-  // kalender.taskilo.de / calendar.taskilo.de -> /webmail/calendar
+  // kalender.taskilo.de / calendar.taskilo.de -> taskilo.de/kalender
   if (hostname.startsWith('kalender.') || hostname.startsWith('calendar.')) {
-    logMiddleware('Kalender Subdomain erkannt', request, { hostname });
-    if (!pathname.startsWith('/webmail/calendar')) {
-      return createSubdomainRewrite(`/webmail/calendar${pathname === '/' ? '' : pathname}`);
-    }
-    return NextResponse.next();
+    logMiddleware('Kalender Subdomain erkannt - redirecting', request, { hostname });
+    return createSubdomainRedirect(`/kalender${pathname === '/' ? '' : pathname}`);
   }
 
-  // meet.taskilo.de -> /webmail/meet
+  // meet.taskilo.de -> taskilo.de/meet
   if (hostname.startsWith('meet.')) {
-    logMiddleware('Meet Subdomain erkannt', request, { hostname });
-    if (!pathname.startsWith('/webmail/meet')) {
-      return createSubdomainRewrite(`/webmail/meet${pathname === '/' ? '' : pathname}`);
-    }
-    return NextResponse.next();
+    logMiddleware('Meet Subdomain erkannt - redirecting', request, { hostname });
+    return createSubdomainRedirect(`/meet${pathname === '/' ? '' : pathname}`);
   }
 
-  // task.taskilo.de / tasks.taskilo.de -> /webmail/tasks
+  // task.taskilo.de / tasks.taskilo.de -> taskilo.de/tasks
   if (hostname.startsWith('task.') || hostname.startsWith('tasks.')) {
-    logMiddleware('Tasks Subdomain erkannt', request, { hostname });
-    if (!pathname.startsWith('/webmail/tasks')) {
-      return createSubdomainRewrite(`/webmail/tasks${pathname === '/' ? '' : pathname}`);
-    }
-    return NextResponse.next();
+    logMiddleware('Tasks Subdomain erkannt - redirecting', request, { hostname });
+    return createSubdomainRedirect(`/tasks${pathname === '/' ? '' : pathname}`);
   }
 
-  // kontakt.taskilo.de / contact.taskilo.de -> /webmail/contacts
+  // kontakt.taskilo.de / contact.taskilo.de -> taskilo.de/kontakte
   if (hostname.startsWith('kontakt.') || hostname.startsWith('contact.') || hostname.startsWith('contacts.')) {
-    logMiddleware('Contacts Subdomain erkannt', request, { hostname });
-    if (!pathname.startsWith('/webmail/contacts')) {
-      return createSubdomainRewrite(`/webmail/contacts${pathname === '/' ? '' : pathname}`);
-    }
-    return NextResponse.next();
+    logMiddleware('Contacts Subdomain erkannt - redirecting', request, { hostname });
+    return createSubdomainRedirect(`/kontakte${pathname === '/' ? '' : pathname}`);
   }
 
   // ============================================
