@@ -39,6 +39,7 @@ interface CookieConsentProviderProps {
 }
 
 export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ children }) => {
+  const [isMounted, setIsMounted] = useState(false);
   const [consent, setConsent] = useState<ConsentState>({
     necessary: true,
     analytics: false,
@@ -49,6 +50,7 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
   const [bannerVisible, setBannerVisible] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     // Prüfe, ob bereits eine Einwilligung gespeichert ist
     const savedConsent = localStorage.getItem('taskilo-cookie-consent');
     if (!savedConsent) {
@@ -62,11 +64,15 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
         // Only send to GTM in production
         if (process.env.NODE_ENV === 'production') {
           sendConsentToGTM(parsedConsent);
-        } else {
         }
       }, 200);
     }
   }, []);
+
+  // Verhindere Hydration-Mismatch: Rendere nichts bis Client gemountet ist
+  if (!isMounted) {
+    return <>{children}</>;
+  }
 
   const updateConsentState = (newConsent: Partial<ConsentState>) => {
     const updatedConsent = { ...consent, ...newConsent };
@@ -77,7 +83,6 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
     // Neue Einwilligung sofort an GTM senden
     if (process.env.NODE_ENV === 'production') {
       sendConsentToGTM(updatedConsent);
-    } else {
     }
   };
 
