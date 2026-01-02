@@ -68,12 +68,24 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [session, setSession] = useState<WebmailSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubdomain, setIsSubdomain] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
-  // DEBUG: Log beim Mount
-  console.log('[WebmailLayout] Mount - pathname:', pathname, 'hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR');
+  // DEBUG: Log beim Mount (nur client-side)
+  useEffect(() => {
+    setIsMounted(true);
+    // Subdomain-Erkennung nur im Client
+    const hostname = window.location.hostname;
+    const subdomain = hostname !== 'taskilo.de' && 
+      hostname !== 'www.taskilo.de' &&
+      hostname.endsWith('.taskilo.de');
+    setIsSubdomain(subdomain);
+    console.log('[WebmailLayout] Mount - pathname:', pathname, 'hostname:', hostname, 'isSubdomain:', subdomain);
+  }, [pathname]);
 
   // Load session from cookie
   useEffect(() => {
+    if (!isMounted) return;
     console.log('[WebmailLayout] useEffect - checking cookie...');
     console.log('[WebmailLayout] document.cookie:', document.cookie);
     const credentials = getCookie();
@@ -87,16 +99,11 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
       });
     }
     setIsLoading(false);
-  }, []);
+  }, [isMounted]);
 
   // Public pages that don't require authentication
   const publicPaths = ['/webmail', '/webmail/pricing', '/webmail/pricing/checkout', '/webmail/pricing/success'];
   const isPublicPage = publicPaths.some(path => pathname === path || pathname?.startsWith('/webmail/pricing'));
-  
-  // Subdomain-Erkennung: Bei Subdomain-Zugriff ist Login-Seite unter /webmail
-  const isSubdomain = typeof window !== 'undefined' && 
-    window.location.hostname !== 'taskilo.de' && 
-    window.location.hostname.endsWith('.taskilo.de');
   
   // Login-URL basierend auf Kontext
   const loginUrl = isSubdomain ? 'https://email.taskilo.de' : '/webmail';
