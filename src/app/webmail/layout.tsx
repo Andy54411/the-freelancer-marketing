@@ -31,7 +31,7 @@ function getCookie(): { email: string; password: string } | null {
 }
 
 function deleteCookie(): void {
-  document.cookie = `\${COOKIE_NAME}=; path=/; max-age=0`;
+  document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
 }
 
 // Webmail Session Context
