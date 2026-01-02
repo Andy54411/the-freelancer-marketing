@@ -150,7 +150,7 @@ export function generateViewport() {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de">
+    <html lang="de" suppressHydrationWarning>
       <head>
         {/* Performance Optimizations - Preconnect zu kritischen Ressourcen */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -280,7 +280,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <StructuredData type="Organization" />
         <StructuredData type="WebSite" />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
         <CookieConsentProvider>
           <AnalyticsProvider>
             <AlertProvider>
