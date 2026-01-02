@@ -91,6 +91,7 @@ function WebmailPageContent() {
   const composeParam = searchParams.get('compose');
   const toParam = searchParams.get('to');
   
+  const [isMounted, setIsMounted] = useState(false);
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
@@ -102,7 +103,14 @@ function WebmailPageContent() {
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [companyId, setCompanyId] = useState<string | undefined>(undefined);
 
+  // Hydration-Fix: Warte bis Client gemountet ist
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Nicht starten bis Client gemountet ist
+    if (!isMounted) return;
     const checkSession = async () => {
       // 1. Prüfe Cookie (direkter Webmail-Login)
       const savedCredentials = getCookie();
@@ -161,13 +169,14 @@ function WebmailPageContent() {
         }
       }
       
-      // 2. Prüfe lokale Credentials (Dashboard-Verbindung)
+      // 2. Prüfe Firestore Credentials (Dashboard-Verbindung)
       // Warte auf Firebase Auth Status
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           // Setze companyId für AppLauncher (User UID ist Company ID bei Company-Accounts)
           setCompanyId(user.uid);
           
+          // Zuerst: Prüfe lokale Credentials aus localStorage
           const localCredentials = getWebmailCredentials(user.uid);
           if (localCredentials && localCredentials.email && localCredentials.password) {
             try {
@@ -190,6 +199,9 @@ function WebmailPageContent() {
                 // Setze auch Cookie für konsistente Session
                 setCookie(localCredentials.email, localCredentials.password, true);
                 setIsConnected(true);
+                setIsCheckingSession(false);
+                unsubscribe();
+                return;
               }
             } catch {
               // Netzwerkfehler - trotzdem verbinden wenn Credentials valide aussehen
@@ -198,8 +210,50 @@ function WebmailPageContent() {
                 setPassword(localCredentials.password);
                 setCookie(localCredentials.email, localCredentials.password, true);
                 setIsConnected(true);
+                setIsCheckingSession(false);
+                unsubscribe();
+                return;
               }
             }
+          }
+          
+          // Zweitens: Prüfe Firestore Credentials (aus companies Collection)
+          try {
+            const response = await fetch('/api/webmail/credentials', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ companyId: user.uid }),
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.email && data.password) {
+              // Teste die Credentials
+              const testResponse = await fetch('/api/webmail/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  email: data.email,
+                  password: data.password,
+                  imapHost: 'mail.taskilo.de',
+                  imapPort: 993,
+                }),
+              });
+              
+              const testData = await testResponse.json();
+              
+              if (testData.success) {
+                setEmail(data.email);
+                setPassword(data.password);
+                setCookie(data.email, data.password, true);
+                setIsConnected(true);
+                setIsCheckingSession(false);
+                unsubscribe();
+                return;
+              }
+            }
+          } catch {
+            // Firestore-Abfrage fehlgeschlagen - ignorieren
           }
         }
         setIsCheckingSession(false);
@@ -208,7 +262,7 @@ function WebmailPageContent() {
     };
 
     checkSession();
-  }, []);
+  }, [isMounted]);
 
   // Separater Effect um companyId zu setzen, auch wenn User über Cookie eingeloggt ist
   useEffect(() => {
