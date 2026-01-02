@@ -57,13 +57,14 @@ function setCookie(email: string, password: string, remember: boolean): void {
   // ZUERST alle alten Cookie-Varianten loeschen
   document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
   document.cookie = `${COOKIE_NAME}=; path=/; domain=taskilo.de; max-age=0`;
+  document.cookie = `${COOKIE_NAME}=; path=/; domain=.taskilo.de; max-age=0`;
   
   const encoded = encodeCredentials(email, password);
   // Session-Cookie (kein max-age) oder 7 Tage
   const expires = remember ? `; max-age=${COOKIE_MAX_AGE}` : '';
   // Cookie gilt fuer alle Subdomains (email.taskilo.de, drive.taskilo.de, etc.)
   const domain = window.location.hostname.includes('taskilo.de') ? '; domain=.taskilo.de' : '';
-  document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/${domain}; SameSite=None; Secure`;
+  document.cookie = `${COOKIE_NAME}=${encoded}${expires}; path=/; SameSite=Lax; Secure${domain}`;
 }
 
 function getCookie(): { email: string; password: string } | null {

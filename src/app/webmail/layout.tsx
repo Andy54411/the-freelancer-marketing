@@ -105,20 +105,23 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
   const publicPaths = ['/webmail', '/webmail/pricing', '/webmail/pricing/checkout', '/webmail/pricing/success'];
   const isPublicPage = publicPaths.some(path => pathname === path || pathname?.startsWith('/webmail/pricing'));
   
-  // Login-URL basierend auf Kontext
-  const loginUrl = isSubdomain ? 'https://email.taskilo.de' : '/webmail';
+  // Bei Subdomain ist die Root-Seite (/) auch eine public/login page
+  const isSubdomainRoot = isSubdomain && pathname === '/';
+  
+  // Login-URL basierend auf Kontext - NICHT auf gleiche URL redirecten!
+  const loginUrl = '/webmail';
 
   // Redirect to login if not authenticated and not on public page
+  // WICHTIG: Bei Subdomain-Root NICHT redirecten (das IST die Login-Seite)
   useEffect(() => {
-    if (!isLoading && !session?.isAuthenticated && !isPublicPage) {
-      if (isSubdomain) {
-        // Bei Subdomain zur Email-Login-Seite weiterleiten
-        window.location.href = loginUrl;
-      } else {
+    if (!isLoading && !session?.isAuthenticated && !isPublicPage && !isSubdomainRoot) {
+      // Nur von taskilo.de zum Webmail-Login redirecten, nicht von Subdomains
+      if (!isSubdomain) {
         router.push('/webmail');
       }
+      // Bei Subdomains zeigen wir die Login-Required Page (kein Redirect-Loop)
     }
-  }, [isLoading, session?.isAuthenticated, pathname, router, isPublicPage, isSubdomain, loginUrl]);
+  }, [isLoading, session?.isAuthenticated, pathname, router, isPublicPage, isSubdomain, isSubdomainRoot]);
 
   const handleLogout = () => {
     deleteCookie();
@@ -128,7 +131,8 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
   };
 
   // Don't show layout for login page when not authenticated
-  const isLoginPage = pathname === '/webmail' && !session?.isAuthenticated;
+  // Auf Subdomain ist '/' die Login-Seite, auf Hauptdomain '/webmail'
+  const isLoginPage = (pathname === '/webmail' || isSubdomainRoot) && !session?.isAuthenticated;
 
   console.log('[WebmailLayout] Render decision:', {
     isMounted,
@@ -137,6 +141,7 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
     isPublicPage,
     isLoginPage,
     isSubdomain,
+    isSubdomainRoot,
     pathname,
   });
 
