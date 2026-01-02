@@ -131,6 +131,7 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
   const isLoginPage = pathname === '/webmail' && !session?.isAuthenticated;
 
   console.log('[WebmailLayout] Render decision:', {
+    isMounted,
     isLoading,
     isAuthenticated: session?.isAuthenticated,
     isPublicPage,
@@ -139,7 +140,9 @@ export default function WebmailLayout({ children }: { children: ReactNode }) {
     pathname,
   });
 
-  if (isLoading) {
+  // WICHTIG: Während SSR und erstem Client-Render immer Loading Spinner zeigen
+  // Das verhindert Hydration Mismatch
+  if (!isMounted || isLoading) {
     console.log('[WebmailLayout] Returning: LOADING SPINNER');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
